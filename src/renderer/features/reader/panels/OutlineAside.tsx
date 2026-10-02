@@ -156,13 +156,22 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
             </button>
           ))}
         </div>
+        {/* [小挂账第 9 条] 收起文字钮图标化（用户图 1 红框标注）：左向
+            chevron（侧栏向左缘收起语义）——TAB_ICONS 同族 24×24 单色描边
+            （stroke 走 .rdr-aside-collapse svg CSS——theme-reader.css 同规则
+            组并入）；aria-label/title 保「收起」语义（无障碍不回退）；点击
+            行为零变 */}
         <button
           type="button"
-          className="shrink-0 px-1 text-xs"
+          aria-label="收起"
+          title="收起"
+          className="rdr-aside-collapse shrink-0 px-1"
           style={{ color: 'var(--text-dim)' }}
           onClick={onCollapse}
         >
-          收起
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M15 4l-8 8 8 8" />
+          </svg>
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">

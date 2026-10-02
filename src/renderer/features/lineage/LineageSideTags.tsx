@@ -11,6 +11,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
+import { TAG_NAME_MAX } from '@shared/models/tag'
 
 /** 标签小片样式（红示意：红字小片——用户图7「红小块」） */
 const SIDE_TAG_CHIP: CSSProperties = {
@@ -64,6 +65,7 @@ export function LineageSideTags(props: {
         ))}
         <input
           data-testid="lineage-tag-input"
+          maxLength={TAG_NAME_MAX}
           className="w-24 rounded border px-1.5 py-0.5 text-xs"
           style={{ borderColor: 'var(--border)' }}
           value={tagInput}

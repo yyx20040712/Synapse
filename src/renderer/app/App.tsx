@@ -5,6 +5,7 @@
  * 各页面组件来自 features/*。[T3-P1] ErrorBoundary 拆 ./ErrorBoundary。
  */
 import { useEffect, useRef, useState } from 'react'
+import { api, unwrap } from '../api/client'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -142,16 +143,32 @@ export function App(): JSX.Element {
   const lineageEdges = useLineageStore((s) => s.edges)
   const selectedId = useLibraryStore((s) => s.selectedId)
 
-  // [F-WS-02] 导入升格桥（D2「导入过文献即升格」）：默认课题内导入落地
-  // （library total 0→N——LibraryPage onImported→library.load 链终态信号）
-  // →组合根重拉课题清单 → paperCount>0 打破引导态第三条件 → rail 解禁。
-  // 仅引导态窗口内重拉（窗口外计数刷新语义仍归 reload——既有行为不动）；
-  // 重拉失败=items 不变禁用保持，错误契约经管理页错误行+重试恢复（k1-N2
-  // 边界在档——桥自身不 toast 不重试，恢复面归 store error 既有契约）
+  // [F-WS-02] 导入升格桥（D2）：导入落地→重拉课题清单→paperCount>0 打破引导
+  // 态第三条件→rail 解禁。仅引导态窗口内重拉（窗口外归 reload）；失败=禁用
+  // 保持（k1-N2 在档）。[W1 小挂账] 判定信号=无过滤计数（完成语义=「库内任一
+  // 文献」与筛选无关——裁决案 a）：libTotal>0 直拉既有路保留；=0 时以
+  // library.list 空查询探针（total=COUNT(*) 无过滤，零新契约）复核——筛选掩蔽
+  // 态不再锁死；触发沿=窗口内任一 load 收尾/挂载沿；失败=本轮放弃归自愈路径
   const libTotal = useLibraryStore((s) => s.total)
+  const libLoading = useLibraryStore((s) => s.loading)
   useEffect(() => {
-    if (wsGuide && libTotal > 0) void wsLoad()
-  }, [wsGuide, libTotal, wsLoad])
+    if (!wsGuide || libLoading) return
+    if (libTotal > 0) {
+      void wsLoad()
+      return
+    }
+    let cancelled = false
+    try {
+      void unwrap(api.library.list({})).then((r) => {
+        if (!cancelled && r.total > 0) void wsLoad()
+      }).catch(() => undefined)
+    } catch {
+      // 探针发起失败=本轮放弃（引导态不破——自愈路径在档）
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [wsGuide, libTotal, libLoading, wsLoad])
 
   // T3-P2 gsearch：全局 Ctrl+K 聚焦（keydown 挂 App 单点；preventDefault 防
   // 浏览器默认；v1 展示性控件——可聚焦可输入，无后端动作；提示语=受控空值

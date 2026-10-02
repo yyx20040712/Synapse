@@ -34,6 +34,7 @@
  *   ——blur/Enter 在同批事件窗内也只放行一次，TagLifecycle useBusyGuard 同型）
  */
 import { useEffect, useRef, useState } from 'react'
+import { TAG_NAME_MAX } from '@shared/models/tag'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { tagColorStyle } from '../../shared/ui-constants'
@@ -174,6 +175,7 @@ export function TagEditor(props: {
         <input
           ref={inputRef}
           aria-label="新增标签"
+          maxLength={TAG_NAME_MAX}
           className="rounded border px-2 py-1 text-xs disabled:opacity-50"
           style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
           value={input}

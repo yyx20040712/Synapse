@@ -11,7 +11,7 @@
 import { useRef, useState } from 'react'
 import { Dialog } from '../../shared/ui/Dialog'
 import { showToast } from '../../shared/ui/Toast'
-import type { Tag } from '@shared/models/tag'
+import { TAG_NAME_MAX, type Tag } from '@shared/models/tag'
 import { useTagsStore, type TagWithCount } from './tags.store'
 
 /**
@@ -79,6 +79,7 @@ export function TagRenameDialog(props: {
     <Dialog open title={`重命名标签：${props.tag.name}`} onClose={requestClose}>
       <input
         aria-label="新标签名"
+        maxLength={TAG_NAME_MAX}
         className="w-full rounded border px-2 py-1 text-xs"
         style={{ borderColor: 'var(--border)' }}
         value={value}

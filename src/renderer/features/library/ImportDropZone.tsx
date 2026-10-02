@@ -213,18 +213,12 @@ export function ImportDropZone(props: {
         {dragging ? DROP_HINT : '将 PDF 拖到此处，或使用按钮导入'}
       </p>
       <div className="flex items-center gap-2">
-        <Button
-          variant="primary"
-          disabled={busy}
-          onClick={() => startButtonImport('dialog')}
-        >
+        {/* [小挂账第 8 条] 按钮风格统一：PDF 钮 primary→secondary 描边款+字号/
+            高度各降一档（md→sm）——与「导入文件夹」同排同款；交互语义零变 */}
+        <Button variant="secondary" size="sm" disabled={busy} onClick={() => startButtonImport('dialog')}>
           导入 PDF 文件
         </Button>
-        <Button
-          variant="secondary"
-          disabled={busy}
-          onClick={() => startButtonImport('folder')}
-        >
+        <Button variant="secondary" size="sm" disabled={busy} onClick={() => startButtonImport('folder')}>
           导入文件夹
         </Button>
         {/* [F-FOLDER-02·E]「导入到」选择器（拆件 ImportTargetSelect——组件 250

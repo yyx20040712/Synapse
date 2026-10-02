@@ -168,9 +168,12 @@ canvas[data-thumb-canvas] {
    .titlebar-btn svg 先例：stroke currentColor/fill none/统一线宽；图标常量
    =toolbar-icons.tsx+OutlineAside.tsx TAB_ICONS，禁新依赖；按钮文本走
    sr-only span——textContent/accessible name 双面保活受锁断言；
-   [T3-P4] 16px=mockup .tb-btn svg/.aside-tab svg 逐值） */
+   [T3-P4] 16px=mockup .tb-btn svg/.aside-tab svg 逐值；
+   [小挂账第 9 条] .rdr-aside-collapse svg=侧栏收起钮图标（2026-10-02
+   文字钮图标化——同规则组并入） */
 .rdr-toolbar button svg,
-.rdr-aside-tabs button svg {
+.rdr-aside-tabs button svg,
+.rdr-aside-collapse svg {
   width: 16px;
   height: 16px;
   flex: none;

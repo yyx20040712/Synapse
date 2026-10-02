@@ -37,7 +37,8 @@
  * - 测试：tests/unit/renderer/workspaces-page.test.tsx（always-active）
  *   +tests/e2e/workspaces.spec.ts（真 Chromium 切换链）
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { WORKSPACE_NAME_MAX } from '@shared/ipc/schemas'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { OP_FAILED } from '../../shared/ui-constants'
@@ -70,6 +71,18 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // [W2 小挂账] 挂载重拉一次（仅非引导态）：导入后计数会话内陈旧——专职管理页
+  // 使陈旧性升格为主数据面可见，挂载沿自愈（成本一次 IPC）。引导态窗口豁免=
+  // 导入沿重拉已归 App 组合根 W1 桥（职责分界免双重拉）；窗口外 reload/计数
+  // 刷新语义归 F-UIRES-01 票面；失败走 store error 既有契约=本页错误行+重试
+  const guide = isGuideState({ items, currentId })
+  const mountPulledRef = useRef(false)
+  useEffect(() => {
+    if (mountPulledRef.current) return
+    mountPulledRef.current = true
+    if (!guide) void load()
+  }, [guide, load])
 
   /** 点卡切换（幂等=当前课题直返零 IPC——确认语义不空切；失败=toast 留本页） */
   async function pick(id: string): Promise<void> {
@@ -125,8 +138,6 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
     }
   }
 
-  const guide = isGuideState({ items, currentId })
-
   return (
     <div className="ws-page">
       <h2>课题管理</h2>
@@ -148,6 +159,7 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
                 <div className="ws-edit">
                   <input
                     aria-label="课题名称"
+                    maxLength={WORKSPACE_NAME_MAX}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                   />
@@ -196,6 +208,7 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
       <div className="ws-new-row">
         <input
           aria-label="新课题名称"
+          maxLength={WORKSPACE_NAME_MAX}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
         />

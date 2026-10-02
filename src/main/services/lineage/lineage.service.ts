@@ -197,6 +197,20 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
         throw new LineageDomainError('CONFLICT', `文件夹不存在（幽灵 folderId）：${folderId}`)
       }
     }
+    // [F1 小挂账] 重复节点服务层预检：新建形态（input 无 id）+该文献已有节点
+    // → CONFLICT 中文拒（不落库撞 idx_lineage_paper 部分唯一索引折叠 INTERNAL
+    // ——renderer write-queue 仅 CONFLICT 丢弃，系统型=永久重试卡队列）。判定面
+    // =本函数已读 nodes（nodeByPaperId 同语义单源，零新增 deps）；位次=图归属
+    // 校验之后（显式 folderId≠归属 拒的受锁文案优先——folders-move-paper.test
+    // 在档契约）+归档写可能先行但随 withTransaction 回滚（拒路径零持久副作用
+    // ——与坑 a 索引撞原子性同构）；update 形态（带 id）不走本预检（整行
+    // upsert 语义不变）
+    if (input.paperId !== null && input.id === undefined) {
+      const clash = nodes.find((n) => n.paperId === input.paperId)
+      if (clash !== undefined) {
+        throw new LineageDomainError('CONFLICT', `该文献已有节点（${clash.title}，节点 id ${clash.id}）——同一文献仅一个节点`)
+      }
+    }
     // T3-P5 month/slot 归一（D-I-1）——全图读一次算组内 max（单用户本地图量级）
     const { month, slot } = normalizeMonthSlot({ ...input, folderId }, nodes)
     return deps.repo.upsertNode({ ...input, folderId, month, slot })

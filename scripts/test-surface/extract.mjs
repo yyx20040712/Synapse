@@ -30,6 +30,10 @@
  * expect 断言（W2 终案）：单元=最外层 expect 调用链 getText+空白归一，
  * 全记不去重（同链去重除外——链内嵌 expect 爬到同一链顶自然合并）；
  * 收集域=用例回调体子树（含体内嵌套声明函数——模块级 helper 不计）。
+ * [F-TESTREF-S1] 三补强（2026-10-02 小挂账批）：①哨兵 each 双层调用形态
+ * （外层 callee=CallExpression 旧双盲）；②本地变量别名通道（const myIt=it
+ * 静默漏抽→保守红——两域同查）；③importAliasCheck 排除 type-only import
+ * （红向误伤修复）。
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -174,6 +178,9 @@ function importAliasCheck(sf, relPath, unresolvable) {
     if (!TEST_API_SOURCE_RE.test(stmt.moduleSpecifier.getText(sf))) continue
     const clause = stmt.importClause
     if (!clause) continue
+    // [F-TESTREF-S1③] type-only import（import type 声明）排除：运行时零绑定
+    // ——别名形态不构成用例 API 流经面，误红=假阳性（红向误伤非漏报）
+    if (clause.isTypeOnly) continue
     const line = lineOf(stmt, sf)
     if (clause.name) {
       // default import：imported='default'——local∈监视集即伪装形态
@@ -190,6 +197,9 @@ function importAliasCheck(sf, relPath, unresolvable) {
     if (ts.isNamedImports(bindings)) {
       for (const spec of bindings.elements) {
         if (!ts.isIdentifier(spec.name)) continue
+        // [F-TESTREF-S1③] 内联 type 修饰符说明符（import { type it as myIt }）
+        // 同排除——类型面引用零运行时绑定
+        if (spec.isTypeOnly) continue
         const imported = spec.propertyName && ts.isIdentifier(spec.propertyName) ? spec.propertyName.text : spec.name.text
         const local = spec.name.text
         if (ALIAS_WATCHED.has(imported) && local !== imported) {
@@ -203,6 +213,34 @@ function importAliasCheck(sf, relPath, unresolvable) {
 }
 
 /**
+ * [F-TESTREF-S1②] 本地变量别名检测：const/let/var X = it|test|describe|expect
+ * （裸标识符初始化）→ 用例/断言 API 经本地名流经（X('t', fn) 调用形态 callee
+ * 不在白名单=静默漏抽面）→ 保守红（import 别名 W6 检测面外的同族）。初始化
+ * 为复合表达式（成员访问/调用）不在 v1 判定面——属性访问族已由 calleeText
+ * 白名单覆盖。白名单（extractFile）与非白名单（sentinelCheck）两域同查——
+ * helper 文件内别名同证 API 流经不可静态判定。
+ */
+function localAliasCheck(sf, relPath, unresolvable) {
+  function scan(node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer !== undefined &&
+      ts.isIdentifier(node.initializer) &&
+      ALIAS_WATCHED.has(node.initializer.text)
+    ) {
+      unresolvable.push({
+        file: relPath,
+        line: lineOf(node, sf),
+        reason: `用例 API 本地变量别名不可静态判定（const ${node.name.text} = ${node.initializer.text}——${node.name.text}(...) 调用形态白名单外，静默漏抽面）`
+      })
+    }
+    ts.forEachChild(node, scan)
+  }
+  scan(sf)
+}
+
+/**
  * 单文件抽取（白名单域）。unresolvable 收集 {file,line,reason}（不中断——
  * 全量明细一次输出）。
  */
@@ -212,6 +250,7 @@ function extractFile(absPath, relPath, unresolvable) {
   const sf = ts.createSourceFile(absPath, text, ts.ScriptTarget.Latest, true, kind)
   const red = (node, reason) => unresolvable.push({ file: relPath, line: lineOf(node, sf), reason })
   importAliasCheck(sf, relPath, unresolvable)
+  localAliasCheck(sf, relPath, unresolvable)
 
   // 预扫描：const X = ArrayLiteral 声明表 + 标识符赋值/更新表（单跳解析防护）
   const constArrays = new Map()
@@ -403,25 +442,35 @@ function extractFile(absPath, relPath, unresolvable) {
 
 /** 漏扫哨兵（设计 W6+自裁②+门一 W7 扩）：非白名单 .ts/.tsx 含用例调用形态 →
  *  保守红。callee 识别面=纯标识符三词 或 带后缀属性访问（calleeText 匹配
- *  /^(it|test|describe)\./）；命中后仍按参数形态判定（首参字符串字面量或
- *  任一参函数字面量）——guard.ts 的 describe(label, fn)/describe.skip(label, fn)
- *  转发调用（双标识符参）不误伤，真用例（带回调）不漏。 */
+ *  /^(it|test|describe)\./）或 each 双层调用（F-TESTREF-S1①：外层被调者本身
+ *  是调用——it.each(ARR)(title, fn) 形态 calleeText 返 null 双盲，取内层被调
+ *  者文本判 each 族）；命中后仍按参数形态判定（首参字符串字面量或任一参函数
+ *  字面量——each 形态按外层参数判）——guard.ts 的 describe(label, fn)/
+ *  describe.skip(label, fn) 转发调用（双标识符参）不误伤，真用例（带回调）
+ *  不漏。 */
 function sentinelCheck(absPath, relPath, unresolvable) {
   const text = readFileSync(absPath, 'utf8')
   const kind = relPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   const sf = ts.createSourceFile(absPath, text, ts.ScriptTarget.Latest, true, kind)
   importAliasCheck(sf, relPath, unresolvable)
+  localAliasCheck(sf, relPath, unresolvable)
   function visit(node) {
     if (ts.isCallExpression(node)) {
       const ct = calleeText(node.expression)
       const isBareThree = ts.isIdentifier(node.expression) && THREE_API.has(node.expression.text)
       const isDottedThree = ct !== null && /^(it|test|describe)\./.test(ct)
-      if (isBareThree || isDottedThree) {
+      const innerEachCallee = ts.isCallExpression(node.expression)
+        ? calleeText(node.expression.expression)
+        : null
+      const isEachDouble =
+        ct === null && innerEachCallee !== null && /^(it|test|describe)\.each/.test(innerEachCallee)
+      if (isBareThree || isDottedThree || isEachDouble) {
         const looksCase =
           (node.arguments[0] !== undefined && (ts.isStringLiteral(node.arguments[0]) || ts.isNoSubstitutionTemplateLiteral(node.arguments[0]))) ||
           node.arguments.some((a) => isFunctionExpr(a))
         if (looksCase) {
-          unresolvable.push({ file: relPath, line: lineOf(node, sf), reason: `漏扫哨兵：非白名单文件含用例调用形态（${isDottedThree ? ct : 'it/test/describe'}——门一 W7 扩）` })
+          const shape = isEachDouble ? 'each 双层调用' : isDottedThree ? ct : 'it/test/describe'
+          unresolvable.push({ file: relPath, line: lineOf(node, sf), reason: `漏扫哨兵：非白名单文件含用例调用形态（${shape}——门一 W7 扩/F-TESTREF-S1①）` })
           return
         }
       }

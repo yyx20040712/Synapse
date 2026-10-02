@@ -8,7 +8,7 @@ import { annotationRectSchema } from '../models/annotation'
 import { paperSummarySchema, pagedSchema, paperMetaPatchSchema } from '../models/paper'
 import { annotationSchema, annotationInputSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
-import { tagSchema, tagColorSchema } from '../models/tag'
+import { TAG_NAME_MAX, tagSchema, tagColorSchema } from '../models/tag'
 import { collectionSchema } from '../models/collection'
 import {
   lineageNodeSchema,
@@ -376,16 +376,18 @@ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
 
 // ── tags ────────────────────────────────────────────────────────
 export const tagWithCountSchema = tagSchema.extend({ paperCount: z.number().int().min(0) })
-export const tagNameReqSchema = z.object({ name: z.string().min(1).max(50) }).strict()
+// [T4 小挂账] 标签名上限=TAG_NAME_MAX 单源（models/tag——渲染层四输入点 maxLength 同源）
+export const tagNameReqSchema = z.object({ name: z.string().min(1).max(TAG_NAME_MAX) }).strict()
 export const attachTagReqSchema = z
   .object({ paperId: z.string().min(1), tagId: z.string().min(1) })
   .strict()
 export const detachTagReqSchema = attachTagReqSchema
 /** P7E-01 标签生命周期三请求（delete） */
 export const tagIdReqSchema = z.object({ tagId: z.string().min(1) }).strict()
-/** P7E-01 rename（name 与 upsert 同界：min(1) 拦不住纯空格，service 层再 trim 判空） */
+/** P7E-01 rename（name 与 upsert 同界：min(1) 拦不住纯空格，service 层再 trim 判空；
+ *  [T4 小挂账] 上限=TAG_NAME_MAX 单源（models/tag） */
 export const renameTagReqSchema = z
-  .object({ tagId: z.string().min(1), name: z.string().min(1).max(50) })
+  .object({ tagId: z.string().min(1), name: z.string().min(1).max(TAG_NAME_MAX) })
   .strict()
 /** P7E-01 merge（source===target 的业务拒绝在 service——zod 表达不了跨字段） */
 export const mergeTagReqSchema = z

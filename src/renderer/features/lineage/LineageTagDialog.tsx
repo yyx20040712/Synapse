@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { Dialog } from '../../shared/ui/Dialog'
 import type { LineageNode } from '@shared/models/lineage'
+import { TAG_NAME_MAX } from '@shared/models/tag'
 
 export function LineageTagDialog(props: {
   open: boolean
@@ -29,6 +30,7 @@ export function LineageTagDialog(props: {
     <Dialog open={props.open} title={`添加标签：${props.node.title}`} onClose={props.onClose}>
       <input
         data-testid="lineage-tag-input"
+        maxLength={TAG_NAME_MAX}
         className="w-full rounded border px-2 py-1 text-xs"
         style={{ borderColor: 'var(--border)' }}
         value={value}

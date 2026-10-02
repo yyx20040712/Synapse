@@ -9,10 +9,17 @@ import { z } from 'zod'
 /** 标签颜色：六位小写 hex（service 层正规化小写）或 null（恢复默认） */
 export const tagColorSchema = z.string().regex(/^#[0-9a-f]{6}$/).nullable()
 
+/**
+ * [T4 小挂账] 标签名长度上限单源常量（NOTE_TITLE_MAX 同型）：schema 校验
+ * （tagSchema/tagNameReqSchema/renameTagReqSchema）与渲染层四输入点
+ * maxLength 同源消费，禁止两处字面量对齐。
+ */
+export const TAG_NAME_MAX = 50
+
 export const tagSchema = z
   .object({
     id: z.string().min(1),
-    name: z.string().min(1).max(50),
+    name: z.string().min(1).max(TAG_NAME_MAX),
     color: tagColorSchema
   })
   .strict()
