@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T13:29:59.6611869Z",
+    "generatedAt":  "2026-10-02T14:47:56.6572396Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -622,6 +622,10 @@
                       "sha256":  "07b564bcb8a03b38327f855698aeee6016caec08b494d5b0f4964c0de21a8480"
                   },
                   {
+                      "path":  "tests/unit/renderer/edge-menu-blur-commit.test.tsx",
+                      "sha256":  "d0f14f13cfe555ea7430c5ca6813daee5a3b00837d1dd4d943402498eefa2965"
+                  },
+                  {
                       "path":  "tests/unit/renderer/folder-nav.test.tsx",
                       "sha256":  "708b52526054b74b0f01734976d3c6b5a7a21cfe5a843675307f1cd0877637e0"
                   },
@@ -644,6 +648,10 @@
                   {
                       "path":  "tests/unit/renderer/import-zone-styles.test.tsx",
                       "sha256":  "c12b8a9e3a475fc23c819e1f0c7a099667e99490b2c9a67ba27680c1b1ec8adf"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/inline-keys.test.tsx",
+                      "sha256":  "3508190d4af5dbbdda9fa631d8077ddf596a0a52b823a4bced385c943d3ea55b"
                   },
                   {
                       "path":  "tests/unit/renderer/keymap.test.ts",
@@ -672,6 +680,10 @@
                   {
                       "path":  "tests/unit/renderer/library-unfiled-empty.test.tsx",
                       "sha256":  "07fe65722ee54c0c86e392d00011b15cf351420719a2ec83ab8f2252ad42db1c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-add-node-enter.test.tsx",
+                      "sha256":  "4db5ea2aa0fc1c36d99f700c1c4780b3e7e8eb813a630a23614164a6ac34a879"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
@@ -786,6 +798,10 @@
                       "sha256":  "39573b39f4434d0897cf3b49afc71019309b9739921921bf44de15c487385478"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-side-tags-keys.test.tsx",
+                      "sha256":  "bc1afbf4f44da672beb05a037720aaa8ac2ab51ce2c893ce0d7fc2ad1302eefc"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-store-reorder.test.ts",
                       "sha256":  "2d8e092e50ed7d3df98b15a5acfd8b000151b47ad7d31b217a8b3658973d4ae2"
                   },
@@ -828,6 +844,10 @@
                   {
                       "path":  "tests/unit/renderer/meta-edit-dialog.test.tsx",
                       "sha256":  "dcb2b5912f59c861bb265edba715f5b22e02bd1ddf5a9a35139d2fad5b5f4c69"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/meta-edit-dialog-enter.test.tsx",
+                      "sha256":  "4b069f4198d37334f904db4d4838bdf0ba4c57af02794d40a28b6953b4a235f7"
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
@@ -990,6 +1010,10 @@
                       "sha256":  "de7863cfd16264d1fff9b8579eaffd50f285c52a258bd178d5356c72503bb414"
                   },
                   {
+                      "path":  "tests/unit/renderer/settings-page-enter.test.tsx",
+                      "sha256":  "8930f0523e2509393bb1c9b8c300e391316b1bdf887ca62334477a1d7f77c5ae"
+                  },
+                  {
                       "path":  "tests/unit/renderer/split-pane.test.tsx",
                       "sha256":  "e520d2bf1a658bedfe0414e3f483a9acf28bce847dfa877b58e97101652a3a53"
                   },
@@ -1076,6 +1100,10 @@
                   {
                       "path":  "tests/unit/renderer/workspaces-page.test.tsx",
                       "sha256":  "2cc122c50eeca79666de4c2d138a782af2dfaac8689006b03fc2f32b17ca35b9"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/workspaces-page-keys.test.tsx",
+                      "sha256":  "ed896183074bf1369a526a3edbdba0dade2d524e4fc41c080445f7c58da7b1d5"
                   },
                   {
                       "path":  "tests/unit/renderer/ws-guide-bridge-probe.test.tsx",

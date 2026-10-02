@@ -12,6 +12,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
+import { useComposingCommit } from '../../shared/inline-keys'
 
 export type EdgeMenuTarget =
   | { kind: 'edge'; edgeId: string; label: string; x: number; y: number; transient?: boolean }
@@ -45,9 +46,14 @@ export function EdgeMenu(props: {
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState(props.target.kind === 'edge' ? props.target.label : '')
   const rootRef = useRef<HTMLDivElement | null>(null)
-  // [回炉 R12] IME 守卫（INV-85 全域必备）：组词期 Enter/确定不提交
-  const composingRef = useRef(false)
   const renameInputRef = useRef<HTMLInputElement | null>(null)
+  // [回炉 R12] IME 守卫+序 B 补提交（INV-85 全域必备）——F-UIRES-02 迁
+  // shared/inline-keys 单源（composingRef 镜像+compositionend activeElement 判定）
+  const composing = useComposingCommit(
+    renameInputRef,
+    // 定案文本取 DOM 当前值（state 可能滞后——INV-85⑥）
+    () => act(() => props.onRename((renameInputRef.current?.value ?? draft).trim()))
+  )
   // [回炉 R19] 视口钳制：首帧按锚点直落（h=0 估）→ layout 后按实测高复钳
   const [pos, setPos] = useState<{ left: number; top: number }>(() => clampMenuPos(props.target.x, props.target.y, 0))
   useLayoutEffect(() => {
@@ -58,6 +64,9 @@ export function EdgeMenu(props: {
   // Esc 关闭+点外部关闭（菜单轻量面——与节点菜单同族）
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // [F-UIRES-02 R9] IME 组词期 Esc=取消候选词非关闭意图（原全域唯一
+      // 守卫真空——Dialog.tsx:35 document 原生监听同型直读 isComposing）
+      if (e.isComposing) return
       if (e.key === 'Escape') props.onClose()
     }
     const onDoc = (e: MouseEvent): void => {
@@ -109,22 +118,23 @@ export function EdgeMenu(props: {
                 autoFocus
                 ref={renameInputRef}
                 onChange={(e) => setDraft(e.target.value)}
-                onCompositionStart={() => {
-                  composingRef.current = true
-                }}
-                onCompositionEnd={() => {
-                  composingRef.current = false
-                  // 序 B 补提交（组词被失焦打断——INV-85⑥ 同型）：定案文本取
-                  // DOM 当前值；聚焦态常规组词确认不自动提交
-                  if (document.activeElement !== renameInputRef.current) {
-                    act(() => props.onRename((renameInputRef.current?.value ?? draft).trim()))
-                  }
-                }}
+                onCompositionStart={composing.onCompositionStart}
+                onCompositionEnd={composing.onCompositionEnd}
                 onKeyDown={(e) => {
                   // IME 组词确认回车不提交（nativeEvent.isComposing）
                   if (e.nativeEvent.isComposing) return
                   if (e.key === 'Enter') act(() => props.onRename(draft.trim()))
                   if (e.key === 'Escape') props.onClose()
+                }}
+                // [F-UIRES-02 R9] 失焦从丢弃改提交（点外=确认——资源管理器
+                // 语义）；组词中失焦拒绝+复位（序 B 补提交承载——INV-85⑥）；
+                // 空名静默零写由宿主 EdgeMenuHost label!=='' 守卫维持
+                onBlur={() => {
+                  if (composing.composingRef.current) {
+                    composing.composingRef.current = false
+                    return
+                  }
+                  act(() => props.onRename((renameInputRef.current?.value ?? draft).trim()))
                 }}
               />
               <button
@@ -136,7 +146,7 @@ export function EdgeMenu(props: {
                 // 补提交与 click 守卫的双提交竞逐（click 单路提交）
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
-                  if (composingRef.current) return // 组词期不提交（与 Enter/blur 同守卫）
+                  if (composing.composingRef.current) return // 组词期不提交（与 Enter/blur 同守卫）
                   act(() => props.onRename(draft.trim()))
                 }}
               >

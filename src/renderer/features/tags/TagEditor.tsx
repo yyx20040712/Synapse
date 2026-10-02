@@ -38,6 +38,7 @@ import { TAG_NAME_MAX } from '@shared/models/tag'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { tagColorStyle } from '../../shared/ui-constants'
+import { useComposingCommit } from '../../shared/inline-keys'
 import { useTagsStore, TAG_OP_FAILED } from './tags.store'
 
 export function TagEditor(props: {
@@ -49,10 +50,11 @@ export function TagEditor(props: {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   // busy/composing 的同步镜像（ref）：blur 与 Enter 可能落在同一批事件窗，
-  // state 尚未重渲染——ref 保证互斥守卫同步生效（S8 双击同型）
+  // state 尚未重渲染——ref 保证互斥守卫同步生效（S8 双击同型）；
+  // composing 镜像+序 B 补提交=F-UIRES-02 shared/inline-keys 单源（三拷贝合一）
   const busyRef = useRef(false)
-  const composingRef = useRef(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const composing = useComposingCommit(inputRef, () => void createAndAttach())
   const allTags = useTagsStore((s) => s.tags)
   const refreshTags = useTagsStore((s) => s.refresh)
   const listError = useTagsStore((s) => s.error)
@@ -182,17 +184,8 @@ export function TagEditor(props: {
           value={input}
           disabled={busy}
           onChange={(e) => setInput(e.target.value)}
-          onCompositionStart={() => {
-            composingRef.current = true
-          }}
-          onCompositionEnd={() => {
-            composingRef.current = false
-            // 序 B（组词被失焦打断：blur 先被拒→compositionend 后到）补提交
-            // 定案文本；未失焦的常规组词确认不在此提交（d1-W1/INV-85⑥）
-            if (document.activeElement !== inputRef.current) {
-              void createAndAttach()
-            }
-          }}
+          onCompositionStart={composing.onCompositionStart}
+          onCompositionEnd={composing.onCompositionEnd}
           onKeyDown={(e) => {
             // IME 组词确认回车不提交（React onKeyDown 的 e.key 组词期=Process/
             // 原键，需以 nativeEvent.isComposing 判定——AnnotationEditor 范式）
@@ -202,8 +195,8 @@ export function TagEditor(props: {
           onBlur={() => {
             // 失焦提交：busy/组词中不提交；组词拒绝分支复位 ref
             // （compositionend 漏发防悬空哑化——k1'-N2/INV-85⑥）
-            if (composingRef.current) {
-              composingRef.current = false
+            if (composing.composingRef.current) {
+              composing.composingRef.current = false
               return
             }
             if (busyRef.current) return
@@ -220,7 +213,7 @@ export function TagEditor(props: {
           // 确定性解；建议按钮同款）；组词期点击不提交（与 Enter/blur 同守卫）
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
-            if (composingRef.current) return
+            if (composing.composingRef.current) return
             void createAndAttach()
           }}
         >

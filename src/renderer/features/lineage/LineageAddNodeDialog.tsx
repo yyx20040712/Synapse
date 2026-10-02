@@ -140,6 +140,16 @@ export function LineageAddNodeDialog(props: LineageAddNodeDialogProps): JSX.Elem
             style={{ borderColor: 'var(--border)' }}
             value={themeTitle}
             onChange={(e) => setThemeTitle(e.target.value)}
+            // [F-UIRES-02 R6] Enter=添加（confirm 既有链——空名 no-op 与按钮
+            // 禁用同语义）；isComposing 守卫（组词确认回车非提交意图）
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return
+              if (e.key === 'Enter') {
+                // [RR1-5] preventDefault 对齐 inlineKeyDown 范式（防御）
+                e.preventDefault()
+                confirm()
+              }
+            }}
           />
         )}
       </div>

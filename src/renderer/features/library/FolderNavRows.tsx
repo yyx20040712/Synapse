@@ -3,35 +3,16 @@
  * 红线；R9 拆件预案）：未归档行/分隔线/文件夹列表（含行内重命名编辑行）/
  * 底部新建内联输入。行为与皮肤零变（拆件纯搬家——注释契约在 FolderNav 头）。
  */
-import type { DragEvent, KeyboardEvent } from 'react'
+import type { DragEvent } from 'react'
 import type { Folder } from '@shared/models/folder'
 import type { LibraryQuery } from '@shared/models/paper'
 import type { DndTarget } from './library-dnd.store'
+import { inlineKeyDown } from '../../shared/inline-keys'
 
 /** 行内重命名在途态（value 持父态——外部重拉不卸载不丢输入） */
 export interface RenameState {
   folderId: string
   value: string
-}
-
-/** 行内输入三键范式共通 keydown（isComposing 守卫——F-UIRES-02 范式即面即守） */
-function inlineKeyDown(
-  e: KeyboardEvent<HTMLInputElement>,
-  onEnter: () => void,
-  onEsc: () => void,
-  skipBlur: () => void
-): void {
-  if (e.nativeEvent.isComposing) return
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    onEnter()
-  }
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    // Esc 收起前标记跳过失焦提交（unmount 不触发 blur，防御窗口在）
-    skipBlur()
-    onEsc()
-  }
 }
 
 export function FolderNavRows(props: {

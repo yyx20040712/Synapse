@@ -3,15 +3,20 @@
  * [F-LG14] LineageSideTags —— 侧板标签编辑分节（LineageSidePanel 拆件——
  * 组件行数红线落点）。
  *
- * 行为：既有标签小片渲染（行内 × 移除）+输入添加（Enter/＋按钮）；同名
- * 添加短路（同节点去重第一道 UX 防——第二道=main repo 写边界单源）；
- * 增删即时持久化=整组上抛 onSetTags（Page 编排→lineage.store.setNodeTags
- * →既有 upsert-node 通道）；空串不派发（draft 协议 min(1) 同源口径）。
+ * 行为：既有标签小片渲染（行内 × 移除）+输入添加（Enter/失焦/＋按钮三路
+ * [F-UIRES-02 R8]——TagEditor 丙类范式对齐：失焦提交经组词守卫+序 B 补提交
+ * [shared/inline-keys 单源]、Esc=清空、＋钮 mousedown preventDefault 防点击
+ * 夺焦双发）；同名添加短路（同节点去重第一道 UX 防——第二道=main repo 写
+ * 边界单源）；增删即时持久化=整组上抛 onSetTags（Page 编排→lineage.store
+ * .setNodeTags→既有 upsert-node 通道）；空串不派发（draft 协议 min(1) 同源
+ * 口径——失焦/序 B 路同守）；名取 DOM 当前值（序 B 下 state 滞后——
+ * INV-85⑥ 同型）。
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import { TAG_NAME_MAX } from '@shared/models/tag'
+import { inlineKeyDown, useComposingCommit } from '../../shared/inline-keys'
 
 /** 标签小片样式（红示意：红字小片——用户图7「红小块」） */
 const SIDE_TAG_CHIP: CSSProperties = {
@@ -31,9 +36,13 @@ export function LineageSideTags(props: {
   const { node } = props
   const [tagInput, setTagInput] = useState('')
   const tags = node.tags ?? []
+  // [F-UIRES-02 R8] 组词守卫+序 B 补提交（shared/inline-keys 单源）
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const composing = useComposingCommit(inputRef, addTag)
 
-  const addTag = (): void => {
-    const t = tagInput.trim()
+  /** 三路共用添加：名取 DOM 当前值（序 B 下 state 滞后于定案文本） */
+  function addTag(): void {
+    const t = (inputRef.current?.value ?? tagInput).trim()
     if (t === '' || tags.includes(t)) return
     props.onSetTags(node.id, [...tags, t])
     setTagInput('')
@@ -70,18 +79,40 @@ export function LineageSideTags(props: {
           style={{ borderColor: 'var(--border)' }}
           value={tagInput}
           aria-label="新标签名"
+          ref={inputRef}
           onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            // [F-TAGS-01 R6] IME 组词确认回车不提交（同类面排查承接）
-            if (e.nativeEvent.isComposing) return
-            if (e.key === 'Enter') addTag()
+          onCompositionStart={composing.onCompositionStart}
+          onCompositionEnd={composing.onCompositionEnd}
+          // [F-UIRES-02 R8] Enter=添加/Esc=清空（常驻输入取消语义；无失焦
+          // 提交标记门面——skipBlur 直通）；isComposing 守卫在键面单源
+          onKeyDown={(e) =>
+            inlineKeyDown(
+              e,
+              addTag,
+              () => setTagInput(''),
+              () => undefined
+            )
+          }
+          // [F-UIRES-02 R8] 失焦=提交：组词中拒绝+复位（序 B 补提交承载）
+          onBlur={() => {
+            if (composing.composingRef.current) {
+              composing.composingRef.current = false
+              return
+            }
+            addTag()
           }}
         />
         <button
           type="button"
           className="rounded border px-1.5 py-0.5 text-xs"
           style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
-          onClick={addTag}
+          // [F-UIRES-02 R8] mousedown 阻焦点转移：不触发输入框 blur——click
+          // 单路提交（TagEditor:213 先例）；组词期点击不提交（三路同守卫）
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (composing.composingRef.current) return
+            addTag()
+          }}
         >
           +
         </button>

@@ -116,6 +116,16 @@ export function SettingsPage(): JSX.Element {
             style={inputStyle}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            // [F-UIRES-02 R7] Enter=保存设置（runSave 同按钮校验链——非法
+            // 邮箱 toast 零 set）；isComposing 守卫（组词确认回车非提交意图）
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return
+              if (e.key === 'Enter') {
+                // [RR1-5] preventDefault 对齐 inlineKeyDown 范式（防御）
+                e.preventDefault()
+                runSave()
+              }
+            }}
           />
         </label>
         <label className="flex items-center gap-2">

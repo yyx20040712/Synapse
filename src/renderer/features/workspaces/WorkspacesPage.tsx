@@ -7,11 +7,18 @@
  * - 卡片列表：每课题一张卡（色标片=WS_DOT_PALETTE 索引轮转[迁自
  *   app/rail-shared 单源]/实名/N 篇）；当前课题卡挂 .on；点卡=switchTo(id,
  *   {dirty}) 既有链路零动（幂等=零 IPC 不空切；dirty>0 必经 store 内
- *   confirm；成功即 reload——ADR-0018；失败=toast 留本页可重试）
+ *   confirm；成功即 reload——ADR-0018；失败=toast 留本页可重试）；
+ *   [F-UIRES-02 R4] 双击卡=进入重命名（资源管理器镜像——单击切换两次幂等
+ *   无害；「重命名」钮保留）
  * - 新建：名称输入+「创建并切换」（create→switchTo 链——创建即切；dirty
- *   取消时新课题仍出现在清单）；空名/纯空白=no-op 提示
+ *   取消时新课题仍出现在清单）；空名/纯空白=no-op 提示；[F-UIRES-02 R3]
+ *   Enter=创建并切换（submitCreate 既有校验链）/Esc=清空（常驻输入取消
+ *   语义）/isComposing 守卫（shared/inline-keys 键面单源）
  * - 改名：行内编辑（确定→rename IPC+store items 即时改名[侧栏/状态条同源
- *   生效]；取消还原）；改名即打破引导态名条件（升格三路之一）
+ *   生效]；取消还原）；[F-UIRES-02 R2] 三键全套——Enter 提交/失焦提交
+ *   （过 skipBlur 标记门）/Esc 取消/isComposing 守卫（序 B 补提交经
+ *   useComposingCommit）；确定/取消钮 mousedown preventDefault（TagEditor
+ *   先例——焦点留 input 防双发）；空名=既有 toast；改名即打破引导态名条件
  * - 引导态窗口（INV-87 三条件成立）：页首引导提示行（课题图标进管理页
  *   引导新建——D2 批语）；卡片仍显实名（管理面=实体管理位，「待选择」仅
  *   rail 标签/状态条显示位）
@@ -42,7 +49,9 @@ import { WORKSPACE_NAME_MAX } from '@shared/ipc/schemas'
 import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
 import { OP_FAILED } from '../../shared/ui-constants'
+import { inlineKeyDown } from '../../shared/inline-keys'
 import { isGuideState, useWorkspaceStore } from './workspace.store'
+import { WorkspaceRenameRow } from './WorkspaceRenameRow'
 import './workspace.css'
 
 /** [T3-P2→F-WS-02] 课题色标 6 色轮转调色板（索引 i%6——族源 token 随主题
@@ -71,6 +80,13 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+
+  /** [F-UIRES-02 R2] 进入重命名会话（「重命名」钮与 R4 双击共用口；skipBlur/
+   *  组词守卫 ref 住 WorkspaceRenameRow——挂载即新会话自清零） */
+  function openRename(w: { id: string; name: string }): void {
+    setEditingId(w.id)
+    setDraft(w.name)
+  }
 
   // [W2 小挂账] 挂载重拉一次（仅非引导态）：导入后计数会话内陈旧——专职管理页
   // 使陈旧性升格为主数据面可见，挂载沿自愈（成本一次 IPC）。引导态窗口豁免=
@@ -119,9 +135,10 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
     }
   }
 
-  /** 行内改名（成功后 store items 即时改名——侧栏/状态条同源生效） */
-  async function submitRename(id: string): Promise<void> {
-    const trimmed = draft.trim()
+  /** 行内改名（value=子件 DOM 定案值——序 B 下 state 滞后由取值方承载；
+   *  成功后 store items 即时改名——侧栏/状态条同源生效） */
+  async function submitRename(id: string, value: string): Promise<void> {
+    const trimmed = value.trim()
     if (trimmed === '') {
       showToast('课题名称不能为空', 'info')
       return
@@ -156,30 +173,22 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
           {items.map((w, i) => (
             <li key={w.id}>
               {editingId === w.id ? (
-                <div className="ws-edit">
-                  <input
-                    aria-label="课题名称"
-                    maxLength={WORKSPACE_NAME_MAX}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                  />
-                  <button type="button" className="ws-rename-ok" onClick={() => void submitRename(w.id)}>
-                    确定
-                  </button>
-                  <button
-                    type="button"
-                    className="ws-rename-cancel"
-                    onClick={() => setEditingId(null)}
-                  >
-                    取消
-                  </button>
-                </div>
+                // [F-UIRES-02 R2] 行内编辑行拆件（组件 250 行红线）：三键+
+                // 组词守卫+按钮 mousedown preventDefault 规约在拆件头注
+                <WorkspaceRenameRow
+                  draft={draft}
+                  onDraftChange={setDraft}
+                  onSubmit={(value) => void submitRename(w.id, value)}
+                  onCancel={() => setEditingId(null)}
+                />
               ) : (
                 <div className="ws-row">
                   <button
                     type="button"
                     className={`ws-card${w.id === currentId ? ' on' : ''}`}
                     onClick={() => void pick(w.id)}
+                    // [F-UIRES-02 R4] 双击=进入重命名（单击切换语义不动——两次单击幂等）
+                    onDoubleClick={() => openRename(w)}
                   >
                     <span
                       className="chip"
@@ -189,14 +198,7 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
                     <span className="nm">{w.name}</span>
                     <span className="ct">{w.paperCount} 篇</span>
                   </button>
-                  <button
-                    type="button"
-                    className="ws-rename"
-                    onClick={() => {
-                      setEditingId(w.id)
-                      setDraft(w.name)
-                    }}
-                  >
+                  <button type="button" className="ws-rename" onClick={() => openRename(w)}>
                     重命名
                   </button>
                 </div>
@@ -211,6 +213,16 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
           maxLength={WORKSPACE_NAME_MAX}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          // [F-UIRES-02 R3] Enter=创建并切换（submitCreate 既有校验链）；
+          // Esc=清空（常驻输入取消语义=清空非卸载，无失焦提交面无 skip 语义）
+          onKeyDown={(e) =>
+            inlineKeyDown(
+              e,
+              () => void submitCreate(),
+              () => setNewName(''),
+              () => undefined
+            )
+          }
         />
         <button type="button" className="ws-create" onClick={() => void submitCreate()}>
           创建并切换

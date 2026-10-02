@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
+import { useComposingCommit } from '../../shared/inline-keys'
 
 export function LineTypeMenu(props: {
   /** 6 色行名（lineage.store lineTypeNames——恰 6 与色板 zip） */
@@ -27,10 +28,10 @@ export function LineTypeMenu(props: {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [draft, setDraft] = useState('')
-  // [回炉 R12] IME 守卫（INV-85 全域必备——TagEditor 范式）：组词期
-  // Enter/blur 不提交；compositionend 补提交定案文本（取 DOM 当前值）
-  const composingRef = useRef(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  // [回炉 R12] IME 守卫+序 B 补提交（INV-85 全域必备——TagEditor 范式）
+  // ——F-UIRES-02 迁 shared/inline-keys 单源（compositionend 补提交取 DOM 值）
+  const composing = useComposingCommit(inputRef, () => commitRename(inputRef.current?.value))
 
   // 点外部收起（A12——列表开时挂 document click；排除列表自身与图标按钮）
   useEffect(() => {
@@ -88,18 +89,8 @@ export function LineTypeMenu(props: {
                 ref={inputRef}
                 onChange={(e) => setDraft(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
-                onCompositionStart={() => {
-                  composingRef.current = true
-                }}
-                onCompositionEnd={() => {
-                  composingRef.current = false
-                  // 序 B（组词被失焦打断：blur 先拒→compositionend 后到）补提交
-                  // 定案文本；名取 DOM 当前值（state 可能滞后——INV-85⑥ 同型）；
-                  // 聚焦态常规组词确认不自动提交（Enter/blur 路自负）
-                  if (document.activeElement !== inputRef.current) {
-                    commitRename(inputRef.current?.value)
-                  }
-                }}
+                onCompositionStart={composing.onCompositionStart}
+                onCompositionEnd={composing.onCompositionEnd}
                 onKeyDown={(e) => {
                   // IME 组词确认回车不提交（nativeEvent.isComposing——AnnotationEditor 范式）
                   if (e.nativeEvent.isComposing) return
@@ -112,8 +103,8 @@ export function LineTypeMenu(props: {
                 onBlur={() => {
                   // 组词中失焦不提交（compositionend 补提交承载）；复位 ref 防
                   // 悬空哑化（compositionend 漏发——k1'-N2 同型）
-                  if (composingRef.current) {
-                    composingRef.current = false
+                  if (composing.composingRef.current) {
+                    composing.composingRef.current = false
                     return
                   }
                   commitRename()

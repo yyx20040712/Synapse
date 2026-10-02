@@ -4,6 +4,8 @@
  * 只负责字段编辑与补丁构造：diff 出相对原详情的变更字段（service 对空 patch
  * 不落库直接返回现状——这里空 diff 干脆不发请求），保存走 api.library.updateMeta，
  * 结果经 onSaved 回传父级刷新。authors 输入按中英文逗号/顿号/分号拆分。
+ * [F-UIRES-02 R5] 7 单行字段 Enter=保存（isComposing 守卫——同「保存」钮
+ * 链路含校验 toast）；摘要 textarea 零动（Enter=换行——乙类豁免）。
  */
 import { useState } from 'react'
 import type { PaperDetail, PaperMetaPatch } from '@shared/models/paper'
@@ -85,6 +87,17 @@ export function MetaEditDialog(props: {
           style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
           value={form[key]}
           onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          // [F-UIRES-02 R5] 单行字段 Enter=保存（isComposing 守卫）——与
+          // 「保存」钮完全同链路（save 含校验 toast）；textarea 零动（Enter=换行）
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return
+            if (e.key === 'Enter') {
+              // [RR1-5] preventDefault 对齐 inlineKeyDown 范式（防御——现无
+              // form 包裹无实际副作用）
+              e.preventDefault()
+              void save()
+            }
+          }}
         />
       ) : (
         <textarea
