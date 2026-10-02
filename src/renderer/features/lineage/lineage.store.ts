@@ -239,6 +239,9 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     },
 
     setFolder(folderId) {
+      // [RRB4] flushing 守卫（RR14 UI 闸的 store 级绝对化——S4 回退径/同 tick
+      // 竞逐残余缝：在飞写窗口切图与「不落库/在飞写落库」承诺互斥，单点拒绝）
+      if (get().flushing) return
       // [F-LGRAPH-01①U4] 置态+重取（不做同值守卫=切图恒重取最新子图；load
       // 有 stale-guard，重复重取无害）
       set({ folderId })

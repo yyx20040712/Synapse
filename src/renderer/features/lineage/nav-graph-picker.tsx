@@ -11,6 +11,10 @@
  *   本件零直连 lineage.graph）。
  * - folders 上抛 onFoldersChange（宿主链路：NavPane→LineagePage→ModeBar
  *   图名消费——图名单源不破）。
+ * - [RR 补批 RR14] saving×切图互锁：flushing/saving 态禁切图（入口禁用+
+ *   禁用态样式=.nav-graph-btn:disabled 沿承+浮层/挂起确认框收起=确认框
+ *   不可达）——「禁」径消解在飞写 IPC 竞态半程；flush 收尾无条件 set clean
+ *   与确认框「不落库」承诺冲突半程同径消解。
  */
 import { useEffect, useRef, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
@@ -32,6 +36,8 @@ export function NavGraphPicker(props: {
   const setFolder = useLineageStore((s) => s.setFolder)
   const load = useLineageStore((s) => s.load)
   const dirty = useLineageStore((s) => s.saveStatus !== 'clean') // [②U1] 暂存在场
+  // [RR 补批 RR14] saving 态订阅（互锁闸——flush 窗口期禁切图）
+  const saving = useLineageStore((s) => s.saveStatus === 'saving')
   // 待切换图（dirty 确认挂起态——null=无挂起）
   const [pendingFolder, setPendingFolder] = useState<string | null>(null)
   const importBusy = useImportBusyStore((s) => s.busy)
@@ -79,6 +85,14 @@ export function NavGraphPicker(props: {
     void load()
   }, [folders])
 
+  // [RR 补批 RR14] saving 上升沿：已开浮层/挂起确认框收起（确认框不可达
+  // 绝对化——跨格过渡防御：dirty 挂起中 flush 起态的窄窗）
+  useEffect(() => {
+    if (!saving) return
+    setOpen(false)
+    setPendingFolder(null)
+  }, [saving])
+
   // T5 外点收起（通用浮层规则）
   useEffect(() => {
     if (!open) return
@@ -99,10 +113,13 @@ export function NavGraphPicker(props: {
         type="button"
         className="nav-graph-btn"
         data-testid="lineage-nav-graph"
-        disabled={importBusy}
+        disabled={importBusy || saving}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (saving) return // [RR14] jsdom dispatchEvent 不拦 disabled——处理器层同闸
+          setOpen((o) => !o)
+        }}
       >
         <span className="nm">{currentName}</span>
         <span className="caret">▾</span>

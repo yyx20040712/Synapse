@@ -24,6 +24,10 @@
  *   边后误触发卡选中；abort 中断不吞——无后续 click）
  * - [回炉 R13] 近锚 pointerdown 消费即 stopPropagation（防 pan 等容器级
  *   并行激活）
+ * - [RR 补批 RR17] 多指针重入 phase 闸：dragging 中第二 pointerdown（触屏
+ *   二指/笔）忽略（已消费不覆盖会话）+document 会话事件 pointerId 绑定
+ *   （他指 move/up/pointercancel 不驱动不收尾不取消本会话——首指 up 正常
+ *   收尾；pid 缺省=鼠标/jsdom MouseEvent 型放行）
  *
  * 坐标域：内容坐标（指针 clientXY−content rect 原点；缩放正交——轮 2 缩放经
  * 逆变换，本批直接内容坐标）。纯几何单源复用 routing/anchors（anchorPoint+
@@ -192,6 +196,12 @@ export function useDrawLine(args: {
   const handlePointerDown = useCallback(
     (ev: ReactPointerEvent<HTMLDivElement>): boolean => {
       if (!armed() || ev.button !== 0) return false
+      // [RR 补批 RR17] 多指针重入 phase 闸：dragging 中第二指忽略——返回
+      // true=已消费（不覆盖会话不触发容器拖拽；首指 up 正常收尾）
+      if (stateRef.current.phase === 'dragging') {
+        ev.stopPropagation() // [RRB5] 消费即止泡（R13 先例对齐——防容器级并行激活）
+        return true
+      }
       const content = args.contentRef.current
       if (content === null) return false
       const p = toContentPt(content, ev.clientX, ev.clientY)
@@ -200,9 +210,17 @@ export function useDrawLine(args: {
       ev.preventDefault()
       ev.stopPropagation() // [回炉 R13] 消费即止泡（防 pan 等并行激活）
       setState({ phase: 'dragging', from: hit, cursor: p, snap: null })
+      // [RR 补批 RR17] 会话指针绑定：他指事件（pointerId 异于会话主指）不
+      // 驱动不收尾不取消；pid 缺省（鼠标/jsdom MouseEvent 型）放行
+      const pid = ev.pointerId
+      const sameSession = (e: PointerEvent | MouseEvent): boolean => {
+        const id = (e as PointerEvent).pointerId
+        return id === undefined || id === pid
+      }
       // [回炉 R1①] document 级拖拽会话（runDragSession 先例）：move/up 在
       // document 派发（指针离画布仍跟随）；pointercancel/blur=中断取消无残留
       const move = (e: PointerEvent | MouseEvent): void => {
+        if (!sameSession(e)) return // [RR17] 他指 move 忽略
         const s = stateRef.current
         if (s.phase !== 'dragging') return
         const c = args.contentRef.current
@@ -212,10 +230,12 @@ export function useDrawLine(args: {
         setState({ ...s, cursor: pt, snap })
       }
       const up = (e: PointerEvent | MouseEvent): void => {
+        if (!sameSession(e)) return // [RR17] 他指 up 不收尾本会话
         cleanup()
         finish(e.clientX, e.clientY)
       }
-      const abort = (): void => {
+      const abort = (e: Event): void => {
+        if (!sameSession(e as PointerEvent | MouseEvent)) return // [RR17] 他指 cancel 不取消
         cleanup()
         cancel() // [回炉 R1④] 中断=取消无残留（不吞后续 click）
       }

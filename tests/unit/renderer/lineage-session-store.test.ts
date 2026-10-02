@@ -316,6 +316,27 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
     expect(state().undoStack).toHaveLength(1)
   })
 
+  it('[RRB4] flushing 中 setFolder no-op（store 级守卫——S4 回退径/同 tick 竞逐残余缝绝对化）', async () => {
+    useLineageStore.setState({ nodes: [node('A')] })
+    let resolveWrite!: (v: { ok: true; data: LineageNode }) => void
+    stubApi.lineage.upsertNode.mockImplementationOnce(
+      () => new Promise((r) => { resolveWrite = r })
+    )
+    state().editCoreIdea('A', '甲')
+    state().save()
+    expect(state().flushing).toBe(true) // flush 在飞窗
+    stubApi.lineage.graph.mockClear()
+    state().setFolder('f-1') // flushing 中切图=拒绝（RR14 UI 闸外的绝对化守卫）
+    expect(state().folderId).toBe('__main__') // 未切图
+    expect(stubApi.lineage.graph).not.toHaveBeenCalled() // 不重取
+    expect(state().status).toBe('ready') // load 未起（load 首拍置 loading）
+    resolveWrite({ ok: true, data: { ...node('A', { coreIdea: '甲' }), updatedAt: 'server' } })
+    await settle()
+    expect(state().saveStatus).toBe('clean') // flush 收尾
+    state().setFolder('f-1') // 收尾后恢复可切
+    expect(state().folderId).toBe('f-1')
+  })
+
   it('[回炉 R20] undoStack 深度截断 50（INV-23 先例）：第 51 单元起丢最旧快照', () => {
     useLineageStore.setState({ nodes: [node('A')] })
     for (let i = 1; i <= 55; i++) state().editCoreIdea('A', `想法${String(i)}`)

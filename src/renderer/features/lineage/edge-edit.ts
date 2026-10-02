@@ -27,6 +27,14 @@ export function fullPoints(p: EditPolyline): Pt[] {
 
 const isVertical = (a: Pt, b: Pt): boolean => a.x === b.x
 
+/** [RR 补批 RR13] via 链等值判定（no-op 短路——拖放回原位零编辑单元；
+ *  坐标精确等值：正交链编辑代数产出与回放同源值，无浮点漂移面。
+ *  [RRB5] z 口径：z=1 精确等值（拖回原位必短路）；z≠1 逆变换往返可注入
+ *  浮点漂移=等值 miss 退化旧行为（真编辑单元写入——可接受，no-op 非承诺） */
+export function viaEquals(a: LineageViaPoint[], b: LineageViaPoint[]): boolean {
+  return a.length === b.length && a.every((p, i) => p.x === b[i]!.x && p.y === b[i]!.y)
+}
+
 /** 相邻重合防御（不变量②——重合点段无轴向，编辑各处剔除） */
 function hasDupNeighbor(pts: readonly Pt[]): boolean {
   for (let i = 1; i < pts.length; i++) if (eq(pts[i - 1]!, pts[i]!)) return true

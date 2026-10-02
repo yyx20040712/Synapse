@@ -11,6 +11,8 @@
  * - dragging 中断（pointercancel/指针移出画布失焦）=abort：via 回拖前定态
  *   不入撤销栈（[RR2] pointercancel 接 abort——§2.5 定案中断=不成立）；
  *   reconnect 中断=端点回原锚。
+ * - [RR 补批 RR13] no-op 短路对称语义（R19 先例）：reconnect 落点==拖始锚
+ *   +拖放 commit via 等值（回原位）=零编辑单元（不 beginUnit 不 dirty 不入队）。
  * - 自动线（无 via）拖段/加点=物化首 via（routed pts 内点）转 manual-override。
  * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=4）=dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
@@ -29,6 +31,7 @@ import {
   reconnectEnd,
   segmentDrag,
   segmentViaIdx,
+  viaEquals,
   type EditPolyline
 } from './edge-edit'
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
@@ -269,7 +272,11 @@ export function useEdgeEdit(args: {
           setState({ phase: 'selected', edgeId: cur.edgeId })
           return
         }
-        store().setEdgeVia(cur.edgeId, s.workVia.length > 0 ? s.workVia : undefined)
+        // [RR 补批 RR13] via 等值短路：拖放回原位=no-op（不 beginUnit 不 dirty
+        // 不入队——R19「重置 no-op 不入栈」对称语义）
+        if (!viaEquals(s.startVia, s.workVia)) {
+          store().setEdgeVia(cur.edgeId, s.workVia.length > 0 ? s.workVia : undefined)
+        }
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },
@@ -312,6 +319,13 @@ export function useEdgeEdit(args: {
         }
         const edge = store().edges.find((x) => x.id === cur.edgeId)
         if (edge === undefined) return
+        // [RR 补批 RR13] 落点==拖始锚=no-op 短路（同端节点+同锚位——零编辑
+        // 单元零 dirty；manual 线 L 重正交幽灵 +1 点同径消解）
+        const home = end === 'from' ? { n: edge.fromNode, p: pl.anchorA } : { n: edge.toNode, p: pl.anchorB }
+        if (s.anchor.nodeId === home.n && s.anchor.pt.x === home.p.x && s.anchor.pt.y === home.p.y) {
+          setState({ phase: 'selected', edgeId: cur.edgeId })
+          return
+        }
         // [回炉 R11①] 收尾 via 归一：length>0?via:undefined（空数组禁穿透
         // IPC——自动路由语义）
         const via = s.workVia.length > 0 ? s.workVia : undefined
@@ -366,7 +380,8 @@ export function useEdgeEdit(args: {
           setState({ phase: 'selected', edgeId: cur.edgeId })
           return
         }
-        store().setEdgeVia(cur.edgeId, s.workVia)
+        // [RR 补批 RR13] via 等值短路（vertex 同式——回原位=no-op 零单元）
+        if (!viaEquals(s.startVia, s.workVia)) store().setEdgeVia(cur.edgeId, s.workVia)
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },

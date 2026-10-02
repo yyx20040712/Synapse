@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T00:36:09.6589493Z",
+    "generatedAt":  "2026-10-02T01:46:25.1538171Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "44fdd99060b8ebce9e7825d9cdf465cd0e75ee493c13b57992721cec4ddbee07"
+                      "sha256":  "c8b5aab9446e9dd89d33af27033c85e7eb5486e566dd4fd934c463f41737ecc6"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -734,8 +734,20 @@
                       "sha256":  "67a48efcf5f2c49041c7b356bd8227220df4d5e79b097fba711efff1f8611ea1"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-rr13-noop.test.tsx",
+                      "sha256":  "75a31d99ffb9de7d919c62b1c6602b5d5986983f0e2007b2307b0615f370479c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-rr14-saving-switch.test.tsx",
+                      "sha256":  "31b176c3c1a4cb380941deb4c48de2712270de745003711369f799c5127cf2b5"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-rr17-drawline-multipointer.test.tsx",
+                      "sha256":  "bf1d1b99feefddfee100ce420164f11d84baf70aae45b24b826467ffe4672278"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-session-store.test.ts",
-                      "sha256":  "cb5ab1ff98da31b94934c85b60c8cbe5149a20778dd4c64708b74168d5d97d2f"
+                      "sha256":  "9453ed12ab13f13b9614c64707e32b42ae852a3357ddc6d6f2be3a8e3c6da7fd"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-session-ui.test.tsx",
