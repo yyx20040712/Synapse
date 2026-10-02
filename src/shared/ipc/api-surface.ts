@@ -145,9 +145,11 @@ export const API_SURFACE = {
   },
   // papers 域（[F-FOLDER-01] 单通道起步）：move-folder 移动/移出事务序在
   // library.service（§3.4+W2 终裁）——域归属 papers（通道名 papers/*，
-  // 与 library 元数据域分域）
+  // 与 library 元数据域分域）；[F-UIRES-01 批 B] +delete（级联=DDL 承担
+  // ——§2.4 统一级联契约，弹窗计数面=renderer 经 library.detail 预检派生）
   papers: {
-    moveFolder: { channel: 'papers/move-folder', Req: S.paperMoveReqSchema, Res: S.trueAckSchema }
+    moveFolder: { channel: 'papers/move-folder', Req: S.paperMoveReqSchema, Res: S.trueAckSchema },
+    delete: { channel: 'papers/delete', Req: S.paperDeleteReqSchema, Res: S.trueAckSchema }
   }
 } satisfies Record<string, Record<string, Endpoint>>
 

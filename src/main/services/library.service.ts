@@ -14,7 +14,8 @@
  *   面，patch.month 无落点忽略）；patch.impactFactor → papers.impact_factor
  *   （PATCH_COLS）；S1 队列闸（INV-91）——lineagePending 拒绝
  * - 集合列表：collections.list()（导入面历史只读形状）
- * - [F-FOLDER-01] papers 域：moveFolder（§3.4+W2 终裁事务序——见下方注释）
+ * - [F-FOLDER-01] papers 域：moveFolder（§3.4+W2 终裁事务序——见下方注释）；
+ *   [F-UIRES-01 批 B] +delete（§2.4 统一级联契约+事务内重验=零比对直删）
  *
  * ── 接口层 ──
  * - export function createLibraryService(deps): ApiHandlers['library']
@@ -26,7 +27,9 @@
  *
  * ── 生命周期层 ──
  * - P7E-07 已兑现：智能排序（引用数排序）——ORDER_BY 映射扩展（加值向后兼容）
- * - 不做：删除文献（D3 附带知悉的确认弹窗+files/ 清理=票 2 renderer 面）
+ * - [F-UIRES-01 批 B] 已兑现：删除文献（papers/delete 通道+级联=DDL 承担；
+ *   弹窗分流在 renderer usePaperDelete/PaperDeleteDialog；文件清理=设计稿外
+ *   挂账——PDF 驻留 userData，非本批范围）
  *
  * ── 文化层 ──
  * - NOT_FOUND 场景抛 DomainError（F-DEDUP-01 单源 re-export 保持既有导出面）
@@ -152,8 +155,8 @@ export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['lib
 }
 
 /**
- * [F-FOLDER-01] papers 域 service（papers/move-folder 单通道）。
- * 移动事务序（design-final §3.4+W2 终裁，withTransaction 原子）：
+ * [F-FOLDER-01] papers 域 service（papers/move-folder 单通道；[F-UIRES-01 批 B]
+ * +papers/delete）。移动事务序（design-final §3.4+W2 终裁，withTransaction 原子）：
  * 1. papers.folder_id F1→F2（toFolderId=null=移出→未归档）
  * 2. 移出分支（W2）：删该文献节点（边随节点 DDL CASCADE 灭）——节点删=政策性
  *    （INV-93：未归档文献可无节点，与未加入脉络正交）
@@ -166,6 +169,16 @@ export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['lib
  * 4. 跨图边清理：节点换图后其与旧图邻居的边=跨图（INV-90 违例）——同事务删除
  *    （边属图派生，连线不迁移——survey 矩阵「移动 F1→F2」行用户明示）
  * 5. 广播 folders.changed + lineage.changed（侧栏计数+图结构双失效）
+ *
+ * [F-UIRES-01 批 B] delete 事务序（设计稿 §2.4 统一级联契约）：
+ * 1. pending() → CONFLICT 拒（INV-91 S1 队列闸——图结构级联变，与 moveFolder/
+ *    updateMeta 同闸先例；拒时零库副作用）
+ * 2. papers.findById===null → NOT_FOUND（paperNotFound 单源）
+ * 3. withTransaction 零比对直删——「事务内重验」=DDL 按事务内实际状态级联，
+ *    service 不取数不回滚不比对预检值（弹窗计数=提示值——落定瞬态规避）
+ * 4. 成功→sendFoldersChanged+sendLineageChanged 双播（夹计数减+图结构级联变
+ *    ——folders.service delete 双播先例）；级联清单=paper_tags/annotations/
+ *    notes/ai_notes/lineage_nodes CASCADE→边二跳+papers_fts 触发器自清（DDL）
  */
 export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['papers'] {
   const { papers, folders, lineage } = deps.repos
@@ -233,6 +246,20 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
           }
         }
       })
+      sendFoldersChanged()
+      sendLineageChanged()
+      return { ok: true as const }
+    },
+
+    // [F-UIRES-01 批 B] §2.4 删除（静默/保护两分支同一数据效果——差异仅弹窗
+    // 与否，弹窗面在 renderer；事务内重验=零比对直删见上注释）
+    async delete(req) {
+      if (pending()) throw lineageSavePending()
+      if (papers.findById(req.paperId) === null) throw paperNotFound(req.paperId)
+      // [RR1-3/d1-N1] removed===false=并发窗口已被删——如实 NOT_FOUND 非假成功
+      //（findById 前置后单进程同步序不可达，防御面）
+      const removed = deps.repos.withTransaction(() => papers.remove(req.paperId))
+      if (!removed) throw paperNotFound(req.paperId)
       sendFoldersChanged()
       sendLineageChanged()
       return { ok: true as const }

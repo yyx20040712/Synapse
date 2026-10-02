@@ -8,7 +8,7 @@
  * click 在 React 重渲染前也只放行一次，S8）；失败 toast+对话框保持开（S6）；
  * busy 飞行中禁关（N1 回炉：取消按钮 disabled+Dialog onClose 包装 no-op——
  * 防「对话框已关、变更随后生效」语义错位，与保存按钮 disabled 态对齐）；
- * 成功经 props.onMutated(disappearedId) 上抛——死 id 筛选清空顺序归 TagFilter。
+ * 成功经 props.onMutated(disappearedId) 上抛——死 id 筛选清空顺序归 TagDropdown。
  */
 import { useRef, useState } from 'react'
 import { Dialog } from '../../shared/ui/Dialog'

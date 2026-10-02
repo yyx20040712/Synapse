@@ -27,7 +27,7 @@
  *
  * ── 架构层 ──
  * - 挂接/移除成功后经 onChanged() 让父组件（PaperDetailPanel）重读详情；
- *   建议数据自取 tags.store（挂载时 refresh，与 TagFilter 共享单一数据源）
+ *   建议数据自取 tags.store（挂载时 refresh，与 TagDropdown 共享单一数据源）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - api 失败统一 toast；busy 期间禁输入防重复提交（busy ref 同步镜像
@@ -116,7 +116,8 @@ export function TagEditor(props: {
     }
   }
 
-  /** ×：移除挂接（不动标签本身——标签删除走 TagFilter 管理面，P7E-01 已实现） */
+  /** ×：移除挂接（不动标签本身——标签 merge/delete UI 入口已随 TagFilter
+   *  退役挂账 F-TAGS-02；TagDropdown 行右键=改名/颜色双入口） */
   async function removeTag(tagId: string): Promise<void> {
     if (busyRef.current) return
     busyRef.current = true

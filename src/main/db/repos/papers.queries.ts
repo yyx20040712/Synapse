@@ -21,6 +21,7 @@ import type {
   EnrichStatus,
   LibraryQuery,
   LibrarySort,
+  PaperMetaPatch,
   PaperSource,
   PaperSummary
 } from '../../../shared/models/paper'
@@ -175,6 +176,40 @@ export interface StmtGetter {
   (sql: string): { all(...args: unknown[]): unknown[]; get(...args: unknown[]): unknown }
 }
 
+/** detailById 标签面（paper_tags×tags JOIN——显式列按名序；[F-UIRES-01 批 B]
+ *  SQL 原文自 repo 迁入=repo 300 行拆件面 §架构层，语义零变） */
+export function tagsOfPaper(id: string, stmt: StmtGetter): Array<{ id: string; name: string }> {
+  return stmt(
+    'SELECT t.id AS id, t.name AS name FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = ? ORDER BY t.name'
+  ).all(id) as Array<{ id: string; name: string }>
+}
+
+/** PaperMetaPatch→表列名（authors 序列化为 authors_json）。[F-FOLDER-01]
+ *  +impact_factor；patch.month 不在此——papers 无此列（落位=service 写节点）。
+ * [F-UIRES-01 批 B] 自 repo 迁入（repo 300 行拆件——映射子函数与
+ * buildFilters 同族面），语义零变 */
+const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
+  title: 'title',
+  authors: 'authors_json',
+  year: 'year',
+  venue: 'venue',
+  doi: 'doi',
+  abstract: 'abstract',
+  impactFactor: 'impact_factor'
+}
+
+/** meta 补丁→列名/绑定值（authors 在此序列化；未提供字段不进 SET） */
+export function patchFragments(patch: PaperMetaPatch): { columns: string[]; values: unknown[] } {
+  const columns: string[] = []
+  const values: unknown[] = []
+  for (const key of Object.keys(patch) as (keyof PaperMetaPatch)[]) {
+    const col = PATCH_COLS[key]
+    if (col === undefined) continue
+    columns.push(col)
+    values.push(key === 'authors' ? JSON.stringify(patch[key]) : patch[key])
+  }
+  return { columns, values }
+}
 /** [F-FOLDER-01] 归属纯读（INV-88 统一规则判别源——显式 folderId≠归属拒的
  *  前置读，无副作用）；未命中/未归档=null */
 export function folderIdOfQuery(id: string, stmt: StmtGetter): string | null {

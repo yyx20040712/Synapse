@@ -1,6 +1,6 @@
 // b3: F-TAGS-01
 /**
- * [F-TAGS-01] TagColorDialog —— 标签颜色对话框（TagFilter 子组件，TagLifecycle
+ * [F-TAGS-01] TagColorDialog —— 标签颜色对话框（TagDropdown 子组件，TagLifecycle
  * 三对话框同构：useBusyGuard busy 守卫/N1 busy 飞行中禁关/S6 失败 toast+保持开；
  * 写路径收口 tags.store.setTagColor——mutate 壳链式 refresh 单一数据源自愈）。
  *

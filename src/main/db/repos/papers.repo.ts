@@ -41,7 +41,9 @@ import {
   folderIdOfQuery,
   LIST_SQL,
   ORDER_BY,
+  patchFragments,
   pubNoByIdsQuery,
+  tagsOfPaper,
   toSummary,
   type DetailRow,
   type SummaryRow
@@ -115,6 +117,8 @@ export interface PapersRepo {
   ensureFolderAssigned(id: string): string
   /** [F-FOLDER-01] pubNo 批查（库级窗口——graph 通道 pubNos 装配源；空 ids=空数组） */
   pubNoByIds(ids: string[]): Array<{ paperId: string; pubNo: number }>
+  /** [F-UIRES-01 批 B] 删行（级联=DDL 承担——清单见头注行为层）；changes>0 */
+  remove(id: string): boolean
 }
 
 /** 预编译语句类型（显式给 unknown[]：ReturnType 推导会被条件类型解析成单参语句） */
@@ -131,30 +135,6 @@ const INSERT_SQL = `INSERT INTO papers (${COLS}) VALUES (${COLS.split(', ').map(
  *  导入面 PaperRow 不构造三列，DB 默认 NULL） */
 const SELECT_COLS = `${COLS}, cited_by_count, cited_by_fetched_at, cited_by_count_source`
 
-/** PaperMetaPatch→表列名（authors 序列化为 authors_json）。[F-FOLDER-01]
- *  +impact_factor；patch.month 不在此——papers 无此列（落位=service 写节点） */
-const PATCH_COLS: Readonly<Partial<Record<keyof PaperMetaPatch, string>>> = {
-  title: 'title',
-  authors: 'authors_json',
-  year: 'year',
-  venue: 'venue',
-  doi: 'doi',
-  abstract: 'abstract',
-  impactFactor: 'impact_factor'
-}
-
-/** meta 补丁→列名/绑定值（authors 在此序列化；未提供字段不进 SET） */
-function patchFragments(patch: PaperMetaPatch): { columns: string[]; values: unknown[] } {
-  const columns: string[] = []
-  const values: unknown[] = []
-  for (const key of Object.keys(patch) as (keyof PaperMetaPatch)[]) {
-    const col = PATCH_COLS[key]
-    if (col === undefined) continue
-    columns.push(col)
-    values.push(key === 'authors' ? JSON.stringify(patch[key]) : patch[key])
-  }
-  return { columns, values }
-}
 export function createPapersRepo(db: SqliteDb): PapersRepo {
   // 语句缓存（SQL 文本→预编译语句：过滤/补丁组合只编译一次）
   const cache = new Map<string, Stmt>()
@@ -168,7 +148,6 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
 
   const findById = (id: string): PaperRow | null =>
     (stmt(`SELECT ${SELECT_COLS} FROM papers WHERE id = ?`).get(id) as PaperRow | undefined) ?? null
-
 
   /** 按给定列更新（列名来自白名单）并同步 updated_at；未命中返回 null */
   const updateColumns = (id: string, columns: string[], values: unknown[]): PaperRow | null => {
@@ -262,12 +241,14 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     pubNoByIds(ids) {
       return pubNoByIdsQuery(ids, stmt)
     },
+    remove(id) {
+      return stmt('DELETE FROM papers WHERE id = ?').run(id).changes > 0
+    },
     detailById(id) {
       const r = stmt(DETAIL_SQL).get(id) as DetailRow | undefined
       if (r === undefined) return null
-      const tags = stmt(
-        'SELECT t.id AS id, t.name AS name FROM paper_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.paper_id = ? ORDER BY t.name'
-      ).all(id) as { id: string; name: string }[]
+      // 标签面=queries 件单源（SQL 原文迁移——repo 300 行拆件 §架构层）
+      const tags = tagsOfPaper(id, stmt)
       const slashPos = r.file_ref.lastIndexOf('/') + 1 // -1+1=0：无斜杠时取整串
       return {
         ...toSummary(r),

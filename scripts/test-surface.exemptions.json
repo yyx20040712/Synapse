@@ -2897,6 +2897,24 @@
       "caseTitle": ".lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）",
       "reason": "RR1-1/d1-B1 布局构图重排断言适调：断言面扩展（FolderNav=.lib-page 直子全高纵贯+导入条驻右列——设计稿 §3.1 .frame 子序），基批旧断言集随之退役",
       "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.1"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=60（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-BAKRET-01] 61→60：lineage/import 退役）",
+      "reason": "F-UIRES-01 批 B papers/delete 通道新增（§2.4 统一级联契约）：通道数 pin 60→61，用例标题+断言随终态改写",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#8"
+    },
+    {
+      "file": "tests/unit/renderer/paper-row-menu.test.tsx",
+      "caseTitle": "右键行→菜单弹出：两项文本（在阅读器中打开/移动到文件夹）+删除与星标零渲染",
+      "reason": "F-UIRES-01 批 B 菜单删除项点亮（§3.5 三项版）：S5a 改锚单测面——「删除文献零渲染」断言反转为可见；删除流全矩阵=paper-delete.test.tsx 承接",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.5"
+    },
+    {
+      "file": "tests/e2e/library-explorer.spec.ts",
+      "caseTitle": "S5a：行右键菜单两项版+移动子面执行（批 A 无删除/星标项）",
+      "reason": "F-UIRES-01 批 B 菜单删除项点亮（§3.5 三项版）：S5a 改锚——「删除文献 toHaveCount(0)」反转为可见；星标零渲染断言保留",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.5"
     }
   ]
 }

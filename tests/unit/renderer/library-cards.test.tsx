@@ -24,15 +24,15 @@ import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   library: { list: vi.fn(), collections: vi.fn() },
   tags: { list: vi.fn() },
-  // [F-FOLDER-02·A] FolderFilter 静态参考数据面（FilterBar 经组合根挂载）
+  // [F-FOLDER-02·A→F-UIRES-01 批 A] FolderNav 静态参考数据面（FilterBar 经组合根挂载）
   folders: { list: vi.fn() },
   lineage: { graph: vi.fn() }
 })
 const onImportProgressSpy = vi.fn(() => () => undefined)
 stubApiEvents({
   onImportProgress: onImportProgressSpy,
-  // [F-FOLDER-02·A] folders.changed 订阅面（mock 代理未覆盖键透传 undefined，
-  // FolderFilter 订阅直调即抛；生产面 preload 恒在场）
+  // [F-FOLDER-02·A→F-UIRES-01 批 A] folders.changed 订阅面（mock 代理未覆盖键透传
+  // undefined，FolderNav 订阅直调即抛；生产面 preload 恒在场）
   onFoldersChanged: vi.fn(() => () => undefined)
 })
 
@@ -404,7 +404,7 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
       />
     )
     // [F-FOLDER-02·A] 集合下拉已随文件夹区重制退役（方案切换=删除旧方案——
-    // 选中态面由 FolderFilter chip 承接）；年份下拉 .lib-sort-on 语义保活
+    // 选中态面由 FolderNav 导航行承接）；年份下拉 .lib-sort-on 语义保活
     const byCollection = host?.querySelector('select[aria-label="按文件夹筛选"]')
     expect(byCollection, '旧「按文件夹筛选」下拉已退役').toBeNull()
     const byYear = host?.querySelector('select[aria-label="按年份筛选"]')

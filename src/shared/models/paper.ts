@@ -109,7 +109,7 @@ export const librarySortSchema = z.enum(['added_desc', 'year_desc', 'title_asc',
 export type LibrarySort = z.infer<typeof librarySortSchema>
 
 /**
- * [P7X-01] 标签筛选选中上界：schema 与渲染层 TagFilter toggle 守卫同源消费
+ * [P7X-01] 标签筛选选中上界：schema 与渲染层 TagDropdown toggle 守卫同源消费
  * （单查询爆炸上界——EXISTS 每标签一条；UI 侧提前拦截=提交期报错的 UX 断层消除）。
  */
 export const TAG_FILTER_MAX = 20
@@ -146,3 +146,9 @@ export type FolderScope = NonNullable<LibraryQuery['folderScope']>
 export const pagedSchema = <T extends z.ZodTypeAny>(item: T) =>
   z.object({ items: z.array(item), total: z.number().int().min(0) }).strict()
 export type Paged<T> = { items: T[]; total: number }
+
+/** [F-UIRES-01 批 B] papers/delete 载荷（级联=DDL 承担：子表 CASCADE+
+ *  FTS 影子表触发器——设计稿 §2.4 统一级联契约）。驻本件=文献域单源
+ * （区别于 paperMoveReq 驻 folder.ts 的移动域就近先例——本通道纯文献语义） */
+export const paperDeleteReqSchema = z.object({ paperId: z.string().min(1) }).strict()
+export type PaperDeleteReq = z.infer<typeof paperDeleteReqSchema>

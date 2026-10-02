@@ -11,7 +11,7 @@
  *   额外 refresh 自愈，其余错误零 refresh（S6/S7 分流）
  * - 错误契约（全 store 统一）：refresh 属列表型——失败不抛、保留旧 tags；失败信息
  *   记入 error 字段（下次 refresh 发起清空、成功置 null），由消费方（TagEditor/
- *   TagFilter）watch error toast——错误可达且不重复归责（2026-08-23 Q2-A3 落地）
+ *   TagDropdown）watch error toast——错误可达且不重复归责（2026-08-23 Q2-A3 落地）
  *
  * ── 接口层 ──
  * - export const useTagsStore: UseBoundStore<...>
@@ -19,8 +19,9 @@
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
- * - 消费方：TagEditor（下拉建议）/ TagFilter（筛选 chip+管理面）——单一数据源，
- *   挂载时 refresh；busy 态局部在发起组件（TagEditor setBusy 同型），store 不增持久字段
+ * - 消费方：TagEditor（下拉建议）/ TagDropdown（筛选下拉+行右键改名/颜色）——
+ *   单一数据源，挂载时 refresh；busy 态局部在发起组件（TagEditor setBusy 同型），
+ *   store 不增持久字段
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/tags.store.test.ts（已锁定，api 桩）
@@ -55,7 +56,7 @@ export interface TagsStore {
 }
 
 export const useTagsStore = create<TagsStore>()((set, get) => {
-  // 请求序号（store 闭包，对齐 library.store）：TagEditor/TagFilter 双挂载并发 refresh
+  // 请求序号（store 闭包，对齐 library.store）：TagEditor/TagDropdown 双挂载并发 refresh
   // 时只认最后一次发起的请求——迟到的旧响应（含旧失败）不污染最新 tags/error
   let loadSeq = 0
 

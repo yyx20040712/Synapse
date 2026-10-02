@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T10:38:42.8620215Z",
+    "generatedAt":  "2026-10-02T13:00:55.5552673Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c23d1153ce165f123797daa8e907bc6a6f073d4dfc661f828dad31600cb16c23"
+                      "sha256":  "bb024d8180435a4ba8a00285425fe3d53be84a3c2259dadfc960c1567dc384a5"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "b5c300fd6c1180a734f961916ef279111a355529df53c77bf522ab39ee0d6062"
+                      "sha256":  "a9e8fc4890724db9954aca4be8e9ce20c2c7a249e70c5fdd0bc64824eb4aac58"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -183,7 +183,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "563cc81b54cd5964de619d80cd51b9221bd488d6bcfd30856cd89040d696fea1"
+                      "sha256":  "a44a35c72beff106e5a9e9b2e237ca5ecfd37d8f2a4bb12597711a56b68e833c"
                   },
                   {
                       "path":  "src/shared/ipc/events.schemas.ts",
@@ -191,7 +191,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "f7f1a90af4eef326b9566b5a99ee86f0b7595fc729aee7eda8ef988828c7a8e0"
+                      "sha256":  "2cd3d4b718e71a4371605128d7628b0165af4b06facfd49ab87398f9e9e26d39"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -219,7 +219,7 @@
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
-                      "sha256":  "a67888edf209ce9aa3ccb02f960453c4e24e0dbfbb9aef35082aaed04f77aff0"
+                      "sha256":  "15fe9622bc8c96547d274bac76990b322427b337fcf4769b06b966082269e103"
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
@@ -235,7 +235,7 @@
                   },
                   {
                       "path":  "tests/contracts/api-surface-closure.test.ts",
-                      "sha256":  "011e8d43433a28a51a7df293d299172740a2df7f6ac73fddb61f29652ac4f2b0"
+                      "sha256":  "39fe12b955128c71c036a9ebad10936a529c65e9047924d5bdc7b413776b1fed"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -255,7 +255,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "d1008d4dca1ec8ba8ff4a3f082f13088e5893c481c635c1fb0b461651b5aa9d9"
+                      "sha256":  "6e70a9246fbaa629a9d70bd72524b6856db3d51d11a0c243de7e6a050e2a068b"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -291,7 +291,7 @@
                   },
                   {
                       "path":  "tests/e2e/library-explorer.spec.ts",
-                      "sha256":  "9417296d281aaa95bff4f5d1b285e475ce682b0de693344ed6b6916206825b25"
+                      "sha256":  "2252bdd9abcc28f724de010f87c95c673348ea105a088dbb17afa01af92e1a4b"
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
@@ -599,7 +599,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
-                      "sha256":  "e134a9d4431d56b589a6f1f6df3934a357c530f18b4f3c135484d8e493c8f94a"
+                      "sha256":  "e662fd246165ccdbd20734a7178401003c3def6b4fcdb4b4a3859607aa6e62ca"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell-t3u1.test.tsx",
@@ -655,7 +655,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "c0adeecb5adc1b84b5df1aff90585f5a0c8930f56462f856b8f41b24f678c41d"
+                      "sha256":  "dbe5f59bf8f54885e26ce1d0a94734442e7ea11939eb609f3d1ce52a43619586"
                   },
                   {
                       "path":  "tests/unit/renderer/library-lineage-display.test.tsx",
@@ -854,6 +854,10 @@
                       "sha256":  "139f517d1df551c970cde6a88cc689eeec5d802ec011c5e77373bd0c51da4c0b"
                   },
                   {
+                      "path":  "tests/unit/renderer/paper-delete.test.tsx",
+                      "sha256":  "f4f787e6c61faf3caea399c44e6997f0d084917f4cdc1f7ffdd70c331fbf5394"
+                  },
+                  {
                       "path":  "tests/unit/renderer/paper-detail-cited.test.tsx",
                       "sha256":  "85cac0aa446c5c2577a206fb35f1974a71ce71cfbb02a45f76af3da7ce97f0ba"
                   },
@@ -875,7 +879,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/paper-row-menu.test.tsx",
-                      "sha256":  "2d5ee95324b77b14f79aec8eb20f5824962eecb2c0fe6a285908f91697e65ffd"
+                      "sha256":  "8df556773dbddc87f59d7c37f0c5c44ef3834e905f0e32b40bf0ccf14f6403a3"
                   },
                   {
                       "path":  "tests/unit/renderer/pdf-item-geometry.test.tsx",
@@ -1188,6 +1192,10 @@
                   {
                       "path":  "tests/unit/services/notes.service.test.ts",
                       "sha256":  "52bd750564c4e16d8525e61872cca224698567b607230758a3d76ad4125a8e90"
+                  },
+                  {
+                      "path":  "tests/unit/services/papers-delete.test.ts",
+                      "sha256":  "b1be8d946d393cc2d36e921dc45c9cafb8111c3088dc3b870fd2e59bc1eed7f0"
                   },
                   {
                       "path":  "tests/unit/services/pdf-meta.extract.test.ts",

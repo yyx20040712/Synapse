@@ -33,12 +33,14 @@ import { FilterBar } from './FilterBar'
 import { FolderNav } from './FolderNav'
 import { ImportDropZone } from './ImportDropZone'
 import { LibraryDragGhost } from './LibraryDragGhost'
+import { PaperDeleteDialog } from './PaperDeleteDialog'
 import { PaperDetailPanel } from './PaperDetailPanel'
 import { PaperList } from './PaperList'
 import { PaperRowMenu } from './PaperRowMenu'
 import { useLibraryDnd } from './library-dnd.store'
 import { useLibraryStore } from './library.store'
 import { movePaperToFolder } from './paper-move'
+import { usePaperDeleteFlow, type PaperDeletePrompt } from './usePaperDelete'
 // 文献库皮肤（lib-* 类挂载点——feature 树全件共享；T3-P3 核心域+
 // [F-UIRES-01] 资源管理器形态域分域拆件=library-explorer.css[CSS 450 上限]）
 import './library.css'
@@ -64,6 +66,12 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
     paper: PaperSummary
     anchor: { x: number; y: number }
   } | null>(null)
+  // [F-UIRES-01 批 B] 删除流（预检分流 hook+保护弹窗态——FolderNav 挂
+  // FolderDeleteDialog 宿主模式同型）
+  const [deleteDialog, setDeleteDialog] = useState<PaperDeletePrompt | null>(null)
+  const { requestDelete, handleDeleted } = usePaperDeleteFlow({
+    onProtect: (p) => setDeleteDialog(p)
+  })
 
   // 挂载即拉取（useAsync 是显式 run 语义，故在 effect 中手动触发一次）
   const { run } = useAsync(load, [load])
@@ -147,6 +155,17 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
           onClose={() => setRowMenu(null)}
           onOpen={openPaper}
           onMove={(paperId, toFolderId) => void movePaperToFolder(paperId, toFolderId)}
+          onDelete={(paperId) => void requestDelete(paperId)}
+        />
+      )}
+      {deleteDialog !== null && (
+        <PaperDeleteDialog
+          key={deleteDialog.paperId}
+          paperId={deleteDialog.paperId}
+          graphName={deleteDialog.graphName}
+          edgeCount={deleteDialog.edgeCount}
+          onClose={() => setDeleteDialog(null)}
+          onDone={handleDeleted}
         />
       )}
       <LibraryDragGhost />

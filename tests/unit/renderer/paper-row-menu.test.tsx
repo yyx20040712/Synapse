@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-01 批 A U4] PaperRowMenu 两项版（P-10：批 A 菜单=「在阅读器中
- * 打开」+「移动到文件夹 ▸」；删除项批 B 点亮、星标项 DB 窗口点亮——不渲染
- * 禁用项=零死交互）。覆盖：右键行弹出+命中行高亮（按下即高亮）；两项文本；
- * 移动子面（folders.list+未归档移出）；moveFolder 链+成功收尾两分支（行离开
- * 当前视图→选中清空+抽屉清空；仍在→保持）；失败→拒因中文 toast；「在阅读器
- * 中打开」走 openPaper 通道。always-active（不经 guardedDescribe）。
+ * [F-UIRES-01 批 A U4→批 B 三项版] PaperRowMenu（P-10：菜单=「在阅读器中
+ * 打开」+「移动到文件夹 ▸」+「删除文献」（批 B 点亮）；星标项 DB 窗口点亮
+ * ——不渲染禁用项=零死交互。删除流全矩阵=paper-delete.test.tsx[批 B 新增]）。
+ * 覆盖：右键行弹出+命中行高亮（按下即高亮）；三项文本；移动子面（folders.list+
+ * 未归档移出）；moveFolder 链+成功收尾两分支（行离开当前视图→选中清空+抽屉
+ * 清空；仍在→保持）；失败→拒因中文 toast；「在阅读器中打开」走 openPaper
+ * 通道。always-active（不经 guardedDescribe）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -132,15 +133,17 @@ afterEach(async () => {
   host = null
 })
 
+// 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——组名冻结
+// 先例=api-surface-closure「55 通道 pin」）；活锚=本组首用例三项版断言
 describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
-  it('右键行→菜单弹出：两项文本（在阅读器中打开/移动到文件夹）+删除与星标零渲染', async () => {
+  it('右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染', async () => {
     setPapers([summary('p1', null)])
     await render()
     await rightClickRow('p1')
     expect(menu()).not.toBeNull()
     expect(menu()?.textContent).toContain('在阅读器中打开')
     expect(menu()?.textContent).toContain('移动到文件夹')
-    expect(menu()?.textContent).not.toContain('删除文献')
+    expect(menu()?.textContent).toContain('删除文献')
     expect(menu()?.textContent).not.toContain('星标')
   })
 

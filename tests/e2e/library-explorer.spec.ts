@@ -2,17 +2,19 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 
 /**
- * [F-UIRES-01 批 A] 库页资源管理器形态 e2e —— §3.9 锚清单补幕（每幕≥2
- * 真实文本/aria 锚；S5b 批 B 除外）：
+ * [F-UIRES-01 批 A→批 B] 库页资源管理器形态 e2e —— §3.9 锚清单补幕（每幕≥2
+ * 真实文本/aria 锚）：
  * - S1：左栏「全部文献/未归档」导航行文本+选中行 aria-current；
  * - S4：drop 徽标文本「移入」+导入条「导入到：〈名〉」（合成内部拖拽经
  *   dispatchEvent——HTML5 DnD 手势 e2e 不可原生模拟，合成事件驱动 React
  *   合成 onDragStart/onDragOver/onDrop 同链）；
- * - S5a：行右键菜单「在阅读器中打开/移动到文件夹」+子面移动执行（批 A 两项
- *   版——删除文献项批 B 点亮、星标项 DB 窗口点亮，均不渲染）；
+ * - S5a：行右键菜单「在阅读器中打开/移动到文件夹/删除文献」三项版（批 B
+ *   删除项点亮；星标项 DB 窗口点亮不渲染）+子面移动执行；
+ * - S5b（批 B）：删除两分支——保护弹窗三要素（「删除文献？」+「同时移除其
+ *   节点与全部连线」+图名+连线数）/静默直删（无 Dialog）；
  * - S6：未归档空态句+归档双通道句。
  */
 
@@ -101,7 +103,7 @@ test('S4：行拖入左栏文件夹=drop「移入」徽标+moveFolder 执行（�
   await app.close()
 })
 
-test('S5a：行右键菜单两项版+移动子面执行（批 A 无删除/星标项）', async () => {
+test('S5a：行右键菜单三项版（删除项批 B 点亮+星标项不渲染）+移动子面执行', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uix-s5a-'))
   await bootstrapMigrations(userData)
   for (const p of PAPERS) {
@@ -121,10 +123,10 @@ test('S5a：行右键菜单两项版+移动子面执行（批 A 无删除/星标
   await row.click({ button: 'right' })
   const menu = win.getByTestId('paper-row-menu')
   await expect(menu).toBeVisible()
-  // 两项版（S5a 锚——批 A：删除项批 B 点亮、星标项 DB 窗口点亮，均不渲染）
+  // 三项版（S5a 锚——批 B 删除项点亮；星标项 DB 窗口点亮，不渲染）
   await expect(menu.getByRole('menuitem', { name: '在阅读器中打开' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: '移动到文件夹' })).toBeVisible()
-  await expect(menu.getByRole('menuitem', { name: '删除文献' })).toHaveCount(0)
+  await expect(menu.getByRole('menuitem', { name: '删除文献' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: '星标' })).toHaveCount(0)
   // 命中行=按下即高亮
   await expect(row).toHaveClass(/hit/)
@@ -137,6 +139,75 @@ test('S5a：行右键菜单两项版+移动子面执行（批 A 无删除/星标
   await expect(sub.getByRole('menuitem', { name: '未归档（移出）' })).toBeVisible()
   await sub.getByRole('menuitem', { name: '菜单移动夹' }).click()
   await expect(navRow(win, '菜单移动夹')).toContainText('1', { timeout: 10_000 })
+
+  await app.close()
+})
+
+test('S5b-1：删除文献保护分支——有连线弹窗三要素+确认级联（行消失+夹计数减）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-uix-s5b1-'))
+  await bootstrapMigrations(userData)
+  await seedPaperRow(userData, 'a.pdf', 'd'.repeat(64), '保护分支文献', 'e2e-uix-d')
+  await seedPaperRow(userData, 'a.pdf', 'e'.repeat(64), '保护邻接文献', 'e2e-uix-e')
+  // 夹+两文献节点+一边（seedLineageGraph 同步归夹——INV-88 入图即归档镜像）
+  await seedLineageGraph(userData, {
+    folders: [{ id: 'f-s5b', name: '删除保护夹' }],
+    nodes: [
+      { paperId: 'e2e-uix-d', title: '保护分支文献', year: 2024, folderId: 'f-s5b' },
+      { paperId: 'e2e-uix-e', title: '保护邻接文献', year: 2024, folderId: 'f-s5b' }
+    ],
+    edges: [{ from: 'e2e-uix-e', to: 'e2e-uix-d', label: '引证' }]
+  })
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  // 夹计数 2（两文献已归夹；[RR1-4] 计数锚=对 mono 计数格 .lib-fn-ct 精确
+  // toHaveText——行定位=hasText 全文锚，禁在 filter has 内引行外根链）
+  await expect(navRow(win, '删除保护夹').locator('.lib-fn-ct')).toHaveText('2', { timeout: 10_000 })
+  const row = win.locator('.lib-row', { hasText: '保护分支文献' })
+  await expect(row).toBeVisible({ timeout: 10_000 })
+
+  // 右键→删除文献→保护弹窗（edgeCount>0——§2.4 预检分流）
+  await row.click({ button: 'right' })
+  await win.getByTestId('paper-row-menu').getByRole('menuitem', { name: '删除文献' }).click()
+  const dialog = win.locator('[role="dialog"]')
+  await expect(dialog).toBeVisible({ timeout: 10_000 })
+  // S5b 三要素（§3.9 锚逐字）：标题+连带句+图名+连线数（[RR1-4] 整句锚防裸数字误配）
+  await expect(dialog).toContainText('删除文献？')
+  await expect(dialog).toContainText('同时移除其节点与全部连线')
+  await expect(dialog).toContainText('删除保护夹')
+  await expect(dialog).toContainText('有 1 条连线')
+
+  // 确认→级联删（行消失+夹计数 2→1——folders.changed 双播）
+  await dialog.getByRole('button', { name: '删除文献' }).click()
+  await expect(win.locator('.lib-row', { hasText: '保护分支文献' })).toHaveCount(0, {
+    timeout: 10_000
+  })
+  await expect(navRow(win, '删除保护夹').locator('.lib-fn-ct')).toHaveText('1', { timeout: 10_000 })
+  // 邻接文献不受影响（行在场）
+  await expect(win.locator('.lib-row', { hasText: '保护邻接文献' })).toBeVisible()
+
+  await app.close()
+})
+
+test('S5b-2：删除文献静默分支——无节点直删（无 Dialog 行消失）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-uix-s5b2-'))
+  await bootstrapMigrations(userData)
+  await seedPaperRow(userData, 'a.pdf', 'f'.repeat(64), '静默分支文献', 'e2e-uix-f')
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  const row = win.locator('.lib-row', { hasText: '静默分支文献' })
+  await expect(row).toBeVisible({ timeout: 10_000 })
+
+  // 右键→删除文献→静默直删（无节点——F-DELCONF C5 判据，零弹窗）
+  await row.click({ button: 'right' })
+  await win.getByTestId('paper-row-menu').getByRole('menuitem', { name: '删除文献' }).click()
+  await expect(win.locator('.lib-row', { hasText: '静默分支文献' })).toHaveCount(0, {
+    timeout: 10_000
+  })
+  await expect(win.locator('[role="dialog"]')).toHaveCount(0)
 
   await app.close()
 })

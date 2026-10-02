@@ -478,6 +478,9 @@ export {
   paperMoveReqSchema
 } from '../models/folder'
 
+// ── papers（[F-UIRES-01 批 B] 文献域删除载荷——models/paper 单源）──
+export { paperDeleteReqSchema } from '../models/paper'
+
 // ── folders.changed / lineage.changed 事件（[F-FOLDER-01] main→renderer 单向；
 //    载荷=空对象——纯失效通知（renderer 重拉 folders.list/lineage.graph），
 //    不携带数据防双真相）──────────────────────────────────────────

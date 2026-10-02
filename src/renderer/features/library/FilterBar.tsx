@@ -44,7 +44,7 @@ const SORT_LABEL: Record<LibrarySort, string> = {
 export function FilterBar(props: {
   query: LibraryQuery
   onChange: (patch: Partial<LibraryQuery>) => void
-  /** [F-TAGS-01] 标签颜色映射上抛（TagFilter 透传——组合根接力） */
+  /** [F-TAGS-01] 标签颜色映射上抛（TagDropdown 透传——组合根接力） */
   onTagColorMap?: (map: ReadonlyMap<string, string | null>) => void
 }): JSX.Element {
   const { query, onChange } = props

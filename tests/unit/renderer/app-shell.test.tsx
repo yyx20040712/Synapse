@@ -23,7 +23,7 @@ const stubApi = makeApiStub({
   settings: { get: vi.fn(), set: vi.fn() },
   system: { setQuitDirty: vi.fn(), windowControl: vi.fn() },
   workspaces: { list: vi.fn(), switch: vi.fn() },
-  // [F-FOLDER-02·A/B] FolderFilter（文献库页）+图切换器（脉络页）文件夹域面
+  // [F-FOLDER-02·A/B→F-UIRES-01 批 A] FolderNav（文献库页）+图切换器（脉络页）文件夹域面
   folders: { list: vi.fn() },
   papers: { moveFolder: vi.fn() }
 })

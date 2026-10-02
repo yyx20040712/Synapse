@@ -99,6 +99,8 @@ const VALID: Record<string, unknown[]> = {
     { paperId: 'p1', toFolderId: 'f1' },
     { paperId: 'p1', toFolderId: null }
   ],
+  // [F-UIRES-01 批 B] papers/delete 载荷（文献域单源——models/paper）
+  paperDeleteReqSchema: [{ paperId: 'p1' }],
   foldersChangedEventSchema: [{}],
   lineageChangedEventSchema: [{}],
   lineageGraphReqSchema: [{}, { folderId: 'f1' }],
@@ -264,6 +266,7 @@ const SCHEMA_NAMES = [
   'observeResSchema',
   'openExternalReqSchema',
   'paperIdReqSchema',
+  'paperDeleteReqSchema',
   'paperMoveReqSchema',
   'readerOpenResSchema',
   'renameTagReqSchema',
