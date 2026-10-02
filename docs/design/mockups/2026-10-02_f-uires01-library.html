@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>F-UIRES-01 库页资源管理器化 mockup（2026-10-02 呈裁）</title>
+<style>
+  /* ── token 单源誊自 theme.css :root（亮面裸值）── */
+  :root {
+    --bg: #f4f6f9; --panel: #ffffff; --panel-2: #fbfcfe;
+    --line: #e3e7ee; --line-soft: #edf0f5;
+    --ink: #1c2333; --dim: #5d6577;
+    --accent: #3a5bd9; --accent-soft: #eaeefc;
+    --gold: #b8935a; --gold-soft: rgba(207, 174, 114, 0.16); --border-gold: #c9a86a;
+    --danger: #f06030; --ok: #2e8b57; --warn: #e8a33d;
+    --shadow-1: 0 1px 2px rgba(35,38,45,0.06);
+    --shadow-2: 0 4px 14px rgba(35,38,45,0.09);
+    --shadow-3: 0 10px 34px rgba(35,38,45,0.16);
+    --radius-s: 8px; --radius-m: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #e8ebf1; font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif; color: var(--ink); font-size: 12px; padding: 28px 32px 60px; }
+  .scene { margin-bottom: 44px; }
+  .scene-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .scene-note { font-size: 11px; color: var(--dim); margin-bottom: 12px; line-height: 1.7; max-width: 1180px; }
+  .scene-note b { color: var(--ink); }
+  .frame { display: flex; width: 1180px; height: 700px; background: var(--bg); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-2); position: relative; }
+
+  /* ── 顶栏 ── */
+  .topbar { position: absolute; top: 0; left: 0; right: 0; height: 34px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; gap: 10px; z-index: 5; }
+  .topbar .app { font-weight: 600; font-size: 13px; letter-spacing: .5px; }
+  .topbar .ws { font-size: 11px; color: var(--dim); }
+  .topbar .ws b { color: var(--ink); font-weight: 600; }
+
+  /* ── Rail 72px ── */
+  .rail { width: 72px; margin-top: 34px; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; flex-shrink: 0; }
+  .rail-item { width: 58px; padding: 7px 0 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: var(--radius-s); color: var(--dim); }
+  .rail-item svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .rail-item span { font-size: 10px; }
+  .rail-item.active { background: var(--accent-soft); color: var(--accent); }
+  .rail-foot { margin-top: auto; }
+
+  /* ── 左栏 FolderNav 224px ── */
+  .fnav { width: 224px; margin-top: 34px; background: var(--panel-2); border-right: 1px solid var(--line); display: flex; flex-direction: column; flex-shrink: 0; }
+  .fnav-head { padding: 12px 14px 8px; font-size: 11px; color: var(--dim); letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; }
+  .fnav-head .hint { letter-spacing: 0; font-size: 10px; }
+  .fn-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 14px; cursor: default; position: relative; color: var(--ink); }
+  .fn-row svg { width: 15px; height: 15px; fill: none; stroke: var(--dim); stroke-width: 1.6; flex-shrink: 0; }
+  .fn-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+  .fn-row .ct { font-family: Consolas, monospace; font-size: 10.5px; color: var(--dim); }
+  .fn-row:hover { background: var(--line-soft); }
+  .fn-row.sel { background: var(--accent-soft); }
+  .fn-row.sel::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 2px; background: var(--accent); }
+  .fn-row.sel svg { stroke: var(--accent); }
+  .fn-row.sel .nm { color: var(--accent); font-weight: 600; }
+  .fn-sep { height: 1px; background: var(--line); margin: 6px 14px; }
+  .fn-new { margin-top: auto; border-top: 1px solid var(--line); padding: 9px 14px; color: var(--dim); display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .fn-new svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .fn-new:hover { color: var(--accent); background: var(--accent-soft); }
+  /* 拖入候选态（S4） */
+  .fn-row.drop { outline: 1.5px dashed var(--accent); outline-offset: -4px; background: var(--accent-soft); border-radius: var(--radius-s); }
+  .fn-row.drop .ct { visibility: hidden; }
+  .fn-drop-hint { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--accent); color: #fff; font-size: 10px; border-radius: 4px; padding: 1px 6px; }
+
+  /* ── 主区 ── */
+  .main { flex: 1; margin-top: 34px; display: flex; flex-direction: column; min-width: 0; position: relative; }
+  /* 导入条（ImportBar——ImportDropZone 收敛态） */
+  .ibar { height: 42px; display: flex; align-items: center; gap: 12px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .ibar .btn { padding: 5px 14px; border-radius: 7px; background: var(--accent); color: #fff; font-size: 12px; border: none; }
+  .ibar .btn.ghost { background: transparent; color: var(--dim); border: 1px solid var(--line); }
+  .ibar .hint { color: var(--dim); font-size: 11px; }
+  .ibar .target { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+  .ibar .target svg { width: 13px; height: 13px; fill: none; stroke: var(--gold); stroke-width: 1.6; }
+  .ibar .target b { color: var(--ink); font-weight: 600; }
+  /* 筛选行（收敛后 FilterBar） */
+  .fbar { height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .search { width: 290px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); display: flex; align-items: center; gap: 8px; padding: 0 10px; color: var(--dim); }
+  .search svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .sel-dd { height: 30px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--ink); background: var(--panel); font-size: 12px; }
+  .sel-dd svg { width: 10px; height: 10px; stroke: var(--dim); fill: none; stroke-width: 2; }
+  .fbar .spacer { flex: 1; }
+  .tagbtn { height: 30px; border: 1px solid var(--accent); border-radius: 8px; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+  .tagbtn .n { font-family: Consolas, monospace; background: var(--accent); color: #fff; border-radius: 999px; padding: 0 7px; font-size: 10.5px; }
+  .tagbtn.idle { border-color: var(--line); background: var(--panel); color: var(--ink); font-weight: 400; }
+  .tagbtn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ── 文献列表 ── */
+  .plist { flex: 1; overflow: hidden; background: var(--panel); display: flex; flex-direction: column; }
+  .pl-head, .pl-row { display: grid; grid-template-columns: 30px 46px 1fr 64px 52px 170px; align-items: center; gap: 8px; padding: 0 14px 0 10px; }
+  .pl-head { height: 30px; color: var(--dim); font-size: 10.5px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .pl-row { height: 46px; border-bottom: 1px solid var(--line-soft); cursor: default; }
+  .pl-row:hover { background: var(--panel-2); }
+  .pl-row.sel { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+  .pl-row.sel .ptitle { font-weight: 600; }
+  .star { text-align: center; font-size: 13px; color: var(--line); }
+  .star.on { color: var(--gold); }
+  .pid { font-family: Consolas, monospace; font-size: 10.5px; color: var(--dim); text-align: right; }
+  .pid.cat { color: var(--gold); }
+  .ptitle { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .psub { font-size: 10.5px; color: var(--dim); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pyear { font-size: 11.5px; color: var(--dim); font-family: Consolas, monospace; }
+  .pcite { font-family: Consolas, monospace; font-size: 11.5px; color: var(--dim); text-align: right; }
+  .ptags { display: flex; gap: 4px; overflow: hidden; }
+  .tg { font-size: 10px; border-radius: 999px; padding: 1.5px 8px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); white-space: nowrap; }
+  .tg.c1 { background: rgba(58, 91, 217, 0.08); border-color: rgba(58, 91, 217, 0.35); color: var(--accent); }
+  .tg.c2 { background: var(--gold-soft); border-color: var(--border-gold); color: var(--gold); }
+  .pl-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--dim); }
+
+  /* ── 右侧详情抽屉 316px ── */
+  .drawer { width: 316px; margin-top: 34px; background: var(--panel); border-left: 1px solid var(--line); padding: 16px; flex-shrink: 0; overflow: hidden; }
+  .dr-title { font-size: 13.5px; font-weight: 600; line-height: 1.5; margin-bottom: 10px; }
+  .dr-meta { display: grid; grid-template-columns: 56px 1fr; row-gap: 6px; font-size: 11.5px; margin-bottom: 14px; }
+  .dr-meta .k { color: var(--dim); }
+  .dr-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .dr-open { display: block; width: 100%; text-align: center; padding: 7px 0; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; font-size: 12px; }
+
+  /* ── 弹层通用 ── */
+  .menu { position: absolute; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-m); box-shadow: var(--shadow-3); padding: 5px; min-width: 176px; z-index: 20; }
+  .menu .mt { font-size: 10px; color: var(--dim); padding: 5px 10px 4px; letter-spacing: 1px; }
+  .menu .mi { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+  .menu .mi:hover { background: var(--accent-soft); color: var(--accent); }
+  .menu .mi.danger { color: var(--danger); }
+  .menu .mi.danger:hover { background: rgba(240, 96, 48, 0.08); }
+  .menu .mi.danger .sub { color: var(--danger); opacity: 0.72; }
+  /* 右键命中对象高亮（F-LGRAPH-01 二轮同语义——按下即高亮命中对象） */
+  .hit-row { background: var(--line-soft) !important; box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 6px; }
+  .menu .msep { height: 1px; background: var(--line); margin: 4px 8px; }
+  .menu .mi .sub { margin-left: auto; color: var(--dim); font-size: 10px; }
+  /* 标签下拉面板（S3） */
+  .tagmenu { position: absolute; top: 96px; right: 16px; width: 240px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-m); box-shadow: var(--shadow-3); z-index: 20; overflow: hidden; }
+  .tagmenu .th { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); }
+  .tagmenu .th .l { font-weight: 600; font-size: 12px; }
+  .tagmenu .th .r { font-size: 10.5px; color: var(--accent); }
+  .tagmenu .tl { max-height: 218px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .tagmenu .tl::-webkit-scrollbar { width: 6px; }
+  .tagmenu .tl::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .tagmenu .tr { display: flex; align-items: center; gap: 9px; padding: 7px 12px; position: relative; }
+  .tagmenu .tr:hover { background: var(--panel-2); }
+  .tagmenu .cb { width: 14px; height: 14px; border: 1.5px solid var(--line); border-radius: 4px; flex-shrink: 0; position: relative; }
+  .tagmenu .tr.on .cb { background: var(--accent); border-color: var(--accent); }
+  .tagmenu .tr.on .cb::after { content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(42deg); }
+  .tagmenu .tr .nm { flex: 1; font-size: 12px; }
+  .tagmenu .tr .ct { font-family: Consolas, monospace; font-size: 10px; color: var(--dim); }
+  .tagmenu .dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .tagmenu .tf { border-top: 1px solid var(--line-soft); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 10.5px; background: var(--panel); position: relative; z-index: 2; }
+  .tagmenu .tf .clr { color: var(--accent); }
+  .tagmenu .tfade { position: absolute; left: 1px; right: 1px; bottom: 36px; height: 44px; background: linear-gradient(transparent, var(--panel) 62%, rgba(227, 231, 238, 0.55)); pointer-events: none; z-index: 1; }
+  .rk-hint { position: absolute; right: 14px; background: var(--ink); color: #fff; border-radius: 6px; padding: 4px 9px; font-size: 10.5px; z-index: 25; box-shadow: var(--shadow-2); }
+  .rk-hint::after { content: ''; position: absolute; right: 16px; top: -4px; border: 4px solid transparent; border-bottom-color: var(--ink); }
+  /* 模态（S5 分支 b） */
+  .veil { position: absolute; inset: 0; background: rgba(28, 35, 51, 0.32); z-index: 30; display: flex; align-items: center; justify-content: center; }
+  .modal { width: 400px; background: var(--panel); border-radius: var(--radius-m); box-shadow: var(--shadow-3); padding: 20px 22px; }
+  .modal h3 { font-size: 14px; margin-bottom: 10px; }
+  .modal p { font-size: 12px; color: var(--dim); line-height: 1.8; margin-bottom: 16px; }
+  .modal p b { color: var(--ink); }
+  .modal p .d { color: var(--danger); font-weight: 600; }
+  .modal .acts { display: flex; justify-content: flex-end; gap: 10px; }
+  .modal .btn2 { padding: 6px 16px; border-radius: 7px; font-size: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .modal .btn2.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  /* 行内新建输入（S2） */
+  .fn-input { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+  .fn-input input { flex: 1; border: 1.5px solid var(--accent); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--ink); outline: none; background: var(--panel); }
+  .fn-input .kb { font-size: 10.5px; color: var(--dim); white-space: nowrap; display: flex; gap: 4px; align-items: center; }
+  .fn-input .kb b { font-weight: 500; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel-2); font-family: Consolas, monospace; font-size: 10px; }
+  /* 拖拽态（S4） */
+  .pl-row.dragging { opacity: 0.3; outline: 2px dashed var(--accent); outline-offset: -3px; }
+  .drag-ghost { position: absolute; background: var(--panel); border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; box-shadow: var(--shadow-2); padding: 5px 12px; font-size: 11.5px; z-index: 22; display: flex; gap: 6px; align-items: center; }
+  .drag-ghost svg { width: 12px; height: 12px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .anno { position: absolute; z-index: 26; background: rgba(184, 147, 90, 0.12); border: 1px dashed var(--border-gold); color: var(--gold); border-radius: 6px; padding: 3px 9px; font-size: 10.5px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ S1 全景默认态 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S1 · 库页全景（默认态——「综述阅读」文件夹选中）</div>
+  <div class="scene-note">布局=<b>Rail 72px（全局，零变）→ 文件夹导航 224px（新增库页二级栏）→ 主区（导入条 / 收敛筛选行 / 文献密度列表）→ 详情抽屉 316px（零变）</b>。左栏三态语义沿 F-FOLDER-02 folderScope 判别联合（全部文献=undefined / 未归档 / 各文件夹）——形态从 chip 平铺迁为导航行，数据面零变。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹<span class="hint">右键：重命名 / 删除</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">论文草稿</span><span class="ct">12</span></div>
+      <div class="fn-row sel"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">已弃用</span><span class="ct">2</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>综述阅读</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row"><span class="star on">★</span><span class="pid cat">021</span><span><div class="ptitle">Global retrieval of river bathymetry from satellite imagery</div><div class="psub">Water Resources Research</div></span><span class="pyear">2023-06</span><span class="pcite">128</span><span class="ptags"><span class="tg c1">方法</span><span class="tg c2">SSE</span><span class="tg">时序</span></span></div>
+        <div class="pl-row sel"><span class="star">★</span><span class="pid cat">022</span><span><div class="ptitle">深度学习驱动的内陆水体遥感反演综述</div><div class="psub">遥感学报</div></span><span class="pyear">2022-11</span><span class="pcite">96</span><span class="ptags"><span class="tg c2">综述</span><span class="tg">待读</span></span></div>
+        <div class="pl-row"><span class="star on">★</span><span class="pid cat">023</span><span><div class="ptitle">Optical shallow water mapping with Sentinel-2</div><div class="psub">Remote Sensing of Environment</div></span><span class="pyear">2021-03</span><span class="pcite">243</span><span class="ptags"><span class="tg c1">SSE</span><span class="tg">验证</span><span class="tg">+1</span></span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid">024</span><span><div class="ptitle">River width dynamics from Landsat archives</div><div class="psub">J. of Hydrology</div></span><span class="pyear">2020-08</span><span class="pcite">87</span><span class="ptags"><span class="tg">时序</span></span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid">025</span><span><div class="ptitle">星载激光雷达河流水深探测能力评估</div><div class="psub">测绘学报</div></span><span class="pyear">2023-01</span><span class="pcite">31</span><span class="ptags"><span class="tg">方法</span><span class="tg">待读</span></span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid">026</span><span><div class="ptitle">Uncertainty quantification in bathymetric inversion</div><div class="psub">IEEE TGRS</div></span><span class="pyear">2024-02</span><span class="pcite">12</span><span class="ptags"><span class="tg">校准</span></span></div>
+      </div>
+    </div>
+    <aside class="drawer">
+      <div class="dr-title">深度学习驱动的内陆水体遥感反演综述</div>
+      <div class="dr-meta">
+        <span class="k">期刊</span><span>遥感学报</span>
+        <span class="k">年月</span><span>2022-11</span>
+        <span class="k">影响因子</span><span>— </span>
+        <span class="k">被引</span><span>96</span>
+        <span class="k">文件夹</span><span>综述阅读</span>
+      </div>
+      <div class="dr-tags"><span class="tg c2">综述</span><span class="tg">待读</span></div>
+      <div class="dr-open">在阅读器中打开</div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S2 左栏操作态 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S2 · 左栏操作态（文件夹行右键菜单 + 底部新建内联输入）</div>
+  <div class="scene-note">右键菜单=FolderMenu 迁移（F-FOLDER-02 交付面承接）；<b>删除走 F-DELCONF-01 静默判据前置</b>（空图直删不弹窗/有脉络资产走 FolderDeleteDialog 保护）。新建=左栏底部常驻入口 → 内联输入（Enter 提交 / Esc 取消 / isComposing 守卫——F-UIRES-02 范式）。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav" style="position:relative">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row sel hit-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">论文草稿</span><span class="ct">12</span></div>
+      <div class="menu" style="left:26px; top:118px">
+        <div class="mt">● 论文草稿</div>
+        <div class="mi">重命名<span class="sub">F2</span></div>
+        <div class="mi danger">删除文件夹…<span class="sub">空图直删</span></div>
+        <div class="msep"></div>
+        <div class="mi">在脉络图中打开</div>
+      </div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span></div>
+      <div class="fn-new" style="border-top:none;padding-top:0">
+        <div class="fn-input" style="flex:1"><input value="对比实验" /><span class="kb"><b>↵</b>确定 <b>Esc</b>取消</span></div>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>论文草稿</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid">027</span><span><div class="ptitle">Draft: 基于多时相光学影像的河床演变分析</div><div class="psub">—</div></span><span class="pyear">—</span><span class="pcite">—</span><span class="ptags"><span class="tg">草稿</span></span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid">028</span><span><div class="ptitle">Draft: SWOT 卫星任务水深产品初评</div><div class="psub">—</div></span><span class="pyear">—</span><span class="pcite">—</span><span class="ptags"></span></div>
+      </div>
+    </div>
+    <aside class="drawer">
+      <div class="dr-title">Draft: 基于多时相光学影像的河床演变分析</div>
+      <div class="dr-meta">
+        <span class="k">期刊</span><span>—</span>
+        <span class="k">文件夹</span><span>论文草稿</span>
+      </div>
+      <div class="dr-open">在阅读器中打开</div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S3 标签筛选下拉展开态 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S3 · 标签筛选下拉（最右侧 · 展开态 · 一行一个）</div>
+  <div class="scene-note"><b>标签筛选移至最右侧（用户第 6 条）+ 下拉列表一行一个（F-TAGS-02 ④ 形态节——域化后标签集随当前文件夹域）</b>。溢出策略=面板内部滚动（8 行可视+底部渐隐——本域 10 标签滚动可见）；选中上限=域内总数 20（F-TAGS-02 ②——域内超限走「+N」折叠）。行右键=改名/颜色（F-TAGS-02 ⑦——域化实施面，本稿仅形态位）。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">论文草稿</span><span class="ct">12</span></div>
+      <div class="fn-row sel"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>综述阅读</b></span>
+      </div>
+      <div class="fbar" style="position:relative">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn">标签<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg><span class="n">2</span></div>
+      </div>
+      <div class="tagmenu">
+        <div class="th"><span class="l">标签筛选</span><span class="r">已选 2</span></div>
+        <div class="tl">
+          <div class="tr on"><span class="cb"></span><span class="dot" style="background:var(--accent)"></span><span class="nm">方法</span><span class="ct">12</span></div>
+          <div class="tr on"><span class="cb"></span><span class="dot" style="background:var(--gold)"></span><span class="nm">SSE</span><span class="ct">9</span></div>
+          <div class="tr"><span class="cb"></span><span class="dot" style="background:var(--ok)"></span><span class="nm">时序</span><span class="ct">7</span></div>
+          <div class="tr"><span class="cb"></span><span class="dot" style="background:var(--warn)"></span><span class="nm">验证</span><span class="ct">5</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">待读</span><span class="ct">4</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">综述</span><span class="ct">3</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">校准</span><span class="ct">2</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">草稿</span><span class="ct">1</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">SWOT</span><span class="ct">1</span></div>
+          <div class="tr"><span class="cb"></span><span class="nm">水深</span><span class="ct">1</span></div>
+          <div class="tfade"></div>
+        </div>
+        <div class="tf"><span>域内 10 标签 · 可滚动 · 右键行改色</span><span class="clr">清空已选</span></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row"><span class="star on">★</span><span class="pid cat">021</span><span><div class="ptitle">Global retrieval of river bathymetry from satellite imagery</div><div class="psub">Water Resources Research</div></span><span class="pyear">2023-06</span><span class="pcite">128</span><span class="ptags"><span class="tg c1">方法</span><span class="tg c2">SSE</span></span></div>
+        <div class="pl-row"><span class="star on">★</span><span class="pid cat">023</span><span><div class="ptitle">Optical shallow water mapping with Sentinel-2</div><div class="psub">Remote Sensing of Environment</div></span><span class="pyear">2021-03</span><span class="pcite">243</span><span class="ptags"><span class="tg c1">方法</span><span class="tg c2">SSE</span></span></div>
+      </div>
+    </div>
+    <aside class="drawer">
+      <div class="dr-title">标签筛选中…</div>
+      <div class="dr-meta"><span class="k">已选标签</span><span>方法 · SSE（AND 交集）</span></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S4 拖拽文献入文件夹 + 导入语义 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S4 · 拖拽文献入文件夹（moveFolder 链）+ 导入目标恒=当前文件夹</div>
+  <div class="scene-note"><b>拖文献行 → 左栏文件夹 = 移动（papers.moveFolder——F-LGCLN-01 用户裁决保留链路）</b>；候选行 drop 高亮+「移入」徽标；源行 faded 0.35。移动语义沿 INV-88 统一规则（节点随文献归属）。<b>「仅入文献库」选项已退役（用户 2026-09-30）——导入条右侧恒显目标（当前选中文件夹；「全部文献/未归档」态=主图）</b>，ImportTargetSelect 两态选择器随票退役。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">论文草稿</span><span class="ct">12</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row drop"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span><span class="fn-drop-hint">移入 ↩</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">已弃用</span><span class="ct">2</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>综述阅读</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist" style="position:relative">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row"><span class="star">★</span><span class="pid cat">022</span><span><div class="ptitle">深度学习驱动的内陆水体遥感反演综述</div><div class="psub">遥感学报</div></span><span class="pyear">2022-11</span><span class="pcite">96</span><span class="ptags"><span class="tg c2">综述</span></span></div>
+        <div class="pl-row dragging"><span class="star">★</span><span class="pid">026</span><span><div class="ptitle">Uncertainty quantification in bathymetric inversion</div><div class="psub">IEEE TGRS</div></span><span class="pyear">2024-02</span><span class="pcite">12</span><span class="ptags"><span class="tg">校准</span></span></div>
+        <div class="drag-ghost" style="left:250px; top:118px"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>1 篇文献 → 方法工具箱</div>
+      </div>
+    </div>
+    <aside class="drawer">
+      <div class="dr-title">Uncertainty quantification…</div>
+      <div class="dr-meta"><span class="k">文件夹</span><span>综述阅读 → 方法工具箱</span></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S5a 文献行右键菜单 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S5a · 文献行右键菜单（删除入口 + 移动双通道）</div>
+  <div class="scene-note"><b>资源管理器引入文献删除入口（papers 域 delete 通道新增——C5 预设承接）</b>。右键菜单承载「移动到文件夹」（拖拽的菜单等价路径——可达性双通道）+星标切换（F-STAR-01 行内显示的联动面）+删除。删除动作后菜单收起 → 按 F-DELCONF-01 静默判据分流（S5b）。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row sel"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main" style="position:relative">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>综述阅读</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row hit-row"><span class="star">★</span><span class="pid cat">021</span><span><div class="ptitle">Global retrieval of river bathymetry from satellite imagery</div><div class="psub">Water Resources Research</div></span><span class="pyear">2023-06</span><span class="pcite">128</span><span class="ptags"><span class="tg c1">方法</span></span></div>
+      </div>
+      <div class="menu" style="left:230px; top:180px; min-width:196px">
+        <div class="mt">● 021 Global retrieval…</div>
+        <div class="mi">在阅读器中打开</div>
+        <div class="mi">星标 / 取消星标<span class="sub">F-STAR-01</span></div>
+        <div class="mi">移动到文件夹 ▸<span class="sub">或拖拽至左栏</span></div>
+        <div class="msep"></div>
+        <div class="mi danger">删除文献<span class="sub">有连线时弹窗</span></div>
+      </div>
+      <div class="anno" style="right:20px; bottom:12px">分支 a：无节点 ∨ 节点无边 → 点删即删，静默无弹窗</div>
+    </div>
+    <aside class="drawer" style="position:relative">
+      <div class="dr-title">Global retrieval of river bathymetry…</div>
+      <div class="dr-meta"><span class="k">期刊</span><span>Water Resources Research</span><span class="k">被引</span><span>128</span></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S5b 删除保护弹窗（分支 b） ══════════ -->
+<div class="scene">
+  <div class="scene-title">S5b · 删除保护弹窗（有连线分支——F-DELCONF-01 语义）</div>
+  <div class="scene-note">静默判据=<b>无节点 ∨ 节点无边</b>（分支 a——纯结构数据静默删，S5a 注记）；<b>有连线=本幕保护弹窗</b>（只保护手工策展资产——F-DELCONF-01 用户裁决）。菜单已收起（点「删除文献」后）。弹窗明示连带删除面（节点+连线）。</div>
+  <div class="frame">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">3</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row sel"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">方法工具箱</span><span class="ct">5</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main" style="position:relative">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>综述阅读</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">2024<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-row hit-row"><span class="star">★</span><span class="pid cat">021</span><span><div class="ptitle">Global retrieval of river bathymetry from satellite imagery</div><div class="psub">Water Resources Research</div></span><span class="pyear">2023-06</span><span class="pcite">128</span><span class="ptags"><span class="tg c1">方法</span></span></div>
+      </div>
+      <div class="veil" style="inset:0">
+        <div class="modal" style="margin-right:40px">
+          <h3>删除文献？</h3>
+          <p>该文献在脉络图<b>〈综述阅读〉</b>中已有 <b>2 条连线</b>。<br>删除文献将<span class="d">同时移除其节点与全部连线</span>，此操作不可恢复。</p>
+          <div class="acts"><button class="btn2">取消</button><button class="btn2 danger">删除</button></div>
+        </div>
+      </div>
+    </div>
+    <aside class="drawer" style="position:relative">
+      <div class="dr-title">Global retrieval of river bathymetry…</div>
+      <div class="dr-meta"><span class="k">期刊</span><span>Water Resources Research</span><span class="k">被引</span><span>128</span></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ S6 未归档空态 ══════════ -->
+<div class="scene">
+  <div class="scene-title">S6 · 未归档态（空态引导 + 归档双通道提示）</div>
+  <div class="scene-note">未归档=独立导航项（folderScope {kind:'unfiled'} 零变）。空态引导文案指明两条归档通道（拖拽至左栏 / 右键移动）。<b>引导态（INV-87）零变注记：库页左栏在引导态（default 课题∧0 篇）下仅「全部文献」可见（无文件夹无未归档计数），导入桥升格路语义承接不变。</b></div>
+  <div class="frame" style="height:560px">
+    <div class="topbar"><span class="app">Synapse</span><span class="ws">课题：<b>水深遥感反演</b></span></div>
+    <nav class="rail">
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M4 11h16"/></svg><span>水深遥感</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5"/></svg><span>下载</span></div>
+      <div class="rail-item active"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>文献库</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z"/><path d="M8 8h8M8 11h6"/></svg><span>阅读器</span></div>
+      <div class="rail-item"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2"/></svg><span>脉络</span></div>
+      <div class="rail-item rail-foot"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>设置</span></div>
+    </nav>
+    <aside class="fnav">
+      <div class="fnav-head">文件夹</div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg><span class="nm">全部文献</span><span class="ct">42</span></div>
+      <div class="fn-row sel"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg><span class="nm">未归档</span><span class="ct">0</span></div>
+      <div class="fn-sep"></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">论文草稿</span><span class="ct">12</span></div>
+      <div class="fn-row"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg><span class="nm">综述阅读</span><span class="ct">8</span></div>
+      <div class="fn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建文件夹</div>
+    </aside>
+    <div class="main">
+      <div class="ibar">
+        <button class="btn">导入 PDF</button>
+        <button class="btn ghost">导入文件夹</button>
+        <span class="hint">或将文件拖入窗口任意位置</span>
+        <span class="target"><svg viewBox="0 0 24 24"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/></svg>导入到：<b>主图</b></span>
+      </div>
+      <div class="fbar">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>搜索标题 / 期刊 / 标签…</div>
+        <div class="sel-dd">全部年份<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="sel-dd">最近添加<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="spacer"></div>
+        <div class="tagbtn idle">标签<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </div>
+      <div class="plist">
+        <div class="pl-head"><span>★</span><span style="text-align:right">序号</span><span>题名 / 期刊</span><span>年月</span><span style="text-align:right">被引</span><span>标签</span></div>
+        <div class="pl-empty">
+          <svg width="34" height="34" viewBox="0 0 24 24" style="fill:none;stroke:var(--line);stroke-width:1.4"><path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z"/><path d="M9 14h6M12 11v6"/></svg>
+          <div style="font-size:13px; color: var(--dim)">未归档文献将出现在这里</div>
+          <div style="font-size:11px; color: var(--dim)">归档方式：拖拽文献行至左侧文件夹，或右键文献行「移动到文件夹」</div>
+        </div>
+      </div>
+    </div>
+    <aside class="drawer"><div style="color:var(--dim);font-size:11px;text-align:center;margin-top:40px">未选择文献</div></aside>
+  </div>
+</div>
+
+</body>
+</html>
