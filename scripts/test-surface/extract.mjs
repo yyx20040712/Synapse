@@ -34,6 +34,16 @@
  * （外层 callee=CallExpression 旧双盲）；②本地变量别名通道（const myIt=it
  * 静默漏抽→保守红——两域同查）；③importAliasCheck 排除 type-only import
  * （红向误伤修复）。
+ * [F-TESTREF-S5] 邻接残余三形态补判定面（v109 §4 d1-W4 承接，语义全族=保守红
+ * UNRESOLVABLE）：①属性访问初值别名（const each = it.each / it['each']——
+ * localAliasCheck 原仅认裸标识符初值，别名后 each(ARR)(title,fn) callee 裸标识符
+ * 两域双盲）；②ElementAccess 调用（it['each']('t', fn)——calleeText 对
+ * ElementAccess 返 null 两域不中；computed 非字面量成员静态不可判，成员字面量
+ * 与否同红）；③链式 each 双层（it.concurrent.each(ARR)(title,fn)——白名单域
+ * 并入 startsWith 判定族自然落「不在 v1 支持子集」红支路不做展开；哨兵域
+ * isEachDouble 放宽为 watched 根前缀+each 段）。
+ * [RR2 d1-W1] 修饰链族（it.skip.each/test.only.each 等）白名单域漏判根修：
+ * 前缀枚举删除，白名单 each 分支与哨兵 isEachDouble 同源共享 EACH_CHAIN_RE。
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -61,6 +71,13 @@ const CONSERVATIVE_REDS = new Set([
   'it.concurrent', 'test.concurrent', 'test.extend',
   'describe.configure', 'test.describe.configure'
 ])
+// [F-TESTREF-S5③+RR2] 链式 each 两域同源判定正则：watched 根前缀+each 段
+// （it.each/it.concurrent.each/it.skip.each 等修饰链双形皆中；each 备选无尾锚
+// ——it.each.skip 等旧前缀形仍中=严格超集）。白名单 each 分支与哨兵 isEachDouble
+// 单源共用（RR2 d1-W1：前缀枚举漏修饰链致哨兵中而白名单漏的域间不对称根修）。
+// 引用点恰两处（白名单 each 分支+哨兵 isEachDouble）——不变量=两域判定不分叉
+// （d1 复审 N6：分化须先拆常量再动，禁单侧改文本）
+const EACH_CHAIN_RE = /^(it|test|describe)\.(each|.*\.each)/
 
 export function walkFiles(dir, filter, acc = []) {
   for (const name of readdirSync(dir)) {
@@ -79,6 +96,15 @@ function calleeText(node) {
     return base === null ? null : `${base}.${node.name.text}`
   }
   return null
+}
+
+/** [F-TESTREF-S5①②] 扁平化根标识符：沿 PropertyAccess/ElementAccess 链下探至
+ *  根 Identifier（it.each/it.concurrent.each/it['each'] 根均为 it）；根非标识符
+ *  （调用/字面量等复合形态）返 null——调用/复合初值/成员仍按 v1 注释理据排除。 */
+function flatRootIdentifier(expr) {
+  let n = expr
+  while (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) n = n.expression
+  return ts.isIdentifier(n) ? n.text : null
 }
 
 function staticTitleOf(expr) {
@@ -215,24 +241,66 @@ function importAliasCheck(sf, relPath, unresolvable) {
 /**
  * [F-TESTREF-S1②] 本地变量别名检测：const/let/var X = it|test|describe|expect
  * （裸标识符初始化）→ 用例/断言 API 经本地名流经（X('t', fn) 调用形态 callee
- * 不在白名单=静默漏抽面）→ 保守红（import 别名 W6 检测面外的同族）。初始化
- * 为复合表达式（成员访问/调用）不在 v1 判定面——属性访问族已由 calleeText
- * 白名单覆盖。白名单（extractFile）与非白名单（sentinelCheck）两域同查——
- * helper 文件内别名同证 API 流经不可静态判定。
+ * 不在白名单=静默漏抽面）→ 保守红（import 别名 W6 检测面外的同族）。
+ * [F-TESTREF-S5①] 初值扩展为属性访问/成员访问族（const each = it.each /
+ * it['each']）——扁平化根标识符 ∈ 监视集即保守红（别名后 each(ARR)(title,fn)
+ * callee 裸标识符，白名单抽取与漏扫哨兵双盲）。初始化为调用/复合表达式仍排除
+ * （v1 注释理据保留）。白名单（extractFile）与非白名单（sentinelCheck）两域同查
+ * ——helper 文件内别名同证 API 流经不可静态判定。
  */
 function localAliasCheck(sf, relPath, unresolvable) {
   function scan(node) {
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
-      node.initializer !== undefined &&
-      ts.isIdentifier(node.initializer) &&
-      ALIAS_WATCHED.has(node.initializer.text)
+      node.initializer !== undefined
+    ) {
+      const init = node.initializer
+      if (ts.isIdentifier(init) && ALIAS_WATCHED.has(init.text)) {
+        unresolvable.push({
+          file: relPath,
+          line: lineOf(node, sf),
+          reason: `用例 API 本地变量别名不可静态判定（const ${node.name.text} = ${init.text}——${node.name.text}(...) 调用形态白名单外，静默漏抽面）`
+        })
+      } else if (
+        (ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init)) &&
+        ALIAS_WATCHED.has(flatRootIdentifier(init) ?? '')
+      ) {
+        unresolvable.push({
+          file: relPath,
+          line: lineOf(node, sf),
+          reason: `用例 API 属性访问别名不可静态判定（const ${node.name.text} = ${normalizeWs(init.getText(sf))}——${node.name.text}(...) 双层等调用形态白名单外，F-TESTREF-S5①）`
+        })
+      }
+    }
+    ts.forEachChild(node, scan)
+  }
+  scan(sf)
+}
+
+/**
+ * [F-TESTREF-S5②] ElementAccess 调用检测：CallExpression 的 calleeText 为 null
+ * （纯 ElementAccess 或含 ElementAccess 的混合链——it.concurrent['each'] /
+ * it['concurrent'].each 沿链下探皆断流）且扁平化根标识符 ∈ 监视集 → 保守红。
+ * [RR1 W-1] 判据放宽自「callee 本身为 ElementAccessExpression」——混合链
+ * （PropertyAccess×ElementAccess 交错）归族同红（calleeText null+flatRoot
+ * watched 严格超集；CallExpression/FunctionExpression/Parenthesized 根=flatRoot
+ * null 自然排除，与 N-1 边界一致）。calleeText 对 ElementAccess 返 null——
+ * 白名单抽取（用例/断言收集零命中）与漏扫哨兵两域均不中；computed 非字面量
+ * 成员（it[k](...)）静态不可判，成员字面量与否同红（同族保守）。白名单
+ * （extractFile）与非白名单（sentinelCheck）两域同查。
+ */
+function elementAccessCheck(sf, relPath, unresolvable) {
+  function scan(node) {
+    if (
+      ts.isCallExpression(node) &&
+      calleeText(node.expression) === null &&
+      ALIAS_WATCHED.has(flatRootIdentifier(node.expression) ?? '')
     ) {
       unresolvable.push({
         file: relPath,
         line: lineOf(node, sf),
-        reason: `用例 API 本地变量别名不可静态判定（const ${node.name.text} = ${node.initializer.text}——${node.name.text}(...) 调用形态白名单外，静默漏抽面）`
+        reason: `用例 API ElementAccess 调用不可静态判定（${normalizeWs(node.expression.getText(sf))}(...)——computed 成员静态不可判，成员字面量与否同红，F-TESTREF-S5②）`
       })
     }
     ts.forEachChild(node, scan)
@@ -251,6 +319,7 @@ function extractFile(absPath, relPath, unresolvable) {
   const red = (node, reason) => unresolvable.push({ file: relPath, line: lineOf(node, sf), reason })
   importAliasCheck(sf, relPath, unresolvable)
   localAliasCheck(sf, relPath, unresolvable)
+  elementAccessCheck(sf, relPath, unresolvable)
 
   // 预扫描：const X = ArrayLiteral 声明表 + 标识符赋值/更新表（单跳解析防护）
   const constArrays = new Map()
@@ -349,7 +418,7 @@ function extractFile(absPath, relPath, unresolvable) {
         // 潜在 each 形态：外层被调者本身是调用（it.each(ARR)(title, fn)）——
         // calleeText 对 CallExpression 返回 null，须取内层调用的被调者文本
         const inner = calleeText(node.expression.expression)
-        if (inner !== null && (inner.startsWith('it.each') || inner.startsWith('test.each') || inner.startsWith('describe.each'))) {
+        if (inner !== null && EACH_CHAIN_RE.test(inner)) {
           if (inner !== 'it.each' && inner !== 'test.each') {
             red(node, `${inner} 形态不在 v1 支持子集（describe.each/带后缀 each）`)
           } else {
@@ -454,6 +523,7 @@ function sentinelCheck(absPath, relPath, unresolvable) {
   const sf = ts.createSourceFile(absPath, text, ts.ScriptTarget.Latest, true, kind)
   importAliasCheck(sf, relPath, unresolvable)
   localAliasCheck(sf, relPath, unresolvable)
+  elementAccessCheck(sf, relPath, unresolvable)
   function visit(node) {
     if (ts.isCallExpression(node)) {
       const ct = calleeText(node.expression)
@@ -462,8 +532,11 @@ function sentinelCheck(absPath, relPath, unresolvable) {
       const innerEachCallee = ts.isCallExpression(node.expression)
         ? calleeText(node.expression.expression)
         : null
+      // [F-TESTREF-S5③+RR2] innerEachCallee 判定=EACH_CHAIN_RE（两域同源单源化
+      // ——与白名单 each 分支共用一处定义；each 备选无尾锚，it.each.skip 等
+      // 带后缀形态仍命中，只放宽不收窄）
       const isEachDouble =
-        ct === null && innerEachCallee !== null && /^(it|test|describe)\.each/.test(innerEachCallee)
+        ct === null && innerEachCallee !== null && EACH_CHAIN_RE.test(innerEachCallee)
       if (isBareThree || isDottedThree || isEachDouble) {
         const looksCase =
           (node.arguments[0] !== undefined && (ts.isStringLiteral(node.arguments[0]) || ts.isNoSubstitutionTemplateLiteral(node.arguments[0]))) ||

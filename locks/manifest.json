@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T04:32:56.2475082Z",
+    "generatedAt":  "2026-10-02T06:59:07.6107759Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -91,7 +91,7 @@
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
-                      "sha256":  "890430c369cd0843eca6d102cec3b0213e18329a16a567962f7abda258f9878e"
+                      "sha256":  "f1777b949540868b79849811e3fc8302fe7fb1144ff790bfd375d9ed9fe00d65"
                   },
                   {
                       "path":  "scripts/unlock-protected.ps1",
@@ -1252,6 +1252,10 @@
                   {
                       "path":  "tests/unit/tools/check-test-surface-s1.test.ts",
                       "sha256":  "f1af2ce946cadb7a1bc6c783b5dccc0e9e78c33c43960dd24182868521799a94"
+                  },
+                  {
+                      "path":  "tests/unit/tools/check-test-surface-s5.test.ts",
+                      "sha256":  "b19a7ac3f21253377577eba8671f342140f8be95e1dffbdb99dd0c09cc71f434"
                   },
                   {
                       "path":  "tests/unit/tools/check-tickets.test.ts",
