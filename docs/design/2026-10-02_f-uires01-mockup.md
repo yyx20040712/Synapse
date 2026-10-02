@@ -106,6 +106,11 @@ changed 不触发回退——错误回退护栏）
 
 ### 2.5 导入态（ImportDropZone 收敛）+ DnD 两域判别
 
+> [F-UIRES-01 批 A 实施勘误·2026-10-02 门一 d1-N2] 本节「导入整窗热区/
+> 热区在窗体层」句与现行为不符——导入 drop 热区=**导入条本体（div 级，
+> 批前批后一致）**；样本 hint「或将文件拖入窗口任意位置」随勘误改准确文案
+> 「或将 PDF 拖到此处导入」（主控预裁 R4——非 §3.9 锚点文案，准确性优先）。
+
 - 沿用 dragging/busy/结果行三态；目标显示=folderScope 派生只读。
 - **DnD 判别谓词**：内部行拖拽 dragstart 设置自定义 MIME（如
   application/x-synapse-paper）——左栏行仅响应该 MIME；OS 文件拖入

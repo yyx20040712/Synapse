@@ -3,7 +3,8 @@
  *
  * ── 行为层 ──
  * - 渲染 PaperSummary 列表（上游 store 已按 query.limit 分页取数，本组件全量渲染当前页，v1 不引入虚拟滚动库）
- * - 五列表头（.lib-cols：编号/题名 · 期刊/年月/引用/标签——列宽与行列对齐，
+ * - 六格表头（.lib-cols：★占位/编号/题名 · 期刊/年月/引用/标签——列宽与行
+ *   内对齐（INV-73 列宽同步扩）；★=P-9 星标静态占位列（F-STAR-01 点亮即激活），
  *   INV-73 结构锁；F-LIBUI-01 档次列退役；驻 .lib-list 顶部 sticky——与行
  *   共享滚动容器内容盒，滚动条出现/窄窗收缩两态表头行恒同位）+滚动列表体
  *   （.lib-list）；
@@ -11,7 +12,8 @@
  * - 选中行高亮并通知 onSelect(id)（由上层接 store.selectPaper；高亮样式委托 PaperRow 的 selected）
  * - 键盘可达：容器为可聚焦 listbox，↑/↓ 移动选中、Home/End 跳首/末行、Enter/Space 在无选中时选中首行
  * - 选中变化后自动把选中行滚入可视区，保证键盘导航不脱离视野
- * - 空态：papers 为空时展示中文引导（表头随之隐去——空态即整区引导）；loading/error 态由 LibraryPage 经 store 负责，非本组件职责
+ * - 空态：papers 为空时展示中文引导（表头随之隐去——空态即整区引导）；
+ *   emptyScope='unfiled'=S6 未归档专属空态（F-UIRES-01 U5）；loading/error 态由 LibraryPage 经 store 负责，非本组件职责
  *
  * ── 接口层 ──
  * - export function PaperList(props: { papers: PaperSummary[]; offset?: number;
@@ -57,6 +59,13 @@ export function PaperList(props: {
   onOpen?: (id: string) => void
   /** [F-TAGS-01] name→color 映射（LibraryPage 注入——PaperRow 徽标着色） */
   tagColorByName?: ReadonlyMap<string, string | null>
+  /** [F-UIRES-01 U4] 右键命中行 id（菜单开=按下即高亮） */
+  hitPaperId?: string | null
+  /** [F-UIRES-01 U4] 行右键上抛（宿主挂 PaperRowMenu） */
+  onRowContextMenu?: (paper: PaperSummary, pos: { x: number; y: number }) => void
+  /** [F-UIRES-01 U5/R14] 空态 scope 感知：unfiled=未归档专属空态引导（S6）；
+   *  缺省=现行「暂无文献」通用引导（LibraryPage 按 folderScope 注入） */
+  emptyScope?: 'unfiled'
 }): JSX.Element {
   const { papers, selectedId, onSelect, onOpen } = props
   const offset = props.offset ?? 0
@@ -79,6 +88,22 @@ export function PaperList(props: {
   }
 
   if (papers.length === 0) {
+    // [F-UIRES-01 U5] S6 未归档空态（R14：图标+双通道归档提示——§3.9 锚逐字）
+    if (props.emptyScope === 'unfiled') {
+      return (
+        <div
+          className="lib-empty-unfiled flex h-full flex-col items-center justify-center gap-2 p-8 text-center"
+          style={{ color: 'var(--text-dim)' }}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z" />
+            <path d="M9 14h6M12 11v6" />
+          </svg>
+          <p className="text-sm">未归档文献将出现在这里</p>
+          <p className="text-xs">归档方式：拖拽文献行至左侧文件夹，或右键文献行『移动到文件夹』</p>
+        </div>
+      )
+    }
     return (
       <div
         className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center text-sm"
@@ -100,6 +125,7 @@ export function PaperList(props: {
     >
       <div className="lib-list">
         <div className="lib-cols" aria-hidden="true">
+          <span className="lib-c-star" aria-hidden="true">★</span>
           <span className="lib-c-id">编号</span>
           <span className="lib-c-title">题名 · 期刊</span>
           <span className="lib-c-year">年月</span>
@@ -120,9 +146,11 @@ export function PaperList(props: {
                 paper={paper}
                 ordinal={index + offset + 1}
                 selected={selected}
+                hit={props.hitPaperId === paper.id}
                 onClick={handleActivate}
                 // 双击打开：上层传入 onOpen 时接通阅读器，否则降级为确认选中
                 onOpen={onOpen === undefined ? handleActivate : () => onOpen(paper.id)}
+                onContextMenu={props.onRowContextMenu}
                 tagColorByName={props.tagColorByName}
               />
             </div>

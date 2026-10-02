@@ -1,0 +1,337 @@
+/* ══ [F-UIRES-01 批 A] 库页资源管理器形态皮肤（mockups/2026-10-02_
+   f-uires01-library.html 逐值誊录；token 单源=theme.css :root——色值/尺寸
+   不新造）。分域拆件自 library.css（CSS 450 行上限——F-CSS-01 口径）：
+   FolderNav 左栏/星标占位列/标签下拉 dd 族/导入条/行拖拽与命中高亮/
+   S6 未归档空态。由 LibraryPage.tsx 一并 import。══ */
+
+/* ── FolderNav 左栏 224px（mockup .fnav 族逐值）── */
+.lib-fnav {
+  width: 224px;
+  flex: none;
+  background: var(--panel-2);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.lib-fnav-head {
+  padding: 12px 14px 8px;
+  font-size: var(--fs-micro);
+  color: var(--faint);
+  letter-spacing: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.lib-fnav-hint { letter-spacing: 0; font-size: var(--fs-micro); }
+.lib-fn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 14px;
+  position: relative;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+.lib-fn-row svg { width: 15px; height: 15px; fill: none; stroke: var(--dim); stroke-width: 1.6; flex: none; }
+.lib-fn-row:hover { background: var(--line-soft); }
+.lib-fn-row:focus-visible { outline: 1px solid var(--accent); }
+.lib-fn-row.sel { background: var(--accent-soft); }
+.lib-fn-row.sel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.lib-fn-row.sel svg { stroke: var(--accent); }
+.lib-fn-row.sel .lib-fn-nm { color: var(--accent); font-weight: 600; }
+.lib-fn-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-fn-ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); flex: none; }
+.lib-fn-sep { height: 1px; background: var(--line); margin: 6px 14px; flex: none; }
+.lib-fn-new { margin-top: auto; border-top: 1px solid var(--line); padding: 6px 8px; flex: none; }
+.lib-fn-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  width: 100%;
+  text-align: left;
+}
+.lib-fn-new-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.lib-fn-new-btn:hover { color: var(--accent); background: var(--accent-soft); }
+.lib-fn-new-btn:disabled, .lib-fn-row:disabled { opacity: 0.5; cursor: default; }
+/* 行内编辑（新建/重命名共通——mockup .fn-input 语汇） */
+.lib-fn-edit { display: flex; align-items: center; gap: 8px; padding: 5px 12px; }
+.lib-fn-edit input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  outline: none;
+  background: var(--panel);
+  font-family: inherit;
+}
+.lib-fn-kb { font-size: var(--fs-micro); color: var(--faint); white-space: nowrap; }
+/* 右键菜单行内子标注/分隔（FolderMenu——mockup .mi .sub/.msep 语汇） */
+.lib-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.lib-menu-sub { color: var(--faint); font-size: var(--fs-micro); }
+.lib-menu-sep { height: 1px; background: var(--line); margin: 4px 8px; }
+/* 拖入候选态（mockup .fn-row.drop：dashed 轮廓+accent-soft 底+「移入 ↩」徽标） */
+.lib-fn-row.drop {
+  outline: 1.5px dashed var(--accent);
+  outline-offset: -4px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-s);
+}
+.lib-fn-row.drop .lib-fn-ct { visibility: hidden; }
+.lib-fn-drop-hint {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--fs-micro);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* ── 星标占位列（[P-9] 批 A 静态禁用——淡色字形/零交互；F-STAR-01 点亮即激活；
+   列宽对齐同步扩 INV-73——表头与行同 30px）── */
+.lib-c-star { width: 30px; flex: none; text-align: center; }
+.lib-r-star { width: 30px; flex: none; text-align: center; font-size: var(--fs-strong); color: var(--line); }
+
+/* ── 标签下拉（TagDropdown——mockup .tagbtn/.tagmenu 逐值；TagFilter 胶囊族退役）── */
+.lib-dd { position: relative; display: inline-flex; flex: none; }
+.lib-dd-btn {
+  font-size: var(--fs-body);
+  padding: 6.5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--panel);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 400;
+}
+.lib-dd-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; }
+.lib-dd-btn-n {
+  font-family: var(--mono);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: var(--fs-micro);
+}
+.lib-dd-btn-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.lib-dd-btn:focus-visible { outline: 1px solid var(--accent); }
+.lib-filter-spacer { flex: 1; min-width: 8px; }
+/* 面板（240px：头/列表 8 行滚动+渐隐/脚） */
+.lib-dd-veil { position: fixed; inset: 0; z-index: var(--z-pop-veil); }
+.lib-dd-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: 240px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-3);
+  z-index: var(--z-pop);
+  overflow: hidden;
+}
+.lib-dd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-body);
+}
+.lib-dd-head span:first-child { font-weight: 600; }
+.lib-dd-sel { font-size: var(--fs-micro); color: var(--accent); }
+.lib-dd-list {
+  max-height: 218px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  position: relative;
+}
+.lib-dd-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.lib-dd-row:hover { background: var(--panel-2); }
+.lib-dd-row:focus-visible { outline: 1px solid var(--accent); }
+.lib-dd-cb {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  flex: none;
+  position: relative;
+}
+.lib-dd-row.on .lib-dd-cb { background: var(--accent); border-color: var(--accent); }
+.lib-dd-row.on .lib-dd-cb::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+.lib-dd-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+.lib-dd-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-dd-ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+.lib-dd-fade {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  margin-top: -30px;
+  pointer-events: none;
+  background: linear-gradient(transparent, var(--panel) 70%);
+}
+.lib-dd-empty { padding: 18px 12px; font-size: var(--fs-body); color: var(--dim); }
+.lib-dd-foot {
+  border-top: 1px solid var(--line-soft);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--dim);
+  font-size: var(--fs-micro);
+  background: var(--panel);
+}
+.lib-dd-clr {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ── 导入条（ImportDropZone 收敛态——mockup .ibar 逐值：42px 横条+panel 底
+   +line 下边线；drop 热区=本 div 级保持零变[R3]）── */
+.lib-dropzone {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  position: relative;
+  flex: none;
+  transition: box-shadow var(--dur-lazy) ease;
+}
+.lib-dropzone-dragging { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 3px var(--accent-soft); }
+.lib-ibar-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lib-ibar-hint { color: var(--dim); font-size: var(--fs-body); }
+.lib-ibar-progress {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--fs-caption);
+  color: var(--dim);
+  background: var(--panel);
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 目标徽标（mockup .target 逐值：右对齐胶囊+金色文件夹图标+粗体名） */
+.lib-import-target {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-body);
+  color: var(--dim);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  flex: none;
+  white-space: nowrap;
+}
+.lib-import-target svg { width: 13px; height: 13px; fill: none; stroke: var(--gold); stroke-width: 1.6; }
+.lib-import-target b { color: var(--ink); font-weight: 600; }
+
+/* ── 行拖拽/命中高亮/移动子面（§2.3/§2.5）── */
+.lib-row.dragging { opacity: 0.3; outline: 2px dashed var(--accent); outline-offset: -3px; }
+.lib-drag-ghost {
+  position: fixed;
+  z-index: var(--z-pop);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2);
+  padding: 5px 12px;
+  font-size: var(--fs-body);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  pointer-events: none;
+}
+.lib-drag-ghost svg { width: 12px; height: 12px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.lib-row.hit {
+  background: var(--line-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  border-radius: 6px;
+}
+.lib-move-sub { border-top: 1px solid var(--line); margin: 2px 0; padding-top: 2px; max-height: 200px; overflow-y: auto; }
+
+/* ── S6 未归档空态图标（mockup .pl-empty svg 语汇——line 描边淡色）── */
+.lib-empty-unfiled svg { width: 34px; height: 34px; fill: none; stroke: var(--line); stroke-width: 1.4; }

@@ -398,7 +398,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     '../../../src/renderer/features/reader/view/AnnotationMenu.tsx',
     '../../../src/renderer/features/reader/view/AnnotationEditor.tsx',
     '../../../src/renderer/features/reader/interact/SelectionToolbar.tsx',
-    '../../../src/renderer/features/tags/TagLifecycleMenu.tsx',
+    '../../../src/renderer/features/tags/TagDropdown.tsx',
     '../../../src/renderer/features/lineage/LineageToolbar.tsx',
     '../../../src/renderer/features/lineage/LineageNodeMenu.tsx',
     '../../../src/renderer/features/lineage/LineageBoard.tsx'

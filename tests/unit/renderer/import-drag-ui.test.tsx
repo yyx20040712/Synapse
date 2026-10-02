@@ -52,7 +52,7 @@ async function render(onImported: () => void = () => undefined): Promise<void> {
 
 function findImportButton(): HTMLButtonElement | undefined {
   return [...(host?.querySelectorAll('button') ?? [])].find(
-    (b) => (b.textContent ?? '').replace('⟳', '') === '导入 PDF 文件'
+    (b) => (b.textContent ?? '').replace('⟳', '') === '导入 PDF'
   )
 }
 
@@ -66,7 +66,7 @@ async function drop(files: { name: string }[]): Promise<void> {
   expect(zone, '拖放区在场').toBeDefined()
   await act(async () => {
     const ev = new Event('drop', { bubbles: true, cancelable: true })
-    Object.defineProperty(ev, 'dataTransfer', { value: { files } })
+    Object.defineProperty(ev, 'dataTransfer', { value: { types: ['Files'], files } })
     zone!.dispatchEvent(ev)
   })
 }

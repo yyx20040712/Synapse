@@ -1,31 +1,24 @@
-// b3: P7-E
 /**
- * [P7E-01] TagLifecycleMenu —— 标签右键菜单（TagFilter 子组件，LineageNodeMenu
- * 同型）。行为：fixed 定位于右键锚点；菜单项=重命名/合并到…（tags.length===1
- * 无其他目标时禁用——S9）/颜色…（F-TAGS-01 取色器入口）/删除。透明遮罩点击
- * 关闭 + Esc 关闭（keydown 挂
- * document，unmount 清理——门一 W3 回炉：菜单轻量面键盘关闭自持，不依赖
- * Dialog 域）。所有动作只上抛回调——对话框宿主与写路径在 TagFilter。
+ * [F-UIRES-01 批 A U3] TagRowMenu —— 标签下拉行右键菜单（TagDropdown 拆件：
+ * 组件 250 行红线；TagLifecycleMenu 先例形态——fixed 锚点+透明遮罩+Esc）。
+ * 两件版（P-11 用户终裁）：改名+颜色；merge/delete UI 入口随 TagFilter 退役
+ * （IPC 通道与 main 面零触碰）。动作只上抛——对话框宿主在 TagDropdown。
  */
 import { useEffect } from 'react'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 import type { TagWithCount } from './tags.store'
 
-export function TagLifecycleMenu(props: {
+export function TagRowMenu(props: {
   tag: TagWithCount
-  /** tags.length>1 才可合并（无其他目标——S9 禁用态） */
-  canMerge: boolean
   anchor: { x: number; y: number }
   onClose(): void
   onRename(tag: TagWithCount): void
-  onMerge(tag: TagWithCount): void
-  /** [F-TAGS-01] 颜色…（TagColorDialog 入口——宿主在 TagFilter） */
   onColor(tag: TagWithCount): void
-  onDelete(tag: TagWithCount): void
 }): JSX.Element {
   const { tag, anchor } = props
 
-  // Esc 关闭（W3）：挂 document 捕获 Escape，unmount 成对移除
+  // Esc 关闭：挂 document 捕获，unmount 成对移除（TagLifecycleMenu 先例形态；
+  // 面板层级裁剪在 TagDropdown 单监听分流——本菜单 Esc 由其先行消化）
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') props.onClose()
@@ -62,30 +55,11 @@ export function TagLifecycleMenu(props: {
         <button
           type="button"
           role="menuitem"
-          className={`${MENU_ITEM_STYLE} disabled:opacity-50`}
-          style={{ color: 'var(--text)' }}
-          disabled={!props.canMerge}
-          onClick={() => props.onMerge(tag)}
-        >
-          合并到…
-        </button>
-        <button
-          type="button"
-          role="menuitem"
           className={MENU_ITEM_STYLE}
           style={{ color: 'var(--text)' }}
           onClick={() => props.onColor(tag)}
         >
           颜色…
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className={MENU_ITEM_STYLE}
-          style={{ color: 'var(--danger)' }}
-          onClick={() => props.onDelete(tag)}
-        >
-          删除
         </button>
       </div>
     </>

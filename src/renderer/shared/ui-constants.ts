@@ -13,7 +13,7 @@
  *   ACTION_FAILED 旧名退役，统一 OP_FAILED）
  * - STATUS_POLL_MS：AiNotesStatus / ZcodeLinkSection（5s 门控轮询周期
  *   ——组件挂载期间，卸载清 interval，INV-14 成对）
- * - MENU_ITEM_STYLE：LineageNodeMenu / TagLifecycleMenu（fixed 右键菜单
+ * - MENU_ITEM_STYLE：LineageNodeMenu / TagDropdown 行菜单 / FolderMenu（fixed 右键菜单
  *   菜单项类名串——两处同型菜单项；原 ITEM_STYLE 旧名退役）
  *
  * 同域单源不驻本件：TAG_OP_FAILED（tags.store）/ COLUMN_GAP_*（pdf-item-
@@ -39,7 +39,7 @@ export const THEME_LABEL: Record<AppSettings['theme'], string> = {
 }
 
 /**
- * [F-TAGS-01] 标签着色三面单源（INV-86：TagFilter chip / TagEditor chip /
+ * [F-TAGS-01] 标签着色单源（INV-86：TagDropdown 面板色点 / TagEditor chip /
  * PaperRow 徽标——三面同源消费，禁各面自写 hex 拼接）。
  * color 非空 → 背景 hex+22 / 边框 1px solid hex+66（8 位 hex alpha 后缀，
  * 零 color-mix 依赖）；null → undefined（消费面保持现状默认——accent-soft

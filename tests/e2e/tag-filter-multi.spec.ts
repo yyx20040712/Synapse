@@ -5,21 +5,22 @@ import { join } from 'node:path'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * [P7E-06] 标签多选过滤 e2e（always-active，无工单门）。
+ * [P7E-06→F-UIRES-01 批 A U3] 标签多选过滤 e2e（TagFilter chip 面→TagDropdown
+ * 下拉迁移——一行一勾选 role=menuitemcheckbox aria-checked，toggle 即时生效）。
  *
  * 链路：种子三篇（甲挂 A+B/乙挂 A/丙无标签——交集分化+全列表对照锚）→
- * UI 打标签→选两标签（AND 交集→列表只甲）→取消一个（[A]→甲乙）→全清
- * （空选集收敛 undefined→甲乙丙全回归）。三态列表用 .lib-row 计数锚（T3-P3
- * 密度行；chip 文本=「名 ×N」mono 计数格式）
- * （自带重试=load 完成锚，防 loading 空窗误判缺席）+真实文本断言。
+ * UI 打标签→开面板勾两标签（AND 交集→列表只甲）→取消一个（[A]→甲乙）→
+ * 「清空已选」全清（空选集收敛 undefined→甲乙丙全回归）。三态列表用 .lib-row
+ * 计数锚。S3 锚（§3.9）：面板「标签筛选/已选 N/清空已选」+行勾选
+ * menuitemcheckbox aria-checked。
  */
-test('标签多选过滤：两标签交集→取消一个→全清回全列表', async () => {
+test('标签多选过滤：面板勾选两标签交集→取消一个→清空已选回全列表', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e6-'))
 
-  // 第一跳：应用自建库表（tag-lifecycle.spec 同配方——不 import src 内部模块）
+  // 第一跳：应用自建库表（不 import src 内部模块）
   await bootstrapMigrations(userData)
 
-  // 三篇种子（甲乙=票面双文献双标签分化主体；丙=全列表对照锚——三态列表可区分）
+  // 三篇种子（甲乙=双文献双标签分化主体；丙=全列表对照锚——三态列表可区分）
   const papers = [
     { id: 'e2e-p7e6-a', title: 'P7E06 甲文献', sha: 'a'.repeat(64) },
     { id: 'e2e-p7e6-b', title: 'P7E06 乙文献', sha: 'b'.repeat(64) },
@@ -34,7 +35,7 @@ test('标签多选过滤：两标签交集→取消一个→全清回全列表',
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  // —— UI 打标签：甲=「多选A」+「多选B」；乙=「多选A」（tag-lifecycle.spec 同法）——
+  // —— UI 打标签：甲=「多选A」+「多选B」；乙=「多选A」——
   const tagInput = win.getByLabel('新增标签')
   async function tagPaper(title: string, ...names: string[]): Promise<void> {
     await win.getByText(title).first().click()
@@ -47,29 +48,39 @@ test('标签多选过滤：两标签交集→取消一个→全清回全列表',
   await tagPaper('P7E06 甲文献', '多选A', '多选B')
   await tagPaper('P7E06 乙文献', '多选A')
 
-  // 视图切换强制 LibraryPage 卸载/重挂→TagFilter refresh（chips 就位——既有契约）
+  // 视图切换强制 LibraryPage 卸载/重挂→TagDropdown refresh（数据就位——既有契约）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
-  await expect(win.getByRole('button', { name: '多选A ×2' })).toBeVisible({ timeout: 10_000 })
-  await expect(win.getByRole('button', { name: '多选B ×1' })).toBeVisible({ timeout: 10_000 })
+
+  // 开面板（钮=「标签 ▾」；S3 锚：面板头两文本+行勾选 aria）
+  await win.locator('.lib-dd-btn').click()
+  const panel = win.locator('.lib-dd-panel')
+  await expect(panel).toBeVisible({ timeout: 10_000 })
+  await expect(panel.getByText('标签筛选')).toBeVisible()
+  await expect(panel.getByText('已选 0')).toBeVisible()
+  const rowA = panel.getByRole('menuitemcheckbox').filter({ hasText: '多选A' })
+  const rowB = panel.getByRole('menuitemcheckbox').filter({ hasText: '多选B' })
+  await expect(rowA).toHaveCount(1)
+  await expect(rowA).toHaveAttribute('aria-checked', 'false')
 
   // —— 交集 [A,B]：列表只甲（乙=单挂 A 出局、丙=无标签出局）——
-  await win.getByRole('button', { name: '多选A ×2' }).click()
-  await win.getByRole('button', { name: '多选B ×1' }).click()
+  await rowA.click()
+  await expect(rowA).toHaveAttribute('aria-checked', 'true')
+  await expect(panel.getByText('已选 1')).toBeVisible()
+  await rowB.click()
   await expect(win.locator('.lib-row')).toHaveCount(1, { timeout: 10_000 })
   await expect(win.getByText('P7E06 甲文献').first()).toBeVisible()
   await expect(win.getByText('P7E06 乙文献')).toHaveCount(0)
   await expect(win.getByText('P7E06 丙文献')).toHaveCount(0)
 
   // —— 取消 B → [A]：甲乙在场（丙仍出局——与全清态区分的对照锚）——
-  await win.getByRole('button', { name: '多选B ×1' }).click()
+  await rowB.click()
+  await expect(rowB).toHaveAttribute('aria-checked', 'false')
   await expect(win.locator('.lib-row')).toHaveCount(2, { timeout: 10_000 })
-  await expect(win.getByText('P7E06 甲文献').first()).toBeVisible()
-  await expect(win.getByText('P7E06 乙文献').first()).toBeVisible()
   await expect(win.getByText('P7E06 丙文献')).toHaveCount(0)
 
-  // —— 全清 → 空选集收敛 undefined：甲乙丙全回归（零过滤全列表）——
-  await win.getByRole('button', { name: '多选A ×2' }).click()
+  // —— 「清空已选」→ 空选集收敛 undefined：甲乙丙全回归（零过滤全列表）——
+  await panel.getByRole('button', { name: '清空已选' }).click()
   await expect(win.locator('.lib-row')).toHaveCount(3, { timeout: 10_000 })
   for (const t of ['P7E06 甲文献', 'P7E06 乙文献', 'P7E06 丙文献']) {
     await expect(win.getByText(t).first()).toBeVisible({ timeout: 10_000 })

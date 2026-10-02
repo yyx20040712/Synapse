@@ -110,7 +110,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
       () => new Promise<EmptyOk>((r) => { resolveInvoke = r })
     )
     await render(<ImportDropZone onImported={() => undefined} />)
-    await click('导入 PDF 文件')
+    await click('导入 PDF')
     expect(statusText()).toBe('正在打开选择窗口…')
     await emit(ev('s1', { phase: 'copying', current: 1, total: 2, fileName: '论文一.pdf' }))
     expect(statusText()).toBe('复制文件（1/2） 论文一.pdf')
@@ -126,7 +126,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
   it('busy 中异 sessionId 事件→文案不变（旧会话污染被滤）', async () => {
     stubApi.import_.fromDialog.mockImplementation(() => new Promise<EmptyOk>(() => undefined))
     await render(<ImportDropZone onImported={() => undefined} />)
-    await click('导入 PDF 文件')
+    await click('导入 PDF')
     await emit(ev('live', { phase: 'copying', current: 1, total: 3, fileName: '本会话.pdf' }))
     expect(statusText()).toBe('复制文件（1/3） 本会话.pdf')
     await emit(ev('stale', { phase: 'extracting', current: 3, total: 3, fileName: '旧会话.pdf' }))
@@ -140,7 +140,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
     expect(statusText()).toBeNull()
     // 深断言：idle 事件若写了 state 或锚定了会话身份，后续本会话首事件会被
     // 异身份过滤误吞——此处必须照常更新
-    await click('导入 PDF 文件')
+    await click('导入 PDF')
     await emit(ev('live2', { phase: 'copying', current: 1, total: 1, fileName: '新会话.pdf' }))
     expect(statusText()).toBe('复制文件（1/1） 新会话.pdf')
   })

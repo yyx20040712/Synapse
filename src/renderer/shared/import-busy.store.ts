@@ -3,7 +3,7 @@
  *
  * ── 行为层 ──
  * - 单布尔态：ImportDropZone 的 runImport 入口置 true / finally 置 false
- *  （唯一写入方）；消费方=FilterBar 文件夹区（FolderFilter）与脉络页图切换器
+ *  （唯一写入方）；消费方=FolderNav 左栏导航（[F-UIRES-01]）与脉络页图切换器
  *  （[F-LGRAPH-01①U4] NavGraphPicker）——busy 期禁切文件夹/图（S2：导入进行中切换会被拒）
  *
  * ── 架构层 ──

@@ -12,6 +12,7 @@ import { SettingsPage } from '../features/settings/SettingsPage'
 import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
+import { OPEN_LINEAGE_EVENT } from '../shared/open-lineage-bus'
 import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
@@ -26,20 +27,17 @@ import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
 import { ErrorBoundary } from './ErrorBoundary'
 
-/** [T3-U1] dataset.theme 合法档校验（启动注入值消费位——非法/缺省=undefined
- *  走 ?? light 原兜底；三值枚举与 appSettingsSchema 同源） */
+/** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
   return value === 'light' || value === 'dark' || value === 'sepia' ? value : undefined
 }
 
 /**
- * [T3-U1] 状态条自动保存槽 worst-of 聚合（纯函数——票面②：tab 双源分档 ∪
- * lineage saveStatus →三态真文本；null=无可写面信号槽省略）。序=
- * error > saving > saved。[回炉 R2/W3 终裁分档] annoDirty（annotations 面
- * api 失败残留——真失败）→error 档；notePending（notes 面 pendingEdit
- * 镜像=在途+失败混合，打字防抖窗常 true）→saving 档「保存中…」=未落库
- * 统称（打字期禁红色假警报）；有已打开 tab（标注/笔记可写面）且全干净=
- * saved；无 tab 且 lineage 空闲=null（禁假数据——不显「已保存」造作信号）。
+ * [T3-U1] 状态条自动保存槽 worst-of 聚合（纯函数——tab 双源分档 ∪ lineage
+ * saveStatus →三态真文本；null=槽省略）。序=error > saving > saved；
+ * [回炉 R2/W3 终裁分档] annoDirty=真失败→error；notePending=在途+失败混合
+ * →saving；lineage dirty=[②U1] 会话暂存未落库如实呈现；干净+有 tab=saved；
+ * 无 tab 空闲=null（禁假「已保存」造作信号）。
  */
 function autosaveWorstOf(
   annoDirty: boolean,
@@ -57,15 +55,11 @@ function autosaveWorstOf(
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
-  // TABS-04：聚合 dirty（任一已打开 tab 任一写面）变化沿 push 上报 main——
-  // close 拦截判定读 main 侧缓存，不在 close 事件内反向询问 renderer。
-  // LG-03 扩面（ADR-0014 接缝条款+INV-22）：图视图保存态≠saved 即脏——
-  // 组合根单点扩（tab dirty ∪ lineage dirty），TABS-04 行为面零触碰
-  // 两 hook 必须无条件调用（P7-C 崩溃修复 2026-08-27）：`||` 短路会使
-  // tab dirty=true 的渲染缺席 useLineageDirty 的 hooks——同一 fiber 两次
-  // 渲染 hooks 数量不同（Rules of Hooks 违规），生产 bundle 无 dev 警告，
-  // commit 阶段 effect 链错位崩 areHookInputsEqual（回归锁=
-  // tests/unit/renderer/app-quit-dirty.test.tsx）
+  // TABS-04：聚合 dirty（任一 tab 任一写面）变化沿 push 上报 main（close 拦截
+  // 读 main 缓存）。LG-03 扩面（ADR-0014+INV-22）：图保存态≠saved 即脏——组合根
+  // 单点扩（tab ∪ lineage dirty）。两 hook 必须无条件调用（P7-C 崩溃修复
+  // 2026-08-27）：`||` 短路→hooks 数量随渲染漂移（Rules of Hooks 违规，
+  // commit 链错位崩；回归锁=app-quit-dirty.test.tsx）
   const tabDirty = useTabDirtyAggregate()
   const lineageDirty = useLineageDirty()
   const quitDirty = tabDirty || lineageDirty
@@ -123,17 +117,23 @@ export function App(): JSX.Element {
       .catch(() => undefined)
   }, [quitDirty, lineageDirty])
 
-  // "打开文献"请求：切到阅读器 tab（请求本体的补读/监听在 ReaderPage，见 open-paper-bus）
+  // 跨页事件桥订阅（单 effect 合并挂载）："打开文献"切阅读器（补读/监听在
+  // ReaderPage，见 open-paper-bus）；[F-UIRES-01 R7/P-8]"在脉络图中打开"切
+  // 脉络（FolderNav 右键→requestOpenLineage 广播；缺省图=库页 folderScope 接缝）
   useEffect(() => {
-    const handler = (): void => setView('reader')
-    window.addEventListener(OPEN_PAPER_EVENT, handler)
-    return () => window.removeEventListener(OPEN_PAPER_EVENT, handler)
+    const toReader = (): void => setView('reader')
+    const toLineage = (): void => setView('lineage')
+    window.addEventListener(OPEN_PAPER_EVENT, toReader)
+    window.addEventListener(OPEN_LINEAGE_EVENT, toLineage)
+    return () => {
+      window.removeEventListener(OPEN_PAPER_EVENT, toReader)
+      window.removeEventListener(OPEN_LINEAGE_EVENT, toLineage)
+    }
   }, [])
 
   // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
-  // 课题名/篇数=workspace items+currentId 推导；脉络计数=lineage nodes/edges；
-  // 已选=library selectedId 0/1；主题名=THEME_LABEL 单源（ui-constants）。
-  // [F-WS-02] 课题名显示位=selectDisplayWsName（引导态=待选择——INV-87）
+  // 课题名/篇数/脉络计数/已选 0-1/主题名单源推导；[F-WS-02] 显示位=
+  // selectDisplayWsName（引导态=待选择——INV-87）
   const wsItems = useWorkspaceStore((s) => s.items)
   const wsCurrentId = useWorkspaceStore((s) => s.currentId)
   const wsCurrent = wsItems.find((w) => w.id === wsCurrentId)
@@ -223,7 +223,7 @@ export function App(): JSX.Element {
         <Rail view={view} onView={setView} />
         <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
-            {view === 'library' && <LibraryPage />}
+            {view === 'library' && <LibraryPage guideHidden={wsGuide} />}
             {view === 'reader' && <ReaderPage />}
             {view === 'settings' && <SettingsPage />}
             {view === 'lineage' && <LineagePage />}

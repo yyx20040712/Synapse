@@ -3,8 +3,10 @@
    专属值一律 var() 载体，三族恒定值走 --shadow-sel-glow/--shadow-cta/
    --accent-ink）。旧卡片网格族（网格容器/卡片族/角饰/宝石位——类名不列，
    结构锁负锚见 library-cards.test）已随「方案切换=删除旧方案」退役；
-   .lib-chip 类名沿用作标签胶囊新语义（99px 圆角+mono ×N 计数）。由
-   LibraryPage.tsx import（feature 树唯一挂载点）。══ */
+   标签胶囊族（chip）亦随 TagFilter 退役删除（[F-UIRES-01]——dd 下拉族接替）。
+   [F-UIRES-01] 资源管理器形态域（FolderNav 左栏/星标列/dd 下拉/导入条/拖拽
+   命中）分域拆件=library-explorer.css（CSS 450 行上限——F-CSS-01 口径）。
+   由 LibraryPage.tsx 一并 import（feature 树挂载点不变）。══ */
 
 /* ── 筛选行（mockup .filter-row 语汇；wrap=窄窗溢出兜底——mockup 单行无
    wrap，保功能面三下拉后宽度预算不同，自裁申报）── */
@@ -54,31 +56,6 @@
 /* 键盘焦点环（门一 d1-W2 回炉补）：input 自身 outline:none 后容器承接——
    focus-within 描边换 accent，焦点可见性零回归 */
 .lib-search:focus-within { border-color: var(--accent); }
-/* 标签胶囊（TagFilter 消费——mockup .chip/.chip.on 逐值；计数 .n mono ×N） */
-.lib-chip {
-  font-size: var(--fs-caption);
-  padding: 4.5px 10px;
-  border-radius: 99px;
-  border: 1px solid var(--line);
-  color: var(--dim);
-  background: var(--panel);
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-  font-family: inherit;
-}
-.lib-chip-n { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
-.lib-chip-on {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-soft);
-  font-weight: 600;
-}
-.lib-chip-on .lib-chip-n { color: var(--accent); }
-.lib-chip:focus-visible { outline: 1px solid var(--accent); }
-/* chips 容器（TagFilter 根——筛选行内弹性段） */
-.lib-chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; }
 /* 下拉语汇（集合/年份/排序三选统一——mockup .sort 逐值） */
 .lib-sort {
   font-size: var(--fs-body);
@@ -93,12 +70,13 @@
   cursor: pointer;
   font-family: inherit;
 }
-.lib-sort-end { margin-left: auto; }
-/* 筛选生效态（门一 d1-W1 回炉补——集合/年份下拉选中即亮，退役的旧
-   .lib-chip-on 可见性语义在此恢复：accent 描边+accent 字） */
+/* 筛选生效态（门一 d1-W1 回炉补——年份下拉选中即亮：accent 描边+accent 字） */
 .lib-sort-on { border-color: var(--accent); color: var(--accent); }
 /* ── 页体与密度列表（mockup .lib-body/.cols/.list/.row 逐值）── */
-.lib-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+/* [RR1-1/d1-B1] 行布局：FolderNav 全高纵贯+右列（导入条/筛选行/error/体）——
+   导入条与筛选行只横跨主区（设计稿 §3.1 mockup .frame 子序） */
+.lib-page { display: flex; flex-direction: row; height: 100%; min-height: 0; }
+.lib-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
 .lib-body { flex: 1; display: flex; min-height: 0; }
 .lib-main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
 .lib-listbox { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -323,13 +301,3 @@
   font-size: var(--fs-body);
   padding: 24px;
 }
-
-/* ── ImportDropZone 重皮肤（金框退役→--line 虚线中性族；拖入辉光=accent 族
-   ——mockup 无此组件位，语汇自裁申报）── */
-.lib-dropzone {
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-m);
-  background: transparent;
-  transition: box-shadow var(--dur-lazy) ease, border-color var(--dur-lazy) ease;
-}
-.lib-dropzone-dragging { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

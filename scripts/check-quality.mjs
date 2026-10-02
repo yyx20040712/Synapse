@@ -96,7 +96,7 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 // 引用 library 仍是红线。
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
-  ['src/renderer/features/library/FilterBar.tsx', ['tags/TagFilter']],
+  ['src/renderer/features/library/FilterBar.tsx', ['tags/TagDropdown']],
   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
   ['src/renderer/features/reader/panels/ReaderNotesPanel.tsx', ['notes/notes.store']],
   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],

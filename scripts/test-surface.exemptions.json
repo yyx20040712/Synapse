@@ -2807,6 +2807,96 @@
       "caseTitle": "T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位",
       "reason": "F-LGRAPH-01②U4/A5「已绑定文献」徽章随行 9 收编重整（core UI 消费面全退役——绑定态隐式承载于详情域+data-binding 断言保持）；断言位改星标禁用呈现（panel-star）",
       "rulingLink": "docs/design/2026-10-01_f-lgraph01-editor-design-final.md"
+    },
+    {
+      "file": "tests/e2e/import-drag.spec.ts",
+      "assertionText": "expect(win.getByRole('button', { name: '导入 PDF 文件', exact: true })).toBeVisible()",
+      "reason": "R4 按钮文案勘误：「导入 PDF 文件」→「导入 PDF」（主控裁定 mockup 非锚点处准确性优先），断言文本随迁",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#5"
+    },
+    {
+      "file": "tests/e2e/tag-filter-multi.spec.ts",
+      "caseTitle": "标签多选过滤：两标签交集→取消一个→全清回全列表",
+      "reason": "TagFilter chip 面→TagDropdown 下拉迁移（S3 锚=menuitemcheckbox aria-checked/清空已选），用例按新形态改写",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.3"
+    },
+    {
+      "file": "tests/e2e/tag-lifecycle.spec.ts",
+      "caseTitle": "标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈）",
+      "reason": "P-11 用户终裁：下拉行右键仅改名+颜色两入口，merge/delete UI 入口随批退役（IPC 通道零触碰）——用例改写为两件版",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "筛选行语汇：search 290px+shadow-card；chip 99px 圆角+on 态 accent-soft；sort 8px 圆角",
+      "reason": "R10：.lib-chip 胶囊族随 TagFilter 退役删除（方案切换=删除旧方案），断言迁 dd 下拉族（library-explorer.css 分域件）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#4"
+    },
+    {
+      "file": "tests/unit/renderer/tag-filter-multi.test.tsx",
+      "fileScope": true,
+      "reason": "R5/R6：TagFilter 全件退役，多选面由新件 tag-dropdown.test.tsx 承接（勾选/即时生效/TAG_FILTER_MAX/死 id 顺序全量）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#4"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "S2 删除选中标签：先 onFilterChange(null) 清死 id 筛选，后 onMutated（invocationCallOrder 锚）",
+      "reason": "P-11：标签删除 UI 入口随批退役——INV-53 顺序契约在批 A 无 UI 入口（merge/delete 退役）=防御保留零判别力锚，顺序契约测试待 F-TAGS-02 批恢复入口时补",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "删除非选中标签：筛选不动（onFilterChange 零调用），仅 onMutated",
+      "reason": "P-11：标签删除 UI 入口随批退役（IPC 通道零触碰）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "S3 合且源=选中：同 S2 顺序（源 id 已消失）；目标 chip 点选即确认",
+      "reason": "P-11：标签合并 UI 入口随批退役（IPC 通道零触碰）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "S4 合且目标=选中：筛选不动（target id 稳定，仅计数增）",
+      "reason": "P-11：标签合并 UI 入口随批退役（IPC 通道零触碰）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "S8 重命名对话框：预填现名；提交双击 busy 守卫防重复提交（rename 仅一次）",
+      "reason": "入口形态迁移（chip 右键→TagDropdown 面板行右键）——用例按新入口改写，busy 守卫断言零变承接",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.3"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "S9 tags.length===1 时菜单「合并到…」禁用（无其他目标）",
+      "reason": "P-11：合并入口随批退役，两件菜单无禁用态面",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "W3：菜单开→按 Escape→菜单关闭（keydown 关闭契约，unmount 清理）",
+      "reason": "W4 承接：Esc 层级=最上层弹层先关（行菜单先于面板）——用例按分层语义改写",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.3"
+    },
+    {
+      "file": "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
+      "caseTitle": "N1：delete 提交飞行中取消被阻断（按钮禁用+Esc/遮罩 onClose no-op），resolve 成功后才关",
+      "reason": "P-11：标签删除 UI 入口随批退役（IPC 通道零触碰）——N1 busy 禁关契约由 tag-color-dialog.test.tsx 颜色面同构用例承接",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#P-11"
+    },
+    {
+      "file": "tests/unit/renderer/folder-filter.test.tsx",
+      "fileScope": true,
+      "reason": "RR1-12 补登+RR2-2 勘正：FolderFilter 全件退役（17 例）——三态/右键三件/行内编辑/删除流/回退/busy 由 folder-nav(+edit).test.tsx 承接；W1/W2 删除在途族三用例已移植 folder-nav.test.tsx（RR2-2，useFolderDelete 本体零改）",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#4"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": ".lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）",
+      "reason": "RR1-1/d1-B1 布局构图重排断言适调：断言面扩展（FolderNav=.lib-page 直子全高纵贯+导入条驻右列——设计稿 §3.1 .frame 子序），基批旧断言集随之退役",
+      "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.1"
     }
   ]
 }

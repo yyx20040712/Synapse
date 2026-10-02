@@ -1,5 +1,5 @@
 /**
- * [F-DELCONF-01] useFolderDelete —— 文件夹删除流（FolderFilter 拆件：删除
+ * [F-DELCONF-01] useFolderDelete —— 文件夹删除流（FolderFilter 拆件起源；[F-UIRES-01] 宿主=FolderNav：删除
  * 预检/静默判据/分流逻辑独立，组件文件 250 行红线）。 FolderDeleteDialog
  * 保留弹窗形态零改（本件只管「要不要弹」的分流）。
  *
@@ -30,8 +30,8 @@
  *     requestDelete(folder: Folder): Promise<void>
  *     handleDeleted(deletedId: string): void
  *   }
- * - props.getScope(): 现值筛选态读取器（FolderFilter 侧 scopeRef 每渲染
- *   同步注入——受控 props 即 store 投影，见 FolderFilter W2 注）
+ * - props.getScope(): 现值筛选态读取器（FolderNav 侧 scopeRef 每渲染
+ *   同步注入——受控 props 即 store 投影，见 FolderNav W2 注）
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 写路径=api 直调（unwrap+toast——folders 域无 store 先例同族）；筛选

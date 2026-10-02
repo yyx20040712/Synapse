@@ -104,8 +104,8 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
 
   // 库页删除该文件夹（确认弹窗执行）
   await win.getByRole('button', { name: '文献库' }).click()
-  await win.locator('button[aria-pressed]').filter({ hasText: '即将删除的图' }).click({ button: 'right' })
-  await win.getByRole('menuitem', { name: '删除' }).click()
+  await win.locator('.lib-fn-row').filter({ hasText: '即将删除的图' }).click({ button: 'right' })
+  await win.getByTestId('folder-menu').getByRole('menuitem', { name: '删除文件夹' }).click()
   await win.getByRole('dialog').getByRole('button', { name: '删除文件夹' }).click()
 
   // 脉络页：当前图失效→回退主图（__main__ 恒在场）+主图空态文案

@@ -6,15 +6,15 @@
  *   ——皮肤=.lib-search 290px（mockup .search 逐值）；占位提示=叠加 span
  *   （HTML 占位属性名属 quality 占位标记关卡禁词——空值时显示等价承载）
  * - 下拉：年份（library.store 列表数据推导）、排序三选——统一 .lib-sort 语汇
- *   （mockup .sort 逐值）；排序下拉 margin-left:auto 收口行尾。
- *   [F-FOLDER-02·A]「按文件夹筛选」集合下拉退役删除（方案切换=删除旧方案
- *   ——paper_collections 退役后 collections 通道失去筛选语义）；接替=
- *   FolderFilter chip 文件夹区（folderScope 判别联合三态+行内 CRUD+新建）
- * - TagFilter 组件嵌于此（标签过滤，P7E-06 多选 AND 交集——空选集收敛 undefined）
- *   ——皮肤=.lib-chip 胶囊（99px 圆角+mono「×N」计数，library.css）
- * - P7E-01：TagFilter onMutated 注入 library load（标签改名/合并/删除后行内
- *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagFilter 零 import library.store）
- * - [F-TAGS-01] onTagColorMap 透传（TagFilter 颜色映射→LibraryPage 态→
+ *   （mockup .sort 逐值）。
+ *   [F-UIRES-01 批 A] FolderFilter 文件夹区随批退役（方案切换=删除旧方案）
+ *   ——接替=FolderNav 左栏导航（folderScope 判别联合三态+行内 CRUD+新建）
+ * - [F-UIRES-01 批 A U3] TagDropdown 行尾嵌于此（标签过滤下拉，P7E-06 多选
+ *   AND 交集——空选集收敛 undefined；列序=搜索 290→年份→排序→弹性空档→
+ *   标签行尾——设计稿 N-6）；onMutated 注入 library load（标签改名/着色后行内
+ *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagDropdown 零 import
+ *   library.store）
+ * - [F-TAGS-01] onTagColorMap 透传（TagDropdown 颜色映射→LibraryPage 态→
  *   PaperRow 徽标着色——tags 域数据经组合根逐级下发的合规通道）
  *
  * ── 接口层 ──
@@ -32,8 +32,7 @@ import { useEffect, useState } from 'react'
 import type { LibraryQuery, LibrarySort } from '@shared/models/paper'
 import { useDebounce } from '../../shared/hooks/useDebounce'
 import { useLibraryStore } from './library.store'
-import { FolderFilter } from './FolderFilter'
-import { TagFilter } from '../tags/TagFilter'
+import { TagDropdown } from '../tags/TagDropdown'
 
 const SORT_LABEL: Record<LibrarySort, string> = {
   added_desc: '最近添加',
@@ -84,15 +83,6 @@ export function FilterBar(props: {
           </span>
         )}
       </div>
-      <TagFilter
-        selectedTagIds={query.tagIds ?? []}
-        onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
-        onMutated={() => void loadLibrary()}
-        onColorMapChange={props.onTagColorMap}
-      />
-      {/* [F-FOLDER-02·A] 文件夹区（重制件——旧集合下拉退役删除）：
-          onMutated=library 重载（计数/列表联动，TagFilter onMutated 同链） */}
-      <FolderFilter query={query} onChange={onChange} onMutated={() => void loadLibrary()} />
       <select
         aria-label="按年份筛选"
         className={`lib-sort${query.year !== undefined ? ' lib-sort-on' : ''}`}
@@ -108,7 +98,7 @@ export function FilterBar(props: {
       </select>
       <select
         aria-label="排序方式"
-        className="lib-sort lib-sort-end"
+        className="lib-sort"
         value={query.sort}
         onChange={(e) => onChange({ sort: e.target.value as LibrarySort })}
       >
@@ -118,6 +108,13 @@ export function FilterBar(props: {
           </option>
         ))}
       </select>
+      <div className="lib-filter-spacer" />
+      <TagDropdown
+        selectedTagIds={query.tagIds ?? []}
+        onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
+        onMutated={() => void loadLibrary()}
+        onColorMapChange={props.onTagColorMap}
+      />
     </div>
   )
 }

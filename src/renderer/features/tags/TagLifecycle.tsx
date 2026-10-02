@@ -1,7 +1,9 @@
 // b3: P7-E
 /**
- * [P7E-01] TagLifecycle —— 标签生命周期三对话框（TagFilter 子组件，组件≤250
- * 拆件；菜单在 TagLifecycleMenu.tsx）。Dialog 底座，LineageTagDialog 同型。
+ * [F-UIRES-01 批 A U3] TagLifecycle —— 标签生命周期对话框（TagDropdown 子组件
+ * ；TagMergeDialog/TagDeleteDialog 随 TagFilter 退役删除——P-11 用户终裁=下拉
+ * 行右键仅改名+颜色两入口，merge/delete UI 入口消失、IPC 通道与 main 面零触）。
+ * Dialog 底座，LineageTagDialog 同型。
  * 写路径收口 tags.store 命令型动作；busy 守卫用 ref（同步检查——同批多次
  * click 在 React 重渲染前也只放行一次，S8）；失败 toast+对话框保持开（S6）；
  * busy 飞行中禁关（N1 回炉：取消按钮 disabled+Dialog onClose 包装 no-op——
@@ -12,7 +14,7 @@ import { useRef, useState } from 'react'
 import { Dialog } from '../../shared/ui/Dialog'
 import { showToast } from '../../shared/ui/Toast'
 import { TAG_NAME_MAX, type Tag } from '@shared/models/tag'
-import { useTagsStore, type TagWithCount } from './tags.store'
+import { useTagsStore } from './tags.store'
 
 /**
  * busy 守卫（ref 同步检查防同批双击——S8；setBusy 只管按钮禁用态渲染）。
@@ -116,114 +118,3 @@ export function TagRenameDialog(props: {
   )
 }
 
-export function TagMergeDialog(props: {
-  source: TagWithCount
-  /** 其他标签（排除源——点选即确认，TagEditor suggestions 同型 chip 列表） */
-  targets: TagWithCount[]
-  onClose(): void
-  onMutated: MutatedPayload
-}): JSX.Element {
-  const guard = useBusyGuard()
-  const mergeTags = useTagsStore((s) => s.mergeTags)
-  // N1：busy 飞行中禁关（Dialog Esc/遮罩/✕ 全路径包装）
-  const requestClose = (): void => guard.requestClose(props.onClose)
-
-  async function pick(targetId: string): Promise<void> {
-    if (!guard.begin()) return
-    const r = await mergeTags(props.source.id, targetId)
-    if (r.ok) {
-      props.onMutated(props.source.id) // 源 id 已消失（S3）
-      props.onClose()
-    } else {
-      showToast(r.error.message, 'error')
-      guard.end()
-    }
-  }
-
-  return (
-    <Dialog open title={`合并标签：${props.source.name}`} onClose={requestClose}>
-      <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
-        将「{props.source.name}」的文献挂接全部并入目标标签（双挂文献自动去重），随后删除该标签。
-      </p>
-      <div className="mt-2 flex flex-wrap gap-1" aria-label="合并目标列表">
-        {props.targets.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className="rounded-full border px-2 py-0.5 text-xs disabled:opacity-50"
-            style={{ borderColor: 'var(--border)' }}
-            disabled={guard.busy}
-            onClick={() => void pick(t.id)}
-          >
-            {t.name}{' '}
-            <span className="lib-chip-n">{`×${t.paperCount}`}</span>
-          </button>
-        ))}
-      </div>
-      <div className="mt-3 flex justify-end gap-2">
-        <button
-          type="button"
-          className="rounded border px-3 py-1 text-xs disabled:opacity-50"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
-          disabled={guard.busy}
-          onClick={requestClose}
-        >
-          取消
-        </button>
-      </div>
-    </Dialog>
-  )
-}
-
-export function TagDeleteDialog(props: {
-  tag: TagWithCount
-  onClose(): void
-  onMutated: MutatedPayload
-}): JSX.Element {
-  const guard = useBusyGuard()
-  const deleteTag = useTagsStore((s) => s.deleteTag)
-  // N1：busy 飞行中禁关（Dialog Esc/遮罩/✕ 全路径包装）
-  const requestClose = (): void => guard.requestClose(props.onClose)
-
-  async function confirm(): Promise<void> {
-    if (!guard.begin()) return
-    const r = await deleteTag(props.tag.id)
-    if (r.ok) {
-      props.onMutated(props.tag.id) // 该 id 已消失（S2）
-      props.onClose()
-    } else {
-      showToast(r.error.message, 'error')
-      guard.end()
-    }
-  }
-
-  return (
-    <Dialog open title={`删除标签：${props.tag.name}`} onClose={requestClose}>
-      <p className="text-xs">
-        {props.tag.paperCount > 0
-          ? `将删除标签「${props.tag.name}」及其在 ${props.tag.paperCount} 篇文献上的挂接`
-          : `将删除标签「${props.tag.name}」——尚无文献挂接`}
-      </p>
-      <div className="mt-3 flex justify-end gap-2">
-        <button
-          type="button"
-          className="rounded border px-3 py-1 text-xs disabled:opacity-50"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
-          disabled={guard.busy}
-          onClick={requestClose}
-        >
-          取消
-        </button>
-        <button
-          type="button"
-          className="rounded px-3 py-1 text-xs text-white disabled:opacity-50"
-          style={{ background: 'var(--danger)' }}
-          disabled={guard.busy}
-          onClick={() => void confirm()}
-        >
-          确认删除
-        </button>
-      </div>
-    </Dialog>
-  )
-}

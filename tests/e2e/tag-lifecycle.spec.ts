@@ -2,28 +2,28 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { TAG_COLOR_PRESETS } from '../../src/shared/constants'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * [P7E-01] 标签生命周期 e2e（always-active，无工单门）。
+ * [P7E-01→F-UIRES-01 批 A U3] 标签生命周期 e2e（下拉行右键=改名+颜色两件
+ * [P-11 用户终裁]；merge/delete UI 入口随批退役——IPC 通道与 main 面零触碰）。
  *
- * 链路：种子三篇（甲挂双标签/乙挂单标签/丙无标签——筛区分化）→UI 打标签→
- * 右键改名（chip 与 PaperRow 徽标真实文本更新；选中态 id 稳定筛选不动——S5）→
- * [T3-P3] 值面随迁：chip 文本=「名 ×N」；行徽标类=.lib-t-mini；行根=.lib-row →
- * 合并（源 chip 消失+目标计数 1→2）→删除（选中态先筛选只剩甲乙，删除后死
- * 筛选自动清空→全列表在场含丙——S2 装配级）。全程断言渲染真实文本。
+ * 链路：种子两篇（甲挂双标签/乙挂单标签）→UI 打标签→下拉面板行右键改名
+ * （TagRenameDialog：行名与 PaperRow 徽标真实文本更新；id 稳定筛选不动）→
+ * 颜色（TagColorDialog：预设 swatch→确定→面板行色点着色）。全程断言渲染
+ * 真实文本。
  */
-test('标签生命周期：改名→合并→删除（chip/行徽标真实文本+死筛选自愈）', async () => {
+test('标签生命周期（两件版）：下拉行右键改名→行/徽标真文本更新+颜色→色点着色', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e-'))
 
   // 第一跳：应用自建库表（workspaces.spec 同配方——不 import src 内部模块）
   await bootstrapMigrations(userData)
 
-  // 三篇种子（只列行不开阅读器——无需真实 PDF 文件；sha 互异避唯一约束）
+  // 两篇种子（只列行不开阅读器——无需真实 PDF 文件；sha 互异避唯一约束）
   const papers = [
     { id: 'e2e-p7e-a', title: 'P7E 甲文献', sha: 'a'.repeat(64) },
-    { id: 'e2e-p7e-b', title: 'P7E 乙文献', sha: 'b'.repeat(64) },
-    { id: 'e2e-p7e-c', title: 'P7E 丙文献', sha: 'c'.repeat(64) }
+    { id: 'e2e-p7e-b', title: 'P7E 乙文献', sha: 'b'.repeat(64) }
   ] as const
   for (const p of papers) {
     const fileRef = `${p.sha.slice(0, 2)}/${p.sha.slice(2, 4)}/${p.sha}.pdf`
@@ -41,27 +41,29 @@ test('标签生命周期：改名→合并→删除（chip/行徽标真实文本
     for (const name of names) {
       await tagInput.fill(name)
       await tagInput.press('Enter')
-      // 已挂接 chip 的 × 按钮出现（aria-label 锚——chip span 含 × 子按钮，
-      // 纯文本 exact 匹配不到；Enter→upsert+attach→onChanged 重读完成锚）
+      // 已挂接 chip 的 × 按钮出现（aria-label 锚——Enter→upsert+attach→
+      // onChanged 重读完成锚）
       await expect(win.getByLabel(`移除标签 ${name}`)).toBeVisible({ timeout: 10_000 })
     }
   }
   await tagPaper('P7E 甲文献', '水治', '核心')
   await tagPaper('P7E 乙文献', '水质')
 
-  // 视图切换强制 LibraryPage 卸载/重挂→TagFilter refresh（chips 就位——
+  // 视图切换强制 LibraryPage 卸载/重挂→TagDropdown refresh（数据就位——
   // TagEditor 的 upsert 路径不刷新 tags.store，挂载 refresh 是既有契约）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
+  await win.locator('.lib-dd-btn').click()
+  const panel = win.locator('.lib-dd-panel')
+  await expect(panel).toBeVisible({ timeout: 10_000 })
   const menu = win.getByTestId('tag-menu')
-  await expect(win.getByRole('button', { name: '水治 ×1' })).toBeVisible({ timeout: 10_000 })
 
-  // —— 改名：右键「水治」→「水质监测」——
+  // —— 改名：行右键「水治」→对话框→「水质监测」（预填现名）——
   // 先选中该筛选（setQuery→load 后行徽标可见——改名的对照面在场）
-  await win.getByRole('button', { name: '水治 ×1' }).click()
+  await panel.getByRole('menuitemcheckbox').filter({ hasText: '水治' }).click()
   const rowA = win.locator('.lib-row', { hasText: 'P7E 甲文献' })
   await expect(rowA.locator('.lib-t-mini', { hasText: '水治' })).toHaveCount(1)
-  await win.getByRole('button', { name: '水治 ×1' }).click({ button: 'right' })
+  await panel.getByRole('menuitemcheckbox').filter({ hasText: '水治' }).click({ button: 'right' })
   await expect(menu).toBeVisible()
   await menu.getByRole('menuitem', { name: '重命名' }).click()
   const dialog = win.getByRole('dialog')
@@ -69,50 +71,36 @@ test('标签生命周期：改名→合并→删除（chip/行徽标真实文本
   await expect(renameInput).toHaveValue('水治') // 预填现名
   await renameInput.fill('水质监测')
   await dialog.getByRole('button', { name: '保存' }).click()
-  // chip 更新（store 链式 refresh）；错拼名 chip 消失
-  await expect(win.getByRole('button', { name: '水质监测 ×1' })).toBeVisible({ timeout: 10_000 })
-  await expect(win.getByRole('button', { name: '水治 ×1' })).toHaveCount(0)
+  await expect(dialog).toBeHidden({ timeout: 10_000 })
+  // 面板行更新（store 链式 refresh）；错拼名行消失
+  await expect(panel.getByRole('menuitemcheckbox').filter({ hasText: '水质监测' })).toBeVisible({
+    timeout: 10_000
+  })
+  await expect(panel.getByRole('menuitemcheckbox').filter({ hasText: '水治' })).toHaveCount(0)
   // PaperRow 徽标真实文本更新（onMutated→library load）
   await expect(rowA.locator('.lib-t-mini', { hasText: '水质监测' })).toHaveCount(1)
   await expect(rowA.locator('.lib-t-mini', { hasText: '水治' })).toHaveCount(0)
   // S5：id 稳定——筛选不动，甲行仍在筛选结果内
   await expect(rowA).toBeVisible()
 
-  // —— 合并：「核心」→「水质」；源 chip 消失+目标计数 1→2 ——
-  await win.getByRole('button', { name: '核心 ×1' }).click({ button: 'right' })
-  await menu.getByRole('menuitem', { name: '合并到…' }).click()
-  await dialog.getByRole('button', { name: '水质 ×1' }).click() // 目标 chip 点选即确认
-  // 变更完成锚：对话框关闭（mutation+链式 refresh+unmount 落定）——先锚再断
-  // chips，防「chips 已刷新而对话框尚未卸载」的瞬态双匹配（strict violation
-  // 首次 resolve 即红不重试——两 render 间隙实测可被捕获）
+  // —— 颜色：行右键「水质」→颜色…→预设 swatch→确定→面板行色点着色 ——
+  // [RR1-16/e2e F6] 「水质」hasText 撞「水质监测」——行全文正则锚「名+计数」
+  // （主控亲执修正：filter({has}) 内定位器在行子树重根评估，panel 根链恒不匹配）
+  const rowOfExactName = (name: string) =>
+    panel.getByRole('menuitemcheckbox').filter({ hasText: new RegExp(`^${name}\\d+$`) })
+  await rowOfExactName('水质').click({ button: 'right' })
+  await menu.getByRole('menuitem', { name: '颜色…' }).click()
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`).click()
+  await dialog.getByRole('button', { name: '确定' }).click()
   await expect(dialog).toBeHidden({ timeout: 10_000 })
-  await expect(win.getByRole('button', { name: '核心 ×1' })).toHaveCount(0, { timeout: 10_000 })
-  await expect(win.getByRole('button', { name: '水质 ×2' })).toBeVisible({ timeout: 10_000 })
-
-  // —— 删除：选中「水质」→筛选只剩甲乙（丙被滤掉）；删除后死筛选自动清空→全列表 ——
-  // P7E-06 配套：v2 多选 toggle 下「点新 chip」=叠加非换选——先取消改名段
-  // 选中的「水质监测」（:62 点选其前身「水治」，id 稳定延续），恢复本段
-  // 「单选水质」的换选序列语义（选中集=[水质]，甲乙均挂）
-  await win.getByRole('button', { name: '水质监测 ×1' }).click()
-  await win.getByRole('button', { name: '水质 ×2' }).click()
-  // 先锚列表加载完成再断缺席（loading 中 rows 为空≠被滤掉——workspaces.spec 回炉教训）
-  await expect(win.getByText('正在加载文献列表…')).toBeHidden({ timeout: 10_000 })
-  await expect(win.getByText('P7E 丙文献')).toHaveCount(0) // 筛选生效中
-  await expect(rowA).toBeVisible() // 合并后甲乙双挂——均在筛选结果内
-  await win.getByRole('button', { name: '水质 ×2' }).click({ button: 'right' })
-  await menu.getByRole('menuitem', { name: '删除' }).click()
-  await expect(dialog.getByText('将删除标签「水质」及其在 2 篇文献上的挂接')).toBeVisible()
-  await dialog.getByRole('button', { name: '确认删除' }).click()
-  // 变更完成锚（同合并段——对话框关闭先行）
-  await expect(dialog).toBeHidden({ timeout: 10_000 })
-  // chip 消失 + 死筛选自愈（S2 装配级）：全列表在场（丙回归证明 tagId 已清）
-  await expect(win.getByRole('button', { name: '水质 ×2' })).toHaveCount(0, { timeout: 10_000 })
-  for (const t of ['P7E 甲文献', 'P7E 乙文献', 'P7E 丙文献']) {
-    await expect(win.getByText(t).first()).toBeVisible({ timeout: 10_000 })
-  }
-  // 甲行徽标仅剩「水质监测」（核心已并入、水质已删）
-  await expect(rowA.locator('.lib-t-mini')).toHaveCount(1)
-  await expect(rowA.locator('.lib-t-mini')).toHaveText('水质监测')
+  // 色点着色（真 Chromium 计算样式：#e11d48 → rgb 三元组）
+  const preset = TAG_COLOR_PRESETS[0]
+  const rgb = [1, 3, 5].map((i) => parseInt(preset.slice(i, i + 2), 16)).join(', ')
+  const dot = rowOfExactName('水质').locator('.lib-dd-dot')
+  await expect
+    .poll(async () => dot.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toContain(rgb)
 
   await app.close()
 })

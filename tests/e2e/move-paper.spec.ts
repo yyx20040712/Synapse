@@ -134,7 +134,7 @@ test('移动 F1→F2 边清理+移出→未归档节点删+S1 队列闸拒绝', 
   ).toBe(true)
   expect((await graphOf(win, f2)).nodes.map((n) => n.paperId)).toEqual(['e2e-mp-c'])
   await win.getByRole('button', { name: '文献库' }).click()
-  await win.locator('button[aria-pressed]').filter({ hasText: '未归档' }).click()
+  await win.locator('.lib-fn-row').filter({ hasText: '未归档' }).click()
   await expect(win.getByText('移动乙文献')).toBeVisible({ timeout: 10_000 })
 
   // 收尾复位 dirty（S1 注入的 quit-dirty 信号会触发退出拦截——app.close 挂起）

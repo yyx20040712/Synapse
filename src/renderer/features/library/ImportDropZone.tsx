@@ -1,34 +1,35 @@
 /**
- * [SR-LIB-06] ImportDropZone —— 导入入口（工单：done / weak）
+ * [SR-LIB-06→F-UIRES-01 批 A U2] ImportDropZone —— 导入条（42px 横条形态，
+ * mockup .ibar 逐值；ImportTargetSelect 随批退役——「仅入文献库」选项退役
+ * 2026-09-30 用户裁决，目标恒定语义 R2：folder 态=该文件夹；无筛选/未归档=
+ * 主图 MAIN_GRAPH_ID，由 LibraryPage 投影注入）。
  *
  * ── 行为层 ──
- * - 两个按钮：「导入 PDF 文件」→ api.import_.fromDialog({})；
- *   「导入文件夹」→ api.import_.fromFolder({})
- * - 拖拽（P7E-02，原 v1 预留注记已兑现）：drop → window.apiDrag.importDropped(files)
- *   ——File 经 preload webUtils 解析（.pdf 滤+数量上限）→ import/from-paths，
- *   renderer 全程不接触路径串；busy 期 drop 短路提示（零 invoke）
+ * - 两按钮：「导入 PDF」→ api.import_.fromDialog({})；「导入文件夹」→
+ *   api.import_.fromFolder({})（R4 文案——hint=「或将 PDF 拖到此处导入」）
+ * - 拖拽（P7E-02）：drop → window.apiDrag.importDropped(files)——File 经
+ *   preload webUtils 解析（.pdf 滤+数量上限）→ import/from-paths，renderer
+ *   全程不接触路径串；busy 期 drop 短路提示（零 invoke）
+ * - drop 热区=导入条本体 div 级保持零变（R3——div 级热区语义不变）
+ * - 目标徽标（.lib-import-target）：恒显「导入到：X」——X=当前夹名或主图名
+ *   （folders.list 名解析=每渲染 find；取数两路=挂载+folders.changed）；
+ *   导入成功逐 imported 论文 papers.moveFolder 挂接（移动语义自动入图）；
+ *   失败逐篇 toast 继续（文献已入库，归属失败可见）
  * - 进行中：订阅 apiEvents.onImportProgress 显示进度（文件名 current/total）
- * - 进度事件会话身份过滤（F-D4 B 面，INV-52——范式=corpus-export.store INV-18
- *   同族）：busy=false 时忽略（终局后跨通道迟到事件不写 state——渲染门之外的
- *   第二道门）；sessionRef 首事件锚定会话身份，异身份忽略（reload 后旧会话残留
- *   事件不得污染新会话进度显示）；runImport 入口重置 sessionRef=null。busy 的
- *   订阅回调读旧闭包问题用 busyRef 镜像解决（state 与 ref 双写）。
- *   残余窗（照 corpus-export.store 注释同口径）：新会话 start 后首事件前——
- *   旧事件须跨越终局+用户点击两层，理论窗
- * - 完成后 toast 汇总（成功 n/重复 m/失败 k）并经 onImported 通知父级刷新 library.store
- *   [F-FOLDER-02·E]「导入到」选择器（拆件 ImportTargetSelect）：目标=当前文件夹
- *   →导入成功后逐 imported 论文 papers.moveFolder 挂接（移动语义自动入图——
- *   最简合规路径，主进程 import 面零触碰）；仅入文献库→零挂接（无节点行）；
- *   busy 全程置 import-busy store（S2 消费源——文件夹区/图切换器禁切）
- * - 取消（空结果）静默
+ * - 进度事件会话身份过滤（F-D4 B 面，INV-52）：busy=false 忽略+sessionRef
+ *   首事件锚定异身份忽略；busyRef 镜像解决订阅回调旧闭包
+ * - 完成后 toast 汇总（成功 n/重复 m/失败 k）并经 onImported 通知父级刷新
+ *   library.store；取消（空结果）静默
  *
  * ── 接口层 ──
  * - export function ImportDropZone(props: { onImported(): void;
  *     targetFolderId?: string | null }): JSX.Element
+ * - targetFolderId=导入目标文件夹 id（folder 态=该夹；无筛选/未归档=主图
+ *   '__main__'——null 容错=零挂接，投影单源在 LibraryPage）
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 路径合法来源=main 侧系统对话框 + 拖拽 File 经 preload webUtils 解析
- *   （apiDrag 单口，P7E-02/INV-07 修订）；renderer 无路径字面量（INV-09 不变）
+ *   （apiDrag 单口，INV-07 修订）；renderer 无路径字面量（INV-09 不变）
  * - 进度订阅在卸载时退订；busy 期间按钮禁点防重复发起
  */
 import { useEffect, useRef, useState } from 'react'
@@ -41,7 +42,6 @@ import { useImportBusyStore } from '../../shared/import-busy.store'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
 import type { ToastKind } from '../../shared/ui/Toast'
-import { ImportTargetSelect } from './ImportTargetSelect'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const IMPORT_FAILED = '导入失败'
@@ -51,6 +51,9 @@ const DROP_HINT = '松开以导入 PDF 文件'
 
 /** busy 期再拖入的短路提示（D5——不发起第二次导入） */
 const IMPORT_BUSY_HINT = '导入进行中，请稍候'
+
+/** [R4] hint 文案（div 级热区事实口径——非 mockup「窗口任意位置」勘误版） */
+const DRAG_HINT = '或将 PDF 拖到此处导入'
 
 /** 进度阶段中文标签（与 ImportProgressEvent.phase 一一对应） */
 const PHASE_LABEL: Record<ImportProgressEvent['phase'], string> = {
@@ -93,8 +96,8 @@ function reportImportResult(result: ImportResult, onImported: () => void): void 
 
 export function ImportDropZone(props: {
   onImported: () => void
-  /** [F-FOLDER-02·E] folder 筛选态文件夹 id（null=无筛选——「导入到」默认口径：
-   *  无筛选=仅入文献库；folder 态=该文件夹）；缺省 null */
+  /** [F-UIRES-01 R2] 导入目标文件夹 id（folder 态=该夹；无筛选/未归档=主图
+   *  '__main__'——LibraryPage 投影单源；null 容错=零挂接） */
   targetFolderId?: string | null
 }): JSX.Element {
   const { onImported } = props
@@ -102,23 +105,19 @@ export function ImportDropZone(props: {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<ImportProgressEvent | null>(null)
   const [dragging, setDragging] = useState(false)
-  // [F-FOLDER-02·E] 导入目标（''=仅入文献库）：默认随 folder 筛选态联动重置
-  // （主控细化口径——筛选切走即换默认，用户显式选择只活到下次筛选变化）
-  const [target, setTarget] = useState('')
-  useEffect(() => setTarget(targetFolderId ?? ''), [targetFolderId])
-  // 文件夹名解析（folders.list 自取静态参考数据——计数非本面语义，仅取名）：
-  // targetFolderId 变化（本页筛选切换/新建后选中）+folders.changed（他页变更）
-  // 双触发重取——挂载单取会漏掉挂载后新建的文件夹名
+  // [RR1-9/d1-N7 勘正] 文件夹名解析（folders.list 自取静态参考数据——仅取名）：
+  // 取数两路=挂载+folders.changed（他页变更/导入链 moveFolder 广播）；名解析=
+  // 每渲染 find（targetFolderId 切换不重取——数据已覆盖全部文件夹行）
   const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
   useEffect(() => {
     void loadFolders()
-  }, [loadFolders, targetFolderId])
+  }, [loadFolders])
   useEffect(
     () => apiEvents.onFoldersChanged(() => void loadFolders()),
     [loadFolders]
   )
   const targetName = folders?.find((f) => f.id === targetFolderId)?.name
-  // busy 全局信号（S2 消费源——文件夹区/图切换器禁切）
+  // busy 全局信号（S2 消费源——FolderNav 导航/脉络页图切换器禁切）
   const setImportBusy = useImportBusyStore((s) => s.setBusy)
   // busy 镜像（订阅回调读旧闭包问题——state 与 ref 双写，F-D4）
   const busyRef = useRef(false)
@@ -147,13 +146,13 @@ export function ImportDropZone(props: {
     setProgress(null)
     try {
       const result = await unwrap(call())
-      // [F-FOLDER-02·E] 目标=当前文件夹→逐 imported 论文移动挂接（moveFolder
-      // 移动语义：未归档→folder 自动建节点——「导入到文件夹=节点自动建」）；
-      // 失败逐篇 toast 继续（S1 闸拒绝等场景——文献已入库，归属失败可见）
-      if (result.imported.length > 0 && target !== '') {
+      // [F-UIRES-01 R2] 目标恒定：逐 imported 论文 moveFolder 挂接（移动语义
+      // 自动入图——目标=该夹或主图）；失败逐篇 toast 继续（S1 闸拒绝等场景
+      // ——文献已入库，归属失败可见）
+      if (result.imported.length > 0 && targetFolderId != null) {
         for (const p of result.imported) {
           try {
-            await unwrap(api.papers.moveFolder({ paperId: p.id, toFolderId: target }))
+            await unwrap(api.papers.moveFolder({ paperId: p.id, toFolderId: targetFolderId }))
           } catch (e) {
             showToast(
               e instanceof ApiClientError
@@ -183,8 +182,10 @@ export function ImportDropZone(props: {
     )
   }
 
-  // 拖拽悬停高亮（D1）；导入动作在 drop 落点（handleDrop）
+  // 拖拽悬停高亮（D1）；[F-UIRES-01 §2.5] 两域判别——仅响应 OS 文件拖入
+  // （types 含 Files）；内部行拖拽（自定义 MIME）不触发导入辉光/热区
   function handleDragOver(e: DragEvent<HTMLDivElement>): void {
+    if (!e.dataTransfer.types.includes('Files')) return
     e.preventDefault()
     setDragging(true)
   }
@@ -194,6 +195,8 @@ export function ImportDropZone(props: {
   function handleDrop(e: DragEvent<HTMLDivElement>): void {
     e.preventDefault() // 同时阻止浏览器默认打开文件
     setDragging(false)
+    // [F-UIRES-01 §2.5] 内部行拖拽释放在导入条=非导入语义（无 Files）→忽略
+    if (!e.dataTransfer.types.includes('Files')) return
     if (busyRef.current) {
       showToast(IMPORT_BUSY_HINT, 'info')
       return
@@ -207,35 +210,28 @@ export function ImportDropZone(props: {
       onDragOver={handleDragOver}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className={`lib-dropzone flex flex-col items-center gap-3 p-6${dragging ? ' lib-dropzone-dragging' : ''}`}
+      className={`lib-dropzone${dragging ? ' lib-dropzone-dragging' : ''}`}
     >
-      <p className="text-sm" style={{ color: dragging ? 'var(--accent)' : 'var(--text-dim)' }}>
-        {dragging ? DROP_HINT : '将 PDF 拖到此处，或使用按钮导入'}
-      </p>
-      <div className="flex items-center gap-2">
-        {/* [小挂账第 8 条] 按钮风格统一：PDF 钮 primary→secondary 描边款+字号/
-            高度各降一档（md→sm）——与「导入文件夹」同排同款；交互语义零变 */}
+      <div className="lib-ibar-main">
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => startButtonImport('dialog')}>
-          导入 PDF 文件
+          导入 PDF
         </Button>
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => startButtonImport('folder')}>
           导入文件夹
         </Button>
-        {/* [F-FOLDER-02·E]「导入到」选择器（拆件 ImportTargetSelect——组件 250
-            行红线；与导入按钮同行=零垂直增量，dropzone 高度变化会挤压详情抽屉
-            可视高——tag-input e2e 实证） */}
-        <ImportTargetSelect
-          value={target}
-          folderId={targetFolderId}
-          folderName={targetName}
-          disabled={busy}
-          onChange={setTarget}
-        />
+        <span className="lib-ibar-hint">{dragging ? DROP_HINT : DRAG_HINT}</span>
       </div>
+      <span className="lib-import-target">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z" />
+        </svg>
+        {`导入到：`}
+        <b>{targetName ?? '…'}</b>
+      </span>
       {busy && (
-        <p role="status" className="text-xs" style={{ color: 'var(--text-dim)' }}>
+        <span role="status" className="lib-ibar-progress">
           {progress !== null ? progressText(progress) : '正在打开选择窗口…'}
-        </p>
+        </span>
       )}
     </div>
   )

@@ -50,6 +50,11 @@ import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 // .lib-rule* 三段住 theme-buttons.css（DiamondRule 语法位——T3-P3 起库域
 // 退役、settings 域消费保留，本件续锚防回漂）
 const css = readFileSync(join(process.cwd(), 'src/renderer/features/library/library.css'), 'utf8')
+// [F-UIRES-01] 资源管理器形态域分域拆件（CSS 450 上限）——两文件合读续锚
+const cssExplorer = readFileSync(
+  join(process.cwd(), 'src/renderer/features/library/library-explorer.css'),
+  'utf8'
+)
 const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-buttons.css'), 'utf8')
 
 /** 列表行夹具：默认带年份/期刊/两标签（venue/year/citedByCount 由用例覆写） */
@@ -111,7 +116,7 @@ afterEach(async () => {
 })
 
 describe('T3-P3 密度列表渲染（PaperList 五列结构）', () => {
-  it('五列表头在场：.lib-cols 五格文本=编号/题名 · 期刊/年月/引用/标签（档次列 F-LIBUI-01 退役）', async () => {
+  it('六格表头在场：.lib-cols=★占位/编号/题名 · 期刊/年月/引用/标签（★=P-9 星标列；档次列 F-LIBUI-01 退役）', async () => {
     await render(
       <PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />
     )
@@ -119,14 +124,15 @@ describe('T3-P3 密度列表渲染（PaperList 五列结构）', () => {
     expect(cols).not.toBeNull()
     const cells = Array.from(cols?.querySelectorAll('span') ?? [])
     expect(cells.map((c) => c.textContent)).toEqual([
+      '★',
       '编号',
       '题名 · 期刊',
       '年月',
       '引用',
       '标签'
     ])
-    // 列头列宽类逐一在场（46/flex1/74/52/180 与行列对齐）
-    for (const cls of ['lib-c-id', 'lib-c-title', 'lib-c-year', 'lib-c-cite', 'lib-c-tags']) {
+    // 列头列宽类逐一在场（30[★]/46/flex1/74/52/180 与行列对齐——INV-73 同步扩）
+    for (const cls of ['lib-c-star', 'lib-c-id', 'lib-c-title', 'lib-c-year', 'lib-c-cite', 'lib-c-tags']) {
       expect(cols?.querySelector(`.${cls}`), `表头列类 ${cls}`).not.toBeNull()
     }
     expect(cols?.querySelector('.lib-c-tier'), '档次列头已退役（F-LIBUI-01 ④）').toBeNull()
@@ -324,11 +330,12 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     expect(css).not.toContain('.lib-tag')
   })
 
-  it('筛选行语汇：search 290px+shadow-card；chip 99px 圆角+on 态 accent-soft；sort 8px 圆角', () => {
+  it('筛选行语汇：search 290px+shadow-card；标签下拉钮 8px 圆角+on 态 accent-soft；sort 8px 圆角（[F-UIRES-01] chip 族→dd 族迁）', () => {
     expect(css).toMatch(/\.lib-search\s*\{[^}]*width:\s*290px;[^}]*var\(--shadow-card\)/)
-    expect(css).toMatch(/\.lib-chip\s*\{[^}]*border-radius:\s*99px/)
-    expect(css).toMatch(
-      /\.lib-chip-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\);[^}]*font-weight:\s*600/
+    expect(`${css}${cssExplorer}`, 'chip 胶囊族已随 TagFilter 退役删除').not.toContain('.lib-chip')
+    expect(cssExplorer).toMatch(/\.lib-dd-btn\s*\{[^}]*border-radius:\s*8px/)
+    expect(cssExplorer).toMatch(
+      /\.lib-dd-btn-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\);[^}]*color:\s*var\(--accent\);[^}]*font-weight:\s*600/
     )
     expect(css).toMatch(/\.lib-sort\s*\{[^}]*border-radius:\s*8px/)
   })
@@ -358,6 +365,12 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
     expect(host?.querySelector('.lib-body')).not.toBeNull()
     expect(host?.querySelector('.lib-cols')).not.toBeNull()
     expect(host?.querySelector('.lib-list')).not.toBeNull()
+    // [RR1-1/d1-B1] 布局构图：FolderNav 与主区并列纵贯（.lib-page 行布局）——
+    // 导入条/筛选行只横跨主区（.lib-page 直子=导航+右列，非全宽横带）
+    expect(host?.querySelector('.lib-page > .lib-fnav'), 'FolderNav=.lib-page 直子（全高纵贯）').not.toBeNull()
+    expect(host?.querySelector('.lib-page > .lib-dropzone'), '导入条不再全宽横在 .lib-body 之上').toBeNull()
+    expect(host?.querySelector('.lib-page > .lib-main > .lib-dropzone'), '导入条驻右列顶部（42px 同高带）').not.toBeNull()
+    expect(host?.querySelector('.lib-main > .lib-filter-row'), '筛选行驻右列（46px）').not.toBeNull()
     // d1 复审 N1 回炉：表头驻 .lib-list 内（sticky 吸附链的结构前提——回退兄弟位即红）
     expect(host?.querySelector('.lib-list .lib-cols')).not.toBeNull()
     const drawer = host?.querySelector('.lib-drawer')
@@ -367,7 +380,8 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
   })
 
   it('d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）', async () => {
-    stubApi.library.list.mockResolvedValueOnce({ ok: true, data: { items: [], total: 0 } })
+    // [RR1-2] FolderNav unfiled 计数查询共享 library.list 桩——全查询面空态
+    stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
     await render(<LibraryPage />)
     expect(host?.querySelector('.lib-cols')).toBeNull()
     expect(host?.textContent).toContain('暂无文献')

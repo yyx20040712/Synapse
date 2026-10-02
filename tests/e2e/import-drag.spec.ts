@@ -18,7 +18,7 @@ test('拖拽导入：合成 File 被 preload 天然拒（toast 真实文本）+�
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
   // 按钮回归：两个既有导入入口在场（拖拽为增量，不取代按钮路径）
-  await expect(win.getByRole('button', { name: '导入 PDF 文件', exact: true })).toBeVisible()
+  await expect(win.getByRole('button', { name: '导入 PDF', exact: true })).toBeVisible()
   await expect(win.getByRole('button', { name: '导入文件夹' })).toBeVisible()
 
   // D2 装配级：drop 合成 File → preload 解析 '' → none → toast 中文文案（零崩溃）
@@ -27,7 +27,10 @@ test('拖拽导入：合成 File 被 preload 天然拒（toast 真实文本）+�
   await zone.evaluate((el) => {
     const ev = new Event('drop', { bubbles: true, cancelable: true })
     Object.defineProperty(ev, 'dataTransfer', {
-      value: { files: [new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'synthetic.pdf')] }
+      value: {
+        types: ['Files'],
+        files: [new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'synthetic.pdf')]
+      }
     })
     el.dispatchEvent(ev)
   })
