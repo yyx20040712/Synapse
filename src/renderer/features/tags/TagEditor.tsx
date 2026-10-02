@@ -36,6 +36,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { TAG_NAME_MAX } from '@shared/models/tag'
 import { api, unwrap, ApiClientError } from '../../api/client'
+import { ICON_PLUS, ICON_X } from '../../shared/icons'
 import { showToast } from '../../shared/ui/Toast'
 import { tagColorStyle } from '../../shared/ui-constants'
 import { useComposingCommit } from '../../shared/inline-keys'
@@ -152,6 +153,8 @@ export function TagEditor(props: {
         )}
         {tags.map((t) => {
           const colorStyle = tagColorStyle(colorById.get(t.id) ?? null)
+          // [F-UIRES-02 批 B R3] chip × 字符→ICON_X（title/aria-label 同源保活）
+          const removeLabel = `移除标签 ${t.name}`
           return (
             <span
               key={t.id}
@@ -161,14 +164,16 @@ export function TagEditor(props: {
               {t.name}
               <button
                 type="button"
-                aria-label={`移除标签 ${t.name}`}
+                aria-label={removeLabel}
+                title={removeLabel}
+                className="syn-icon-btn"
                 disabled={busy}
                 style={{ color: 'var(--text-dim)' }}
                 // mousedown 阻焦点转移：残留文本点 × 的同手势竞逐解（d1'-W3/INV-85④）
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => void removeTag(t.id)}
               >
-                ×
+                {ICON_X}
               </button>
             </span>
           )
@@ -203,10 +208,12 @@ export function TagEditor(props: {
             void createAndAttach()
           }}
         />
+        {/* [F-UIRES-02 批 B R8] 「添加」文字钮→ICON_PLUS（aria-label 受锁锚+title 同源） */}
         <button
           type="button"
           aria-label="添加标签"
-          className="rounded border px-2 py-1 text-xs disabled:opacity-50"
+          title="添加标签"
+          className="syn-icon-btn rounded border px-2 py-1 text-xs disabled:opacity-50"
           style={{ borderColor: 'var(--border)' }}
           disabled={busy}
           // mousedown 阻焦点转移：不触发输入框 blur——click 单路提交（三路互斥
@@ -217,7 +224,7 @@ export function TagEditor(props: {
             void createAndAttach()
           }}
         >
-          添加
+          {ICON_PLUS}
         </button>
       </div>
       {suggestions.length > 0 && (

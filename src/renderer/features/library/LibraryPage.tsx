@@ -29,6 +29,7 @@ import type { PaperSummary } from '@shared/models/paper'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { FilterBar } from './FilterBar'
 import { FolderNav } from './FolderNav'
 import { ImportDropZone } from './ImportDropZone'
@@ -114,14 +115,8 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
             role="alert"
           >
             <span>{error}</span>
-            <button
-              type="button"
-              className="rounded px-2 py-0.5"
-              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-              onClick={() => void load()}
-            >
-              重试
-            </button>
+            {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton */}
+            <RetryButton onClick={() => void load()} />
           </div>
         )}
         <div className="lib-body">

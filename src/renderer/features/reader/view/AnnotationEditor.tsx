@@ -12,6 +12,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
+import { ICON_REDO, ICON_SAVE, ICON_TRASH, ICON_UNDO, ICON_X } from '../../../shared/icons'
 import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
 import { useAnnotationDraft } from '../interact/use-annotation-draft'
 
@@ -106,27 +107,35 @@ export function AnnotationEditor(props: {
           }
         }}
       />
-      {/* 工具行：撤销/重做按钮对 + 右角保存状态标记（栈空 disabled） */}
+      {/* 工具行：撤销/重做按钮对 + 右角保存状态标记（栈空 disabled）。
+          [F-UIRES-02 批 B R5] 撤销/重做文字钮→图标+title 同源（data-testid
+          受锁锚零变）；sr-only span 保 textContent/accessible name */}
       <div className="flex items-center gap-1">
         <button
           type="button"
-          className={btn}
+          className={`${btn} syn-icon-btn`}
           style={{ borderColor: 'var(--border)' }}
           data-testid="annotation-editor-undo"
+          title="撤销"
+          aria-label="撤销"
           disabled={!draft.canUndo}
           onClick={draft.undoEdit}
         >
-          撤销
+          {ICON_UNDO}
+          <span className="sr-only">撤销</span>
         </button>
         <button
           type="button"
-          className={btn}
+          className={`${btn} syn-icon-btn`}
           style={{ borderColor: 'var(--border)' }}
           data-testid="annotation-editor-redo"
+          title="重做"
+          aria-label="重做"
           disabled={!draft.canRedo}
           onClick={draft.redoEdit}
         >
-          重做
+          {ICON_REDO}
+          <span className="sr-only">重做</span>
         </button>
         {(saveState === 'saved' || saveState === 'failed') && (
           <span
@@ -138,33 +147,45 @@ export function AnnotationEditor(props: {
           </span>
         )}
       </div>
+      {/* [F-UIRES-02 批 B R10] 保存/删除/取消三钮图标化（紧凑弹层底部行——
+          主控已裁）；sr-only 保 textContent（受锁 annotation-menu clickButton/
+          annotation-popups-autosave find '保存' 精确匹配面） */}
       <div className="flex items-center gap-1">
         <button
           type="button"
-          className={btn}
+          className={`${btn} syn-icon-btn`}
           style={{ background: 'var(--accent)', color: 'var(--panel)', borderColor: 'var(--accent)' }}
           disabled={busy}
+          title="保存"
+          aria-label="保存"
           onClick={() => onSave(comment)}
         >
-          保存
+          {ICON_SAVE}
+          <span className="sr-only">保存</span>
         </button>
         <button
           type="button"
-          className={btn}
+          className={`${btn} syn-icon-btn`}
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
           disabled={busy}
+          title="删除"
+          aria-label="删除"
           onClick={onDelete}
         >
-          删除
+          {ICON_TRASH}
+          <span className="sr-only">删除</span>
         </button>
         <button
           type="button"
-          className={`${btn} ml-auto`}
+          className={`${btn} syn-icon-btn ml-auto`}
           style={{ borderColor: 'var(--border)' }}
           disabled={busy}
+          title="取消"
+          aria-label="取消"
           onClick={onCancel}
         >
-          取消
+          {ICON_X}
+          <span className="sr-only">取消</span>
         </button>
       </div>
     </div>

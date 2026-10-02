@@ -36,6 +36,7 @@ import { useEffect, useState } from 'react'
 import type { EnrichStatus, PaperDetail } from '@shared/models/paper'
 import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { TagEditor } from '../tags/TagEditor'
 import { DrActions } from './DrActions'
 import { DrMetrics } from './DrMetrics'
@@ -111,14 +112,8 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           role="alert"
         >
           <span>{`加载详情失败：${error}`}</span>
-          <button
-            type="button"
-            className="rounded px-2 py-0.5"
-            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            onClick={() => void run()}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton */}
+          <RetryButton onClick={() => void run()} />
         </div>
       )
     }
@@ -148,14 +143,8 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
           role="alert"
         >
           <span>详情刷新失败，显示的是旧数据</span>
-          <button
-            type="button"
-            className="rounded px-2 py-0.5"
-            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            onClick={() => void run()}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton */}
+          <RetryButton onClick={() => void run()} />
         </div>
       )}
       <div className="lib-dr-head">

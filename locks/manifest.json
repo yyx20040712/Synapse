@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T14:47:56.6572396Z",
+    "generatedAt":  "2026-10-02T16:52:08.0752336Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -1072,6 +1072,14 @@
                   {
                       "path":  "tests/unit/renderer/toast.test.tsx",
                       "sha256":  "29b9f24cca275dfa92a37e576592d25a0d5ad9f3e79eafb18b86c1464a5f242f"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ui-iconify-buttons.test.tsx",
+                      "sha256":  "e9bd399392fe6bf61c3245cf5d60ad750a6b557ba12687eb6e50c713b5c02172"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/ui-icons-shared.test.tsx",
+                      "sha256":  "88fa038dcaf5f47fb6fb7eb0f01a3f4cfbbfc98a552cdf1931316b1f62619ca5"
                   },
                   {
                       "path":  "tests/unit/renderer/useAsync.test.tsx",

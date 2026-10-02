@@ -28,7 +28,9 @@
  */
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
+import { ICON_X } from '../../../shared/icons'
 import type { ReaderSearchStateName } from './reader-search.store'
+import { ICON_NEXT, ICON_PREV } from './toolbar-icons'
 
 export function ReaderSearchBox(props: {
   state: ReaderSearchStateName
@@ -110,14 +112,16 @@ export function ReaderSearchBox(props: {
           无匹配
         </span>
       ) : null}
-      <button type="button" className={btn} aria-label="上一个" onClick={onPrev}>
-        ‹
+      {/* [F-UIRES-02 批 B R3/R12] ‹›× 三钮图标化：‹› 沿用 toolbar-icons
+          ICON_PREV/NEXT+×→ICON_X；aria-label 受锁锚零变+title 补齐同源 */}
+      <button type="button" className={`${btn} syn-icon-btn`} aria-label="上一个" title="上一个" onClick={onPrev}>
+        {ICON_PREV}
       </button>
-      <button type="button" className={btn} aria-label="下一个" onClick={onNext}>
-        ›
+      <button type="button" className={`${btn} syn-icon-btn`} aria-label="下一个" title="下一个" onClick={onNext}>
+        {ICON_NEXT}
       </button>
-      <button type="button" className={btn} aria-label="关闭搜索" onClick={onClose}>
-        ×
+      <button type="button" className={`${btn} syn-icon-btn`} aria-label="关闭搜索" title="关闭搜索" onClick={onClose}>
+        {ICON_X}
       </button>
     </div>
   )

@@ -11,6 +11,7 @@
  */
 import { useEffect, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
+import { ICON_CHEVRONS_LEFT, ICON_CHEVRONS_RIGHT } from '../../shared/icons'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 import { readNavPrefs, writeNavPrefs } from './nav-pane-prefs'
@@ -90,15 +91,17 @@ export function LineageNavPane(props: {
   if (collapsed) {
     return (
       <aside className="lineage-nav collapsed" data-testid="lineage-nav-pane" style={{ width: '40px' }}>
+        {/* [F-UIRES-02 批 B R4] » 字符→双 chevron SVG（title/aria-label 同源保活） */}
         <button
           type="button"
-          className="nav-expand-btn"
+          className="nav-expand-btn syn-icon-btn"
           data-testid="lineage-nav-expand"
           title="展开导航窗格"
           aria-label="展开导航窗格"
           onClick={() => toggleCollapsed(false)}
         >
-          »
+          {ICON_CHEVRONS_RIGHT}
+          <span className="sr-only">展开导航窗格</span>
         </button>
       </aside>
     )
@@ -107,15 +110,17 @@ export function LineageNavPane(props: {
     <aside className="lineage-nav" data-testid="lineage-nav-pane" style={{ width: `${width}px` }}>
       <div className="nav-head">
         <span className="nav-title">导航</span>
+        {/* [F-UIRES-02 批 B R4] « 字符→双 chevron SVG（title/aria-label 同源保活） */}
         <button
           type="button"
-          className="nav-collapse-btn"
+          className="nav-collapse-btn syn-icon-btn"
           data-testid="lineage-nav-collapse"
           title="收起导航窗格"
           aria-label="收起导航窗格"
           onClick={() => toggleCollapsed(true)}
         >
-          «
+          {ICON_CHEVRONS_LEFT}
+          <span className="sr-only">收起导航窗格</span>
         </button>
       </div>
       <NavGraphPicker onFoldersChange={props.onFoldersChange} />

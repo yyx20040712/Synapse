@@ -46,6 +46,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
+import { RetryButton } from '../../../shared/ui/RetryButton'
 import { deriveSaveStatus, detectSaveFailed } from '../../../shared/save-status'
 import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import type { Annotation } from '@shared/models/annotation'
@@ -151,17 +152,14 @@ export function ReaderNotesPanel(props: {
           </span>
         )}
         {saveFailed && (
-          <button
-            type="button"
-            className="shrink-0 rounded border px-2 py-0.5 text-xs"
-            style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+          // [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（图标+title/aria-label 同源）
+          <RetryButton
+            className="shrink-0"
             onClick={() => {
               setSaveFailedByPaper((m) => ({ ...m, [paperId]: false }))
               saveSoon(paperId)
             }}
-          >
-            重试
-          </button>
+          />
         )}
       </div>
       <div className="relative min-h-0 flex-1 basis-24">
@@ -182,14 +180,8 @@ export function ReaderNotesPanel(props: {
       {loadFailed && (
         <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-dim)' }}>
           <span>{LOAD_FAILED}</span>
-          <button
-            type="button"
-            className="rounded border px-2 py-0.5"
-            style={{ borderColor: 'var(--border)' }}
-            onClick={() => runLoad(paperId)}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton */}
+          <RetryButton onClick={() => runLoad(paperId)} />
         </div>
       )}
       <div className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1 overflow-auto">

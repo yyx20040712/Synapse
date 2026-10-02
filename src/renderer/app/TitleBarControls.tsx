@@ -92,14 +92,18 @@ export function TitleBarControls(): JSX.Element {
   }
 
   const isMax = maximized === true
+  // [F-UIRES-02 批 B R11] 三键补 title（唯一缺 title 的已图标化件）——与
+  // aria-label 同源单变量（图标 10×10 既有规格沿承不迁）
+  const maxLabel = isMax ? '向下还原' : '最大化'
   return (
     <div className="titlebar-controls">
-      <button type="button" aria-label="最小化" className="titlebar-btn" onClick={() => send('minimize')}>
+      <button type="button" aria-label="最小化" title="最小化" className="titlebar-btn" onClick={() => send('minimize')}>
         {ICON_MINIMIZE}
       </button>
       <button
         type="button"
-        aria-label={isMax ? '向下还原' : '最大化'}
+        aria-label={maxLabel}
+        title={maxLabel}
         className="titlebar-btn"
         onClick={() => send('maximize-toggle')}
       >
@@ -108,6 +112,7 @@ export function TitleBarControls(): JSX.Element {
       <button
         type="button"
         aria-label="关闭"
+        title="关闭"
         className="titlebar-btn titlebar-btn-close"
         onClick={() => send('close')}
       >

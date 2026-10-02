@@ -16,6 +16,7 @@ import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import { TAG_NAME_MAX } from '@shared/models/tag'
+import { ICON_PLUS, ICON_X } from '../../shared/icons'
 import { inlineKeyDown, useComposingCommit } from '../../shared/inline-keys'
 
 /** 标签小片样式（红示意：红字小片——用户图7「红小块」） */
@@ -60,15 +61,17 @@ export function LineageSideTags(props: {
         {tags.map((t) => (
           <span key={t} data-testid="lineage-tag-chip" className="gap-0.75 px-1" style={SIDE_TAG_CHIP}>
             {t}
+            {/* [F-UIRES-02 批 B R3] chip × 字符→ICON_X；title 与 aria-label 同源 */}
             <button
               type="button"
               data-testid="lineage-tag-remove"
               aria-label={`移除标签 ${t}`}
-              className="leading-none"
+              title={`移除标签 ${t}`}
+              className="syn-icon-btn leading-none"
               style={{ color: 'var(--danger)' }}
               onClick={() => removeTag(t)}
             >
-              ×
+              {ICON_X}
             </button>
           </span>
         ))}
@@ -102,9 +105,14 @@ export function LineageSideTags(props: {
             addTag()
           }}
         />
+        {/* [F-UIRES-02 批 B R8] ＋ 字符→ICON_PLUS；补 aria-label「添加标签」
+            （盘点 #30 可达名缺失——title/aria-label 同源）；sr-only 保
+            textContent 恰=「+」（受锁 lineage-side-tags-keys:73 精确匹配面） */}
         <button
           type="button"
-          className="rounded border px-1.5 py-0.5 text-xs"
+          aria-label="添加标签"
+          title="添加标签"
+          className="syn-icon-btn rounded border px-1.5 py-0.5 text-xs"
           style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
           // [F-UIRES-02 R8] mousedown 阻焦点转移：不触发输入框 blur——click
           // 单路提交（TagEditor:213 先例）；组词期点击不提交（三路同守卫）
@@ -114,7 +122,8 @@ export function LineageSideTags(props: {
             addTag()
           }}
         >
-          +
+          {ICON_PLUS}
+          <span className="sr-only">+</span>
         </button>
       </div>
     </section>

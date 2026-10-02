@@ -14,6 +14,7 @@
  */
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { ICON_X } from '../icons'
 
 export function Dialog(props: {
   open: boolean
@@ -73,14 +74,17 @@ export function Dialog(props: {
           }}
         >
           <span>{title}</span>
+          {/* [F-UIRES-02 批 B] 关闭 X 图标化（杠杆=覆盖全域 9 对话框）：
+              ICON_X+title/aria-label 同源「关闭对话框」——文字 ✕ 退役 */}
           <button
             type="button"
             aria-label="关闭对话框"
-            className="rounded px-1 text-xs"
+            title="关闭对话框"
+            className="syn-icon-btn rounded px-1 text-xs"
             style={{ color: 'var(--text-dim)' }}
             onClick={onClose}
           >
-            ✕
+            {ICON_X}
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-4 py-3 text-sm">{children}</div>

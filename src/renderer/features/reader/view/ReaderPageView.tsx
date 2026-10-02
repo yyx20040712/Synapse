@@ -29,6 +29,7 @@
  */
 import type { MutableRefObject, ReactNode } from 'react'
 import type { Annotation } from '@shared/models/annotation'
+import { ICON_CHEVRON_RIGHT } from '../../../shared/icons'
 import type { PageScrollRequest } from './PageColumn'
 import type { PageLayout } from './page-column-geometry'
 import type { createReaderScrollProgress } from './scroll-progress'
@@ -145,9 +146,12 @@ export function ReaderPageView(props: {
               main: null
             }} />
         ) : (
-          <button type="button" className="shrink-0 self-start border-b border-r px-1 py-2 text-xs"
+          // [F-UIRES-02 批 B R4] 收起态「目录」文字钮→右向 chevron（与
+          // OutlineAside 收起钮成对镜像——aria-label/title 同源悬停提示）
+          <button type="button" className="syn-icon-btn shrink-0 self-start border-b border-r px-1.5 py-2 text-xs"
+            aria-label="展开侧栏（目录）" title="展开侧栏（目录）"
             style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={() => setOutlineOpen(true)}>
-            目录
+            {ICON_CHEVRON_RIGHT}
           </button>
         )}
         {mainContent}

@@ -23,6 +23,7 @@
 import { useEffect, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
@@ -130,14 +131,9 @@ export function LineagePage(): JSX.Element {
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
           <span>脉络图加载失败：{error}</span>
-          <button
-            type="button"
-            className="rounded px-2 py-1"
-            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            onClick={() => void load()}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（textContent 恰=
+              「重试」——受锁 lineage-timeline-page:256 精确匹配兼容面） */}
+          <RetryButton onClick={() => void load()} />
         </div>
       </div>
     )

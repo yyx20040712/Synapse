@@ -85,6 +85,52 @@
   transform: scale(0.96);
 }
 
+/* ══ [F-UIRES-02 批 B] 图标钮通用 svg 规格+共享重试钮 ══
+   .syn-icon-btn svg=功能小钮图标统一规格（toolbar-icons D7 同源：16px+
+   stroke currentColor+fill none+线宽 1.6——.titlebar-btn svg 先例；消费面
+   在既有类旁追加 .syn-icon-btn 即得规格，域内特例尺寸可覆写）；
+   .syn-retry=RetryButton 专属皮肤（图标化重试钮——统一取代 13 处文字重试
+   钮的 accent-soft 内联变体，简洁美观目标；hover=accent 提亮与 syn-btn
+   族同语言）。 */
+.syn-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+.syn-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
+.syn-retry {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.syn-retry:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* [RR1-2 门一 W3②/W2b] .ws-retry（workspace.css 域类=受锁测试 button.ws-retry
+   查询锚）与 .syn-retry 双挂：padding/border/background/color 四属性重叠，
+   两单类同特异性 (0,1,0) 胜负=样式表装载序（脆弱）——复合选择器升 (0,2,0)
+   显式固化统一皮肤终态（=批 B「重试钮视觉统一」裁决值） */
+.syn-retry.ws-retry {
+  padding: 3px 6px;
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
 /* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
    筛选区|列表与详情空态、R3-U4 设置分节复用同一语法；线段 min-width 24px+
    flex:1 窄窗防碰撞——设计定稿注意事项③）══ */

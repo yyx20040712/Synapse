@@ -14,6 +14,7 @@
  */
 import { useRef } from 'react'
 import { WORKSPACE_NAME_MAX } from '@shared/ipc/schemas'
+import { ICON_CHECK, ICON_X } from '../../shared/icons'
 import { inlineKeyDown, useComposingCommit } from '../../shared/inline-keys'
 
 export function WorkspaceRenameRow(props: {
@@ -65,9 +66,14 @@ export function WorkspaceRenameRow(props: {
           onSubmit(currentValue())
         }}
       />
+      {/* [F-UIRES-02 批 B R7] 确定/取消文字钮→ICON_CHECK/ICON_X（title 同源
+          +sr-only 保 textContent/accessible name——受锁 workspaces-page:255
+          button.ws-rename-ok 与 e2e name=「确定」面）；mousedown preventDefault
+          与 RR2 组词守卫=功能负载原样保留（批 A 门一 N6 接缝注记） */}
       <button
         type="button"
-        className="ws-rename-ok"
+        className="ws-rename-ok syn-icon-btn"
+        title="确定"
         // mousedown 阻焦点转移：焦点留 input——click 单路提交（防双发）
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
@@ -77,16 +83,19 @@ export function WorkspaceRenameRow(props: {
           onSubmit(currentValue())
         }}
       >
-        确定
+        {ICON_CHECK}
+        <span className="sr-only">确定</span>
       </button>
       <button
         type="button"
-        className="ws-rename-cancel"
+        className="ws-rename-cancel syn-icon-btn"
+        title="取消"
         // 同上：preventDefault 防点击夺焦触发 blur 先提交；取消=直设收起
         onMouseDown={(e) => e.preventDefault()}
         onClick={onCancel}
       >
-        取消
+        {ICON_X}
+        <span className="sr-only">取消</span>
       </button>
     </div>
   )

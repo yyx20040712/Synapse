@@ -34,6 +34,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote, AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
+import { ICON_CHEVRON_DOWN, ICON_CHEVRON_RIGHT } from '../../../shared/icons'
 import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../anchors/ai-note-style'
 
 /** question 分组（呈现序=AI_NOTE_QUESTIONS；空组剔除；组内条目按 ROLE_ORDER 排序） */
@@ -74,11 +75,15 @@ function RoleSection(props: {
         type="button"
         data-role-section={role}
         aria-expanded={expanded}
+        // [F-UIRES-02 批 B R8] ▾▸ 文本图标→SVG chevron 随态（段名文字保留）；
+        // 收起=右向/展开=下向（原 ▸/▾ 流派保真——RR1-3 最小视觉变更）；
+        // title 随态「展开/收起」——aria-expanded 受锁锚零变
+        title={expanded ? '收起' : '展开'}
         className="mt-0.5 flex w-full items-center gap-1 border-0 bg-transparent px-1 py-0.5 text-left text-xs"
         style={{ color: 'var(--text-dim)' }}
         onClick={onToggle}
       >
-        <span aria-hidden>{expanded ? '▾' : '▸'}</span>
+        <span aria-hidden className="rdr-role-chevron">{expanded ? ICON_CHEVRON_DOWN : ICON_CHEVRON_RIGHT}</span>
         {`${ROLE_LABEL[role]}(${items.length})`}
       </button>
       {expanded &&

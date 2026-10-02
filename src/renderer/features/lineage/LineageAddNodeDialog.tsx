@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { Dialog } from '../../shared/ui/Dialog'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import type { PaperSummary } from '@shared/models/paper'
 
 export interface LineageAddNodeDialogProps {
@@ -107,9 +108,8 @@ export function LineageAddNodeDialog(props: LineageAddNodeDialogProps): JSX.Elem
             {searchError !== null ? (
               <div role="alert" className="text-xs" style={{ color: 'var(--danger)' }}>
                 {searchError}
-                <button type="button" className="ml-2 underline" style={{ color: 'var(--accent)' }} onClick={() => setRetryToken((t) => t + 1)}>
-                  重试
-                </button>
+                {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton */}
+                <RetryButton className="ml-2" onClick={() => setRetryToken((t) => t + 1)} />
               </div>
             ) : searching ? (
               <p className="text-xs" style={{ color: 'var(--text-dim)' }}>搜索中…</p>

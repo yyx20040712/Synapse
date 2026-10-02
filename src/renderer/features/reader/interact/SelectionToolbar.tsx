@@ -14,10 +14,18 @@
 import type { MutableRefObject } from 'react'
 import type { AnnotationColor, AnnotationKind } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
+import { ICON_HIGHLIGHT, ICON_NOTE, ICON_UNDERLINE } from '../../../shared/icons'
 import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
 
-/** 工具条三种动作（kind→中文文案——按钮 map 单源） */
+/** 工具条三种动作（kind→中文文案——按钮 map 单源）+对应图标（F-UIRES-02 批 B
+ *  R9：划选浮条紧凑场景纯图标=行业惯例——title 同源动作名，sr-only 保
+ *  textContent/accessible name（受锁 selection-layer:268 精确匹配面）） */
 const KIND_LABEL: Record<AnnotationKind, string> = { highlight: '高亮', underline: '下划线', note: '备注' }
+const KIND_ICON: Record<AnnotationKind, JSX.Element> = {
+  highlight: ICON_HIGHLIGHT,
+  underline: ICON_UNDERLINE,
+  note: ICON_NOTE
+}
 
 export function SelectionToolbar(props: {
   containerRef: MutableRefObject<HTMLDivElement | null>
@@ -64,12 +72,14 @@ export function SelectionToolbar(props: {
         <button
           key={k}
           type="button"
-          className={btn}
+          className={`${btn} syn-icon-btn`}
           style={{ borderColor: 'var(--border)' }}
+          title={KIND_LABEL[k]}
           disabled={busy}
           onClick={() => onSave(k)}
         >
-          {KIND_LABEL[k]}
+          {KIND_ICON[k]}
+          <span className="sr-only">{KIND_LABEL[k]}</span>
         </button>
       ))}
     </div>

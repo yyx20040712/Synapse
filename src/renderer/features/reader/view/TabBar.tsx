@@ -41,6 +41,7 @@
  */
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { ICON_X } from '../../../shared/icons'
 import { useReaderStore } from '../state/reader.store'
 import { confirmCloseDirty, isTabDirty, useNotesDrafts } from '../state/tab-dirty'
 import type { TabState } from '../state/reader.store'
@@ -144,16 +145,18 @@ export function TabBar(): JSX.Element | null {
             <button
               type="button"
               aria-label={`关闭 ${title}`}
+              title={`关闭 ${title}`}
               tabIndex={-1}
               // [T3-P4] 关闭叉语汇住皮肤类（.rdr-tab-close——hover=token 承载，
-              // 旧 hover:bg-black/10 硬编码退役）
-              className="rdr-tab-close ml-1 shrink-0 leading-none"
+              // 旧 hover:bg-black/10 硬编码退役）；[F-UIRES-02 批 B] ✕ 字符→
+              // ICON_X 图标（aria-label 受锁锚零变+title 同源悬停提示）
+              className="rdr-tab-close syn-icon-btn ml-1 shrink-0 leading-none"
               onClick={(ev) => {
                 ev.stopPropagation()
                 if (confirmCloseDirty(id)) closeTab(id)
               }}
             >
-              ✕
+              {ICON_X}
             </button>
           </div>
         )

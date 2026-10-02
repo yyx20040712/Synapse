@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClientError, api, unwrap } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { OP_FAILED, STATUS_POLL_MS } from '../../shared/ui-constants'
 import type { ZcodeLinkDetectRes } from '@shared/ipc/schemas'
 
@@ -129,15 +130,9 @@ export function ZcodeLinkSection(): JSX.Element {
         </button>
       )}
       {(failed || res?.state === 'error') && (
-        <button
-          type="button"
-          data-action="retry"
-          className="self-start rounded border px-2 py-0.5 text-xs"
-          style={{ borderColor: 'var(--border)', color: 'var(--accent)' }}
-          onClick={() => void run()}
-        >
-          重试
-        </button>
+        // [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（data-action
+        // 受锁锚透传——zcode-link-section:70）
+        <RetryButton dataAction="retry" className="self-start" onClick={() => void run()} />
       )}
     </section>
   )

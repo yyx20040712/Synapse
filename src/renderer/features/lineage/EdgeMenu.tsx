@@ -11,6 +11,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
+import { ICON_CHECK } from '../../shared/icons'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 import { useComposingCommit } from '../../shared/inline-keys'
 
@@ -137,9 +138,13 @@ export function EdgeMenu(props: {
                   act(() => props.onRename((renameInputRef.current?.value ?? draft).trim()))
                 }}
               />
+              {/* [F-UIRES-02 批 B R7] 确定文字钮→ICON_CHECK（title 同源+sr-only
+                  保 textContent 恰=「确定」——受锁 lineage-edge-edit-menu:245 面）；
+                  mousedown preventDefault+组词守卫=功能负载原样保留 */}
               <button
                 type="button"
-                className="text-xs"
+                className="syn-icon-btn text-xs"
+                title="确定"
                 style={{ color: 'var(--accent)' }}
                 // [RR9] INV-85④ 范式（TagEditor/LineTypeMenu 镜像）：mousedown
                 // preventDefault 拒点击夺焦——防组词期 blur 触发 compositionend
@@ -150,7 +155,8 @@ export function EdgeMenu(props: {
                   act(() => props.onRename(draft.trim()))
                 }}
               >
-                确定
+                {ICON_CHECK}
+                <span className="sr-only">确定</span>
               </button>
             </div>
           ) : (

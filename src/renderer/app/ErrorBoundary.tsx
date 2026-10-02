@@ -5,6 +5,7 @@
  * 出错组件带旧状态重渲染大概率立刻再抛同一错误）。
  */
 import { Component, type ErrorInfo, type ReactNode, Fragment } from 'react'
+import { RetryButton } from '../shared/ui/RetryButton'
 
 export class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -29,15 +30,12 @@ export class ErrorBoundary extends Component<
             <p className="text-xs" style={{ color: 'var(--text-dim)' }}>
               {this.state.message}
             </p>
-            <button
-              className="mt-3 rounded px-3 py-1 text-xs text-white"
-              style={{ background: 'var(--accent)' }}
-              // 重试 = 清错误 + 递增 retry 作子树 key 强制重挂载：出错组件带着旧状态
-              // 重渲染大概率立刻再抛同一错误，remount 才是真正的"重试"
+            {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（图标+title/
+                aria-label 同源） */}
+            <RetryButton
+              className="mt-3"
               onClick={() => this.setState((s) => ({ message: null, retry: s.retry + 1 }))}
-            >
-              重试
-            </button>
+            />
           </div>
         </div>
       )

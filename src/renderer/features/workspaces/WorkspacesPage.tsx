@@ -47,7 +47,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { WORKSPACE_NAME_MAX } from '@shared/ipc/schemas'
 import { ApiClientError } from '../../api/client'
+import { ICON_PENCIL } from '../../shared/icons'
 import { showToast } from '../../shared/ui/Toast'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { OP_FAILED } from '../../shared/ui-constants'
 import { inlineKeyDown } from '../../shared/inline-keys'
 import { isGuideState, useWorkspaceStore } from './workspace.store'
@@ -164,9 +166,9 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
         // 失败面：store error 契约的壳层兑现点（弹层退役后唯一——d1-W1 语义随迁）
         <div className="ws-error" role="alert">
           <span>课题列表加载失败：{error}</span>
-          <button type="button" className="ws-retry" onClick={() => void load()}>
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（.ws-retry 类
+              透传——受锁 workspaces-page:292 button.ws-retry 锚） */}
+          <RetryButton className="ws-retry" onClick={() => void load()} />
         </div>
       ) : (
         <ul className="ws-list" aria-label="课题列表">
@@ -198,8 +200,18 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
                     <span className="nm">{w.name}</span>
                     <span className="ct">{w.paperCount} 篇</span>
                   </button>
-                  <button type="button" className="ws-rename" onClick={() => openRename(w)}>
-                    重命名
+                  {/* [F-UIRES-02 批 B R7] 重命名文字钮→铅笔图标（title/aria-label
+                      同源+sr-only 保 textContent 恰=「重命名」——受锁
+                      workspaces-input-maxlength:73 与 e2e accessible name 面） */}
+                  <button
+                    type="button"
+                    className="ws-rename syn-icon-btn"
+                    aria-label="重命名"
+                    title="重命名"
+                    onClick={() => openRename(w)}
+                  >
+                    {ICON_PENCIL}
+                    <span className="sr-only">重命名</span>
                   </button>
                 </div>
               )}

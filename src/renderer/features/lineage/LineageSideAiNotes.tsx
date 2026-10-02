@@ -17,6 +17,7 @@
  */
 import { useEffect, useState } from 'react'
 import { api, unwrap } from '../../api/client'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { AI_NOTE_QUESTIONS } from '@shared/models/ai-note'
 import type { AiNote } from '@shared/models/ai-note'
 import { QUESTION_COLOR, QUESTION_LABEL, QUESTION_TEXT, ROLE_LABEL, ROLE_ORDER } from '../reader/anchors/ai-note-style'
@@ -82,15 +83,9 @@ export function LineageSideAiNotes(props: {
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
           <span>AI 笔记加载失败：{message}</span>
-          <button
-            type="button"
-            data-action="retry"
-            className="rounded px-1"
-            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            onClick={() => setRetryTick((t) => t + 1)}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（data-action
+              受锁锚透传） */}
+          <RetryButton dataAction="retry" onClick={() => setRetryTick((t) => t + 1)} />
         </div>
       )}
       {phase === 'ready' &&

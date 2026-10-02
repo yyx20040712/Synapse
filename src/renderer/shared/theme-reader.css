@@ -182,6 +182,28 @@ canvas[data-thumb-canvas] {
   stroke-width: 1.6;
 }
 
+/* [F-UIRES-02 批 B] tab 关闭叉 svg（16px 基准缩至 10px——34px tab 条内嵌
+   尺度）+AI 笔记段头 chevron（12px——text-xs 段名同尺度随行）。
+   [RR1-2 门一双席同中] 关闭叉双挂 .rdr-tab-close+.syn-icon-btn，两单类 svg
+   规则同特异性 (0,1,1) 胜负=样式表装载序（脆弱）——复合选择器升 (0,2,1)
+   固化 10px 终态 */
+.rdr-tab-close.syn-icon-btn svg {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
+.rdr-role-chevron svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+
 /* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
    等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
    .lib-rule*）══ */

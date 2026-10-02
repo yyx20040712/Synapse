@@ -13,6 +13,7 @@
  */
 import { type CSSProperties, useEffect, useState } from 'react'
 import { dismiss, getToastItems, subscribeToasts, type ToastItem, type ToastKind } from './toast-store'
+import { ICON_X } from '../icons'
 
 export { showToast } from './toast-store'
 export type { ToastKind } from './toast-store'
@@ -61,14 +62,16 @@ function ToastCard(props: { item: ToastItem; onClose: () => void }): JSX.Element
       style={{ ...CARD_STYLE, borderLeft: `3px solid ${KIND_COLOR[item.kind]}` }}
     >
       <span className="min-w-0 flex-1 break-words">{item.message}</span>
+      {/* [F-UIRES-02 批 B] 关闭 X 图标化：ICON_X+title/aria-label 同源「关闭通知」 */}
       <button
         type="button"
         aria-label="关闭通知"
-        className="shrink-0 rounded px-1 text-xs leading-none"
+        title="关闭通知"
+        className="syn-icon-btn shrink-0 rounded px-1 text-xs leading-none"
         style={{ color: 'var(--text-dim)' }}
         onClick={onClose}
       >
-        ×
+        {ICON_X}
       </button>
     </div>
   )

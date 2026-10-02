@@ -19,6 +19,8 @@
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
+import { ICON_HAND, ICON_REDO, ICON_UNDO } from '../../shared/icons'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import { LineTypeMenu } from './LineTypeMenu'
 
 /** 线型图标（13×9 线样——实/虚两态；stroke=当前线型色） */
@@ -105,12 +107,16 @@ export function LineageToolbar(props: {
 
   return (
     <div className="lg-toolbar tools">
+      {/* [F-UIRES-02 批 B R6] 保存钮去文字（用户票面点名例）：SaveIcon+dirty
+          角点+saving spinner 保留；title/aria-label 随态同源；sr-only 保
+          textContent 恰=「保存」 */}
       <button
         type="button"
         className="lg-btn save"
         data-testid="lineage-save-btn"
         disabled={saveStatus === 'clean' || saving}
         title={saveStatus === 'error' ? '重试保存' : '保存全部修改（Ctrl+S 语义=会话批量落库）'}
+        aria-label={saveStatus === 'error' ? '重试保存' : '保存全部修改（Ctrl+S 语义=会话批量落库）'}
         onClick={() => store().save()}
       >
         {saving ? (
@@ -118,7 +124,7 @@ export function LineageToolbar(props: {
         ) : (
           <SaveIcon marked={saveStatus === 'dirty'} />
         )}
-        保存
+        <span className="sr-only">保存</span>
       </button>
       <span className="lg-sep" />
       <button
@@ -131,15 +137,18 @@ export function LineageToolbar(props: {
         添加节点
       </button>
       <span className="lg-sep" />
+      {/* [F-UIRES-02 批 B R6] ✋ 字符→手掌 SVG（title 保活+sr-only 保
+          accessible name「选择」） */}
       <button
         type="button"
-        className={tool === 'select' ? 'lg-btn ghost on' : 'lg-btn ghost'}
+        className={tool === 'select' ? 'lg-btn ghost on syn-icon-btn' : 'lg-btn ghost syn-icon-btn'}
         data-testid="lineage-tool-select"
         disabled={lock}
         title="小手选择（点选卡/线）"
         onClick={() => view().resetTool()}
       >
-        ✋ 选择
+        {ICON_HAND}
+        <span className="sr-only">选择</span>
       </button>
       {/* [回炉 R6] 线型图标锚槽（relative）：列表挂**当前展开图标**正下方
           （solid/dashed 随迁——ref 槽位方案：列表渲染进 open 锚内） */}
@@ -170,25 +179,31 @@ export function LineageToolbar(props: {
         {listOpen && linetypeListOpenFor === 'dashed' && linetypeMenu}
       </span>
       <span className="lg-sep" />
+      {/* [F-UIRES-02 批 B R5] ↶↷ 字符→ICON_UNDO/ICON_REDO（两域复用）；补
+          aria-label（原仅 title）；sr-only 保 textContent/accessible name */}
       <button
         type="button"
-        className="lg-btn ghost"
+        className="lg-btn ghost syn-icon-btn"
         data-testid="lineage-undo"
         disabled={undoDisabled}
         title="撤销（Ctrl+Z）"
+        aria-label="撤销（Ctrl+Z）"
         onClick={() => store().undo()}
       >
-        ↶
+        {ICON_UNDO}
+        <span className="sr-only">撤销</span>
       </button>
       <button
         type="button"
-        className="lg-btn ghost"
+        className="lg-btn ghost syn-icon-btn"
         data-testid="lineage-redo"
         disabled={redoDisabled}
         title="重做（Ctrl+Y）"
+        aria-label="重做（Ctrl+Y）"
         onClick={() => store().redo()}
       >
-        ↷
+        {ICON_REDO}
+        <span className="sr-only">重做</span>
       </button>
       <span className="drag-hint" data-testid="drag-hint">
         编辑中：点卡片月标改月 · 拖动＝月内调序 · 画线＝点线型工具后从卡边拖出
@@ -201,13 +216,8 @@ export function LineageToolbar(props: {
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
           保存失败：{lastWriteError}
-          <button
-            type="button"
-            data-testid="lineage-save-retry"
-            onClick={() => store().retrySave()}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（testid 受锁锚透传） */}
+          <RetryButton testId="lineage-save-retry" onClick={() => store().retrySave()} />
         </span>
       )}
       {/* A12 线型列表：挂当前 armed/交互图标正下方（随迁——[回炉 R6] 锚槽

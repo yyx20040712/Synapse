@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from 'react'
 import { api, unwrap } from '../../api/client'
+import { RetryButton } from '../../shared/ui/RetryButton'
 import type { Note } from '@shared/models/note'
 
 type Phase = 'loading' | 'ready' | 'error'
@@ -68,15 +69,9 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
           <span>人工笔记加载失败：{message}</span>
-          <button
-            type="button"
-            data-action="retry"
-            className="rounded px-1"
-            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            onClick={() => setRetryTick((t) => t + 1)}
-          >
-            重试
-          </button>
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（data-action
+              受锁锚透传） */}
+          <RetryButton dataAction="retry" onClick={() => setRetryTick((t) => t + 1)} />
         </div>
       )}
       {phase === 'ready' &&
