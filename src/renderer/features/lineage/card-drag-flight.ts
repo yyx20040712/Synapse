@@ -22,11 +22,15 @@
  * 元素首个样式周期无 before-change style，同步改值不启过渡（transitionend
  * 永不触发，e2e 探针实证）；双 rAF 保证起点先入样式变更事件后再赋目标。
  */
+import { contentScale } from './timeline-zoom'
+
 /** settle 飞行过渡（.32s cubic-bezier(.22,.9,.26,1)——mockup L993 逐值） */
 export const SETTLE_TRANSITION =
   'left .32s cubic-bezier(.22,.9,.26,1), top .32s cubic-bezier(.22,.9,.26,1)'
 
-/** 飞行任务（拖拽松手/改月两径共用——finish=settle 落定收口） */
+/** 飞行任务（拖拽松手/改月两径共用——finish=settle 落定收口）。
+ *  [②U7] 坐标域=**内容坐标**（拖影 absolute 驻 .tl-content——transform 祖先
+ *  会劫持 fixed 定位，缩放正交：全部 left/top/宽经内容域承载） */
 export interface FlightJob {
   nodeId: string
   fromX: number
@@ -36,12 +40,20 @@ export interface FlightJob {
   finish: () => void
 }
 
-export function startFlight(card: HTMLElement | null, job: FlightJob): void {
+/** 视口 rect→内容坐标（z 逆变换——contentEl=内容层[变换祖先后代基准]） */
+function toContentBase(contentEl: HTMLElement | null, r: { left: number; top: number; width: number }): { left: number; top: number; width: number } {
+  if (contentEl === null) return { left: r.left, top: r.top, width: r.width }
+  const base = contentEl.getBoundingClientRect()
+  const z = contentScale()
+  return { left: (r.left - base.left) / z, top: (r.top - base.top) / z, width: r.width / z }
+}
+
+export function startFlight(card: HTMLElement | null, job: FlightJob, contentEl: HTMLElement | null = null): void {
   if (card === null) {
     job.finish()
     return
   }
-  // flow 态测量：dragging 期残留的 inline fixed（position/left/top/width）先清
+  // flow 态测量：dragging 期残留的 inline 定位（position/left/top/width）先清
   // +强制回流再量；错位 marginLeft 拖起时已压 0——测量前恢复（零位移分支
   // 因此天然干净：已清再判，无残留）
   card.style.position = ''
@@ -50,7 +62,7 @@ export function startFlight(card: HTMLElement | null, job: FlightJob): void {
   card.style.width = ''
   card.style.marginLeft = job.marginLeft0
   void card.offsetWidth
-  const target = card.getBoundingClientRect()
+  const target = toContentBase(contentEl, card.getBoundingClientRect())
   if (Math.hypot(target.left - job.fromX, target.top - job.fromY) < 0.5) {
     // 零位移径不过 flight 分支——激活期禁断的 inline transition 就地清空回
     // 类值（不残留则错位变化重排动画永冻+零位移残留断言红）
@@ -58,11 +70,13 @@ export function startFlight(card: HTMLElement | null, job: FlightJob): void {
     job.finish() // 零位移（纯几何判定）——不过渡直接落定
     return
   }
-  card.style.position = 'fixed'
+  // [②U7] absolute 驻内容层（.tl-content position:relative——fixed 在 transform
+  // 祖先下以内容层为包含块，视口系 left/top 会错位；内容域坐标天然随缩放）
+  card.style.position = 'absolute'
   card.style.left = `${job.fromX}px`
   card.style.top = `${job.fromY}px`
   card.style.width = `${target.width}px`
-  // fixed 期压 0（left=margin edge——双计防线同拖起面）
+  // absolute 期压 0（left=margin edge——双计防线同拖起面）
   card.style.marginLeft = '0'
   card.style.zIndex = '99'
   card.style.boxShadow = 'var(--shadow-drag)'

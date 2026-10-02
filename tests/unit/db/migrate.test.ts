@@ -7,7 +7,7 @@ describe('db/migrate —— 迁移执行器', () => {
   it('新库：全量应用，user_version = 最新版本', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
     expect(readUserVersion(db)).toBe(result.currentVersion)
     db.close()

@@ -20,8 +20,8 @@
  *   upsertEdge 运行时守卫**（门一 W1 闭合）——本单零守卫代码只接
  *   toast 呈现=双保险同 08 按钮禁用语义）；拒绝用例消费方级断言
  * - **自动保存**（ADR-0014「保存语义对齐标注/笔记」——**INV-04 同型
- *   不新立号**）：autosave-first（编辑动作即经写通道落库，无「保存」
- *   按钮）；失败不推进 savedAt+脏态投影（lineage.store 保存态三态：
+ *   不新立号**）：[F-LGRAPH-01②U1] 编辑会话暂存+点保存批量落库（A7——
+ *   autosave-first 语义翻转：编辑动作乐观应用入暂存，保存钮触发 flush）；失败不推进 savedAt+脏态投影（lineage.store 保存态三态：
  *   saved/saving/error+重试——notes.store save-status 先例族）；写
  *   面=**LG-01 已交付 service 四写方法（含守卫），本单接线 IPC 四
  *   通道**（lineage/upsert-node 等——[locked-change] 扩 schemas/
@@ -85,16 +85,14 @@ import { LineageBoardDialogs } from './LineageBoardDialogs'
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
   selectedNodeId?: string | null
+  /** [F-LGRAPH-01②U4/A6] 卡双击=跳阅读器（Page 编排→OPEN_PAPER_EVENT 总线） */
+  onNodeDblClick?: (nodeId: string) => void
 }): JSX.Element {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
   const paperMetrics = useLineageStore((s) => s.paperMetrics)
   // [F-FOLDER-01] pubNo 表下发（节点号=库级同源——Timeline 经此单源传入）
   const pubNos = useLineageStore((s) => s.pubNos)
-  // [T3-P7A] 线型组下发（EdgeOverlay sub 覆盖渲染消费——样式层不改坐标）
-  const lineTypes = useLineageStore((s) => s.lineTypes)
-  const saveStatus = useLineageStore((s) => s.saveStatus)
-  const lastWriteError = useLineageStore((s) => s.lastWriteError)
   const store = useLineageStore.getState
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
@@ -102,14 +100,10 @@ export function LineageBoard(props: {
   const [addOpen, setAddOpen] = useState(false)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
   const [tagNodeId, setTagNodeId] = useState<string | null>(null)
-  // F-LG15 人工父双对话框宿主 state（连接目标选择/管理 label+删除）
-  const [manualParentId, setManualParentId] = useState<string | null>(null)
-  const [manualManageId, setManualManageId] = useState<string | null>(null)
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
       if (pendingLink.mode === 'link') store().linkNodes(pendingLink.source, nodeId)
-      else if (pendingLink.mode === 'ref') store().linkRefNodes(pendingLink.source, nodeId)
       else store().reparentNode(pendingLink.source, nodeId)
       setPendingLink(null)
       return
@@ -130,21 +124,11 @@ export function LineageBoard(props: {
         edges={edges}
         paperMetrics={paperMetrics}
         pubNos={pubNos}
-        lineTypes={lineTypes}
         selectedNodeId={props.selectedNodeId ?? null}
-        toolbar={{
-          saveStatus,
-          lastWriteError,
-          onAddNode: () => setAddOpen(true),
-          onRetrySave: () => store().retrySave()
-        }}
-        actions={{
-          applyEdgeLine: (id, k, s) => store().applyEdgeLine(id, k, s),
-          linkWithLine: (f, t, k, s) => store().linkWithLine(f, t, k, s),
-          saveLineTypes: (g) => store().saveLineTypes(g),
-          removeEdge: (id) => store().removeEdge(id)
-        }}
+        contextNodeId={menu?.node.id ?? null}
+        toolbar={{ onAddNode: () => setAddOpen(true) }}
         onNodeClick={handleNodeClick}
+        onNodeDblClick={props.onNodeDblClick}
         onNodeContextMenu={(id, anchor) => {
           const node = nodes.find((n) => n.id === id)
           if (node !== undefined) setMenu({ node, anchor })
@@ -157,13 +141,12 @@ export function LineageBoard(props: {
           对话框开关 state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
           absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响） */}
       <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink}
-        setManualParentId={setManualParentId} setManualManageId={setManualManageId} setIdeaNodeId={setIdeaNodeId} setTagNodeId={setTagNodeId} />
+        setIdeaNodeId={setIdeaNodeId} setTagNodeId={setTagNodeId} />
 
-      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——加节点两型/core_idea/标签/
-          人工父四对话框装配） */}
+      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——加节点两型/core_idea/标签三
+          对话框装配；[②U5] 人工父双对话框退役） */}
       <LineageBoardDialogs nodes={nodes} addOpen={addOpen} setAddOpen={setAddOpen}
-        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} tagNodeId={tagNodeId} setTagNodeId={setTagNodeId}
-        manualParentId={manualParentId} setManualParentId={setManualParentId} manualManageId={manualManageId} setManualManageId={setManualManageId} />
+        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} tagNodeId={tagNodeId} setTagNodeId={setTagNodeId} />
     </div>
   )
 }

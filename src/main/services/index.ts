@@ -121,14 +121,15 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     fileStore: deps.fileStore,
     sendEvent: deps.sendExportEvent ?? (() => undefined),
     // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）；
-    // [F-FOLDER-01] +pubNos map（INV-92 库级派生编号——pub_no 字段数据源）
+    // [F-FOLDER-01] +pubNos map（INV-92 库级派生编号——pub_no 字段数据源）；
+    // [F-LGRAPH-01②U8] lineTypes 四组→lineTypeNames 色行名（恰 6）
     lineage: () => {
       const g = deps.repos.lineage.listGraph()
       const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
       return {
         nodes: g.nodes,
         edges: g.edges,
-        lineTypes: deps.repos.lineage.getLineTypes(),
+        lineTypeNames: deps.repos.lineage.getLineTypeNames(),
         pubNos: new Map(deps.repos.papers.pubNoByIds(paperIds).map((r) => [r.paperId, r.pubNo]))
       }
     }

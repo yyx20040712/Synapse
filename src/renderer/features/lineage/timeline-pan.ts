@@ -5,8 +5,8 @@
  *
  * - 命中面=画布空白（排除卡身/月标/工具条/图例——这些是点选/编辑域）；
  *   指针位移反向滚动（内容随手指）；
- * - [回炉 R12] 激活阈值 5px（取值对照 useCardDrag DRAG_THRESHOLD 先例——
- *   微移不滚不进 grabbing，防误触平移吞点选）；
+ * - [回炉 R12] 激活阈值 5px（DRAG_THRESHOLD 同值先例——微移不滚不进
+ *   grabbing 防误触）；[②U7/挂账⑦] 激活帧 re-base（阈值累积不瞬跳）；
  * - 光标域=.panning 类（grabbing）挂滚动容器根——基态 grab 由模式类
  *   （.mode-browse/.mode-focus）承载（theme-lineage.css）。
  */
@@ -51,9 +51,13 @@ export function useTimelinePan(args: {
       const sc = scrollerRef.current
       if (base === null || sc === null) return
       // [R12] 阈值闸：位移 <5px 不滚不 grabbing；首次过阈值 armed+进 grabbing
+      // [②U7/挂账⑦] 激活帧 re-base 起点至当前指针——阈值累积位移不瞬跳（≤5px
+      //  跳变消解：内容自激活点起随手指）
       if (!armedRef.current) {
         if (Math.hypot(e.clientX - base.startX, e.clientY - base.startY) < PAN_THRESHOLD) return
         armedRef.current = true
+        base.startX = e.clientX
+        base.startY = e.clientY
         setPanning(true)
       }
       sc.scrollLeft = base.scrollLeft - (e.clientX - base.startX) // 内容随手指（反向）

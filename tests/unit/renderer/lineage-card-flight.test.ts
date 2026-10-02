@@ -48,12 +48,12 @@ describe('F-LGRAPH-01①U2 card-drag-flight（FLIP 飞行拆件）', () => {
     expect(card.style.marginLeft).toBe('82px') // 错位恢复（零位移径同样恢复）
   })
 
-  it('位移分支：flow 态量测+fixed 起点+SETTLE 过渡在场；双 rAF 后目标值；transitionend→finish+inline 全清', async () => {
+  it('位移分支：flow 态量测+absolute 起点（[②U7] 内容坐标域）+SETTLE 过渡在场；双 rAF 后目标值；transitionend→finish+inline 全清', async () => {
     const card = document.createElement('div')
     stubRect(card, 200, 160) // target 远离起点（190/150 位移）
     const job = jobOf()
-    startFlight(card, job)
-    expect(card.style.position).toBe('fixed')
+    startFlight(card, job) // contentEl 缺省=视口恒等（z=1 同值）
+    expect(card.style.position).toBe('absolute')
     expect(card.style.left).toBe('10px') // 起点=fromX/fromY
     expect(card.style.marginLeft).toBe('0px') // fixed 期压 0（双计防线）
     expect(card.style.transition).toBe(SETTLE_TRANSITION)

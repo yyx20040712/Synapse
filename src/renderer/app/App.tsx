@@ -43,11 +43,14 @@ function normalizeTheme(value: string | undefined): AppSettings['theme'] | undef
 function autosaveWorstOf(
   annoDirty: boolean,
   notePending: boolean,
-  lineage: 'saved' | 'saving' | 'error',
+  lineage: 'clean' | 'dirty' | 'saving' | 'error',
   openTabs: number
 ): AutosaveStatus {
   if (annoDirty || lineage === 'error') return 'error'
   if (notePending || lineage === 'saving') return 'saving'
+  // [F-LGRAPH-01②U1] lineage dirty=编辑会话暂存未落库（保存语义反转：
+  // autosave-first→会话暂存+点保存——「待保存」档如实呈现非假「保存中」）
+  if (lineage === 'dirty') return 'dirty'
   return openTabs > 0 ? 'saved' : null
 }
 

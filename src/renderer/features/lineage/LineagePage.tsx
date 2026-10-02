@@ -25,12 +25,12 @@ import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
+import { useLineageViewStore } from './lineage-view.store'
 import { LineageBoard } from './LineageBoard'
 import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
 import type { NavFolder } from './nav-graph-picker'
 import { LineageSidePanel } from './LineageSidePanel'
-import { isCore } from './lineage-classify'
 
 export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
@@ -43,24 +43,51 @@ export function LineagePage(): JSX.Element {
   // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
-  // [T3-P8] 侧板徽章分发单源：骑缝编号（INV-76 全图一次）+核心档+含金量摘要
-  const edges = useLineageStore((s) => s.edges)
+  // [T3-P8→②U4] 侧板徽章分发单源：骑缝编号（INV-76 全图一次）+含金量摘要
+  // （core 徽章消费面随行 9 退役——isCore 渲染链拆除，数据面留 lineage-classify）
   const paperMetrics = useLineageStore((s) => s.paperMetrics)
   // [F-FOLDER-01] 侧板徽章=该文献 pubNo（库级同源 INV-92——catalogNo 退役）
   const pubNos = useLineageStore((s) => s.pubNos)
-  const selCore = selectedNode !== null && isCore(selectedNode, edges)
   const selMetrics =
     selectedNode !== null && selectedNode.paperId !== null
       ? (paperMetrics[selectedNode.paperId] ?? null)
       : null
 
   useEffect(() => {
+    // [F-LGRAPH-01②A1 兑现] 挂载恒走模式态 reset（P-1「进页缺省」直读——二次
+    // 进页=再进页缺省：mode='browse'+focusSet 清空+工具态归位；与下行数据
+    // 暂存保留[P-2]正交——view 态 reset≠数据 discard，两者不互斥）
+    useLineageViewStore.getState().resetForMount()
     // 缺省图=库页文件夹上下文同步（进哪个文件夹开哪张图；未选=主图）——
-    // setFolder 内含重取（挂载取数单点）；图名兜底=主图（folders 未落定期）
+    // setFolder 内含重取（挂载取数单点）；图名兜底=主图（folders 未落定期）。
+    // [F-LGRAPH-01②U1] 会话 dirty 时跳过同步=暂存图保留（跨页返回不丢编辑
+    // ——mockup §2.6-6；load 互锁同族兜底）
+    if (useLineageStore.getState().saveStatus !== 'clean') return
     const scope = useLibraryStore.getState().query.folderScope
     useLineageStore.getState().setFolder(
       scope?.kind === 'folder' ? scope.folderId : MAIN_GRAPH_ID
     )
+  }, [])
+
+  // [F-LGRAPH-01②U1] Ctrl+Z/Ctrl+Y 键盘撤销/重做（edit 模式；输入焦点内不
+  // 拦截——文本框原生撤销优先；saving 态锁定=no-op，store.undo/redo 内守）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!e.ctrlKey || e.isComposing) return
+      if (e.key !== 'z' && e.key !== 'Z' && e.key !== 'y' && e.key !== 'Y') return
+      const mode = useLineageViewStore.getState().mode
+      if (mode !== 'edit') return
+      const t = e.target
+      if (t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        return // 输入焦点内=原生文本撤销（mockup §2.2 撤销域=图态）
+      }
+      e.preventDefault()
+      const store = useLineageStore.getState()
+      if (e.key === 'y' || e.key === 'Y') store.redo()
+      else store.undo()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
   /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一） */
@@ -77,6 +104,14 @@ export function LineagePage(): JSX.Element {
           : { ...payload.anchor, anchorPage: payload.anchor.anchorPage ?? undefined },
       aiNoteId: payload.aiNoteId
     })
+  }
+
+  /** [F-LGRAPH-01②U4/A6] 卡双击=跳阅读器（OPEN_PAPER_EVENT 总线单入口 INV-20
+   *  ——与笔记条目同入口；已开 tab 跳转语义由阅读器侧承载） */
+  const handleCardDblClick = (nodeId: string): void => {
+    const n = useLineageStore.getState().nodes.find((x) => x.id === nodeId)
+    if (n === undefined || n.paperId === null) return // 主题节点无阅读器面
+    requestOpenPaperAnchored({ paperId: n.paperId })
   }
 
   if (status === 'loading') {
@@ -124,11 +159,16 @@ export function LineagePage(): JSX.Element {
       <div className="flex min-h-0 flex-1 gap-1 p-1">
         <LineageNavPane onFoldersChange={setFolders} />
         <div className="min-w-0 flex-1">
-          <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+          <LineageBoard
+            onSelectNode={setSelectedNodeId}
+            selectedNodeId={selectedNodeId}
+            onNodeDblClick={handleCardDblClick}
+          />
         </div>
         {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
-            尺寸直通（接线零动，纯容器样式归并） */}
-        <aside className="w-72 shrink-0 overflow-hidden">
+            尺寸直通（接线零动，纯容器样式归并）；[②U4/P-16] 面板宽 252=
+            .lg-inspector 承载（aside 不再钉死 w-72） */}
+        <aside className="shrink-0 overflow-hidden">
           <LineageSidePanel
             node={selectedNode}
             onJumpToPaper={handleJumpToPaper}
@@ -138,7 +178,6 @@ export function LineagePage(): JSX.Element {
                 ? (pubNos[selectedNode.paperId] ?? null)
                 : null
             }
-            core={selCore}
             metrics={selMetrics}
           />
         </aside>

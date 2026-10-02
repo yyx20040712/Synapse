@@ -103,7 +103,7 @@ beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.lineage.graph.mockResolvedValue({
     ok: true,
-    data: { nodes: [], edges: [], lineTypes: [] }
+    data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] }
   })
   foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 1)]
   stubApi.folders.list.mockImplementation(async () => ({ ok: true, data: foldersNow }))
@@ -112,10 +112,12 @@ beforeEach(() => {
     edges: [],
     status: 'ready',
     error: null,
-    saveStatus: 'saved',
+    saveStatus: 'clean', // [②U1] 会话基线（saved→clean）
     lastWriteError: null,
     queue: [],
     flushing: false,
+    undoStack: [],
+    redoStack: [],
     // [F-LGRAPH-01①U4] folderId 恒有值（主图兜底）
     folderId: '__main__'
   })

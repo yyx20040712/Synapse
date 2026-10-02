@@ -44,8 +44,8 @@ function baseEdge(patch: Record<string, unknown> = {}): Record<string, unknown> 
     fromNode: 'n-a',
     toNode: 'n-b',
     label: '',
-    kind: 'manual',
-    sub: null,
+    dashed: false,
+    color: '#3a5bd9',
     createdAt: 't',
     updatedAt: 't',
     ...patch
@@ -108,19 +108,19 @@ describe('F-LINEAGE-02 ①a repo 往返+序列化口径（N-1 缺省省略不产
   it('via 落库 JSON TEXT 读回等值；缺省/空数组→NULL→读回 undefined', () => {
     boot()
     const via = [{ x: 100, y: 200 }, { x: 140, y: 200 }, { x: 140, y: 300 }]
-    const saved = repo.upsertEdge({ fromNode: nA, toNode: nB, label: '', kind: 'manual', via })
+    const saved = repo.upsertEdge({ fromNode: nA, toNode: nB, label: '', via })
     expect(saved.via).toEqual(via)
     const raw = db.prepare('SELECT via FROM lineage_edges WHERE id = ?').get(saved.id) as { via: string | null }
     expect(raw.via).toBe(JSON.stringify(via))
-    const cleared = repo.upsertEdge({ id: saved.id, fromNode: nA, toNode: nB, label: '', kind: 'manual' })
+    const cleared = repo.upsertEdge({ id: saved.id, fromNode: nA, toNode: nB, label: '' })
     expect(cleared.via).toBeUndefined()
-    const emptied = repo.upsertEdge({ id: saved.id, fromNode: nA, toNode: nB, label: '', kind: 'manual', via: [] })
+    const emptied = repo.upsertEdge({ id: saved.id, fromNode: nA, toNode: nB, label: '', via: [] })
     expect(emptied.via).toBeUndefined()
   })
 
   it('读面容错：库内非法 JSON/非数组形状→undefined（不炸 graph 读）', () => {
     boot()
-    const saved = repo.upsertEdge({ fromNode: nA, toNode: nB, label: '', kind: 'manual' })
+    const saved = repo.upsertEdge({ fromNode: nA, toNode: nB, label: '' })
     db.prepare('UPDATE lineage_edges SET via = ? WHERE id = ?').run('{bad json', saved.id)
     expect(repo.listGraph().edges[0]!.via).toBeUndefined()
     db.prepare('UPDATE lineage_edges SET via = ? WHERE id = ?').run('{"x":1}', saved.id)
@@ -133,7 +133,7 @@ describe('F-LINEAGE-02 ①a service 写面守卫（违者 INVALID_REQUEST）', (
     boot()
     const diagonal = (): { code: string; message: string } => {
       try {
-        svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', kind: 'manual', via: [{ x: 0, y: 0 }, { x: 9, y: 9 }] })
+        svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', via: [{ x: 0, y: 0 }, { x: 9, y: 9 }] })
       } catch (e) {
         return { code: (e as { code: string }).code, message: (e as Error).message }
       }
@@ -143,7 +143,7 @@ describe('F-LINEAGE-02 ①a service 写面守卫（违者 INVALID_REQUEST）', (
     expect(r1.code).toBe('INVALID_REQUEST')
     expect(r1.message).toContain('正交')
     try {
-      svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', kind: 'manual', via: [{ x: 0, y: 0 }, { x: 0, y: 0.5 }] })
+      svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', via: [{ x: 0, y: 0 }, { x: 0, y: 0.5 }] })
       throw new Error('unreachable')
     } catch (e) {
       expect((e as { code: string }).code).toBe('INVALID_REQUEST')
@@ -155,7 +155,6 @@ describe('F-LINEAGE-02 ①a service 写面守卫（违者 INVALID_REQUEST）', (
         fromNode: nA,
         toNode: nB,
         label: '',
-        kind: 'manual',
         via: [{ x: Number.POSITIVE_INFINITY, y: 0 }, { x: Number.POSITIVE_INFINITY, y: 10 }]
       })
       throw new Error('unreachable')
@@ -163,16 +162,16 @@ describe('F-LINEAGE-02 ①a service 写面守卫（违者 INVALID_REQUEST）', (
       expect((e as { code: string }).code).toBe('INVALID_REQUEST')
     }
     const via = [{ x: 10, y: 10 }, { x: 10, y: 60 }, { x: 50, y: 60 }]
-    const saved = svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', kind: 'manual', via })
+    const saved = svc.upsertEdge({ fromNode: nA, toNode: nB, label: '', via })
     expect(saved.via).toEqual(via)
     expect(svc.graph().edges[0]!.via).toEqual(via)
   })
 })
 
 describe('F-LINEAGE-02 ①a 迁移 013（edges.via TEXT NULL——先例 007 tags JSON 列）', () => {
-  it('新库 user_version=13；直插 via=NULL 行合法（存量零迁移兼容）', () => {
+  it('新库 user_version=14（[F-LGRAPH-01②U8] 014 起）；直插 via=NULL 行合法（存量零迁移兼容）', () => {
     boot()
-    expect(readUserVersion(db)).toBe(13)
+    expect(readUserVersion(db)).toBe(14)
     db.prepare(
       `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
        VALUES ('e-legacy', ?, ?, '', 'tree', 't', 't')`

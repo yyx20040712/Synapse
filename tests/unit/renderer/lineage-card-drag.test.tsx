@@ -50,7 +50,6 @@ const req = (sel: string): Element => {
   return el
 }
 const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`) as HTMLElement
-const btn = (testid: string): HTMLButtonElement => req(`[data-testid="${testid}"]`) as HTMLButtonElement
 
 const reorder = vi.fn()
 const moveMonth = vi.fn()
@@ -207,35 +206,6 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(req('.tl-edges').classList.contains('dimmed')).toBe(true)
   })
 
-  it('拾取互斥（picker≠idle 禁拖——拾取优先）：linkbtn 拾取中 pointerdown 不激活拖拽', () => {
-    mount([node('A'), node('B')])
-    enterEdit()
-    act(() => {
-      btn('lineage-link-btn').click()
-    })
-    pDown(cardOf('A'), 150, 200)
-    pMove(170, 220)
-    expect(q('.drag-slot')).toBeNull()
-    pUp(170, 220)
-    expect(reorder).not.toHaveBeenCalled()
-  })
-
-  it('popover 开禁拖：线型弹层开时 pointerdown 不激活', () => {
-    mount([node('A'), node('B')])
-    enterEdit()
-    act(() => {
-      btn('lineage-link-btn').click()
-    })
-    click(cardOf('A'))
-    click(cardOf('B'))
-    expect(q('[data-testid="edge-pop"]')).not.toBeNull()
-    pDown(cardOf('A'), 150, 200)
-    pMove(170, 220)
-    expect(q('.drag-slot')).toBeNull()
-    pUp(170, 220)
-    expect(reorder).not.toHaveBeenCalled()
-  })
-
   it('月内槽位实时移位（同行判卡左半）+框外槽淡化 .35', () => {
     mount([node('A'), node('B'), node('C')])
     const f = req('.month-frame')
@@ -256,7 +226,15 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     pMove(999, 40)
     ph = req('.drag-slot')
     expect(ph.classList.contains('faded')).toBe(true)
+    // [②U6/退役行 7] 框外松手=物理域回弹原位：无 toast+零重排写（回弹=no-op
+    // 不入编辑会话栈——呈报确认口径）
     pUp(999, 40)
+    fireEnd(cardOf('A'))
+    expect(reorder).not.toHaveBeenCalled()
+    // 回框内松手=落当前候选槽（B 右半→[B,A,C]）
+    pDown(cardOf('A'), 60, 40)
+    pMove(240, 40)
+    pUp(240, 40)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
   })
@@ -333,7 +311,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(reorder).not.toHaveBeenCalled()
   })
 
-  it('跨月拒绝：落点他月框=toast 文案+落当前槽（源月序写不受染）', () => {
+  it('[②U6/退役行 7] 跨月=物理域回弹：无 toast（INV-83 子句退役）+回弹原位零写', () => {
     mount([node('A', { month: 9 }), node('B', { month: 9 }), node('X', { month: 10 })])
     const frames = [...host!.querySelectorAll('.month-frame')]
     stubRect(frames[0]!, 0, 0, 600, 200)
@@ -343,13 +321,13 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
     pMove(240, 40) // 框内变序：B 右半 → [B,A]
-    pMove(300, 400) // 落他月框（跨月拒绝面）
+    pMove(300, 400) // 落他月框（跨月面——限本月物理域）
     pUp(300, 400)
-    expect(toastStoreSpy).toHaveBeenCalledWith('不能跨月拖动——请进入编辑模式，点卡片月标修改月份', 'error')
+    // 无 toast（跨月拒绝 toast 子句退役——代码面零残留）；回弹原位零写
+    expect(toastStoreSpy).not.toHaveBeenCalled()
     expect(q('.drag-slot')).toBeNull()
     fireEnd(cardOf('A'))
-    // 落当前候选槽（源月框内最后插位）→ 源月全序照写
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).not.toHaveBeenCalled() // 回弹原位=序不变=no-op 不入会话栈
   })
 
   it('拖后 click 抑制（一次性）：拖拽松手后的 click 不转发选中；此后正常 click 恢复', () => {
@@ -514,10 +492,11 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     // 切片起点取激活块 gBCR 之后（激活读 rect 在 pointerMove 阈值判定内
     // ——pDown 时零采样；起点取早则激活样本 '82px' 混入切片恒真）
     const settleSamplesStart = marginAtRect.length
-    // dragging：fixed 盒 border box=left（marginLeft 压 0px——无双计）。
+    // dragging：[②U7] absolute 驻内容层+内容坐标（transform 祖先劫持 fixed 包含
+    // 块）；border box=left（marginLeft 压 0px——无双计）。
     // left=指针派生 ghost：ox=140−94=46 → 146−46=100；双计形态=同 left 而
     // margin 恒 82px（border box 再偏 +82 → 视觉落 182）
-    expect(cardOf('C').style.position).toBe('fixed')
+    expect(cardOf('C').style.position).toBe('absolute')
     expect(cardOf('C').style.marginLeft).toBe('0px')
     expect(cardOf('C').style.left).toBe('100px')
     // [回炉 R8/d1-B1] 激活同步禁断：基类 margin-left .25s 过渡在场则压 0
@@ -539,17 +518,4 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(cardOf('C').style.transition).toBe('')
   })
 
-  it('R7 月标互斥：拾取中（picker≠idle）点 .c-ym 不开改月弹层', () => {
-    mount([node('A'), node('B')])
-    enterEdit()
-    act(() => {
-      btn('lineage-link-btn').click()
-    })
-    act(() => {
-      req('.tl-card[data-node-id="A"] .c-ym').dispatchEvent(
-        new MouseEvent('click', { bubbles: true, clientX: 300, clientY: 200 })
-      )
-    })
-    expect(q('[data-testid="month-pop"]')).toBeNull()
-  })
 })

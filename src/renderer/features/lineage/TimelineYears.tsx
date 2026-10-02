@@ -16,15 +16,15 @@ import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { TimelineYearGroup } from './lineage-timeline'
 import { frameKeyOf } from './lineage-timeline'
 import { LineageTimelineCard } from './LineageTimelineCard'
+import { DragCandidates } from './drag-slot-candidates'
 import type { DragSlotPreview } from './useCardDrag'
 import type { TimelineCallbacks } from './LineageTimeline'
 
-/** [T3-P7A] 图例四基础型（D-18 映射序：accent 实/accent 虚/faint 点/signal 虚） */
+/** [F-LGRAPH-01②U8] 图例两型（kind 四值体系退役——线型=实线/虚线两态，
+ *  色随边内联 color；图例呈示形态语义非数据分类） */
 const LEGEND_ITEMS = [
-  { cls: 'lc', text: '继承' },
-  { cls: 'lc i2', text: '推断' },
-  { cls: 'lc i3', text: '综述关联' },
-  { cls: 'lc i4', text: '人工补线' }
+  { cls: 'lc', text: '实线' },
+  { cls: 'lc i2', text: '虚线' }
 ] as const
 
 /** [T3-P8] 图例挂滚动容器 .timeline（视口级恒可见）——自 Timeline 下沉
@@ -47,10 +47,10 @@ export function TimelineYears(props: {
   /** [F-FOLDER-01] 节点号单源（Timeline useMemo 一次——值=该文献 pubNo，
   *  INV-92 库级同源；主题节点=0） */
   pubNos: Map<string, number>
-  /** 核心档预计算（classify.isCore 单源） */
-  coreIds: Map<string, boolean>
   paperMetrics: Record<string, LineagePaperMetrics>
   selectedNodeId: string | null
+  /** [②U5] 右键反馈：节点菜单目标卡 accent 描边（.ctx-hlt——菜单关即撤） */
+  ctxNodeId?: string | null
   /** [F-LINEAGE-02] 瀑布错位表（nodeId→margin-left px；缺席=无错位） */
   offsets: ReadonlyMap<string, number>
   /** [T3-P7B] 拾取源卡高亮（composer target 相位） */
@@ -63,26 +63,35 @@ export function TimelineYears(props: {
   flashKey?: string | null
   /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框） */
   focusIds?: ReadonlySet<string>
+  /** [②U7/P-18] 聚焦 dim 激活（集非空）——非聚焦卡挂 .dim（0.3/hover 0.6） */
+  dimUnfocused?: boolean
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
+  /** [F-LGRAPH-01②U4] 星标区点击（宿主模式分派——edit=选中/browse+focus=no-op） */
+  onCardStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
+  /** [F-LGRAPH-01②U4/A6] 双击卡跳阅读器 */
+  onCardDblClick?: (nodeId: string) => void
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
   onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {
-  const { groups, pubNos, coreIds, paperMetrics } = props
+  const { groups, pubNos, paperMetrics } = props
   const slot = props.dragSlot ?? null
   const renderCard = (n: LineageNode, dragging: boolean): JSX.Element => (
     <LineageTimelineCard
       key={n.id}
       node={n}
       no={pubNos.get(n.id) ?? 0}
-      core={coreIds.get(n.id) === true}
       metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
       selected={props.selectedNodeId === n.id}
+      ctx={props.ctxNodeId === n.id}
       focused={props.focusIds?.has(n.id) === true}
+      dim={props.dimUnfocused === true && props.focusIds?.has(n.id) !== true}
       offset={props.offsets.get(n.id) ?? 0}
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
+      onNodeDblClick={props.onCardDblClick}
       onNodeContextMenu={props.onNodeContextMenu}
+      onStarClick={props.onCardStarClick}
       onCardPointerDown={props.onCardPointerDown}
       onYmClick={props.onYmClick}
     />
@@ -130,7 +139,14 @@ export function TimelineYears(props: {
               } else {
                 kids = m.nodes.map((n) => renderCard(n, false))
               }
-              const frameCls = props.flashKey === key ? 'month-frame flash' : 'month-frame'
+              // [②U6] 框底缘下拉态（拖过底缘=stretch 框高动画腾新行——.38s 曲线
+              // CSS 承载）；候选槽族（faded 多预览）挂源框内
+              const stretching = isSrc && slot !== null && slot.active && slot.extend === true
+              const frameCls = [
+                'month-frame',
+                props.flashKey === key ? 'flash' : '',
+                stretching ? 'stretch' : ''
+              ].filter((c) => c !== '').join(' ')
               return (
                 <div
                   className={m.month === null ? 'tl-month unknown' : 'tl-month'}
@@ -152,6 +168,14 @@ export function TimelineYears(props: {
                         : `${m.month} 月 · ${m.nodes.length} 篇`}
                     </span>
                     {kids}
+                    {isSrc && slot !== null && slot.active && (
+                      <DragCandidates
+                        frameKey={key}
+                        nodeId={slot.nodeId}
+                        insertIdx={slot.insertIdx}
+                        active={slot.active}
+                      />
+                    )}
                   </div>
                 </div>
               )

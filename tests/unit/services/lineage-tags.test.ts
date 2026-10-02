@@ -57,9 +57,9 @@ beforeEach(() => {
 // ── 迁移 007：tags 列+存量兼容 ─────────────────────────────────
 
 describe('F-LG14 迁移 007（lineage_nodes.tags）', () => {
-  it('版本接续：MIGRATIONS 含 version 7 且 user_version=13（新库全量，[F-LINEAGE-02] 013 落地后）', () => {
+  it('版本接续：MIGRATIONS 含 version 7 且 user_version=14（新库全量，[F-LINEAGE-02] 013 落地后）', () => {
     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
-    expect(readUserVersion(db)).toBe(13)
+    expect(readUserVersion(db)).toBe(14)
   })
 
   it('tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）', () => {
@@ -119,14 +119,14 @@ describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', ()
     expect(Object.keys(g.paperMetrics).sort()).toEqual(['p-1', 'p-2'])
   })
 
-  it('含金量三元组：T1 映射+被引 42/未映射 venue+null/0=值非缺（判别 === null）', () => {
+  it('含金量三元组：T1 映射+被引 42/未映射 venue+null/0=值非缺（判别 === null）；[②U4] venue 透传+impact_factor null=缺席', () => {
     svc.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
     svc.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
     svc.upsertNode({ paperId: 'p-3', title: '丙', coreIdea: '', year: 2022, x: null, y: null })
     const g = svc.graph()
-    expect(g.paperMetrics['p-1']).toEqual({ citedByCount: 42, venueTier: 'T1' })
-    expect(g.paperMetrics['p-2']).toEqual({ citedByCount: null, venueTier: null })
-    expect(g.paperMetrics['p-3']).toEqual({ citedByCount: 0, venueTier: 'T3' })
+    expect(g.paperMetrics['p-1']).toEqual({ citedByCount: 42, venueTier: 'T1', venue: 'Nature Water', impactFactor: null })
+    expect(g.paperMetrics['p-2']).toEqual({ citedByCount: null, venueTier: null, venue: '某未映射期刊', impactFactor: null })
+    expect(g.paperMetrics['p-3']).toEqual({ citedByCount: 0, venueTier: 'T3', venue: 'Water', impactFactor: null })
   })
 
   it('主题节点（paperId null）不入 paperMetrics；空图=空表合法态', () => {

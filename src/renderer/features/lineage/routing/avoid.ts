@@ -15,8 +15,9 @@ export const PAD = 4
 /** 桩区路径长（沿折线自两端各此长度的区段=短桩免检源/目标卡区） */
 export const STUB_PATH = 10
 
-/** Liang-Barsky：线段 p1→p2 vs rect（已按 PAD 膨胀传入——含边界相触=命中） */
-function segHitsRect(p1: Pt, p2: Pt, r: Rect): boolean {
+/** Liang-Barsky：线段 p1→p2 vs rect（已按 PAD 膨胀传入——含边界相触=命中）。
+ *  [②U5] 导出=edge-edit 穿卡警示消费（同口径 PAD 单源） */
+export function segHitsRect(p1: Pt, p2: Pt, r: Rect): boolean {
   let t0 = 0
   let t1 = 1
   const dx = p2.x - p1.x

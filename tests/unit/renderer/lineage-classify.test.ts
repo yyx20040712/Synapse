@@ -1,15 +1,15 @@
 /**
- * [R2-LG11] lineage-classify —— 综述/核心档判定纯函数测试（锁定合约，
+ * [R2-LG11] lineage-classify —— 核心档判定纯函数测试（锁定合约，
  * always-active——不经 guardedDescribe）。
  *
- * 决2 D1'：核心=研究性论文（排除综述/主题）且入度（被引边）≥2——出度
- * 不计入（被引为主口径）；决3 v1：综述=isSurvey(title) 关键词启发
- * （综述|survey|review|概述|评述 子串，大小写不敏感——误判人工修正
- * 通道归后续 D2 式字段增强票，不在本单）。
+ * 决2 D1'：核心=文献节点（paperId≠null）且出度（被继承边）≥2。
+ * [F-LGRAPH-01②U8] isSurvey/isSurveyTitle 随 ref 综述边体系退役删除
+ * （mockup §3.8 行 6）——isCore 综述排除分支同撤（core 判定简化；core 的
+ * UI 消费面归轮 2 详情面板退役，数据面留 AI 重做域评估）。
  */
 import { describe, expect, it } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import { isCore, isSurvey } from '../../../src/renderer/features/lineage/lineage-classify'
+import { isCore } from '../../../src/renderer/features/lineage/lineage-classify'
 
 /** 节点工厂（默认文献节点） */
 function node(
@@ -32,50 +32,21 @@ function node(
   }
 }
 
-/** 边工厂（from=父→to=子——入度计数面=toNode） */
+/** 边工厂（from=父→to=子——出度计数面=fromNode） */
 function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind: 'tree', sub: null, createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
 }
 
-describe('isSurvey —— 综述题名关键词启发（决3 v1）', () => {
-  it('五关键词子串命中：综述/survey/review/概述/评述', () => {
-    expect(isSurvey('扩散模型综述')).toBe(true)
-    expect(isSurvey('A Survey of Diffusion Models')).toBe(true)
-    expect(isSurvey('Deep Learning: A Review')).toBe(true)
-    expect(isSurvey('领域概述')).toBe(true)
-    expect(isSurvey('方法论评述')).toBe(true)
-  })
-
-  it('大小写不敏感：SURVEY/Review/单词级均命中', () => {
-    expect(isSurvey('DIFFUSION SURVEY')).toBe(true)
-    expect(isSurvey('review of methods')).toBe(true)
-    expect(isSurvey('Survey')).toBe(true)
-  })
-
-  it('非综述阴性：普通研究论文题名与空串不命中', () => {
-    expect(isSurvey('Denoising Diffusion Probabilistic Models')).toBe(false)
-    expect(isSurvey('扩散模型的概率视角')).toBe(false)
-    expect(isSurvey('')).toBe(false)
-  })
-})
-
-describe('isCore —— 核心档判定（决2 D1\'：研究性论文出度 ≥2）', () => {
+describe('isCore —— 核心档判定（决2 D1\'：文献节点出度 ≥2）', () => {
   /**
-   * 出度口径裁决（2026-08-29 真机复评修正）：初版「入度≥2」在 INV-27 树
-   * 单父约束下数学恒假——合法图内每节点入度≤1，isCore 永不触发（取证器
-   * fixture 造双入边即被 service 多父守卫拒——r2-lg11-forensics 实录）。
-   * 「被引用数≥2 的开宗立派论文」=≥2 个继承者=**出度**≥2。
+   * 出度口径裁决（2026-08-29 真机复评修正）：初版「入度≥2」在树单父约束下
+   * 数学恒假——「被引用数≥2 的开宗立派论文」=≥2 个继承者=**出度**≥2。
    */
   it('出度边界：2 条被继承边=核心，1 条=非核心', () => {
     const n = node('X', { title: '开宗立派方法论' })
     expect(isCore(n, [edge('X', 'A'), edge('X', 'B')])).toBe(true)
     expect(isCore(n, [edge('X', 'A')])).toBe(false)
     expect(isCore(n, [])).toBe(false)
-  })
-
-  it('综述排除：出度 ≥2 的综述不入核心档', () => {
-    const n = node('S', { title: '领域综述' })
-    expect(isCore(n, [edge('S', 'A'), edge('S', 'B'), edge('S', 'C')])).toBe(false)
   })
 
   it('主题排除：paperId null（主题节点）即使出度 ≥2 非核心', () => {

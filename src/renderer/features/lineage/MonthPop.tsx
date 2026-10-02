@@ -1,15 +1,29 @@
 // b3: T3-P8
 /**
- * [T3-P8] MonthPop —— 改月弹层（mockup L1101-1128 .month-pop；沿 popover-shared
- * 钳制）。月份列表=Timeline groups 派生单源（MonthOption）；行=dot[当前月 on
+ * [T3-P8] MonthPop —— 改月弹层（mockup L1101-1128 .month-pop；弹层视口钳制
+ * [原 popover-shared clampPopoverPos——随线型弹层退役迁驻本件单一消费面]）。
+ * 月份列表=Timeline groups 派生单源（MonthOption）；行=dot[当前月 on
  * 态]+月份名+篇数计数；foot-note 语义自锁（移动带飞行动画·月份是数据字段
  * 非拖拽语义）。Esc/外点关闭驻 useCardDrag（排除弹层自身与 .c-ym——mockup
  * L770）；根 onClick stopPropagation=外点排除面第二重。
  */
 import { useLayoutEffect, useRef, useState } from 'react'
-import { clampPopoverPos } from './lineage-popover-shared'
 import { moveTargetLabel } from './useCardDrag'
 import type { MonthOption } from './useMonthPop'
+
+/** 弹层视口钳制（mockup L1031-1034 语义——纯函数；left=clamp(6,cx−125,vw−258)
+ *  /top=clamp(6,cy+14,vh−h−10)，h=实测弹层高） */
+function clampPopoverPos(
+  cx: number,
+  cy: number,
+  vw: number,
+  vh: number,
+  h: number
+): { left: number; top: number } {
+  const left = Math.max(6, Math.min(cx - 125, vw - 258))
+  const top = Math.max(6, Math.min(cy + 14, vh - h - 10))
+  return { left, top }
+}
 
 export function MonthPop(props: {
   /** 开层锚点（视口坐标） */

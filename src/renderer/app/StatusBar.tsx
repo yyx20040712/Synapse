@@ -31,13 +31,15 @@
  */
 
 /** [T3-U1] 自动保存槽三态（App 组合根 worst-of 聚合的输出；null=槽省略） */
-export type AutosaveStatus = 'saved' | 'saving' | 'error' | null
+export type AutosaveStatus = 'saved' | 'saving' | 'dirty' | 'error' | null
 
-/** [T3-U1] 三态真文本（票面②原文——无时间戳，禁假数据） */
+/** [T3-U1] 三态真文本（票面②原文——无时间戳，禁假数据）；
+ * [F-LGRAPH-01②U1] +dirty=编辑会话暂存未落库（「待保存」——保存语义反转） */
 const AUTOSAVE_LABEL: Record<Exclude<AutosaveStatus, null>, string> = {
   saved: '已保存',
   saving: '保存中…',
-  error: '保存失败'
+  error: '保存失败',
+  dirty: '待保存'
 }
 
 export function StatusBar(props: {

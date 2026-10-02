@@ -1,0 +1,128 @@
+/* [F-LGRAPH-01②U4] 脉络详情面板族（自 theme-lineage.css 分域拆件——check-quality
+   450 行红线；A5/P-16 常驻栏位宽 252+详情域收编——星标禁用呈现/期刊 IF 被引
+   徽章/底部注记双击跳阅读器） */
+/* 检查面板（mockup .lg-inspector 族 L264-281——重皮肤结构性改造：既有
+   testid/数据面/行为面全保活，容器仍驻 LineageSidePanel 玻璃底）；
+   [F-LGRAPH-01②U4/A5] 常驻栏位宽 252（P-16——面板常驻不收） */
+.lg-inspector { width: 252px; }
+.panel-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--faint);
+  cursor: default; /* P-11 静态禁用态 */
+}
+.insp-cap {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-micro);
+  letter-spacing: 3px;
+  color: var(--faint);
+  font-family: var(--mono);
+}
+.insp-title {
+  font-size: var(--fs-title);
+  color: var(--ink);
+  line-height: 1.55;
+  margin: 9px 0 8px;
+  font-weight: 600;
+}
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.badge { font-size: var(--fs-tl-hint); padding: 2.5px 8px; border-radius: 99px; font-family: var(--mono); }
+/* [回炉 R10] core 徽章类死样式删除（core UI 全退役——消费面恒 plain 变体；
+   负锚=lineage-detail-panel.test CSS 断言） */
+.badge.plain { color: var(--dim); border: 1px solid var(--line); }
+.idea-cap { font-size: var(--fs-micro); letter-spacing: 2px; color: var(--accent); margin: 4px 0 5px; }
+.idea {
+  font-size: var(--fs-body);
+  line-height: 1.85;
+  color: var(--dim);
+  text-align: justify;
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+.sec-cap {
+  font-size: var(--fs-micro);
+  letter-spacing: 3px;
+  color: var(--faint);
+  margin: 2px 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+/* 后置章虚线徽标（mockup L311——--fs-nano 值源；原 library.css .lib-postpone 同族——该侧已随 F-LIBUI-01 ⑤ 退役，本侧脉络检查面板自用） */
+.postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
+.insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }
+/* ══ [F-LGRAPH-01②U4] 卡三层族（mockup §3.4 二轮定案——L1 高 18 星标+标签+
+   骑缝号/L2 题名两行 9.3px/L3 高 12 期刊+IF+被引；旧 .c-head/.c-idea/.c-meta/
+   .mb core 样式族随三层重整退役——退役行 8/9，方案切换=删旧）══ */
+/* L1：星标命中区 14×14（T2×T3 星标域优先——click stopProp 隔离）+标签 ≤2+
+   「+N」+骑缝号右贴（margin-left:auto）；标签=8px 级 pill（--fs-tl-idea 同值
+   映射——零新 token 先例） */
+.c-l1 {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  overflow: hidden;
+  flex: none;
+}
+.c-star {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  cursor: default; /* P-11 静态禁用态（F-STAR-01 窗口后启用） */
+}
+.c-tag {
+  font-size: var(--fs-tl-idea);
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 3px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44px;
+}
+.c-tag-more { font-size: var(--fs-tl-idea); color: var(--faint); white-space: nowrap; }
+.c-no { font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--faint); margin-left: auto; white-space: nowrap; }
+/* L2 题名：两行 9.3px 截断（-webkit-line-clamp 2——二轮定案两行版） */
+.c-title {
+  font-size: var(--fs-tl-title);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 1px;
+}
+/* L3：期刊缩写 faint（8px 级——--fs-tl-idea 同值映射）+IF mono accent+
+   被引 mono dim「被引 N」；三字段可选省略（缺席零渲染——组件面门控） */
+.c-l3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 12px;
+  margin-top: 2px;
+  overflow: hidden;
+  flex: none;
+}
+.c-venue {
+  font-size: var(--fs-tl-idea);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.c-if { font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--accent); white-space: nowrap; }
+.c-cited { font-family: var(--mono); font-size: var(--fs-tl-meta); color: var(--dim); white-space: nowrap; }
+

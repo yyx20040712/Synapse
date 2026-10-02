@@ -18,11 +18,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
-import { showToast } from '../../shared/ui/toast-store'
 import { frameKeyOf } from './lineage-timeline'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
-import { frameAt, frameContains, insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
+import { frameContains, insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
+import { contentScale } from './timeline-zoom'
 
 export type DragPhase = 'idle' | 'pending' | 'dragging' | 'settle'
 
@@ -35,6 +35,8 @@ export interface DragSlotPreview {
   active: boolean
   /** 指针在源月框内（框外槽淡化 .35） */
   overFrame: boolean
+  /** [②U6] 框底缘下拉态（拖过底缘 x 带内=框高动画下拉腾新行+插位组末） */
+  extend?: boolean
 }
 
 /** 激活阈值（px——mockup L944 同值） */
@@ -47,15 +49,37 @@ interface DragSession {
   srcIds: string[]
   sx: number
   sy: number
+  /** [②U7] 抓取偏移=**内容坐标**（拖影 absolute 驻 .tl-content——视口偏移/z） */
   ox: number
   oy: number
   moved: boolean
+  /** [②U7] 拖影位置=内容坐标（flight job 同域传递） */
   ghost: { x: number; y: number }
   insertIdx: number
+  /** [②U6] 原始槽位（回弹基准——源框外松手飞行落点） */
+  srcIdx: number
   overFrame: boolean
-  /** [回炉 R1] 拖前 React inline marginLeft（瀑布错位）——fixed 期压 0 防双计，
+  /** [②U6] 框底缘下拉态（源框底缘以下 x 带内） */
+  extend: boolean
+  /** [回炉 R1] 拖前 React inline marginLeft（瀑布错位）——拖起期压 0 防双计，
    *  清场恢复（React style diff 不重写未变值——须自恢复非赖重渲染） */
   marginLeft0: string
+}
+
+/** [②U6] 源框物理域命中=框内 ∪ 底缘 82px 下拉带（x 带内——腾新行面；
+ *  onMove 槽相位/onUp 落位判定两处同式单源） */
+const overSourceFrame = (frameEl: HTMLDivElement | null, x: number, y: number): boolean => {
+  if (frameEl === null) return false
+  const fr = frameEl.getBoundingClientRect()
+  if (x >= fr.left && x <= fr.right && y >= fr.top && y <= fr.bottom) return true
+  return x >= fr.left && x <= fr.right && y > fr.bottom && y <= fr.bottom + 82
+}
+
+/** [②U7] 视口点→内容坐标（z 逆变换；base=内容层 rect——判定时点取值） */
+const toContent = (content: HTMLElement, clientX: number, clientY: number): { x: number; y: number } => {
+  const base = content.getBoundingClientRect()
+  const z = contentScale()
+  return { x: (clientX - base.left) / z, y: (clientY - base.top) / z }
 }
 
 export function useDragSession(args: {
@@ -103,46 +127,65 @@ export function useDragSession(args: {
     const onMove = (e: PointerEvent): void => {
       const s = sessionRef.current
       if (s === null) return
+      const content = contentRef.current
       if (!s.moved) {
         if (Math.hypot(e.clientX - s.sx, e.clientY - s.sy) < DRAG_THRESHOLD) return
         s.moved = true
         const card = findCard(s.nodeId)
-        if (card !== null) {
+        if (card !== null && content !== null) {
           const r = card.getBoundingClientRect()
-          s.ghost = { x: r.left, y: r.top }
+          // [②U7] 拖影=absolute 驻内容层+内容坐标（transform 祖先劫持 fixed）：
+          // 起点/偏移经 z 逆变换（z=1 时与旧视口系同值）；偏移锚=pointerdown
+          // 坐标 s.sx/s.sy（激活帧 e=首个 move 事件——非按点位）
+          s.ox = (s.sx - r.left) / contentScale()
+          s.oy = (s.sy - r.top) / contentScale()
+          const ghostContent = toContent(content, r.left, r.top)
+          s.ghost = ghostContent
           s.marginLeft0 = card.style.marginLeft
-          card.style.position = 'fixed'
-          card.style.left = `${r.left}px`
-          card.style.top = `${r.top}px`
-          card.style.width = `${r.width}px`
-          // [回炉 R1/B-1] fixed 盒 left 定位 margin edge——压 0 后 left=视觉
-          // rect.left（无双计）；[回炉 R8/d1-B1] 同步禁断过渡（基类 margin-left
+          card.style.position = 'absolute'
+          card.style.left = `${ghostContent.x}px`
+          card.style.top = `${ghostContent.y}px`
+          card.style.width = `${r.width / contentScale()}px`
+          // [回炉 R1/B-1] absolute 盒 left 定位 margin edge——压 0 后 left=视觉
+          // 位（无双计）；[回炉 R8/d1-B1] 同步禁断过渡（基类 margin-left
           // .25s 在场——不禁断则 82→0 启动 0.25s 过渡=拖起 +82px 滑移）
           card.style.marginLeft = '0'
           card.style.transition = 'none'
         }
-        setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true })
+        setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false })
         setPhase('dragging')
       }
-      s.ghost = { x: e.clientX - s.ox, y: e.clientY - s.oy }
+      // [②U7] 指针→内容坐标−内容域抓取偏移（z 判定时点取值——缩放正交）
+      const p = content !== null ? toContent(content, e.clientX, e.clientY) : { x: e.clientX, y: e.clientY }
+      s.ghost = { x: p.x - s.ox, y: p.y - s.oy }
       const card = findCard(s.nodeId)
       if (card !== null) {
         card.style.left = `${s.ghost.x}px`
         card.style.top = `${s.ghost.y}px`
       }
-      const over = s.frameEl !== null && frameContains(s.frameEl, e.clientX, e.clientY)
+      // [②U6] 源框物理域命中（框内 ∪ 底缘下拉带）：下拉带=over+extend+插位组末
+      const inBand = s.frameEl !== null && !frameContains(s.frameEl, e.clientX, e.clientY)
+      const over = overSourceFrame(s.frameEl, e.clientX, e.clientY)
+      const extend = over && inBand
       let nextIdx = s.insertIdx
       if (over && s.frameEl !== null) {
-        const rects = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]'))
-          .filter((c) => c.dataset.nodeId !== s.nodeId)
-          .map((c) => c.getBoundingClientRect())
-        nextIdx = insertIndexFromRects(rects, e.clientX, e.clientY)
+        const othersCount = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]')).filter(
+          (c) => c.dataset.nodeId !== s.nodeId
+        ).length
+        if (extend) nextIdx = othersCount // 新行空位=组末
+        else {
+          const rects = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]'))
+            .filter((c) => c.dataset.nodeId !== s.nodeId)
+            .map((c) => c.getBoundingClientRect())
+          nextIdx = insertIndexFromRects(rects, e.clientX, e.clientY)
+        }
       }
-      if (over !== s.overFrame || nextIdx !== s.insertIdx) {
+      if (over !== s.overFrame || nextIdx !== s.insertIdx || extend !== s.extend) {
         s.overFrame = over
         s.insertIdx = nextIdx
+        s.extend = extend
         setSlot((prev) =>
-          prev === null ? prev : { ...prev, overFrame: over, insertIdx: nextIdx }
+          prev === null ? prev : { ...prev, overFrame: over, insertIdx: nextIdx, extend }
         )
       }
     }
@@ -155,12 +198,13 @@ export function useDragSession(args: {
         return
       }
       suppressClickRef.current = true // 拖后 click 抑制（一次性——click 同步随后到达）
-      const overEl = frameAt(framesRef.current, e.clientX, e.clientY)
-      if (overEl !== null && overEl !== s.frameEl) {
-        showToast('不能跨月拖动——请进入编辑模式，点卡片月标修改月份', 'error')
-      }
+      // [F-LGRAPH-01②U6/退役行 7] 限本月=物理域：源月框外松手=回弹原位
+      //（飞行落点=原始槽位 idx）——不写不弹 toast（INV-83 跨月拒绝子句退役，
+      // 代码面零残留）；框内∪下拉带松手沿承候选槽落位（overSourceFrame 单源）
+      const inSrcFrame = overSourceFrame(s.frameEl, e.clientX, e.clientY)
+      const settleIdx = inSrcFrame ? s.insertIdx : s.srcIdx
       const others = s.srcIds.filter((id) => id !== s.nodeId)
-      const finalIds = [...others.slice(0, s.insertIdx), s.nodeId, ...others.slice(s.insertIdx)]
+      const finalIds = [...others.slice(0, settleIdx), s.nodeId, ...others.slice(settleIdx)]
       const changed = finalIds.join(' ') !== s.srcIds.join(' ')
       args.onFlightReady({
         nodeId: s.nodeId,
@@ -174,7 +218,7 @@ export function useDragSession(args: {
           if (changed) args.onReorderMonthSlots?.(finalIds)
         }
       })
-      setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: false, overFrame: true })
+      setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: settleIdx, active: false, overFrame: true })
       setPhase('settle')
     }
     // [R5] pointercancel 同 onUp 径：系统取消（触控手势/设备抢占）=落当前
@@ -219,7 +263,9 @@ export function useDragSession(args: {
       moved: false,
       ghost: { x: r.left, y: r.top },
       insertIdx: srcIds.indexOf(nodeId),
+      srcIdx: srcIds.indexOf(nodeId),
       overFrame: true,
+      extend: false,
       marginLeft0: ''
     }
     try {

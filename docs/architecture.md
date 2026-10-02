@@ -120,6 +120,14 @@ papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage
 lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
 +lineagePending（INV-91 S1 队列闸）。
 
+[F-LGRAPH-01②]（2026-10-02）编辑器批（U1/U8）：lineageEdges 视觉线型内联
+（+dashed/color——迁移 014；kind 四值 tree/inferred/ref/manual 退役→repo
+写边界恒 'manual'，sub 引用制+isSurveyTitle/ref 守卫/多父守卫随体系删除）；
+lineageEdgeUpsert 载荷 kind/sub→dashed/color；upsertLineTypes 载荷→
+lineTypeNames（恰 6 行色行名——图级 KV 新键 'lineTypeNames'）；lineage.json
+导出 schema_version 3（edges 扩 via/dashed/color+line_types 四组→色行名 6
+行——A9' golden 重锁）；lineage.graph 响应 lineTypes→lineTypeNames。
+
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 
 ### 7.1 系统全景（三进程 + 外部边界）

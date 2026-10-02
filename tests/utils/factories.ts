@@ -114,12 +114,15 @@ export function seedLineage(nodes: LineageNode[], edges: LineageEdge[] = []): vo
   useLineageStore.setState({
     nodes,
     edges,
+    lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
     status: 'ready',
     error: null,
-    saveStatus: 'saved',
+    saveStatus: 'clean', // [F-LGRAPH-01②U1] 会话基线（saved→clean 概念反转）
     lastWriteError: null,
     queue: [],
-    flushing: false
+    flushing: false,
+    undoStack: [],
+    redoStack: []
   })
 }
 

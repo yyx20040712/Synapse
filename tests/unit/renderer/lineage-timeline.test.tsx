@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { groupTimeline, rowsFromOffsetTops, waterfallOffsets } from '../../../src/renderer/features/lineage/lineage-timeline'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
 // act() 环境声明（library-cards.test 同口径——免 React 警告刷屏）
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -51,8 +52,8 @@ function edge(from: string, to: string): LineageEdge {
     fromNode: from,
     toNode: to,
     label: '',
-    kind: 'tree',
-    sub: null,
+    dashed: false,
+    color: '#3a5bd9',
     createdAt: 't',
     updatedAt: 't'
   }
@@ -213,7 +214,8 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     }
   })
 
-  it('空图空态文案保活：暂无脉络图——添加节点（[T3-P7B] 工具条随本票移入 .timeline——空图保留添加引导，编辑死按钮零）', () => {
+  it('空图空态文案保活：暂无脉络图——添加节点（[②U2/A11] 工具组仅 edit 可见——空图 bootstrap=edit 态挂载）', () => {
+    useLineageViewStore.setState({ mode: 'edit' })
     mount(<LineageTimeline nodes={[]} edges={[]} />)
     expect(host?.textContent).toContain('暂无脉络图——添加节点')
     // 工具条在空图在场（添加节点=空图 bootstrap 路径——e2e T1 消费面）；编辑面
@@ -243,7 +245,7 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#007')
   })
 
-  it('小卡三行真文本：题名/核心想法（空串整行不渲染）/年月 YYYY-MM 补零与年单值/引用数与主题节点「—」', () => {
+  it('[②U4 迁移] 卡三层真文本：L2 题名+L3 期刊/IF/被引（可选省略）；旧 c-idea/c-meta 族退役零残留', () => {
     mount(
       <LineageTimeline
         nodes={[
@@ -254,27 +256,29 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
         ]}
         edges={[]}
         paperMetrics={{
-          'paper-A': { citedByCount: 17, venueTier: 'T2' },
+          'paper-A': { citedByCount: 17, venueTier: 'T2', venue: 'Water Res.', impactFactor: 9.7 },
           'paper-B': { citedByCount: null, venueTier: null }
         }}
       />
     )
     const a = cardOf('A')
     expect(a.querySelector('.c-title')?.textContent).toBe('扩散模型起点')
-    expect(a.querySelector('.c-idea')?.textContent).toBe('去噪范式奠基')
-    // c-meta 两端：左=年月（YYYY-MM 补零）；右=引用数
-    expect([...a.querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022-09', '17'])
-    // month null→年单值；citedByCount null→「—」；空 core_idea→整行不渲染
-    const b = cardOf('B')
-    expect([...b.querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022', '—'])
-    expect(b.querySelector('.c-idea')).toBeNull()
-    // 主题节点（paperId null）：年月照常呈现（有值）+引用「—」（无 paperId 键）
-    expect([...cardOf('T').querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['2022-09', '—'])
-    // year null→年月「—」缺值占位（INV-73 库列同族口径）
-    expect([...cardOf('X').querySelectorAll('.c-meta span')].map((e) => e.textContent)).toEqual(['—', '—'])
+    expect(a.querySelector('.c-venue')?.textContent).toBe('Water Res.')
+    expect(a.querySelector('.c-if')?.textContent).toBe('IF 9.7')
+    expect(a.querySelector('.c-cited')?.textContent).toBe('被引 17')
+    // L3 可选省略：缺席整字段省略（B/T/X 零「—」占位——年月归月框分组承载）
+    for (const id of ['B', 'T', 'X']) {
+      expect(cardOf(id).querySelector('.c-venue')).toBeNull()
+      expect(cardOf(id).querySelector('.c-if')).toBeNull()
+      expect(cardOf(id).querySelector('.c-cited')).toBeNull()
+    }
+    // 旧族退役（退役行 8——方案切换=删旧；core_idea 呈现面归详情面板）
+    expect(a.querySelector('.c-idea')).toBeNull()
+    expect(a.querySelector('.c-meta')).toBeNull()
+    expect(a.querySelector('.c-head')).toBeNull()
   })
 
-  it('徽章真文本：核=isCore 出度≥2（预计算传卡）；综述=isSurveyTitle（虚线框）；主题节点无综述徽章', () => {
+  it('[②U4/退役行 9] 核 chip 退役：isCore 出度≥2 卡面零 .mb 徽章（core UI 消费面全退役——数据面留 lineage-classify）', () => {
     mount(
       <LineageTimeline
         nodes={[
@@ -287,13 +291,14 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
         edges={[edge('R', 'A'), edge('R', 'B')]}
       />
     )
-    expect(cardOf('R').querySelector('.mb.core')?.textContent).toBe('核')
+    // 出度≥2 的 R（isCore=true 数据面在）卡面也零徽章——UI 消费面全退役
+    expect(cardOf('R').querySelector('.mb')).toBeNull()
     expect(cardOf('A').querySelector('.mb')).toBeNull()
-    expect(cardOf('S').querySelector('.mb.survey')?.textContent).toBe('综述')
+    expect(cardOf('S').querySelector('.mb.survey')).toBeNull() // U8：综述徽章退役（沿承）
     expect(cardOf('T').querySelector('.mb')).toBeNull()
   })
 
-  it('data-kind 三值沿承（NodeCard DOM 契约——theme/paper/survey；e2e 断言面）', () => {
+  it('data-kind 两值沿承（NodeCard DOM 契约——theme/paper；[U8] survey 值退役；e2e 断言面）', () => {
     mount(
       <LineageTimeline
         nodes={[
@@ -306,7 +311,7 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     )
     expect(cardOf('A').getAttribute('data-kind')).toBe('paper')
     expect(cardOf('T').getAttribute('data-kind')).toBe('theme')
-    expect(cardOf('S').getAttribute('data-kind')).toBe('survey')
+    expect(cardOf('S').getAttribute('data-kind')).toBe('paper') // U8：综述题名不再分型
   })
 
   it('sel 类挂选中卡（inset accent 环——CSS 面）', () => {
@@ -481,23 +486,29 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     expect(css).toMatch(/\.tl-content\.tl-measure \.tl-card\s*\{[^}]*transition:\s*none/)
   })
 
-  it('c-* 微族：c-no mono --fs-tl-meta faint；mb.core accent 底 accent-ink 字 600；mb.survey dim 虚线框；c-title --fs-tl-title nowrap ellipsis；c-idea --fs-tl-idea；c-meta mono 两端', () => {
-    expect(css).toMatch(
+  it('[②U4] c-* 微族迁移：c-no mono faint；c-title --fs-tl-title 两行 clamp；c-l1 高 18/c-l3 高 12；c-if mono accent/c-cited mono dim/c-venue faint；旧 .mb.core/.c-idea/.c-meta 零残留', () => {
+    const cardCss = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage-card.css'), 'utf8') // [②U4] 卡三层族拆件
+    expect(cardCss).toMatch(
       /\.c-no\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\);[^}]*color:\s*var\(--faint\)/
     )
-    expect(css).toMatch(
-      /\.mb\.core\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\);[^}]*font-weight:\s*600/
+    expect(cardCss).toMatch(
+      /\.c-title\s*\{[^}]*font-size:\s*var\(--fs-tl-title\);[^}]*font-weight:\s*600;[^}]*-webkit-line-clamp:\s*2;[^}]*overflow:\s*hidden/
     )
-    expect(css).toMatch(/\.mb\.survey\s*\{[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px dashed var\(--faint\)/)
-    expect(css).toMatch(
-      /\.c-title\s*\{[^}]*font-size:\s*var\(--fs-tl-title\);[^}]*font-weight:\s*600;[^}]*color:\s*var\(--ink\);[^}]*white-space:\s*nowrap;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis/
+    expect(cardCss).toMatch(/\.c-l1\s*\{[^}]*height:\s*18px/)
+    expect(cardCss).toMatch(/\.c-l3\s*\{[^}]*height:\s*12px/)
+    expect(cardCss).toMatch(
+      /\.c-if\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\);[^}]*color:\s*var\(--accent\)/
     )
-    expect(css).toMatch(
-      /\.c-idea\s*\{[^}]*font-size:\s*var\(--fs-tl-idea\);[^}]*color:\s*var\(--dim\);[^}]*text-overflow:\s*ellipsis/
+    expect(cardCss).toMatch(
+      /\.c-cited\s*\{[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\);[^}]*color:\s*var\(--dim\)/
     )
-    expect(css).toMatch(
-      /\.c-meta\s*\{[^}]*justify-content:\s*space-between;[^}]*font-family:\s*var\(--mono\);[^}]*font-size:\s*var\(--fs-tl-meta\)/
+    expect(cardCss).toMatch(/\.c-venue\s*\{[^}]*font-size:\s*var\(--fs-tl-idea\);[^}]*color:\s*var\(--faint\)/
     )
+    // 旧族退役负锚（退役行 8/9——方案切换=删旧）
+    expect(css).not.toMatch(/\.mb\.core/)
+    expect(cardCss).not.toMatch(/\.c-idea\s*\{/) 
+    expect(cardCss).not.toMatch(/\.c-meta\s*\{/) 
+    expect(cardCss).not.toMatch(/\.c-head\s*\{/) 
   })
 })
 

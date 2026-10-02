@@ -145,10 +145,13 @@ describe('F-LGRAPH-01①U5 平移小手（browse/focus 拖空白=滚动跟随；
     scroller.scrollLeft = 100
     scroller.scrollTop = 50
     pDown(req('.tl-content'), 200, 300) // 空白（非卡/非月标/非工具条）
-    pMove(150, 270) // dx=-50 dy=-30 → 滚动+50/+30（内容随手指）
-    pUp(150, 270)
-    expect(scroller.scrollLeft).toBe(150)
-    expect(scroller.scrollTop).toBe(80)
+    // [②U7/挂账⑦] 激活帧 re-base：过阈值（58px）激活但零位移（阈值累积不瞬跳）
+    pMove(150, 270)
+    expect(scroller.scrollLeft).toBe(100) // 激活帧不跳
+    pMove(140, 260) // dx=-10 dy=-10 → 滚动+10/+10（内容随手指）
+    pUp(140, 260)
+    expect(scroller.scrollLeft).toBe(110)
+    expect(scroller.scrollTop).toBe(60)
     expect(scroller.classList.contains('panning')).toBe(false) // 松手摘 grabbing
   })
 
@@ -160,8 +163,10 @@ describe('F-LGRAPH-01①U5 平移小手（browse/focus 拖空白=滚动跟随；
     pMove(197, 302) // 3.6px < 5——阈值内
     expect(scroller.scrollLeft).toBe(100) // 不滚
     expect(scroller.classList.contains('panning')).toBe(false) // 不进 grabbing
-    pMove(194, 300) // 6px ≥ 5——激活
-    expect(scroller.scrollLeft).toBe(106) // 反向随指（200-194=+6）
+    pMove(194, 300) // 6px ≥ 5——激活（[挂账⑦] re-base：激活帧零位移不瞬跳）
+    expect(scroller.scrollLeft).toBe(100)
+    pMove(190, 300) // 再移 4px → +4
+    expect(scroller.scrollLeft).toBe(104) // 反向随指
     expect(scroller.classList.contains('panning')).toBe(true)
     pUp(194, 300)
   })
@@ -231,7 +236,7 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     setMode('focus')
     expect(hint()).toBe('◎ 单击卡片＝聚焦标记（再点取消） · 拖动空白＝平移画布')
     setMode('edit')
-    expect(hint()).toBe('编辑中：点连线改线型 · 点卡片月标改月 · 拖动＝月内调序')
+    expect(hint()).toBe('编辑中：点卡片月标改月 · 拖动＝月内调序 · 画线＝点线型工具后从卡边拖出') // [②U2] 工具组文案（画线入口提示）
   })
 
   it('.timeline 挂模式类（mode-browse/mode-focus/mode-edit——CSS 光标域承载）', () => {

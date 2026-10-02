@@ -9,8 +9,13 @@
  *   ADR-0022——备份域归未来服务端多实体导出；lineage.json 导出面=assemble
  *   golden 锁定，与 draft 协议无共享 schema）。
  * 接缝锚定（INV-11）：DDL 真相=迁移 004（UNIQUE(from_node,to_node) 收口）；
- * 树单父约束（无多父/无环/无自环）不在 DDL——service 层不变量 INV-27，
- * 守卫宿主=services/lineage/lineage.service（upsertEdge 运行时口）。
+ * 环约束（无环/无自环）不在 DDL——service 层守卫，宿主=services/lineage/
+ * lineage.service（upsertEdge 运行时口）。
+ * [F-LGRAPH-01②U8] kind 四值体系（tree/inferred/ref/manual）退役→manual
+ * 单基型+边内联视觉字段（dashed/color——A3 仲裁）：kind/sub schema 字段删；
+ * DB kind 列保留恒 'manual'、sub 列死置（读面不映射）——DDL 最小化免迁移；
+ * 视觉列=迁移 014（dashed INTEGER/color TEXT NOT NULL DEFAULT）。综述题名
+ * 判定（isSurveyTitle）随 ref 边体系全链退役（mockup §3.8 行 6）。
  */
 import { z } from 'zod'
 
@@ -65,21 +70,34 @@ export function lineageOrder(nodes: readonly LineageNode[]): LineageNode[] {
   })
 }
 
-// ── 综述题名判定（单一真相源，R2-LG12 §2 上移）────────────────────
-
-/** 综述关键词（小写比对——大小写不敏感；决3 v1 关键词启发） */
-export const SURVEY_KEYWORDS = ['综述', 'survey', 'review', '概述', '评述'] as const
+// ── 色行名体系（[F-LGRAPH-01②U8] manual 单基型+视觉线型——A3 仲裁）────
 
 /**
- * isSurveyTitle(title)：综述题名关键词启发（子串命中任一关键词即综述）。
- * 单源消费=service ref 边守卫（R2-LG12「from 必须是综述节点」）+renderer
- * lineage-classify re-export（classify/布局/渲染面零改动）——R2-LG11 出度
- * 修正教训=约束公式单源；误判人工修正通道=后续 D2 式字段增强票（不在 v1）。
+ * [F-LGRAPH-01②U8] 线色板：6 色固定行（P-5 蓝/橙/绿/紫/灰/洋红，不可增行）。
+ * hex 值=用户数据面（lineage_graph_meta 色行名配置与边 color 持久值的固定
+ * 候选集——非组件 chrome 色）。前四色沿旧 PALETTE（蓝/橙/绿/紫），灰/洋红
+ * 随 6 色定案新定值。消费方=renderer 工具组线型列表+repo 视觉列缺省。
  */
-export function isSurveyTitle(title: string): boolean {
-  const lower = title.toLowerCase()
-  return SURVEY_KEYWORDS.some((kw) => lower.includes(kw))
+export const LINE_TYPE_COLORS = ['#3a5bd9', '#c07a2a', '#0f8a6d', '#8a4fbf', '#8a8f98', '#c2447f'] as const
+
+/** [F-LGRAPH-01②U8] 未命名色行缺省名（mockup §3.3——「待命名」） */
+export const LINE_TYPE_DEFAULT_NAME = '待命名'
+
+/** [F-LGRAPH-01②U8] 色行数=色板长度（恰 6 行校验键——schema/service/repo 三面共用） */
+export const LINE_TYPE_ROWS = LINE_TYPE_COLORS.length
+
+/** [F-LGRAPH-01②U8] 缺省色行名（6×「待命名」——repo 读面容错降级值同源） */
+export function defaultLineTypeNames(): string[] {
+  return Array.from({ length: LINE_TYPE_ROWS }, () => LINE_TYPE_DEFAULT_NAME)
 }
+
+/**
+ * [F-LGRAPH-01②U8] 色行名配置 schema（图级 lineage_graph_meta KV
+ * 'lineTypeNames' JSON 承载——恰 6 行；空名归一「待命名」在 service 写面）。
+ * 替代退役的 lineTypeGroupsSchema 恒四组校验（四组体系随 kind 四值退役）。
+ */
+export const lineTypeNamesSchema = z.array(z.string()).length(LINE_TYPE_ROWS)
+export type LineTypeNames = z.infer<typeof lineTypeNamesSchema>
 
 // ── 应用面（camelCase——DB 行与写入口输入） ────────────────────────
 
@@ -119,20 +137,13 @@ export function dedupeLineageTags(tags: readonly string[]): string[] {
   return [...new Set(tags)]
 }
 
-/** 边基础型（R2-LG12 用户裁决 A+F-LG15+T3-P5 四值）：tree=树边（单父不变量
- *  INV-27 原语义）/inferred=推断边（T3-P5 先行枚举——同 tree 守卫：单父+拒环；
- *  P5 无产生入口（P7 编辑器+后置 AI 域为入口），枚举+守卫先行防退化）/
- *  ref=参考边（综述节点→文献——service 层豁免单父、仍拒环、同端点对与 tree
- *  互斥；INV-27 修订版守卫宿主仍=service 写面）/manual=人工补父边（F-LG15
- *  用户裁决**不限条数**——service 豁免单父、仍拒环（环检测图=全部边含
- *  inferred）、同端点对与 tree/ref 互斥；draft 导入协议不收——edge schema
- *  无 kind 字段=tree 语义，manual 仅应用内手工创建） */
-export const lineageEdgeKindSchema = z.enum(['tree', 'inferred', 'ref', 'manual'])
-export type LineageEdgeKind = z.infer<typeof lineageEdgeKindSchema>
-
-/** lineTypes 组基础型枚举序（恒四组排序键——graph 读面/导出按此序；T3-P5） */
-export const LINE_TYPE_BASE_ORDER = ['tree', 'inferred', 'ref', 'manual'] as const
-
+/**
+ * [F-LGRAPH-01②U8] 边视觉线型内联（A3 仲裁——sub 引用制退役）：dashed=虚线
+ * 布尔+color=hex 色（值域=LINE_TYPE_COLORS 色板，落库无 CHECK——应用面写
+ * 路径经工具组色板单源）；label=逻辑线说明（P-14：新画边继承当前线型名快照
+ * ，线型改名不回传已画边）。kind 四值体系（tree/inferred/ref/manual）退役
+ * ——DB kind 列保留恒 'manual'（A3：DDL 最小化，应用层收敛）。
+ */
 export const lineageEdgeSchema = z
   .object({
     id: z.string().min(1),
@@ -140,10 +151,10 @@ export const lineageEdgeSchema = z
     toNode: z.string().min(1),
     /** 逻辑线说明 */
     label: z.string(),
-    kind: lineageEdgeKindSchema,
-    /** [T3-P5] 子线型 id（lineTypes 引用）；null=基础型默认样式（样式层，
-     *  不参与结构守卫——引用完整性守卫在 service 写面） */
-    sub: z.string().nullable(),
+    /** 虚线=true（视觉线型内联——A3） */
+    dashed: z.boolean(),
+    /** 线色 hex（视觉线型内联——A3；缺省归一=色板首色蓝） */
+    color: z.string(),
     /** [F-LINEAGE-02] 手动调线中间路点（内容坐标，有序——design-final §2.1）。
      *  缺省=省略字段（undefined）**不产出 []**（N-1：空数组与缺省同义=自动
      *  路由，diff/脏检测零噪声）；端点不进 via（④=schema 形状面：点仅 x/y
@@ -194,51 +205,8 @@ export function validateLineageVia(via: readonly LineageViaPoint[]): string | nu
   return null
 }
 
-/** [T3-P5] 子线型（图级样式配置——lineage_graph_meta KV JSON 承载） */
-export const lineTypeSubSchema = z
-  .object({
-    /** 图内唯一（跨组全图唯一——upsertLineTypes 整批校验） */
-    id: z.string().min(1),
-    name: z.string().min(1),
-    color: z.string(),
-    /** 空串=实线 */
-    dash: z.string(),
-    w: z.number().positive()
-  })
-  .strict()
-export type LineTypeSub = z.infer<typeof lineTypeSubSchema>
-
-/** [T3-P5] 基础型线型组（base+子线型列表；恒四组各一——LINE_TYPE_BASE_ORDER） */
-export const lineTypeGroupSchema = z
-  .object({
-    base: lineageEdgeKindSchema,
-    subs: z.array(lineTypeSubSchema)
-  })
-  .strict()
-export type LineTypeGroup = z.infer<typeof lineTypeGroupSchema>
-
-/** 恒四组拒绝文案单源（F-CONSOL-02/k1-N2）：schema refine 与 write-guards reason 双侧消费，禁两处字面量 */
-export const LINE_TYPE_GROUPS_REQUIRED_REASON = '线型配置必须恰含 tree/inferred/ref/manual 四组各一（空组含空 subs 列表）'
-
-/** [T3-P5] upsertLineTypes 请求面强校验：恒四组（base 集合恰=四枚举值各一
- *  ——主控预裁 D-I-4；空组含 subs:[] 合法）。子线型 id 全图唯一与被引用
- *  sub 不得消失=service 写面守卫（运行时图状态相关，非 schema 面） */
-export const lineTypeGroupsSchema = z
-  .array(lineTypeGroupSchema)
-  .refine(
-    (groups) => {
-      const bases = groups.map((g) => g.base)
-      return (
-        bases.length === LINE_TYPE_BASE_ORDER.length &&
-        LINE_TYPE_BASE_ORDER.every((b) => bases.includes(b))
-      )
-    },
-    { message: LINE_TYPE_GROUPS_REQUIRED_REASON }
-  )
-export type LineTypeGroups = z.infer<typeof lineTypeGroupsSchema>
-
 /** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留）。
- *  边 kind 可选缺省 'tree'（R2-LG12——service 写路径显式填默认，不赖 DB DEFAULT）。
+ *  [F-LGRAPH-01②U8] 边 kind 字段退役（manual 单基型——repo 写边界恒 'manual'）；dashed/color 可选缺省归一在 repo（false/色板首色）。
  *  [T3-P5] month/slot/sub 可选（缺省语义=undefined——归一/守卫在 service：
  *  month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例）；slot 缺省走
  *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型）。
@@ -266,8 +234,10 @@ export const lineageEdgeUpsertSchema = lineageEdgeSchema
   .omit({ createdAt: true, updatedAt: true })
   .extend({
     id: z.string().min(1).optional(),
-    kind: lineageEdgeKindSchema.optional(),
-    sub: z.string().nullable().optional()
+    /** [F-LGRAPH-01②U8] dashed/color 可选（缺省=false/色板首色——repo 写边界
+     *  归一；编辑器全载荷合成[流会话动作]恒显式携值） */
+    dashed: z.boolean().optional(),
+    color: z.string().optional()
   })
   .strict()
 export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>

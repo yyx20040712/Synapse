@@ -10,7 +10,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { EdgeGeomInput, LayoutSnapshot, Rect } from '../../../src/renderer/features/lineage/routing/chain'
 import { defaultCorridor, laneIndex, routeAll, routeEdge } from '../../../src/renderer/features/lineage/routing/chain'
-import { DASH_ROT, PALETTE } from '../../../src/renderer/features/lineage/lineage-palette'
 
 // ── 夹具工具（纯数据——contentW=800 ⇒ laneX(i)=800−58+10+9i=752+9i，D-5 沿承）──
 
@@ -32,8 +31,8 @@ function makeSnap(partial: Partial<LayoutSnapshot> = {}): LayoutSnapshot {
 const CARD_W = 128
 const CARD_H = 72
 
-function geom(id: string, from: string, to: string, kind: EdgeGeomInput['kind'], via?: Array<{ x: number; y: number }>): EdgeGeomInput {
-  return { edgeId: id, sourceId: from, targetId: to, kind, via }
+function geom(id: string, from: string, to: string, via?: Array<{ x: number; y: number }>): EdgeGeomInput {
+  return { edgeId: id, sourceId: from, targetId: to, via }
 }
 
 describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallback 单向不回溯）', () => {
@@ -44,7 +43,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
         ['B', rect(100, 300, CARD_W, CARD_H)]
       ])
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'tree'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('direct')
     expect(r.lane).toBe(-1)
     // 源底锚=投影 tc.x=164→½ 序 (164,172)；目标顶锚同序 (164,300)；
@@ -61,7 +60,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
       ]),
       frames: [{ ...rect(90, 60, 600, 300), year: 2022 }]
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'tree'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('band')
     // 手推：tc=(246,228)→A 底锚 ¾ 序 (196,172)；sc=(164,136)→B 顶锚 ¼ 序
     // (214,192)；行隙带 [172,192]（卡 y 区间夹缝，宽 20>s 下限）中心 y=182；
@@ -79,7 +78,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
       ]),
       frames: [{ ...rect(90, 60, 600, 400), year: 2022 }]
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'tree'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('band')
     // 手推：A/B 锚 x=164（½ 序）竖段穿 D（膨胀 y[188,268]）→direct 废；
     // 行隙带 [172,192]/[264,284] 两道；带0 终落 x=164 穿 D→候选 [164(废),
@@ -94,7 +93,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
         ['B', rect(400, 140, CARD_W, CARD_H)]
       ])
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('h-slip')
     // 源右锚=投影 tc.y=176→¾ 序 (228,154)；目标左锚=投影 sc.y=136 于
     // B(y∈[140,212])→¼ 序 (400,158)；x 带分离 100+128+8=236<400 ✓；
@@ -110,7 +109,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
         ['B', rect(100, 300, CARD_W, CARD_H)]
       ])
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('h-slip')
     // tc=(164,336)→A 左锚 ¾ 序 (400,154)；sc=(464,136) 于 B(y∈[300,372])
     // →¼ 序 (228,318)（初稿手算 176 误按 B 顶=100——勘正）
@@ -125,7 +124,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
         ['B', rect(100, 300, CARD_W, CARD_H)]
       ])
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('corridor')
     expect(r.lane).toBe(0)
     // X 并合卡 y 区间→行隙 [172,176]/[296,300] 宽 4≤2·PAD=8→带全封闭；
@@ -142,7 +141,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
         ['V0', rect(749, 180, 7, 20)]
       ])
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('corridor')
     expect(r.lane).toBe(1)
     // lane1 x=761（V0 膨胀 x≤760 之外）；两臂 y=154/214 距 V0 膨胀 y 带
@@ -159,7 +158,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
       ])
     })
     const onWarn = vi.fn()
-    const r = routeEdge(geom('e1', 'A', 'B', 'ref'), snap, onWarn)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap, onWarn)
     expect(r.route).toBe('fallback')
     expect(r.lane).toBe(-1)
     expect(onWarn).toHaveBeenCalledTimes(1)
@@ -171,7 +170,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
   it('端点卡缺失：d 空+route fallback+onWarn（防御面沿承）', () => {
     const snap = makeSnap({ cards: new Map<string, Rect>([['A', rect(100, 100, CARD_W, CARD_H)]]) })
     const onWarn = vi.fn()
-    const r = routeEdge(geom('e1', 'A', 'GHOST', 'tree'), snap, onWarn)
+    const r = routeEdge(geom('e1', 'A', 'GHOST'), snap, onWarn)
     expect(r.d).toBe('')
     expect(r.route).toBe('fallback')
     expect(onWarn).toHaveBeenCalledTimes(1)
@@ -194,7 +193,7 @@ describe('F-LINEAGE-02 曲化复检收缩链（骨架过检后曲化再检——
       labels: [rect(201, 173, 4, 4)],
       frames: [{ ...rect(90, 60, 600, 300), year: 2022 }]
     })
-    const r = routeEdge(geom('e1', 'A', 'B', 'tree'), snap)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('band')
     // label 不入带推导（带=卡 y 区间派生）→骨架/锚不变；两拐 r=3（收缩链
     // 第二档——桩 10 钳制值 5 之上）
@@ -216,7 +215,7 @@ describe('F-LINEAGE-02 车道（走廊=字典序基道环形探测）', () => {
         ['B', rect(100, 196, CARD_W, CARD_H)]
       ])
     })
-    const paths = routeAll(['e0', 'e1', 'e2'].map((id) => geom(id, 'A', 'B', 'ref')), snap)
+    const paths = routeAll(['e0', 'e1', 'e2'].map((id) => geom(id, 'A', 'B')), snap)
     expect(paths.map((p) => p.route)).toEqual(['corridor', 'corridor', 'corridor'])
     expect(paths.map((p) => p.lane)).toEqual([0, 1, 2])
     // e0 锚=源右 ¾ (328,154)/目标右 ¼ (228,214)——首边原锚（散开注册基线）
@@ -231,7 +230,7 @@ describe('F-LINEAGE-02 车道（走廊=字典序基道环形探测）', () => {
         ['B', rect(100, 196, CARD_W, CARD_H)]
       ])
     })
-    const paths = routeAll(['e0', 'e1', 'e2'].map((id) => geom(id, 'A', 'B', 'ref')), snap)
+    const paths = routeAll(['e0', 'e1', 'e2'].map((id) => geom(id, 'A', 'B')), snap)
     expect(paths.map((p) => p.route)).toEqual(['corridor', 'corridor', 'corridor'])
     // 源端锚（d 首点）两两互异：e0=右¾ (328,154)/e1=右¼ (328,118)/e2=右½ (328,136)
     // ——aliasing 形态=e1 与 e2 同落 (328,118)（e2 pick 见 r0 未记→重取）
@@ -257,7 +256,7 @@ describe('F-LINEAGE-02 车道（走廊=字典序基道环形探测）', () => {
       ])
     })
     const onWarn = vi.fn()
-    const paths = routeAll(['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => geom(id, 'A', 'B', 'ref')), snap, onWarn)
+    const paths = routeAll(['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => geom(id, 'A', 'B')), snap, onWarn)
     expect(paths.map((p) => p.route)).toEqual(['corridor', 'corridor', 'corridor', 'fallback', 'fallback'])
     expect(paths.map((p) => p.lane)).toEqual([0, 1, 2, -1, -1])
     expect(onWarn).toHaveBeenCalledTimes(2)
@@ -279,7 +278,7 @@ describe('F-LINEAGE-02 车道（走廊=字典序基道环形探测）', () => {
         ['B', rect(100, 180, CARD_W, CARD_H)]
       ])
     })
-    const paths = routeAll(['e0', 'e1', 'e2', 'e3'].map((id) => geom(id, 'A', 'B', 'ref')), snap)
+    const paths = routeAll(['e0', 'e1', 'e2', 'e3'].map((id) => geom(id, 'A', 'B')), snap)
     expect(paths.map((p) => p.route)).toEqual(['corridor', 'corridor', 'corridor', 'corridor'])
     expect(paths.map((p) => p.lane)).toEqual([0, 1, 2, 3])
     // 前 3 边源锚=右侧三序 (328,154/118/136)；第 4 边=底 ½ (264,172)——
@@ -308,7 +307,7 @@ describe('F-LINEAGE-02 manual-override（via 在场——design-final §2.2）',
       { x: 300, y: 136 },
       { x: 300, y: 336 }
     ]
-    const r = routeEdge(geom('e1', 'A', 'B', 'manual', via), snap)
+    const r = routeEdge(geom('e1', 'A', 'B', via), snap)
     expect(r.route).toBe('manual-override')
     expect(r.lane).toBe(-1)
     // via[0]=(300,136)：dx=136>dy=0→横→右½ (228,136)；via 末同式 (228,336)；
@@ -324,9 +323,9 @@ describe('F-LINEAGE-02 manual-override（via 在场——design-final §2.2）',
         ['B', rect(100, 300, CARD_W, CARD_H)]
       ])
     })
-    const withVia = routeEdge(geom('e1', 'A', 'B', 'manual', [{ x: 250, y: 136 }]), snap)
+    const withVia = routeEdge(geom('e1', 'A', 'B', [{ x: 250, y: 136 }]), snap)
     expect(withVia.route).toBe('manual-override')
-    const noVia = routeEdge(geom('e2', 'A', 'B', 'manual'), snap)
+    const noVia = routeEdge(geom('e2', 'A', 'B'), snap)
     expect(noVia.route).toBe('direct')
   })
 })
@@ -342,7 +341,7 @@ describe('F-LINEAGE-02 确定性（§1.5 无随机/无 Date/无三角函数）',
       labels: [rect(202, 173, 4, 4)],
       frames: [{ ...rect(90, 60, 600, 300), year: 2022 }]
     })
-    const e = geom('e1', 'A', 'B', 'ref')
+    const e = geom('e1', 'A', 'B')
     const first = routeEdge(e, snap)
     for (let i = 0; i < 100; i++) {
       expect(routeEdge(e, snap)).toEqual(first)
@@ -351,10 +350,3 @@ describe('F-LINEAGE-02 确定性（§1.5 无随机/无 Date/无三角函数）',
   })
 })
 
-describe('T3-P7A lineage-palette 数据常量冒烟（D-17 hex=用户数据面）', () => {
-  it('PALETTE 8 色 hex 形状+DASH_ROT 三线型轮转（P7b 新建线型消费）', () => {
-    expect(PALETTE.length).toBe(8)
-    for (const c of PALETTE) expect(c).toMatch(/^#[0-9a-f]{6}$/)
-    expect(DASH_ROT).toEqual(['', '6 3', '2 3'])
-  })
-})

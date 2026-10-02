@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * [T3-P8] 检查面板重皮肤测试（锁定合约，always-active）。覆盖：insp-cap
- * 「节点检查」+骑缝编号徽章（catalogNo 分发）/insp-title 题名/徽章行（核心
- * [core]/年月/引[citedByCount]/T 档[venueTier——mockup Q2 档字样按数据模型
- * T1/T2/T3 呈现]）/idea-cap「核 心 想 法」/AI 评估后置章占位（postpone 标记
- * +说明文案，不渲染假数据）/insp-foot 提示行/既有 testid 面全保活（meta/
- * idea/ai-notes/manual-note）+主题节点空态零变。
+ * [T3-P8] 检查面板重皮肤测试（锁定合约，always-active）。[F-LGRAPH-01②U4/
+ * A5] 迁移：详情域收编（期刊缩写/IF/被引/年月/T 档——三字段可选省略语义）
+ * +core 徽章退役（行 9——UI 消费面全退役）+星标态禁用呈现+底部注记双击跳
+ * 阅读器。覆盖：insp-cap「节点详情」+骑缝编号徽章（pubNo 分发）/insp-title
+ * 题名/徽章行/idea-cap「核 心 想 法」/AI 评估后置章占位/insp-foot 提示行/
+ * 既有 testid 面全保活（meta/idea/ai-notes/manual-note）+主题节点空态零变。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -76,64 +76,63 @@ afterEach(() => {
 })
 
 describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）', () => {
-  it('insp-cap「节点检查」+骑缝编号 #NNN（[F-FOLDER-01] pubNo 分发——catalogNo 退役）；缺省不呈现编号', async () => {
+  it('insp-cap「节点详情」+骑缝编号 #NNN（[F-FOLDER-01] pubNo 分发）+星标态禁用呈现；缺省不呈现编号', async () => {
     mount(
       <LineageSidePanel
         node={node('A')}
         pubNo={4}
-        core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
       />
     )
     await flush()
     const cap = q('.insp-cap')
-    expect(cap?.textContent).toContain('节点检查')
+    expect(cap?.textContent).toContain('节点详情')
     expect(cap?.textContent).toContain('#004')
     expect(q('.insp-title')?.textContent).toBe('节点A')
+    // [②U4/P-11] 星标态禁用呈现（title 行内提示）
+    const star = q('[data-testid="panel-star"]')
+    expect(star?.getAttribute('title')).toBe('星标功能即将开放')
   })
 
-  it('徽章行：核心（core=true）/年月 YYYY-MM 补零/引 N/T 档；null 退化「引 —」「未定」', async () => {
+  it('[②U4] 徽章行：期刊缩写/IF/被引 N/年月/T 档（可选省略——缺席零渲染）；core 徽章退役（行 9）', async () => {
     mount(
       <LineageSidePanel
         node={node('A', { month: 6 })}
         pubNo={1}
-        core={true}
-        metrics={{ citedByCount: 17, venueTier: 'T2' }}
+        metrics={{ citedByCount: 17, venueTier: 'T2', venue: 'Water Res.', impactFactor: 11.2 }}
         onJumpToPaper={vi.fn()}
       />
     )
     await flush()
     const badges = [...(q('.badges')?.querySelectorAll('.badge') ?? [])].map((b) => b.textContent)
-    expect(badges).toEqual(['核心', '2023-06', '引 17', 'T2'])
-    expect(q('.badge.core')?.classList.contains('core')).toBe(true)
+    expect(badges).toEqual(['Water Res.', 'IF 11.2', '被引 17', '2023-06', 'T2'])
+    expect(q('.badge.core')).toBeNull() // 行 9：core 徽章 UI 消费面退役
   })
 
-  it('年月退化：month null→年单值；metrics null→引 —/未定；theme 节点无 T 档徽章', async () => {
+  it('[②U4] 年月退化：month null→年单值；metrics null→期刊/IF/被引/T 档全省略（无占位）；theme 节点同年月徽章', async () => {
     mount(
       <LineageSidePanel
         node={node('A', { month: null })}
         pubNo={1}
-        core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
       />
     )
     await flush()
     const badges = [...(q('.badges')?.querySelectorAll('.badge') ?? [])].map((b) => b.textContent)
-    expect(badges).toEqual(['2023', '引 —', '未定'])
+    expect(badges).toEqual(['2023'])
     mount(
       <LineageSidePanel
         node={node('T', { paperId: null })}
         pubNo={2}
-        core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
       />
     )
     await flush()
     const themeBadges = [...(q('.badges')?.querySelectorAll('.badge') ?? [])].map((b) => b.textContent)
-    expect(themeBadges).toEqual(['2023-06', '引 —'])
+    expect(themeBadges).toEqual(['2023-06'])
   })
 
   it('idea-cap「核 心 想 法」+idea 内容；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行', async () => {
@@ -141,7 +140,6 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
       <LineageSidePanel
         node={node('A', { coreIdea: '把管网拓扑显式建模为图' })}
         pubNo={1}
-        core={false}
         metrics={null}
         onJumpToPaper={vi.fn()}
       />
@@ -156,7 +154,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(host?.textContent).toContain('评估功能后置——当前版本不生成 AI 评估内容')
     expect(host?.querySelectorAll('.note-card').length).toBe(0)
     expect(q('.insp-foot')?.textContent).toBe(
-      '单击选中 · 拖动＝月内调序 · 编辑模式：改月 / 展开选线型 / 新建连线'
+      '双击卡片跳转阅读器 · 编辑模式：改月 / 调序 / 画线 / 调线'
     )
   })
 

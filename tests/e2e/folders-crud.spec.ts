@@ -66,6 +66,8 @@ test('folders-crud：新建/重名 toast/改名（S3 脉络页标题联动）/�
   // 当前图随选（INV-88：文献节点 folder=文献归属恒落主图，不走此路）。T4b
   // 弹窗路径需有资产（静默判据下空图不弹窗）。主题节点不动 paper 归属→
   // 计数=1 节点/0 连线/0 篇文献
+  // [F-LGRAPH-01②U2/A11] 添加节点钮随工具组仅 edit 模式可见——先进编辑模式
+  await win.getByTestId('lineage-mode-edit').click()
   await win.getByTestId('lineage-add-node').click()
   await win.getByTestId('add-node-mode-theme').click()
   await win.getByLabel('主题名称（阶段分组）').fill('crud 资产节点')
@@ -73,6 +75,10 @@ test('folders-crud：新建/重名 toast/改名（S3 脉络页标题联动）/�
   await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: 'crud 资产节点' })).toBeVisible({
     timeout: 10_000
   })
+  // [②U1/INV-91 S1 队列闸] 编辑会话暂存未落库时 folders 写被互斥拒——保存后
+  // 再跨域（①批 autosave 语义翻转的 spec 迁移面）
+  await win.getByTestId('lineage-save-btn').click()
+  await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
 
   await win.getByRole('button', { name: '文献库' }).click()
 

@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 /**
- * [F-LG15] manual 边 UI —— 节点菜单「连接父文献…」+目标选择对话框+人工连线
- * 管理对话框（label 后编辑/删除）+store 写面（新增锁定面）。
+ * [F-LG15→F-LGRAPH-01②U5] manual 边 store 写面+节点菜单残余面。
  *
- * 覆盖：Board 全链（右键→连接父文献→搜索过滤+选取+逻辑线说明→保存=upsert-edge
- * kind='manual' 载荷）/取消零写/无 manual 边节点无「管理人工连线…」项/管理对话框
- * label 编辑保存=upsert-edge 带 id 更新载荷/删除=remove-edge/「删除父连线」仅针对
- * tree 边（manual 父不吞）/store linkManualParent·editManualEdgeLabel 载荷回填。
- * [T3-P6] 渲染面 its（manual 琥珀虚线色型/图例）随连线渲染退役删除——P7
- * 连线系统恢复视觉锚（主控裁决 a）。
+ * [②U5/退役] 人工父双对话框（连接父文献目标选择/管理人工连线 label 编辑+
+ * 删除）随对话框退役删除——功能面替代=画线工具（②U3）+线身右键菜单「命名/
+ * 线形与颜色/删除连线」（②U5）；原 Board 全链 describe 4 用例随面退役
+ * （test-surface 豁免在档）。保留面：「删除父连线」=首条入边（节点菜单——
+ * U8 kind 收敛沿承）/store linkManualParent（旧入口写面载荷锚保活）/
+ * editManualEdgeLabel（线身右键「命名」store 面——A8 全载荷含视觉字段）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -50,8 +49,8 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   }
 }
 
-function edge(id: string, from: string, to: string, kind: LineageEdge['kind'] = 'tree'): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind, sub: null, createdAt: 't', updatedAt: 't' }
+function edge(id: string, from: string, to: string, label = ''): LineageEdge {
+  return { id, fromNode: from, toNode: to, label, dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
 }
 
 const settle = async (turns = 6): Promise<void> => {
@@ -104,18 +103,6 @@ function clickMenu(label: string): void {
   })
 }
 
-function dialogButton(text: string): HTMLButtonElement | undefined {
-  return [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
-    (b) => b.textContent === text
-  )
-}
-
-/** React 受控输入的 jsdom 驱动法：原生 setter+input 事件 */
-function typeInto(el: HTMLInputElement, text: string): void {
-  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(el, text)
-  el.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.library.list.mockReset()
@@ -141,198 +128,68 @@ afterEach(() => {
 
 // ── Board 全链：连接父文献+管理人工连线 ────────────────────────
 
-describe('F-LG15 Board 全链（连接父文献/管理人工连线）', () => {
-  it('全链：右键 B→「连接父文献…」→对话框搜索过滤+选取目标+逻辑线说明→保存=upsert-edge {from:父,to:B,label,kind:"manual"}', async () => {
-    stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string; label?: string }) =>
-      ({ ok: true, data: edge('e-new', req.from, req.to, 'manual') })
-    )
-    seedLineage([
-      node('B', { title: '子文献', year: 2021 }),
-      node('P1', { title: '平行路线甲', year: 2019 }),
-      node('P2', { title: '平行路线乙', year: 2019 })
-    ])
+describe('[②U5 迁移] 节点菜单残余面（人工父双对话框退役后）', () => {
+
+
+
+
+
+  it('[②U5 迁移]「删除父连线」=首条入边（U8 kind 收敛沿承）；人工父双入口随对话框退役零残留', async () => {
+    seedLineage([node('B'), node('P1')], [edge('e-man1', 'P1', 'B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
-    clickMenu('连接父文献…')
-    const dialog = q('[role="dialog"]')
-    expect(dialog).not.toBeNull()
-    // 候选列表：图内节点（自身 B 排除）全量在场
-    let items = [...(dialog?.querySelectorAll('button') ?? [])].filter((b) =>
-      b.textContent?.includes('平行路线')
-    )
-    expect(items.length).toBe(2)
-    // 搜索过滤「乙」→只剩 P2
-    const search = q('[data-testid="manual-parent-search"]') as HTMLInputElement | null
-    expect(search).not.toBeNull()
-    act(() => {
-      typeInto(search!, '乙')
-    })
-    items = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].filter((b) =>
-      b.textContent?.includes('平行路线')
-    )
-    expect(items.length).toBe(1)
-    act(() => {
-      items[0]!.click()
-    })
-    // 逻辑线说明输入
-    const label = q('[data-testid="manual-parent-label"]') as HTMLInputElement | null
-    expect(label).not.toBeNull()
-    act(() => {
-      typeInto(label!, '研究者补判的方法源头')
-    })
-    act(() => {
-      dialogButton('连接')?.click()
-    })
-    await settle()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
-      from: 'P2',
-      to: 'B',
-      label: '研究者补判的方法源头',
-      kind: 'manual'
-    })
-    // 回填：manual 边入 store
-    expect(useLineageStore.getState().edges.some((e) => e.kind === 'manual')).toBe(true)
-    expect(q('[role="dialog"]')).toBeNull() // 对话框关闭
-  })
-
-  it('取消=零写（对话框关闭不派发）', async () => {
-    seedLineage([node('B'), node('P1')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('B')
-    clickMenu('连接父文献…')
-    act(() => {
-      dialogButton('取消')?.click()
-    })
-    await settle()
-    expect(stubApi.lineage.upsertEdge).not.toHaveBeenCalled()
-    expect(q('[role="dialog"]')).toBeNull()
-  })
-
-  it('未选目标禁用确认（空选择短路——不派发）', async () => {
-    seedLineage([node('B'), node('P1')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('B')
-    clickMenu('连接父文献…')
-    const connect = dialogButton('连接') as HTMLButtonElement | undefined
-    expect(connect?.disabled).toBe(true)
-    act(() => {
-      connect?.click()
-    })
-    await settle()
-    expect(stubApi.lineage.upsertEdge).not.toHaveBeenCalled()
-  })
-
-  it('「管理人工连线…」仅在有 manual 入边的节点呈现：管理对话框 label 编辑保存=upsert-edge 带 id 更新载荷', async () => {
-    stubApi.lineage.upsertEdge.mockImplementation(async (req: { id?: string; from: string; to: string; label?: string }) =>
-      ({
-        ok: true,
-        data:
-          req.id !== undefined
-            ? { ...edge(req.id, req.from, req.to, 'manual'), label: req.label ?? '' }
-            : edge('e-new', req.from, req.to, 'manual')
-      })
-    )
-    const manualEdge = { ...edge('e-man1', 'P1', 'B', 'manual'), label: '初判' }
-    seedLineage([node('B'), node('P1', { title: '平行路线甲', year: 2019 })], [manualEdge])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    // B（有 manual 入边）有管理项
-    openMenu('B')
-    expect(menuButtons().some((b) => b.textContent === '管理人工连线…')).toBe(true)
-    clickMenu('管理人工连线…')
-    const row = q('[data-testid="manual-edge-row"]')
-    expect(row).not.toBeNull()
-    expect(row?.textContent).toContain('平行路线甲') // 来自节点标题
-
-    const input = q('[data-testid="manual-edge-label"]') as HTMLInputElement | null
-    expect(input).not.toBeNull()
-    expect(input!.value).toBe('初判')
-    act(() => {
-      typeInto(input!, '再判：修正的逻辑线')
-    })
-    act(() => {
-      dialogButton('保存')?.click()
-    })
-    await settle()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
-      id: 'e-man1',
-      from: 'P1',
-      to: 'B',
-      label: '再判：修正的逻辑线',
-      kind: 'manual'
-    })
-  })
-
-  it('管理对话框删除=remove-edge；无 manual 边节点无「管理人工连线…」项', async () => {
-    const manualEdge = edge('e-man1', 'P1', 'B', 'manual')
-    seedLineage([node('B'), node('P1')], [manualEdge])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('B')
-    clickMenu('管理人工连线…')
-    const remove = q('[data-testid="manual-edge-remove"]') as HTMLButtonElement | null
-    expect(remove).not.toBeNull()
-    act(() => {
-      remove?.click()
-    })
+    // 单入边=父边：呈现且指向它；人工父双入口零残留（退役负锚）
+    expect(menuButtons().some((b) => b.textContent === '删除父连线')).toBe(true)
+    expect(menuButtons().some((b) => b.textContent === '管理人工连线…')).toBe(false)
+    expect(menuButtons().some((b) => b.textContent === '连接父文献…')).toBe(false)
+    clickMenu('删除父连线')
+    useLineageStore.getState().save() // [②U1]
     await settle()
     expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-man1' })
-    // 无 manual 边的节点（P1：仅发出 manual 边，无入边）无管理项
-    openMenu('P1')
-    expect(menuButtons().some((b) => b.textContent === '管理人工连线…')).toBe(false)
-  })
-
-  it('「删除父连线」仅针对 tree 边：节点只有 manual 父（无 tree 父）时该项不呈现', async () => {
-    seedLineage([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', 'manual')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('B')
-    expect(menuButtons().some((b) => b.textContent === '删除父连线')).toBe(false)
-    // 加 tree 父后该项呈现且指向 tree 边
-    seedLineage([node('B'), node('P1'), node('T')], [edge('e-man1', 'P1', 'B', 'manual'), edge('e-tree1', 'T', 'B', 'tree')])
-    openMenu('B')
-    clickMenu('删除父连线')
-    await settle()
-    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-tree1' }) // tree 边，非 manual
   })
 })
 
 // ── store 写面：linkManualParent / editManualEdgeLabel ─────────
 
 describe('F-LG15 store manual 写面', () => {
-  it('linkManualParent：upsert-edge kind="manual" 载荷+回填；CONFLICT 拒绝型丢弃不卡队（守卫宿主=service）', async () => {
-    stubApi.lineage.upsertEdge.mockImplementation(async (req: { from: string; to: string }) =>
-      ({ ok: true, data: edge('e-m', req.from, req.to, 'manual') })
+  it('linkManualParent：upsert-edge 载荷（U8 单基型无 kind）+回填；CONFLICT 拒绝型丢弃不卡队（守卫宿主=service）', async () => {
+    stubApi.lineage.upsertEdge.mockImplementation(async (req: { id?: string; from: string; to: string; label?: string }) =>
+      ({ ok: true, data: edge(req.id ?? 'e-m', req.from, req.to, req.label) })
     )
     seedLineage([node('B'), node('P1')])
     useLineageStore.getState().linkManualParent('B', 'P1', '逻辑线说明')
+    useLineageStore.getState().save() // [②U1]
     await settle()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({
       from: 'P1',
       to: 'B',
-      label: '逻辑线说明',
-      kind: 'manual'
-    })
+      label: '逻辑线说明'
+    })) // [②U1] 本地 uuid 随行
     expect(useLineageStore.getState().edges).toHaveLength(1)
-    expect(useLineageStore.getState().saveStatus).toBe('saved')
+    expect(useLineageStore.getState().saveStatus).toBe('clean')
   })
 
-  it('editManualEdgeLabel：upsert-edge 带 id 更新载荷（kind/from/to 保持）+回填 label', async () => {
+  it('editManualEdgeLabel：upsert-edge 带 id 全载荷更新（视觉字段携行——A8）+回填 label', async () => {
     stubApi.lineage.upsertEdge.mockImplementation(async (req: { id?: string; from: string; to: string; label?: string }) =>
       ({
         ok: true,
         data:
           req.id !== undefined
-            ? { ...edge(req.id, req.from, req.to, 'manual'), label: req.label ?? '' }
-            : edge('e-new', req.from, req.to, 'manual')
+            ? edge(req.id, req.from, req.to, req.label ?? '')
+            : edge('e-new', req.from, req.to, req.label ?? '')
       })
     )
-    seedLineage([node('B'), node('P1')], [{ ...edge('e-man1', 'P1', 'B', 'manual'), label: '旧说明' }])
+    seedLineage([node('B'), node('P1')], [edge('e-man1', 'P1', 'B', '旧说明')])
     useLineageStore.getState().editManualEdgeLabel('e-man1', '新说明')
+    useLineageStore.getState().save() // [②U1]
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({
       id: 'e-man1',
       from: 'P1',
       to: 'B',
       label: '新说明',
-      kind: 'manual'
+      dashed: false,
+      color: '#3a5bd9'
     })
     expect(useLineageStore.getState().edges[0]!.label).toBe('新说明')
     expect(useLineageStore.getState().edges).toHaveLength(1) // 更新非新建

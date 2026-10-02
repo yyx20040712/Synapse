@@ -1,14 +1,16 @@
 /**
  * [T3-P5] lineage.json 第六件套（装配纯函数+会话落盘接线）锁定测试。
+ * [F-LGRAPH-01②U8] A9' golden 重锁：schema_version=3——edges 扩 via+内联
+ * 视觉字段（dashed/color 替代 line_type{base,sub} 引用）+line_types 四组→
+ * 色行名 6 行新形状（LINE_TYPE_COLORS 固定序 zip）。
  *
  * 覆盖：assembleLineageJson golden **字节级**比对（递归 alphabetical 键序+
- * snake_case+2 空格缩进+末尾换行+schema_version=1）/幂等（两次调用逐字节
- * 全等）/catalog_no=按 lineageOrder 全序 1..N（与 lineageCatalogNos 同源）/
- * nodes 不含 x/y/slot、edges 含 line_type{base,sub}、line_types base 枚举序
- * 后 subs 按 id 升序/输入乱序不侵扰输出序（装配自归位）/会话接线：corpus
- * 导出会话 finalizing 写 lineage.json（deps.lineage 读通道注入——真库图 +
- * meta lineTypes；无 BOM）；通道缺席=不写（可选依赖先例=clipboard 桩零改）。
- * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §5/§6。
+ * snake_case+2 空格缩进+末尾换行+schema_version=3）/幂等（两次调用逐字节
+ * 全等）/pub_no 直取（INV-92）/nodes 不含 x/y/slot/edges via 缺省省略不产
+ * []/输入乱序不侵扰输出序/会话接线：corpus 导出会话 finalizing 写
+ * lineage.json（deps.lineage 读通道注入——真库图；无 BOM）；通道缺席=不写。
+ * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §5/§6
+ * +2026-10-01_f-lgraph01-editor-design-final.md A9'（v3 重锁）。
  * always-active（不经 guardedDescribe）。
  */
 import { readFile, rm } from 'node:fs/promises'
@@ -27,7 +29,7 @@ import {
 import { createRepos, type Repos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
 import type { ExtractRequestEvent, ExportCorpusEvent } from '../../../src/shared/ipc/schemas'
-import type { LineageEdge, LineageNode, LineTypeGroup } from '../../../src/shared/models/lineage'
+import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 
 const ISO_A = '2026-01-01T00:00:00.000Z'
 const ISO_B = '2026-01-02T00:00:00.000Z'
@@ -53,30 +55,20 @@ function nodes(): LineageNode[] {
 function edges(): LineageEdge[] {
   return [
     {
-      id: 'e2', fromNode: 'nB', toNode: 'nC', label: '', kind: 'tree', sub: null,
+      id: 'e2', fromNode: 'nB', toNode: 'nC', label: '', dashed: true, color: '#c07a2a',
+      via: [{ x: 1, y: 2 }, { x: 1, y: 30 }],
       createdAt: ISO_B, updatedAt: 't'
     },
     {
-      id: 'e1', fromNode: 'nA', toNode: 'nB', label: '继承', kind: 'tree', sub: 'lt-a',
+      id: 'e1', fromNode: 'nA', toNode: 'nB', label: '继承', dashed: false, color: '#3a5bd9',
       createdAt: ISO_A, updatedAt: 't'
     }
   ]
 }
 
-/** lineTypes 输入乱序（装配按 base 枚举序归位；subs 按 id 升序） */
-function lineTypes(): LineTypeGroup[] {
-  return [
-    { base: 'manual', subs: [] },
-    {
-      base: 'tree',
-      subs: [
-        { id: 'lt-b', name: '乙型', color: '#111111', dash: '4 2', w: 1.5 },
-        { id: 'lt-a', name: '强继承', color: '#F2773A', dash: '', w: 2 }
-      ]
-    },
-    { base: 'ref', subs: [] },
-    { base: 'inferred', subs: [] }
-  ]
+/** 色行名（恰 6——LINE_TYPE_COLORS zip 导出） */
+function lineTypeNames(): string[] {
+  return ['主线', '副线', '对比', '支撑', '衍生', '否证']
 }
 
 function input(): LineageAssembleInput {
@@ -84,7 +76,7 @@ function input(): LineageAssembleInput {
   return {
     nodes: nodes(),
     edges: edges(),
-    lineTypes: lineTypes(),
+    lineTypeNames: lineTypeNames(),
     pubNos: new Map([
       ['p-1', 7],
       ['p-2', 9]
@@ -92,63 +84,62 @@ function input(): LineageAssembleInput {
   }
 }
 
-/** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序） */
+/** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序；v3） */
 const GOLDEN = `{
   "edges": [
     {
+      "color": "#3a5bd9",
       "created_at": "${ISO_A}",
+      "dashed": false,
       "edge_id": "e1",
       "from": "nA",
       "label": "继承",
-      "line_type": {
-        "base": "tree",
-        "sub": "lt-a"
-      },
       "to": "nB"
     },
     {
+      "color": "#c07a2a",
       "created_at": "${ISO_B}",
+      "dashed": true,
       "edge_id": "e2",
       "from": "nB",
       "label": "",
-      "line_type": {
-        "base": "tree",
-        "sub": null
-      },
-      "to": "nC"
+      "to": "nC",
+      "via": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 30
+        }
+      ]
     }
   ],
   "line_types": [
     {
-      "base": "tree",
-      "subs": [
-        {
-          "color": "#F2773A",
-          "dash": "",
-          "id": "lt-a",
-          "name": "强继承",
-          "w": 2
-        },
-        {
-          "color": "#111111",
-          "dash": "4 2",
-          "id": "lt-b",
-          "name": "乙型",
-          "w": 1.5
-        }
-      ]
+      "color": "#3a5bd9",
+      "name": "主线"
     },
     {
-      "base": "inferred",
-      "subs": []
+      "color": "#c07a2a",
+      "name": "副线"
     },
     {
-      "base": "ref",
-      "subs": []
+      "color": "#0f8a6d",
+      "name": "对比"
     },
     {
-      "base": "manual",
-      "subs": []
+      "color": "#8a4fbf",
+      "name": "支撑"
+    },
+    {
+      "color": "#8a8f98",
+      "name": "衍生"
+    },
+    {
+      "color": "#c2447f",
+      "name": "否证"
     }
   ],
   "nodes": [
@@ -185,12 +176,12 @@ const GOLDEN = `{
       "year": null
     }
   ],
-  "schema_version": 2
+  "schema_version": 3
 }
 `
 
-describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
-  it('golden 字节级比对（输入乱序自归位：nodes=lineageOrder 序/edges=(created_at,id)/line_types=base 枚举序后 subs id 升序）', () => {
+describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁）', () => {
+  it('golden 字节级比对（输入乱序自归位：nodes=lineageOrder 序/edges=(created_at,id)/line_types=色板固定序 6 行）', () => {
     expect(assembleLineageJson(input())).toBe(GOLDEN)
   })
 
@@ -198,11 +189,11 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     expect(assembleLineageJson(input())).toBe(assembleLineageJson(input()))
   })
 
-  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 core_idea<…<year（pub_no 位）；subs color<dash<id<name<w', () => {
+  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 core_idea<…<year；边 color<created_at<dashed<…<via', () => {
     const text = assembleLineageJson(input())
     const topKeys = [...Object.keys(JSON.parse(text))]
     expect(topKeys).toEqual(['edges', 'line_types', 'nodes', 'schema_version'])
-    // JSON.parse 保持文本键序——逐层断言（嵌套第一节点/第一边/第一 subs）
+    // JSON.parse 保持文本键序——逐层断言（嵌套第一节点/第一边/色行）
     const parsed = JSON.parse(text) as Record<string, unknown>
     const firstNode = (parsed.nodes as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstNode)).toEqual([
@@ -210,46 +201,40 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
     ])
     const firstEdge = (parsed.edges as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstEdge)).toEqual([
-      'created_at', 'edge_id', 'from', 'label', 'line_type', 'to'
+      'color', 'created_at', 'dashed', 'edge_id', 'from', 'label', 'to'
     ])
-    const lt = (firstEdge.line_type as Record<string, unknown>)
-    expect(Object.keys(lt)).toEqual(['base', 'sub'])
-    const firstGroup = (parsed.line_types as Array<Record<string, unknown>>)[0]!
-    expect(Object.keys(firstGroup)).toEqual(['base', 'subs'])
-    const firstSub = (firstGroup.subs as Array<Record<string, unknown>>)[0]!
-    expect(Object.keys(firstSub)).toEqual(['color', 'dash', 'id', 'name', 'w'])
+    const viaEdge = (parsed.edges as Array<Record<string, unknown>>)[1]!
+    expect(Object.keys(viaEdge)).toEqual([
+      'color', 'created_at', 'dashed', 'edge_id', 'from', 'label', 'to', 'via'
+    ])
+    const firstRow = (parsed.line_types as Array<Record<string, unknown>>)[0]!
+    expect(Object.keys(firstRow)).toEqual(['color', 'name'])
   })
 
-  it('pub_no=入参 pubNos 同源直取（INV-92 库级编号）；主题节点 null；不含 x/y/slot', () => {
+  it('pub_no=入参 pubNos 同源直取（INV-92 库级编号）；主题节点 null；不含 x/y/slot；via 缺省省略不产 []（N-1）', () => {
     const parsed = JSON.parse(assembleLineageJson(input())) as {
       nodes: Array<Record<string, unknown>>
+      edges: Array<Record<string, unknown>>
     }
-    // [F-FOLDER-01] catalog_no 退役→pub_no（库级编号直取——图序编号双实现禁令随退役消解）
     expect(parsed.nodes.map((n) => n.pub_no)).toEqual([7, 9, null])
     for (const n of parsed.nodes) {
       expect('x' in n).toBe(false)
       expect('y' in n).toBe(false)
       expect('slot' in n).toBe(false)
     }
+    expect('via' in parsed.edges[0]!).toBe(false) // 无 via 边缺省省略
+    expect(parsed.edges[1]!.via).toEqual([{ x: 1, y: 2 }, { x: 1, y: 30 }])
   })
 
-  it('空图：nodes/edges 空数组+line_types 恒四组（空配置面）+schema_version=2（[F-FOLDER-01] 序列化变更递增）', () => {
+  it('空图：nodes/edges 空数组+line_types 恒 6 行（空配置面缺省「待命名」）+schema_version=3（A9&apos; 序列化变更递增）', () => {
     const parsed = JSON.parse(
-      assembleLineageJson({
-        nodes: [],
-        edges: [],
-        lineTypes: [
-          { base: 'tree', subs: [] },
-          { base: 'inferred', subs: [] },
-          { base: 'ref', subs: [] },
-          { base: 'manual', subs: [] }
-        ]
-      })
-    ) as { nodes: unknown[]; edges: unknown[]; line_types: unknown[]; schema_version: number }
+      assembleLineageJson({ nodes: [], edges: [], lineTypeNames: [] })
+    ) as { nodes: unknown[]; edges: unknown[]; line_types: Array<{ name: string }>; schema_version: number }
     expect(parsed.nodes).toEqual([])
     expect(parsed.edges).toEqual([])
-    expect(parsed.line_types).toHaveLength(4)
-    expect(parsed.schema_version).toBe(2)
+    expect(parsed.line_types).toHaveLength(6)
+    expect(parsed.line_types.every((r) => r.name === '待命名')).toBe(true)
+    expect(parsed.schema_version).toBe(3)
   })
 
   it('[F-FOLDER-02·C2] 跨图边过滤兜底：端点 folderId 不同的存量幽灵边不携出（同图边保留）', () => {
@@ -271,20 +256,15 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77）', () => {
         ],
         edges: [
           {
-            id: 'e-same', fromNode: 'nA', toNode: 'nC', label: '同图', kind: 'tree', sub: null,
+            id: 'e-same', fromNode: 'nA', toNode: 'nC', label: '同图', dashed: false, color: '#3a5bd9',
             createdAt: ISO_A, updatedAt: 't'
           },
           {
-            id: 'e-cross', fromNode: 'nA', toNode: 'nD', label: '跨图幽灵', kind: 'tree', sub: null,
+            id: 'e-cross', fromNode: 'nA', toNode: 'nD', label: '跨图幽灵', dashed: false, color: '#3a5bd9',
             createdAt: ISO_B, updatedAt: 't'
           }
         ],
-        lineTypes: [
-          { base: 'tree', subs: [] },
-          { base: 'inferred', subs: [] },
-          { base: 'ref', subs: [] },
-          { base: 'manual', subs: [] }
-        ]
+        lineTypeNames: []
       })
     ) as { edges: Array<{ edge_id: string }> }
     expect(parsed.edges.map((e) => e.edge_id)).toEqual(['e-same'])
@@ -318,7 +298,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
             lineage: () => ({
               nodes: repos.lineage.listGraph().nodes,
               edges: repos.lineage.listGraph().edges,
-              lineTypes: repos.lineage.getLineTypes(),
+              lineTypeNames: repos.lineage.getLineTypeNames(),
               // [F-FOLDER-01] pubNos 装配（services/index 生产接线同源——pub_no 字段）
               pubNos: new Map(repos.papers.pubNoByIds(
                 repos.lineage.listGraph().nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
@@ -380,7 +360,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       const expectText = assembleLineageJson({
         nodes: g.nodes,
         edges: g.edges,
-        lineTypes: h.repos.lineage.getLineTypes(),
+        lineTypeNames: h.repos.lineage.getLineTypeNames(),
         pubNos: new Map(
           h.repos.papers
             .pubNoByIds(g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : [])))

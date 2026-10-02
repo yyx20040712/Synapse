@@ -42,11 +42,19 @@ test('主题节点 folderId=当前图：F 图添加→主图不可见→图域�
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主题图' }).click()
+  // [②U2/A11] 添加节点钮随工具组（edit 态）
+  await win.getByTestId('lineage-mode-edit').click()
   await win.getByTestId('lineage-add-node').click()
   await win.getByTestId('add-node-mode-theme').click()
   await win.getByLabel('主题名称（阶段分组）').fill('阶段一分组')
   await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
   await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
+  // [②U1] 会话语义：编辑入暂存→点工具组保存钮批量落库（后续切图/reload 真
+  // 持久；dirty 切图走确认分支前先落库=数据面确立）
+  await win.getByTestId('lineage-save-btn').click()
+  await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
+  // [回炉 R23] 保存后断言补：clean 回落锁定（保存钮回禁用+spinner 消退）
+  await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
 
   // 图域隔离：主图视角不可见（folderId=当前图——非主图落地）+空图提示在场
   await win.getByTestId('lineage-nav-graph').click()
@@ -83,11 +91,16 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '即将删除的图' }).click()
+  // [②U2/A11] 添加节点钮随工具组（edit 态）
+  await win.getByTestId('lineage-mode-edit').click()
   await win.getByTestId('lineage-add-node').click()
   await win.getByTestId('add-node-mode-theme').click()
   await win.getByLabel('主题名称（阶段分组）').fill('将随图删除的节点')
   await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
   await expect(nodeCard(win, '将随图删除的节点')).toBeVisible({ timeout: 10_000 })
+  // [②U1] 会话语义：点保存落库（图非空锚=真写盘；后续删图级联有对象）
+  await win.getByTestId('lineage-save-btn').click()
+  await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
 
   // 库页删除该文件夹（确认弹窗执行）
   await win.getByRole('button', { name: '文献库' }).click()

@@ -77,16 +77,17 @@
  */
 import { randomUUID } from 'node:crypto'
 import {
+  LINE_TYPE_COLORS,
   MAIN_GRAPH_ID,
   dedupeLineageTags,
-  type LineTypeGroup,
+  type LineTypeNames,
   type LineageEdge,
   type LineageEdgeUpsert,
   type LineageNode,
   type LineageNodeUpsert
 } from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
-import { parseLineTypes, toEdge, toNode, type LineageEdgeRow, type LineageNodeRow } from './lineage.repo.rows'
+import { parseLineTypeNames, toEdge, toNode, type LineageEdgeRow, type LineageNodeRow } from './lineage.repo.rows'
 
 export interface LineageRepo {
   /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新）。
@@ -102,7 +103,8 @@ export interface LineageRepo {
    *  由 INV-89 部分唯一索引保证单行）；返回删行数（0=无节点=移出幂等分支） */
   removeNodeByPaperId(paperId: string): number
   /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service）。
-   *  [T3-P5] sub 列直写（input.sub 缺省=NULL=基础型默认样式） */
+   *  [F-LGRAPH-01②U8] kind 列恒 'manual' 写入（应用面单基型——旧值不透传）；
+   *  dashed/color 缺省归一=false/色板首色；sub 列死置 NULL */
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
   removeEdge(id: string): number
   /** 全图单读（nodes+edges；created_at,rowid 确定性序——库空=空数组合法态；
@@ -113,12 +115,12 @@ export interface LineageRepo {
   nodeByPaperId(paperId: string): LineageNode | null
   /** [T3-P3] 节点度数只读查（双端计数——from/to 任一端命中均计一条） */
   edgeCountByNode(nodeId: string): number
-  /** [T3-P5] 图级线型配置读（meta KV 'lineTypes' JSON+zod 校验+恒四组按
-   *  base 枚举序补齐——空配置=四空组；缺组补空组） */
-  getLineTypes(): LineTypeGroup[]
-  /** [T3-P5] 图级线型配置整体替换（单通道原子写——守卫在 service；updated_at
+  /** [F-LGRAPH-01②U8] 图级色行名配置读（meta KV 'lineTypeNames' JSON+恰 6
+   *  校验+读面容错缺省 6×「待命名」——旧 'lineTypes' 四组键残留不读） */
+  getLineTypeNames(): LineTypeNames
+  /** [F-LGRAPH-01②U8] 图级色行名配置整批替换（恰 6 校验在 service；updated_at
    *  应用层刷新 ISO 值，弃 DDL DEFAULT） */
-  setLineTypes(groups: LineTypeGroup[]): void
+  setLineTypeNames(names: LineTypeNames): void
 }
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
@@ -132,12 +134,13 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
-    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, created_at, updated_at)
-     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @via, @now, @now)
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, dashed, color, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @via, @dashed, @color, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        from_node = excluded.from_node, to_node = excluded.to_node,
        label = excluded.label, kind = excluded.kind, sub = excluded.sub,
-       via = excluded.via, updated_at = excluded.updated_at`
+       via = excluded.via, dashed = excluded.dashed, color = excluded.color,
+       updated_at = excluded.updated_at`
   )
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
@@ -153,11 +156,12 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const edgeCountByNodeStmt = db.prepare(
     `SELECT COUNT(*) AS n FROM lineage_edges WHERE from_node = ? OR to_node = ?`
   )
-  // [T3-P5] 图级线型配置 KV（010 迁移表——seed 空数组串）
+  // [F-LGRAPH-01②U8] 图级色行名配置 KV（010 迁移表——键 'lineTypeNames'；
+  // 旧 'lineTypes' 四组键残留不读写）
   const getMetaStmt = db.prepare(`SELECT value FROM lineage_graph_meta WHERE key = ?`)
   const setLineTypesStmt = db.prepare(
     `INSERT INTO lineage_graph_meta (key, value, updated_at)
-     VALUES ('lineTypes', @value, @now)
+     VALUES ('lineTypeNames', @value, @now)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
   )
 
@@ -203,11 +207,15 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         fromNode: input.fromNode,
         toNode: input.toNode,
         label: input.label,
-        kind: input.kind ?? 'tree',
-        sub: input.sub ?? null,
+        // [F-LGRAPH-01②U8] 应用面单基型：kind 列恒 'manual'（输入面无 kind 字段）
+        kind: 'manual',
+        sub: null,
         // [F-LINEAGE-02] 序列化口径 N-1：undefined/空数组→NULL（缺省=自动路由
         // 不产出 []——diff/脏检测零噪声）；不变量校验在 service 写面（repo 薄）
         via: input.via != null && input.via.length > 0 ? JSON.stringify(input.via) : null,
+        // [F-LGRAPH-01②U8] 视觉列缺省归一（false/色板首色——A3 内联字段）
+        dashed: input.dashed === true ? 1 : 0,
+        color: input.color ?? LINE_TYPE_COLORS[0],
         now
       })
       return toEdge(edgeByIdStmt.get(id) as LineageEdgeRow)
@@ -234,14 +242,14 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
       return r.n
     },
 
-    getLineTypes(): LineTypeGroup[] {
-      const row = getMetaStmt.get('lineTypes') as { value: string } | undefined
-      // 恒四组补齐在 parseLineTypes（rows 件单源——zod 校验+base 枚举序缺组补空）
-      return parseLineTypes(row === undefined ? '[]' : row.value)
+    getLineTypeNames(): LineTypeNames {
+      const row = getMetaStmt.get('lineTypeNames') as { value: string } | undefined
+      // 恰 6 校验+容错降级在 parseLineTypeNames（rows 件单源——缺省 6×「待命名」）
+      return parseLineTypeNames(row === undefined ? null : row.value)
     },
 
-    setLineTypes(groups: LineTypeGroup[]): void {
-      setLineTypesStmt.run({ value: JSON.stringify(groups), now: new Date().toISOString() })
+    setLineTypeNames(names: LineTypeNames): void {
+      setLineTypesStmt.run({ value: JSON.stringify(names), now: new Date().toISOString() })
     }
   }
 }

@@ -105,9 +105,8 @@ export interface PapersRepo {
   listSummariesByIds(ids: string[]): PaperSummary[]
   listAllIds(): string[]
   detailById(id: string): PaperDetail | null
-  /** F-LG14 含金量摘要批量查证（venue+cited_by_count；graph 通道 join 单源——
-   *  批量 in-query 单语句禁 N+1，listSummariesByIds 同型；空 ids=空数组） */
-  listMetricsByIds(ids: string[]): Array<{ paperId: string; venue: string; citedByCount: number | null }>
+  /** F-LG14 含金量批量查证（+[②U4] impact_factor——graph join 单源） */
+  listMetricsByIds(ids: string[]): Array<{ paperId: string; venue: string; citedByCount: number | null; impactFactor: number | null }>
   /** [F-FOLDER-01] 文件夹归属直写（单归属；null=移出未归档）。未命中返回 null */
   setFolderId(id: string, folderId: string | null): PaperRow | null
   /** [F-FOLDER-01] 归属纯读（INV-88 判别源；null=未归档/未命中） */
@@ -240,9 +239,10 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       if (ids.length === 0) return []
       const marks = ids.map(() => '?').join(', ')
       const rows = stmt(
-        `SELECT id, venue, cited_by_count FROM papers WHERE id IN (${marks})`
-      ).all(...ids) as { id: string; venue: string; cited_by_count: number | null }[]
-      return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count }))
+        `SELECT id, venue, cited_by_count, impact_factor FROM papers WHERE id IN (${marks})`
+      ).all(...ids) as Array<{ id: string; venue: string; cited_by_count: number | null; impact_factor: number | null }>
+      // [F-LGRAPH-01②U4] +impact_factor（papers 既有列[迁移 012]透传——零新 DB 面）
+      return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count, impactFactor: r.impact_factor }))
     },
     // [F-FOLDER-01] 单归属直写（moveFolder 第 1 步；updated_at 语义同 meta 写）
     setFolderId(id, folderId) {

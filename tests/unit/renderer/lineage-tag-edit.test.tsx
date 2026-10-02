@@ -50,7 +50,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', sub: null, createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
 }
 
 /** 落库后回传的服务器行（回填面） */
@@ -151,6 +151,7 @@ it('Board 全链：右键→「添加标签…」→对话框输入→保存=ups
   act(() => {
     save?.click()
   })
+  useLineageStore.getState().save() // [②U1] 点保存批量落库
   await settle()
   // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变）
   expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
@@ -258,6 +259,7 @@ it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新�
     ({ ok: true, data: serverNode(node('A', req)) })
   )
   useLineageStore.getState().setNodeTags('A', ['综述', '早期'])
+  useLineageStore.getState().save() // [②U1]
   await settle()
   // [T3-P8] 同上：全字段载荷补 month/slot
   expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
@@ -273,7 +275,7 @@ it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新�
     tags: ['综述', '早期']
   })
   expect(useLineageStore.getState().nodes[0]!.tags).toEqual(['综述', '早期'])
-  expect(useLineageStore.getState().saveStatus).toBe('saved')
+  expect(useLineageStore.getState().saveStatus).toBe('clean')
 })
 
 // ── F-TAGS-01 R6：文本输入 Enter 提交面 isComposing 守卫（同类面排查承接） ──
@@ -299,6 +301,8 @@ it('F-TAGS-01 对话框输入 IME 组词期 Enter（isComposing=true）不派发
       new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: false })
     )
   })
+  await settle()
+  useLineageStore.getState().save() // [②U1] 提交入暂存后点保存
   await settle()
   expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
 })

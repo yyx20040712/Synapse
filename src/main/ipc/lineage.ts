@@ -47,16 +47,16 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         fromNode: req.from,
         toNode: req.to,
         label: req.label ?? '',
-        kind: req.kind,
-        sub: req.sub, // T3-P5：undefined/null 同归一 null=基础默认样式（service 守卫）
+        dashed: req.dashed, // [F-LGRAPH-01②U8] 视觉线型内联（缺省归一在 repo）
+        color: req.color,
         via: req.via // [F-LINEAGE-02] 手动调线路点透传（不变量校验在 service）
       }),
     removeEdge: async (req) => {
       deps.services.lineage.removeEdge(req.id)
       return { ok: true }
     },
-    // T3-P5：图级线型整体替换（守卫全在 service——恒四组/id 唯一/被引用 sub
-    // 不得消失；Res=校验后回显）
-    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypes(req)
+    // [F-LGRAPH-01②U8] 图级色行名整批替换（恰 6 校验 schema 面单源——
+    // 通道名沿承 upsert-line-types，载荷重整为 names 数组；Res=归一后回显）
+    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypeNames(req)
   }
 }

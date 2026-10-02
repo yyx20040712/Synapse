@@ -26,6 +26,7 @@ import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
 import tagsColorSql from './migrations/011_tags_color.sql?raw'
 import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
 import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
+import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
 
 export interface Migration {
   version: number
@@ -59,7 +60,11 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 12, name: 'folders_graphs', sql: foldersGraphsSql },
   // [F-LINEAGE-02 ①a] 手动调线路点：lineage_edges.via JSON TEXT（缺省 NULL=
   // 自动路由；不变量校验在 service 写面——新库 user_version 终值 13）
-  { version: 13, name: 'lineage_edge_via', sql: lineageEdgeViaSql }
+  { version: 13, name: 'lineage_edge_via', sql: lineageEdgeViaSql },
+  // [F-LGRAPH-01②U8] 边视觉线型内联：dashed INTEGER/color TEXT NOT NULL
+  // DEFAULT（存量行零迁移归一=实线+蓝；kind 列保留恒 'manual'——A3 DDL 最小
+  // 化；新库 user_version 终值 14）
+  { version: 14, name: 'lineage_edge_visual', sql: lineageEdgeVisualSql }
 ]
 
 export interface MigrateResult {

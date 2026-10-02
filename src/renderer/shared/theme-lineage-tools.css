@@ -1,0 +1,91 @@
+/* [F-LGRAPH-01②U2/U3] 脉络编辑工具组+线型列表+画线预览皮肤（自
+   theme-lineage.css 分域拆件——check-quality 450 行红线；token 沿承主件） */
+/* [F-LGRAPH-01②U2] 编辑工具组（§3.3——保存/选择/线型图标/撤销重做；
+   仅 edit 模式渲染）+线型列表（CAD 式扁平 6 色行） */
+.lg-toolbar.tools { gap: 4px; }
+.lg-sep { width: 1px; height: 20px; margin: 0 4px; background: var(--line); }
+.lg-btn.save { display: inline-flex; align-items: center; gap: 5px; }
+.lg-btn.save:disabled { opacity: 0.45; filter: grayscale(0.8); cursor: default; }
+.lg-btn.ghost.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.lg-btn.save .spinner {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--accent-soft); border-top-color: var(--accent);
+  animation: lg-spin 0.7s linear infinite;
+}
+@keyframes lg-spin { to { transform: rotate(360deg); } }
+.lg-save-error {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; font-size: var(--fs-micro);
+  border: 1px solid var(--danger); border-radius: 6px;
+}
+.lg-save-error button {
+  padding: 1px 8px; border-radius: 5px; font-size: var(--fs-micro);
+  background: var(--accent-soft); color: var(--accent);
+}
+/* [F-LGRAPH-01②U2/回炉 R6] 线型图标锚槽：列表挂当前展开图标正下方（随迁）
+   ——锚槽 relative+列表 top:100%/left:0 定位 */
+.lg-tool-anchor { position: relative; display: inline-flex; }
+.linetype-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 148px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-drag);
+  z-index: 140;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.linetype-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px; border-radius: 6px; cursor: pointer;
+}
+.linetype-row:hover { background: var(--accent-soft); }
+.linetype-row.on { background: var(--accent-soft); }
+.linetype-sample { display: inline-block; width: 26px; height: 0; }
+.linetype-name { flex: 1; font-size: var(--fs-tl-hint); color: var(--text); }
+.linetype-name-input {
+  flex: 1; min-width: 0; font-size: var(--fs-tl-hint);
+  padding: 1px 4px; border: 1px solid var(--accent); border-radius: 4px;
+  background: var(--bg); color: var(--text);
+}
+
+.linetype-check { color: var(--accent); font-size: var(--fs-micro); }
+
+/* [F-LGRAPH-01②U3] 画线拖动预览层（内容坐标 SVG——瞬态零持久化）+画线态光标 */
+.draw-preview {
+  position: absolute; inset: 0; overflow: visible;
+  pointer-events: none; z-index: 2;
+}
+.tl-content.drawing { cursor: crosshair; }
+.tl-content.drawing .tl-card { cursor: pointer; }
+
+/* [F-LGRAPH-01②U5] 手动调线编辑态：选中线 accent 加粗 2.2+手柄族+虚影+
+   磁吸指示+穿卡警示（P-10/P-9——零持久化渲染态） */
+.tl-edge.selected { stroke-width: 2.2; }
+.edge-handle { pointer-events: all; }
+.edge-handle.vertex {
+  fill: var(--accent-ink);
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  transition: transform 0.08s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.edge-handle.vertex:hover { transform: scale(1.25); }
+.edge-handle.vertex.magnet { fill: var(--accent); }
+.edge-handle.end { fill: var(--accent-ink); stroke: var(--signal); stroke-width: 1.6; cursor: grab; }
+.edge-handle.end:hover { r: 5.6; }
+.edge-handle.end[data-active='1'] { fill: var(--signal); }
+.edge-ghost { stroke: var(--faint); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.edge-snapline { stroke: var(--signal); stroke-width: 1; stroke-dasharray: 5 4; }
+.edge-warn { stroke: var(--signal); stroke-width: 3.2; opacity: 0.65; fill: none; }
+.edge-color-dot { cursor: pointer; padding: 0; }
+/* [②U5/§3.6] 右键反馈：卡=accent 描边（菜单开期间保持、关即撤——Board
+   menu 态驱动 .ctx-hlt） */
+.tl-card.ctx-hlt { outline: 2px solid var(--accent); outline-offset: 1px; }

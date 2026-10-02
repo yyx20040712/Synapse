@@ -110,7 +110,7 @@ beforeEach(() => {
     edges: [],
     status: 'ready',
     error: null,
-    saveStatus: 'saved',
+    saveStatus: 'clean',
     lastWriteError: null,
     queue: [],
     flushing: false,

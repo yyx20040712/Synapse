@@ -71,8 +71,8 @@ const lineageEdge = {
   fromNode: 'ln1',
   toNode: 'ln2',
   label: '',
-  kind: 'tree' as const,
-  sub: null,
+  dashed: false, // [F-LGRAPH-01②U8] 视觉线型内联（kind/sub 退役）
+  color: '#3a5bd9',
   createdAt: ISO,
   updatedAt: ISO
 }
@@ -164,12 +164,7 @@ const VALID: Record<string, unknown[]> = {
       edges: [lineageEdge],
       pubNos: { p1: 3 }, // [F-FOLDER-01] 库级编号表（键=paperId）
       paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } },
-      lineTypes: [
-        { base: 'tree', subs: [{ id: 'lt1', name: '强继承', color: '#F2773A', dash: '', w: 2 }] },
-        { base: 'inferred', subs: [] },
-        { base: 'ref', subs: [] },
-        { base: 'manual', subs: [] }
-      ]
+      lineTypeNames: ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'] // [F-LGRAPH-01②U8] 色行名（恰 6）
     }
   ],
   lineageUpsertNodeReqSchema: [
@@ -180,16 +175,11 @@ const VALID: Record<string, unknown[]> = {
   lineageIdReqSchema: [{ id: 'ln1' }],
   lineageUpsertEdgeReqSchema: [
     { from: 'a', to: 'b' },
-    { id: 'le1', from: 'a', to: 'b', label: 'L', kind: 'ref' },
-    { from: 'a', to: 'c', label: 'L', kind: 'manual', sub: 'lt1' }
+    { id: 'le1', from: 'a', to: 'b', label: 'L' },
+    { from: 'a', to: 'c', label: 'L', dashed: true, color: '#c07a2a' } // [F-LGRAPH-01②U8] 视觉内联
   ],
   lineageUpsertLineTypesReqSchema: [
-    [
-      { base: 'tree', subs: [] },
-      { base: 'inferred', subs: [] },
-      { base: 'ref', subs: [] },
-      { base: 'manual', subs: [] }
-    ]
+    ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'] // [②U8] 色行名恰 6
   ],
   corpusReqSchema: [{ paperId: 'p1' }],
   tagWithCountSchema: [

@@ -1,23 +1,18 @@
 /**
  * [T3-P5] 脉络模型增量 v2 —— zod 单源+lineageOrder 排序契约纯函数（新锁定合约面）。
  *
- * 覆盖：kind 四值枚举（inferred 先行——P5 无产生入口防退化）/LineageNode
- * month 边界（0/13 拒、1/12 过、null=未定月）/slot（负拒、0 过、null 兜底）/
- * LineageEdge sub（string|null）/LineTypeSub·LineTypeGroup 形状（空串 dash=
- * 实线、w positive、空 id 拒）/恒四组强校验 schema（base 集合恰四枚举各一）/
- * lineageOrder 排序契约（乱序插入归位+null 组末三态+行序 tiebreak）+
- * lineageCatalogNos 全序编号（draft v1.2 面已随导入链退役删除——
- * [F-BAKRET-01] 2026-09-30，ADR-0022）。
- * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §1/§4。
+ * 覆盖：LineageNode month 边界（0/13 拒、1/12 过、null=未定月）/slot（负拒、
+ * 0 过、null 兜底）/lineageOrder 排序契约（乱序插入归位+null 组末三态+行序
+ * tiebreak）/folderId 必填。
+ * [F-LGRAPH-01②U8] kind 四值枚举/LineageEdge sub/LineTypeSub·LineTypeGroup/
+ * 恒四组 schema 用例随四值体系退役删除（替代断言面=lineage-u8-linetype.test.ts
+ * ——dashed/color 内联+色板常量+lineTypeNamesSchema 恰 6）。
+ * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §1/§4
+ * +2026-10-01_f-lgraph01-editor-design-final.md §1（U8 重整）。
  * always-active（不经 guardedDescribe）。
  */
 import { describe, expect, it } from 'vitest'
 import {
-  LINE_TYPE_BASE_ORDER,
-  lineTypeGroupSchema,
-  lineTypeGroupsSchema,
-  lineageEdgeKindSchema,
-  lineageEdgeSchema,
   lineageNodeSchema,
   lineageOrder,
   MAIN_GRAPH_ID,
@@ -42,15 +37,6 @@ function node(patch: Partial<LineageNode> & { id: string }): LineageNode {
     ...patch
   }
 }
-
-describe('T3-P5 kind 四值枚举（inferred 先行）', () => {
-  it('tree/inferred/ref/manual 四值全过；旧值域外串拒', () => {
-    for (const k of ['tree', 'inferred', 'ref', 'manual']) {
-      expect(lineageEdgeKindSchema.parse(k)).toBe(k)
-    }
-    expect(lineageEdgeKindSchema.safeParse('dashed').success).toBe(false)
-  })
-})
 
 describe('T3-P5 LineageNode month/slot（zod 边界）', () => {
   const base = {
@@ -82,57 +68,6 @@ describe('T3-P5 LineageNode month/slot（zod 边界）', () => {
     expect(lineageNodeSchema.safeParse({ ...base, month: null, slot: -1 }).success).toBe(false)
     expect(lineageNodeSchema.safeParse({ ...base, month: null, slot: 1.5 }).success).toBe(false)
     expect(lineageNodeSchema.safeParse({ ...base, month: null }).success).toBe(false)
-  })
-})
-
-describe('T3-P5 LineageEdge sub（string|null 必填键）', () => {
-  const base = {
-    id: 'e-1',
-    fromNode: 'a',
-    toNode: 'b',
-    label: '',
-    kind: 'tree',
-    createdAt: 't',
-    updatedAt: 't'
-  }
-
-  it('sub 字符串过、null=基础型默认样式过、缺 sub strict 拒', () => {
-    expect(lineageEdgeSchema.safeParse({ ...base, sub: 'lt-1' }).success).toBe(true)
-    expect(lineageEdgeSchema.safeParse({ ...base, sub: null }).success).toBe(true)
-    expect(lineageEdgeSchema.safeParse(base).success).toBe(false)
-    expect(lineageEdgeSchema.safeParse({ ...base, sub: 5 }).success).toBe(false)
-  })
-})
-
-describe('T3-P5 LineTypeSub/LineTypeGroup 形状', () => {
-  const sub = { id: 'lt-a', name: '强继承', color: '#F2773A', dash: '', w: 2 }
-
-  it('合法组过（空串 dash=实线）；w 非正拒、空 id/name 拒、未知键拒', () => {
-    expect(lineTypeGroupSchema.safeParse({ base: 'tree', subs: [sub] }).success).toBe(true)
-    expect(lineTypeGroupSchema.safeParse({ base: 'inferred', subs: [] }).success).toBe(true)
-    expect(lineTypeGroupSchema.safeParse({ base: 'tree', subs: [{ ...sub, w: 0 }] }).success).toBe(false)
-    expect(lineTypeGroupSchema.safeParse({ base: 'tree', subs: [{ ...sub, id: '' }] }).success).toBe(false)
-    expect(lineTypeGroupSchema.safeParse({ base: 'tree', subs: [{ ...sub, name: '' }] }).success).toBe(false)
-    expect(
-      lineTypeGroupSchema.safeParse({ base: 'tree', subs: [{ ...sub, extra: 1 }] }).success
-    ).toBe(false)
-  })
-})
-
-describe('T3-P5 恒四组强校验 schema（upsertLineTypes 请求面）', () => {
-  const g = (base: string, subs: unknown[] = []): unknown => ({ base, subs })
-
-  it('四组各一过（乱序亦过）；缺组/重复组/超集均拒', () => {
-    const four = [g('tree'), g('inferred'), g('ref'), g('manual')]
-    expect(lineTypeGroupsSchema.safeParse(four).success).toBe(true)
-    expect(lineTypeGroupsSchema.safeParse([g('manual'), g('ref'), g('inferred'), g('tree')]).success).toBe(true)
-    expect(lineTypeGroupsSchema.safeParse(four.slice(0, 3)).success).toBe(false)
-    expect(lineTypeGroupsSchema.safeParse([...four, g('tree')]).success).toBe(false)
-    expect(lineTypeGroupsSchema.safeParse([g('tree'), g('tree'), g('ref'), g('manual')]).success).toBe(false)
-  })
-
-  it('LINE_TYPE_BASE_ORDER 导出=base 枚举序（tree,inferred,ref,manual）', () => {
-    expect(LINE_TYPE_BASE_ORDER).toEqual(['tree', 'inferred', 'ref', 'manual'])
   })
 })
 

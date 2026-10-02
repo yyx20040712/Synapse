@@ -16,7 +16,6 @@ export { defaultCorridor, laneIndex, routeAll, routeEdge } from './routing/chain
 export type {
   Corridor,
   EdgeGeomInput,
-  EdgeKind,
   LayoutSnapshot,
   MonthFrame,
   RoutedPath,

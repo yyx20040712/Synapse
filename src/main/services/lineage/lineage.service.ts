@@ -7,17 +7,15 @@
  * 零语义变化。
  *
  * 职责（票面行为层）：
- * - 四写方法（IPC 注册归 LG-03）：upsertNode（幽灵
+ * - 写方法（IPC 注册归 LG-03）：upsertNode（幽灵
  *   paperId 拒；T3-P5 month/slot 归一=write-guards 拆件单源）/upsertEdge
- *   （树守卫运行时防线——INV-27 守卫宿主，T3-P5 修订版**四 kind**：
- *   自环拒/节点不存在拒/重复边中文收口（UNIQUE 前置，同端点对跨 kind
- *   互斥）/多父拒（tree+inferred 同守——单父集合双向；ref 豁免、manual
- *   豁免且不限条数=用户裁决）/成环拒（全边可达图含 inferred/manual
- *   父链）/sub 引用完整性（存在性+跨基型拒——T3-P5））/removeNode/
- *   removeEdge（透传）/upsertLineTypes（恒四组+id 全图唯一+被引用 sub
- *   不得消失不得变更基型组——图级整体替换，T3-P5）。
+ *   （守卫运行时防线——[F-LGRAPH-01②U8] kind 四值体系退役后重整面：自环拒/
+ *   节点不存在拒/重复边中文收口（UNIQUE 前置）/跨图拒（INV-90）/成环拒
+ *   （全边可达图）/via 不变量校验（F-LINEAGE-02）；ref 综述限定+多父守卫+
+ *   sub 引用完整性随四 kind 体系退役）/removeNode/removeEdge（透传）/
+ *   upsertLineTypeNames（恰 6 行+空名归一——图级整体替换，②U8）。
  * - graph：全图单读+含金量 join（F-LG14）+nodes=lineageOrder 序（INV-75
- *   读面唯一保证）+lineTypes 恒四组（T3-P5；库空=空数组，合法态非错误）。
+ *   读面唯一保证）+lineTypeNames 恰 6（meta KV 读出）。
  *
  * 分层：service 持 repo+paperExists+withTransaction（注入保可测），
  * 禁 service 直写 SQL；树守卫集中本文件（LG-03 接线不另写守卫——门一 W1 处置）。
@@ -25,9 +23,15 @@
  * lineage-v2-service.test.ts（T3-P5 四 kind/sub 守卫/slot 归一/graph 读面）+
  * lineage-manual-edges.test.ts（manual 面）[受锁新增]（always-active）。
  */
-import { MAIN_GRAPH_ID, isSurveyTitle, lineageOrder, validateLineageVia } from '../../../shared/models/lineage'
+import {
+  LINE_TYPE_DEFAULT_NAME,
+  MAIN_GRAPH_ID,
+  lineageOrder,
+  lineTypeNamesSchema,
+  validateLineageVia
+} from '../../../shared/models/lineage'
 import type {
-  LineTypeGroup,
+  LineTypeNames,
   LineageEdge,
   LineageEdgeUpsert,
   LineageNode,
@@ -36,14 +40,18 @@ import type {
 import { venueToTier, type VenueTier } from '../../../shared/venue-tier'
 import type { LineageRepo } from '../../db/repos/lineage.repo'
 import { DomainError } from '../shared/domain-error'
-import { checkLineTypeGroups, normalizeMonthSlot } from './lineage.write-guards'
+import { normalizeMonthSlot } from './lineage.write-guards'
 
 /** F-LG14 含金量摘要（graph 通道逐文献节点载荷；venueTier 映射单源=
  *  shared/venue-tier.ts venueToTier——受锁常量零改，未映射=null=「未定」；
- *  citedByCount null=从未抓到=「引 —」，0=已抓到且为 0（值非缺）） */
+ *  citedByCount null=从未抓到，0=已抓到且为 0（值非缺））。
+ *  [F-LGRAPH-01②U4] +venue/+impactFactor（卡 L3/详情面板同源——papers 既有
+ *  列透传[venue 001/impact_factor 迁移 012]零新 DB 面；可选缺席=渲染省略语义） */
 export interface LineagePaperMetrics {
   citedByCount: number | null
   venueTier: VenueTier | null
+  venue?: string | null
+  impactFactor?: number | null
 }
 
 export interface LineageService {
@@ -51,27 +59,24 @@ export interface LineageService {
   removeNode(id: string): number
   upsertEdge(input: LineageEdgeUpsert): LineageEdge
   removeEdge(id: string): number
-  /** [T3-P5] 图级线型配置整体替换（单通道原子写）：恒四组校验+subs.id 全图
-   *  唯一+被现存边引用的 sub 不得消失（整批拒绝列冲突 id）；成功回显恒四组
-   *  （base 枚举序——与 graph 读面同序） */
-  upsertLineTypes(groups: LineageGroupInput): LineTypeGroup[]
+  /** [F-LGRAPH-01②U8] 图级色行名配置整批替换（单通道原子写）：恰 6 行校验
+   *  （schema 面拦 INVALID_REQUEST）+空名 trim 后归一「待命名」（写边界
+   *  单源）；成功回显归一后值 */
+  upsertLineTypeNames(names: LineTypeNames): LineTypeNames
   /** 全图单读+含金量 join（F-LG14：paperMetrics 键=paperId，主题节点不入表；
-   *  批量单语句禁 N+1——主控裁决）。[T3-P5] nodes=lineageOrder 序（INV-75
-   *  读面唯一保证——消费方不得重排）+lineTypes 恒四组（meta KV 读出）。
-   *  [F-FOLDER-01] folderId 提供=只取该图节点/边子图（W4 改写面——图切换器
-   *  数据源；边=双端点均入图才保留）+pubNos（库级派生编号 INV-92——图内
-   *  节点号与库号同源单一真相源；主题节点无键） */
+   *   批量单语句禁 N+1——主控裁决）。[T3-P5] nodes=lineageOrder 序（INV-75
+   *   读面唯一保证——消费方不得重排）+lineTypeNames 恰 6（meta KV 读出）。
+   *   [F-FOLDER-01] folderId 提供=只取该图节点/边子图（W4 改写面——图切换器
+   *   数据源；边=双端点均入图才保留）+pubNos（库级派生编号 INV-92——图内
+   *   节点号与库号同源单一真相源；主题节点无键） */
   graph(folderId?: string): {
     nodes: LineageNode[]
     edges: LineageEdge[]
     paperMetrics: Record<string, LineagePaperMetrics>
-    lineTypes: LineTypeGroup[]
+    lineTypeNames: LineTypeNames
     pubNos: Record<string, number>
   }
 }
-
-/** upsertLineTypes 入参（恒四组强校验 schema 派生——models/lineage 单源） */
-export type LineageGroupInput = readonly LineTypeGroup[]
 
 export interface LineageServiceDeps {
   repo: Pick<
@@ -81,8 +86,8 @@ export interface LineageServiceDeps {
     | 'upsertEdge'
     | 'removeEdge'
     | 'listGraph'
-    | 'getLineTypes'
-    | 'setLineTypes'
+    | 'getLineTypeNames'
+    | 'setLineTypeNames'
   >
   /** papers 表存在性查证（幽灵 paperId 拦截——装配层接 repos.papers.findById） */
   paperExists: (paperId: string) => boolean
@@ -100,6 +105,7 @@ export interface LineageServiceDeps {
     paperId: string
     venue: string
     citedByCount: number | null
+    impactFactor?: number | null
   }>
   /** [F-FOLDER-01] 文件夹存在性查证（幽灵 folderId 拦截——装配层接
    *  repos.folders.findById !== null；可选缺省=恒真（既有单测装配兼容——
@@ -209,10 +215,9 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
     },
 
     upsertEdge(input: LineageEdgeUpsert): LineageEdge {
-      // INV-27 运行时守卫（T3-P5 修订版——四 kind 全景：tree/inferred 同守
-      // 单父+拒环（inferred=P7 编辑器/AI 域入口，枚举+守卫先行防退化）；ref
-      // 豁免单父仍拒环；manual 豁免单父**不限条数**（用户裁决）仍拒环）
-      const kind = input.kind ?? 'tree' // 写路径显式缺省（预裁 5——不赖 DB DEFAULT）
+      // [F-LGRAPH-01②U8] 守卫重整：kind 四值体系退役（manual 单基型）——
+      // ref 综述限定/多父守卫/sub 引用完整性随体系退役（manual 不限条数=
+      // 用户裁决恒立）；保留面=自环/悬空/跨图/重复边/成环/via 不变量
       if (input.fromNode === input.toNode) {
         throw new LineageDomainError('CONFLICT', '自环边不允许（from 与 to 为同一节点）')
       }
@@ -248,17 +253,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
           `跨图边拒绝（ERR_CROSS_GRAPH_EDGE）：两端节点分属不同文件夹的脉络图（${fromNode.folderId} / ${toNode.folderId}）——请先移动文献到同一文件夹`
         )
       }
-      // ref 限定（R2-LG12 §1）：from 必须是综述文献节点（菜单项级限定+service
-      // 双守——isSurveyTitle 单源 shared/models；paperId null 主题节点同拒）。
-      // manual 无 from 限定（F-LG15 守卫票面清单：豁免单父/拒环/同端点对互斥/
-      // 「仅允许人工」由 UI 入口承载（[F-BAKRET-01] 草稿导入链退役），非 from 属性限定）
-      if (kind === 'ref') {
-        if (fromNode.paperId === null || !isSurveyTitle(fromNode.title)) {
-          throw new LineageDomainError('CONFLICT', '参考边只能由综述节点发出')
-        }
-      }
-      // 重复边收口（同端点对不区分 kind——tree/ref/manual 三方互斥，预裁 2：
-      // 同端点对只允许一种 kind，语义清晰防重线；kind 相异时 reason 附互斥说明）
+      // 重复边收口（同端点对唯一——UNIQUE(from,to) 应用层前置）
       const dup = graph.edges.find(
         (e) =>
           e.id !== input.id && e.fromNode === input.fromNode && e.toNode === input.toNode
@@ -266,111 +261,44 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       if (dup !== undefined) {
         throw new LineageDomainError(
           'CONFLICT',
-          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝` +
-            (dup.kind !== kind ? `（${dup.kind} 与 ${kind} 同端点对互斥）` : '')
+          `该逻辑线已存在（${input.fromNode}→${input.toNode}），重复边被拒绝`
         )
       }
-      // 多父守卫（tree 原语义；T3-P5 INV-27 修订：inferred 同 tree——单父集合
-      // ={tree,inferred} 双向：to 已有 tree 父或 inferred 父均拒；ref/manual
-      // 豁免：to 可已有 tree/inferred 父或多条 ref、manual 入边（manual 不限
-      // 条数=用户裁决 F-LG15）；更新场景（input.id 已存在）：改端点=改父，按
-      // 新端点重估守卫
-      if (kind === 'tree' || kind === 'inferred') {
-        const existingParent = graph.edges.find(
-          (e) =>
-            e.toNode === input.toNode &&
-            e.id !== input.id &&
-            (e.kind === 'tree' || e.kind === 'inferred')
-        )
-        if (existingParent !== undefined) {
-          throw new LineageDomainError(
-            'CONFLICT',
-            `多父边拒绝：节点 ${input.toNode} 已有父节点 ${existingParent.fromNode}（树至多一父）`
-          )
-        }
-      }
-      // 加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边的旧端点）；环检测
-      // 图=全部边含 ref/manual（综述/人工父链与 tree 混合成环真实可达——F-LG15
-      // 「tree 父链+manual 父链双向」由全边可达图天然承载）
+      // 成环守卫：加 from→to 后成环 ⇔ 现图中 to 可达 from（排除自身边旧端点）
       if (reachable(graph.edges, input.toNode, input.fromNode, input.id)) {
         throw new LineageDomainError(
           'CONFLICT',
-          '成环拒绝：该边将使脉络图出现环路（树边、参考边与人工边均不得成环）'
+          '成环拒绝：该边将使脉络图出现环路（连线不得成环）'
         )
       }
-      // 成环守卫（全边可达图）之后接 T3-P5 sub 引用完整性守卫（样式层写面）：
-      // sub≠null ⇒ 存在于 lineTypes 且 group.base==edge.kind（跨基型拒绝）；
-      // sub=null/缺省=基础型默认样式不查证
-      if (input.sub !== undefined && input.sub !== null) {
-        const groups = deps.repo.getLineTypes()
-        const owner = groups.flatMap((g) =>
-          g.subs.filter((s) => s.id === input.sub).map(() => g.base)
-        )[0]
-        if (owner === undefined) {
-          throw new LineageDomainError(
-            'CONFLICT',
-            `子线型不存在：${input.sub}（先在线型配置中定义再引用）`
-          )
-        }
-        if (owner !== kind) {
-          throw new LineageDomainError(
-            'CONFLICT',
-            `子线型跨基型拒绝：${input.sub} 属 ${owner} 组，与 ${kind} 边不符`
-          )
-        }
-      }
-      return deps.repo.upsertEdge({ ...input, kind, sub: input.sub ?? null, via: input.via })
+      return deps.repo.upsertEdge({ ...input, via: input.via })
     },
 
     removeEdge(id: string): number {
       return deps.repo.removeEdge(id)
     },
 
-    upsertLineTypes(groups: LineageGroupInput): LineTypeGroup[] {
-      // ①恒四组（D-I-4）+②subs.id 全图唯一——静态校验拆件单源
-      // （lineage.write-guards；schema 面同规则在 lineTypeGroupsSchema）
-      const check = checkLineTypeGroups(groups)
-      if (!check.ok) {
-        throw new LineageDomainError('CONFLICT', check.reason)
+    upsertLineTypeNames(names: LineTypeNames): LineTypeNames {
+      // 恰 6 行校验（lineTypeNamesSchema 单源——IPC 面同规则先拦，service 面
+      // 直调路径同守）；空名 trim 后归一「待命名」（写边界单源——消费面零
+      // 兜底逻辑）
+      const check = lineTypeNamesSchema.safeParse(names)
+      if (!check.success) {
+        throw new LineageDomainError('INVALID_REQUEST', '线型色行名必须恰为 6 行')
       }
-      // ③被现存边引用的 sub 不得消失（整批拒绝列冲突 id——弃级联置 null=
-      // 静默丢样式）**且不得变更基型组**（门一 W-3/门二 P2-2：跨组移动会击穿
-      // upsertEdge 写面建立的 group.base==edge.kind 不变量，导出 line_types
-      // 与 edges.line_type 联接语义破裂——同列冲突 id 整批拒）；引用面=现存
-      // 边 sub 非 null 全集；动态图状态守卫留宿主本件
-      const baseOf = new Map(groups.flatMap((g) => g.subs.map((s) => [s.id, g.base] as const)))
-      const conflictIds: string[] = []
-      const movedIds: string[] = []
-      for (const e of deps.repo.listGraph().edges) {
-        if (e.sub === null || e.sub === undefined) continue
-        const newBase = baseOf.get(e.sub)
-        if (newBase === undefined) {
-          conflictIds.push(e.sub) // 消失
-        } else if (newBase !== e.kind) {
-          movedIds.push(e.sub) // 跨组移动（基型变更）
-        }
-      }
-      if (conflictIds.length > 0) {
-        throw new LineageDomainError(
-          'CONFLICT',
-          `子线型被现存边引用不得删除：${[...new Set(conflictIds)].join('、')}`
-        )
-      }
-      if (movedIds.length > 0) {
-        throw new LineageDomainError(
-          'CONFLICT',
-          `子线型被现存边引用不得变更基型组：${[...new Set(movedIds)].join('、')}`
-        )
-      }
-      deps.repo.setLineTypes([...groups])
-      return deps.repo.getLineTypes() // 校验后回显（恒四组 base 枚举序——与 graph 同序）
+      const normalized = check.data.map((n) => {
+        const t = n.trim()
+        return t === '' ? LINE_TYPE_DEFAULT_NAME : t
+      })
+      deps.repo.setLineTypeNames(normalized)
+      return deps.repo.getLineTypeNames()
     },
 
     graph(folderId?: string): {
       nodes: LineageNode[]
       edges: LineageEdge[]
       paperMetrics: Record<string, LineagePaperMetrics>
-      lineTypes: LineTypeGroup[]
+      lineTypeNames: LineTypeNames
       pubNos: Record<string, number>
     } {
       const g = deps.repo.listGraph()
@@ -392,7 +320,10 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       for (const r of rows) {
         paperMetrics[r.paperId] = {
           citedByCount: r.citedByCount,
-          venueTier: venueToTier(r.venue)
+          venueTier: venueToTier(r.venue),
+          // [②U4] 期刊/IF 透传（venue 空串=缺席省略语义同 null）
+          venue: r.venue === '' ? null : r.venue,
+          impactFactor: r.impactFactor ?? null
         }
       }
       // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口单源=pubNoByIds——与 LIST_SQL
@@ -408,7 +339,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
         nodes: lineageOrder(scopedNodes),
         edges: scopedEdges,
         paperMetrics,
-        lineTypes: deps.repo.getLineTypes(),
+        lineTypeNames: deps.repo.getLineTypeNames(),
         pubNos
       }
     }

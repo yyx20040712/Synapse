@@ -281,7 +281,7 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
     expect(document.querySelector('main .ws-page'), 'dirty 取消后留在本页（可换选）').not.toBeNull()
     confirmSpy.mockRestore()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'saved' })
+      useLineageStore.setState({ saveStatus: 'clean' }) // [②U1]
     })
   })
 

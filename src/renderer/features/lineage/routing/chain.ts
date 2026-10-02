@@ -16,7 +16,6 @@ import type { LineageViaPoint } from '@shared/models/lineage'
 
 export type { Pt, Rect } from './anchors'
 
-export type EdgeKind = 'tree' | 'inferred' | 'ref' | 'manual'
 export type RouteTag = 'direct' | 'h-slip' | 'band' | 'corridor' | 'fallback' | 'manual-override'
 export interface MonthFrame extends Rect {
   year: number | null
@@ -33,12 +32,11 @@ export interface LayoutSnapshot {
   contentW: number
   corridor: Corridor
 }
+/** [F-LGRAPH-01②U8] kind/subId 随四值体系退役（路由几何不消费线型——纯结构面） */
 export interface EdgeGeomInput {
   edgeId: string
   sourceId: string
   targetId: string
-  kind: EdgeKind
-  subId?: string
   via?: LineageViaPoint[]
 }
 export interface RoutedPath {
@@ -46,6 +44,9 @@ export interface RoutedPath {
   d: string
   route: RouteTag
   lane: number
+  /** [F-LGRAPH-01②U5] 骨架点链（圆角化前——锚 A→…→锚 B 内容坐标）：手柄
+   *  几何/自动线物化 via（首 via 落位）消费；渲染不变（d 才是渲染面） */
+  pts: Pt[]
 }
 
 const CORRIDOR_W = 58
@@ -207,11 +208,11 @@ export function routeEdge(
   const tgt = snap.cards.get(e.targetId)
   if (src === undefined || tgt === undefined) {
     onWarn(`lineage-routing：边 ${e.edgeId} 端点卡缺失（${e.sourceId}/${e.targetId}），跳过路由`)
-    return { edgeId: e.edgeId, d: '', route: 'fallback', lane: -1 }
+    return { edgeId: e.edgeId, d: '', route: 'fallback', lane: -1, pts: [] }
   }
   const r = routeOne(e, snap, src, tgt, 0, onWarn, undefined)
   const all = [...snap.cards.values(), ...snap.labels]
-  return { edgeId: r.edgeId, d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'), route: r.route, lane: r.lane }
+  return { edgeId: r.edgeId, d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'), route: r.route, lane: r.lane, pts: r.skel }
 }
 
 /** 带共道分组（同带同轴+投影重叠链）字典序偏移 (i−(k−1)/2)·s 钳容量内 */
@@ -279,6 +280,7 @@ export function routeAll(
     edgeId: r.edgeId,
     d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
     route: r.route,
-    lane: r.lane
+    lane: r.lane,
+    pts: r.skel
   }))
 }

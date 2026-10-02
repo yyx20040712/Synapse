@@ -11,7 +11,9 @@
  * drag ∈ {idle, pending, dragging, settle(飞行过渡期)} ×
  * mode ∈ {view,edit} × composer ∈ {picker, popover, monthPop}：
  * - **view/edit 双态无 mode 门槛**（mockup pointerdown 无 mode 闸）
- * - picker≠idle 禁拖（拾取优先）；popover/monthPop 开禁拖
+ * - picker≠idle 禁拖（[②U3] 画线 armed 态沿承此闸——isPicking 形参语义=
+ *   画线工具激活（重命名申报：composer 拾取流退役，闸面复用）；popover/
+ *   monthPop 开禁拖
  * - 跨格序列：拾取中拖禁/弹层开拖禁/拖中弹层不可触发（pointer 在飞）/
  *   settle 接新拖忽略/reorderMonthSlots 与同道写错峰=store 队列 FIFO 既有
  *
@@ -27,6 +29,7 @@ import { showToast } from '../../shared/ui/toast-store'
 import { applyMovePreview, frameKeyOf } from './lineage-timeline'
 import type { TimelineYearGroup } from './lineage-timeline'
 import { startFlight } from './card-drag-flight'
+import { contentScale } from './timeline-zoom'
 import { useDragSession } from './card-drag-session'
 import type { DragPhase, DragSlotPreview } from './card-drag-session'
 import { useMonthPopState } from './useMonthPop'
@@ -104,7 +107,8 @@ export function useCardDrag(args: {
     const job = flightRef.current
     flightRef.current = null
     if (job === null) return
-    startFlight(findCard(job.nodeId), job)
+    // [②U7] contentEl 传入=飞行坐标域换算基准（内容坐标 absolute）
+    startFlight(findCard(job.nodeId), job, contentRef.current)
   }, [phase])
 
   // ── 改月预演清除（写落定对齐——UI 位置不回滚的补账时点）────────────
@@ -126,6 +130,12 @@ export function useCardDrag(args: {
     [groups, movePreview]
   )
 
+  // [F-LGRAPH-01②U6/挂账③] MonthPop 下降沿对称化：切出 edit 模式=关闭
+  //（Esc/外点/切模式三径统一——非对称残留防御）
+  useEffect(() => {
+    if (!args.isEditing) setMonthPop(null)
+  }, [args.isEditing])
+
   const handleYmClick = (nodeId: string, ev: ReactMouseEvent<HTMLElement>): void => {
     if (!args.isEditing) return // edit 态闸（CSS 显隐+handler 双闸）
     if (phase !== 'idle') return
@@ -144,7 +154,14 @@ export function useCardDrag(args: {
     if (n === undefined) return
     if (n.year === year && n.month === month) return // 同月=no-op 零写（申报）
     const fromCard = findCard(n.id)
-    const from = fromCard?.getBoundingClientRect()
+    const fromRaw = fromCard?.getBoundingClientRect()
+    // [②U7] 改月飞行起点=内容坐标（视口 rect 逆变换——contentEl 基准）
+    const base = contentRef.current?.getBoundingClientRect()
+    const z = contentScale()
+    const from =
+      fromRaw !== undefined && base !== undefined
+        ? { left: (fromRaw.left - base.left) / z, top: (fromRaw.top - base.top) / z }
+        : undefined
     // [回炉 R8③] 改月飞行同式禁断（settle re-fix 压 0 面的类过渡防线——
     // settle 段 SETTLE_TRANSITION 接管+清场回类值）
     if (fromCard !== null && fromCard !== undefined) fromCard.style.transition = 'none'

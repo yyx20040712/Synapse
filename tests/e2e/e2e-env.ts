@@ -59,6 +59,8 @@ export interface LineageSeedNode {
   slot?: number | null
   coreIdea?: string
   folderId?: string
+  /** [F-LGRAPH-01②U4] 节点标签（JSON 列——卡 L1 标签断言面） */
+  tags?: string[]
 }
 export interface LineageSeedEdge {
   from: string
@@ -110,12 +112,13 @@ export async function seedPaperRow(
   sha: string,
   title: string,
   id = 'e2e-seed-paper',
-  extra: { year?: number; venue?: string; cited?: number } = {}
+  extra: { year?: number; venue?: string; cited?: number; impact?: number } = {}
 ): Promise<void> {
   const optionalEnv: Record<string, string> = {}
   if (extra.year !== undefined) optionalEnv.SEED_YEAR = String(extra.year)
   if (extra.venue !== undefined) optionalEnv.SEED_VENUE = extra.venue
   if (extra.cited !== undefined) optionalEnv.SEED_CITED = String(extra.cited)
+  if (extra.impact !== undefined) optionalEnv.SEED_IMPACT = String(extra.impact)
   await runSeedScript({
     ...process.env,
     SEED_DB: join(userData, 'synapse.db'),

@@ -18,6 +18,7 @@ import { api, unwrap, apiEvents } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
 import { useLineageStore } from './lineage.store'
+import { Dialog } from '../../shared/ui/Dialog'
 
 export interface NavFolder {
   id: string
@@ -30,6 +31,9 @@ export function NavGraphPicker(props: {
   const folderId = useLineageStore((s) => s.folderId)
   const setFolder = useLineageStore((s) => s.setFolder)
   const load = useLineageStore((s) => s.load)
+  const dirty = useLineageStore((s) => s.saveStatus !== 'clean') // [②U1] 暂存在场
+  // 待切换图（dirty 确认挂起态——null=无挂起）
+  const [pendingFolder, setPendingFolder] = useState<string | null>(null)
   const importBusy = useImportBusyStore((s) => s.busy)
   const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
   const [open, setOpen] = useState(false)
@@ -115,6 +119,11 @@ export function NavGraphPicker(props: {
               className={f.id === folderId ? 'nav-graph-item on' : 'nav-graph-item'}
               onClick={() => {
                 setOpen(false)
+                // [②U1] dirty 切图两分支：暂存在场先挂起确认（A2 同值重选=切图）
+                if (dirty) {
+                  setPendingFolder(f.id)
+                  return
+                }
                 setFolder(f.id)
               }}
             >
@@ -123,6 +132,36 @@ export function NavGraphPicker(props: {
           ))}
         </div>
       )}
+      {/* [②U1] dirty 切图未保存提示（两分支——取消留守/确认弃暂存并切换） */}
+      <Dialog
+        open={pendingFolder !== null}
+        title="未保存的修改"
+        onClose={() => setPendingFolder(null)}
+        actions={
+          <>
+            <button type="button" className="pbtn sec" onClick={() => setPendingFolder(null)}>
+              取消
+            </button>
+            <button
+              type="button"
+              className="pbtn dgr"
+              data-testid="nav-graph-discard-confirm"
+              onClick={() => {
+                const target = pendingFolder
+                setPendingFolder(null)
+                if (target === null) return
+                // 确认=弃暂存（不落库+队列栈清）+执行切换（load 库态覆盖）
+                useLineageStore.getState().discardSession()
+                setFolder(target)
+              }}
+            >
+              放弃修改
+            </button>
+          </>
+        }
+      >
+        当前脉络图有未保存的修改，切换后将放弃这些修改（不落库）。
+      </Dialog>
     </div>
   )
 }

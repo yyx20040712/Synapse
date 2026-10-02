@@ -57,7 +57,7 @@ function node(
 }
 
 function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', kind: 'tree', sub: null, createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
 }
 
 /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */
@@ -152,7 +152,8 @@ describe('LineageTimeline —— 时间线宿主渲染', () => {
     expect(host?.querySelector('[data-node-id="B"]')).not.toBeNull()
   })
 
-  it('空图空态文案（[T3-P7B] 工具条随票移入 .timeline——添加引导在场、编辑死按钮零）', () => {
+  it('空图空态文案（[②U2/A11] 工具组仅 edit 可见——空图 bootstrap=edit 态挂载）', () => {
+    useLineageViewStore.setState({ mode: 'edit' })
     mount(<LineageTimeline nodes={[]} edges={[]} />)
     expect(host?.textContent).toContain('暂无脉络图——添加节点')
     // [T3-P7B 修订] P6 期「零按钮」断言随工具条移入（D-P7B-1）失效——空图

@@ -9,7 +9,9 @@
  * 数据经环境变量传入（SEED_DB/SEED_FILE_REF/SEED_SHA/SEED_TITLE，不经 shell）；
  * SQL 一律 prepare 预编译 + 参数绑定。SEED_ID 可选（多篇种子场景——P7-B 三序列；
  * 缺省 'e2e-seed-paper' 保持既有单篇调用零改动）。[T3-P3] SEED_YEAR/SEED_VENUE/
- * SEED_CITED 可选列（密度列表断言面[五列=F-LIBUI-01 ④ 档次列退役]——缺省不进 INSERT 保持既有调用零改动）。
+ * SEED_CITED 可选列（密度列表断言面[五列=F-LIBUI-01 ④ 档次列退役]——缺省不进
+ * INSERT 保持既有调用零改动）；[F-LGRAPH-01②U4] SEED_IMPACT=impact_factor
+ * （papers 既有列[迁移 012]——卡 L3/详情面板 IF 断言面，缺省不进 INSERT）。
  */
 import Database from 'better-sqlite3'
 
@@ -33,6 +35,10 @@ try {
   if (process.env.SEED_CITED !== undefined) {
     cols.push('cited_by_count')
     vals.push(Number(process.env.SEED_CITED))
+  }
+  if (process.env.SEED_IMPACT !== undefined) {
+    cols.push('impact_factor')
+    vals.push(Number(process.env.SEED_IMPACT))
   }
   // added_at/updated_at 固定演示时间戳（SQL 字面量列尾——绑定值与 ? 一一对应）
   const sql =

@@ -42,6 +42,7 @@ stubApiEvents({
 
 import { showToast } from '../../../src/renderer/shared/ui/toast-store'
 import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { App } from '../../../src/renderer/app/App'
 
@@ -64,7 +65,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', kind: 'tree', sub: null, createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
 }
 
 /** 覆盖位置节点（拖拽断言的确定性锚——布局坐标=精确覆盖值，不依赖自动布局） */
@@ -132,6 +133,7 @@ async function writeViaEditIdea(id: string): Promise<void> {
   act(() => {
     save.click()
   })
+  useLineageStore.getState().save() // [②U1] 点保存批量落库
   await flush()
 }
 
@@ -173,7 +175,7 @@ beforeEach(() => {
     configurable: true,
     value: { onWindowState: vi.fn(() => () => undefined) }
   })
-  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] } })
   stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
@@ -214,8 +216,9 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     clickMenu('连线到…')
     expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
     clickNode(nodeEl('B'))
+    useLineageStore.getState().save() // [②U1]
     await flush()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'A', to: 'B', label: '' })
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'A', to: 'B', label: '' })) // [②U1] uuid 随行
     expect(q('[data-testid="lineage-pending-link"]')).toBeNull() // 完成即退出选取模式
   })
 
@@ -236,9 +239,10 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
       openMenu('A')
       clickMenu('连线到…')
       clickNode(nodeEl('B'))
+      useLineageStore.getState().save() // [②U1]
       await flush()
       expect(showToast).toHaveBeenCalledWith(reason, 'error')
-      expect(useLineageStore.getState().saveStatus).toBe('saved') // 拒绝=动作丢弃非脏态
+      expect(useLineageStore.getState().saveStatus).toBe('clean') // 拒绝=动作丢弃非脏态
       act(() => {
         root?.unmount()
       })
@@ -251,9 +255,10 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     openMenu('B')
     clickMenu('改父…')
     clickNode(nodeEl('C'))
+    useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ from: 'C', to: 'B', label: '' })
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'C', to: 'B', label: '' })) // [②U1] uuid 随行
   })
 
   it('删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷', async () => {
@@ -261,11 +266,13 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     mount(<LineageBoard onSelectNode={() => undefined} />)
     openMenu('B')
     clickMenu('删除父连线')
+    useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-1' })
 
     openMenu('A')
     clickMenu('删除节点')
+    useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
   })
@@ -287,6 +294,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     act(() => {
       save.click()
     })
+    useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'A', coreIdea: '新的核心想法', x: 500, y: 400 })
@@ -294,29 +302,31 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
   })
 })
 
-describe('LineageBoard —— 保存态指示（autosave-first：无保存按钮）', () => {
-  it('失败指示+重试：error 条可见，重试点击重发；成功后指示消退', async () => {
+describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内错误——退役行 4 chip）', () => {
+  it('失败指示+重试：行内错误可见，重试点击重发；成功后指示消退', async () => {
     stubApi.lineage.upsertNode
       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
     seedLineage([node('A', OVL)])
+    useLineageViewStore.getState().setMode('edit') // [②U2/A11] 工具组仅 edit 可见
     mount(<LineageBoard onSelectNode={() => undefined} />)
     await writeViaEditIdea('A')
-    const bar = q('[data-testid="lineage-save-status"]')
-    expect(bar?.textContent).toContain('保存失败')
-    const retry = q('[data-testid="lineage-retry-save"]') as HTMLButtonElement | null
+    const bar = q('[data-testid="lineage-save-error"]')
+    expect(bar?.textContent).toContain('写入失败')
+    const retry = q('[data-testid="lineage-save-retry"]') as HTMLButtonElement | null
     if (retry === null) throw new Error('重试按钮未渲染')
     act(() => {
       retry.click()
     })
     await flush()
     expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
-    expect(q('[data-testid="lineage-save-status"]')).toBeNull() // saved 不占指示
+    expect(q('[data-testid="lineage-save-error"]')).toBeNull() // clean 不占指示
   })
 })
 
 describe('LineageBoard —— 添加节点对话框（两型）', () => {
   it('文献型：library.list 搜索选取→paperId 绑定+元数据默认', async () => {
+    useLineageViewStore.getState().setMode('edit') // [②U2/A11] 添加节点钮随工具组
     stubApi.library.list.mockResolvedValue({
       ok: true,
       data: {
@@ -351,19 +361,23 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
     act(() => {
       confirm?.click()
     })
+    useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.library.list).toHaveBeenCalledWith(expect.objectContaining({ search: '扩散' }))
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
-      paperId: 'paper-9',
-      title: '扩散模型综述',
-      coreIdea: '',
-      year: 2021,
-      x: null,
-      y: null
-    })
+    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paperId: 'paper-9',
+        title: '扩散模型综述',
+        coreIdea: '',
+        year: 2021,
+        x: null,
+        y: null
+      })
+    ) // [②U1] uuid 随行
   })
 
   it('主题型：title 输入→paperId null 节点', async () => {
+    useLineageViewStore.getState().setMode('edit') // [②U2/A11]
     stubApi.lineage.upsertNode.mockResolvedValue({
       ok: true, data: node('T1', { paperId: null, title: '阶段二' })
     })
@@ -386,16 +400,19 @@ describe('LineageBoard —— 添加节点对话框（两型）', () => {
     act(() => {
       confirm?.click()
     })
+    useLineageStore.getState().save() // [②U1]
     await flush()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
-      paperId: null,
-      title: '阶段二',
-      coreIdea: '',
-      year: null,
-      x: null,
-      y: null,
-      folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
-    })
+    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paperId: null,
+        title: '阶段二',
+        coreIdea: '',
+        year: null,
+        x: null,
+        y: null,
+        folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
+      })
+    ) // [②U1] uuid 随行
   })
 })
 

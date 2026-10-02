@@ -10,28 +10,32 @@
  * 确定性规范（design-final §5，INV-77）：
  * - 对象键序=**递归 alphabetical**（唯一规则不做语义分块——消费方 diff 稳定）
  * - nodes=lineageOrder 序（§4 排序契约唯一纯函数单源消费）/edges=(created_at,id)
- *   行序/line_types=base 枚举序（tree,inferred,ref,manual）后 subs 按 id 升序
- * - snake_case 键+2 空格缩进+UTF-8 无 BOM+末尾换行；schema_version=2 起版
- *   （[F-FOLDER-01] 序列化变更递增：catalog_no→pub_no——图内节点号与库号
- *   同源 INV-92 单一真相源；序列化变更必须递增版本并更新快照测试）
+ *   行序/line_types=色板固定序 6 行（[F-LGRAPH-01②U8] 色行名新形状）
+ * - snake_case 键+2 空格缩进+UTF-8 无 BOM+末尾换行；schema_version=3 起版
+ *   （[F-FOLDER-01] v2：catalog_no→pub_no；[F-LGRAPH-01②U8] v3：edges 扩
+ *   via+dashed/color 内联视觉字段[替代 line_type{base,sub} 引用]+line_types
+ *   四组→色行名 6 行重整——A9' 仲裁：导出面与数据面形状不一致=导出即坏，
+ *   随 U8 破坏性重整同步兑现免中间态；序列化变更必须递增版本并更新快照测试）
  * - 字段：nodes{core_idea,month,node_id,paper_id,pub_no,tags,title,year}
  *   ——**不含 x/y UI 态与 slot**（slot=内部承载列，消费方不需要）；edges
- *   {created_at,edge_id,from,label,line_type{base,sub},to}；line_types{base,
- *   subs[{color,dash,id,name,w}]}；paper_id=null 纯主题节点照实导出 null；
+ *   {color,created_at,dashed,edge_id,from,label,to,via?}（via 缺省省略不产
+ *   []——N-1 口径）；line_types=[{color,name}×6]（LINE_TYPE_COLORS×色行名
+ *   zip——色板固定应用常量随行导出）；paper_id=null 纯主题节点照实导出 null；
  *   paperMetrics 不入（corpus 域 join 数据避双真相）
  * - pub_no=库级派生编号（INV-92——入参 pubNos 单源 map，与 LIST_SQL 同窗口
  *   同值；纯主题节点无文献键=null）
  * - 幂等：同输入逐字节稳定（无时间戳/无随机/序全由单源比较器与入参决定）
  *
  * 架构：main services/export_ 纯函数——零 IO、零 Electron、零出网；import
- * 仅 shared/models/lineage（排序契约单源）。
+ * 仅 shared/models/lineage（排序契约+色板单源）。
  */
-import { LINE_TYPE_BASE_ORDER, lineageOrder, type LineTypeGroup, type LineageEdge, type LineageNode } from '../../../shared/models/lineage'
+import { LINE_TYPE_COLORS, LINE_TYPE_DEFAULT_NAME, lineageOrder, type LineageEdge, type LineageNode } from '../../../shared/models/lineage'
 
 export interface LineageAssembleInput {
   nodes: readonly LineageNode[]
   edges: readonly LineageEdge[]
-  lineTypes: readonly LineTypeGroup[]
+  /** [F-LGRAPH-01②U8] 图级色行名（恰 6——与 LINE_TYPE_COLORS zip 导出） */
+  lineTypeNames: readonly string[]
   /** [F-FOLDER-01] pubNo map（键=paperId——corpus.export.service 经
    *  repos.papers.pubNoByIds 装配；缺省=空 map→全 null（装配缺失面如实导出） */
   pubNos?: ReadonlyMap<string, number>
@@ -61,20 +65,6 @@ function orderedEdges(edges: readonly LineageEdge[]): LineageEdge[] {
   })
 }
 
-/** line_types 导出形：base 枚举序（缺组跳过——输入恒四组由 repo 读面保证）+subs id 升序 */
-function orderedLineTypes(groups: readonly LineTypeGroup[]): Array<{ base: string; subs: unknown[] }> {
-  return LINE_TYPE_BASE_ORDER.flatMap((base) => {
-    const hit = groups.find((g) => g.base === base)
-    if (hit === undefined) return []
-    return [
-      {
-        base,
-        subs: [...hit.subs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-      }
-    ]
-  })
-}
-
 export function assembleLineageJson(input: LineageAssembleInput): string {
   const ordered = lineageOrder(input.nodes)
   const pubNos = input.pubNos ?? new Map<string, number>()
@@ -87,7 +77,7 @@ export function assembleLineageJson(input: LineageAssembleInput): string {
     (e) => folderOf.get(e.fromNode) === folderOf.get(e.toNode)
   )
   const payload = sortKeysDeep({
-    schema_version: 2,
+    schema_version: 3,
     nodes: ordered.map((n) => ({
       node_id: n.id,
       paper_id: n.paperId,
@@ -103,10 +93,18 @@ export function assembleLineageJson(input: LineageAssembleInput): string {
       from: e.fromNode,
       to: e.toNode,
       label: e.label,
-      line_type: { base: e.kind, sub: e.sub },
+      dashed: e.dashed,
+      color: e.color,
+      // via 缺省省略（N-1：undefined 键经 JSON.stringify 丢弃——不产出 []）
+      ...(e.via !== undefined ? { via: e.via } : {}),
       created_at: e.createdAt
     })),
-    line_types: orderedLineTypes(input.lineTypes)
+    // [F-LGRAPH-01②U8] 色行名 6 行新形状（色板固定序 zip——name 缺项=缺省名
+    // 常量 LINE_TYPE_DEFAULT_NAME [回炉 R21 常量单源]）
+    line_types: LINE_TYPE_COLORS.map((color, i) => ({
+      color,
+      name: input.lineTypeNames[i] ?? LINE_TYPE_DEFAULT_NAME
+    }))
   })
   return `${JSON.stringify(payload, null, 2)}\n`
 }

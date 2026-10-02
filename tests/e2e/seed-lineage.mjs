@@ -4,7 +4,7 @@
  * 原生模块文件锁，数据经环境变量传入不经 shell，SQL 一律 prepare 预编译+
  * 参数绑定）。
  * 载荷（SEED_LINEAGE_JSON）：{ folders?: [{id,name,position?}], nodes:
- * [{paperId,title,year,month?,slot?,coreIdea?,folderId?}], edges:
+ * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?}], edges:
  * [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按 paper_id
  * 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 则写为节点 folder
@@ -50,7 +50,7 @@ try {
   }
   const insNode = db.prepare(
     `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?)`
   )
   const assignFolder = db.prepare(
     'UPDATE papers SET folder_id = ? WHERE id = ? AND folder_id IS NULL'
@@ -77,6 +77,7 @@ try {
       n.title,
       n.coreIdea ?? '',
       n.year ?? null,
+      n.tags !== undefined && n.tags.length > 0 ? JSON.stringify(n.tags) : null,
       month,
       slot,
       folderId,

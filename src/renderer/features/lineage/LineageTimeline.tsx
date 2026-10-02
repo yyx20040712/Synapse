@@ -1,44 +1,38 @@
 // b3: T3-P6
 /**
- * [T3-P6] LineageTimeline —— 脉络纵向「年+月」时间线滚动容器宿主
- * （LineageCanvas[SVG 画布] 退役后的渲染层宿主——方案切换=删旧方案）。
+ * [T3-P6] LineageTimeline —— 纵向「年+月」时间线滚动容器宿主。
  *
- * - 分组=lineage-timeline.ts groupTimeline 纯函数（INV-75 消费方不得重排；
- *   骑缝编号/核徽章=shared 单源）。年/月/卡渲染体=TimelineYears 拆件。
- * - 瀑布错位（P-15：(R×82)mod148）——机制本体=timeline-waterfall.ts 拆件。
- * - [T3-P7B] 编辑交互编排（useEdgeComposer 状态机+工具条换装+弹层挂载）：
- *   .timeline 挂 .editing（mode）/.link-pick（picker≠idle）；[F-LGRAPH-01①U3]
- *   模式态单源=lineage-view.store（三模式栏写路径——composer 受控注入
- *   editing=mode==='edit'，内部 view|edit useState 退役随编辑 toggle 退役）；
- *   命中层点击=EdgeOverlay onEdgeHitClick→composer（与 CSS pointer-events
- *   双闸）；拾取态点卡不转发 onNodeClick 选中；工具条（LineageToolbar
- *   换装 .lg-toolbar sticky）自本票移入渲染树——toolbar/actions props 经
- *   Board 下传（本件触 store 仅限 renderer 本地 UI 态 lineage-view.store
- *   ——数据域仍纯 props 编排可直测）。
- * - 空图空态文案保活；工具条空图在场（添加节点=空图 bootstrap 路径；
- *   [F-BAKRET-01] 导入入口随草稿导入链退役删除——用户裁决 2026-09-30）。
+ * - 分组=lineage-timeline.ts groupTimeline 纯函数（INV-75 消费方不得重排）；
+ *   年/月/卡渲染体=TimelineYears 拆件（核徽章链随②U4 退役）。
+ * - 瀑布错位（P-15）=timeline-waterfall 拆件；工具条 sticky 驻渲染树——本件
+ *   触 store 仅限 view.store（数据域纯 props 可直测）。
  */
 import { useMemo, useRef } from 'react'
-import { nodePubNoMap, type LineageEdge, type LineageEdgeKind, type LineageNode, type LineTypeGroup } from '@shared/models/lineage'
+import type { MouseEvent as ReactMouseEvent } from 'react'
+import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
-import { isCore } from './lineage-classify'
 import { groupTimeline } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
-import { EdgeTypePopover } from './EdgeTypePopover'
 import { TimelineLegend, TimelineYears } from './TimelineYears'
 import { LineageToolbar } from './LineageToolbar'
-import { useEdgeComposer, type ClickEventLike } from './useEdgeComposer'
 import { useCardDrag } from './useCardDrag'
+import { useDrawLine } from './useDrawLine'
+import { DrawPreview } from './DrawPreview'
 import { MonthPop } from './MonthPop'
 import { useLineageViewStore } from './lineage-view.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useWaterfallOffsets } from './timeline-waterfall'
 import { useTimelinePan } from './timeline-pan'
+import { useTimelineZoom } from './timeline-zoom-hook'
+import { ZoomBadge } from './ZoomBadge'
 
 /** [T3-P7B] 03 编辑层/04 侧板消费的节点交互回调（全可选——缺省即纯只读） */
 export interface TimelineCallbacks {
-  /** 单击选中（04 侧板消费面上抛；[T3-P7B] 事件透传=拾取定位面） */
-  onNodeClick?: (nodeId: string, ev: ClickEventLike) => void
+  /** 单击选中（04 侧板消费面上抛；事件透传=拾取定位面） */
+  onNodeClick?: (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
+  /** [F-LGRAPH-01②U4/A6] 双击卡=跳阅读器（paperId 在场才上抛——主题节点
+   *  no-op；消费面=Page 编排→OPEN_PAPER_EVENT 总线单入口 INV-20） */
+  onNodeDblClick?: (nodeId: string) => void
   /** 右键节点开菜单（03 节点菜单锚点） */
   onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
   /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
@@ -48,53 +42,42 @@ export interface TimelineCallbacks {
   onMoveNodeMonth?: (nodeId: string, year: number | null, month: number | null) => void
 }
 
-/** [T3-P7B] 工具条 props（Board 下传——P7-H 既有行为面零变） */
+/** [②U2] 工具条 props（Board 下传最小面——保存/撤销/色行名=工具组直连
+ * lineage.store；容器只注入模式与添加节点对话框开关） */
 export interface TimelineToolbarProps {
-  saveStatus: 'saved' | 'saving' | 'error'
-  lastWriteError: string | null
   onAddNode(): void
-  onRetrySave(): void
-}
-
-/** [T3-P7B] 线型编辑写路径（store 三 action+removeEdge——Board 自 store 下传） */
-export interface EdgeLineActions {
-  applyEdgeLine(edgeId: string, kind: LineageEdgeKind, sub: string | null): void
-  linkWithLine(from: string, to: string, kind: LineageEdgeKind, sub: string | null): void
-  saveLineTypes(groups: LineTypeGroup[]): void
-  removeEdge(id: string): void
 }
 
 export function LineageTimeline(props: {
   nodes: LineageNode[]
   edges: LineageEdge[]
   selectedNodeId?: string | null
+  /** [F-LGRAPH-01②U5] 右键反馈④：节点菜单在场=目标卡 accent 描边（菜单关
+   *  闭即撤——Board menu 态单源） */
+  contextNodeId?: string | null
   /** F-LG14 含金量摘要表（键=paperId；Board 自 store 分发传入；缺省=空表） */
   paperMetrics?: Record<string, LineagePaperMetrics>
   /** [F-FOLDER-01] pubNo 表（键=paperId；INV-92 库级派生——图内节点号与库号
    *  同源单一真相源；Board 自 store 分发传入；缺省=空表） */
   pubNos?: Record<string, number>
-  /** [T3-P7A] 线型组（EdgeOverlay sub 覆盖渲染+P7B 弹层消费——缺省=空表） */
-  lineTypes?: LineTypeGroup[]
   /** [T3-P7B] 工具条（缺省=saved 静默态） */
   toolbar?: TimelineToolbarProps
-  /** [T3-P7B] 线型编辑写路径（缺省=零写只读——弹层 acts 走 no-op） */
-  actions?: EdgeLineActions
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
   const paperMetrics = props.paperMetrics ?? {}
   const pubNos = props.pubNos ?? {}
-  const lineTypes = props.lineTypes ?? []
   const groups = useMemo(() => groupTimeline(nodes), [nodes])
   const pubNoByNode = useMemo(() => nodePubNoMap(nodes, pubNos), [nodes, pubNos])
-  const coreIds = useMemo(() => new Map(nodes.map((n) => [n.id, isCore(n, edges)])), [nodes, edges])
 
   // [F-LGRAPH-01①U3] 模式态单源=lineage-view.store（三模式栏 LineageModeBar
-  // 写路径）；composer 受控化：editing=mode==='edit' 注入（内部 mode 态退役）
+  // 写路径）
   const viewMode = useLineageViewStore((s) => s.mode)
   // P-8 聚焦集（selector 取稳定数组引用——派生 Set 经 memo 防新引用死循环）
   const focusSet = useLineageViewStore((s) => s.focusSet)
   const focusIds = useMemo(() => new Set(focusSet), [focusSet])
-  const composer = useEdgeComposer(edges, { editing: viewMode === 'edit' })
+  // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
+  const tool = useLineageViewStore((s) => s.tool)
+  const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
 
   // 滚动容器 ref 两面：content=.tl-content（瀑布量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
@@ -102,13 +85,16 @@ export function LineageTimeline(props: {
   // 拖拽清场→瀑布 routeEpoch 前置接线（hook 初始化序约束——ref 晚绑定）
   const bumpRouteRef = useRef<() => void>(() => undefined)
 
+  // [②U3] 画线子态机（armed=工具态；容器 pointer 流——拖拽互斥闸）
+  const draw = useDrawLine({ contentRef })
+  const drawing = tool !== 'select'
   // [T3-P8] 槽位拖拽+改月状态机（编排本体驻 hook——Timeline 增量红线）
   const drag = useCardDrag({
     nodes,
     groups,
-    isEditing: composer.isEditing,
-    isPicking: composer.isPicking,
-    popOpen: composer.popover.kind !== 'closed',
+    isEditing: viewMode === 'edit',
+    isPicking: drawing, // [②U3] 画线 armed=拖拽闸（拾取优先沿承——重命名申报）
+    popOpen: false,
     contentRef,
     onReorderMonthSlots: props.onReorderMonthSlots,
     onMoveNodeMonth: props.onMoveNodeMonth,
@@ -130,6 +116,12 @@ export function LineageTimeline(props: {
     enabled: viewMode === 'browse' || viewMode === 'focus',
     scrollerRef: timelineRef
   })
+  // [②U7] 缩放：ctrl+滚轮（P-4 三模式均生效——滚动容器非被动监听）+内容层
+  // transform+sizer（scale 不改布局盒——sizer 按 z 放大自然尺寸供滚动域）+
+  // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件
+  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: drag.renderGroups })
+  // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空（非聚焦卡+全部线 0.3）
+  const dimActive = viewMode === 'focus' && focusSet.length > 0
 
   // EdgeOverlay 再触发信号（错位量>0 的卡集——引用稳定；[回炉 R10/d1-N3]
   // 局部语义名 offsetIds——EdgeOverlay prop 名 shiftedIds 遗留（改名波及
@@ -143,22 +135,27 @@ export function LineageTimeline(props: {
     'timeline',
     modeCls,
     pan.panning ? 'panning' : '', // [U5] 平移中 grabbing
-    composer.isEditing ? 'editing' : '',
-    composer.isPicking ? 'link-pick' : ''
+    viewMode === 'edit' ? 'editing' : ''
   ]
     .filter((c) => c !== '')
     .join(' ')
 
-  const handleCardClick = (nodeId: string, ev: ClickEventLike): void => {
+  const handleCardClick = (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }): void => {
     if (drag.consumeClickSuppress()) return // [T3-P8] 拖后 click 抑制（一次性）
-    if (composer.handleCardClick(nodeId, ev)) return // 拾取/弹层语义消费——不转发选中
+    if (draw.consumeClickSuppress()) return // [②U3] 画线收尾后 click 抑制（防误选）
     // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
     // 照常转发——toggle 与详情面板联动并行不冲突）
     if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
     props.onNodeClick?.(nodeId, ev)
   }
 
-  const pop = composer.popover
+  // [F-LGRAPH-01②U4/A4] 星标区分派（卡内已 stopProp——星标域优先不触发卡身）：
+  // edit=选中卡（P-6）；browse/focus=no-op（P-11 静态禁用态——title 行内提示）
+  const handleStarClick = (nodeId: string, ev: ReactMouseEvent<HTMLElement>): void => {
+    if (viewMode !== 'edit') return
+    if (drag.consumeClickSuppress()) return
+    props.onNodeClick?.(nodeId, ev)
+  }
 
   return (
     <div
@@ -167,46 +164,55 @@ export function LineageTimeline(props: {
       ref={timelineRef}
       onPointerDown={pan.onPointerDown}
     >
-      {/* [T3-P7B] 工具条换装（.lg-toolbar sticky 挂 .timeline 内——D-P7B-1）；
-          [F-LGRAPH-01①U3] 编辑 toggle 退役——editing 受控（view.store 单源） */}
+      {/* [②U2] 工具组重做挂接（.lg-toolbar sticky 挂 .timeline 内——仅 edit
+          模式可见；保存/撤销/线型=工具组直连 store） */}
       <LineageToolbar
-        saveStatus={props.toolbar?.saveStatus ?? 'saved'}
-        lastWriteError={props.toolbar?.lastWriteError ?? null}
-        onAddNode={() => props.toolbar?.onAddNode()}
-        onRetrySave={() => props.toolbar?.onRetrySave()}
         mode={viewMode}
-        onNewLink={composer.startLinkPick}
+        onAddNode={() => props.toolbar?.onAddNode()}
       />
       {nodes.length === 0 ? (
         // 空态不短路滚动容器结构+工具条在场（添加节点=空图 bootstrap 路径）
         <div className="tl-empty">暂无脉络图——添加节点</div>
       ) : (
-        <div className="tl-content" ref={contentRef}>
-          {/* [T3-P7A] 连线层子组件（D-22）+[T3-P7B] 命中层点击接 composer
-              （handler 闸——与 CSS pointer-events 双闸） */}
+        <div
+          className={drawing ? 'tl-content drawing' : 'tl-content'}
+          ref={contentRef}
+          style={zoom.contentStyle}
+          onPointerDown={(e) => {
+            draw.handlePointerDown(e)
+          }}
+        >
+          {/* [T3-P7A] 连线层子组件（D-22）；[F-LGRAPH-01②U8] 命中层点击挂接
+              随弹层流退役拆除（线右键菜单=轮 2 手动调线域） */}
           <EdgeOverlay
             nodes={nodes}
             edges={edges}
-            lineTypes={lineTypes}
             shiftedIds={offsetIds}
             groups={drag.renderGroups}
             routeEpoch={routeEpoch}
             dimmed={drag.phase === 'dragging'}
-            onEdgeHitClick={(edgeId, ev) => composer.handleEdgeHitClick(edgeId, ev)}
+            focusDim={dimActive}
+            editEnabled={viewMode === 'edit' && tool === 'select'}
+            onAddNode={() => props.toolbar?.onAddNode()}
           />
+          {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化） */}
+          <DrawPreview state={draw.state} color={currentLineColor} />
           <TimelineYears
             groups={drag.renderGroups}
             pubNos={pubNoByNode}
-            coreIds={coreIds}
             paperMetrics={paperMetrics}
             selectedNodeId={props.selectedNodeId ?? null}
+            ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}
             offsets={offsets}
-            linkSourceId={composer.picker === 'target' ? composer.sourceId : null}
+            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : null}
             dragSlot={drag.slot}
             registerFrame={drag.registerFrame}
             flashKey={drag.flashKey}
+            dimUnfocused={dimActive}
             onCardClick={handleCardClick}
+            onCardStarClick={handleStarClick}
+            onCardDblClick={props.onNodeDblClick}
             onCardPointerDown={drag.handleCardPointerDown}
             onYmClick={drag.handleYmClick}
             onNodeContextMenu={props.onNodeContextMenu}
@@ -215,6 +221,12 @@ export function LineageTimeline(props: {
       )}
       {/* [T3-P7A 回炉 1 W7] 图例挂滚动容器 .timeline（视口级恒可见）；非空图才渲染 */}
       {nodes.length > 0 && <TimelineLegend />}
+      {/* [②U7] spacer：绝对定位撑滚动域覆盖缩放视觉区（.timeline relative
+          ——包裹盒方案会与块级 content 互撑成环，e2e 探针实证 #185） */}
+      <div className="tl-zoom-spacer" data-testid="tl-zoom-spacer" style={zoom.spacerStyle} />
+      {/* [②U7/T9] 缩放角标（右下——图例上位堆叠：单动作点击=复位；拆件
+          ZoomBadge——组件 250 行红线） */}
+      <ZoomBadge />
       {/* [T3-P8] 改月弹层（position:fixed——沿 popover-shared 钳制） */}
       {drag.monthPop !== null && (
         <MonthPop
@@ -223,25 +235,6 @@ export function LineageTimeline(props: {
           current={{ year: drag.monthPop.year, month: drag.monthPop.month }}
           months={drag.monthPopMonths}
           onPick={drag.pickMonth}
-        />
-      )}
-      {/* [T3-P7B] 线型弹层（position:fixed——.timeline 滚动容器不裁剪） */}
-      {pop.kind !== 'closed' && (
-        <EdgeTypePopover
-          mode={pop.kind}
-          edgeId={pop.kind === 'edit' ? pop.edgeId : undefined}
-          from={pop.kind === 'create' ? pop.from : undefined}
-          to={pop.kind === 'create' ? pop.to : undefined}
-          cx={pop.cx}
-          cy={pop.cy}
-          lineTypes={lineTypes}
-          edges={edges}
-          saveStatus={props.toolbar?.saveStatus ?? 'saved'}
-          onApplyLine={(id, k, s) => props.actions?.applyEdgeLine(id, k, s)}
-          onCreateLine={(f, t, k, s) => props.actions?.linkWithLine(f, t, k, s)}
-          onRemoveLine={(id) => props.actions?.removeEdge(id)}
-          onSaveLineTypes={(g) => props.actions?.saveLineTypes(g)}
-          onClose={composer.closePopover}
         />
       )}
     </div>

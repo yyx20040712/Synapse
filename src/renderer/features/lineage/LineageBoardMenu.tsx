@@ -11,11 +11,10 @@
  * - **树约束 UI 守卫**（INV-27 消费面）：加边 to 已有父/成环/自环三拒绝路径=
  *   动作型 toast 中文 reason（**树守卫宿主=LG-01 service upsertEdge 运行时
  *   守卫**——本件零守卫代码只接 toast 呈现=双保险同 08 按钮禁用语义）
- * - 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」
- *   R2-LG12）提示条（激活期——R2-LG11 浅色板态：白底 accent 描边，行为零变）
- * - tree 父边（kind=tree——manual 入边不算 tree 父，F-LG15：菜单「删除父连线」
- *   仅针对 tree 边，manual 边删除走管理对话框）——menuParentEdge/
- *   menuManualEdges 派生随迁本件（edges 经 store 自订阅）
+ * - 目标选取模式（源节点菜单发起：「连线到…」/「改父…」）提示条（激活期
+ *   ——R2-LG11 浅色板态：白底 accent 描边，行为零变）
+ * - 父边/管理入边派生驻本件（edges 经 store 自订阅；[F-LGRAPH-01②U8]
+ *   kind 收敛后=首条入边+其余入边拆分）
  * - 状态归属不变：menu/pendingLink 与各对话框开关由宿主 LineageBoard 持有，
  *   本件经 props 收值+set 函数回写；store 写路径仍经 getState 单口
  *
@@ -28,16 +27,16 @@ import { useLineageStore } from './lineage.store'
 import { LineageNodeMenu } from './LineageNodeMenu'
 import type { LineageNode } from '@shared/models/lineage'
 
-/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」/「添加参考连接」R2-LG12） */
+/** 目标选取模式（源节点菜单发起：「连线到…」/「改父…」；[F-LGRAPH-01②U8]
+ *  ref 参考连接模式随综述边体系退役删除） */
 export interface PendingLink {
   source: string
-  mode: 'link' | 'reparent' | 'ref'
+  mode: 'link' | 'reparent'
 }
 
 const MODE_HINT: Record<PendingLink['mode'], string> = {
   link: '连线模式：点击目标节点（源 → 目标，目标成为子节点）',
-  reparent: '改父模式：点击新父节点',
-  ref: '参考连接模式：点击目标文献（综述 → 目标，淡灰虚线）'
+  reparent: '改父模式：点击新父节点'
 }
 
 /** 节点菜单锚（node+右键锚点——宿主 menu state 形状） */
@@ -48,23 +47,17 @@ export function LineageBoardMenu(props: {
   pendingLink: PendingLink | null
   setMenu: (v: MenuTarget | null) => void
   setPendingLink: (v: PendingLink | null) => void
-  setManualParentId: (v: string | null) => void
-  setManualManageId: (v: string | null) => void
   setIdeaNodeId: (v: string | null) => void
   setTagNodeId: (v: string | null) => void
 }): JSX.Element {
-  const { menu, pendingLink, setMenu, setPendingLink, setManualParentId, setManualManageId, setIdeaNodeId, setTagNodeId } = props
+  const { menu, pendingLink, setMenu, setPendingLink, setIdeaNodeId, setTagNodeId } = props
   const edges = useLineageStore((s) => s.edges)
   const store = useLineageStore.getState
 
-  // tree 父边（kind=tree——manual 入边不算 tree 父，F-LG15：菜单「删除父连线」
-  // 仅针对 tree 边，manual 边删除走管理对话框）
-  const menuParentEdge =
-    menu === null
-      ? null
-      : edges.find((e) => e.toNode === menu.node.id && e.kind === 'tree') ?? null
-  const menuManualEdges =
-    menu === null ? [] : edges.filter((e) => e.toNode === menu.node.id && e.kind === 'manual')
+  // 父边=首条入边（[②U5] 人工父双对话框入口退役——边级管理面=线身右键菜单
+  // 「命名/线形与颜色/删除连线」承载；父边删除入口沿承）
+  const menuInEdges = menu === null ? [] : edges.filter((e) => e.toNode === menu.node.id)
+  const menuParentEdge = menuInEdges[0] ?? null
 
   return (
     <>
@@ -87,14 +80,10 @@ export function LineageBoardMenu(props: {
         <LineageNodeMenu
           node={menu.node}
           parentEdge={menuParentEdge}
-          manualParentEdges={menuManualEdges}
           anchor={menu.anchor}
           onClose={() => setMenu(null)}
           onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
-          onAddRefLink={(id) => { setPendingLink({ source: id, mode: 'ref' }); setMenu(null) }}
-          onLinkManualParent={(id) => { setManualParentId(id); setMenu(null) }}
-          onManageManualParents={(id) => { setManualManageId(id); setMenu(null) }}
           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
           onAddTag={(id) => { setTagNodeId(id); setMenu(null) }}
           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}

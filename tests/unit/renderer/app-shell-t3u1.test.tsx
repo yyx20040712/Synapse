@@ -114,7 +114,7 @@ describe('T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/s
     act(() => {
       useReaderStore.setState({ order: [], tabs: {} })
       useNotesStore.setState({ noteByPaper: {} })
-      useLineageStore.setState({ saveStatus: 'saved' })
+      useLineageStore.setState({ saveStatus: 'clean' }) // [②U1]
     })
   })
 

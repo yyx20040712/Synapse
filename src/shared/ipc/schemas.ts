@@ -13,8 +13,7 @@ import { collectionSchema } from '../models/collection'
 import {
   lineageNodeSchema,
   lineageEdgeSchema,
-  lineTypeGroupSchema,
-  lineTypeGroupsSchema,
+  lineTypeNamesSchema,
   lineageNodeUpsertSchema,
   lineageEdgeUpsertSchema
 } from '../models/lineage'
@@ -278,13 +277,19 @@ export type ZcodeLinkInstallRes = z.infer<typeof zcodeLinkInstallResSchema>
 
 // ── lineage（LG-01 脉络图：全图读——[F-BAKRET-01] lineage/import 草稿导入
 //    响应 schema 随导入链退役删除，用户裁决 2026-09-30）────────────────────
-/** F-LG14 含金量摘要（lineage/graph 逐文献节点）：citedByCount null=从未抓到
- *  （渲染「引 —」）；venueTier null=未映射（渲染「未定」）；0=值非缺（判别 === null）。
- *  venueTier 值域=VenueTier 三档（映射单源 shared/venue-tier.ts，受锁常量零改） */
+/** F-LG14 含金量摘要（lineage/graph 逐文献节点）：citedByCount null=从未抓到；
+ *  venueTier null=未映射；0=值非缺（判别 === null）。
+ *  venueTier 值域=VenueTier 三档（映射单源 shared/venue-tier.ts，受锁常量零改）。
+ *  [F-LGRAPH-01②U4] +venue/+impactFactor（卡 L3/详情面板同源——W-r2-1 证据链：
+ *  papers.venue[001 DDL NOT NULL DEFAULT '']/papers.impact_factor[迁移 012 列]
+ *  既有列透传，零新 DB 面零新抓取面；optional+nullable=缺席省略语义——
+ *  L3 三字段数据缺席整字段省略渲染（mockup §3.4），null/'' 同缺） */
 export const lineagePaperMetricsSchema = z
   .object({
     citedByCount: z.number().int().nullable(),
-    venueTier: z.enum(['T1', 'T2', 'T3']).nullable()
+    venueTier: z.enum(['T1', 'T2', 'T3']).nullable(),
+    venue: z.string().nullable().optional(),
+    impactFactor: z.number().nullable().optional()
   })
   .strict()
 export type LineagePaperMetrics = z.infer<typeof lineagePaperMetricsSchema>
@@ -297,7 +302,8 @@ export type LineageGraphReq = z.infer<typeof lineageGraphReqSchema>
 /** lineage/graph 响应：全图单读+含金量 join（库空=空数组/空表，合法态非错误；
  *  模型单源=shared/models/lineage——paperMetrics 键=paperId，主题节点不入表
  *  [F-LG14 载荷扩展：加字段向后兼容]。[T3-P5] nodes=lineageOrder 序（INV-75
- *  读面唯一保证）+lineTypes 恒四组（base 枚举序——空组含空 subs）。
+ *  读面唯一保证）+lineTypeNames 恰 6 行（[F-LGRAPH-01②U8] 色行名——四组
+ *  lineTypes 体系随 kind 退役）。
  *  [F-FOLDER-01] +pubNos（键=paperId，值=库级派生编号 INV-92——图内节点号
  *  与库号同源单一真相源，catalogNo 退役接替；主题节点无键） */
 export const lineageGraphResSchema = z
@@ -305,7 +311,7 @@ export const lineageGraphResSchema = z
     nodes: z.array(lineageNodeSchema),
     edges: z.array(lineageEdgeSchema),
     paperMetrics: z.record(z.string(), lineagePaperMetricsSchema),
-    lineTypes: z.array(lineTypeGroupSchema),
+    lineTypeNames: lineTypeNamesSchema,
     pubNos: z.record(z.string(), z.number().int())
   })
   .strict()
@@ -336,12 +342,11 @@ export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
 export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()
 export type LineageIdReq = z.infer<typeof lineageIdReqSchema>
 
-/** lineage/upsert-edge 请求：{from,to,label?,kind?,sub?,id?,via?}（树守卫宿主=LG-01 service
- *  upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误透传 renderer
- *  toast；kind 可选缺省 'tree'（R2-LG12——ref=综述参考边/manual=人工补父边
- *  F-LG15 不限条数，service 三 kind 守卫；T3-P5 inferred 同 tree 守卫）；
+/** lineage/upsert-edge 请求：{from,to,label?,dashed?,color?,id?,via?}（守卫宿主
+ *  =LG-01 service upsertEdge——IPC 只透传零守卫，拒绝 reason 经 CONFLICT 域错误
+ *  透传 renderer toast；[F-LGRAPH-01②U8] kind/sub 退役——manual 单基型恒落库
+ *  +视觉字段内联 dashed/color（缺省归一 repo：false/色板首色）；
  *  id 可选=F-LG15 label 后编辑更新语义（缺省=新建——既有新建载荷形状不变）；
- *  [T3-P5] sub 可选缺省=null 基础默认样式（存在性+同基型守卫在 service）。
  *  [F-LINEAGE-02] via 可选=手动调线路点（缺省不进载荷；不变量 ①②③校验在
  *  service 写面 validateLineageVia）。
  *  [F-CONSOL-02] 本 schema=models lineageEdgeUpsertSchema 派生；差异字段仅
@@ -356,11 +361,11 @@ export const lineageUpsertEdgeReqSchema = lineageEdgeUpsertSchema
   .strict()
 export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
 
-/** [T3-P5] lineage/upsert-line-types 请求（图级整体替换——单通道原子写）：
- *  恒四组强校验 schema 单源=models/lineage lineTypeGroupsSchema（D-I-4；
- *  ipc/schemas 仅 re-export 派生，模型字段定义禁二次定义）；Res=同 schema
- *  （校验后回显——service 回恒四组枚举序） */
-export const lineageUpsertLineTypesReqSchema = lineTypeGroupsSchema
+/** [F-LGRAPH-01②U8] lineage/upsert-line-types 请求（图级色行名整批替换——
+ *  通道名沿承、载荷重整为 names 数组）：恰 6 行强校验 schema 单源=
+ *  models/lineage lineTypeNamesSchema（ipc/schemas 仅 re-export 派生，模型
+ *  字段定义禁二次定义）；Res=同 schema（空名归一后回显——service 写边界） */
+export const lineageUpsertLineTypesReqSchema = lineTypeNamesSchema
 export type LineageUpsertLineTypesReq = z.infer<typeof lineageUpsertLineTypesReqSchema>
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────

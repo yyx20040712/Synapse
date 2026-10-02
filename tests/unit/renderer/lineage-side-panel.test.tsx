@@ -154,7 +154,7 @@ beforeEach(() => {
   stubApi.lineage.graph.mockReset()
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] })
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
-  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] } })
   locateAnchorStub.mockResolvedValue('exact')
   openPaperStub.mockResolvedValue(undefined)
   useLineageStore.setState({
@@ -162,10 +162,12 @@ beforeEach(() => {
     edges: [],
     status: 'loading',
     error: null,
-    saveStatus: 'saved',
+    saveStatus: 'clean', // [②U1] 会话基线（saved→clean）
     lastWriteError: null,
     queue: [],
-    flushing: false
+    flushing: false,
+    undoStack: [],
+    redoStack: []
   })
 })
 
@@ -418,10 +420,10 @@ it('空数据：AI 空态+人工 null 空态（非错误）', async () => {
   expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('暂无人工笔记')
 })
 
-it('未选中节点→空态提示', async () => {
+it('未选中节点→空态提示（[②U4/P-16] 占位文案=「点击卡片查看详情」）', async () => {
   mount(<LineageSidePanel node={null} onJumpToPaper={JUMP} />)
   await flush()
-  expect(host?.textContent).toContain('单击节点查看详情')
+  expect(host?.textContent).toContain('点击卡片查看详情')
   expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
 })
 
