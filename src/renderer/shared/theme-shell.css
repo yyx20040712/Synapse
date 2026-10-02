@@ -6,10 +6,18 @@
    值单源=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段
    （L39-77）逐值誊录；真相源=docs/design/2026-09-26_theme-trio-final-design.md §1。 */
 
-/* ══ App 壳三行网格：38px 顶栏｜1fr 内容行（rail+main）｜26px 状态条 ══ */
+/* ══ App 壳三行网格：38px 顶栏｜1fr 内容行（rail+main）｜26px 状态条 ══
+   [F-UIRES-VFIX-01] 列模板钉死 minmax(0,1fr)：无显式列模板时 grid 隐式
+   auto 列被子项 max-content 贡献撑超视口（.app-content-row 的 zoom 参与
+   布局计算——贡献×档位放大，1.1 档实测轨道 1382>视口 1294）→header/
+   statusbar 被 stretch 到轨道宽→caption 三键出窗+文档横向溢出。minmax
+   (0,·) 弃内容敏感（min=0 不看贡献），列宽恒=容器宽；内容溢出改由
+   .app-main（overflow-auto+min-w-0）容器内消化——「文档永不滚」不变量
+   在放大档的补全。 */
 .app-shell {
   display: grid;
   grid-template-rows: 38px 1fr 26px;
+  grid-template-columns: minmax(0, 1fr);
   height: 100%;
 }
 
@@ -111,7 +119,11 @@
 /* ══ R2-SET1 界面缩放三档：--ui-scale 挂 documentElement（App effect 单点写，
    数值映射单源=shared/ipc/schemas UI_SCALE 1/1.1/1.25）。
    内容行整行缩放（rail+main 文本面）；topbar/statusbar 在行外结构性豁免
-   （E5 裁决——caption 三键/顶栏保持系统观感，恒定不随档位变）；
+   （E5 裁决——caption 三键/顶栏保持系统观感，恒定不随档位变）。
+   [F-UIRES-VFIX-01] 豁免勘误：原表述只考虑 zoom 继承面——zoom 同时参与
+   布局计算，内容行 max-content 贡献×档位经 grid 隐式列传染顶栏/状态条
+   （放大档三键被推出窗，随文件夹文献集宽分化）；布局传染由 .app-shell
+   列模板钉死 minmax(0,1fr) 封掉（缘由详彼注）——本段 zoom 消费规则不变；
    PDF 页列反向补偿恒视觉 1.0——探针实测（r2-set1-out-probe.json）：canvas
    跟随 ×1.1 位图拉伸模糊，zoom: calc(1 / var(--ui-scale, 1)) Chromium 接受且
    canvas 精确恢复 612×792 原始视觉+背衬匹配+textLayer 对位不受破坏（对位
