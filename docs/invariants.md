@@ -12,7 +12,7 @@
 
 | 编号 | 不变量 | 声明处 | 强制方式 | 状态 |
 | --- | --- | --- | --- | --- |
-| INV-01 | 文档永不滚：所有滚动只发生在应用内 overflow 容器（main/阅读器滚动区） | src/renderer/shared/theme.css | e2e reader-text.spec（三层 overflow 计算样式断言） | 已锚定（2026-08-23 UBS） |
+| INV-01 | 文档永不滚：所有滚动只发生在应用内 overflow 容器（main/阅读器滚动区） | src/renderer/shared/theme.css | e2e reader-text.spec（三层 overflow 计算样式断言）+ui-scale-viewport.spec（放大档壳层完整性——F-UIRES-VFIX-01 2026-10-03 补） | 已锚定（2026-08-23 UBS） |
 | INV-02 | 用户触发的动作失败必须可见（toast/内联红条），禁止静默吞错 | AGENTS.md, scripts/new-ticket.ps1 | 人审+工单模板条款（lint 化不可行有实证——blanket 空 catch 禁令误伤合法尽力而为） | **部分**（U1/U6 两修复模式；规约化已落模板文化层） |
 | INV-03 | 一切含异步 load 的 store 必须有请求序号 stale-guard（旧响应/旧失败不得覆盖新状态；含 per-tab 变体/写方向身份寻址/同通道写全序三同族变体） | library/notes/tags/reader/settings 五 store, useAsync.ts | 五 store 单测+useAsync.test 三面（reader per-tab 18 用例；写方向与全序用例 always-active） | 已锚定 |
 | INV-04 | 保存失败不推进 savedAt（失败=未保存态延续，下次编辑自然重试） | src/renderer/features/notes/notes.store.ts | notes.store.test 锁定 | 已锚定 |

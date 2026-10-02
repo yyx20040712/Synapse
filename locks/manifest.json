@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T16:52:08.0752336Z",
+    "generatedAt":  "2026-10-02T18:20:54.3509845Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "bb024d8180435a4ba8a00285425fe3d53be84a3c2259dadfc960c1567dc384a5"
+                      "sha256":  "95524dc5d3e9330180f3b653e5cb182378653d7243acd169fc3577cc3f472807"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -360,6 +360,10 @@
                   {
                       "path":  "tests/e2e/theme-trio.spec.ts",
                       "sha256":  "8700c2c0fb2388a960e20540bdca8d37c8a64900895c0a380d96938992e36ed7"
+                  },
+                  {
+                      "path":  "tests/e2e/ui-scale-viewport.spec.ts",
+                      "sha256":  "ade81146f60d95ccef87675cd912a0a60a089cf255443ee331a9719fb2fdc571"
                   },
                   {
                       "path":  "tests/e2e/workspaces.spec.ts",
