@@ -235,7 +235,8 @@
 .lib-dr-vu { font-size: var(--fs-micro); color: var(--faint); margin-left: 2px; }
 .lib-dr-ml { font-size: var(--fs-micro); color: var(--faint); margin-top: 3px; }
 /* 键值行（等宽大写键名+右对齐值 max-width 190px） */
-.lib-dr-body { padding: 12px 18px; flex: 1; min-height: 0; }
+/* 抽屉内容溢出滚动于本区（矮窗/大字体环境防溢出叠压动作区——libfix2，CI Linux 字体实证） */
+.lib-dr-body { padding: 12px 18px; flex: 1; min-height: 0; overflow-y: auto; }
 .lib-fld {
   display: flex;
   justify-content: space-between;

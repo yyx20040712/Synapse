@@ -13,6 +13,8 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * （四格指标真实文本+fld 键值行+关联节退役）→动作区两列 grid 计算样式锚
  * （F-LIBUI-01 ⑥）→选中行挂 sel 类。断言=真实文本+类锚+getComputedStyle
  * （INV-06 口径——禁截图比对）。
+ * [libfix2] 五列形态断言分档：开头升 1285，实测内容宽 ≥1274 断全形态；CI
+ * 虚拟屏 1024 钳制态断降级档（「标签」hidden+main ≥100+标题 visible）。
  */
 test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+动作区 grid+选中态', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-t3p3-'))
@@ -42,11 +44,35 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  // —— 五列表头在场（编号/题名 · 期刊/年月/引用/标签——真实文本；档次列 F-LIBUI-01 退役）——
+  // —— [libfix2·RR1] 五列形态断言前置：升 1285 正常宽档（本机/宽屏走全形态；
+  //    CI 虚拟屏 1024 钳制态走降级档=「标签」列收 0 锁 libfix1 语义）。
+  //    resize throw 守卫同窄窗用例形态；表头「标签」分档=**语义断言**（实测
+  //    .lib-c-tags 列宽 >0 断可见/=0 断 hidden——门一双审 W1：1274 是 main≥140
+  //    的线、标签可见语义线=1134，阈值耦合留 (1134,1274) 假红死区，实测列宽
+  //    自适应消死区）；行级降级锁=无条件（塌 0 回归任何视口都该红——W2 同批
+  //    收紧：标签列在场断言闭合「列被移除恒绿」盲区）——
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows()[0]
+    if (main === undefined) throw new Error('主窗口不在 BrowserWindow.getAllWindows() 中')
+    main.setContentSize(1285, 800)
+  })
+
+  // —— 五列表头在场（编号/题名 · 期刊/年月/引用两态共用——定宽列窄视口下
+  //    hidden=溢出裁剪非收缩，CI 四列断言实测绿维持原断言；档次列 F-LIBUI-01 退役）——
   const cols = win.locator('.lib-cols')
   await expect(cols).toBeVisible()
-  for (const head of ['编号', '题名 · 期刊', '年月', '引用', '标签']) {
+  for (const head of ['编号', '题名 · 期刊', '年月', '引用']) {
     await expect(cols.getByText(head, { exact: true })).toBeVisible()
+  }
+  // [libfix2·RR1-W2] 标签表头列在场（列被移除=toHaveCount(0) 即红——toBeHidden
+  // 对「未渲染」与「渲染但收 0」同真，在场锚区分两者）
+  await expect(cols.locator('.lib-c-tags')).toHaveCount(1)
+  const tagsHeadW = async (): Promise<number> =>
+    cols.locator('.lib-c-tags').evaluate((el) => el.getBoundingClientRect().width)
+  if ((await tagsHeadW()) > 0) {
+    await expect(cols.getByText('标签', { exact: true })).toBeVisible()
+  } else {
+    await expect(cols.getByText('标签', { exact: true })).toBeHidden()
   }
   await expect(cols.locator('.lib-c-tier')).toHaveCount(0)
 
@@ -56,6 +82,12 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
   // 图序：甲 year=2023 在前=001，乙缺年 NULLS LAST 殿后=002（probe 实测恒定）
   const rowA = win.locator('.lib-row', { hasText: 'T3P3 甲文献' })
   await expect(rowA).toBeVisible({ timeout: 10_000 })
+  // [libfix2·RR1-W1] 行级塌 0 回归锁=无条件（main 列保底 ≥100+标题文本
+  // visible——libfix1 语义，正常宽 151.6 与钳制态 120 两态皆真）
+  await expect
+    .poll(async () => (await rowA.locator('.lib-r-main').boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(100)
+  await expect(win.getByText('T3P3 甲文献：管网漏损定位')).toBeVisible({ timeout: 10_000 })
   await expect(rowA.locator('.lib-r-id')).toHaveText('001')
   await expect(rowA.locator('.lib-r-title')).toHaveText('T3P3 甲文献：管网漏损定位')
   await expect(rowA.locator('.lib-r-j')).toHaveText('Nature Water')

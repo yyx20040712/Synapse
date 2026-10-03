@@ -773,4 +773,11 @@ describe('B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列�
       '.lib-r-tags 需显式 min-width: 0（min-width:auto 默认阻止收缩至 0，弹性吸收失效）'
     ).toMatch(/\.lib-r-tags\s*\{[^}]*min-width:\s*0;/)
   })
+
+  it('.lib-dr-body 块含 overflow-y: auto（抽屉内容溢出滚动于本区——防叠压尾部动作区）', () => {
+    expect(
+      libCss,
+      '.lib-dr-body 需自身滚动（矮窗/大字体环境内容溢出与 .lib-dr-actions 叠压——CI Linux 字体实证）'
+    ).toMatch(/\.lib-dr-body\s*\{[^}]*overflow-y:\s*auto;/)
+  })
 })

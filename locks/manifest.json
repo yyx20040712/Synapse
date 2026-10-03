@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-03T14:05:51.6179779Z",
+    "generatedAt":  "2026-10-03T14:50:45.4942030Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -287,7 +287,7 @@
                   },
                   {
                       "path":  "tests/e2e/library-density.spec.ts",
-                      "sha256":  "ec0a61e09fe6c62d18f6793024d9c4f2ac289e96979c7d8dc1f6e30ded51c602"
+                      "sha256":  "3080d00595ee506350548711a1de0b20f1d1add130766e4ccc08fb0d2f54cdef"
                   },
                   {
                       "path":  "tests/e2e/library-explorer.spec.ts",
@@ -1075,7 +1075,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "b551faa37ad419a7506f6f250c73a6641ba953e390c787e4769079e28f02c1f6"
+                      "sha256":  "abe8b6c9a03b29315df66dce0c42e573f473971a98ea627f1a41c416838fbad2"
                   },
                   {
                       "path":  "tests/unit/renderer/theme-boot.test.ts",
