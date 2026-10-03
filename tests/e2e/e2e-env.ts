@@ -10,11 +10,16 @@ import { _electron as electron, type ElectronApplication } from '@playwright/tes
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 
-export function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
-  return electron.launch({
+export async function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
+  const app = await electron.launch({
     args: ['out/main/index.js'],
     env: { ...process.env, SYNAPSE_USER_DATA: userData, ...extraEnv } as Record<string, string>
   })
+  // [ciatimeout-a2] _electron.launch 自建 BrowserContext 不吃 playwright.config
+  // 的 use.actionTimeout（run 37101764841 实证：config 已设 60s 仍报 120 处
+  // 30s 默认超时）——context 级显式设默认超时才对 electron 窗口生效
+  app.context().setDefaultTimeout(60_000)
+  return app
 }
 
 /**
