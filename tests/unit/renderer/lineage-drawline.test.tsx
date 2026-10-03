@@ -9,7 +9,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeApiStub } from '../../utils/api-client-mock'
+import { makeApiStub, toastStoreSpy } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
   lineage: { graph: vi.fn(), upsertNode: vi.fn(), removeNode: vi.fn(), upsertEdge: vi.fn(), removeEdge: vi.fn(), upsertLineTypes: vi.fn() }
@@ -393,5 +393,92 @@ describe('F-LGRAPH-01②U3 画线收尾 click 抑制（[RR4] suppress 旗同手�
     expect(onNodeClick).not.toHaveBeenCalled() // 抑制沿承（防建边误选卡）
     docClick(req('.tl-card[data-node-id="B"]')) // 第二次卡点击=新手势放行
     expect(onNodeClick).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('lnfix1 画线锚点指示+容差 12+落空分层反馈（armed hint/±12/toast 分层）', () => {
+  /** document 级 pointermove（hint 待机扫描面——与拖拽会话监听同域） */
+  const docMove = (x: number, y: number): void => {
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, cancelable: true, clientX: x, clientY: y }))
+    })
+  }
+
+  beforeEach(() => {
+    // toast 通道走 toastStoreSpy（api-client-mock F-TESTREF-W1A 替换面）——
+    // 用例间清调用记录（既有用例如查重 toast 亦经此 spy）
+    toastStoreSpy.mockClear()
+  })
+
+  it('容差 ±12 边界：锚旁 10px 起拖（旧容差 6 不可达）→落点 10px 建边 A→B', async () => {
+    mountTimeline()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    pointer(content, 'pointerdown', 218, 136)
+    expect(q('[data-testid="draw-preview"]')).not.toBeNull()
+    pointer(content, 'pointerup', 110, 336)
+    const e = useLineageStore.getState().edges[0]!
+    expect(e.fromNode).toBe('A')
+    expect(e.toNode).toBe('B')
+  })
+
+  it('落点=他卡卡身中心（膨胀圈内非锚）→toast 落点未在连接点上+无边+armed 保留', async () => {
+    mountTimeline()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    pointer(content, 'pointerdown', 228, 136)
+    pointer(content, 'pointerup', 164, 336)
+    expect(toastStoreSpy).toHaveBeenCalledWith('落点未在连接点上，未创建连线', 'error')
+    expect(useLineageStore.getState().edges).toHaveLength(0)
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid')
+  })
+
+  it('落点=空白（膨胀圈外）→静默取消无 toast（负锚）', async () => {
+    mountTimeline()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    pointer(content, 'pointerdown', 228, 136)
+    pointer(content, 'pointerup', 800, 700)
+    expect(toastStoreSpy).not.toHaveBeenCalled()
+    expect(useLineageStore.getState().edges).toHaveLength(0)
+  })
+
+  it('armed 待机 hover 近锚（距 2px）→draw-anchor-hint 在场+圆点坐标=最近锚', async () => {
+    mountTimeline()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    docMove(226, 136)
+    const circle = req('[data-testid="draw-anchor-hint"] circle')
+    expect(circle.getAttribute('cx')).toBe('228')
+    expect(circle.getAttribute('cy')).toBe('136')
+  })
+
+  it('armed 待机 hover 卡中心（距最近锚 36>12）→hint 不在场（所见即可拖负锚）', async () => {
+    mountTimeline()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    docMove(164, 136)
+    expect(q('[data-testid="draw-anchor-hint"]')).toBeNull()
+  })
+
+  it('select 态无 hint；起拖（dragging）即撤', async () => {
+    mountTimeline()
+    docMove(226, 136)
+    expect(q('[data-testid="draw-anchor-hint"]')).toBeNull()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    docMove(226, 136)
+    expect(q('[data-testid="draw-anchor-hint"]')).not.toBeNull()
+    pointer(req('.tl-content'), 'pointerdown', 228, 136)
+    expect(q('[data-testid="draw-anchor-hint"]')).toBeNull()
   })
 })

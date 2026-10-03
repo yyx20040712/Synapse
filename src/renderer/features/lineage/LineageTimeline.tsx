@@ -18,6 +18,7 @@ import { LineageToolbar } from './LineageToolbar'
 import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawPreview } from './DrawPreview'
+import { DrawAnchorHint } from './DrawAnchorHint'
 import { MonthPop } from './MonthPop'
 import { useLineageViewStore } from './lineage-view.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
@@ -197,6 +198,8 @@ export function LineageTimeline(props: {
           />
           {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化） */}
           <DrawPreview state={draw.state} color={currentLineColor} />
+          {/* [lnfix1] armed 待机锚点指示（近锚 accent 圆点——所见即可拖） */}
+          <DrawAnchorHint hint={draw.hint} />
           <TimelineYears
             groups={drag.renderGroups}
             pubNos={pubNoByNode}

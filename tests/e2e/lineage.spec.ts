@@ -1018,6 +1018,97 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
+   * [lnfix1] T12b=画线链三缺口（用户视检定性①）：a) armed 待机锚点指示圆点
+   * b) 落点容差 12 边界建边 c) 落空分层反馈（他卡膨胀圈=toast/空白=静默负锚）。
+   */
+  test('T12b 画线锚点指示+容差边界+落空分层反馈（lnfix1：hint 在场/±10 建边/toast 分层）', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t12b-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    const rb = await root.boundingBox()
+    const ab = await cardA.boundingBox()
+    if (rb === null || ab === null) throw new Error('卡不可见')
+    const hint = win.getByTestId('draw-anchor-hint')
+    // a) armed hover 近卡缘（右中锚旁 2px）→指示圆点在场+坐标=最近锚内容坐标
+    await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
+    await expect(hint).toHaveCount(1)
+    const pos = await win.evaluate(() => {
+      const content = document.querySelector('.tl-content')
+      const rootCard = Array.from(document.querySelectorAll('.tl-card[data-node-id]')).find((c) =>
+        (c.textContent ?? '').includes('脉络根文献')
+      )
+      const circle = document.querySelector('[data-testid="draw-anchor-hint"] circle')
+      if (!(content instanceof HTMLElement) || rootCard === undefined || circle === null) return null
+      const cb = content.getBoundingClientRect()
+      const cr = rootCard.getBoundingClientRect()
+      return {
+        ax: cr.right - cb.left,
+        ay: cr.top + cr.height / 2 - cb.top,
+        hx: Number(circle.getAttribute('cx')),
+        hy: Number(circle.getAttribute('cy'))
+      }
+    })
+    if (pos === null) throw new Error('hint 坐标采集失败')
+    expect(Math.abs(pos.hx - pos.ax)).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(pos.hy - pos.ay)).toBeLessThanOrEqual(0.5)
+    // a 负锚) hover 卡身中心（距最近锚>12）→不在场（60ms=hint 节流窗让位，非断言 sleep）
+    await win.waitForTimeout(60)
+    await win.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+    await expect(hint).toHaveCount(0)
+    // b) 容差 12 边界：源/落点均锚旁 10px（旧容差 6 不可达）→建边
+    await win.mouse.move(rb.x + rb.width - 10, rb.y + rb.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(ab.x + 10, ab.y + ab.height / 2, { steps: 8 })
+    await win.mouse.up()
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 5_000 })
+    await expect(win.getByTestId('lineage-save-btn')).toBeEnabled()
+    // d) 空白松手=静默取消（无 toast 负锚+armed 保留）——先于 c 排（c 的 toast 残影防污）
+    await win.getByTestId('lineage-tool-solid').click()
+    const tlBox = await win.getByTestId('lineage-timeline').boundingBox()
+    if (tlBox === null) throw new Error('画布不可见')
+    const blankX = tlBox.x + tlBox.width - 40
+    const blankY = tlBox.y + tlBox.height - 40
+    await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(blankX, blankY, { steps: 6 })
+    await win.mouse.up()
+    await expect(win.getByText('落点未在连接点上，未创建连线')).toHaveCount(0)
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1)
+    // c) 落他卡卡身中心（膨胀圈内非锚）→toast+无边+armed 保留（hint 复在场）
+    await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(ab.x + ab.width / 2, ab.y + ab.height / 2, { steps: 8 })
+    await win.mouse.up()
+    await expect(win.getByText('落点未在连接点上，未创建连线')).toBeVisible({ timeout: 5_000 })
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1)
+    await win.waitForTimeout(60)
+    await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
+    await expect(hint).toHaveCount(1)
+    // 收尾保存（quit-dirty 拦截防 close 挂死：b 建边入暂存=dirty，未保存时
+    // app.close 被 main preventDefault+确认对话框拦——T12 保存后 close 同型）
+    await win.getByTestId('lineage-save-btn').click()
+    await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
+    await app.close()
+  })
+
+  /**
    * [F-LGRAPH-01②U6/U7] T13=聚焦 dim+缩放+拖拽候选槽+退役零残留。
    */
   test('T13 聚焦 dim+缩放+拖拽候选槽+退役零残留（②U6/U7）', async () => {

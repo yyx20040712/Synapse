@@ -65,6 +65,12 @@
 .tl-content.drawing { cursor: crosshair; }
 .tl-content.drawing .tl-card { cursor: pointer; }
 
+/* [lnfix1] 画线 armed 待机锚点指示层（.draw-preview 同层结构——零交互瞬态） */
+.draw-anchor-hint {
+  position: absolute; inset: 0; overflow: visible;
+  pointer-events: none; z-index: 2;
+}
+
 /* [F-LGRAPH-01②U5] 手动调线编辑态：选中线 accent 加粗 2.2+手柄族+虚影+
    磁吸指示+穿卡警示（P-10/P-9——零持久化渲染态） */
 .tl-edge.selected { stroke-width: 2.2; }

@@ -8,14 +8,20 @@
  * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚}。
  *
  * ── 迁移表（§2.4 逐条）──
- * - armed+pointerdown 近锚（12 锚/卡±6 内容坐标）→ dragging（预览线+吸附指示
+ * - armed+pointerdown 近锚（12 锚/卡±12 内容坐标——[lnfix1] 6→12 容差放宽）
+ *   → dragging（预览线+吸附指示
  *   +源卡 .link-src 高亮[回炉 R15]）——**document 级拖拽会话**（[回炉 R1①]
  *   pointermove/up/pointercancel+window blur——use-edge-edit runDragSession
  *   先例：指针离画布仍跟随，中断=取消无残留）
  * - dragging+pointerup 落另一卡近锚 → 建边（drawEdge：manual+dashed/color=
  *   当前工具线型+label=当前色行名快照 P-14）→ idle（tool 回 select）+入撤销栈
  *   （收尾带 armed 闸[回炉 R1③]——工具已非画线不建边）
- * - dragging+pointerup 空白/同卡 → 取消 → idle（**armed 保留**——tool 不动）
+ * - dragging+pointerup 空白/同卡 → 取消 → idle（**armed 保留**——tool 不动）；
+ *   [lnfix1] 落空分层反馈：落点命中他卡 rect 外扩 DRAW_SNAP_R 膨胀圈（排除源
+ *   卡——同卡面沿承静默）=error toast「落点未在连接点上」；空白=静默取消
+ * - [lnfix1] armed 待机锚点指示（hint 通道）：armed+idle 时 document
+ *   pointermove 数学命中最近锚（≤DRAW_SNAP_R——与可起拖判定同一数学，所见即
+ *   可拖）驱动 DrawAnchorHint 渲染；leading 节流 50ms（禁每 move 全卡 rect 采集）
  * - 切模式/切 select/切图下降沿：dragging 中止=取消（[回炉 R1②] effect 监听
  *   tool/mode/folderId 三源——会话监听同步拆除）
  * - UI 预检（现行语义沿承）：同卡近邻=自环不建；同端点对无向查重=toast 拒绝；
@@ -43,8 +49,12 @@ import { showToast } from '../../shared/ui/toast-store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 
-/** 吸附半径（内容坐标 px——§2.4 近锚 ±6） */
-export const DRAW_SNAP_R = 6
+/** 吸附半径（内容坐标 px——§2.4 近锚；[lnfix1] 6→12：±6 用户实检过严） */
+export const DRAW_SNAP_R = 12
+
+/** [lnfix1] armed 待机 hint 扫描节流窗（ms——leading 即时+窗口内丢弃；禁每
+ *  move 全卡 rect 采集：50ms 上限采样，rect 近实时=「所见即可拖」偏差极小） */
+const HINT_THROTTLE_MS = 50
 
 export interface DrawAnchor {
   nodeId: string
@@ -114,12 +124,15 @@ export function useDrawLine(args: {
   contentRef: RefObject<HTMLDivElement | null>
 }): {
   state: DrawLineState
+  /** [lnfix1] armed 待机最近锚指示（idle 态 document move 数学命中——DrawAnchorHint 渲染源） */
+  hint: DrawAnchor | null
   /** .tl-content pointerdown（draw 态消费；返回 true=已消费——容器不分发拖拽） */
   handlePointerDown(ev: ReactPointerEvent<HTMLDivElement>): boolean
   /** dragging 收尾后的 click 抑制（一次性——防建边触发卡选中） */
   consumeClickSuppress(): boolean
 } {
   const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null })
+  const [hint, setHint] = useState<DrawAnchor | null>(null)
   const suppressClickRef = useRef(false)
   const stateRef = useRef(state)
   stateRef.current = state
@@ -145,6 +158,60 @@ export function useDrawLine(args: {
     sessionCleanupRef.current()
     cancel()
   }, [tool, mode, folderId, cancel])
+
+  // [lnfix1] armed 待机锚点指示：armed+idle 时 document pointermove 数学命中
+  // 最近锚（nearestAnchor 与可起拖判定同一数学——所见即可拖，不引入第二容差）。
+  // 性能=leading 节流 50ms（窗口内 move 丢弃）：禁每 move 全卡 getBoundingClientRect
+  // 采集（use-edge-edit RR8 重采集键先例的轻量替代——useDrawLine 无布局变化
+  // 信号源，节流保 rect 近实时且零新接缝；down 判定仍走实时 cardRects 不受节流）
+  // [RR1-2a] trailing 补发：窗内被丢的 move 记 pending 位，窗尾（50ms）补算一次
+  // ——窗口续期（新 move 重置 timer）：持续移动不补发、停驻 50ms 后 hint=停驻位，
+  // leading 与 trailing 双沿保「停驻位=hint 位」一致；cleanup 清 timer 防泄漏
+  const armedNow = tool === 'draw-solid' || tool === 'draw-dashed'
+  useEffect(() => {
+    if (!armedNow || state.phase === 'dragging') return
+    let lastAt = 0
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null
+    let pendingPt: { clientX: number; clientY: number } | null = null
+    const compute = (clientX: number, clientY: number): void => {
+      const c = args.contentRef.current
+      if (c === null) return
+      const hit = nearestAnchor(cardRects(c), toContentPt(c, clientX, clientY))
+      setHint((prev) => (prev?.nodeId === hit?.nodeId && prev?.pt.x === hit?.pt.x && prev?.pt.y === hit?.pt.y ? prev : hit))
+    }
+    const clearPending = (): void => {
+      if (pendingTimer !== null) {
+        clearTimeout(pendingTimer)
+        pendingTimer = null
+      }
+      pendingPt = null
+    }
+    const onMove = (ev: PointerEvent | MouseEvent): void => {
+      const now = performance.now()
+      if (now - lastAt < HINT_THROTTLE_MS) {
+        pendingPt = { clientX: ev.clientX, clientY: ev.clientY }
+        if (pendingTimer !== null) clearTimeout(pendingTimer)
+        pendingTimer = setTimeout(() => {
+          pendingTimer = null
+          const p = pendingPt
+          pendingPt = null
+          if (p === null) return
+          lastAt = performance.now()
+          compute(p.clientX, p.clientY)
+        }, HINT_THROTTLE_MS)
+        return
+      }
+      lastAt = now
+      clearPending()
+      compute(ev.clientX, ev.clientY)
+    }
+    document.addEventListener('pointermove', onMove)
+    return () => {
+      document.removeEventListener('pointermove', onMove)
+      clearPending()
+      setHint(null)
+    }
+  }, [armedNow, state.phase, args.contentRef])
 
   // 卸载清理（会话监听不越界驻留）
   useEffect(() => () => sessionCleanupRef.current(), [])
@@ -175,8 +242,28 @@ export function useDrawLine(args: {
       const content = args.contentRef.current
       if (content === null) return
       const p = toContentPt(content, clientX, clientY)
-      const target = nearestAnchor(cardRects(content), p, from.nodeId)
-      if (target === null) return // 空白/同卡=取消（armed 保留——tool 不动）
+      const cards = cardRects(content)
+      const target = nearestAnchor(cards, p, from.nodeId)
+      if (target === null) {
+        // [lnfix1] 落空分层反馈：命中他卡 rect 外扩 DRAW_SNAP_R 膨胀圈（排除
+        // 源卡——同卡面沿承静默）=error toast；空白=静默取消（负锚沿承）
+        const nearCard = cards.some((c) => {
+          if (c.nodeId === from.nodeId) return false
+          const r = c.rect
+          return (
+            p.x >= r.x - DRAW_SNAP_R &&
+            p.x <= r.x + r.w + DRAW_SNAP_R &&
+            p.y >= r.y - DRAW_SNAP_R &&
+            p.y <= r.y + r.h + DRAW_SNAP_R
+          )
+        })
+        if (nearCard) showToast('落点未在连接点上，未创建连线', 'error')
+        // [RR1-2b] 收尾补算（取消路径）：up 后指针未动 hint 立即恢复——同卡锚
+        // 取消时恢复源卡锚位（nearestAnchor 无 exclude——指示面=可起拖全域）。
+        // 建边路径不补：resetTool→armed 拆除 hint 必清（写入即被覆盖的死代码）
+        setHint(nearestAnchor(cards, p))
+        return
+      }
       // 同卡自环面已由 excludeNodeId 排除（target≠from 卡）；查重预检：
       if (hasPair(from.nodeId, target.nodeId)) {
         showToast('两节点间已存在连线', 'error')
@@ -261,5 +348,5 @@ export function useDrawLine(args: {
     return v
   }, [])
 
-  return { state, handlePointerDown, consumeClickSuppress }
+  return { state, hint, handlePointerDown, consumeClickSuppress }
 }
