@@ -113,11 +113,18 @@ export function sideAnchor(r: Rect, side: Side, toward: Pt): SelectedAnchor {
 }
 
 /** 同锚散开注册表（cardId|side|slot——仅胜出态落记：失败态尝试不占锚，
- *  否则注册表污染使后续边锚位漂移[routeAll 3 边实测 e1 落 fallback]） */
+ *  否则注册表污染使后续边锚位漂移[routeAll 3 边实测 e1 落 fallback]）。
+ *  [批3] has=散开候选占用预检（几何散开域与占用散开域正交——几何候选
+ *  须避开已 commit 锚） */
 export class AnchorUse {
   private readonly used = new Set<string>()
 
   private readonly key = (cardId: string, side: Side, slot: number): string => `${cardId}|${side}|${slot}`
+
+  /** [批3] 占用纯查（不落记）——几何散开候选循环消费（先占用后几何） */
+  has(cardId: string, side: Side, slot: number): boolean {
+    return this.used.has(this.key(cardId, side, slot))
+  }
 
   /** 纯查（不落记）：返回散开后的 (side,slot)——同侧下一空闲→邻边→对边 */
   pick(cardId: string, side: Side, preferred: number): { side: Side; slot: number } {

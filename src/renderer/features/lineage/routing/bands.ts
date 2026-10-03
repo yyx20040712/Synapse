@@ -2,11 +2,13 @@
  * [F-LINEAGE-02 ①a] bands —— 甲链带路由机件（行隙带/框间带——options §2-A；
  * design-final §1）。带=卡 y 区间夹缝（框边界在缝内→框间带 s=9，否则行隙
  * s=6；车道数=⌊(带宽−2·PAD)/s⌋，0 道=封闭 D-L2-7）；zigzag 骨架：每带先试
- * 目标 x 终落（末 10px 桩区排除源/目标卡——D-L2-4），阻塞经下降 x 候选
- * （目标 x→所跨列缝中线[距目标 x 序]→框外空白）降下一带。确定性红线：
+ * 目标 x 终落（末 10px 桩区排除源/目标卡——D-L2-4），终落受阻经同边 slot
+ * 近序散开重试（[批3] 月标封堵首选 slot 的绕右修正；同边三槽全挡的邻边
+ * 逃逸挂账后续票——主控挂账），阻塞经下降 x 候选（目标 x→所跨列缝中线
+ * [距目标 x 序]→框外空白）降下一带。确定性红线：
  * 无随机/无 Date/无三角函数。纯函数零 DOM import。
  */
-import { anchorPick, sideAnchor, stubEnd, type AnchorUse, type Pt, type Rect, type Side } from './anchors'
+import { anchorPick, anchorPoint, sideAnchor, stubEnd, type AnchorUse, type Pt, type Rect, type Side } from './anchors'
 import { PAD, polylineClearStubs, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
 
@@ -105,42 +107,56 @@ export function bandSkeleton(
   const sa = sideAnchor(src, down ? 'bottom' : 'top', tc)
   const sb = sideAnchor(tgt, down ? 'top' : 'bottom', sc)
   const pa = anchorPick(srcId, src, sa.side, sa.slot, use)
-  const pb = anchorPick(tgtId, tgt, sb.side, sb.slot, use)
   const A = pa.pt
-  const B = pb.pt
   // [回炉 R3] 出桩=生效锚外法线（散开至左/右边后骨架首段不得横穿源卡）：
   // 竖边锚桩与原形共线（stripCollinear 收敛）；横边锚桩=竖转角引入点
   const aS = stubEnd(A, pa.side)
   const first = bands[0]!
   const skel: Pt[] = [A, aS, { x: aS.x, y: first.center }]
   let curX = aS.x
+  const thirdParty = obstacles.filter((o) => o !== src && o !== tgt)
+  // [批3] 终落锚散开：首选锚受阻（月标封堵首选 slot——INV-79 标注属障碍
+  // 集，散开=绕开障碍非豁免障碍）时按 slot 近序重试——同边 [base,(base+1)
+  // %3,(base+2)%3]（AnchorUse.pick 同式）；基序=sb 几何首选（[回炉 W2] 非
+  // use 散开后的 pb——占用域经候选循环 has 预检正交互避）。首成功者=生效
+  // 锚；全候选失败才维持降级 corridor（return null）。[回炉 B1] 候选域收窄
+  // 为同边三槽（月标封堵主场景已覆盖；邻边逃逸挂账后续票）
+  const endSide: Side = down ? 'top' : 'bottom'
+  const base = sb.side === endSide ? sb.slot : 1
+  const spread: ReadonlyArray<readonly [Side, number]> = [
+    [endSide, base],
+    [endSide, (base + 1) % 3],
+    [endSide, (base + 2) % 3]
+  ]
+  // [回炉 W2] 死码清理随动：descend 目标 x 换几何首选锚 x（原 B=pb.pt 随
+  // 终落段改锚候选域而退役——use=undefined 时数值全等，routeAll 语义取
+  // 几何首选与占用正交一致）
+  const tgtAnchorX = anchorPoint(tgt, endSide, base).x
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i]!
     const by = band.center
     // 终落：目标 x 自本带直落（末 10px 桩区排除源/目标卡——D-L2-4 桩语义）
-    const stubTop = down ? B.y - 10 : B.y + 10
-    const thirdParty = obstacles.filter((o) => o !== src && o !== tgt)
-    if (vClear(B.x, by, stubTop, obstacles) && !segHitsAny({ x: B.x, y: stubTop }, B, thirdParty)) {
-      // [回炉 R3] 终段=生效锚外法线桩（竖边锚共线；横边锚 L 形进段）
-      const bS = stubEnd(B, pb.side)
-      const isVerticalEnd = pb.side === 'top' || pb.side === 'bottom'
-      if (isVerticalEnd) {
-        skel.push({ x: B.x, y: by }, B)
-      } else {
-        skel.push({ x: B.x, y: by }, { x: bS.x, y: by }, bS, B)
-      }
+    for (const [side, slot] of spread) {
+      // [回炉 B2] 先占用后几何（几何候选须避开已 commit 锚——省无谓取点）
+      if (use !== undefined && use.has(tgtId, side, slot)) continue
+      const pt = anchorPoint(tgt, side, slot)
+      const stubTop = down ? pt.y - 10 : pt.y + 10
+      if (!vClear(pt.x, by, stubTop, obstacles)) continue
+      if (segHitsAny({ x: pt.x, y: stubTop }, pt, thirdParty)) continue
+      // [回炉 R3] 终段=生效锚外法线桩（竖边锚共线——B1 收窄后恒竖边）
+      skel.push({ x: pt.x, y: by }, pt)
       const cap = Math.floor((band.bottom - band.top - 2 * PAD) / band.s)
-      // [回炉 R2] picks=生效锚（散开身份）
+      // [回炉 R2] picks=生效锚（散开身份——仅胜出态落记，失败尝试不 commit）
       const picks: Array<[string, Side, number]> = [
         [srcId, pa.side, pa.slot],
-        [tgtId, pb.side, pb.slot]
+        [tgtId, side, slot]
       ]
       return { skel, laneY: by, s: band.s, cap, picks }
     }
     if (i === bands.length - 1) return null
     const next = bands[i + 1]!
     let moved = false
-    for (const x of descendCandidates(by, next.center, B.x, snap, cards)) {
+    for (const x of descendCandidates(by, next.center, tgtAnchorX, snap, cards)) {
       if (vClear(x, by, next.center, obstacles)) {
         if (x !== curX) skel.push({ x, y: by })
         skel.push({ x, y: next.center })

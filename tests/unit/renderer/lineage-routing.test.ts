@@ -8,6 +8,8 @@
  * 基准卡=128×72（P-15）。always-active 裸 describe（K3）。
  */
 import { describe, expect, it, vi } from 'vitest'
+import { AnchorUse } from '../../../src/renderer/features/lineage/routing/anchors'
+import { bandSkeleton } from '../../../src/renderer/features/lineage/routing/bands'
 import type { EdgeGeomInput, LayoutSnapshot, Rect } from '../../../src/renderer/features/lineage/routing/chain'
 import { defaultCorridor, laneIndex, routeAll, routeEdge } from '../../../src/renderer/features/lineage/routing/chain'
 
@@ -347,6 +349,92 @@ describe('F-LINEAGE-02 确定性（§1.5 无随机/无 Date/无三角函数）',
       expect(routeEdge(e, snap)).toEqual(first)
     }
     expect(routeAll([e], snap)).toEqual([first])
+  })
+})
+
+describe('F-LINEAGE-02 [批3] band 终落锚散开（月标封堵首选 slot——INV-79 绕开非豁免）', () => {
+  // 夹具手推：src A(100,100,128,72) 下行 tgt B(160,192,128,72)；行隙带
+  // [172,192]（frame y=180 入带→s=9），带中心 y=182；A 底锚=投影 tc.x=224
+  // →¾ 序 (196,172)；B 顶首选锚=投影 sc.x=164→¼ 序 (192,192)；月标形
+  // label(113,181,77,8)（框左+12 宽 77——膨胀 [109,194]×[177,193]）封堵
+  // 首选直落点 (192,182)；散开序 [0,1,2]→slot1 (224,192) 净空承接
+  const spreadSnap = (): LayoutSnapshot =>
+    makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(160, 192, CARD_W, CARD_H)]
+      ]),
+      labels: [rect(113, 181, 77, 8)],
+      frames: [{ ...rect(101, 180, 200, 300), year: 2022 }]
+    })
+
+  it('月标挡首选 slot→散开第二槽终落 band（骨架末段=slot1 锚+d 手推）', () => {
+    const snap = spreadSnap()
+    const obstacles = [...snap.cards.values(), ...snap.labels]
+    const cards = [...snap.cards.values()]
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, 'A', 'B')
+    expect(band).not.toBeNull()
+    // 终落锚=散开第二候选 slot1：手算 x=160+128×½=224（首选 x=192 被月标
+    // 膨胀带 [109,194] 封堵）——骨架末点即生效锚点
+    expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 224, y: 192 })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('band')
+    // d 手推：骨架 [(196,172),(196,182),(224,182),(224,192)]（零长顶点剔除）
+    // ——两拐 r=min(6,10/2,28/2)=5：tIn/tOut=(196,177)/(201,182) 与
+    // (219,182)/(224,187)
+    expect(r.d).toBe('M 196 172 L 196 177 Q 196 182 201 182 L 219 182 Q 224 182 224 187 L 224 192')
+  })
+
+  it('全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null+routeEdge 降级 corridor', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(160, 192, CARD_W, CARD_H)]
+      ]),
+      // 构造面=同边三挡（B1 收窄后候选域=同边三槽）：宽 140 月标横贯 B 三
+      // 顶槽 x（192/224/256）——膨胀 [146,294]×[177,193] 封死全部散开候选
+      labels: [rect(150, 181, 140, 8)],
+      frames: [{ ...rect(101, 180, 200, 300), year: 2022 }]
+    })
+    const obstacles = [...snap.cards.values(), ...snap.labels]
+    const cards = [...snap.cards.values()]
+    expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, 'A', 'B')).toBeNull()
+    // 全候选失败→降级 corridor（lane0=752——右缘走廊承接；邻边逃逸挂账后续票）
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('corridor')
+    expect(r.lane).toBe(0)
+  })
+
+  it('散开锚 picks 落记=生效锚（tgt 项=散开 side/slot 非首选——R2 仅胜出态）', () => {
+    const snap = spreadSnap()
+    const obstacles = [...snap.cards.values(), ...snap.labels]
+    const cards = [...snap.cards.values()]
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, new AnchorUse(), 'A', 'B')
+    expect(band).not.toBeNull()
+    // picks tgt 项=生效散开锚 ('top',1)——非首选 ('top',0)（失败尝试不落记）；
+    // src 项=常规生效锚（散开只施于终落端）
+    expect(band!.picks).toEqual([
+      ['A', 'bottom', 2],
+      ['B', 'top', 1]
+    ])
+  })
+
+  it('[回炉 B2] 散开候选避开已 commit 槽（占用预检）：slot1 被占+slot0 月标挡→散至 slot2', () => {
+    const snap = spreadSnap()
+    const obstacles = [...snap.cards.values(), ...snap.labels]
+    const cards = [...snap.cards.values()]
+    // use 预 commit (tgt,'top',1)——slot1 几何净空但占用域被占（模拟多边
+    // 同目标先到边）；候选序 [0(几何挡),1(占用),2(净空)]→终落 slot2
+    const use = new AnchorUse()
+    use.commit('B', 'top', 1)
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, use, 'A', 'B')
+    expect(band).not.toBeNull()
+    // 终落锚=slot2：手算 x=160+128×¾=256（无占用预检时落 slot1 x=224 即红）
+    expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 256, y: 192 })
+    expect(band!.picks).toEqual([
+      ['A', 'bottom', 2],
+      ['B', 'top', 2]
+    ])
   })
 })
 
