@@ -182,6 +182,7 @@ export function EdgeOverlay(props: {
               className={cls}
               data-edge-id={p.edgeId}
               data-dashed={e.dashed ? '1' : '0'}
+              data-route={p.route}
               d={p.d}
               style={selected ? { ...visual, stroke: 'var(--accent)', strokeWidth: 2.2 } : visual}
             />
