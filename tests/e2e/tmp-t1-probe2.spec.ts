@@ -42,7 +42,7 @@ async function linkNodesViaUi(win: Page, fromTitle: string, toTitle: string): Pr
 async function fullGeo(win: Page, tag: string): Promise<void> {
   const data = await win.evaluate(() => {
     const tl = document.querySelector('.timeline') as HTMLElement | null
-    const years = [...document.querySelectorAll('.tl-year')].map((y) => {
+    const years = Array.from(document.querySelectorAll('.tl-year')).map((y) => {
       const r = y.getBoundingClientRect()
       return { y: r.y, h: r.height, text: (y.textContent || '').slice(0, 12) }
     })
