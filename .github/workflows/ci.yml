@@ -13,12 +13,12 @@ jobs:
   verify:
     name: 六道关卡（lint→typecheck→quality→tickets→unit→build+e2e）
     runs-on: windows-latest
-    # [2026-10-03 CI 修复] 30→60→180：e2e 74 用例后 60min 再撞墙（run
-    # 37109891745 于 60m04s 取消——A2 批 setDefaultTimeout 60s 使失败 action
-    # 等满 60s，环境适配红面（35 红族）单用例失败耗时翻倍爆预算→job
-    # cancelled 连红面数据都拿不到；180=环境适配欠账清偿前的过渡预算，
-    # B 案逐用例适配收窄后应回调）
-    timeout-minutes: 180
+    # [2026-10-03 CI 修复·回调] 30→60→180→60：180=35 红族期的过渡预算
+    # （run 37109891745 于 60m04s 撞墙——A2 批 setDefaultTimeout 60s 使失败
+    # action 等满 60s×retry 放大）；B 案根治（libfix1 塌 0+libfix2 叠压/表头
+    # 分档）后 run 37131855587=e2e 75 绿/1 红（T1 坐标漂移挂账族）7.4m、
+    # 全程 ~17m——v116 §4 回调判据（e2e 红≤5）达成，回调 60（3.5 倍余量）
+    timeout-minutes: 60
     steps:
       # fetch-depth 0：尾注检查需要事件基线（push 的 before / PR 的 base sha）
       # 出现在本地历史内；merge commit 的 git log -1 拿不到源提交的尾注，会误杀合法 PR
