@@ -85,7 +85,7 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
   // 建文件夹 F 并在其中建图（主题节点=图非空锚）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('即将删除的图')
   await win.getByLabel('新文件夹名').press('Enter')
   await win.getByRole('button', { name: '脉络', exact: true }).click()

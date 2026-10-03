@@ -9,9 +9,10 @@
  *   （mockup .sort 逐值）。
  *   [F-UIRES-01 批 A] FolderFilter 文件夹区随批退役（方案切换=删除旧方案）
  *   ——接替=FolderNav 左栏导航（folderScope 判别联合三态+行内 CRUD+新建）
- * - [F-UIRES-01 批 A U3] TagDropdown 行尾嵌于此（标签过滤下拉，P7E-06 多选
- *   AND 交集——空选集收敛 undefined；列序=搜索 290→年份→排序→弹性空档→
- *   标签行尾——设计稿 N-6）；onMutated 注入 library load（标签改名/着色后行内
+ * - [F-UIRES-01 批 A U3] TagDropdown 嵌于此（标签过滤下拉，P7E-06 多选
+ *   AND 交集——空选集收敛 undefined；[批 α 2026-10-03] 列序=搜索 290→年份→
+ *   排序→标签（排序钮右邻——用户视检示意移位，原批 A 行尾位退役）→弹性空档
+ *   行尾留白）；onMutated 注入 library load（标签改名/着色后行内
  *   tagNames 徽标与筛选计数需重载——跨域回调注入，TagDropdown 零 import
  *   library.store）
  * - [F-TAGS-01] onTagColorMap 透传（TagDropdown 颜色映射→LibraryPage 态→
@@ -108,13 +109,15 @@ export function FilterBar(props: {
           </option>
         ))}
       </select>
-      <div className="lib-filter-spacer" />
+      {/* [批 α 2026-10-03] 标签钮=排序钮右邻（自行尾移位——逻辑零改仅列序）； */}
+      {/* 弹性空档吸收余宽（窄窗 flex-wrap 换行——library.css 既有行为） */}
       <TagDropdown
         selectedTagIds={query.tagIds ?? []}
         onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
         onMutated={() => void loadLibrary()}
         onColorMapChange={props.onTagColorMap}
       />
+      <div className="lib-filter-spacer" />
     </div>
   )
 }

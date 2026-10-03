@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-02T18:20:54.3509845Z",
+    "generatedAt":  "2026-10-03T01:18:33.8979622Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -275,7 +275,7 @@
                   },
                   {
                       "path":  "tests/e2e/folders-crud.spec.ts",
-                      "sha256":  "f673f9985ce5621f7d91bbb4a1c422810d76b8690919898755f6743130b1fa21"
+                      "sha256":  "989670cdbf0bc44bfa2f27467539e2474c53ac02e5c6da5f0b125be0783f7c99"
                   },
                   {
                       "path":  "tests/e2e/import-drag.spec.ts",
@@ -283,7 +283,7 @@
                   },
                   {
                       "path":  "tests/e2e/import-to-folder.spec.ts",
-                      "sha256":  "92ff1177d8213d802f2c256741a1bc1abfd207f965638c2c08d3c41cd565a3e8"
+                      "sha256":  "8503be889a5455486af7b0246607f6d881bcd53afc9d99c2303f776c67d6080e"
                   },
                   {
                       "path":  "tests/e2e/library-density.spec.ts",
@@ -291,7 +291,7 @@
                   },
                   {
                       "path":  "tests/e2e/library-explorer.spec.ts",
-                      "sha256":  "2252bdd9abcc28f724de010f87c95c673348ea105a088dbb17afa01af92e1a4b"
+                      "sha256":  "2a101bf15ada080fd30865119dad537539d9b7bea8cad9643f1ed5cd64b34a57"
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage-topic-node.spec.ts",
-                      "sha256":  "c06c214397e7516843a70b9b24deb12ab57fe50ada28cbb429293249c561e3b3"
+                      "sha256":  "28f4cc1db7d0a059c385b73d0cb0a686f960cdb1697af0d5f2725e9e83bc6973"
                   },
                   {
                       "path":  "tests/e2e/meta-year-month.spec.ts",
@@ -631,11 +631,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/folder-nav.test.tsx",
-                      "sha256":  "708b52526054b74b0f01734976d3c6b5a7a21cfe5a843675307f1cd0877637e0"
+                      "sha256":  "8bdb1dae015bd9f67a59c7eb5c822ab12f565552ef2ca7697beac9fac413dc7d"
                   },
                   {
                       "path":  "tests/unit/renderer/folder-nav-edit.test.tsx",
-                      "sha256":  "118a7d1f4e8f4707a33e89460f65e80d4ddf884ff5d0a1df9ecae132675755de"
+                      "sha256":  "5f627cea3630a821dab3a7e99f9e3e0ee6cb615f7df4f1de6f6e93535fa876d6"
                   },
                   {
                       "path":  "tests/unit/renderer/import-drag-ui.test.tsx",
@@ -1035,7 +1035,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown.test.tsx",
-                      "sha256":  "fd24cb8c20426de152364aa884386a2bc16eaae2298083cc487bae33e5094bad"
+                      "sha256":  "5244fc78071c9aa925b0badbe1592fd12f2ebc5a57cf4bf0423a3a02a3a3ab64"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-editor.test.tsx",

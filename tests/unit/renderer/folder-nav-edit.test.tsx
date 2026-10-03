@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
  * [F-UIRES-01 批 A RR1] FolderNav 行内编辑流（folder-nav.test.tsx 拆件——
- * ESLint max-lines 500 红线）：重命名三键范式/F2 键等价/CONFLICT 输入保留/
+ * ESLint max-lines 500 红线）：重命名三键范式/F2 键等价/双击等价（批 α
+ * 2026-10-03 用户裁决翻转：双击文件夹行进重命名）/CONFLICT 输入保留/
  * RR1-4 skipBlur 跨格序列（Esc 取消后 Enter 提交不被驻留标记吞）/RR1-7
  * create·rename 在途守卫（在途窗 Enter/失焦零双发）/§2.2 W-2 行内编辑×
  * folders.changed 外部刷新输入保留。always-active（不经 guardedDescribe）。
@@ -91,6 +92,14 @@ function rightClick(el: HTMLElement | undefined): void {
     el!.dispatchEvent(
       new MouseEvent('contextmenu', { clientX: 210, clientY: 160, bubbles: true, cancelable: true })
     )
+  })
+}
+
+/** [批 α 2026-10-03] 双击进重命名（用户裁决翻转——与课题卡/WorkspacesPage 范式统一） */
+function dblClick(el: HTMLElement | undefined): void {
+  expect(el).toBeDefined()
+  act(() => {
+    el!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, detail: 2 }))
   })
 }
 
@@ -211,6 +220,34 @@ describe('F-UIRES-01 U1 重命名行内编辑（单源——FolderRenameDialog �
     expect(renameInput()).not.toBeNull()
   })
 
+  it('双击等价（批 α 2026-10-03 用户裁决翻转）：双击文件夹行→行内编辑预填现名', async () => {
+    await render(BASE_QUERY)
+    dblClick(navRow('调研计划'))
+    await settle()
+    const input = renameInput()
+    expect(input, '双击后行内重命名输入在场').not.toBeNull()
+    expect(input?.value).toBe('调研计划')
+  })
+
+  it('双击虚拟行 no-op：全部文献/未归档双击不进重命名（不可重命名面）', async () => {
+    await render(BASE_QUERY)
+    dblClick(navRow('全部文献'))
+    dblClick(navRow('未归档'))
+    await settle()
+    expect(renameInput()).toBeNull()
+  })
+
+  it('busy 期双击不进重命名（§2.1 清单——导入中编辑入口锁定）', async () => {
+    await render(BASE_QUERY)
+    act(() => {
+      useImportBusyStore.getState().setBusy(true)
+    })
+    await settle()
+    dblClick(navRow('调研计划'))
+    await settle()
+    expect(renameInput()).toBeNull()
+  })
+
   it('RR1-4 跨格序列：Esc 取消（skipBlur 标记）后紧接重命名 Enter 提交生效（标记不得驻留吞提交）', async () => {
     await render(BASE_QUERY)
     // 第一格：开重命名→Esc 取消（置 skipBlur 标记，输入卸载无 blur 消费）
@@ -264,7 +301,7 @@ describe('F-UIRES-01 U1 重命名行内编辑（单源——FolderRenameDialog �
   it('RR1-7 在途守卫：create 提交在途窗内 Enter 连按零双发（单次 IPC）', async () => {
     await render(BASE_QUERY)
     const newBtn = [...(host?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find(
-      (b) => (b.textContent ?? '') === '+ 新建文件夹'
+      (b) => (b.textContent ?? '') === '新建文件夹'
     )
     await click(newBtn)
     const input = host?.querySelector<HTMLInputElement>('input[aria-label="新文件夹名"]')

@@ -61,7 +61,7 @@ test('S4：行拖入左栏文件夹=drop「移入」徽标+moveFolder 执行（�
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
   // 建目标文件夹（拖放落点）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('拖放目标夹')
   await win.getByLabel('新文件夹名').press('Enter')
   await expect(navRow(win, '拖放目标夹')).toBeVisible({ timeout: 10_000 })
@@ -113,7 +113,7 @@ test('S5a：行右键菜单三项版（删除项批 B 点亮+星标项不渲染�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('菜单移动夹')
   await win.getByLabel('新文件夹名').press('Enter')
   await expect(navRow(win, '菜单移动夹')).toBeVisible({ timeout: 10_000 })

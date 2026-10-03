@@ -50,7 +50,7 @@ test('导入到当前文件夹：真实 PDF 导入→moveFolder 挂接→脉络�
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
   // 建文件夹并进入 folder 筛选态（导入目标的驱动面——FolderNav 导航行）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('调研计划')
   await win.getByLabel('新文件夹名').press('Enter')
   await win.locator('.lib-fn-row').filter({ hasText: '调研计划' }).click()
@@ -116,7 +116,7 @@ test('S2：导入进行中禁切导航行与图（busy 全局信号→导航行/
 
   // 先建一文件夹（busy 断言目标行）；批量 PDF 拉长 busy 窗口（80 份逐一
   // copy+sha+extract——秒级窗口保障 disabled 断言可观测）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('批量夹')
   await win.getByLabel('新文件夹名').press('Enter')
   const row = win.locator('.lib-fn-row').filter({ hasText: '批量夹' })

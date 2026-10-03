@@ -388,3 +388,9 @@ R2 修正役（R2-LG11 脉络浅色重制/LG12 综述参考边/SH1 重命名迁�
 | 教训 | 事故证据 | 沉淀位置 |
 | ---- | ---- | ---- |
 | **html/body/#root `overflow:hidden` 剪辑链下 `documentElement.scrollWidth` 不反映溢出=恒真断言假绿** | F-UIRES-VFIX-01（runId=20261003-f-uivfix01）首版 e2e (c) 断言 docScrollW≤innerW：门一 d1 以「首败掩盖无独立红值+overflow:hidden 链检出强度存疑」点疑（k2 未中）→主控核探针原始数据证实恒真（1.25 档 header=1571 出窗时 docScrollW 恒==innerW）——**断言写时就恒真**，属断言面选型缺陷非测试值写错。改锁两级排险：.app-shell rect 宽又被变异态探针证恒真（width:auto 普通 block 的 border-box 恒=父宽）→终锁 .app-content-row rect 宽（撑破源本体；红值与 header 逐位同源 6536.93/7429.26 三 items 互证） | 溢出类断言禁锁 scrollWidth（overflow:hidden 剪辑链恒真）；锁「被布局改变的真实元素」rect——被 stretch 的 grid/flex item 或撑破源容器；断言组 expect.soft 化=独立失败载体（首败不掩盖，变异态一次全列红值——本批 RR1 沉淀形态）；主控预裁锁面被实证推翻时，实现者探针举证改面+如实申报=正确自裁范式（本批正向样例） |
+
+## 十八、增补（2026-10-03，批 α——React disabled 合成事件抑制）
+
+| 教训 | 事故证据 | 沉淀位置 |
+| ---- | ---- | ---- |
+| **React 对 disabled 表单控件不派发合成事件 handler=红证双层互掩** | 批 α（runId=20261003-fuia）门一 d1-W1 处方变异恒绿：删组件 busy 守卫（`if (!importBusy)`）后 busy 用例仍 15 passed——根因探针（jsdom 对照组）：disabled 按钮上 dispatchEvent('dblclick') 原生 listener=1 而 React handler=0（disabled=false 对照 2/1）——行按钮既有 `disabled={importBusy}` 在 React 合成事件层先行拦截，组件守卫单删结构性恒绿 | busy 期事件类断言的红证须 **2×2 双拆矩阵**（disabled 属性×handler 守卫两维各拆一格）——单拆任一层被另一层掩蔽；负断言（「不触发」类）在 disabled 入口存在**真空真**风险（handler 永不达=断言恒过而无人知）；探针件 20261003-fuia-probe-disabled-dblclick.cjs 驻仓外档案区可复跑 |

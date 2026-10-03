@@ -340,7 +340,7 @@ describe('色映射通道（onColorMapChange——INV-86 承接）', () => {
   })
 })
 
-describe('FilterBar 装配收敛（列序=搜索→年份→排序→弹性空档→标签行尾）', () => {
+describe('FilterBar 装配收敛（列序=搜索→年份→排序→标签→弹性空档——批 α 移位）', () => {
   it('点选→onChange({tagIds})；全清→onChange({tagIds: undefined})（空数组不进查询）', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
@@ -357,7 +357,7 @@ describe('FilterBar 装配收敛（列序=搜索→年份→排序→弹性空�
     expect(onChange).toHaveBeenLastCalledWith({ tagIds: undefined })
   })
 
-  it('列序锚：搜索框→年份下拉→排序下拉→弹性空档→标签钮行尾（.lib-filter-spacer 在场）', async () => {
+  it('列序锚（批 α 移位）：搜索框→年份下拉→排序下拉→标签钮（排序钮右邻）→弹性空档', async () => {
     currentTags = [tag('t-a', '水质', 2)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
     await renderBar({ sort: 'added_desc', offset: 0, limit: 50 }, vi.fn())
@@ -366,10 +366,10 @@ describe('FilterBar 装配收敛（列序=搜索→年份→排序→弹性空�
     const order = [
       ...(bar?.querySelectorAll('.lib-search, select, .lib-filter-spacer, .lib-dd-btn') ?? [])
     ].map((el) => (el.classList.contains('lib-search') ? 'search' : el.tagName === 'SELECT' ? 'select' : el.className))
-    expect(order).toEqual(['search', 'select', 'select', 'lib-filter-spacer', 'lib-dd-btn'])
+    expect(order).toEqual(['search', 'select', 'select', 'lib-dd-btn', 'lib-filter-spacer'])
     expect(
       host?.querySelector('select[aria-label="排序方式"]')?.classList.contains('lib-sort-end'),
-      '排序下拉行尾类退役（标签钮=行尾）'
+      '排序下拉行尾类退役（标签钮=排序钮右邻——批 α 移位后行尾留白归 spacer）'
     ).toBe(false)
   })
 })

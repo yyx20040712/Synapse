@@ -215,7 +215,7 @@ describe('F-UIRES-01 U1 引导态（INV-87 三条件——guideHidden 注入）'
     expect(navRow('全部文献')).toBeDefined()
     expect(navRow('未归档')).toBeUndefined()
     expect(navRow('主图')).toBeUndefined()
-    expect(buttonByText('+ 新建文件夹')).toBeUndefined()
+    expect(buttonByText('新建文件夹')).toBeUndefined()
     expect(host?.querySelector('.lib-fn-sep')).toBeNull()
     const rows = host?.querySelectorAll('.lib-fn-row') ?? []
     expect(rows.length).toBe(1)
@@ -224,7 +224,7 @@ describe('F-UIRES-01 U1 引导态（INV-87 三条件——guideHidden 注入）'
   it('解除态（guideHidden=false）：完整结构再现（分隔线+文件夹+新建入口）', async () => {
     await render(BASE_QUERY, false)
     expect(host?.querySelector('.lib-fn-sep')).not.toBeNull()
-    expect(buttonByText('+ 新建文件夹')).toBeDefined()
+    expect(buttonByText('新建文件夹')).toBeDefined()
     expect((host?.querySelectorAll('.lib-fn-row') ?? []).length).toBe(4)
   })
 })
@@ -239,7 +239,7 @@ describe('F-UIRES-01 U1 busy 禁用清单（§2.1——导航行切换/新建锁
     expect(navRow('全部文献')?.disabled).toBe(true)
     expect(navRow('未归档')?.disabled).toBe(true)
     expect(navRow('调研计划')?.disabled).toBe(true)
-    expect(buttonByText('+ 新建文件夹')?.disabled).toBe(true)
+    expect(buttonByText('新建文件夹')?.disabled).toBe(true)
   })
 })
 
@@ -291,7 +291,7 @@ describe('F-UIRES-01 U1 右键三件菜单（§2.2）', () => {
 describe('F-UIRES-01 U1 新建内联输入（底部常驻入口）', () => {
   it('新建：底部入口→内联输入 Enter 提交 create→列表刷新出新行', async () => {
     await render(BASE_QUERY)
-    await click(buttonByText('+ 新建文件夹'))
+    await click(buttonByText('新建文件夹'))
     const input = host?.querySelector<HTMLInputElement>('input[aria-label="新文件夹名"]')
     expect(input).not.toBeNull()
     stubApi.folders.create.mockImplementation(async () => ({
@@ -311,7 +311,7 @@ describe('F-UIRES-01 U1 新建内联输入（底部常驻入口）', () => {
 
   it('重名 toast：create 拒 CONFLICT→error toast 中文原文+输入保留（不收输入行）', async () => {
     await render(BASE_QUERY)
-    await click(buttonByText('+ 新建文件夹'))
+    await click(buttonByText('新建文件夹'))
     const input = host?.querySelector<HTMLInputElement>('input[aria-label="新文件夹名"]')
     stubApi.folders.create.mockResolvedValue({
       ok: false,
@@ -325,7 +325,7 @@ describe('F-UIRES-01 U1 新建内联输入（底部常驻入口）', () => {
 
   it('组词中 Enter 不提交（isComposing 守卫）+Esc 取消收起输入', async () => {
     await render(BASE_QUERY)
-    await click(buttonByText('+ 新建文件夹'))
+    await click(buttonByText('新建文件夹'))
     const input = host?.querySelector<HTMLInputElement>('input[aria-label="新文件夹名"]')
     stubApi.folders.create.mockResolvedValue({ ok: true, data: folder('f-3', 'x', 0) })
     enterValue(input as HTMLInputElement, '组词中的文件夹', true)

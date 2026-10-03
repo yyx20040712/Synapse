@@ -33,15 +33,15 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   await expect(navRow('全部文献')).toBeVisible()
   await expect(navRow('未归档')).toBeVisible()
 
-  // T1 新建：底部「+ 新建文件夹」常驻入口 → 内联输入 Enter → 导航行出现（×0 计数）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  // T1 新建：底部「新建文件夹」常驻入口（svg 加号承载+语义——批 α 双加号修复）→ 内联输入 Enter → 导航行出现（×0 计数）
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('调研计划')
   await win.getByLabel('新文件夹名').press('Enter')
   await expect(navRow('调研计划')).toBeVisible({ timeout: 10_000 })
   await expect(navRow('调研计划')).toContainText('0')
 
   // T2 重名：域错误中文原文 toast（CONFLICT folders.service 消息透传）+输入保留
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('调研计划')
   await win.getByLabel('新文件夹名').press('Enter')
   await expect(win.getByText('文件夹名已被占用')).toBeVisible({ timeout: 10_000 })
@@ -90,7 +90,7 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
 
   // T4a 静默直删（F-DELCONF-01①）：空图文件夹（0 节点 0 连线）→点删除即
   // 直删，不弹确认窗（保护资产=脉络图唯一，无资产则不跳）
-  await win.getByRole('button', { name: '+ 新建文件夹' }).click()
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
   await win.getByLabel('新文件夹名').fill('速删验证图')
   await win.getByLabel('新文件夹名').press('Enter')
   await expect(navRow('速删验证图')).toBeVisible({ timeout: 10_000 })
@@ -109,6 +109,32 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   )
   await dialog.getByRole('button', { name: '删除文件夹' }).click()
   await expect(navRow('改名后的图')).toHaveCount(0, { timeout: 10_000 })
+
+  await app.close()
+})
+
+/**
+ * [批 α 2026-10-03] 双击文件夹行=进入重命名（用户裁决翻转——F-UIRES-02 批 A
+ * 「双击不进编辑」豁免作废；与课题卡/WorkspacesPage 范式统一）。正锚：双击
+ * 真实文件夹行→行内重命名输入出现且预填现名（aria-label 锚——与右键/F2 同态）。
+ */
+test('folders-crud：双击文件夹行进重命名（批 α 用户裁决翻转）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-fua-dbl-'))
+  await bootstrapMigrations(userData)
+  // 壳层种子破引导态（INV-87——同上用例配方）
+  await seedPaperRow(userData, 'a.pdf', 'sha-fua-dbl', '双击种子文献', 'e2e-fua-dbl')
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  const navRow = (name: string) => win.locator('.lib-fn-row').filter({ hasText: name })
+  await expect(navRow('主图')).toBeVisible({ timeout: 10_000 })
+
+  await navRow('主图').dblclick()
+  const input = win.getByLabel('重命名文件夹名')
+  await expect(input).toBeVisible({ timeout: 5_000 })
+  await expect(input).toHaveValue('主图')
+  await input.press('Escape')
+  await expect(input).toHaveCount(0)
 
   await app.close()
 })

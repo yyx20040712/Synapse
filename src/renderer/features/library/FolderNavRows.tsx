@@ -2,6 +2,9 @@
  * [F-UIRES-01 批 A U4] FolderNavRows —— FolderNav 列表段拆件（组件 250 行
  * 红线；R9 拆件预案）：未归档行/分隔线/文件夹列表（含行内重命名编辑行）/
  * 底部新建内联输入。行为与皮肤零变（拆件纯搬家——注释契约在 FolderNav 头）。
+ * [批 α 2026-10-03] ①新建钮文字去「+」前缀（svg 加号承载语义——双加号
+ * 视觉修复）；②文件夹行双击进重命名（用户裁决翻转——与课题卡/WorkspacesPage
+ * 范式统一；未归档虚拟行不挂处理器即 no-op，「全部文献」行在 FolderNav 头）。
  */
 import type { DragEvent } from 'react'
 import type { Folder } from '@shared/models/folder'
@@ -110,6 +113,11 @@ export function FolderNavRows(props: {
                 props.openRenaming({ folderId: f.id, value: f.name })
               }
             }}
+            // [批 α 2026-10-03] 双击=重命名第三入口（右键菜单/F2 等价——用户
+            // 裁决翻转；openRenaming 会话开口版清 skipBlur 残余标记）
+            onDoubleClick={() => {
+              if (!importBusy) props.openRenaming({ folderId: f.id, value: f.name })
+            }}
             onDragOver={(e) =>
               props.onRowDragOver(e, { kind: 'folder', folderId: f.id, name: f.name })
             }
@@ -160,7 +168,7 @@ export function FolderNavRows(props: {
             <svg aria-hidden="true" viewBox="0 0 24 24">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            + 新建文件夹
+            新建文件夹
           </button>
         )}
       </div>
