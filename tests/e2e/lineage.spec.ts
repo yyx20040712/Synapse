@@ -206,8 +206,18 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     //   节点内容不满视口——先注入临时高度制造可滚面（evaluate 测试手段
     //   非产品面，probe 先例），再验 scrollTop 真推进+首年份头滚出容器顶
     //   （d1-W3 回炉：防「容器不可滚也绿」恒真面）+节点文本仍可断言
-    await win.locator('.tl-content').evaluate((el) => {
-      el.style.minHeight = '2000px'
+    // [t1race] 注入走 head <style> 而非内联：内联 style 属 React 管辖面
+    // （.tl-content style={zoom.contentStyle}），慢机上 UI 添加链的异步
+    // commit/重挂载会连带清掉内联注入的 min-height → 滚动域收缩 →
+    // scrollTop 被 clamp（run 37133311174 实测 96.75=144−47.25——y0 本地
+    // 实测 143.75~167.6 跨场浮动、47.25=收缩后 maxScroll=705.25−658；
+    // 精确清除路径 style 覆写/重挂载未终裁，head 对两路径均免疫——
+    // CI 复跑终证）；head 不受 React 渲染管辖，竞态全路径免疫
+    await win.evaluate(() => {
+      const style = document.createElement('style')
+      style.id = 'e2e-tl-scroll-domain'
+      style.textContent = '.tl-content { min-height: 2000px !important }'
+      document.head.append(style)
     })
     // [T3-P7A 回炉 1 W4] 滚动前基准：path 与卡 boundingBox y 差（内嵌内容
     // 坐标随文档流零跟随的几何证据——滚动后差值恒定）

@@ -91,6 +91,15 @@
       "status": "fix-landed",
       "first_seen": "2026-09-30",
       "resolution": "fix-landed（语义自描述=修复已落地、观察窗未期的中间态，非 resolved——台账首例新值）。已修 F-FLAKE-02 2026-10-01：本变体与「收官全链（P3 划选步骤）」条目**同根因**（fit-width 后 TextLayer 双段重建——selectText 成功后选区被后续重建摧毁→工具条收→标注不落地→annotation-rect 超时；SelectionLayer 契约摧毁链）**同一修复**（settle 门+划选前稳定锚定）。观察窗/复发升级条款与该条目同（N=3 场全量零复现转 resolved；同指纹再现 1 次回 filed 启动结构性封闭评估）。count 保留历史值 4 不清零；两条目不合并（保计数粒度）。证据=仓外 F-FLAKE-02/"
+    },
+    {
+      "spec": "tests/e2e/reader-text.spec.ts",
+      "case": "P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截",
+      "count": 1,
+      "fingerprint": "同值=:313 getByText('P7BA-MARK').first() toBeVisible 10s 超时 element(s) not found（序列二中段——关 tab 后留存 tab 的状态保持标记文本未现）；序列位=首跑红 retry #1 绿（11.2s）；上场 run 37131855587 同用例直接绿=非确定性确认",
+      "status": "observing",
+      "first_seen": "2026-10-03",
+      "resolution": "观察中（再 1 现立案；史料=CI run 37133311174 日志〔GitHub Actions〕+2026-10-04 场开工首查——v119 §挂账承载）"
     }
   ]
 }
