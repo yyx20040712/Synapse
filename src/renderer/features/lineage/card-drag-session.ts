@@ -1,4 +1,6 @@
 // b3: T3-P8
+// lnfix2: extend 判定改冻结基准（grab 帧同步取值+激活后 rAF 校准——断点 A/B
+// 同源消除）；registerFrame/framesRef 注册链退役（跨月联动死码）
 /**
  * [F-LGRAPH-01①U2] card-drag-session —— pointer 拖拽会话域（自 useCardDrag
  * 拆出，行为零变；几何判定=card-drag-geometry，飞行机制=card-drag-flight）。
@@ -21,7 +23,7 @@ import type { LineageNode } from '@shared/models/lineage'
 import { frameKeyOf } from './lineage-timeline'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
-import { frameContains, insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
+import { insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
 import { contentScale } from './timeline-zoom'
 
 export type DragPhase = 'idle' | 'pending' | 'dragging' | 'settle'
@@ -42,6 +44,10 @@ export interface DragSlotPreview {
 /** 激活阈值（px——mockup L944 同值） */
 const DRAG_THRESHOLD = 5
 
+/** [②U6] 源框底缘下拉带高（px——mockup §3.5）：overSourceFrame 实时判定与
+ *  [lnfix2] 冻结基准判定两处共用单源 */
+const PULL_BAND_PX = 82
+
 interface DragSession {
   nodeId: string
   srcKey: string
@@ -59,20 +65,30 @@ interface DragSession {
   /** [②U6] 原始槽位（回弹基准——源框外松手飞行落点） */
   srcIdx: number
   overFrame: boolean
-  /** [②U6] 框底缘下拉态（源框底缘以下 x 带内） */
+  /** [②U6] 框底缘下拉态（冻结基准下拉带内——见 frameBottom0） */
   extend: boolean
+  /** [lnfix2] 冻结基准（pointerdown 抓取帧同步取值+激活后 rAF 校准一次）
+   *  ——extend 判定源。实时 rect 会被占位槽腾行（+92）与 stretch padding
+   *  （+94）推高（k1 断点 A/B——下拉带几何不可达+挂置即振荡），读实时则
+   *  stretch 永不稳态；grab 时布局=拖前稳态（占位槽 128×72 与卡同构换位，
+   *  高卡离流缩框的边界形由 rAF 校准兜住） */
+  frameBottom0: number
+  frameLeft0: number
+  frameRight0: number
   /** [回炉 R1] 拖前 React inline marginLeft（瀑布错位）——拖起期压 0 防双计，
    *  清场恢复（React style diff 不重写未变值——须自恢复非赖重渲染） */
   marginLeft0: string
 }
 
-/** [②U6] 源框物理域命中=框内 ∪ 底缘 82px 下拉带（x 带内——腾新行面；
- *  onMove 槽相位/onUp 落位判定两处同式单源） */
+/** [②U6] 源框物理域命中=框内 ∪ 底缘 82px 下拉带（x 带内——腾新行面）。
+ *  实时 rect 单源供两处：onMove 槽相位（淡化/插位）与 onUp 落位判定
+ *  （松手时框已撑高，指针在撑高框内=落位组末，语义自洽）；extend 判定
+ *  本身改读冻结基准（onMove 内联——见 frameBottom0 注） */
 const overSourceFrame = (frameEl: HTMLDivElement | null, x: number, y: number): boolean => {
   if (frameEl === null) return false
   const fr = frameEl.getBoundingClientRect()
   if (x >= fr.left && x <= fr.right && y >= fr.top && y <= fr.bottom) return true
-  return x >= fr.left && x <= fr.right && y > fr.bottom && y <= fr.bottom + 82
+  return x >= fr.left && x <= fr.right && y > fr.bottom && y <= fr.bottom + PULL_BAND_PX
 }
 
 /** [②U7] 视口点→内容坐标（z 逆变换；base=内容层 rect——判定时点取值） */
@@ -106,7 +122,6 @@ export function useDragSession(args: {
   setSlot(v: DragSlotPreview | null): void
   flightRef: React.MutableRefObject<FlightJob | null>
   handleCardPointerDown(nodeId: string, ev: ReactPointerEvent<HTMLElement>): void
-  registerFrame(key: string, el: HTMLDivElement | null): void
   consumeClickSuppress(): boolean
 } {
   const { nodes, groups, contentRef } = args
@@ -115,7 +130,6 @@ export function useDragSession(args: {
 
   const sessionRef = useRef<DragSession | null>(null)
   const flightRef = useRef<FlightJob | null>(null)
-  const framesRef = useRef(new Map<string, HTMLDivElement>())
   const suppressClickRef = useRef(false)
 
   const findCard = (nodeId: string): HTMLElement | null =>
@@ -154,6 +168,18 @@ export function useDragSession(args: {
         }
         setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false })
         setPhase('dragging')
+        // [lnfix2] 稳态校准（激活后 rAF 一帧——主控裁决 b 面）：占位槽首帧
+        // 渲染后复取源框底缘/x 带（grab 基准=拖前布局，高卡离流缩框的边界
+        // 形由此对齐）。已入带/会话已换代/框已卸载则跳过——防撑高框毒化
+        // 基准（振荡回潮）与废快照
+        requestAnimationFrame(() => {
+          const el = s.frameEl
+          if (sessionRef.current !== s || el === null || !el.isConnected || s.extend) return
+          const fr = el.getBoundingClientRect()
+          s.frameBottom0 = fr.bottom
+          s.frameLeft0 = fr.left
+          s.frameRight0 = fr.right
+        })
       }
       // [②U7] 指针→内容坐标−内容域抓取偏移（z 判定时点取值——缩放正交）
       const p = content !== null ? toContent(content, e.clientX, e.clientY) : { x: e.clientX, y: e.clientY }
@@ -163,10 +189,15 @@ export function useDragSession(args: {
         card.style.left = `${s.ghost.x}px`
         card.style.top = `${s.ghost.y}px`
       }
-      // [②U6] 源框物理域命中（框内 ∪ 底缘下拉带）：下拉带=over+extend+插位组末
-      const inBand = s.frameEl !== null && !frameContains(s.frameEl, e.clientX, e.clientY)
+      // [lnfix2] extend 判定读冻结基准（grab 帧+校准值）：实时 rect 被占位槽
+      //  腾行/stretch padding 推高（k1 断点 A/B——下拉带几何不可达+挂载即
+      //  振荡），冻结后带可达且挂载不反噬判定；over（槽淡化/插位）沿实时单源
+      const extend =
+        e.clientX >= s.frameLeft0 &&
+        e.clientX <= s.frameRight0 &&
+        e.clientY > s.frameBottom0 &&
+        e.clientY <= s.frameBottom0 + PULL_BAND_PX
       const over = overSourceFrame(s.frameEl, e.clientX, e.clientY)
-      const extend = over && inBand
       let nextIdx = s.insertIdx
       if (over && s.frameEl !== null) {
         const othersCount = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]')).filter(
@@ -249,6 +280,9 @@ export function useDragSession(args: {
     const frameEl = cardEl.closest('.month-frame') as HTMLDivElement | null
     if (n === undefined || frameEl === null) return
     const r = cardEl.getBoundingClientRect()
+    // [lnfix2] 冻结基准 grab 帧同步取值（拖前稳态布局——卡未离流/占位槽未
+    // 入驻；后续占位槽腾行与 stretch padding 推高均不再反噬判定）
+    const fr0 = frameEl.getBoundingClientRect()
     const srcKey = frameKeyOf(n.year, n.month)
     const srcIds = srcGroupIdsOf(groups, nodes, srcKey)
     sessionRef.current = {
@@ -266,6 +300,9 @@ export function useDragSession(args: {
       srcIdx: srcIds.indexOf(nodeId),
       overFrame: true,
       extend: false,
+      frameBottom0: fr0.bottom,
+      frameLeft0: fr0.left,
+      frameRight0: fr0.right,
       marginLeft0: ''
     }
     try {
@@ -274,11 +311,6 @@ export function useDragSession(args: {
       // 合成事件 pointerId 缺席（jsdom）——document 级监听已覆盖移动/松手
     }
     setPhase('pending')
-  }
-
-  const registerFrame = (key: string, el: HTMLDivElement | null): void => {
-    if (el === null) framesRef.current.delete(key)
-    else framesRef.current.set(key, el)
   }
 
   const consumeClickSuppress = (): boolean => {
@@ -294,7 +326,6 @@ export function useDragSession(args: {
     setSlot,
     flightRef,
     handleCardPointerDown,
-    registerFrame,
     consumeClickSuppress
   }
 }

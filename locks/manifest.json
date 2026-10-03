@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-03T08:21:01.2630230Z",
+    "generatedAt":  "2026-10-03T09:02:53.2778111Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -295,7 +295,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "6245ba7aa5d8af1c0daf854c6aa5604c6ddffd70f2b6f8f501870445c2c63a58"
+                      "sha256":  "51c79ad23698f9f936a85591950b7a28c0115b38a4b3f84c04562cccb7f8d18e"
                   },
                   {
                       "path":  "tests/e2e/lineage-topic-node.spec.ts",
@@ -695,7 +695,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
-                      "sha256":  "969d71985bf493bccffb15248208a3c4f722f6f0df6407db72def5159a084057"
+                      "sha256":  "f2bd703d932432a35c95b244ed4b77b97e9acf4e384176ce35d442651d857dcd"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-flight.test.ts",
@@ -704,6 +704,10 @@
                   {
                       "path":  "tests/unit/renderer/lineage-card-layer.test.tsx",
                       "sha256":  "314abe556942aa940aa39d5aa3dd7635253674a40217d6be267a77c35a60f232"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-card-stretch.test.tsx",
+                      "sha256":  "fe32520486c5a8f4f5c4986edcece0ff5a8eb62ffbff64db9145fd47962df94b"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-classify.test.ts",

@@ -10,6 +10,8 @@
  * 框外淡化）+纯函数 insertIndexFromRects/frameKeyOf/applyMovePreview 直测。
  * （几何经 getBoundingClientRect spy 定值——jsdom 零布局；transitionend 以
  * Object.assign(new Event) 附 propertyName 派发。）
+ * [lnfix2] 下拉扩展（冻结基准）组拆驻 lineage-card-stretch.test.tsx（本件
+ * 500 行红线——lnfix1 拆新件先例同族）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'

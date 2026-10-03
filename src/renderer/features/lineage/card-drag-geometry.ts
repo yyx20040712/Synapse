@@ -1,4 +1,6 @@
 // b3: T3-P8
+// lnfix2: 跨月联动死码清理（frameAt/frameContains 删——注册链随 registerFrame 退役，
+// 零消费 grep 终核 2026-10-03）
 /**
  * [F-LGRAPH-01①U2] card-drag-geometry —— 拖拽几何判定域（自 useCardDrag 拆出，
  * 行为零变；纯函数无 DOM 状态——直测面=lineage-card-drag.test 纯函数组）。
@@ -31,24 +33,6 @@ export function insertIndexFromRects(rects: readonly CardRect[], px: number, py:
     }
   }
   return idx
-}
-
-/** 框包含判定（rect 几何——elementFromPoint 的确定性替身） */
-export function frameContains(el: HTMLDivElement, px: number, py: number): boolean {
-  const r = el.getBoundingClientRect()
-  return px >= r.left && px <= r.right && py >= r.top && py <= r.bottom
-}
-
-/** 指针命中的月组框（注册面遍历——纯几何，无 elementFromPoint） */
-export function frameAt(
-  frames: ReadonlyMap<string, HTMLDivElement>,
-  px: number,
-  py: number
-): HTMLDivElement | null {
-  for (const el of frames.values()) {
-    if (frameContains(el, px, py)) return el
-  }
-  return null
 }
 
 /** 源月组全序 id（groups 派生——渲染序单源；组缺省防御=nodes 过滤序） */

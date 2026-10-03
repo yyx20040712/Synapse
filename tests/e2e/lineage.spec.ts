@@ -781,6 +781,27 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .poll(async () => await frameTitles(0), { timeout: 10_000 })
       .toEqual(['脉络甲文献', '脉络根文献'])
 
+    // [lnfix2] 月框下拉扩展贯通段：拖甲至 2020-05 框底缘下方（冻结基准下拉带
+    // bottom0+40——激活帧 rAF 快照源框稳态底缘）→ .month-frame.stretch 在场
+    // +微动（+50）不回框 class 稳定（冻结基准消振荡——实时 rect 已被 stretch
+    // padding/腾行推高不反噬判定）→松手组末落位（extend 路径写=框内末位同值，
+    // 纯视觉链）。reload 后回 browse——再进 edit（拖卡=edit 专属闸）
+    await win.getByTestId('lineage-mode-edit').click()
+    const frameBox = await win.locator('.month-frame').first().boundingBox()
+    if (frameBox === null) throw new Error('月框不可见：2020-05')
+    const aBox3 = await cardBox('脉络甲文献')
+    await win.mouse.move(aBox3.x + aBox3.width / 2, aBox3.y + aBox3.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(frameBox.x + frameBox.width * 0.5, frameBox.y + frameBox.height + 40, { steps: 8 })
+    await expect(win.locator('.month-frame.stretch')).toHaveCount(1, { timeout: 5_000 })
+    await win.mouse.move(frameBox.x + frameBox.width * 0.5, frameBox.y + frameBox.height + 50, { steps: 2 })
+    await expect(win.locator('.month-frame.stretch')).toHaveCount(1, { timeout: 2_000 })
+    await win.mouse.up()
+    await expect(win.locator('.month-frame.stretch')).toHaveCount(0, { timeout: 5_000 })
+    await expect
+      .poll(async () => await frameTitles(0), { timeout: 10_000 })
+      .toEqual(['脉络根文献', '脉络甲文献'])
+
     await app.close()
   })
 

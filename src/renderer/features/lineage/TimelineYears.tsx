@@ -7,8 +7,9 @@
  * [T3-P8] 槽位拖拽渲染：dragSlot 在场时源月组按「其余卡+拖卡@insertIdx」
  * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡尾挂 .dragging
  * fixed 离流+框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
- * FLIP 飞行由 useCardDrag 命令式接管）。月组框 ref 注册（几何源）+改月
- * 飞行目标框 .flash 高亮。
+ * FLIP 飞行由 useCardDrag 命令式接管）。改月飞行目标框 .flash 高亮。
+ * [lnfix2] 月组框 ref 注册链退役（跨月联动死码）；data-frame-key 属性保留
+ * （DragCandidates 查询源——drag-slot-candidates.tsx）。
  */
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
@@ -57,8 +58,6 @@ export function TimelineYears(props: {
   linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
   dragSlot?: DragSlotPreview | null
-  /** [T3-P8] 月组框注册（useCardDrag 几何源——框包含/槽位计算） */
-  registerFrame?: (key: string, el: HTMLDivElement | null) => void
   /** [T3-P8] 改月飞行目标框高亮（.flash——框高亮动画） */
   flashKey?: string | null
   /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框） */
@@ -158,9 +157,6 @@ export function TimelineYears(props: {
                   <div
                     className={frameCls}
                     data-frame-key={key}
-                    ref={(el) => {
-                      props.registerFrame?.(key, el)
-                    }}
                   >
                     <span className="month-tag">
                       {m.month === null

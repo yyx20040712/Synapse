@@ -75,14 +75,13 @@ export function useCardDrag(args: {
   handleCardPointerDown(nodeId: string, ev: ReactPointerEvent<HTMLElement>): void
   handleYmClick(nodeId: string, ev: ReactMouseEvent<HTMLElement>): void
   pickMonth(year: number | null, month: number | null): void
-  registerFrame(key: string, el: HTMLDivElement | null): void
   consumeClickSuppress(): boolean
 } {
   const { nodes, groups, contentRef } = args
   const [movePreview, setMovePreview] = useState<MonthMovePreview | null>(null)
   const [flashKey, setFlashKey] = useState<string | null>(null)
   const { monthPop, setMonthPop, monthPopMonths } = useMonthPopState(groups)
-  const { phase, slot, setPhase, setSlot, flightRef, handleCardPointerDown, registerFrame, consumeClickSuppress } =
+  const { phase, slot, setPhase, setSlot, flightRef, handleCardPointerDown, consumeClickSuppress } =
     useDragSession({
       nodes,
       groups,
@@ -194,7 +193,6 @@ export function useCardDrag(args: {
     handleCardPointerDown,
     handleYmClick,
     pickMonth,
-    registerFrame,
     consumeClickSuppress
   }
 }

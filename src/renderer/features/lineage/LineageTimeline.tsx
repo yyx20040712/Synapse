@@ -210,7 +210,6 @@ export function LineageTimeline(props: {
             offsets={offsets}
             linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : null}
             dragSlot={drag.slot}
-            registerFrame={drag.registerFrame}
             flashKey={drag.flashKey}
             dimUnfocused={dimActive}
             onCardClick={handleCardClick}
