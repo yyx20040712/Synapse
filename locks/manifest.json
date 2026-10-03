@@ -1,9 +1,9 @@
 {
-    "generatedAt":  "2026-10-03T02:58:09.2096242Z",
+    "generatedAt":  "2026-10-03T03:58:17.7768901Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
-                      "sha256":  "65f17d5ca51603ea80d29bd06bd6b4e5aab4294fd8cd7307ad0f10c0df91ebe7"
+                      "sha256":  "d2db5dc51f8bc0ae228d436f2c5254a6b64532763e6e7beab89a9492d9d521cd"
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",

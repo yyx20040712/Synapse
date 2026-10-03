@@ -13,7 +13,10 @@ jobs:
   verify:
     name: 六道关卡（lint→typecheck→quality→tickets→unit→build+e2e）
     runs-on: windows-latest
-    timeout-minutes: 30
+    # [2026-10-03 CI 修复] 30→60：e2e 33→74 用例后 Windows runner 全程
+    # ~35min+（2026-10-03 两 run 30m8s/30m+ 双双超时取消——job 超时在 GitHub
+    # 侧结论=cancelled；33 用例时代 5m40s 全绿的旧预算不再适用）
+    timeout-minutes: 60
     steps:
       # fetch-depth 0：尾注检查需要事件基线（push 的 before / PR 的 base sha）
       # 出现在本地历史内；merge commit 的 git log -1 拿不到源提交的尾注，会误杀合法 PR
