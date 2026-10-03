@@ -18,10 +18,13 @@ export default defineConfig({
   // .only 溜进 CI 即红；失败重试时抓 trace（配合 CI 的 artifact 上传）
   forbidOnly: !!process.env.CI,
   use: {
+    actionTimeout: 60_000,
     trace: 'on-first-retry'
   },
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }], ['list']] : 'list',
-  timeout: 60_000,
+  // CI runner 无 GPU 软渲染慢（run 37095072186 实证 120 处 30s action 超时）：
+  // action 30→60s、用例 60→90s 保证慢 action 后仍有断言余量；本地不受影响
+  timeout: 90_000,
   outputDir: 'test-results',
   projects: [
     // 产品测试默认门（排除探针）
