@@ -1,22 +1,22 @@
 /**
- * [F-UIRES-01 批 A U3] TagDropdown —— 标签筛选下拉（TagFilter chip 形态全件
- * 退役的承接件，设计稿 §3.3/R6；mockup .tagbtn/.tagmenu 逐值）。全 props 签名
+ * [F-UIRES-01 批 A U3→批 tagrows 2026-10-03] TagDropdown —— 标签筛选下拉
+ * （TagFilter chip 形态全件退役的承接件，设计稿 §3.3/R6）。全 props 签名
  * 承接 TagFilter：selectedTagIds/onFilterChange/onMutated/onColorMapChange
  * （注入链 FilterBar→LibraryPage 不变）。
  *
  * ── 行为层 ──
  * - 钮=「标签 ▾」：idle 灰；有选集 accent+「×N」mono 计数；点击开/关面板
- * - 面板 240px：头（标签筛选+已选 N）/列表（一行一勾选 role=menuitemcheckbox
- *   aria-checked+色点+mono 计数；8 行滚动+底部渐隐）/脚（共 N 标签+右键提示+
- *   「清空已选」——过渡期计数避开「域」字，全局集事实）
+ * - 面板 240px：头（标签筛选+已选 N）/列表（批 tagrows 三段行——行拆件
+ *   TagDropdownRow 头注：勾选只归 checkbox+名称/颜色行内直接编辑）/脚
+ *   （共 N 标签+右键提示+「清空已选」）
  * - toggle 即时生效（现行 P7E-06 语义零变——面板保持开）
  * - P7X-01 上界守卫：添加方向且选中数 ≥ TAG_FILTER_MAX → 零变更+info toast
- * - 行右键=改名+颜色两入口（P-11 用户终裁；merge/delete UI 入口随批退役
- *   ——IPC 通道与 main 面零触碰）：TagRenameDialog/TagColorDialog 承载
- * - 关闭触发=Esc/外点（.lib-dd-veil 遮罩）/钮二次点；Esc 层级=最上层
- *   弹层先关（行菜单先于面板——单 document 监听按开态分流）
- * - 死 id 顺序契约（INV-53）：变更涉及消失 id 且∈selectedTagIds 时先
- *   onFilterChange(剔除后剩余) 后 onMutated()
+ * - 行右键=改名+颜色两入口（P-11；批 tagrows 行内编辑为直接入口、右键
+ *   对话框保留）：TagRenameDialog/TagColorDialog 承载
+ * - 关闭触发=Esc/外点（.lib-dd-veil 遮罩）/钮二次点；Esc 层级=色板自有
+ *   监听→行菜单→面板（单 document 监听按开态分流）
+ * - 死 id 顺序契约（INV-53）：消失 id∈selectedTagIds 时先 onFilterChange
+ *   (剔除后剩余) 后 onMutated()
  * - [F-TAGS-01] 色映射通道：tags 变化即重建 name→color Map 上抛（回调须稳定
  *   引用——R2 d1'-N5）
  * - 空标签库：面板内引导文案（先在详情侧栏打标签——现行语义形态适配件）
@@ -27,12 +27,12 @@
  *     onColorMapChange?: (map: ReadonlyMap<string, string | null>) => void })
  *
  * ── 架构层 ──
- * - 数据自取 tags.store（挂载 refresh——单一数据源）；对话框拆件在
- *   TagLifecycle.tsx/TagColorDialog.tsx（保留件）
+ * - 数据自取 tags.store（挂载 refresh——单一数据源）；拆件=TagDropdownRow
+ *   （行）/TagColorPopover（行内色板）/TagLifecycle·TagColorDialog（对话框）
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - 测试：tests/unit/renderer/tag-dropdown.test.tsx + tag-lifecycle-ui.test.tsx
- *   + tag-color-dialog.test.tsx（均 always-active）
+ * - 测试：tests/unit/renderer/tag-dropdown / tag-dropdown-row /
+ *   tag-lifecycle-ui / tag-color-dialog 四件（均 always-active）
  */
 import { useEffect, useRef, useState } from 'react'
 import { TAG_FILTER_MAX } from '@shared/models/paper'
@@ -41,9 +41,12 @@ import { useTagsStore, type TagWithCount } from './tags.store'
 import { TagRowMenu } from './TagRowMenu'
 import { TagRenameDialog } from './TagLifecycle'
 import { TagColorDialog } from './TagColorDialog'
+import { TagDropdownRow } from './TagDropdownRow'
+import { TagColorPopover } from './TagColorPopover'
 import type { MutatedPayload } from './TagLifecycle'
 
-interface RowMenuState {
+/** 行锚点态（右键行菜单与行内色板共用形状——{tag, 点击坐标}） */
+interface TagAnchorState {
   tag: TagWithCount
   anchor: { x: number; y: number }
 }
@@ -65,7 +68,8 @@ export function TagDropdown(props: {
   const refresh = useTagsStore((s) => s.refresh)
   const listError = useTagsStore((s) => s.error)
   const [open, setOpen] = useState(false)
-  const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null)
+  const [rowMenu, setRowMenu] = useState<TagAnchorState | null>(null)
+  const [colorEdit, setColorEdit] = useState<TagAnchorState | null>(null)
   const [dialog, setDialog] = useState<DialogState | null>(null)
 
   useEffect(() => {
@@ -87,11 +91,13 @@ export function TagDropdown(props: {
     onColorMapChange?.(new Map(tags.map((t) => [t.name, t.color])))
   }, [tags, onColorMapChange])
 
-  // Esc 层级（单监听分流）：行菜单开→先关行菜单；否则关面板（unmount 成对清理）
+  // Esc 层级（单监听分流）：行内色板开→让位其自有监听（busy 守卫承载）；
+  // 行菜单开→先关行菜单；否则关面板（unmount 成对清理）
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape') return
+      if (colorEdit !== null) return
       if (rowMenu !== null) {
         setRowMenu(null)
         return
@@ -100,7 +106,7 @@ export function TagDropdown(props: {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, rowMenu])
+  }, [open, rowMenu, colorEdit])
 
   /** 生命周期变更成功上抛（INV-53 顺序：先剔死 id 后 onMutated） */
   const handleMutated: MutatedPayload = (disappearedId) => {
@@ -134,6 +140,7 @@ export function TagDropdown(props: {
         onClick={() => {
           if (open) {
             setRowMenu(null)
+            setColorEdit(null)
             setOpen(false)
           } else {
             setOpen(true)
@@ -148,8 +155,14 @@ export function TagDropdown(props: {
       </button>
       {open && (
         <>
-          <div className="lib-dd-veil" onClick={() => setOpen(false)} />
-          <div className="lib-dd-panel" role="menu" aria-label="标签筛选面板">
+          <div
+            className="lib-dd-veil"
+            onClick={() => {
+              setColorEdit(null)
+              setOpen(false)
+            }}
+          />
+          <div className="lib-dd-panel" role="group" aria-label="标签筛选面板">
             <div className="lib-dd-head">
               <span>标签筛选</span>
               <span className="lib-dd-sel">{`已选 ${selectedTagIds.length}`}</span>
@@ -158,42 +171,44 @@ export function TagDropdown(props: {
               <div className="lib-dd-empty">暂无标签可筛选（在详情侧栏为文献打标签）</div>
             ) : (
               <div className="lib-dd-list">
-                {tags.map((t) => {
-                  const on = selectedTagIds.includes(t.id)
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      role="menuitemcheckbox"
-                      aria-checked={on}
-                      className={`lib-dd-row${on ? ' on' : ''}`}
-                      onClick={() => toggleTag(t)}
-                      onContextMenu={(e) => {
-                        e.preventDefault()
-                        setRowMenu({ tag: t, anchor: { x: e.clientX, y: e.clientY } })
-                      }}
-                    >
-                      <span className="lib-dd-cb" aria-hidden="true" />
-                      <span
-                        className="lib-dd-dot"
-                        style={t.color !== null ? { background: t.color } : undefined}
-                      />
-                      <span className="lib-dd-nm">{t.name}</span>
-                      <span className="lib-dd-ct">{t.paperCount}</span>
-                    </button>
-                  )
-                })}
+                {tags.map((t) => (
+                  <TagDropdownRow
+                    key={t.id}
+                    tag={t}
+                    checked={selectedTagIds.includes(t.id)}
+                    onToggle={() => toggleTag(t)}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setRowMenu({ tag: t, anchor: { x: e.clientX, y: e.clientY } })
+                    }}
+                    onOpenColor={(tag, anchor) => setColorEdit({ tag, anchor })}
+                    onRenamed={() => handleMutated(null)}
+                  />
+                ))}
                 <div className="lib-dd-fade" aria-hidden="true" />
               </div>
             )}
             <div className="lib-dd-foot">
-              <span>{`共 ${tags.length} 标签 · 右键行改名/颜色`}</span>
+              <span className="lib-dd-hint">{`共 ${tags.length} 标签 · 点名称/颜色可编辑，右键更多`}</span>
               <button type="button" className="lib-dd-clr" onClick={() => onFilterChange([])}>
                 清空已选
               </button>
             </div>
           </div>
         </>
+      )}
+
+      {open && colorEdit !== null && (
+        <TagColorPopover
+          key={colorEdit.tag.id}
+          tag={colorEdit.tag}
+          anchor={colorEdit.anchor}
+          onClose={() => setColorEdit(null)}
+          onSaved={() => {
+            setColorEdit(null)
+            handleMutated(null)
+          }}
+        />
       )}
 
       {rowMenu !== null && (

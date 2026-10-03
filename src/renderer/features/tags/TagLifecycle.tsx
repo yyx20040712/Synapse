@@ -21,11 +21,14 @@ import { useTagsStore } from './tags.store'
  * requestClose=关闭守卫（N1）：mutation 飞行中 no-op——取消/遮罩/✕/Esc 全
  * 关闭路径统一过此门（Dialog 的 onClose 收包装后的回调）。
  * [F-TAGS-01] 导出供 TagColorDialog 同构复用（域内单源）。
+ * [批 tagrows 2026-10-03] isPending=同步 pending 读口（行内编辑 blur 门：
+ * busy 飞行中失焦不恢复——N1「编辑已收、变更随后生效」错位同型防线）。
  */
 export function useBusyGuard(): {
   busy: boolean
   begin(): boolean
   end(): void
+  isPending(): boolean
   requestClose(onClose: () => void): void
 } {
   const pending = useRef(false)
@@ -41,6 +44,9 @@ export function useBusyGuard(): {
     end(): void {
       pending.current = false
       setBusy(false)
+    },
+    isPending(): boolean {
+      return pending.current
     },
     requestClose(onClose: () => void): void {
       if (!pending.current) onClose()

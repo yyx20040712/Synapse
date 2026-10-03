@@ -60,8 +60,8 @@ function dialog(): HTMLElement | null {
   return host?.querySelector('[role="dialog"]') ?? null
 }
 
-function row(name: string): HTMLButtonElement | undefined {
-  return [...(host?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [])].find(
+function row(name: string): HTMLElement | undefined {
+  return [...(host?.querySelectorAll<HTMLElement>('.lib-dd-row') ?? [])].find(
     (r) => r.querySelector('.lib-dd-nm')?.textContent === name
   )
 }

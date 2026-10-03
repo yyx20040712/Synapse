@@ -47,13 +47,14 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   await expect(win.getByLabel('移除标签 水泵')).toBeVisible({ timeout: 10_000 })
 
   // —— ④ 着色 computed style 锚：[F-UIRES-01] TagDropdown 面板行右键→颜色…→
-  // 预设 swatch→确定（TagFilter chip 面退役——着色呈现=面板行色点 .lib-dd-dot）——
+  // 预设 swatch→确定（TagFilter chip 面退役——着色呈现=面板行色点 .lib-dd-dot；
+  // 批 tagrows 行容器=.lib-dd-row 三段行，右键通道保留）——
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
   await win.locator('.lib-dd-btn').click()
   const panel = win.locator('.lib-dd-panel')
   await expect(panel).toBeVisible({ timeout: 10_000 })
-  await panel.getByRole('menuitemcheckbox').filter({ hasText: '水质' }).click({ button: 'right' })
+  await panel.locator('.lib-dd-row').filter({ hasText: '水质' }).click({ button: 'right' })
   const menu = win.getByTestId('tag-menu')
   await expect(menu).toBeVisible()
   await menu.getByRole('menuitem', { name: '颜色…' }).click()
@@ -65,7 +66,7 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   // 真 Chromium 计算样式：色点背景=#e11d48（三元组严格锚）
   const preset = TAG_COLOR_PRESETS[0]
   const rgb = [1, 3, 5].map((i) => parseInt(preset.slice(i, i + 2), 16)).join(', ')
-  const dot = panel.getByRole('menuitemcheckbox').filter({ hasText: '水质' }).locator('.lib-dd-dot')
+  const dot = panel.locator('.lib-dd-row').filter({ hasText: '水质' }).locator('.lib-dd-dot')
   await expect
     .poll(async () => dot.evaluate((el) => getComputedStyle(el).backgroundColor))
     .toContain(rgb)
@@ -85,7 +86,7 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   await win2.locator('.lib-dd-btn').click()
   const panel2 = win2.locator('.lib-dd-panel')
   await expect(panel2).toBeVisible({ timeout: 10_000 })
-  const dot2 = panel2.getByRole('menuitemcheckbox').filter({ hasText: '水质' }).locator('.lib-dd-dot')
+  const dot2 = panel2.locator('.lib-dd-row').filter({ hasText: '水质' }).locator('.lib-dd-dot')
   await expect
     .poll(async () => dot2.evaluate((el) => getComputedStyle(el).backgroundColor))
     .toContain(rgb)

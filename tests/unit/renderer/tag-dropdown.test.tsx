@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-01 批 A U3] TagDropdown —— 标签筛选下拉（TagFilter chip 形态全件
- * 退役的承接件，设计稿 §3.3/R6；mockup .tagbtn/.tagmenu 逐值）。覆盖：钮态
- * （idle 灰/有选集 accent「×N」）/面板结构（头「标签筛选+已选 N」/一行一勾选
- * role=menuitemcheckbox aria-checked+色点+计数/脚「共 N 标签+清空已选」）/
- * toggle 即时生效/三关闭触发（Esc 层级=行菜单先关/外点/钮二次点）/TAG_FILTER_MAX
- * 添加向守卫（T8/T9/T10）/死 id 顺序契约（INV-53）/空标签库引导文案/色映射
- * 上抛通道/FilterBar 装配收敛（tagIds 空集收敛 undefined）。
+ * [F-UIRES-01 批 A U3→批 tagrows 2026-10-03] TagDropdown —— 标签筛选下拉
+ * （TagFilter chip 形态全件退役的承接件，设计稿 §3.3/R6）。覆盖：钮态（idle 灰/
+ * 有选集 accent「×N」）/面板结构（头「标签筛选+已选 N」/三段行=勾选框
+ * role=checkbox aria-checked+名称+色点+计数——勾选只归 checkbox，批 tagrows
+ * 改版/脚「共 N 标签+清空已选」）/toggle 即时生效/三关闭触发（Esc 层级=行菜单
+ * 先关/外点/钮二次点）/TAG_FILTER_MAX 添加向守卫（T8/T9/T10）/死 id 顺序契约
+ * （INV-53）/空标签库引导文案/色映射上抛通道/FilterBar 装配收敛（tagIds 空集
+ * 收敛 undefined）。行内编辑新行为面=tag-dropdown-row.test.tsx（批 tagrows 新件）。
  * always-active 裸 describe（K3 威胁不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -78,18 +79,19 @@ async function openPanel(): Promise<void> {
   })
 }
 
-/** 面板行（menuitemcheckbox——按名格 .lib-dd-nm 精确匹配，防计数粘名误配） */
-function row(name: string): HTMLButtonElement | undefined {
-  return [...(host?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [])].find(
+/** 面板行容器（批 tagrows 三段行 .lib-dd-row——按名格 .lib-dd-nm 精确匹配，防计数粘名误配） */
+function row(name: string): HTMLElement | undefined {
+  return [...(host?.querySelectorAll<HTMLElement>('.lib-dd-row') ?? [])].find(
     (r) => r.querySelector('.lib-dd-nm')?.textContent === name
   )
 }
 
+/** 勾选只归 checkbox（批 tagrows：点击行其余区域零勾选） */
 async function clickRow(name: string): Promise<void> {
-  const r = row(name)
-  expect(r, `面板行存在：${name}`).toBeDefined()
+  const cb = row(name)?.querySelector<HTMLButtonElement>('[role="checkbox"]')
+  expect(cb, `面板行勾选框存在：${name}`).toBeDefined()
   await act(async () => {
-    r!.click()
+    cb!.click()
   })
 }
 
@@ -138,9 +140,9 @@ describe('F-UIRES-01 U3 TagDropdown 钮与面板结构（§3.3）', () => {
     expect(panel?.textContent).toContain('标签筛选')
     expect(panel?.textContent).toContain('已选 1')
     const r = row('水质')
-    expect(r?.getAttribute('role')).toBe('menuitemcheckbox')
-    expect(r?.getAttribute('aria-checked')).toBe('true')
-    expect(row('机器学习')?.getAttribute('aria-checked')).toBe('false')
+    expect(panel?.getAttribute('role'), '面板容器=group（menu 语义随行改版退役）').toBe('group')
+    expect(r?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('true')
+    expect(row('机器学习')?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('false')
     expect(r?.querySelector('.lib-dd-dot'), '色点在场').not.toBeNull()
     expect(r?.textContent).toContain('2')
     expect(panel?.textContent).toContain('共 2 标签')
@@ -178,7 +180,7 @@ describe('F-UIRES-01 U3 toggle 即时生效（现行 P7E-06 语义零变）', ()
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-a'])
     await renderDropdown(['t-a'], onFilterChange)
     await openPanel()
-    expect(row('水质')?.getAttribute('aria-checked')).toBe('true')
+    expect(row('水质')?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('true')
     await clickRow('机器学习')
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-a', 't-b'])
     await renderDropdown(['t-a', 't-b'], onFilterChange)
@@ -245,7 +247,7 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
     expect(toastSpy).toHaveBeenCalledTimes(1)
     expect(toastSpy).toHaveBeenCalledWith('最多同时筛选 20 个标签', 'info')
     expect(onFilterChange).not.toHaveBeenCalled()
-    expect(row('标签21')?.getAttribute('aria-checked')).toBe('false')
+    expect(row('标签21')?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('false')
   })
 
   it('T9 边界放行：19 选中点第 20 行 → 载荷 20 项含新 id + 零 toast', async () => {

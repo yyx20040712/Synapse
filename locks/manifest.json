@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-03T02:23:31.1817934Z",
+    "generatedAt":  "2026-10-03T02:58:09.2096242Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -347,15 +347,15 @@
                   },
                   {
                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
-                      "sha256":  "3c5697d86527300c0e939e3c114d5bc267e5bca0992d05e4cfa86dc08dccfece"
+                      "sha256":  "9c48fc710f1e280363878f0540507ef620aa9563fbfafdb2cd44908a1ece8c9c"
                   },
                   {
                       "path":  "tests/e2e/tag-input-paths.spec.ts",
-                      "sha256":  "9c433482ba03b95041123166782731da6c59a387cf3b9e8c55a07c10007bf468"
+                      "sha256":  "a47d3b32ae0731e9de62d614ecc32330a8b16e1164abc5f4ccc4a498a576f945"
                   },
                   {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
-                      "sha256":  "64bbd3cfccb271ec6c7daea8f5cdea03f4f135a8012820312eac4f7d0b7c59d4"
+                      "sha256":  "9f45847db667f90698fcb8cdf93e42b90b033f35b313c47cd2d5daf581232367"
                   },
                   {
                       "path":  "tests/e2e/theme-trio.spec.ts",
@@ -1031,11 +1031,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-color-dialog.test.tsx",
-                      "sha256":  "1bf6152f00d663af0f783a670524cb6c0ddf94fc3cd6a8fe3901f1074eed88cf"
+                      "sha256":  "890686d4f0325acea6ac9f98cd255459cdd7f89dd0e0c65921ca1c3e4e22ef2f"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown.test.tsx",
-                      "sha256":  "5244fc78071c9aa925b0badbe1592fd12f2ebc5a57cf4bf0423a3a02a3a3ab64"
+                      "sha256":  "1e2cbde849359e165288b19cbbf2327b739ac71736da749ecf2b39b7c4398c74"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/tag-dropdown-row.test.tsx",
+                      "sha256":  "6938ddf4bd12629c64fbe7190603f0f54a842f91e86c802d94635bafb11a8941"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-editor.test.tsx",
@@ -1043,7 +1047,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
-                      "sha256":  "989ce2bcdf1e211594af32786657bc5bf64f47bf698cba7f1892a534b4f2cafb"
+                      "sha256":  "7a2cc456e2cb5df84a085174a29df14f776b94f819070fe1c85f7842dc5dd673"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-name-maxlength.test.tsx",

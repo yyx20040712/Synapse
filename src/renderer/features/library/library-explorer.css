@@ -183,30 +183,30 @@
   scrollbar-width: thin;
   position: relative;
 }
+/* [批 tagrows] 行=三段结构容器（勾选框/名称区/颜色框各为独立钮——勾选只归
+   checkbox；名称区点击=行内改名、颜色框点击=行内色板，右键入口保留） */
 .lib-dd-row {
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 7px 12px;
   width: 100%;
-  border: none;
-  background: transparent;
-  font-family: inherit;
   font-size: var(--fs-body);
   color: var(--ink);
-  text-align: left;
-  cursor: pointer;
 }
 .lib-dd-row:hover { background: var(--panel-2); }
-.lib-dd-row:focus-visible { outline: 1px solid var(--accent); }
 .lib-dd-cb {
   width: 14px;
   height: 14px;
+  padding: 0;
   border: 1.5px solid var(--line);
   border-radius: 4px;
   flex: none;
   position: relative;
+  background: transparent;
+  cursor: pointer;
 }
+.lib-dd-cb:focus-visible { outline: 1px solid var(--accent); }
 .lib-dd-row.on .lib-dd-cb { background: var(--accent); border-color: var(--accent); }
 .lib-dd-row.on .lib-dd-cb::after {
   content: '';
@@ -219,7 +219,51 @@
   border-width: 0 2px 2px 0;
   transform: rotate(42deg);
 }
-.lib-dd-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+.lib-dd-nm-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.lib-dd-nm-btn:focus-visible { outline: 1px solid var(--accent); }
+.lib-dd-edit {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--panel);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  padding: 1px 5px;
+}
+.lib-dd-ok {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.lib-dd-ok:focus-visible { outline: 1px solid var(--accent); }
+.lib-dd-dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  flex: none;
+  cursor: pointer;
+}
+.lib-dd-dot:focus-visible { outline: 1px solid var(--accent); }
 .lib-dd-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lib-dd-ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
 .lib-dd-fade {
@@ -243,6 +287,9 @@
   font-size: var(--fs-micro);
   background: var(--panel);
 }
+/* [批 tagrows RR1-N2] 口径句提示（行内编辑主入口+右键保留）——micro 字号
+   240px 面板下单行放不下完整句，允许两行 wrap */
+.lib-dd-hint { line-height: 1.4; }
 .lib-dd-clr {
   border: none;
   background: transparent;
@@ -252,6 +299,46 @@
   cursor: pointer;
   padding: 0;
 }
+/* [批 tagrows] 行内小色板（行颜色框点击弹出——点色=保存；Esc/点外关闭不改） */
+.lib-dd-pop-veil { position: fixed; inset: 0; z-index: var(--z-pop-veil); }
+.lib-dd-pop {
+  position: fixed;
+  z-index: var(--z-pop);
+  width: 200px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-3);
+}
+.lib-dd-pop-sw {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  flex: none;
+  cursor: pointer;
+}
+.lib-dd-pop-sw:hover { border-color: var(--accent); }
+.lib-dd-pop-sw:disabled { opacity: 0.5; cursor: default; }
+.lib-dd-pop-reset {
+  height: 18px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+}
+.lib-dd-pop-reset:hover { border-color: var(--accent); color: var(--ink); }
+.lib-dd-pop-reset:disabled { opacity: 0.5; cursor: default; }
 
 /* ── 导入条（ImportDropZone 收敛态——mockup .ibar 逐值：42px 横条+panel 底
    +line 下边线；drop 热区=本 div 级保持零变[R3]）── */

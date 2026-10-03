@@ -5,14 +5,15 @@ import { join } from 'node:path'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * [P7E-06→F-UIRES-01 批 A U3] 标签多选过滤 e2e（TagFilter chip 面→TagDropdown
- * 下拉迁移——一行一勾选 role=menuitemcheckbox aria-checked，toggle 即时生效）。
+ * [P7E-06→F-UIRES-01 批 A U3→批 tagrows 2026-10-03] 标签多选过滤 e2e
+ * （TagFilter chip 面→TagDropdown 下拉迁移——三段行勾选框 role=checkbox
+ * aria-checked，勾选只归 checkbox，toggle 即时生效）。
  *
  * 链路：种子三篇（甲挂 A+B/乙挂 A/丙无标签——交集分化+全列表对照锚）→
  * UI 打标签→开面板勾两标签（AND 交集→列表只甲）→取消一个（[A]→甲乙）→
  * 「清空已选」全清（空选集收敛 undefined→甲乙丙全回归）。三态列表用 .lib-row
- * 计数锚。S3 锚（§3.9）：面板「标签筛选/已选 N/清空已选」+行勾选
- * menuitemcheckbox aria-checked。
+ * 计数锚。S3 锚（§3.9）：面板「标签筛选/已选 N/清空已选」+行勾选框
+ * role=checkbox aria-checked（行容器=.lib-dd-row）。
  */
 test('标签多选过滤：面板勾选两标签交集→取消一个→清空已选回全列表', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e6-'))
@@ -58,24 +59,26 @@ test('标签多选过滤：面板勾选两标签交集→取消一个→清空�
   await expect(panel).toBeVisible({ timeout: 10_000 })
   await expect(panel.getByText('标签筛选')).toBeVisible()
   await expect(panel.getByText('已选 0')).toBeVisible()
-  const rowA = panel.getByRole('menuitemcheckbox').filter({ hasText: '多选A' })
-  const rowB = panel.getByRole('menuitemcheckbox').filter({ hasText: '多选B' })
+  const rowA = panel.locator('.lib-dd-row').filter({ hasText: '多选A' })
+  const rowB = panel.locator('.lib-dd-row').filter({ hasText: '多选B' })
+  const cbA = rowA.getByRole('checkbox')
+  const cbB = rowB.getByRole('checkbox')
   await expect(rowA).toHaveCount(1)
-  await expect(rowA).toHaveAttribute('aria-checked', 'false')
+  await expect(cbA).toHaveAttribute('aria-checked', 'false')
 
   // —— 交集 [A,B]：列表只甲（乙=单挂 A 出局、丙=无标签出局）——
-  await rowA.click()
-  await expect(rowA).toHaveAttribute('aria-checked', 'true')
+  await cbA.click()
+  await expect(cbA).toHaveAttribute('aria-checked', 'true')
   await expect(panel.getByText('已选 1')).toBeVisible()
-  await rowB.click()
+  await cbB.click()
   await expect(win.locator('.lib-row')).toHaveCount(1, { timeout: 10_000 })
   await expect(win.getByText('P7E06 甲文献').first()).toBeVisible()
   await expect(win.getByText('P7E06 乙文献')).toHaveCount(0)
   await expect(win.getByText('P7E06 丙文献')).toHaveCount(0)
 
   // —— 取消 B → [A]：甲乙在场（丙仍出局——与全清态区分的对照锚）——
-  await rowB.click()
-  await expect(rowB).toHaveAttribute('aria-checked', 'false')
+  await cbB.click()
+  await expect(cbB).toHaveAttribute('aria-checked', 'false')
   await expect(win.locator('.lib-row')).toHaveCount(2, { timeout: 10_000 })
   await expect(win.getByText('P7E06 丙文献')).toHaveCount(0)
 
