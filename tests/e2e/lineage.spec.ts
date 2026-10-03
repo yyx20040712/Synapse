@@ -604,15 +604,23 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T-P1b=[T3-P7A 裁决部首日兑现；回炉 R4 走廊断言复锚] resize 不错位真机
-   * 直证：setViewportSize 两档（1280→1000）→ResizeObserver 重算→（a）车道
-   * x 随 contentW 变化（首树边根→甲实态=corridor——回炉探针实证 laneX=
-   * contentW−48+9×lane：月标注入框后终落竖段受阻，跨年边落走廊；两档差=
-   * 视口差）；（b）线-卡 y 相对关系恒定（纵向布局零变化）。
-   * [回炉 R4] 首版收窄时弱化 poll 丢陈旧路径守卫（收窄后 path 未重算即量=
-   * 假不动）——走廊参数族谓词既是断言面也是 stale 守卫，原式恢复。
+   * T-P1b=[批 3 迁移；T3-P7A 裁决部首日兑现] resize 不错位真机直证：
+   * setViewportSize 两档（1280→1000）→ResizeObserver 重算→（a）首条树边
+   * （根→甲）route=band（批 3 终落锚散开：月标封堵首选 slot 后同边 slot
+   * 近序散开承接——跨年边不再绕右走廊；观测窗=path[data-route] 可见层
+   * 属性，99eacd5e 落）；（b）band 由卡位派生非 contentW 锚定（走廊时代
+   * laneX=contentW−48+9×lane 参数族谓词随绕右形态退役）——收窄只削内容
+   * 右缘、卡零迁移，故断言面=路径对内容盒左缘偏移两档全等（卡锚定几何
+   * 内容坐标不变性——若路径 stale 而卡迁移即错位红）+线-卡 y 相对关系
+   * 恒定；（c）跨年边不穿月标（路径段化采样 128 点折线段 vs .month-tag
+   * rect 线段-矩形判交——zigzag 路径 bbox 角区与月标恒相交而路径几何
+   * 净空，bbox 级判交假阳性，批 3 探针实证 tagHit=true 且路径距月标
+   * ≥14px）。
+   * [回炉 W3 守卫边界] band 由卡位派生，两档 d 全等为批 3 探针实证——
+   * stale 路径区分=contentW poll+route 复核弱守卫；强守卫（收窄触发卡
+   * 换行重排）由 T6 瀑布错位用例承载（主控挂账知悉）。
    */
-  test('T-P1b resize 直证：两档视口→车道 x 随 contentW 变化+线-卡 y 相对关系恒定', async () => {
+  test('T-P1b resize 直证：两档视口→route=band+路径卡锚定几何两档全等+线-卡 y 相对关系恒定', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -625,63 +633,119 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
 
-    // 首条树边（根→甲）实态=corridor（回炉探针实证：横臂至 laneX=
-    // contentW−48+9×lane——月标入框阻终落竖段所致）——bbox 右缘=laneX。
-    // 量测单 evaluate 原子取（viewport 坐标三值同拍——path bbox/content 左缘/
-    // 宽度混算坐标系即错位，P7B 首跑实证 off 含 content 左缘偏移）
-    const measure = async (): Promise<{ laneX: number; contentLeft: number; contentW: number; relY: number }> =>
+    // 量测单 evaluate 原子取（viewport 坐标同拍——path bbox/content 左缘/
+    // 宽度/卡 y 混算坐标系即错位，P7B 首跑实证沿承）
+    const measure = async (): Promise<{ route: string; bboxX: number; contentLeft: number; contentW: number; relY: number }> =>
       win.evaluate(() => {
         const path = document.querySelector('svg.tl-edges path.tl-edge') as SVGPathElement | null
         const ct = document.querySelector('.tl-content') as HTMLElement | null
         const card = document.querySelector('.tl-card') as HTMLElement | null
         if (path === null || ct === null || card === null) {
-          return { laneX: -1, contentLeft: -1, contentW: -1, relY: 0 }
+          return { route: '', bboxX: -1, contentLeft: -1, contentW: -1, relY: 0 }
         }
         const pr = path.getBoundingClientRect()
         const cr = ct.getBoundingClientRect()
         const kr = card.getBoundingClientRect()
         return {
-          laneX: pr.x + pr.width,
+          route: path.dataset.route ?? '',
+          bboxX: pr.x,
           contentLeft: cr.left,
           contentW: cr.width,
           relY: pr.y - kr.y
         }
       })
-    // 稳定面：poll 至几何自洽（laneX−contentW−contentLeft=−48+9×lane ∈[−48,−21]
-    // ——走廊参数族；content 左缘为 viewport 偏移须同拍扣除）
-    await expect
-      .poll(async () => {
-        const m = await measure()
-        const off = m.laneX - m.contentLeft - m.contentW
-        return off >= -48.5 && off <= -20.5 && Math.abs((off + 48) % 9) < 0.5
+    // (c) 跨年边不穿月标：[回炉 W4] 段化精确判交——路径沿弧长采样 128 点、
+    // 相邻采样点连成折线段，每段对每 .month-tag rect 做线段-矩形判交
+    // （Liang-Barsky，与 avoid.ts segHitsRect 同式含边界相触=命中；点采样
+    // 漏小目标窗面消除——段距亚像素级、圆角曲率近似误差可忽略）；坐标映射
+    // 自校准（getBBox 用户坐标 vs getBoundingClientRect 缩放/平移——不依赖
+    // svg 定位假设）
+    const pathClearOfTags = async (): Promise<boolean> =>
+      win.evaluate(() => {
+        const path = document.querySelector('svg.tl-edges path.tl-edge') as SVGPathElement | null
+        if (path === null) return false
+        const bb = path.getBBox()
+        const br = path.getBoundingClientRect()
+        const z = bb.width === 0 ? 1 : br.width / bb.width
+        const ox = br.left - bb.x * z
+        const oy = br.top - bb.y * z
+        const tags = Array.from(document.querySelectorAll('.month-tag')).map((t) => t.getBoundingClientRect())
+        const segHitsRect = (
+          ax: number,
+          ay: number,
+          bx: number,
+          by: number,
+          l: number,
+          tp: number,
+          r: number,
+          bm: number
+        ): boolean => {
+          let t0 = 0
+          let t1 = 1
+          const dx = bx - ax
+          const dy = by - ay
+          const edges: Array<[number, number]> = [
+            [-dx, ax - l],
+            [dx, r - ax],
+            [-dy, ay - tp],
+            [dy, bm - ay]
+          ]
+          for (const [den, num] of edges) {
+            if (den === 0) {
+              if (num < 0) return false
+              continue
+            }
+            const q = num / den
+            if (den < 0) {
+              if (q > t1) return false
+              if (q > t0) t0 = q
+            } else {
+              if (q < t0) return false
+              if (q < t1) t1 = q
+            }
+          }
+          return true
+        }
+        const total = path.getTotalLength()
+        const N = 128
+        let prev: { x: number; y: number } | null = null
+        for (let k = 0; k <= N; k++) {
+          const p = path.getPointAtLength((total * k) / N)
+          const px = ox + p.x * z
+          const py = oy + p.y * z
+          if (prev !== null) {
+            for (const tr of tags) {
+              if (segHitsRect(prev.x, prev.y, px, py, tr.left, tr.top, tr.right, tr.bottom)) return false
+            }
+          }
+          prev = { x: px, y: py }
+        }
+        return true
       })
-      .toBe(true)
+    // (a) 首条树边（根→甲）route=band（批 3 散开承接——corridor 参数族
+    // 谓词随绕右形态退役）
+    await expect.poll(async () => (await measure()).route).toBe('band')
     const m1 = await measure()
-    // 第二档：收窄 280px——ResizeObserver+rAF 重算后车道左移同量。稳定面同
-    // 谓词再 poll（CSS 宽同步先变、rAF 重算晚帧——只 poll contentW 会取到
-    // 陈旧路径坐标，P7B 首跑实证 m2.laneX===m1.laneX 假绿面——[回炉 R4] 该
-    // 谓词即陈旧路径守卫，弱化即翻车实证）
+    // (c) 首档不穿月标
+    expect(await pathClearOfTags()).toBe(true)
+    // 第二档：收窄 280px——ResizeObserver+rAF 重算后 poll（CSS 宽同步先变、
+    // rAF 重算晚帧——只 poll contentW 会取到陈旧路径坐标，[回炉 R4] 沿承；
+    // route 面随 poll 复核=窄档重算不退 corridor/fallback）
     await win.setViewportSize({ width: 1000, height: 860 })
     await expect
       .poll(async () => {
         const m = await measure()
-        const off = m.laneX - m.contentLeft - m.contentW
-        return (
-          m.contentW < m1.contentW - 200 &&
-          off >= -48.5 &&
-          off <= -20.5 &&
-          Math.abs((off + 48) % 9) < 0.5
-        )
+        return m.contentW < m1.contentW - 200 && m.route === 'band'
       })
       .toBe(true)
     const m2 = await measure()
-    // (a) 车道 x 随 contentW 变化（差值≈视口差）
-    expect(m2.laneX).toBeLessThan(m1.laneX)
-    expect(Math.abs(m1.laneX - m2.laneX - 280)).toBeLessThan(3)
-    // (b) 卡/线 bbox 相对关系恒定：laneX 对内容盒右缘偏移两档全等（走廊参数不变）
-    expect(m2.laneX - m2.contentLeft - m2.contentW).toBeCloseTo(m1.laneX - m1.contentLeft - m1.contentW, 1)
-    // (c) 纵向相对关系恒定（线-卡 y 差不变——错位即红）
+    // (b) 路径对内容盒左缘偏移两档全等（卡锚定几何不变性——band 由卡位
+    // 派生，收窄只削右缘；两档 d 全等为批 3 探针实证）
+    expect(m2.bboxX - m2.contentLeft).toBeCloseTo(m1.bboxX - m1.contentLeft, 1)
+    // (b) 纵向相对关系恒定（线-卡 y 差不变——错位即红）
     expect(m2.relY).toBeCloseTo(m1.relY, 1)
+    // (c) 窄档不穿月标
+    expect(await pathClearOfTags()).toBe(true)
 
     await app.close()
   })
