@@ -394,3 +394,16 @@ R2 修正役（R2-LG11 脉络浅色重制/LG12 综述参考边/SH1 重命名迁�
 | 教训 | 事故证据 | 沉淀位置 |
 | ---- | ---- | ---- |
 | **React 对 disabled 表单控件不派发合成事件 handler=红证双层互掩** | 批 α（runId=20261003-fuia）门一 d1-W1 处方变异恒绿：删组件 busy 守卫（`if (!importBusy)`）后 busy 用例仍 15 passed——根因探针（jsdom 对照组）：disabled 按钮上 dispatchEvent('dblclick') 原生 listener=1 而 React handler=0（disabled=false 对照 2/1）——行按钮既有 `disabled={importBusy}` 在 React 合成事件层先行拦截，组件守卫单删结构性恒绿 | busy 期事件类断言的红证须 **2×2 双拆矩阵**（disabled 属性×handler 守卫两维各拆一格）——单拆任一层被另一层掩蔽；负断言（「不触发」类）在 disabled 入口存在**真空真**风险（handler 永不达=断言恒过而无人知）；探针件 20261003-fuia-probe-disabled-dblclick.cjs 驻仓外档案区可复跑 |
+
+## 十九、增补（2026-10-03，B 案首修批——多固定列 flex 行唯一弹性列塌 0 与虚拟屏视口）
+
+| 教训 | 事故证据 | 沉淀位置 |
+| ---- | ---- | ---- |
+| **flex 行内唯一弹性列 `flex:1; min-width:0` 在多固定列布局=塌陷单点——窗口/常驻抽屉占宽挤压时该列塌 0，内容元素空 box 恒不可见（Playwright visible 判定恒 false）** | CI run 37114688270 的 35 红中 34 例同根因：窗口 1024（CI runner 虚拟屏）→ window-state clamp `min(1280, screen.width)`=1024 → 文献库行 `.lib-r-main` 被 rail72+FolderNav224+常驻抽屉316+行内固定522 挤塌 0——30 例超时型（dblclick/click resolve 到 `.lib-r-title` 但恒 not visible）+4 例断言型同象；v115 期误判「逐用例适配面 35 例」，v116 主控无头探针（probe-librow-vis 三档 1024/1152/1285=0/18/151.6）坍缩为单根因后 libfix1 一批修复（min-width 120 保底+tags 列 flex:0 1 180 收缩+表头同源 INV-73），预期 34 红族大面转绿 | 多固定列 flex 行的唯一弹性列必须设 `min-width` 保底；e2e 大面积「resolve 但不可见」族先算布局塌陷账（固定列和+容器链 vs 视口宽，本批公式=窗口宽−1134）再逐用例适配；测试环境虚拟屏宽（CI 1024）≠本地开发屏——布局类 e2e 须含窄视口档且 resize 用 `getContentSize()` 直证生效（防 setContentSize 静默 no-op 在默认宽下假绿）；超屏复原档须按实测宽分档断言（CI 虚拟屏可能钳制超屏 resize——判定线=断言阈值所需最小总宽上取整，本批 1274=1133.4+140）；变异处方对 CSS 守卫属性必须 bugform（回退到修复前精确值）——删整条声明回落 `min-width:auto` 由内容 min-content 兜底不塌 0，e2e 不红属 CSS 正确语义非锁力空洞（probe A1 实证，裁决部终裁降格教训） |
+
+## 二十、增补（2026-10-03，lnfix3 范围闸埋雷复发——复合批尾注纪律与已推历史改写）
+
+| 教训 | 事故证据 | 沉淀位置 |
+| ---- | ---- | ---- |
+| **src+tests 复合批带 [test-refactor] 尾注=CI 范围闸结构性红——同日第二次踩同雷（先例处置未内化为派发/收口检查项）** | lnfix3（798247c9a35，runId=20261003-lnfix3）带 [locked-change][test-refactor] 双尾注但 diff 含 src 两文件（anchors/bands.ts）——范围闸（`grep %B [test-refactor] → diff 白名单机检，src/** 红）拦截，run 37124188921 范围闸 job failure；与 F-UIRES-VFIX-01（d65683889c9 登记批 A/B 埋雷）同日同形态。差异=本次已推送，处置升级为 filter-branch 限位 reword+force push origin main（用户裁决 2026-10-03；树零变实证新旧 HEAD 树哈希一致+message 逐字节仅差尾注 U+FFFD=0+闸脚本本地重放绿+推送后 run 37126078518 范围闸 job success）；哈希映射 798247c9a35→7caa8c3cad4、2a3b4fa39d3→131dca1a1d8（旧哈希=撰写时态保留，先例 ab9dc261e12 口径） | **尾注三分纪律**：纯测试面战役票（diff 全在范围闸白名单）=[locked-change][test-refactor] 双尾注；src+tests 复合批=[locked-change] 单尾注（[test-refactor] 必红）；纯 src 批无尾注要求。**收口清单新增**：提交前对含尾注提交跑范围闸同款一行脚本本地重放（`git log BASE..HEAD --format=%B | grep [test-refactor]` 命中者 diff 白名单核对）；**派发前 grep 测试面既有锁**（本日 executor 撞 library-cards 旧锚互斥停手——白名单墙执行正确，但主控派发简报漏查被改设计值的测试锁面=流程缺口，接缝呈报制兜住了后果）；历史改写三件套=备份分支+树哈希前后对拍+message 字节级 node 验证（sed/管道链在 Git Bash 显示层乱码≠内容损伤——显示层假象与真 GBK 化的判别必须经 node 读文件对比，本日两现） |
+

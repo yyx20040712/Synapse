@@ -112,3 +112,82 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
 
   await app.close()
 })
+
+/**
+ * [B案首修批 runId=20261003-libfix1] 窄窗标题列塌 0 回归锁（always-active）。
+ *
+ * 窗口 <1134px 时 .lib-r-main（flex:1+min-width:0）被 rail72+fnav224+抽屉
+ * 316+行内五列固定 522 挤塌至 0 → .lib-r-title 空 box 恒不可见（CI 35 红中
+ * 34 例同根因）。修复契约：.lib-r-main 保底 120px + .lib-r-tags 先收缩
+ * （flex: 0 1 180px）——本用例在 1024 窄窗锁「标题列可见」反向断言（修复前
+ * ②实值 0、③ not visible 必红），复原 1285 锁「正常宽度视觉零变」（探针
+ * 基线 ≈151.6，禁精确值断言防环境漂移）。单行种子防 .lib-list 纵向滚动条
+ * 吃行宽（overflow-x:hidden 下无横滚条扰动）。resize 前置直证 getContentSize
+ * （d1-W1：防 setContentSize 静默 no-op 假绿）；复原档 CI 虚拟屏钳制自适应
+ * （d1-W2：1285 被钳回 ≤1024 时按窄窗等值档断言，两分支皆硬断言）。
+ */
+test('文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（libfix1 塌 0 回归锁）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-libfix1-'))
+
+  // 同测 1 配方：应用自建库表+单行全值种子
+  await bootstrapMigrations(userData)
+  const sha = 'c'.repeat(64)
+  const title = 'libfix1 窄窗种子：管网漏损定位'
+  await seedPaperRow(
+    userData,
+    `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`,
+    sha,
+    title,
+    'e2e-libfix1-a',
+    { year: 2023 }
+  )
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+
+  // 行渲染在场（沿用测 1 等待形态——无 waitForTimeout）
+  const rowA = win.locator('.lib-row', { hasText: 'libfix1 窄窗种子' })
+  await expect(rowA).toBeVisible({ timeout: 10_000 })
+
+  // —— 窄窗 1024（CI runner 虚拟屏口径）——resize 直证（d1-W1：throw 守卫只防
+  //    窗口缺失，不防 setContentSize 静默 no-op——no-op 态停 1280 默认宽会假绿）：
+  //    内容宽实测到 1024 再进布局断言 ——
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows()[0]
+    if (main === undefined) throw new Error('主窗口不在 BrowserWindow.getAllWindows() 中')
+    main.setContentSize(1024, 768)
+  })
+  await expect
+    .poll(async () =>
+      app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getContentSize()[0] ?? 0)
+    )
+    .toBe(1024)
+  // main 列保底 ≥100（预期实值 120，留取整/边框裕量；修复前实值 0 此 poll 必红）
+  await expect
+    .poll(async () => (await rowA.locator('.lib-r-main').boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(100)
+  // 标题可见性反向锁（CI 失败形态=getByText resolve 但恒不可见——修复前必红）
+  await expect(win.getByText(title)).toBeVisible({ timeout: 10_000 })
+
+  // —— 复原 1285（正常宽度档）——resize 直证+d1-W2 钳制自适应：CI 虚拟屏 1024
+  //    下 setContentSize(1285) 可能被钳制，按实测内容宽分支断言（两分支皆硬
+  //    断言禁静默跳过；钳制态=窄窗等值锁仍锁「不塌 0」）——
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows()[0]
+    if (main === undefined) throw new Error('主窗口不在 BrowserWindow.getAllWindows() 中')
+    main.setContentSize(1285, 800)
+  })
+  const readContentW = async (): Promise<number> =>
+    app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getContentSize()[0] ?? 0)
+  await expect.poll(readContentW).toBeGreaterThan(0)
+  const wideW = await readContentW()
+  // 真复原档（≥1274）锁视觉零变（探针基线 ≈151.6→≥140；判定线=main≥140
+  // 所需最小总宽 1273.4 上取整——k1-W-RR1-1：1260 会留 [1260,1273.4) 假红窗）
+  const wideMin = wideW >= 1274 ? 140 : 100
+  await expect
+    .poll(async () => (await rowA.locator('.lib-r-main').boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(wideMin)
+
+  await app.close()
+})

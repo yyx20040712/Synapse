@@ -2915,6 +2915,13 @@
       "caseTitle": "S5a：行右键菜单两项版+移动子面执行（批 A 无删除/星标项）",
       "reason": "F-UIRES-01 批 B 菜单删除项点亮（§3.5 三项版）：S5a 改锚——「删除文献 toHaveCount(0)」反转为可见；星标零渲染断言保留",
       "rulingLink": "docs/design/2026-10-02_f-uires01-mockup.md#3.5"
+    },
+    {
+      "file": "tests/unit/renderer/library-cards.test.tsx",
+      "caseTitle": "门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中",
+      "assertionText": "expect(css).toMatch(/\\.lib-c-tags\\s*\\{[^}]*width:\\s*180px;[^}]*flex:\\s*none/)",
+      "reason": "B案 runId=20261003-libfix1 主控裁决 A（条件1/5）：表头 .lib-c-tags 旧锚「width:180px+flex:none 定宽形态」随窄窗塌 0 修复退役——INV-73 表头行同源收缩新契约为 flex: 0 1 180px+min-width: 0（回填定宽形态新锚红证在案）。设计值变更→锁同步，非放宽断言",
+      "rulingLink": "主控批内裁决 A·B案 runId=20261003-libfix1（2026-10-03 批内消息）——executor 回执自裁申报段+批次收口档承载"
     }
   ]
 }

@@ -276,7 +276,7 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     expect(css, 'c-title flex:1').toMatch(/\.lib-c-title\s*\{[^}]*flex:\s*1/)
     expect(css, 'c-year 74px 右对齐').toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*text-align:\s*right/)
     expect(css, 'c-cite 52px 右对齐').toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*text-align:\s*right/)
-    expect(css, 'c-tags 180px').toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px/)
+    expect(css, 'c-tags 基准 180 可收缩（flex 0 1 180px）').toMatch(/\.lib-c-tags\s*\{[^}]*flex:\s*0 1 180px;/)
     expect(css, '.lib-cols gap 14px+letter-spacing 1.5px+faint').toMatch(
       /\.lib-cols\s*\{[^}]*gap:\s*14px;[^}]*letter-spacing:\s*1\.5px;[^}]*var\(--faint\)/
     )
@@ -340,6 +340,9 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     expect(css).toMatch(/\.lib-sort\s*\{[^}]*border-radius:\s*8px/)
   })
 
+  // [B案 libfix1 裁决 A 条件2核调] 本用例标题保留原「定宽列 flex:none」措辞：
+  // 该短语指 id/year/cite 三锚（下三行仍定宽），表头 tags=可收缩列由 :353 锚与
+  // 消息承载（改标题会断 test-surface 基线 caseTitle 键——豁免通道未在本批授权）
   it('门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中', () => {
     // d1-W1：集合/年份下拉筛选生效可见性（accent 描边+accent 字）
     expect(css).toMatch(/\.lib-sort-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*color:\s*var\(--accent\)/)
@@ -350,7 +353,9 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
     expect(css, '定宽列表头列与行侧一致不收缩（d1-N5 回炉补全五格）').toMatch(/\.lib-c-id\s*\{[^}]*width:\s*46px;[^}]*flex:\s*none/)
     expect(css).toMatch(/\.lib-c-year\s*\{[^}]*width:\s*74px;[^}]*flex:\s*none/)
     expect(css).toMatch(/\.lib-c-cite\s*\{[^}]*width:\s*52px;[^}]*flex:\s*none/)
-    expect(css).toMatch(/\.lib-c-tags\s*\{[^}]*width:\s*180px;[^}]*flex:\s*none/)
+    // [B案 libfix1 裁决 A] 表头 tags=可收缩列（与行侧 .lib-r-tags 同源——INV-73）：
+    // 旧锚定宽 180+flex:none 随窄窗塌 0 修复退役，回填定宽形态即红
+    expect(css, 'tags 表头列收缩形态（基准 180 可缩至 0——窄窗为 main 列让位）').toMatch(/\.lib-c-tags\s*\{[^}]*flex:\s*0 1 180px;[^}]*min-width:\s*0/)
     // k1-N2：键盘导航行滚入预留 sticky 表头高度
     expect(css).toMatch(/\.lib-list \[role='option'\]\s*\{[^}]*scroll-margin-top:\s*28px/)
     // d1-W5：空态居中锁（旧 .lib-detail-empty 居中断言同强度后继）

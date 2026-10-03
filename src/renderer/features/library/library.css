@@ -104,10 +104,10 @@
    判定不感知 sticky 遮挡——预留后 ↑ 回顶区首击即完整可见） */
 .lib-list [role='option'] { scroll-margin-top: 28px; }
 .lib-c-id { width: 46px; flex: none; }
-.lib-c-title { flex: 1; }
+.lib-c-title { flex: 1; min-width: 120px; }
 .lib-c-year { width: 74px; text-align: right; flex: none; }
 .lib-c-cite { width: 52px; text-align: right; flex: none; }
-.lib-c-tags { width: 180px; flex: none; }
+.lib-c-tags { flex: 0 1 180px; min-width: 0; }
 .lib-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 12px 8px; }
 /* 密度行：hover=panel 底+shadow-card+信号橙游标线；sel=inset 1.5px accent
    描边+左缘条+外辉（sel 规则源序在 :hover 后——同命中时选中态赢） */
@@ -155,7 +155,10 @@
 .lib-r-id { width: 46px; font-family: var(--mono); font-size: var(--fs-caption); color: var(--faint); flex: none; }
 /* T3-P5 入脉络 catalogNo 编号=accent 色与位置序 faint 区分（W-4 最小兑现；形态细节收口轮细调） */
 .lib-r-id.cat { color: var(--accent); }
-.lib-r-main { flex: 1; min-width: 0; }
+/* 窄窗收缩契约（B案 runId=20261003-libfix1）：窗口<1134 时本列曾塌 0
+   （rail72+fnav224+抽屉316+行内固定522 挤占）——收缩次序=tags 列先收、
+   main 列止于 120 保底，标题列永不空 box */
+.lib-r-main { flex: 1; min-width: 120px; }
 .lib-r-title {
   display: block;
   font-size: var(--fs-strong);
@@ -176,7 +179,9 @@
 }
 .lib-r-year { width: 74px; }
 .lib-r-cite { width: 52px; }
-.lib-r-tags { width: 180px; display: flex; gap: 4px; overflow: hidden; flex: none; }
+/* 窄窗收缩契约（B案 runId=20261003-libfix1）：本列=窄窗先收缩的弹性列
+   （基准 180 正常宽视觉零变，可缩至 0）——为 main 列保底 120 让出空间 */
+.lib-r-tags { display: flex; gap: 4px; overflow: hidden; flex: 0 1 180px; min-width: 0; }
 .lib-t-mini {
   font-size: var(--fs-micro);
   padding: 2px 7px;

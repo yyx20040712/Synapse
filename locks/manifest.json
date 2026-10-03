@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-03T12:33:15.3521673Z",
+    "generatedAt":  "2026-10-03T14:05:51.6179779Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "0791b83a7c21be52986eb136111b6019a5464ec84ad303803e8b6f25476640b1"
+                      "sha256":  "b15d79806bc076a0824faf3ac30f40d7341a4fe2369d713a0f60a05f2ced5b43"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "a9e8fc4890724db9954aca4be8e9ce20c2c7a249e70c5fdd0bc64824eb4aac58"
+                      "sha256":  "60bc50598c5e5ff8703ab02bfba275227024ba6f9dfa919bfd6d82c8db59329a"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -287,7 +287,7 @@
                   },
                   {
                       "path":  "tests/e2e/library-density.spec.ts",
-                      "sha256":  "eba491cdca3675bf36489b5be6f2f31c909e343df66202aeb61d172d455e544a"
+                      "sha256":  "ec0a61e09fe6c62d18f6793024d9c4f2ac289e96979c7d8dc1f6e30ded51c602"
                   },
                   {
                       "path":  "tests/e2e/library-explorer.spec.ts",
@@ -667,7 +667,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "dbe5f59bf8f54885e26ce1d0a94734442e7ea11939eb609f3d1ce52a43619586"
+                      "sha256":  "3b7dd671f63c23ccdb2edd589f37794d0c7027ed4ae09f6521f7fa5328615d0e"
                   },
                   {
                       "path":  "tests/unit/renderer/library-lineage-display.test.tsx",
@@ -1075,7 +1075,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/theme.test.ts",
-                      "sha256":  "42ec9e27f9590d3159ab34bc3766737eaa458214729d8f26239eb945b1826286"
+                      "sha256":  "b551faa37ad419a7506f6f250c73a6641ba953e390c787e4769079e28f02c1f6"
                   },
                   {
                       "path":  "tests/unit/renderer/theme-boot.test.ts",

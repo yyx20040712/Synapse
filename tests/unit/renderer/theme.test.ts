@@ -737,3 +737,40 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     expect(page, '对象键 system: 回填即红').not.toMatch(/system\s*:/)
   })
 })
+
+describe('B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列塌 0 修复）', () => {
+  /**
+   * 窗口 <1134px 时 .lib-r-main 曾塌 0（窗口宽−72(rail)−224(fnav)−316(抽屉)
+   * −522(行内五列固定+间隙+padding)为负）→ .lib-r-title 空 box 恒不可见。
+   * 修复契约（收缩次序）：tags 列先收缩（flex: 0 1 180px——正常宽基准 180
+   * 视觉零变，窄窗可缩至 0）+ main 列止于保底（min-width: 120px——永不塌 0）；
+   * 表头 .lib-c-title/.lib-c-tags 收缩参数同源（INV-73 表头列宽与行内列对齐）。
+   */
+  it('.lib-r-main 块含 min-width: 120px（标题列保底——窄窗永不塌 0）', () => {
+    expect(
+      libCss,
+      '.lib-r-main 应保底 120px（flex:1 基准 0 在窄窗被固定列全挤——塌 0 根因）'
+    ).toMatch(/\.lib-r-main\s*\{[^}]*min-width:\s*120px;/)
+  })
+
+  it('.lib-r-tags 块含 flex: 0 1 180px（窄窗先收缩弹性列——基准 180 视觉零变）', () => {
+    expect(
+      libCss,
+      '.lib-r-tags 应可收缩（width+flex:none 固定宽把塌陷全推给 main 列=根因半体）'
+    ).toMatch(/\.lib-r-tags\s*\{[^}]*flex:\s*0 1 180px;/)
+  })
+
+  it('.lib-c-title 块含 min-width: 120px（表头标题列保底——INV-73 表头侧）', () => {
+    expect(
+      libCss,
+      '表头标题列应与 .lib-r-main 同源保底（表头=独立 flex 行，缺保底窄窗同塌 0）'
+    ).toMatch(/\.lib-c-title\s*\{[^}]*min-width:\s*120px;/)
+  })
+
+  it('.lib-r-tags 块含 min-width: 0（先收缩前提——flex 项缺省 auto 使可缩至 0 失效）', () => {
+    expect(
+      libCss,
+      '.lib-r-tags 需显式 min-width: 0（min-width:auto 默认阻止收缩至 0，弹性吸收失效）'
+    ).toMatch(/\.lib-r-tags\s*\{[^}]*min-width:\s*0;/)
+  })
+})
