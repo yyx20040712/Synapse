@@ -100,6 +100,15 @@
       "status": "observing",
       "first_seen": "2026-10-03",
       "resolution": "观察中（再 1 现立案；史料=CI run 37133311174 日志〔GitHub Actions〕+2026-10-04 场开工首查——v119 §挂账承载）"
+    },
+    {
+      "spec": "tests/e2e/reader-scroll.spec.ts",
+      "case": "缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移（F-05 :266）",
+      "count": 1,
+      "fingerprint": "90s 整用例 test timeout 首跑挂起（非断言红）→retry #1 秒绿（2.4s）——负载/时序型挂起候选；与 :176 族两变体（selectText 脱附/annotation-rect 等待超时）同 spec 异位异指纹，独立计数不并入 F-FLAKE-02 观察窗条款（该条款管同指纹）",
+      "status": "observing",
+      "first_seen": "2026-10-03",
+      "resolution": "观察中（再 1 现立案；史料=CI run 37144795869 日志〔t1race RR2 终证场——T1 同 run 首次转绿〕+2026-10-04 v119 §5 增补承载）"
     }
   ]
 }
