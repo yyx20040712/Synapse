@@ -206,13 +206,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     //   节点内容不满视口——先注入临时高度制造可滚面（evaluate 测试手段
     //   非产品面，probe 先例），再验 scrollTop 真推进+首年份头滚出容器顶
     //   （d1-W3 回炉：防「容器不可滚也绿」恒真面）+节点文本仍可断言
-    // [t1race] 注入走 head <style> 而非内联：内联 style 属 React 管辖面
-    // （.tl-content style={zoom.contentStyle}），慢机上 UI 添加链的异步
-    // commit/重挂载会连带清掉内联注入的 min-height → 滚动域收缩 →
-    // scrollTop 被 clamp（run 37133311174 实测 96.75=144−47.25——y0 本地
-    // 实测 143.75~167.6 跨场浮动、47.25=收缩后 maxScroll=705.25−658；
-    // 精确清除路径 style 覆写/重挂载未终裁，head 对两路径均免疫——
-    // CI 复跑终证）；head 不受 React 渲染管辖，竞态全路径免疫
+    // [t1race] 注入走 head <style>：探针 run 37141870865 终裁——CI 红
+    // 真因=固定滚动量 300 的环境敏感假设（见 [t1race-r2] 注），非样式
+    // 清除（head 注入后几何不变=证伪 v1「内联被 React commit 清除」假说）；
+    // head 形态保留=防御性稳妥（注入与 React 渲染面隔离，免疫任何样式
+    // 清除路径——v1 假说虽证伪，隔离价值独立成立）
     await win.evaluate(() => {
       const style = document.createElement('style')
       style.id = 'e2e-tl-scroll-domain'
@@ -229,8 +227,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     }
     const yDiffBefore = await yDiffOf()
     const timeline = win.locator('.timeline')
+    // [t1race-r2] 滚动量=滚到底而非固定 300：固定量假设「首段贴近容器顶+
+    // 无滚动残留」，CI 窄窗（windows-latest 默认屏 1024×720→timeline 宽
+    // 476）下三重失效——编辑工具条换行高 298.75（本地 70.4）+自然内容
+    // 946>610 溢出+连线链 scrollIntoView 残留 scrollTop=336（探针 run
+    // 37141870865：y0=396.75，滚 300 后 96.75>80 红）；滚到 maxScroll
+    // 的成立域=clientHeight<(scrollHeight−y0)+80（CI 实测门槛≈1982px
+    // 视口高上界；注入撑 scrollHeight≥2000，常规视口恒满足、极端高视口
+    // 退化态由 scrolledTop>0 守卫响亮红）
     const scrolledTop = await timeline.evaluate((el) => {
-      el.scrollTo(0, 300)
+      el.scrollTop = el.scrollHeight
       return el.scrollTop
     })
     expect(scrolledTop).toBeGreaterThan(0)
