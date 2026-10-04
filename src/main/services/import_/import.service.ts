@@ -193,7 +193,6 @@ export function createImportService(deps: {
           year: meta.year,
           x: null,
           y: null,
-          tags: null,
           month: null,
           folderId
         }

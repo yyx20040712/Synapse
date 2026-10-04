@@ -17,8 +17,9 @@ import {
   type LineageViaPoint
 } from '../../../shared/models/lineage'
 
-/** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列 JSON 数组 TEXT，
- *  NULL=无标签（存量行零迁移兼容）；month/slot=010 迁移列——month NULL=未定
+/** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列——[A1b
+ *  F-CONTRACTA-01 2026-10-04] 标签域退役后死置（读面不映射，清列归 D 批
+ *  ——kind/sub 死置列先例同型）；month/slot=010 迁移列——month NULL=未定
  *  月框（CHECK 1..12 在 DDL）、slot NULL=防御面兜底（迁移回填/service 新写恒
  *  有序）；folder_id=012 迁移列——DDL 可空（design-final 修订二：SQLite ADD
  *  COLUMN 静态禁 REFERENCES+非空 DEFAULT——NOT NULL DEFAULT 安全网移 repo 读
@@ -31,6 +32,7 @@ export interface LineageNodeRow {
   year: number | null
   x: number | null
   y: number | null
+  /** [A1b] 死置列（DB 保留、DTO 不映射——应用面唯一标签源=文献库域） */
   tags: string | null
   month: number | null
   slot: number | null
@@ -59,7 +61,7 @@ export interface LineageEdgeRow {
 
 /** [F-LINEAGE-02] via 列读面容错解析（design-final §2.1）：NULL/非法 JSON/
  *  非法形状（非数组/元素非 {x,y} 数值）→ undefined（自动路由语义，不炸
- *  graph 读——tags 列「禁静默吞错」口径的例外面：via 属渲染派生数据非
+ *  graph 读——「用户内容禁静默吞错」口径的例外面：via 属渲染派生数据非
  *  用户内容，损坏降级优于整图读失败） */
 function parseViaTolerant(raw: string | null): LineageViaPoint[] | undefined {
   if (raw === null) return undefined
@@ -88,9 +90,7 @@ export function toNode(row: LineageNodeRow): LineageNode {
     year: row.year,
     x: row.x,
     y: row.y,
-    // 007 列：NULL=无标签；JSON 数组直解（写入面单源 JSON.stringify——库内
-    // 非法 JSON 只能来自库外手改，读面原样上抛（禁静默吞错——graph error 态可见）
-    tags: row.tags === null ? null : (JSON.parse(row.tags) as string[]),
+    // [A1b] tags 列死置不映射（应用面唯一标签源=文献库域——见 LineageNodeRow 注）
     month: row.month,
     slot: row.slot,
     // 012 列读边界归一：DDL 可空（修订二）+迁移回填+写边界兜底三重封闭后
@@ -121,8 +121,8 @@ export function toEdge(row: LineageEdgeRow): LineageEdge {
 /**
  * [F-LGRAPH-01②U8] meta 'lineTypeNames' 原文 → 恰 6 色行名。读面容错
  * （损坏 JSON/非法形状/长度≠6→缺省 6×「待命名」）：色行名属图级样式配置
- * 非用户内容，损坏降级优于整图读失败（via 列容错同精神——与 tags 列
- * 「禁静默吞错」的区分申报）。旧 'lineTypes' 四组键残留不读本键（键分离）。
+ * 非用户内容，损坏降级优于整图读失败（via 列容错同精神——「用户内容
+ * 禁静默吞错」的区分申报）。旧 'lineTypes' 四组键残留不读本键（键分离）。
  */
 export function parseLineTypeNames(rawText: string | null): LineTypeNames {
   if (rawText === null) return defaultLineTypeNames()

@@ -4,12 +4,13 @@
  * 原生模块文件锁，数据经环境变量传入不经 shell，SQL 一律 prepare 预编译+
  * 参数绑定）。
  * 载荷（SEED_LINEAGE_JSON）：{ folders?: [{id,name,position?}], nodes:
- * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?,libraryTags?}]
- * （[F-ALIGN-01] paperId 必填非空——主题节点形态退役，null 即 fail-fast），
+ * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,libraryTags?}]
+ * （[F-ALIGN-01] paperId 必填非空——主题节点形态退役，null 即 fail-fast；
+ * [A1b F-CONTRACTA-01] tags 种子键随脉络私有标签域退役删除），
  * edges: [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按
  * paper_id 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * [A1a] libraryTags=文献库标签种子（tags+paper_tags 两行挂接该节点 paperId
- * ——卡 L1 标签断言面换源；tags[脉络私有域 JSON 列]不再是卡断言源）。
+ * ——卡 L1 标签断言面换源；[A1b] 后=唯一标签种子面）。
  * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 则写为节点 folder
  * （镜像 ensurePaperFolder 入图即归档语义）。幽灵边种子（edges 两端 paper 分属
  * 不同文件夹——存量数据模拟）的跨图过滤单测覆盖=tests/unit/services/
@@ -52,8 +53,8 @@ try {
     slotMax.set(groupKey(row.folder_id, row.year, row.month), row.m ?? 0)
   }
   const insNode = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, month, slot, folder_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`
   )
   const assignFolder = db.prepare(
     'UPDATE papers SET folder_id = ? WHERE id = ? AND folder_id IS NULL'
@@ -89,13 +90,13 @@ try {
       slotMax.set(key, slot)
     }
     const t = stamp()
+    // [A1b] tags 列死置不种（清列归 D 批——应用面读链已不映射）
     insNode.run(
       randomUUID(),
       n.paperId,
       n.title,
       n.coreIdea ?? '',
       n.year ?? null,
-      n.tags !== undefined && n.tags.length > 0 ? JSON.stringify(n.tags) : null,
       month,
       slot,
       folderId,

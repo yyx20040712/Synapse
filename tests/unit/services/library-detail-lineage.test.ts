@@ -70,7 +70,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       year: 2023,
       x: null,
       y: null,
-      tags: null,
       month: null,
       slot: null,
       folderId: '__main__',
@@ -111,7 +110,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       year: 2022,
       x: null,
       y: null,
-      tags: null,
       month: 1,
       slot: 1,
       folderId: '__main__',
@@ -126,7 +124,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       year: null,
       x: null,
       y: null,
-      tags: null,
       month: 6,
       slot: null,
       folderId: '__main__',
@@ -221,18 +218,17 @@ describe('T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真�
       coreIdea: '',
       year: 2023,
       x: null,
-      y: null,
-      tags: null
+      y: null
     })
-    repo.upsertNode({ paperId: null, title: '纯主题节点', coreIdea: '', year: null, x: null, y: null, tags: null })
+    repo.upsertNode({ paperId: null, title: '纯主题节点', coreIdea: '', year: null, x: null, y: null })
     expect(repo.nodeByPaperId('p-1')?.id).toBe(hit.id)
     expect(repo.nodeByPaperId('ghost')).toBeNull()
   })
 
   it('edgeCountByNode：双端计数——from 命中与 to 命中各计一条，无关边不计', () => {
-    const a = repo.upsertNode({ paperId: 'p-a', title: 'A', coreIdea: '', year: 2023, x: null, y: null, tags: null })
-    const b = repo.upsertNode({ paperId: 'p-b', title: 'B', coreIdea: '', year: 2023, x: null, y: null, tags: null })
-    const c = repo.upsertNode({ paperId: 'p-c', title: 'C', coreIdea: '', year: 2024, x: null, y: null, tags: null })
+    const a = repo.upsertNode({ paperId: 'p-a', title: 'A', coreIdea: '', year: 2023, x: null, y: null })
+    const b = repo.upsertNode({ paperId: 'p-b', title: 'B', coreIdea: '', year: 2023, x: null, y: null })
+    const c = repo.upsertNode({ paperId: 'p-c', title: 'C', coreIdea: '', year: 2024, x: null, y: null })
     repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
     repo.upsertEdge({ fromNode: c.id, toNode: a.id, label: '' })
     repo.upsertEdge({ fromNode: b.id, toNode: c.id, label: '' })

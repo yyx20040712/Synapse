@@ -13,15 +13,16 @@
  *   （撤销/重做/保存/删除/取消——data-testid 保活+title+textContent 恰=原
  *   文本，受锁 annotation-popups-autosave:217 与 annotation-menu:64 面）。
  * - 标签域：TagEditor chip ×与「添加」（aria-label 保活+title 同源）。
- * - 脉络域：EdgeMenu 确定钮/LineageSideTags ＋钮与 chip ×（textContent
- *   '+'/'确定' 保活——受锁 lineage-side-tags-keys:73/lineage-edge-edit-menu:245
- *   面）/LineageToolbar 保存·选择·撤销·重做（随态 title+aria-label 同源+
- *   textContent 保活）/LineageNavPane 收起展开（title/aria-label 保活）。
+ * - 脉络域：EdgeMenu 确定钮（textContent '确定' 保活——受锁
+ *   lineage-edge-edit-menu:245 面）/LineageToolbar 保存·选择·撤销·重做（随态
+ *   title+aria-label 同源+textContent 保活）/LineageNavPane 收起展开（title/
+ *   aria-label 保活）。[A1b F-CONTRACTA-01 2026-10-04] LineageSideTags ＋钮/
+ *   chip × 两用例随脉络私有标签域退役删除（标签唯一源=文献库域）。
  * - 课题域：WorkspaceRenameRow 确定/取消（textContent 保活——受锁
  *   workspaces e2e accessible name 面）。
  * - 壳层：TitleBarControls 三键 title 补齐（与 aria-label 同源——R11）。
- * - R14 组词守卫锁（C5）：LineageSideTags ＋钮/EdgeMenu 确定钮组词期不提交
- *   （workspaces 面 RR2 同款已在批 A workspaces-page-keys:244 锁过）。
+ * - R14 组词守卫锁（C5）：EdgeMenu 确定钮组词期不提交（workspaces 面 RR2
+ *   同款已在批 A workspaces-page-keys:244 锁过；LineageSideTags 面随 A1b 删）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -46,12 +47,10 @@ import type { Annotation } from '../../../src/shared/models/annotation'
 import { TagEditor } from '../../../src/renderer/features/tags/TagEditor'
 import { useTagsStore } from '../../../src/renderer/features/tags/tags.store'
 import { EdgeMenu } from '../../../src/renderer/features/lineage/EdgeMenu'
-import { LineageSideTags } from '../../../src/renderer/features/lineage/LineageSideTags'
 import { LineageToolbar } from '../../../src/renderer/features/lineage/LineageToolbar'
 import { LineageNavPane } from '../../../src/renderer/features/lineage/LineageNavPane'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
-import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LINE_TYPE_COLORS } from '../../../src/shared/models/lineage'
 import { AiNoteGroupList } from '../../../src/renderer/features/reader/panels/AiNoteGroupList'
 import type { AiNote } from '../../../src/shared/models/ai-note'
@@ -248,18 +247,7 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     expectSvg(confirm, 'EdgeMenu 确定钮')
   })
 
-  it('LineageSideTags ＋钮/chip ×：svg+title/aria-label 同源+textContent 恰=＋', () => {
-    const node = { id: 'n1', paperId: null, title: '主题', coreIdea: '', year: null, x: null, y: null, month: null, slot: null, folderId: '__main__', tags: ['甲'], createdAt: 't', updatedAt: 't' } as unknown as LineageNode
-    mount(<LineageSideTags node={node} onSetTags={() => undefined} />)
-    const plus = findBtnByText('+')
-    expect(plus.getAttribute('title')).toBe('添加标签')
-    expect(plus.getAttribute('aria-label')).toBe('添加标签')
-    expectSvg(plus, '＋钮')
-    const chipBtn = host!.querySelector<HTMLButtonElement>('[aria-label="移除标签 甲"]')!
-    expect(chipBtn, 'chip 移除钮在场').not.toBeNull()
-    expectSameLabel(chipBtn)
-    expectSvg(chipBtn, 'chip 移除钮')
-  })
+  // [A1b F-CONTRACTA-01] LineageSideTags ＋钮/chip × 用例随脉络私有标签域退役删除。
 
   it('LineageToolbar：保存钮 svg+随态 title/aria-label 同源+textContent 恰=保存；撤销/重做补 aria-label', () => {
     useLineageStore.setState({
@@ -343,25 +331,7 @@ describe('F-UIRES-02 批 B 课题域+壳层', () => {
 })
 
 describe('F-UIRES-02 批 B R14 组词守卫锁（C5——对删守卫变异红证方向）', () => {
-  it('LineageSideTags 组词期点＋钮：不提交（onSetTags 零调用——输入先填值防空串 no-op 假阳性）', () => {
-    const onSetTags = vi.fn()
-    const node = { id: 'n1', paperId: null, title: '主题', coreIdea: '', year: null, x: null, y: null, month: null, slot: null, folderId: '__main__', tags: [], createdAt: 't', updatedAt: 't' } as unknown as LineageNode
-    mount(<LineageSideTags node={node} onSetTags={onSetTags} />)
-    const input = host!.querySelector<HTMLInputElement>('[data-testid="lineage-tag-input"]')!
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
-    act(() => {
-      setter.call(input, '组词中')
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    act(() => {
-      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
-    })
-    const plus = findBtnByText('+')
-    act(() => {
-      plus.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onSetTags, '组词期点＋不提交').not.toHaveBeenCalled()
-  })
+  // [A1b F-CONTRACTA-01] LineageSideTags 组词期点＋钮用例随脉络私有标签域退役删除。
 
   it('EdgeMenu 组词期点确定钮：不提交不关菜单（onRename/onClose 零调用）', () => {
     const onRename = vi.fn()

@@ -82,8 +82,9 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     mount(
       <LineageTimeline
         nodes={[
-          // [A1a 换源] node.tags（脉络私有域）留存=不再上卡（断言面换 tagNames）
-          node('A', { year: 2022, month: 9, title: '甲文献', tags: ['脉络私有域标签'] }),
+          // [A1a 换源] 卡标签源=tagNames（[A1b] node.tags 私有域已退役——
+          // LineageNode 契约无 tags 字段，断言面唯一源=文献库标签 map）
+          node('A', { year: 2022, month: 9, title: '甲文献' }),
           node('B', { year: 2022, month: 9, title: '乙文献' }),
           node('T', { paperId: null, year: 2022, month: 9, title: '主题节点' })
         ]}
@@ -116,12 +117,13 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     expect(cardOf('T').querySelector('.c-tag-more')).toBeNull()
   })
 
-  it('[A1a] 标签行换源：无 tagNames 键（含缺省 props）→零标签行（node.tags 私有域不再上卡）', () => {
-    // 根因回归锚=用户视检「卡上标签完全不显示」：私有域有值+文献库 map 无键
-    // →零渲染（换源后 node.tags 非卡数据源；A1b 退役面前的行为锁定）
+  it('[A1a] 标签行换源：无 tagNames 键（含缺省 props）→零标签行（[A1b] 私有域已随契约退役）', () => {
+    // 根因回归锚=用户视检「卡上标签完全不显示」：文献库 map 无键
+    // →零渲染（tagNames 伴生 map=唯一卡标签源；原「node.tags 私有域不再上卡」
+    // 对照面随 [A1b] LineageNode 契约收窄消亡——语义由「无键=零行」承载）
     mount(
       <LineageTimeline
-        nodes={[node('A', { year: 2022, month: 9, title: '甲文献', tags: ['脉络私有域标签'] })]}
+        nodes={[node('A', { year: 2022, month: 9, title: '甲文献' })]}
         edges={[]}
       />
     )

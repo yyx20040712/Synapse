@@ -3054,6 +3054,42 @@
       "assertionText": "expect(svc.importFolder(join(storeDir, '不存在'))).rejects.toMatchObject({ code: 'IO_ERROR' })",
       "reason": "F-ALIGN-01 D3 导入落夹（单元二 B）：importFolder 签名扩 targetFolderId，断言行随调用签名改写",
       "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "fileScope": true,
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-reorder.test.ts",
+      "caseTitle": "editCoreIdea/editTags 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁）",
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）",
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）",
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/theme.test.ts",
+      "caseTitle": "四 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）",
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）",
+      "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
     }
   ]
 }

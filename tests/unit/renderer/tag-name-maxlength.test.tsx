@@ -5,10 +5,10 @@
  *
  * 锁行为面（v87 P2-T4）：标签输入框无 maxLength——>50 字收英文 zod 报错。
  * 单源常量 TAG_NAME_MAX（shared/models/tag）+全部标签名文本输入点：
- * ① TagEditor「新增标签」② TagRenameDialog「新标签名」③ LineageTagDialog
- * 添加标签 ④ LineageSideTags「新标签名」；schema 面（tagSchema/
+ * ① TagEditor「新增标签」② TagRenameDialog「新标签名」；schema 面（tagSchema/
  * tagNameReqSchema/renameTagReqSchema）.max 引用同一常量（边界=恰上限过、
- * 超 1 拒——单源接线锁）。
+ * 超 1 拒——单源接线锁）。[A1b F-CONTRACTA-01 2026-10-04] ③LineageTagDialog
+ * ④LineageSideTags 两输入点随脉络私有标签域退役删除（标签唯一源=文献库域）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -25,8 +25,6 @@ const stubApi = makeApiStub({
 import { TagEditor } from '../../../src/renderer/features/tags/TagEditor'
 import { TagRenameDialog } from '../../../src/renderer/features/tags/TagLifecycle'
 import { useTagsStore } from '../../../src/renderer/features/tags/tags.store'
-import { LineageTagDialog } from '../../../src/renderer/features/lineage/LineageTagDialog'
-import { LineageSideTags } from '../../../src/renderer/features/lineage/LineageSideTags'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -85,31 +83,8 @@ describe('T4 标签名输入点 maxLength=TAG_NAME_MAX（四输入面+schema 单
     expect(input!.maxLength, `maxLength=${TAG_NAME_MAX}`).toBe(TAG_NAME_MAX)
   })
 
-  it('LineageTagDialog 添加标签输入框携带 maxLength', () => {
-    mount(
-      <LineageTagDialog
-        open
-        node={{ id: 'n-1', paperId: null, title: '节点', coreIdea: '', year: 2024, x: null, y: null, month: null, slot: null, folderId: '__main__', tags: null, createdAt: 't', updatedAt: 't' }}
-        onClose={() => undefined}
-        onSave={() => undefined}
-      />
-    )
-    const input = document.querySelector('[data-testid="lineage-tag-input"]') as HTMLInputElement | null
-    expect(input, '脉络添加标签输入框在场').not.toBeNull()
-    expect(input!.maxLength, `maxLength=${TAG_NAME_MAX}`).toBe(TAG_NAME_MAX)
-  })
-
-  it('LineageSideTags「新标签名」输入框携带 maxLength', () => {
-    mount(
-      <LineageSideTags
-        node={{ id: 'n-1', paperId: null, title: '节点', coreIdea: '', year: 2024, x: null, y: null, month: null, slot: null, folderId: '__main__', tags: null, createdAt: 't', updatedAt: 't' }}
-        onSetTags={() => undefined}
-      />
-    )
-    const input = document.querySelector('input[aria-label="新标签名"]') as HTMLInputElement | null
-    expect(input, '侧板标签输入框在场').not.toBeNull()
-    expect(input!.maxLength, `maxLength=${TAG_NAME_MAX}`).toBe(TAG_NAME_MAX)
-  })
+  // [A1b F-CONTRACTA-01] 两输入点用例（LineageTagDialog/LineageSideTags
+  // maxLength）随脉络私有标签域退役删除——文献库域输入点用例保留。
 
   it('schema 单源接线：TAG_NAME_MAX 恰上限过、超 1 拒（tagSchema/tagNameReq/renameTagReq 三面同界）', () => {
     const at = '甲'.repeat(TAG_NAME_MAX)

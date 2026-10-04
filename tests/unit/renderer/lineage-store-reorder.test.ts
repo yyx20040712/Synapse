@@ -53,7 +53,7 @@ const settle = async (turns = 8): Promise<void> => {
 
 const state = () => useLineageStore.getState()
 
-/** [F-ALIGN-01] patchNode 载荷形状（断言面最小投影） */
+/** [F-ALIGN-01] patchNode 载荷形状（断言面最小投影；[A1b] tags 键随标签域退役删） */
 interface PatchPayload {
   id?: string
   slot?: number
@@ -61,7 +61,6 @@ interface PatchPayload {
   year?: number
   title?: string
   coreIdea?: string
-  tags?: string[]
 }
 
 /** 捕获 patchNode 载荷序列（调用序即派发序——FIFO 面） */
@@ -192,8 +191,8 @@ describe('[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组�
 })
 
 describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）', () => {
-  it('editCoreIdea/editTags 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁）', async () => {
-    const A = node('A', { month: 6, slot: 3, tags: ['甲'] })
+  it('editCoreIdea 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁；[A1b] editTags 面随标签域退役删）', async () => {
+    const A = node('A', { month: 6, slot: 3 })
     useLineageStore.setState({ nodes: [A] })
     state().editCoreIdea('A', '新想法')
     state().save()
@@ -218,39 +217,11 @@ describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消�
 })
 
 describe('[T3-P8 回炉] R3 —— patch-node lazy 载荷（②U1 暂存期同实体融合——合成读最新行）', () => {
-  it('跨格：改月→同节点 setNodeTags→save 单发终值 month=新月+tags 新值（暂存期融合，载荷合成读执行时点最新行）', async () => {
-    const A = node('A', { year: 2022, month: 9, slot: 0 })
-    useLineageStore.setState({ nodes: [A] })
-    state().moveNodeMonth('A', 2023, 1) // 入暂存（lazy：override={year,month}）
-    state().setNodeTags('A', ['新标签']) // 同实体融合（patch 并入）
-    expect(state().queue).toHaveLength(1)
-    state().save()
-    await settle()
-    const calls = payloads()
-    expect(calls.length).toBe(1) // 融合单发
-    const last = calls[0]!
-    expect(last.year).toBe(2023)
-    expect(last.month).toBe(1)
-    expect(last.tags).toEqual(['新标签'])
-    expect(state().nodes[0]!.month).toBe(1)
-    expect(state().nodes[0]!.tags).toEqual(['新标签'])
-    expect(state().saveStatus).toBe('clean')
-  })
-
-  it('跨格反序：setNodeTags 先入暂存→改月后入融合（终值双对——无顺序敏感）', async () => {
-    const A = node('A', { year: 2022, month: 9, slot: 3 })
-    useLineageStore.setState({ nodes: [A] })
-    state().setNodeTags('A', ['早期'])
-    state().moveNodeMonth('A', 2023, 1)
-    state().save()
-    await settle()
-    const calls = payloads()
-    expect(calls.length).toBe(1)
-    expect(calls[0]!.month).toBe(1)
-    expect(calls[0]!.tags).toEqual(['早期'])
-    expect(state().nodes[0]!.month).toBe(1)
-    expect(state().nodes[0]!.tags).toEqual(['早期'])
-  })
+  // [A1b F-CONTRACTA-01] 两用例「跨格：改月→同节点 setNodeTags→save 单发终值」
+  // 「跨格反序：setNodeTags 先入暂存→改月后入融合」随脉络私有标签域退役删除
+  // （setNodeTags 写路径消亡=唯一 override+patch 混轴生产者；融合机制两半边
+  // 仍各在锁：override 轴=本组 reorder/改月用例、patch 轴=lineage-store-write
+  // 连续编辑合并用例）。
 
   it('reorder 暂存窗内同节点改月：lazy 融合派发=改月后落（月对）+slot 透写不被吞', async () => {
     const A = node('A', { year: 2022, month: 9, slot: 0 })

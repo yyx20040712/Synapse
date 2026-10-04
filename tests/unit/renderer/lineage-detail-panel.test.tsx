@@ -79,7 +79,7 @@ describe('U4 详情面板（A5/P-16/P-20）', () => {
   it('详情域收编：完整题名/期刊缩写/IF/被引/年月真文本；星标态禁用呈现', () => {
     mount(
       <LineageSidePanel
-        node={node('A', { title: '流域韧性评估综述', year: 2022, month: 9, tags: ['方法'] })}
+        node={node('A', { title: '流域韧性评估综述', year: 2022, month: 9 })}
         onJumpToPaper={JUMP}
         metrics={{ citedByCount: 17, venueTier: 'T2', venue: 'Water Res.', impactFactor: 11.2 }}
       />
@@ -112,16 +112,15 @@ describe('U4 详情面板（A5/P-16/P-20）', () => {
     expect(text).not.toContain('核心') // core UI 消费面全退役（徽章行零「核心」字样）
   })
 
-  it('底部注记=「双击卡片跳转阅读器」（A6 消费面提示）+标签编辑域保留', () => {
+  it('底部注记=「双击卡片跳转阅读器」（A6 消费面提示；[A1b] 标签编辑域随私有域退役删）', () => {
     mount(
       <LineageSidePanel
-        node={node('A', { tags: ['方法'] })}
+        node={node('A')}
         onJumpToPaper={JUMP}
-        onSetTags={() => undefined}
       />
     )
     expect(host?.textContent).toContain('双击卡片跳转阅读器')
-    expect(host?.querySelector('[data-testid="lineage-side-tags"]')).not.toBeNull() // 标签编辑域保留
+    expect(host?.querySelector('[data-testid="lineage-side-tags"]')).toBeNull() // [A1b] 标签编辑分节退役零渲染
   })
 
   it('主题节点空态沿承（无笔记面文案保活）', () => {

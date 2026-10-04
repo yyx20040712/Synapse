@@ -55,9 +55,10 @@
  * ── 架构层 ──
  * - renderer/features/lineage 域内聚（Board 编辑层与渲染宿主
  *   分文件——组件 ≤250 行红线拆分预案：节点菜单/编辑对话框子
- *   组件化=LineageNodeMenu/LineageEditIdeaDialog/LineageTagDialog
- *   三件+[F-SPLIT-01] 装配分组件 LineageBoardMenu/LineageBoardDialogs
- *   两件（[F-ALIGN-01] 建点对话框件随手动建点路径退役删除）；
+ *   组件化=LineageNodeMenu/LineageEditIdeaDialog 两件+[F-SPLIT-01]
+ *   装配分组件 LineageBoardMenu/LineageBoardDialogs
+ *   两件（[F-ALIGN-01] 建点对话框件随手动建点路径退役删除；[A1b
+ *   F-CONTRACTA-01] 脉络侧标签对话框件随私有标签域退役删除）；
  *   [T3-P6] 渲染宿主=LineageTimeline 时间线（Canvas/layout/
  *   viewport 退役）；依赖 window.api 写四通道+02 交付（store）；
  *   禁直调 ipc/禁 Node API
@@ -102,7 +103,6 @@ export function LineageBoard(props: {
   const [menu, setMenu] = useState<MenuTarget | null>(null)
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
-  const [tagNodeId, setTagNodeId] = useState<string | null>(null)
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
@@ -144,13 +144,13 @@ export function LineageBoard(props: {
           对话框开关 state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
           absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响） */}
       <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink}
-        setIdeaNodeId={setIdeaNodeId} setTagNodeId={setTagNodeId} />
+        setIdeaNodeId={setIdeaNodeId} />
 
-      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——core_idea/标签两对话框装配；
+      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——core_idea 对话框装配；
           [F-ALIGN-01] 加节点对话框随手动建点路径退役删除；[②U5] 人工父双
-          对话框退役） */}
+          对话框退役；[A1b] 标签对话框随脉络私有标签域退役删除） */}
       <LineageBoardDialogs nodes={nodes}
-        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} tagNodeId={tagNodeId} setTagNodeId={setTagNodeId} />
+        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} />
     </div>
   )
 }

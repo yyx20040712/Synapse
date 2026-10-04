@@ -408,12 +408,13 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
   // [T3-P6 主控裁决 b] LineageNodeCard/LineageNodeMeta 随 SVG 画布退役
   // 删除——两源断言块自清单移除（lineage 六件→侧板四件）；[回炉 2 d1-N2]
   // 时间线新件三枚纳入清单（间距负锚扩面）；路径数组独立变量=清单级负锚
-  // 载体（d1-N1：锁「清单不含退役路径」意图，join 后内容串无法承载）
+  // 载体（d1-N1：锁「清单不含退役路径」意图，join 后内容串无法承载）。
+  // [A1b F-CONTRACTA-01 2026-10-04] LineageSideTags 随脉络私有标签域退役
+  // 删除——清单自侧板四件收窄为三件
   const LINEAGE_SPACING_PATHS = [
     '../../../src/renderer/features/lineage/LineageSideAiNotes.tsx',
     '../../../src/renderer/features/lineage/LineageSideManualNote.tsx',
     '../../../src/renderer/features/lineage/LineageSidePanel.tsx',
-    '../../../src/renderer/features/lineage/LineageSideTags.tsx',
     '../../../src/renderer/features/lineage/LineageTimeline.tsx',
     '../../../src/renderer/features/lineage/LineageTimelineCard.tsx',
     '../../../src/renderer/features/lineage/lineage-timeline.ts'
@@ -533,10 +534,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(LINEAGE_SPACING_TSX).not.toContain('LineageNodeMeta')
   })
 
-  it('侧板/标签间距 class 在场（pl-1.5 载体——三件 h4+SideTags 面全覆盖）', () => {
-    const tags = readSrc('../../../src/renderer/features/lineage/LineageSideTags.tsx')
-    expect(tags).toContain('m-0 pl-1.5 font-medium')
-    expect(tags).toContain('className="gap-0.75 px-1"')
+  it('侧板间距 class 在场（pl-1.5 载体——三件 h4 面全覆盖；[A1b] SideTags 面随标签域退役删）', () => {
     expect(readSrc('../../../src/renderer/features/lineage/LineageSidePanel.tsx')).toContain(
       'pl-1.5'
     )
@@ -588,8 +586,8 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
   const FS_DECL = /font-size:[^;{}]*[\d.]+\s*[a-z%]/gi
   const FS_TSX = [
     // [T3-P6 主控裁决 b] NodeMeta/NodeCard 随 SVG 画布退役移除（四件→两件）；
-    // [回炉 2 d1-N2] 时间线新件纳入（字号负锚扩面）
-    '../../../src/renderer/features/lineage/LineageSideTags.tsx',
+    // [回炉 2 d1-N2] 时间线新件纳入（字号负锚扩面）；[A1b F-CONTRACTA-01]
+    // LineageSideTags 随脉络私有标签域退役移除（三件）
     '../../../src/renderer/features/reader/view/TabBar.tsx',
     '../../../src/renderer/features/lineage/LineageTimeline.tsx',
     '../../../src/renderer/features/lineage/LineageTimelineCard.tsx'
@@ -602,13 +600,13 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
     expect(hits.length, `${name} 禁 font-size 值段数字字面量回填（含 calc/clamp 载体；匹配样例：${hits.slice(0, 3).join(' / ')}）`).toBe(0)
   })
 
-  it('四 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token）', () => {
+  it('三 tsx 禁 fontSize 数值字面量（inline 字号消费仅 var(--fs-*) token；[A1b] SideTags 件随标签域退役移出清单）', () => {
     expect(FS_TSX, '票面明文形态：单引号数字开头').not.toContain("fontSize: '1")
     expect(FS_TSX, '数值 fontSize 全形态（含无引号数字——SideTags fontSize: 11 形态）')
       .not.toMatch(/fontSize:\s*['"`]?\d/)
   })
 
-  it('四 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）', () => {
+  it('三 tsx 禁 text-[数字] arbitrary 字号 class（arbitrary 不受 @theme 重绑）', () => {
     expect(FS_TSX, '票面明文形态：text-[10 前缀').not.toContain('text-[10')
     expect(FS_TSX, '数字开头 arbitrary（# 开头色值不咬）').not.toMatch(/text-\[\d/)
   })

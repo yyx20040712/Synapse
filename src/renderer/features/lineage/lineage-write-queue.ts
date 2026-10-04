@@ -44,16 +44,16 @@ import type { LineageEdge, LineageEdgeUpsert, LineageNode } from '@shared/models
 export type LineageSaveStatus = 'clean' | 'dirty' | 'saving' | 'error'
 
 /** [F-ALIGN-01] patch-node 白名单载荷面（=IPC lineagePatchNodeReqSchema 去 id
- *  ——id=定位键；paperId/folderId/时间戳不可 patch；tags/coreIdea=A1b/A3
- *  退役遗留面随各单元删） */
+ *  ——id=定位键；paperId/folderId/时间戳不可 patch；coreIdea=A3 退役遗留面
+ *  随该单元删；tags 已随 [A1b F-CONTRACTA-01] 标签域退役删除） */
 export type LineageNodePatchBody = Partial<
-  Pick<LineageNode, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y' | 'tags'>
+  Pick<LineageNode, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y'>
 >
 
 export interface LazyNodePatch {
   kind: 'patch-node'
   id: string
-  patch: Partial<Pick<LineageNode, 'coreIdea' | 'tags' | 'x' | 'y'>>
+  patch: Partial<Pick<LineageNode, 'coreIdea' | 'x' | 'y'>>
   /** 语义轴整替（后到胜出）：{slot}=月内序透写；{year,month}=改月（合成时
    *  slot 键缺省——服务端组变 max+1 尾部既有分支；乐观应用=组内末预估） */
   override?: { slot: number } | { year: number | null; month: number | null }
@@ -246,13 +246,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     return n
   }
 
-  /** 既有节点→patch-node 全字段载荷（白名单八字段防半更新清字段——A8 全载荷
+  /** 既有节点→patch-node 全字段载荷（白名单七字段防半更新清字段——A8 全载荷
    *  合成语义等价迁移：服务端 {...existing, ...patch} 合并，本地行全字段随发
-   *  =整行面等价；身份/图归属/时间戳不在白名单——沿用库行）。
-   *  [RR1/k1-W1] tags 恒发 `n.tags ?? null`（非条件缺键）：服务端合并语义下
-   *  缺键=保留旧值，null 行缺键即「清空标签」失效——与旧 IPC 面
-   *  `tags: req.tags ?? null` 恒归一 null（repo 写边界 null=清空）严格等价。
-   *  tags 面=A1b 退役面，本句随 A1b 消亡 */
+   *  =整行面等价；身份/图归属/时间戳不在白名单——沿用库行。
+   *  [A1b] tags 恒发行随标签域退役删除（原「恒发 tags:null 防清空失效」面
+   *  随字段消亡——k1-W1 先例注记留档） */
   const fullPatchBody = (n: LineageNode): LineageNodePatchBody => ({
     title: n.title,
     coreIdea: n.coreIdea,
@@ -260,8 +258,7 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     month: n.month,
     slot: n.slot,
     x: n.x,
-    y: n.y,
-    tags: n.tags ?? null
+    y: n.y
   })
 
   /** [R3] lazy 载荷执行时点合成：fullPatchBody 读当前 store 行+patch 覆盖

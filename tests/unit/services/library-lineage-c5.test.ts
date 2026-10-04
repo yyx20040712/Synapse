@@ -140,7 +140,7 @@ describe('T3-P5 detail() 真值透传（month 真值——摘恒 null 注释；[
   it('node.month/year 真值透传；lineage 形={year,month,edgeCount}（编号=summary.pubNo 非 lineage 键）', async () => {
     const node: LineageNode = {
       id: 'n-1', paperId: 'p-1', title: '节点', coreIdea: '', year: 2021, x: null, y: null,
-      tags: null, month: 3, slot: 1, folderId: '__main__', createdAt: 't', updatedAt: 't'
+      month: 3, slot: 1, folderId: '__main__', createdAt: 't', updatedAt: 't'
     }
     const detail = { ...makeDetail(), pubNo: 2 }
     const repos = {

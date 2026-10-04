@@ -34,20 +34,21 @@ import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineag
 const ISO_A = '2026-01-01T00:00:00.000Z'
 const ISO_B = '2026-01-02T00:00:00.000Z'
 
-/** 三节点夹具（输入刻意乱序——装配须自归位）：A(2021,3,slot1)/B(2021,3,slot2)/C 主题(null) */
+/** 三节点夹具（输入刻意乱序——装配须自归位）：A(2021,3,slot1)/B(2021,3,slot2)/C 主题(null)。
+ *  [A1b F-CONTRACTA-01] tags 字段随脉络私有标签域退役删除（LineageNode 契约收窄） */
 function nodes(): LineageNode[] {
   return [
     {
       id: 'nB', paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null,
-      tags: null, month: 3, slot: 2, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+      month: 3, slot: 2, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
       id: 'nA', paperId: 'p-1', title: '甲', coreIdea: 'A 思想', year: 2021, x: 5, y: 6,
-      tags: ['t1'], month: 3, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+      month: 3, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
       id: 'nC', paperId: null, title: '丙', coreIdea: '', year: null, x: null, y: null,
-      tags: null, month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+      month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     }
   ]
 }
@@ -84,7 +85,9 @@ function input(): LineageAssembleInput {
   }
 }
 
-/** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序；v3） */
+/** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序；v3。
+ *  [A1b F-CONTRACTA-01 2026-10-04] 重冻结：nodes 各行 tags 键消失=唯一差异
+ *  （人工核对 diff——设计稿 §4.2/§5.3；schema_version 不动=导出面无消费方） */
 const GOLDEN = `{
   "edges": [
     {
@@ -149,9 +152,6 @@ const GOLDEN = `{
       "node_id": "nA",
       "paper_id": "p-1",
       "pub_no": 7,
-      "tags": [
-        "t1"
-      ],
       "title": "甲",
       "year": 2021
     },
@@ -161,7 +161,6 @@ const GOLDEN = `{
       "node_id": "nB",
       "paper_id": "p-2",
       "pub_no": 9,
-      "tags": null,
       "title": "乙",
       "year": 2021
     },
@@ -171,7 +170,6 @@ const GOLDEN = `{
       "node_id": "nC",
       "paper_id": null,
       "pub_no": null,
-      "tags": null,
       "title": "丙",
       "year": null
     }
@@ -197,7 +195,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
     const parsed = JSON.parse(text) as Record<string, unknown>
     const firstNode = (parsed.nodes as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstNode)).toEqual([
-      'core_idea', 'month', 'node_id', 'paper_id', 'pub_no', 'tags', 'title', 'year'
+      'core_idea', 'month', 'node_id', 'paper_id', 'pub_no', 'title', 'year'
     ])
     const firstEdge = (parsed.edges as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstEdge)).toEqual([
@@ -243,15 +241,15 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
         nodes: [
           {
             id: 'nA', paperId: 'p-1', title: '主图甲', coreIdea: '', year: 2021, x: null, y: null,
-            tags: null, month: 1, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+            month: 1, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
           },
           {
             id: 'nC', paperId: null, title: '主图主题', coreIdea: '', year: null, x: null, y: null,
-            tags: null, month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
+            month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
           },
           {
             id: 'nD', paperId: 'p-2', title: '他图乙', coreIdea: '', year: 2022, x: null, y: null,
-            tags: null, month: 2, slot: 1, folderId: 'f-x', createdAt: ISO_A, updatedAt: 't'
+            month: 2, slot: 1, folderId: 'f-x', createdAt: ISO_A, updatedAt: 't'
           }
         ],
         edges: [
@@ -369,7 +367,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       })
       expect(text).toBe(expectText)
       expect((JSON.parse(text) as { nodes: Array<{ pub_no: number; paper_id: string }> }).nodes).toEqual([
-        { core_idea: '核心', month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, tags: null, title: '文献甲', year: 2021 }
+        { core_idea: '核心', month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, title: '文献甲', year: 2021 }
       ])
     } finally {
       await h.dispose()

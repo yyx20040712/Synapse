@@ -115,19 +115,8 @@ describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷', () => {
 })
 
 describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 同型：失败不推进）', () => {
-  it('[RR1/k1-W1] tags=null 行全量件载荷恒含 tags:null（清空语义——与旧 IPC「tags ?? null 恒归一」严格等价；缺键=服务端合并保留旧值=清空失效）', async () => {
-    // fixture 行 tags=null（LineageNode.tags 可选缺省）——空组 setNodeTags=清空意图
-    useLineageStore.setState({ nodes: [node('A', { tags: null })] })
-    state().setNodeTags('A', [])
-    state().save()
-    await settle()
-    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'A', tags: null })
-    )
-    // 回填后 store 行 tags 仍 null（服务端回显 mock=serverNode 忠实回显）
-    expect(state().nodes[0]!.tags ?? null).toBeNull()
-    expect(state().saveStatus).toBe('clean')
-  })
+  // [A1b F-CONTRACTA-01] 「[RR1/k1-W1] tags=null 行全量件载荷恒含 tags:null」用例
+  // 随脉络私有标签域退役删除（tags 字段消亡——清空语义面无承载对象）。
 
   it('[F-ALIGN-01 改写] moveNode 暂存→save 批量落库：暂存期不发 IPC+dirty；成功回填+clean（原加节点两型载荷用例随 addPaperNode/addThemeNode 退役删——节点唯一来源=入库/移动两路）', async () => {
     useLineageStore.setState({ nodes: [node('A', { x: 1, y: 2 })] })

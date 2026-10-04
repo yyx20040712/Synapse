@@ -69,10 +69,11 @@ export interface LineagePaperMetrics {
 }
 
 /** [F-ALIGN-01] patch-node 编辑 patch 白名单（=IPC lineagePatchNodeReqSchema
- *  去 id 面——tags/coreIdea=A1b/A3 退役遗留面，随各单元删；folderId/paperId/
- *  created/updated 不可 patch） */
+ *  去 id 面——coreIdea=A3 退役遗留面随该单元删（tags 已随 [A1b
+ *  F-CONTRACTA-01 2026-10-04] 标签域退役删除——标签唯一源=文献库域）；
+ *  folderId/paperId/created/updated 不可 patch） */
 export type LineageNodePatch = Partial<
-  Pick<LineageNodeUpsert, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y' | 'tags'>
+  Pick<LineageNodeUpsert, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y'>
 >
 
 export interface LineageService {

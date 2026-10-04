@@ -170,7 +170,6 @@ export function LineagePage(): JSX.Element {
           <LineageSidePanel
             node={selectedNode}
             onJumpToPaper={handleJumpToPaper}
-            onSetTags={(id, tags) => useLineageStore.getState().setNodeTags(id, tags)}
             pubNo={
               selectedNode !== null && selectedNode.paperId !== null
                 ? (pubNos[selectedNode.paperId] ?? null)

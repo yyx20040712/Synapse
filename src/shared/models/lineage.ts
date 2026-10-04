@@ -101,6 +101,9 @@ export type LineTypeNames = z.infer<typeof lineTypeNamesSchema>
 
 // ── 应用面（camelCase——DB 行与写入口输入） ────────────────────────
 
+/** [A1b F-CONTRACTA-01 2026-10-04] 标签唯一源=文献库域（tags+paper_tags 表）：
+ *  脉络节点不持有私有标签——本 schema 无 tags 字段即「标签唯一源」不变量锚
+ *  （DB tags 列死置待 D 批清列，读面不映射/写面无该列）。 */
 export const lineageNodeSchema = z
   .object({
     id: z.string().min(1),
@@ -120,22 +123,11 @@ export const lineageNodeSchema = z
     /** [T3-P5] 月内序承载（D-P5-10 实现层列——无用户序号语义；P8 槽位重排
      *  =slot 值重排）。null=防御面兜底（service 新写恒赋值；迁移回填后存量行有序） */
     slot: z.number().int().min(0).nullable(),
-    /** F-LG14 节点标签（迁移 007 JSON 数组 TEXT 列；null=无标签不渲染）。
-     *  optional 语义=输入面缺省同 null（整行 upsert 全量语义下「省略 tags」=
-     *  清空标签——paperId/x/y 反向清空同款；类型面兼容存量夹具/旧调用点） */
-    tags: z.array(z.string()).nullable().optional(),
     createdAt: z.string(),
     updatedAt: z.string()
   })
   .strict()
 export type LineageNode = z.infer<typeof lineageNodeSchema>
-
-/** 同节点同名标签去重（F-LG14 主控裁决 7）：首见序保留（Set 插入序）。
- *  单源消费=lineage.repo.upsertNode 写边界（service upsert/导入/detach 全
- *  走 repo 单点——DB 恒无重复标签；渲染/面板面按到达序展示） */
-export function dedupeLineageTags(tags: readonly string[]): string[] {
-  return [...new Set(tags)]
-}
 
 /**
  * [F-LGRAPH-01②U8] 边视觉线型内联（A3 仲裁——sub 引用制退役）：dashed=虚线
@@ -214,7 +206,7 @@ export function validateLineageVia(via: readonly LineageViaPoint[]): string | nu
  *  编辑 patch——见 ipc/schemas lineagePatchNodeReqSchema；新建形态对 IPC 面
  *  结构性不可表达，INV-NEW-1）。
  *  [T3-P5] month/slot/sub 可选（缺省语义=undefined——归一/守卫在 service：
- *  month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例）；slot 缺省走
+ *  month=input.month ?? null（全量语义同 x/y 反向清空惯例）；slot 缺省走
  *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型）。
  *  [F-FOLDER-01] folderId 可选：undefined=新建落主图（repo 写边界兜底）/
  *  更新保持现图（service 解析既有值——W3：图归属变更不重排 slot 当 year/month

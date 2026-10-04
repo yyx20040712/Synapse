@@ -20,8 +20,8 @@
  *
  * ── 接口层 ──
  * - export interface PendingLink / export function LineageBoardMenu(props:
- *   { menu; pendingLink; setMenu; setPendingLink; setManualParentId;
- *   setManualManageId; setIdeaNodeId; setTagNodeId }): JSX.Element
+ *   { menu; pendingLink; setMenu; setPendingLink; setIdeaNodeId }): JSX.Element
+ *   （[A1b] setTagNodeId 随脉络私有标签域退役删除）
  */
 import { useLineageStore } from './lineage.store'
 import { LineageNodeMenu } from './LineageNodeMenu'
@@ -48,9 +48,8 @@ export function LineageBoardMenu(props: {
   setMenu: (v: MenuTarget | null) => void
   setPendingLink: (v: PendingLink | null) => void
   setIdeaNodeId: (v: string | null) => void
-  setTagNodeId: (v: string | null) => void
 }): JSX.Element {
-  const { menu, pendingLink, setMenu, setPendingLink, setIdeaNodeId, setTagNodeId } = props
+  const { menu, pendingLink, setMenu, setPendingLink, setIdeaNodeId } = props
   const edges = useLineageStore((s) => s.edges)
   const store = useLineageStore.getState
 
@@ -85,7 +84,6 @@ export function LineageBoardMenu(props: {
           onLinkTo={(id) => { setPendingLink({ source: id, mode: 'link' }); setMenu(null) }}
           onReparent={(id) => { setPendingLink({ source: id, mode: 'reparent' }); setMenu(null) }}
           onEditIdea={(id) => { setIdeaNodeId(id); setMenu(null) }}
-          onAddTag={(id) => { setTagNodeId(id); setMenu(null) }}
           onRemoveParentEdge={(edgeId) => { store().removeEdge(edgeId); setMenu(null) }}
           onRemoveNode={(id) => { store().removeNode(id); setMenu(null) }}
         />

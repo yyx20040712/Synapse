@@ -28,7 +28,6 @@ function node(patch: Partial<LineageNode> & { id: string }): LineageNode {
     year: null,
     x: null,
     y: null,
-    tags: null,
     month: null,
     slot: null,
     folderId: MAIN_GRAPH_ID,
@@ -47,7 +46,6 @@ describe('T3-P5 LineageNode month/slot（zod 边界）', () => {
     year: 2023,
     x: null,
     y: null,
-    tags: null,
     folderId: '__main__', // [F-FOLDER-01] 必填图归属
     createdAt: 't',
     updatedAt: 't'

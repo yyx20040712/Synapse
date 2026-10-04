@@ -17,8 +17,9 @@ import type { IpcDeps } from './ipc-deps'
 export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
   return {
     graph: async (req) => deps.services.lineage.graph(req.folderId),
-    // [F-ALIGN-01] id=定位键；patch=白名单八字段原样透传（未携带键不折叠
-    // ——service 合并语义：未携带字段保留，null=清除）
+    // [F-ALIGN-01] id=定位键；patch=白名单七字段原样透传（[A1b] tags 已随
+    // 标签域退役删除；未携带键不折叠——service 合并语义：未携带字段保留，
+    // null=清除）
     patchNode: async (req) => {
       const { id, ...patch } = req
       return deps.services.lineage.patchNode(id, patch)

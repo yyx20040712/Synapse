@@ -16,11 +16,12 @@
  * 会话态机单源=lineage-write-queue.ts 头注（saveStatus/queue/undoStack/flush）。
  *
  * ── [F-LGRAPH-01②U1] 编辑会话域（A7：脉络页一切写动作统一入暂存）──
- * 节点删/改（[F-ALIGN-01] 增随手动建点路径退役）/改月/调序/标签/画线/删线/
+ * 节点删/改（[F-ALIGN-01] 增随手动建点路径退役）/改月/调序/画线/删线/
  * 命名/线形/改父→beginUnit（单元前
  * 快照入 undo 栈+redo 清）→乐观应用+入队（不发 IPC）；save()=批量落库
  * （成功 clean+栈基线重置）；undo/redo=快照栈；discardSession=dirty 切图
  * 确认分支弃暂存。拖放类单元（调线/拖拽）由轮 2 接入 beginUnit。
+ * [A1b] 标签编辑单元随脉络私有标签域退役删除（标签整组写 action 消亡）。
  *
  * 错误契约：load 失败不上抛——失败态驻 store.error（列表型瞬态，消费方
  * 呈现+重试，INV-02 两型分清；动作型 toast 面=write-queue flush 内）。
@@ -94,8 +95,6 @@ export interface LineageStore {
    *  （新组 max+1 落尾部）归一，月组内槽位不在此写 */
   moveNodeMonth(id: string, year: number | null, month: number | null): void
   editCoreIdea(id: string, coreIdea: string): void
-  /** F-LG14 标签整组写入（增删 UI 语义化收口；去重单源在 main repo 写边界） */
-  setNodeTags(id: string, tags: string[]): void
   linkNodes(from: string, to: string, label?: string): void
   /** [F-LGRAPH-01②U3] 画线建边（拖拽锚点流——§2.4）：kind=manual+视觉字段=
    *  当前工具线型（dashed/color）+label=当前色行名快照（P-14 继承制） */
@@ -290,16 +289,6 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       mustNode(get().nodes, id)
       if (!beginUnit()) return
       wq.enqueue({ kind: 'patch-node', id, patch: { coreIdea } })
-    },
-
-    setNodeTags(id, tags) {
-      mustNode(get().nodes, id)
-      // [RR3/d1-ΔN2 措辞精确化] 空组=patch 本身无 tags 键；清空由
-      // fullPatchBody 全量件恒携 tags:null 承载（服务端合并收 null=清空
-      // ——patch 面缺键不再承载清空语义）。
-      // tags 面=A1b 退役面，本句随 A1b 消亡
-      if (!beginUnit()) return
-      wq.enqueue({ kind: 'patch-node', id, patch: tags.length > 0 ? { tags } : {} })
     },
 
     linkNodes(from, to, label = '') {

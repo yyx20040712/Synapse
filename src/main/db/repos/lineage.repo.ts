@@ -79,7 +79,6 @@ import { randomUUID } from 'node:crypto'
 import {
   LINE_TYPE_COLORS,
   MAIN_GRAPH_ID,
-  dedupeLineageTags,
   type LineTypeNames,
   type LineageEdge,
   type LineageEdgeUpsert,
@@ -122,11 +121,11 @@ export interface LineageRepo {
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
   const upsertNodeStmt = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at)
-     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @tags, @month, @slot, @folderId, @now, @now)
+    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, month, slot, folder_id, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @month, @slot, @folderId, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
-       year = excluded.year, x = excluded.x, y = excluded.y, tags = excluded.tags,
+       year = excluded.year, x = excluded.x, y = excluded.y,
        month = excluded.month, slot = excluded.slot, folder_id = excluded.folder_id,
        updated_at = excluded.updated_at`
   )
@@ -173,9 +172,6 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         year: input.year,
         x: input.x,
         y: input.y,
-        // F-LG14 写边界单点：null/缺省=NULL（清空语义）；数组=去重后 JSON 落库
-        // （dedupe 单源 shared/models——service upsert/导入/应用内增删全经此口）
-        tags: input.tags == null ? null : JSON.stringify(dedupeLineageTags(input.tags)),
         // T3-P5：缺省=NULL 落库（归一/守卫在 service——repo 薄）
         month: input.month ?? null,
         slot: input.slot ?? null,

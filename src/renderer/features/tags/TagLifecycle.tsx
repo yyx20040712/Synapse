@@ -3,7 +3,8 @@
  * [F-UIRES-01 批 A U3] TagLifecycle —— 标签生命周期对话框（TagDropdown 子组件
  * ；TagMergeDialog/TagDeleteDialog 随 TagFilter 退役删除——P-11 用户终裁=下拉
  * 行右键仅改名+颜色两入口，merge/delete UI 入口消失、IPC 通道与 main 面零触）。
- * Dialog 底座，LineageTagDialog 同型。
+ * Dialog 底座（[A1b F-CONTRACTA-01] 脉络侧同型标签对话框随脉络私有标签域
+ * 退役删除——文献库标签域=全应用唯一标签源）。
  * 写路径收口 tags.store 命令型动作；busy 守卫用 ref（同步检查——同批多次
  * click 在 React 重渲染前也只放行一次，S8）；失败 toast+对话框保持开（S6）；
  * busy 飞行中禁关（N1 回炉：取消按钮 disabled+Dialog onClose 包装 no-op——

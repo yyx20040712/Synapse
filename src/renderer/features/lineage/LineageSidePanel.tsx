@@ -13,8 +13,9 @@
  *   面），文献节点=期刊/IF/被引域隐式承载绑定态（不双渲染徽章）。
  * - **空选中态**=「点击卡片查看详情」占位（P-16）；三模式点卡联动（P-13）
  *   编排归 Page（selectedNodeId 单源）。
- * - **AI 笔记/人工笔记/标签编辑域保留**（现侧板面——非退役面；标签列=
- *   保留的标签编辑域承载，只读列+编辑域并存会双渲染同数据——收编单列申报）。
+ * - **AI 笔记/人工笔记域保留**（现侧板面——非退役面）；[A1b
+ *   F-CONTRACTA-01 2026-10-04] 标签编辑分节拆件随脉络私有标签域退役
+ *   删除——标签唯一源=文献库域（卡面标签行=A1a 伴生 map）。
  * - **笔记双击=跳阅读器**（N3/INV-20 单入口——总线载荷锚三元组传递链与
  *   open-paper-bus/open-paper-anchor 三方头注锚定不变）。
  * - 数据单源：AI 笔记本板直连 window.api.ai_notes/list（quality 跨域互引
@@ -26,7 +27,6 @@ import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideManualNote } from './LineageSideManualNote'
-import { LineageSideTags } from './LineageSideTags'
 
 /** 白玻璃卡（R2-LG11 浅色严谨板——沿承） */
 const SIDE_GLASS: CSSProperties = {
@@ -75,8 +75,6 @@ export function LineageSidePanel(props: {
     }
     aiNoteId?: string
   } | null): void
-  /** F-LG14 标签整组写入上抛（Page 编排→lineage.store.setNodeTags） */
-  onSetTags?: (nodeId: string, tags: string[]) => void
   /** [F-FOLDER-01] 骑缝编号（INV-92 pubNo——Page 自 store pubNos 分发） */
   pubNo?: number | null
   /** [T3-P8→②U4 退役] core 徽章消费面已随行 9 退役（prop 删除——数据面留） */
@@ -155,7 +153,6 @@ export function LineageSidePanel(props: {
           {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
         </p>
       </section>
-      {props.onSetTags !== undefined && <LineageSideTags node={node} onSetTags={props.onSetTags} />}
       {node.paperId === null ? (
         <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
       ) : (

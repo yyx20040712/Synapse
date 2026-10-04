@@ -1,9 +1,9 @@
 /**
- * [F-LG14] lineage 节点标签存储+graph 含金量 join（新增锁定合约面）。
+ * [F-LG14] lineage graph 含金量 join+标签读链（新增锁定合约面）。
  *
- * 覆盖：迁移 007（tags 列在场/版本接续/存量行 NULL=无标签零迁移兼容）/
- * repo upsert tags 往返（null 清面）/repo upsert 写面去重（[F-ALIGN-01]
- * service.upsertNode 装置随通道退役改 repo 直插）/graph 含金量
+ * 覆盖：迁移 007（tags 列在场/版本接续——[A1b F-CONTRACTA-01 2026-10-04]
+ * 脉络私有标签域退役：列死置保留（清列归 D 批）、读面不映射 DTO 无 tags 键/
+ * repo upsert tags 写面用例随写链去列删除）/graph 含金量
  * join（批量单语句禁 N+1——spy 计数锚；venueTier 映射单源 venue-tier.ts；
  * cited null 判别；0=值非缺；未映射 venue=null；空图合法空表）。draft tags
  * 校验面已随导入链退役删除（[F-BAKRET-01] 2026-09-30，
@@ -11,8 +11,8 @@
  * [A1a] +graph tagNames 伴生 map（文献库标签域读链——Record<paperId,
  * string[]> 批量一次装配；名序=namesByPaper 同序；无标签文献无键）。
  * [F-ALIGN-01] 主题节点两用例（不入 paperMetrics/不在 tagNames map）随
- * 主题节点应用层退役删除（2026-10-04——节点唯一来源=入库/移动两路；
- * paperId null 过滤=DDL 窗口期防御，语义不再专测）。
+ * 主题节点应用层退役删除（2026-10-04——节点唯一来源=入库/移动
+ * 两路；paperId null 过滤=DDL 窗口期防御，语义不再专测）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -62,57 +62,33 @@ beforeEach(() => {
   })
 })
 
-// ── 迁移 007：tags 列+存量兼容 ─────────────────────────────────
+// ── 迁移 007：tags 列死置锚（[A1b] 应用面退役、DDL 待 D 批清列） ──
 
-describe('F-LG14 迁移 007（lineage_nodes.tags）', () => {
+describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () => {
   it('版本接续：MIGRATIONS 含 version 7 且 user_version=14（新库全量，[F-LINEAGE-02] 013 落地后）', () => {
     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
     expect(readUserVersion(db)).toBe(14)
   })
 
-  it('tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）', () => {
+  it('tags 列在场（TEXT 可空——死置保留清列归 D 批）；存量行零迁移可读且 DTO 无 tags 键（[A1b] 读面不映射）', () => {
     const cols = (
       db.prepare('PRAGMA table_info(lineage_nodes)').all() as Array<{ name: string; notnull: number }>
     ).find((c) => c.name === 'tags')
     expect(cols).toBeDefined()
-    expect(cols!.notnull).toBe(0) // 可空=缺省 NULL=无标签
-    // 模拟存量行（迁移前形状——不带 tags 列写入）
+    expect(cols!.notnull).toBe(0) // 可空列保留（D 批清列前锚）
+    // 模拟存量行（迁移前形状——不带 tags 列写入；列带历史 JSON 值也不入 DTO）
     db.prepare(
-      `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, created_at, updated_at)
-       VALUES ('legacy-1', NULL, '存量主题', '', 2019, NULL, NULL, 't', 't')`
+      `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, tags, created_at, updated_at)
+       VALUES ('legacy-1', NULL, '存量主题', '', 2019, NULL, NULL, '["历史标签"]', 't', 't')`
     ).run()
     const legacy = repo.listGraph().nodes.find((n) => n.id === 'legacy-1')
-    expect(legacy?.tags).toBeNull() // NULL=无标签（renderer 不渲染标签组）
+    expect(legacy?.title).toBe('存量主题') // 存量行零迁移可读
+    expect(legacy !== undefined && 'tags' in legacy).toBe(false) // [A1b] DTO 无 tags 键（读面不映射）
   })
 })
 
-// ── 写面落库+去重（[F-BAKRET-01] 导入面用例退役，upsert 写面保） ──
-
-describe('F-LG14 写面落库（repo upsertNode——[F-ALIGN-01] 装置随 service 通道退役改 repo 直插）', () => {
-  it('repo upsertNode 写面同守去重；tags null 二次 upsert 清面', () => {
-    const n = repo.upsertNode({
-      paperId: 'p-1',
-      title: '甲',
-      coreIdea: '',
-      year: 2018,
-      x: null,
-      y: null,
-      tags: ['综述', '综述', '早期']
-    })
-    expect(n.tags).toEqual(['综述', '早期'])
-    const n2 = repo.upsertNode({
-      id: n.id,
-      paperId: 'p-1',
-      title: '甲',
-      coreIdea: '',
-      year: 2018,
-      x: null,
-      y: null,
-      tags: null
-    })
-    expect(n2.tags).toBeNull()
-  })
-})
+// [A1b F-CONTRACTA-01] 「F-LG14 写面落库（repo upsertNode 去重/null 清面）」
+// describe 随 repo 写链去 tags 列整体删除（写面无该列——载荷结构性不可表达）。
 
 // ── graph 含金量 join（批量单语句禁 N+1） ──────────────────────
 
