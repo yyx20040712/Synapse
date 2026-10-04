@@ -28,8 +28,12 @@ ai-dev-org/verification-before-completion=用；systematic-debugging=
   year 组 slot=1；year=null 两篇入 null 组末；探针=仓外
   2026-10-04_archive-unassigned.mjs）；②测试笔记行已删（v121 §2
   裁决④）。null-folder-papers=0。
-- CI：766587d5b31/6b84a485a29 触发 run 待查（v121 §5 首查面=T1
-  沿绿+P7-B/:266 指纹+T11 CI 首跑）。
+- CI：**首查已完成（本笔收尾补记）**——766587d5b31 的 run 37175781519
+  =**cancelled（concurrency 连续 push 取消，非失败）**；**6b84a485a29
+  的 run 37175842649=success 76 passed (3.6m) 零 flake**——A1a 代码面
+  CI 验证经此 run 达成（T11 换种 CI 首跑绿+T1 沿绿+P7-B/:266 未再现
+  各维持 observing 1/2）。7ec055079c 的 run 37177414119（docs-only
+  增量）=下场开场核对，预期绿。
 
 ## §2 方向轮四裁决（详单=反馈台账 §7c）
 
