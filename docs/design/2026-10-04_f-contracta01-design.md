@@ -75,6 +75,17 @@
 [locked-change] 尾注+locks 即时同步；test-surface 有意收紧处先裁决
 后落 exemptions.json（禁先删后补）。
 
+**〔对齐批连带修订 2026-10-04〕**：对齐批设计稿（docs/design/
+2026-10-04_f-align01-design.md §0 四清单-4）先行落地的情形下——其对齐批
+单元一将 `lineage/upsert-node` 通道拆分为 `lineage/patch-node`（Req 白名单
+**临时含 `tags`+`coreIdea`** 两字段，即本批 A1b/A3 的遗留面）。若对齐批
+单元一先于 A1b/A3 实施：本稿 A1b 的「ipc patch+store setNodeTags+写队列」
+处置面与 A3 的「store 写链」处置面，口径改为「**patch-node schema 删
+tags（A1b）/coreIdea（A3）字段+store 对应 enqueue 路径删**」；两批字段级
+不冲突、文件级交叉仅 LineageBoardDialogs 三对话框共宿主（各删各自挂点）
++LineageSideTags.tsx:11 通道名注释（对齐批单元一连带改写）。批次次序以
+用户指令为准（v122 默认序=对齐批先行）。
+
 ## §4 风险清单（承审核稿+处置）
 
 1. test-surface 收紧（高确定）：A1b/A2 动工前出全量收紧清单随主控
