@@ -127,3 +127,22 @@ CREATE TABLE lineage_edges (
 > 无独立 graph 元数据）。决策细目=ADR-0021（单归属×图绑定）；行为终态=
 > **INV-88~93**；DDL 现文=`src/main/db/migrations/004/006/007/010/012`。
 > 本文保留原始决策叙述不回改。
+
+## 修订记录 v1.5（2026-10-04 F-ALIGN-01：主题节点/手动建点退役——实体面）
+
+> **节点唯一来源收敛**（design-final 2026-10-04 呈裁链终裁 D1~D6——首轮 D1/D2+三呈裁 D3/D4/D6）：本 ADR
+> v1 DDL 快照「paper_id 可空=纯主题节点（阶段分组）」语义**应用层全域退役**
+> ——节点唯一来源=入库（挂接导入落夹建节点〔D3 单跳〕）/移动（moveFolder
+> 自动建与随迁）两路，无手动创建路径（**INV-NEW-1**）。IPC 写通道
+> `lineage/upsert-node` 拆分为 `lineage/patch-node`（纯编辑 patch——id 必填+
+> 字段白名单 strict，无新建形态可表达；通道换名零增减，现数=
+> api-surface-closure 通道 pin 承载）；主题节点分支/手动建点组件
+> （LineageAddNodeDialog）/store 动作（addPaperNode/addThemeNode）全域删除
+> （回潮防御=check-quality 第 10 段负锚词表+defense-lifecycle ㉔ 登记）。
+> DDL 面：`lineage_nodes.paper_id NOT NULL` 归 D 批重建顺带（台账=
+> defense-lifecycle ㉓，附退出条件+评审触发器）；窗口期防御=zod 契约机检
+> （schema 类型测试）+负锚词表+INV-NEW-2 应用层闸三重。行为终态=
+> **INV-NEW-1/2/3**+INV-88 改写注记（两路建节点）；DDL 现文仍=
+> `src/main/db/migrations/004/006/007/010/012/013/014`（013=边 via 路点列，
+> F-LINEAGE-02——v1.4 清单后新增，本修订记录补齐收录）。本文保留原始决策
+> 叙述不回改。

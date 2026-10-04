@@ -128,6 +128,18 @@ lineTypeNames（恰 6 行色行名——图级 KV 新键 'lineTypeNames'）；li
 导出 schema_version 3（edges 扩 via/dashed/color+line_types 四组→色行名 6
 行——A9' golden 重锁）；lineage.graph 响应 lineTypes→lineTypeNames。
 
+[F-ALIGN-01]（2026-10-04）对齐批实体面：lineage_nodes 语义收敛——主题节点
+（paper_id NULL 纯节点）与手动建点路径应用层全域退役，节点唯一来源=入库
+（挂接导入落夹建节点单跳）/移动（moveFolder 自动建与随迁）两路（INV-NEW-1
+——ADR-0014 v1.5；回潮防御=check-quality 第 10 段负锚词表+defense-lifecycle
+㉔）；lineage/upsert-node 通道拆分 patch-node（id 必填纯编辑 patch——通道
+换名零增减，现数=api-surface-closure 通道 pin 承载）；三导入通道 Req 扩
+targetFolderId 必填+paperMoveReq.toFolderId 收紧 min(1)（未归档域退役——
+folderScope 判别联合 all/unfiled/folder 收敛 all/folder，INV-NEW-2 应用层
+闸；PaperSummary.folderId 保持可空=历史行读兼容窗口期，DDL NOT NULL 归 D
+批挂账 defense-lifecycle ㉓）；folders delete=域删级联（事务序=先逐文献
+remove〔DDL 级联链〕后 folders.remove——INV-NEW-3，主图禁删恒设）。
+
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 
 ### 7.1 系统全景（三进程 + 外部边界）
