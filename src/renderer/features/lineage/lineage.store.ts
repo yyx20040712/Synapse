@@ -92,9 +92,10 @@ export interface LineageStore {
    *  落定后调用；[②U1] 整组=一编辑单元——一次 undo 整组回退） */
   reorderMonthSlots(nodeIds: string[]): void
   /** [T3-P8] 改月：month+year 全字段载荷、slot 键缺省——服务端组变分支
-   *  （新组 max+1 落尾部）归一，月组内槽位不在此写 */
+   *  （新组 max+1 落尾部）归一，月组内槽位不在此写。
+   *  [A3 F-CONTRACTA-01 2026-10-04] 核心想法编辑 store 动作随核心想法域
+   *  全退役删除（节点内容编辑面=全文笔记 notes.contentMd 承接） */
   moveNodeMonth(id: string, year: number | null, month: number | null): void
-  editCoreIdea(id: string, coreIdea: string): void
   linkNodes(from: string, to: string, label?: string): void
   /** [F-LGRAPH-01②U3] 画线建边（拖拽锚点流——§2.4）：kind=manual+视觉字段=
    *  当前工具线型（dashed/color）+label=当前色行名快照（P-14 继承制） */
@@ -283,12 +284,6 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       // override={year,month}：合成时 slot 键缺省（服务端组变 max+1——D-I-1）
       if (!beginUnit()) return
       wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { year, month } })
-    },
-
-    editCoreIdea(id, coreIdea) {
-      mustNode(get().nodes, id)
-      if (!beginUnit()) return
-      wq.enqueue({ kind: 'patch-node', id, patch: { coreIdea } })
     },
 
     linkNodes(from, to, label = '') {

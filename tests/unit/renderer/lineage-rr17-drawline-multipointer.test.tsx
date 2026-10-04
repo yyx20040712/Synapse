@@ -26,7 +26,7 @@ import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageT
 
 function node(id: string): LineageNode {
   return {
-    id, paperId: `paper-${id}`, title: `节点${id}`, coreIdea: '', year: 2022,
+    id, paperId: `paper-${id}`, title: `节点${id}`, year: 2022,
     x: null, y: null, month: 9, slot: null, folderId: '__main__', createdAt: 't', updatedAt: 't'
   }
 }

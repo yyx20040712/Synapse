@@ -25,7 +25,7 @@ const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.
 
 function node(id: string): LineageNode {
   return {
-    id, paperId: `paper-${id}`, title: `节点${id}`, coreIdea: '', year: 2022,
+    id, paperId: `paper-${id}`, title: `节点${id}`, year: 2022,
     x: null, y: null, month: 5, slot: null, folderId: '__main__', createdAt: 't', updatedAt: 't'
   }
 }

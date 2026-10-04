@@ -26,7 +26,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2023,
     x: null,
     y: null,
@@ -135,18 +134,19 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(themeBadges).toEqual(['2023-06'])
   })
 
-  it('idea-cap「核 心 想 法」+idea 内容；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行', async () => {
+  it('[A3 F-CONTRACTA-01 2026-10-04] 核心 idea 区随 core_idea 全退役删除（idea-cap/idea 面零渲染负锚）；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行', async () => {
     mount(
       <LineageSidePanel
-        node={node('A', { coreIdea: '把管网拓扑显式建模为图' })}
+        node={node('A')}
         pubNo={1}
         metrics={null}
         onJumpToPaper={vi.fn()}
       />
     )
     await flush()
-    expect(q('[data-testid="lineage-side-idea"] .idea-cap')?.textContent).toBe('核 心 想 法')
-    expect(q('.idea')?.textContent).toBe('把管网拓扑显式建模为图')
+    expect(q('[data-testid="lineage-side-idea"]')).toBeNull()
+    expect(q('.idea-cap')).toBeNull()
+    expect(q('.idea')).toBeNull()
     const postpone = q('[data-testid="lineage-side-postpone"]')
     expect(postpone?.textContent).toContain('AI 评 估 笔 记')
     expect(postpone?.querySelector('.postpone')?.textContent).toBe('后置')
@@ -158,12 +158,13 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     )
   })
 
-  it('既有 testid 面全保活：meta/idea/ai-notes/manual-note；主题节点空态零变+无后置章', async () => {
+  it('既有 testid 面全保活：meta/ai-notes/manual-note（[A3] idea 面退役出集）；主题节点空态零变+无后置章', async () => {
     mount(<LineageSidePanel node={node('A')} onJumpToPaper={vi.fn()} />)
     await flush()
-    for (const tid of ['lineage-side-panel', 'lineage-side-meta', 'lineage-side-idea', 'lineage-side-ai-notes', 'lineage-side-manual-note']) {
+    for (const tid of ['lineage-side-panel', 'lineage-side-meta', 'lineage-side-ai-notes', 'lineage-side-manual-note']) {
       expect(q(`[data-testid="${tid}"]`)).not.toBeNull()
     }
+    expect(q('[data-testid="lineage-side-idea"]')).toBeNull() // [A3] 退役面负锚
     expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
     mount(<LineageSidePanel node={node('T', { paperId: null })} onJumpToPaper={vi.fn()} />)
     await flush()

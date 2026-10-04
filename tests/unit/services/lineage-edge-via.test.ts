@@ -29,8 +29,8 @@ function boot(): void {
   repo = createLineageRepo(db)
   // [F-ALIGN-01] deps 收窄=repo（新建分支注入面退役删）
   svc = createLineageService({ repo })
-  nA = repo.upsertNode({ paperId: null, title: '节点A', coreIdea: '', year: null, x: null, y: null }).id
-  nB = repo.upsertNode({ paperId: null, title: '节点B', coreIdea: '', year: null, x: null, y: null }).id
+  nA = repo.upsertNode({ paperId: null, title: '节点A', year: null, x: null, y: null }).id
+  nB = repo.upsertNode({ paperId: null, title: '节点B', year: null, x: null, y: null }).id
 }
 
 function baseEdge(patch: Record<string, unknown> = {}): Record<string, unknown> {

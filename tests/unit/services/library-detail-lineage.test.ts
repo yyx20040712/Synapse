@@ -66,7 +66,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       id: 'n-1',
       paperId: 'p-1',
       title: '节点甲',
-      coreIdea: '',
       year: 2023,
       x: null,
       y: null,
@@ -106,7 +105,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       id: 'n-0',
       paperId: 'p-9',
       title: '前驱',
-      coreIdea: '',
       year: 2022,
       x: null,
       y: null,
@@ -120,7 +118,6 @@ describe('T3-P3 library.service detail——lineage 组合装配（service 级�
       id: 'n-2',
       paperId: 'p-1',
       title: '节点乙',
-      coreIdea: '',
       year: null,
       x: null,
       y: null,
@@ -215,20 +212,19 @@ describe('T3-P3 lineage.repo 只读对——nodeByPaperId/edgeCountByNode（真�
     const hit = repo.upsertNode({
       paperId: 'p-1',
       title: '节点甲',
-      coreIdea: '',
       year: 2023,
       x: null,
       y: null
     })
-    repo.upsertNode({ paperId: null, title: '纯主题节点', coreIdea: '', year: null, x: null, y: null })
+    repo.upsertNode({ paperId: null, title: '纯主题节点', year: null, x: null, y: null })
     expect(repo.nodeByPaperId('p-1')?.id).toBe(hit.id)
     expect(repo.nodeByPaperId('ghost')).toBeNull()
   })
 
   it('edgeCountByNode：双端计数——from 命中与 to 命中各计一条，无关边不计', () => {
-    const a = repo.upsertNode({ paperId: 'p-a', title: 'A', coreIdea: '', year: 2023, x: null, y: null })
-    const b = repo.upsertNode({ paperId: 'p-b', title: 'B', coreIdea: '', year: 2023, x: null, y: null })
-    const c = repo.upsertNode({ paperId: 'p-c', title: 'C', coreIdea: '', year: 2024, x: null, y: null })
+    const a = repo.upsertNode({ paperId: 'p-a', title: 'A', year: 2023, x: null, y: null })
+    const b = repo.upsertNode({ paperId: 'p-b', title: 'B', year: 2023, x: null, y: null })
+    const c = repo.upsertNode({ paperId: 'p-c', title: 'C', year: 2024, x: null, y: null })
     repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
     repo.upsertEdge({ fromNode: c.id, toNode: a.id, label: '' })
     repo.upsertEdge({ fromNode: b.id, toNode: c.id, label: '' })

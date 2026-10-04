@@ -126,7 +126,6 @@ describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 
   const upsertBase = {
     paperId: 'p-1',
     title: '组键',
-    coreIdea: '',
     x: null,
     y: null
   } as const

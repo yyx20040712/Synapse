@@ -20,7 +20,6 @@ function node(
     id,
     paperId: patch.paperId !== undefined ? patch.paperId : `paper-${id}`,
     title: patch.title ?? `节点${id}`,
-    coreIdea: '',
     year: null,
     x: null,
     y: null,

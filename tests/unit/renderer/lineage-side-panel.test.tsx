@@ -72,7 +72,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2020,
     x: null,
     y: null,
@@ -259,7 +258,7 @@ it('消费方级：无锚打开失败→动作型 toast（既有文案保持）'
 
 // ── SidePanel 组件级 ────────────────────────────────────────────────
 
-it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人工笔记', async () => {
+it('文献节点三区渲染：元信息/AI 分节分色单源/人工笔记（[A3 F-CONTRACTA-01 2026-10-04] core_idea 区随全退役删除——「核心想法」语义由全文笔记承接）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({
     ok: true,
     data: [aiNote('a1', { question: 'Q1' }), aiNote('c1', { role: 'adjudicate', question: 'divergence' })]
@@ -268,7 +267,7 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人�
     ok: true,
     data: { id: 'n1', paperId: 'paper-A', title: '', contentMd: '人工总评内容', createdAt: 't', updatedAt: 't' }
   })
-  mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   expect(stubApi.ai_sensor.listByPaper).toHaveBeenCalledWith({ paperId: 'paper-A' })
   expect(stubApi.notes.get).toHaveBeenCalledWith({ paperId: 'paper-A' })
@@ -276,9 +275,9 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人�
   expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('节点A')
   expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('2020')
   expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
-  // 区2 核心 idea
-  expect(q('[data-testid="lineage-side-idea"]')?.textContent).toContain('核心思想甲')
-  // 区3 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
+  // [A3] 原「区2 核心 idea」整区随 core_idea 全退役删除——面板无该区（负锚）
+  expect(q('[data-testid="lineage-side-idea"]')).toBeNull()
+  // 区2 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
   const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-question]') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
   expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问：核心 idea 是什么', '分歧报告'])
@@ -288,14 +287,14 @@ it('文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人�
   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('quote-a1')
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('内容-a1')
-  // 区4 人工笔记（总评层）
+  // 区3 人工笔记（总评层）
   expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('人工总评内容')
 })
 
-it('主题节点：仅前两区+空态文案；笔记通道零调用', async () => {
+it('主题节点：仅元信息区+空态文案；笔记通道零调用', async () => {
   mount(<LineageSidePanel node={node('T', { paperId: null, year: null })} onJumpToPaper={JUMP} />)
   await flush()
-  expect(q('[data-testid="lineage-side-idea"]')).not.toBeNull()
+  expect(q('[data-testid="lineage-side-idea"]')).toBeNull() // [A3] 退役区不渲染
   expect(host?.textContent).toContain('主题节点无笔记')
   expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
   expect(stubApi.notes.get).not.toHaveBeenCalled()
@@ -304,7 +303,7 @@ it('主题节点：仅前两区+空态文案；笔记通道零调用', async () 
 it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 accent 左缘条；条目卡白底淡描边（防回退）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1', { question: 'Q1' })] })
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
-  mount(<LineageSidePanel node={node('A', { coreIdea: '核心思想甲' })} onJumpToPaper={JUMP} />)
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   // 面板白玻璃底（R2-LG11 浅色严谨板）。backdrop-filter 在 jsdom 不入 style
   // 属性序列化（实证：仅 DOM 属性可读）——经 style.backdropFilter 属性断言
@@ -315,9 +314,10 @@ it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 
   // 边 --border（原 #e4ded1——值面由 theme.test.ts 既有 token 正锚锁定）
   expect(rootEl.getAttribute('style')).toContain('var(--border)')
   expect(rootEl.style.backdropFilter).toBe('blur(12px)')
-  // 分组 h4 accent 左缘条（核心 idea/AI 笔记/人工笔记三处齐改——去金夜色）
+  // 分组 h4 accent 左缘条（AI 笔记/人工笔记两处齐改——去金夜色；[A3] 核心
+  // idea 区随 core_idea 全退役删除——h4 由三减二）
   const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
-  expect(h4s.length).toBe(3)
+  expect(h4s.length).toBe(2)
   for (const h of h4s) {
     expect(h.getAttribute('style')).toContain('var(--accent)')
   }
@@ -453,7 +453,7 @@ async function mountPage(): Promise<void> {
   stubApi.lineage.graph.mockResolvedValue({
     ok: true,
     data: {
-      nodes: [node('A', { coreIdea: 'idea-A' }), node('T', { paperId: null })],
+      nodes: [node('A'), node('T', { paperId: null })],
       edges: []
     }
   })

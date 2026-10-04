@@ -32,16 +32,8 @@
 /* [回炉 R10] core 徽章类死样式删除（core UI 全退役——消费面恒 plain 变体；
    负锚=lineage-detail-panel.test CSS 断言） */
 .badge.plain { color: var(--dim); border: 1px solid var(--line); }
-.idea-cap { font-size: var(--fs-micro); letter-spacing: 2px; color: var(--accent); margin: 4px 0 5px; }
-.idea {
-  font-size: var(--fs-body);
-  line-height: 1.85;
-  color: var(--dim);
-  text-align: justify;
-  border-left: 2px solid var(--accent);
-  padding-left: 10px;
-  margin-bottom: 12px;
-}
+/* [A3 F-CONTRACTA-01 2026-10-04] .idea-cap/.idea 死样式删除（核心 idea 区随
+   核心想法域全退役——消费面 LineageSidePanel idea 区已删；死代码即删） */
 .sec-cap {
   font-size: var(--fs-micro);
   letter-spacing: 3px;

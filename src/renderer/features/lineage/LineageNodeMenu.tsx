@@ -4,8 +4,9 @@
  *
  * 行为：fixed 定位于右键锚点；菜单首行=目标标识「卡「题名」● 命中」（②批
  * 右键反馈④——按下即高亮配套）；菜单项=连线到…/改父…（目标点选流沿承）/
- * 编辑核心想法/删除父连线（有入边时呈现）/删除节点（[A1b]「添加标签…」
- * 随脉络私有标签域退役删除——标签唯一源=文献库域）。
+ * 删除父连线（有入边时呈现）/删除节点（[A1b]「添加标签…」随脉络私有标签域
+ * 退役删除——标签唯一源=文献库域；[A3 F-CONTRACTA-01 2026-10-04]「编辑
+ * 核心想法」随核心想法域全退役删除——「核心想法」语义由全文笔记承接）。
  * [②U5] 「连接父文献…/管理人工连线…」双入口随人工父对话框退役删除（画线
  * 工具+线身右键菜单替代）。透明遮罩点击关闭（ESC 关闭归 Dialog 域——菜单
  * 轻量面不挂键盘）。所有动作只上抛回调——写路径收口在 Board→store。
@@ -24,7 +25,6 @@ export interface LineageNodeMenuProps {
   onClose(): void
   onLinkTo(nodeId: string): void
   onReparent(nodeId: string): void
-  onEditIdea(nodeId: string): void
   onRemoveParentEdge(edgeId: string): void
   onRemoveNode(nodeId: string): void
 }
@@ -57,9 +57,6 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
         </button>
         <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
           改父…
-        </button>
-        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onEditIdea(node.id)}>
-          编辑核心想法
         </button>
         {parentEdge !== null && (
           <button

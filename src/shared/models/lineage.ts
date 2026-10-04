@@ -103,14 +103,16 @@ export type LineTypeNames = z.infer<typeof lineTypeNamesSchema>
 
 /** [A1b F-CONTRACTA-01 2026-10-04] 标签唯一源=文献库域（tags+paper_tags 表）：
  *  脉络节点不持有私有标签——本 schema 无 tags 字段即「标签唯一源」不变量锚
- *  （DB tags 列死置待 D 批清列，读面不映射/写面无该列）。 */
+ *  （DB tags 列死置待 D 批清列，读面不映射/写面无该列）；
+ *  [A3 F-CONTRACTA-01 2026-10-04] 核心想法域全退役——本 schema 无该字段
+ *  （「核心想法」语义由全文笔记 notes.contentMd 承接；DB 同名列 NOT NULL
+ *  DEFAULT '' 死置，清列归 D 批零迁移——tags 先例同型）。 */
 export const lineageNodeSchema = z
   .object({
     id: z.string().min(1),
     /** 可空=纯主题节点（阶段分组，LG-03 手工创建） */
     paperId: z.string().min(1).nullable(),
     title: z.string().min(1),
-    coreIdea: z.string(),
     year: z.number().int().nullable(),
     /** [F-FOLDER-01] 节点图归属（=文件夹 id，1:1 绑定——迁移 012 列；
      *  读面恒非空：repo 写边界兜底 '__main__'+迁移回填封闭） */

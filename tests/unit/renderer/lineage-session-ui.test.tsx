@@ -27,7 +27,7 @@ stubApiEvents({ onFoldersChanged: () => () => undefined })
 
 function node(id: string): LineageNode {
   return {
-    id, paperId: `paper-${id}`, title: `节点${id}`, coreIdea: '', year: 2022,
+    id, paperId: `paper-${id}`, title: `节点${id}`, year: 2022,
     x: null, y: null, month: 9, slot: null, folderId: '__main__', createdAt: 't', updatedAt: 't'
   }
 }
@@ -103,7 +103,7 @@ describe('F-LGRAPH-01②U1 NavGraphPicker dirty 切图两分支（§2.2/B-2 闭�
   it('dirty 切图=未保存提示：取消=留守（暂存与撤销栈原样保留）', async () => {
     mount(<NavGraphPicker />)
     await settle()
-    useLineageStore.getState().editCoreIdea('A', '暂存想法')
+    useLineageStore.getState().moveNode('A', 11, 11)
     const queueBefore = useLineageStore.getState().queue
     const undoBefore = useLineageStore.getState().undoStack.length
     pick('f-x')
@@ -126,7 +126,7 @@ describe('F-LGRAPH-01②U1 NavGraphPicker dirty 切图两分支（§2.2/B-2 闭�
   it('dirty 切图确认=弃暂存（队列+栈清+回 clean）+执行切换（load 库态覆盖）', async () => {
     mount(<NavGraphPicker />)
     await settle()
-    useLineageStore.getState().editCoreIdea('A', '暂存想法')
+    useLineageStore.getState().moveNode('A', 11, 11)
     useLineageStore.getState().linkNodes('A', 'Z')
     pick('f-x')
     await settle()
@@ -148,7 +148,7 @@ describe('F-LGRAPH-01②U1 NavGraphPicker dirty 切图两分支（§2.2/B-2 闭�
   it('dirty 同图重选=切图语义（A2）——同样走确认两分支', async () => {
     mount(<NavGraphPicker />)
     await settle()
-    useLineageStore.getState().editCoreIdea('A', 'x')
+    useLineageStore.getState().moveNode('A', 12, 12)
     pick('__main__') // 同值重选
     await settle()
     expect(q('[role="dialog"]')).not.toBeNull() // 提示在场（A2：同值重选=切图）
@@ -173,16 +173,16 @@ describe('F-LGRAPH-01②U1 Ctrl+Z/Y 键盘接线（LineagePage 挂载——§2.2
     // Page 挂载 load 落地后重植节点（graph 空态夹具——键盘面测试数据）
     useLineageStore.setState({ nodes: [node('A')], status: 'ready' })
     useLineageViewStore.getState().setMode('edit')
-    useLineageStore.getState().editCoreIdea('A', '甲')
-    useLineageStore.getState().editCoreIdea('A', '乙')
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('乙')
+    useLineageStore.getState().moveNode('A', 21, 21)
+    useLineageStore.getState().moveNode('A', 22, 22)
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(22)
     key('z', { ctrlKey: true })
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('甲') // 撤销一步
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(21) // 撤销一步
     key('y', { ctrlKey: true })
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('乙') // 重做
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(22) // 重做
     // 非 edit 模式不接（browse 下 no-op）
     useLineageViewStore.getState().setMode('browse')
     key('z', { ctrlKey: true })
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('乙')
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(22)
   })
 })

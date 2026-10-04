@@ -34,7 +34,7 @@ function boot(): void {
   // [F-ALIGN-01] deps 收窄=repo（新建分支注入面退役删）
   svc = createLineageService({ repo })
   const mk = (title: string): string =>
-    repo.upsertNode({ paperId: null, title, coreIdea: '', year: null, x: null, y: null }).id
+    repo.upsertNode({ paperId: null, title, year: null, x: null, y: null }).id
   nA = mk('节点A')
   nB = mk('节点B')
   nC = mk('节点C')

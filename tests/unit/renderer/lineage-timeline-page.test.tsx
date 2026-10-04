@@ -44,7 +44,6 @@ function node(
     // 显式 null（主题节点）不可被默认值吞掉——?? 对 null 同样走右侧
     paperId: patch.paperId !== undefined ? patch.paperId : `paper-${id}`,
     title: patch.title ?? `节点${id}`,
-    coreIdea: '',
     year: patch.year ?? null,
     x: patch.x ?? null,
     y: patch.y ?? null,

@@ -74,9 +74,9 @@ describe('F-UIRES-01 批 B papers/delete 统一级联矩阵（§2.4——真库�
     repos.papers.setFolderId('p-del', f1.id)
     repos.papers.setFolderId('p-nbr', f1.id)
     repos.papers.setFolderId('p-other', f2.id)
-    const nDel = repos.lineage.upsertNode({ paperId: 'p-del', title: '删', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
-    const nNbr = repos.lineage.upsertNode({ paperId: 'p-nbr', title: '同图邻', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
-    const nOther = repos.lineage.upsertNode({ paperId: 'p-other', title: '跨夹对端', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
+    const nDel = repos.lineage.upsertNode({ paperId: 'p-del', title: '删', year: 2024, x: null, y: null, folderId: f1.id })
+    const nNbr = repos.lineage.upsertNode({ paperId: 'p-nbr', title: '同图邻', year: 2024, x: null, y: null, folderId: f1.id })
+    const nOther = repos.lineage.upsertNode({ paperId: 'p-other', title: '跨夹对端', year: 2024, x: null, y: null, folderId: f2.id })
     repos.lineage.upsertEdge({ fromNode: nNbr.id, toNode: nDel.id, label: '' })
     // 手工预置跨图幽灵边（p-del→p-other——存量遗留形态，绕 service 守卫直插）
     db.prepare(

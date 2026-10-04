@@ -44,16 +44,17 @@ import type { LineageEdge, LineageEdgeUpsert, LineageNode } from '@shared/models
 export type LineageSaveStatus = 'clean' | 'dirty' | 'saving' | 'error'
 
 /** [F-ALIGN-01] patch-node 白名单载荷面（=IPC lineagePatchNodeReqSchema 去 id
- *  ——id=定位键；paperId/folderId/时间戳不可 patch；coreIdea=A3 退役遗留面
- *  随该单元删；tags 已随 [A1b F-CONTRACTA-01] 标签域退役删除） */
+ *  ——id=定位键；paperId/folderId/时间戳不可 patch；核心想法字段已随 [A3
+ *  F-CONTRACTA-01 2026-10-04] 核心想法域全退役删除（全文笔记承接语义）；
+ *  tags 已随 [A1b F-CONTRACTA-01] 标签域退役删除） */
 export type LineageNodePatchBody = Partial<
-  Pick<LineageNode, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y'>
+  Pick<LineageNode, 'title' | 'year' | 'month' | 'slot' | 'x' | 'y'>
 >
 
 export interface LazyNodePatch {
   kind: 'patch-node'
   id: string
-  patch: Partial<Pick<LineageNode, 'coreIdea' | 'x' | 'y'>>
+  patch: Partial<Pick<LineageNode, 'x' | 'y'>>
   /** 语义轴整替（后到胜出）：{slot}=月内序透写；{year,month}=改月（合成时
    *  slot 键缺省——服务端组变 max+1 尾部既有分支；乐观应用=组内末预估） */
   override?: { slot: number } | { year: number | null; month: number | null }
@@ -246,14 +247,14 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     return n
   }
 
-  /** 既有节点→patch-node 全字段载荷（白名单七字段防半更新清字段——A8 全载荷
+  /** 既有节点→patch-node 全字段载荷（白名单六字段防半更新清字段——A8 全载荷
    *  合成语义等价迁移：服务端 {...existing, ...patch} 合并，本地行全字段随发
    *  =整行面等价；身份/图归属/时间戳不在白名单——沿用库行。
    *  [A1b] tags 恒发行随标签域退役删除（原「恒发 tags:null 防清空失效」面
-   *  随字段消亡——k1-W1 先例注记留档） */
+   *  随字段消亡——k1-W1 先例注记留档）；[A3 F-CONTRACTA-01] 核心想法恒发行
+   *  随核心想法域全退役删除（同型先例） */
   const fullPatchBody = (n: LineageNode): LineageNodePatchBody => ({
     title: n.title,
-    coreIdea: n.coreIdea,
     year: n.year,
     month: n.month,
     slot: n.slot,

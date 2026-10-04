@@ -34,7 +34,7 @@ beforeEach(() => {
 /** 四节点种子：A/B/C/D 文献节点（自动布局） */
 function seedNodes(): { a: string; b: string; c: string; d: string } {
   const mk = (paperId: string, title: string, year: number): string =>
-    repo.upsertNode({ paperId, title, coreIdea: '', year, x: null, y: null }).id
+    repo.upsertNode({ paperId, title, year, x: null, y: null }).id
   return {
     a: mk('p-1', '起源方法', 2019),
     b: mk('p-2', '继承工作', 2021),

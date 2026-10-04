@@ -336,13 +336,13 @@ export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
  *  字段 strict 拒）。载荷=既有节点编辑 patch（合并语义：未携带字段保留——
  *  service 层 {...existing, ...patch} 合并落笔，非整行替换）；month/slot
  *  归一沿承 D-I-1（patch 触发组变=目标组 max+1，显式 slot 主权透写）。
- *  白名单=x/y/year/month/slot/title/coreIdea 七编辑字段——coreIdea
- *  =A3 退役遗留面（写队列 coreIdea patch 路径随该单元删）；tags 已随
+ *  白名单=x/y/year/month/slot/title 六编辑字段——核心想法字段已随
+ *  [A3 F-CONTRACTA-01 2026-10-04] 核心想法域全退役删除（语义由
+ *  全文笔记 notes.contentMd 承接——对齐批临时含入面兑现）；tags 已随
  *  [A1b F-CONTRACTA-01 2026-10-04] 标签域退役删除（标签唯一源=文献库域）。
  *  folderId/paperId/created/updated 不可 patch（id=定位键；folderId=移动
  *  语义归 papers/move-folder；paperId=身份）。x/y/month null=清除语义
- *  （自动布局/未定月框）；coreIdea 不可空（DDL NOT NULL DEFAULT ''
- *  +lineageNodeSchema 单源——空串承载清面，null 无落点）。
+ *  （自动布局/未定月框）。
  *  [RR1/d1-N2] 值域单源注记：本 schema 为非派生链——patch 白名单窄化重写
  *  （id 必填+strict 需独立形状，不能自 lineageNodeUpsertSchema omit/
  *  extend 派生），year/month/slot 的 int/min/max 与 models/lineage 节点
@@ -356,8 +356,7 @@ export const lineagePatchNodeReqSchema = z
     year: z.number().int().nullable().optional(),
     month: z.number().int().min(1).max(12).nullable().optional(),
     slot: z.number().int().min(0).nullable().optional(),
-    title: z.string().optional(),
-    coreIdea: z.string().optional()
+    title: z.string().optional()
   })
   .strict()
 export type LineagePatchNodeReq = z.infer<typeof lineagePatchNodeReqSchema>

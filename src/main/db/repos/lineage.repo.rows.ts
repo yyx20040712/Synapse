@@ -19,7 +19,10 @@ import {
 
 /** lineage_nodes 表行形状（列名原样，蛇形；tags=007 迁移列——[A1b
  *  F-CONTRACTA-01 2026-10-04] 标签域退役后死置（读面不映射，清列归 D 批
- *  ——kind/sub 死置列先例同型）；month/slot=010 迁移列——month NULL=未定
+ *  ——kind/sub 死置列先例同型）；core_idea=004 迁移列——[A3
+ *  F-CONTRACTA-01 2026-10-04] core_idea 全退役后死置（DDL NOT NULL
+ *  DEFAULT '' 兜底，读面不映射/写面无该列，清列归 D 批——tags 同型）；
+ *  month/slot=010 迁移列——month NULL=未定
  *  月框（CHECK 1..12 在 DDL）、slot NULL=防御面兜底（迁移回填/service 新写恒
  *  有序）；folder_id=012 迁移列——DDL 可空（design-final 修订二：SQLite ADD
  *  COLUMN 静态禁 REFERENCES+非空 DEFAULT——NOT NULL DEFAULT 安全网移 repo 读
@@ -28,6 +31,7 @@ export interface LineageNodeRow {
   id: string
   paper_id: string | null
   title: string
+  /** [A3] 死置列（DB 保留、DTO 不映射——core_idea 全退役，DDL DEFAULT '' 兜底） */
   core_idea: string
   year: number | null
   x: number | null
@@ -86,11 +90,11 @@ export function toNode(row: LineageNodeRow): LineageNode {
     id: row.id,
     paperId: row.paper_id,
     title: row.title,
-    coreIdea: row.core_idea,
     year: row.year,
     x: row.x,
     y: row.y,
-    // [A1b] tags 列死置不映射（应用面唯一标签源=文献库域——见 LineageNodeRow 注）
+    // [A1b] tags 列死置不映射（应用面唯一标签源=文献库域——见 LineageNodeRow 注）；
+    // [A3] core_idea 列死置不映射（全退役——见 LineageNodeRow 注）
     month: row.month,
     slot: row.slot,
     // 012 列读边界归一：DDL 可空（修订二）+迁移回填+写边界兜底三重封闭后

@@ -31,7 +31,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2022,
     x: null,
     y: null,
@@ -105,27 +104,29 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     expect(host.saveStatus).toBe('clean')
   })
 
-  it('lazy 融合字段级合并：同节点不同字段 patch（coreIdea×x/y）融合后单发共存（save 时合成读最新行）', async () => {
-    const A = node('A', { coreIdea: '旧' })
+  it('lazy 融合轴级合并：同节点 patch（x/y）×override（改月语义轴）融合后单发共存（save 时合成读最新行；[A3] coreIdea patch 轴随退役消亡——负锚）', async () => {
+    const A = node('A', { year: 2020, month: 5, slot: 2 })
     useLineageStore.setState({ nodes: [A] })
     stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
       ({ ok: true, data: { ...A, ...req } as LineageNode })
     )
-    state().editCoreIdea('A', '想法') // 入队（lazy：patch={coreIdea}）
-    state().moveNode('A', 3, 4) // 入队（lazy：patch={x,y}）——与队中项同 id 融合
+    state().moveNode('A', 3, 4) // 入队（lazy：patch={x,y}）
+    state().moveNodeMonth('A', 2020, 6) // 入队（lazy：override={year,month}）——与队中项同 id 融合
     expect(state().queue.length).toBe(1) // 融合单条（拆散即红）
     state().save()
     await settle()
-    // 融合单发：两字段共存（拆散即两次派发或字段互吞即红）
+    // 融合单发：patch 轴与 override 轴共存（拆散即两次派发或轴互吞即红）
     const calls = stubApi.lineage.patchNode.mock.calls as unknown as Array<[Partial<LineageNode>]>
     expect(calls.length).toBe(1)
-    expect(calls[0]![0]).toMatchObject({ id: 'A', coreIdea: '想法', x: 3, y: 4 })
+    expect(calls[0]![0]).toMatchObject({ id: 'A', x: 3, y: 4, year: 2020, month: 6 })
+    // [A3 F-CONTRACTA-01 2026-10-04] core_idea 全退役——patch 轴无 coreIdea 键负锚
+    expect(Object.prototype.hasOwnProperty.call(calls[0]![0], 'coreIdea')).toBe(false)
     expect(state().saveStatus).toBe('clean')
   })
 
   it('P-2 模式切换不丢编辑会话暂存：dirty+queue 非空态 setMode(browse)→setMode(edit) 后原样保留', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
-    state().editCoreIdea('A', '暂存想法') // 入暂存（dirty）
+    state().moveNode('A', 5, 5) // 入暂存（dirty）
     expect(useLineageStore.getState().saveStatus).toBe('dirty') // 前提锁：dirty 态在场
     expect(useLineageStore.getState().queue.length).toBe(1)
     useLineageViewStore.getState().setMode('browse') // 模式切换（P-2：暂存保留）

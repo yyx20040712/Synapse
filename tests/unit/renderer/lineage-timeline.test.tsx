@@ -33,7 +33,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2022,
     x: null,
     y: null,
@@ -248,9 +247,9 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     mount(
       <LineageTimeline
         nodes={[
-          node('A', { year: 2022, month: 9, title: '扩散模型起点', coreIdea: '去噪范式奠基' }),
-          node('B', { year: 2022, month: null, title: '无月文献', coreIdea: '' }),
-          node('T', { paperId: null, year: 2022, month: 9, title: '主题分组', coreIdea: '' }),
+          node('A', { year: 2022, month: 9, title: '扩散模型起点' }),
+          node('B', { year: 2022, month: null, title: '无月文献' }),
+          node('T', { paperId: null, year: 2022, month: 9, title: '主题分组' }),
           node('X', { year: null, month: null, title: '未知年文献' })
         ]}
         edges={[]}
@@ -271,7 +270,8 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
       expect(cardOf(id).querySelector('.c-if')).toBeNull()
       expect(cardOf(id).querySelector('.c-cited')).toBeNull()
     }
-    // 旧族退役（退役行 8——方案切换=删旧；core_idea 呈现面归详情面板）
+    // 旧族退役（退役行 8——方案切换=删旧；core_idea 呈现面随 [A3 F-CONTRACTA-01
+    // 2026-10-04] 全退役同灭——详情面板承载面已删，全文笔记承接语义）
     expect(a.querySelector('.c-idea')).toBeNull()
     expect(a.querySelector('.c-meta')).toBeNull()
     expect(a.querySelector('.c-head')).toBeNull()

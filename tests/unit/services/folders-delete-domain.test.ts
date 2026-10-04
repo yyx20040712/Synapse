@@ -42,7 +42,7 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     for (const id of ['p-dom-a', 'p-dom-b']) {
       seedPaper(id)
       repos.papers.setFolderId(id, folderId)
-      repos.lineage.upsertNode({ paperId: id, title: `节点${id}`, coreIdea: '', year: 2024, x: null, y: null, folderId })
+      repos.lineage.upsertNode({ paperId: id, title: `节点${id}`, year: 2024, x: null, y: null, folderId })
     }
     const na = repos.lineage.nodeByPaperId('p-dom-a')!
     const nb = repos.lineage.nodeByPaperId('p-dom-b')!
@@ -77,11 +77,11 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     // 他夹富域（对照面：域外数据不受域删波及）
     seedPaper('p-keep')
     repos.papers.setFolderId('p-keep', other.id)
-    repos.lineage.upsertNode({ paperId: 'p-keep', title: '幸存节点', coreIdea: '', year: 2024, x: null, y: null, folderId: other.id })
+    repos.lineage.upsertNode({ paperId: 'p-keep', title: '幸存节点', year: 2024, x: null, y: null, folderId: other.id })
     // 主图数据（对照面）
     seedPaper('p-main')
     repos.papers.setFolderId('p-main', MAIN_GRAPH_ID)
-    repos.lineage.upsertNode({ paperId: 'p-main', title: '主图节点', coreIdea: '', year: 2024, x: null, y: null, folderId: MAIN_GRAPH_ID })
+    repos.lineage.upsertNode({ paperId: 'p-main', title: '主图节点', year: 2024, x: null, y: null, folderId: MAIN_GRAPH_ID })
 
     // [RR1 k1-N2] FTS 正对照：删除前同 MATCH 命中=1（证明探针有效——防 CJK
     // 分词不命中导致的「删除后=0」恒绿假阳性）

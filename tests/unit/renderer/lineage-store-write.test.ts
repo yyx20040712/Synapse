@@ -37,7 +37,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2020,
     x: null,
     y: null,
@@ -135,9 +134,9 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     expect(state().saveStatus).toBe('clean')
   })
 
-  it('moveNode/editCoreIdea 全字段载荷：x/y 覆盖与 coreIdea 保留互不清空（防半更新丢字段）', async () => {
+  it('moveNode 全字段载荷：x/y 覆盖+白名单六字段随行防半更新清字段（[A3] coreIdea 键不随行负锚）', async () => {
     useLineageStore.setState({
-      nodes: [node('A', { x: 500, y: 400, coreIdea: '原想法', title: '锚点' })]
+      nodes: [node('A', { x: 500, y: 400, title: '锚点' })]
     })
     state().moveNode('A', 560, 430)
     state().save()
@@ -145,15 +144,12 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变
     //  仅锁新全字段形状；详 lineage-store-reorder.test 同族用例）
     expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'A', title: '锚点', coreIdea: '原想法', year: 2020, month: null, slot: null, x: 560, y: 430 })
+      expect.objectContaining({ id: 'A', title: '锚点', year: 2020, month: null, slot: null, x: 560, y: 430 })
     )
-
-    state().editCoreIdea('A', '新想法')
-    state().save()
-    await settle()
-    expect(stubApi.lineage.patchNode).toHaveBeenLastCalledWith(
-      expect.objectContaining({ id: 'A', coreIdea: '新想法', x: 560, y: 430, title: '锚点' })
-    )
+    // [A3 F-CONTRACTA-01 2026-10-04] core_idea 全退役——patch 载荷无 coreIdea 键
+    // （原「coreIdea 保留互不清空」面随字段消亡；null/undefined 任意形态均不得回潮）
+    const payload = stubApi.lineage.patchNode.mock.calls[0]![0] as Record<string, unknown>
+    expect(Object.prototype.hasOwnProperty.call(payload, 'coreIdea')).toBe(false)
   })
 
   it('连续编辑最后写胜出：暂存期同实体 lazy 合并，save 单发仅最后值', async () => {
@@ -356,13 +352,13 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     stubApi.lineage.graph.mockImplementationOnce(
       () => new Promise((r) => { resolveGraph = r })
     )
-    useLineageStore.setState({ nodes: [node('A', { x: 9, y: 9, coreIdea: '原' })] })
+    useLineageStore.setState({ nodes: [node('A', { x: 9, y: 9 })] })
     void state().load() // load 发起（pending）
-    state().editCoreIdea('A', '编辑中') // 暂存（dirty）
+    state().moveNode('A', 8, 8) // 暂存（dirty）
     resolveGraph({ ok: true, data: { nodes: [node('A')], edges: [] } }) // 旧读晚到
     await settle()
     // graph 旧读被丢弃（暂存在场）——nodes 保持乐观面
-    expect(state().nodes[0]?.coreIdea).toBe('编辑中')
+    expect(state().nodes[0]?.x).toBe(8)
     expect(state().status).toBe('ready')
   })
 })

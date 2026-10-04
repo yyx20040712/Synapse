@@ -16,9 +16,11 @@
  *   via+dashed/color 内联视觉字段[替代 line_type{base,sub} 引用]+line_types
  *   四组→色行名 6 行重整——A9' 仲裁：导出面与数据面形状不一致=导出即坏，
  *   随 U8 破坏性重整同步兑现免中间态；序列化变更必须递增版本并更新快照测试）
- * - 字段：nodes{core_idea,month,node_id,paper_id,pub_no,title,year}——
+ * - 字段：nodes{month,node_id,paper_id,pub_no,title,year}——
  *   [A1b F-CONTRACTA-01 2026-10-04] tags 字段随脉络私有标签域退役删除
- *   （标签唯一源=文献库域；schema_version 不动——导出面无消费方，设计稿 §5.3）
+ *   （标签唯一源=文献库域；schema_version 不动——导出面无消费方，设计稿 §5.3）；
+ *   [A3 F-CONTRACTA-01 2026-10-04] 核心想法字段随核心想法域全退役删除
+ *   （同口径——schema_version 不动，导出面无消费方）
  *   ——**不含 x/y UI 态与 slot**（slot=内部承载列，消费方不需要）；edges
  *   {color,created_at,dashed,edge_id,from,label,to,via?}（via 缺省省略不产
  *   []——N-1 口径）；line_types=[{color,name}×6]（LINE_TYPE_COLORS×色行名
@@ -84,7 +86,6 @@ export function assembleLineageJson(input: LineageAssembleInput): string {
       node_id: n.id,
       paper_id: n.paperId,
       title: n.title,
-      core_idea: n.coreIdea,
       year: n.year,
       month: n.month,
       pub_no: n.paperId !== null ? (pubNos.get(n.paperId) ?? null) : null

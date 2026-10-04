@@ -3,14 +3,15 @@
  * LineageBoard —— 脉络图交互编辑+自动保存+退出聚合
  *
  * ── 行为层 ──
- * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父+改 core_idea）：
+ * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父）：
  *   **[T3-P6] 节点拖拽=写 x/y 覆盖已退役**（JSON Canvas 模式随 SVG 画布
  *   方案切换退役——P8 槽位重排接缝；store moveNode 保留待重接）；
  *   **[F-ALIGN-01 2026-10-04] 加节点两型对话框随手动建点路径全退役
  *   删除**（节点唯一来源=入库/移动两路——INV-NEW-1；主题节点应用层同步
- *   退役）；core_idea 编辑=textarea（负面清单
- *   红线——md 只展示不渲染同族）的对话框装配职责归 LineageBoardDialogs.tsx
- *   （[F-SPLIT-01] 自本件拆出 2026-09-05）；**加边**=源节点菜单
+ *   退役）；**[A3 F-CONTRACTA-01 2026-10-04] 核心想法编辑对话框随
+ *   核心想法域全退役删除**（「核心想法」语义由全文笔记 notes.contentMd 承接
+ *   ——对话框组装配件随挂点消亡整件退役）；
+ *   **加边**=源节点菜单
  *   「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有子边删除+
  *   新边添加两动作组合（UI 呈现单操作，service 两调用——树约束下改父=换父）
  *   的菜单+目标选取提示职责归 LineageBoardMenu.tsx（[F-SPLIT-01] 自本件
@@ -54,11 +55,13 @@
  *
  * ── 架构层 ──
  * - renderer/features/lineage 域内聚（Board 编辑层与渲染宿主
- *   分文件——组件 ≤250 行红线拆分预案：节点菜单/编辑对话框子
- *   组件化=LineageNodeMenu/LineageEditIdeaDialog 两件+[F-SPLIT-01]
- *   装配分组件 LineageBoardMenu/LineageBoardDialogs
- *   两件（[F-ALIGN-01] 建点对话框件随手动建点路径退役删除；[A1b
- *   F-CONTRACTA-01] 脉络侧标签对话框件随私有标签域退役删除）；
+ *   分文件——组件 ≤250 行红线拆分预案：节点菜单子
+ *   组件化=LineageNodeMenu+[F-SPLIT-01]
+ *   装配分组件 LineageBoardMenu
+ *   （[F-ALIGN-01] 建点对话框件随手动建点路径退役删除；[A1b
+ *   F-CONTRACTA-01] 脉络侧标签对话框件随私有标签域退役删除；[A3
+ *   F-CONTRACTA-01] 核心想法编辑对话框件+对话框组装配件随
+ *   核心想法域全退役整件删除——对话框组面清零）；
  *   [T3-P6] 渲染宿主=LineageTimeline 时间线（Canvas/layout/
  *   viewport 退役）；依赖 window.api 写四通道+02 交付（store）；
  *   禁直调 ipc/禁 Node API
@@ -83,7 +86,6 @@ import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
 import { LineageTimeline } from './LineageTimeline'
 import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
-import { LineageBoardDialogs } from './LineageBoardDialogs'
 
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
@@ -102,7 +104,6 @@ export function LineageBoard(props: {
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
-  const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
@@ -140,17 +141,12 @@ export function LineageBoard(props: {
         onMoveNodeMonth={(id, year, month) => store().moveNodeMonth(id, year, month)}
       />
 
-      {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink 与各
-          对话框开关 state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
-          absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响） */}
-      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink}
-        setIdeaNodeId={setIdeaNodeId} />
-
-      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——core_idea 对话框装配；
-          [F-ALIGN-01] 加节点对话框随手动建点路径退役删除；[②U5] 人工父双
-          对话框退役；[A1b] 标签对话框随脉络私有标签域退役删除） */}
-      <LineageBoardDialogs nodes={nodes}
-        ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} />
+      {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink
+          state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
+          absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响）。
+          [A3 F-CONTRACTA-01] 对话框组挂点随核心想法域全退役消亡
+          （对话框组装配件整件删除） */}
+      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink} />
     </div>
   )
 }

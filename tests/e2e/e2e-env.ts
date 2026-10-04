@@ -62,10 +62,10 @@ export interface LineageSeedNode {
   year: number | null
   month?: number | null
   slot?: number | null
-  coreIdea?: string
   folderId?: string
   /** [A1a] 文献库标签种子（tags+paper_tags 两行挂接 paperId——卡 L1 标签断言面；
-   *  [A1b F-CONTRACTA-01] 脉络私有域 tags 种子键随标签域退役删除——本键=唯一标签面） */
+   *  [A1b F-CONTRACTA-01] 脉络私有域 tags 种子键随标签域退役删除——本键=唯一标签面；
+   *  [A3 F-CONTRACTA-01 2026-10-04] coreIdea 种子键随 core_idea 全退役删除） */
   libraryTags?: string[]
 }
 export interface LineageSeedEdge {

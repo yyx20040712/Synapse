@@ -35,19 +35,20 @@ const ISO_A = '2026-01-01T00:00:00.000Z'
 const ISO_B = '2026-01-02T00:00:00.000Z'
 
 /** 三节点夹具（输入刻意乱序——装配须自归位）：A(2021,3,slot1)/B(2021,3,slot2)/C 主题(null)。
- *  [A1b F-CONTRACTA-01] tags 字段随脉络私有标签域退役删除（LineageNode 契约收窄） */
+ *  [A1b F-CONTRACTA-01] tags 字段随脉络私有标签域退役删除（LineageNode 契约收窄）；
+ *  [A3 F-CONTRACTA-01 2026-10-04] coreIdea 随 core_idea 全退役删除（同型收窄） */
 function nodes(): LineageNode[] {
   return [
     {
-      id: 'nB', paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null,
+      id: 'nB', paperId: 'p-2', title: '乙', year: 2021, x: null, y: null,
       month: 3, slot: 2, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
-      id: 'nA', paperId: 'p-1', title: '甲', coreIdea: 'A 思想', year: 2021, x: 5, y: 6,
+      id: 'nA', paperId: 'p-1', title: '甲', year: 2021, x: 5, y: 6,
       month: 3, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     },
     {
-      id: 'nC', paperId: null, title: '丙', coreIdea: '', year: null, x: null, y: null,
+      id: 'nC', paperId: null, title: '丙', year: null, x: null, y: null,
       month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
     }
   ]
@@ -87,7 +88,9 @@ function input(): LineageAssembleInput {
 
 /** golden（手工逐字推演——字节级比对锚；递归 alphabetical 键序；v3。
  *  [A1b F-CONTRACTA-01 2026-10-04] 重冻结：nodes 各行 tags 键消失=唯一差异
- *  （人工核对 diff——设计稿 §4.2/§5.3；schema_version 不动=导出面无消费方） */
+ *  （人工核对 diff——设计稿 §4.2/§5.3；schema_version 不动=导出面无消费方）；
+ *  [A3 F-CONTRACTA-01 2026-10-04] 再冻结：nodes 各行 core_idea 键消失=唯一
+ *  差异（人工核对 diff——同 A1b 口径） */
 const GOLDEN = `{
   "edges": [
     {
@@ -147,7 +150,6 @@ const GOLDEN = `{
   ],
   "nodes": [
     {
-      "core_idea": "A 思想",
       "month": 3,
       "node_id": "nA",
       "paper_id": "p-1",
@@ -156,7 +158,6 @@ const GOLDEN = `{
       "year": 2021
     },
     {
-      "core_idea": "",
       "month": 3,
       "node_id": "nB",
       "paper_id": "p-2",
@@ -165,7 +166,6 @@ const GOLDEN = `{
       "year": 2021
     },
     {
-      "core_idea": "",
       "month": null,
       "node_id": "nC",
       "paper_id": null,
@@ -187,7 +187,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
     expect(assembleLineageJson(input())).toBe(assembleLineageJson(input()))
   })
 
-  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 core_idea<…<year；边 color<created_at<dashed<…<via', () => {
+  it('递归 alphabetical 键序断言：顶层 edges<line_types<nodes<schema_version；节点 month<…<year（[A3] core_idea 键随退役消失）；边 color<created_at<dashed<…<via', () => {
     const text = assembleLineageJson(input())
     const topKeys = [...Object.keys(JSON.parse(text))]
     expect(topKeys).toEqual(['edges', 'line_types', 'nodes', 'schema_version'])
@@ -195,7 +195,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
     const parsed = JSON.parse(text) as Record<string, unknown>
     const firstNode = (parsed.nodes as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstNode)).toEqual([
-      'core_idea', 'month', 'node_id', 'paper_id', 'pub_no', 'title', 'year'
+      'month', 'node_id', 'paper_id', 'pub_no', 'title', 'year'
     ])
     const firstEdge = (parsed.edges as Array<Record<string, unknown>>)[0]!
     expect(Object.keys(firstEdge)).toEqual([
@@ -209,7 +209,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
     expect(Object.keys(firstRow)).toEqual(['color', 'name'])
   })
 
-  it('pub_no=入参 pubNos 同源直取（INV-92 库级编号）；主题节点 null；不含 x/y/slot；via 缺省省略不产 []（N-1）', () => {
+  it('pub_no=入参 pubNos 同源直取（INV-92 库级编号）；主题节点 null；不含 x/y/slot/core_idea；via 缺省省略不产 []（N-1）', () => {
     const parsed = JSON.parse(assembleLineageJson(input())) as {
       nodes: Array<Record<string, unknown>>
       edges: Array<Record<string, unknown>>
@@ -219,6 +219,7 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
       expect('x' in n).toBe(false)
       expect('y' in n).toBe(false)
       expect('slot' in n).toBe(false)
+      expect('core_idea' in n).toBe(false) // [A3] core_idea 全退役——导出键消失负锚
     }
     expect('via' in parsed.edges[0]!).toBe(false) // 无 via 边缺省省略
     expect(parsed.edges[1]!.via).toEqual([{ x: 1, y: 2 }, { x: 1, y: 30 }])
@@ -240,15 +241,15 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
       assembleLineageJson({
         nodes: [
           {
-            id: 'nA', paperId: 'p-1', title: '主图甲', coreIdea: '', year: 2021, x: null, y: null,
+            id: 'nA', paperId: 'p-1', title: '主图甲', year: 2021, x: null, y: null,
             month: 1, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
           },
           {
-            id: 'nC', paperId: null, title: '主图主题', coreIdea: '', year: null, x: null, y: null,
+            id: 'nC', paperId: null, title: '主图主题', year: null, x: null, y: null,
             month: null, slot: 1, folderId: '__main__', createdAt: ISO_A, updatedAt: 't'
           },
           {
-            id: 'nD', paperId: 'p-2', title: '他图乙', coreIdea: '', year: 2022, x: null, y: null,
+            id: 'nD', paperId: 'p-2', title: '他图乙', year: 2022, x: null, y: null,
             month: 2, slot: 1, folderId: 'f-x', createdAt: ISO_A, updatedAt: 't'
           }
         ],
@@ -327,7 +328,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       .prepare('INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at) VALUES (?,?,?,?,?,?)')
       .run('p-1', 'p-1.pdf', 'sha-1', '文献甲', 't', 't')
     h.repos.lineage.upsertNode({
-      paperId: 'p-1', title: '文献甲', coreIdea: '核心', year: 2021, x: null, y: null, month: 3
+      paperId: 'p-1', title: '文献甲', year: 2021, x: null, y: null, month: 3
     })
   }
 
@@ -367,7 +368,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       })
       expect(text).toBe(expectText)
       expect((JSON.parse(text) as { nodes: Array<{ pub_no: number; paper_id: string }> }).nodes).toEqual([
-        { core_idea: '核心', month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, title: '文献甲', year: 2021 }
+        { month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, title: '文献甲', year: 2021 }
       ])
     } finally {
       await h.dispose()

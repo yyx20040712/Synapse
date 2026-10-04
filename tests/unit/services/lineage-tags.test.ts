@@ -94,8 +94,8 @@ describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () =>
 
 describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', () => {
   it('批量单语句：graph() 单次调用 paperMetrics 一次且传全量文献 id（禁 N+1 主控裁决）', () => {
-    repo.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
-    repo.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-1', title: '甲', year: 2018, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-2', title: '乙', year: 2021, x: null, y: null })
     metricsSpy.mockClear()
     const g = svc.graph()
     expect(metricsSpy).toHaveBeenCalledTimes(1)
@@ -104,9 +104,9 @@ describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', ()
   })
 
   it('含金量三元组：T1 映射+被引 42/未映射 venue+null/0=值非缺（判别 === null）；[②U4] venue 透传+impact_factor null=缺席', () => {
-    repo.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
-    repo.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
-    repo.upsertNode({ paperId: 'p-3', title: '丙', coreIdea: '', year: 2022, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-1', title: '甲', year: 2018, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-2', title: '乙', year: 2021, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-3', title: '丙', year: 2022, x: null, y: null })
     const g = svc.graph()
     expect(g.paperMetrics['p-1']).toEqual({ citedByCount: 42, venueTier: 'T1', venue: 'Nature Water', impactFactor: null })
     expect(g.paperMetrics['p-2']).toEqual({ citedByCount: null, venueTier: null, venue: '某未映射期刊', impactFactor: null })
@@ -123,8 +123,8 @@ describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', ()
 
 describe('A1a graph tagNames（文献库标签域伴生 map——Record<paperId, string[]>）', () => {
   it('文献节点带其文献库标签名（名序=namesByPaper 同序口径）+批量一次单批（禁 N+1）', () => {
-    repo.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
-    repo.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-1', title: '甲', year: 2018, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-2', title: '乙', year: 2021, x: null, y: null })
     // 挂接序乱序（调度→方法→流域）：断言按名序回收（ORDER BY t.name ASC 单源）
     for (const name of ['调度', '方法', '流域']) {
       tagsRepo.attach('p-1', tagsRepo.upsertByName(name).id)
@@ -137,7 +137,7 @@ describe('A1a graph tagNames（文献库标签域伴生 map——Record<paperId,
   })
 
   it('[F-ALIGN-01 改写] 无标签文献不在 map（无键非空数组）；孤儿标签面不入 map；空图=空 map（原主题节点断言随退役删）', () => {
-    repo.upsertNode({ paperId: 'p-2', title: '乙（无库标签）', coreIdea: '', year: 2021, x: null, y: null })
+    repo.upsertNode({ paperId: 'p-2', title: '乙（无库标签）', year: 2021, x: null, y: null })
     tagsRepo.attach('p-3', tagsRepo.upsertByName('孤儿标签面').id) // p-3 无节点行——不入 map
     const g = svc.graph()
     expect(g.tagNames).toEqual({})

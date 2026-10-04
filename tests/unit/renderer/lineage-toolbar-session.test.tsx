@@ -31,7 +31,7 @@ const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage-
 
 function node(id: string): LineageNode {
   return {
-    id, paperId: `paper-${id}`, title: `节点${id}`, coreIdea: '', year: 2022,
+    id, paperId: `paper-${id}`, title: `节点${id}`, year: 2022,
     x: null, y: null, month: 9, slot: null, folderId: '__main__', createdAt: 't', updatedAt: 't'
   }
 }
@@ -340,13 +340,13 @@ describe('F-LGRAPH-01②U2 撤销/重做钮（接 U1 会话栈）', () => {
     expect(btn('lineage-undo').disabled).toBe(true)
     expect(btn('lineage-redo').disabled).toBe(true)
     act(() => {
-      useLineageStore.getState().editCoreIdea('A', '甲')
+      useLineageStore.getState().moveNode('A', 10, 10)
     })
     expect(btn('lineage-undo').disabled).toBe(false)
     click(btn('lineage-undo'))
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('')
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(null)
     expect(btn('lineage-redo').disabled).toBe(false)
     click(btn('lineage-redo'))
-    expect(useLineageStore.getState().nodes[0]?.coreIdea).toBe('甲')
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(10)
   })
 })

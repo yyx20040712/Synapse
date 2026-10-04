@@ -24,7 +24,6 @@ function node(id: string): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2022,
     x: null,
     y: null,

@@ -215,7 +215,6 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
           const seed = {
             paperId: req.paperId,
             title: paper.title.trim() === '' ? '（无标题）' : paper.title,
-            coreIdea: '',
             year: paper.year,
             x: null,
             y: null,

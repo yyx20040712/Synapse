@@ -36,18 +36,18 @@ it('upsertNode：新建全字段往返（paperId/year 可空面）+同 id 二次
   const n1 = repo.upsertNode({
     paperId: 'p-1',
     title: '起源',
-    coreIdea: '核心',
     year: 2018,
     x: null,
     y: null
   })
   expect(n1.id).toBeTruthy()
-  expect(n1).toMatchObject({ paperId: 'p-1', title: '起源', coreIdea: '核心', year: 2018, x: null, y: null })
+  // [A3 F-CONTRACTA-01] coreIdea 随 core_idea 全退役——DTO 无键负锚（DDL 列死置 DEFAULT ''）
+  expect(n1).toMatchObject({ paperId: 'p-1', title: '起源', year: 2018, x: null, y: null })
+  expect('coreIdea' in n1).toBe(false)
   const n2 = repo.upsertNode({
     id: n1.id,
     paperId: 'p-1',
     title: '起源（改）',
-    coreIdea: '核心（改）',
     year: null,
     x: 12.5,
     y: 3.25
@@ -60,8 +60,8 @@ it('upsertNode：新建全字段往返（paperId/year 可空面）+同 id 二次
 })
 
 it('removeNode：DDL 级联清关联边；removeEdge 计数', () => {
-  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
-  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
+  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', year: null, x: null, y: null })
+  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', year: null, x: null, y: null })
   const e = repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
   expect(repo.removeEdge(e.id)).toBe(1)
   expect(repo.removeEdge(e.id)).toBe(0)
@@ -75,15 +75,15 @@ it('removeNode：DDL 级联清关联边；removeEdge 计数', () => {
 
 it('upsertEdge：UNIQUE(from,to) 拒同端点第二条（DDL 收口）；listGraph 空库=空数组合法态', () => {
   expect(repo.listGraph()).toEqual({ nodes: [], edges: [] })
-  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
-  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
+  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', year: null, x: null, y: null })
+  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', year: null, x: null, y: null })
   repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '一' })
   expect(() => repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '二' })).toThrow()
 })
 
 it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () => {
-  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: null, x: null, y: null })
-  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: null, x: null, y: null })
+  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', year: null, x: null, y: null })
+  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', year: null, x: null, y: null })
   repo.upsertEdge({ fromNode: a.id, toNode: b.id, label: '' })
   db.prepare('DELETE FROM papers WHERE id = ?').run('p-1')
   const g = repo.listGraph()
@@ -94,9 +94,9 @@ it('级联链：paper 删除 → lineage_nodes CASCADE → 关联边随亡', () 
 // ── service：upsertEdge 运行时守卫（W1 宿主——三拒绝路径） ──────
 
 function seedChain(): { a: string; b: string; c: string } {
-  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', coreIdea: '', year: 2018, x: null, y: null })
-  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', coreIdea: '', year: 2019, x: null, y: null })
-  const c = repo.upsertNode({ paperId: 'p-3', title: 'c', coreIdea: '', year: 2020, x: null, y: null })
+  const a = repo.upsertNode({ paperId: 'p-1', title: 'a', year: 2018, x: null, y: null })
+  const b = repo.upsertNode({ paperId: 'p-2', title: 'b', year: 2019, x: null, y: null })
+  const c = repo.upsertNode({ paperId: 'p-3', title: 'c', year: 2020, x: null, y: null })
   return { a: a.id, b: b.id, c: c.id }
 }
 
@@ -125,7 +125,7 @@ it('upsertEdge 重复边中文收口（UNIQUE 收口面）；节点不存在中�
 })
 
 it('[F-ALIGN-01 改写] removeNode/removeEdge 透传（原幽灵 paperId 拒用例随新建形态退役——节点建装置=repo 直插）', () => {
-  const n = repo.upsertNode({ paperId: 'p-1', title: 'x', coreIdea: '', year: null, x: null, y: null })
+  const n = repo.upsertNode({ paperId: 'p-1', title: 'x', year: null, x: null, y: null })
   expect(svc.removeNode(n.id)).toBe(1)
 })
 

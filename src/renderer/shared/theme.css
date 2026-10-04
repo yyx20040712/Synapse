@@ -98,7 +98,7 @@
      不并入 --shadow-sel-glow[值异 .14/.18 语义隔离]） */
   --fs-tl-year: 23px;   /* 年份头衬线数字（mockup .tl-year-num） */
   --fs-tl-title: 9.3px; /* 小卡题名（.c-title） */
-  --fs-tl-idea: 8.2px;  /* 小卡核心想法（.c-idea） */
+  --fs-tl-idea: 8.2px;  /* 8px 级小字（消费=标签 pill .c-tag/+N 骑缝 .c-tag-more/L3 期刊 .c-venue——token 名承旧 .c-idea 史，[A3 F-CONTRACTA-01] 皮肤消费面随该区退役已清） */
   --fs-tl-meta: 7.5px;  /* 小卡骑缝号/徽章/年月引用行（.c-no/.mb/.c-meta） */
   --fs-tl-hint: 10.5px; /* 空月框拖入提示（.frame-hint——P8 预留样式类） */
   --shadow-tl-sel: 0 3px 10px rgba(58, 91, 217, 0.18); /* 时间线小卡选中外辉（三族恒定——mockup .tl-card.sel） */

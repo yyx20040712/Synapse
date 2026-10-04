@@ -8,8 +8,9 @@
  *   ——ADR-0022；[F-ALIGN-01] UI 添加节点路径退役——T1 节点改种子直写，
  *   UI 交互面=连线/编辑/保存）；②
  *   滚动容器锚（[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
- *   ③时间线真文本 reload 持久+core_idea 编辑持久（⑧主题面随主题节点退役删
- *   ——[F-ALIGN-01]；core_idea 持久锚迁 paper 节点承载）；④加边重复端点对拒绝
+ *   ③时间线真文本 reload 持久（core_idea 编辑持久面随 [A3 F-CONTRACTA-01
+ *   2026-10-04] core_idea 全退役删除——节点写链 reload 持久由 T10 承载）；
+ *   ④加边重复端点对拒绝
  *   toast（②U8 起多父守卫文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目
  *   双击→阅读器打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
  *   自动保存失败路径→退出拦截弹窗（聚合面）——**mock 实现路径注
@@ -31,8 +32,8 @@
  * ── 实现注（LG-05 交付，主控简报六段裁决落点；[F-BAKRET-01] 种子链改述）──
  * - **守卫修订（主控裁定 5）**：skip 条件从「依赖组∪自身」收敛为**仅依赖组**。
  * - **用例组映射（裁决 1）**：T1=①时间线真文本渲染（种子直写）+②滚动容器锚；
- *   T2=③时间线真文本 reload 持久+core_idea 编辑持久（paper 节点承载
- *   ——[F-ALIGN-01] ⑧主题面退役，同一 launch 两轮 reload）；T3=④重复加边拒绝
+ *   T2=③时间线真文本 reload 持久（[A3] core_idea 编辑持久段退役删——
+ *   写链持久面由 T10 改月全流承载）；T3=④重复加边拒绝
  *   toast（②U8 迁移面）+⑦写通道 patch 失败→保存失败指示条→真聚合脏态→close
  *   拦截两态；T4=⑤侧板分节分色+⑥AI 条目双击跳阅读器+锚定位。
  * - **种子链（[F-BAKRET-01] 改述+[F-ALIGN-01]）**：papers 经 e2e-env.seedPaperRow
@@ -81,14 +82,14 @@ const BRICK_PAPERS = [
   { id: 'e2e-lg-brick-b', title: '砖砌文献乙（e2e）' }
 ] as const
 
-/** 种子载荷：标准树（根→甲/乙——④的重复拒绝场景=对乙再加同端点对边被拒） */
+/** 种子载荷：标准树（根→甲/乙——④的重复拒绝场景=对乙再加同端点对边被拒）；
+ *  [A3 F-CONTRACTA-01 2026-10-04] coreIdea 种子键随 core_idea 全退役删除 */
 function chainSeed(): { nodes: LineageSeedNode[]; edges: LineageSeedEdge[] } {
   return {
     nodes: PAPERS.map((p) => ({
       paperId: p.id,
       title: p.title,
-      year: p.year,
-      coreIdea: p.id === 'e2e-lg-a' ? '脉络甲的核心 idea（e2e）' : ''
+      year: p.year
     })),
     edges: [
       { from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' },
@@ -281,11 +282,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   /**
    * T2=验收面③：时间线真文本 reload 持久（[T3-P6 主控裁决] 拖拽 x/y
    * 持久随自由拖拽退役——P8 槽位重排接缝；持久锚=年份头/月标签/小卡
-   * 题名）+core_idea 编辑持久（paper 节点承载——[F-ALIGN-01] ⑧主题面随
-   * 主题节点退役删）。同一 launch 两轮 reload。
+   * 题名）。同一 launch 两轮 reload。
+   * [A3 F-CONTRACTA-01 2026-10-04] core_idea 编辑持久段随 core_idea 全退役
+   * 删除（编辑对话框+详情面板 idea 区+写链同批退役——「核心想法」语义由全文
+   * 笔记 notes.contentMd 承接）；节点写链 reload 持久面由 T10 改月全流承载。
    */
-  test('T2 时间线真文本 reload 持久+paper 节点编辑 core_idea reload 持久', async () => {
-    test.slow() // 两轮 reload+四段写链
+  test('T2 时间线真文本 reload 持久', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t2-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -304,30 +306,23 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.locator('.month-tag').first()).toHaveText('未定月 · 1 篇')
     await expect(win.getByText('脉络根文献')).toBeVisible()
 
-    // [F-ALIGN-01 改写] core_idea 编辑持久（paper 节点承载——原⑧主题面随
-    // 主题节点退役删）：右键→编辑核心想法→保存；[T3-P7B] 工具条入流后内容
-    // 下移——右键前滚卡至视口中心（fixed 菜单锚点防下缘溢出视口）
-    const ideaG = nodeG(win, '脉络甲文献')
-    // [RR2] 右键前先左键点选：selectedNode 置位（右键不触发 onSelectNode——
-    // 侧板 lineage-side-idea 挂载门=选中态；旧主题流程的左键选中前置随改写丢失）
-    await ideaG.click()
-    await ideaG.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-    await ideaG.click({ button: 'right' })
-    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
-    await win.getByTestId('core-idea-input').fill('脉络甲的编辑后核心想法（e2e 持久锚）')
-    await win.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
-    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的编辑后核心想法（e2e 持久锚）')
-    // [②U1] 会话语义：编辑入暂存→点工具组保存钮批量落库（edit 态）
-    await win.getByTestId('lineage-mode-edit').click()
-    await win.getByTestId('lineage-save-btn').click()
-    await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
-
-    // reload→core_idea 持久
-    await reloadToLineage(win)
-    const ideaG2 = nodeG(win, '脉络甲文献')
-    await expect(ideaG2).toBeVisible()
-    await ideaG2.click()
-    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的编辑后核心想法（e2e 持久锚）')
+    // [A3] 退役面负锚：节点菜单无「编辑核心想法」项+详情面板（选中态挂载后）
+    // 无 idea 区。菜单关闭=透明遮罩点击（ESC 归 Dialog 域不关菜单——NodeMenu
+    // 头注口径）；遮罩 fixed inset-0 全屏——右键菜单恰锚在卡片鼠标位上方，
+    // 点卡片=点中菜单本体被拦截，须坐标点击画布空白处落遮罩（RR2 主控亲执：
+    // executor 首版两击选卡策略被菜单拦截 60s 超时实测）
+    const cardA = nodeG(win, '脉络甲文献')
+    await cardA.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await cardA.click({ button: 'right' })
+    await expect(win.getByTestId('lineage-node-menu')).toBeVisible()
+    await expect(
+      win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' })
+    ).toHaveCount(0)
+    await win.mouse.click(50, 520) // 画布空白落透明遮罩——关菜单
+    await expect(win.getByTestId('lineage-node-menu')).toHaveCount(0)
+    await cardA.click() // 选中——面板挂载
+    await expect(win.getByTestId('lineage-side-panel')).toBeVisible()
+    await expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)
 
     await app.close()
   })
@@ -384,14 +379,18 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       })
     })
 
-    // 写失败触发=[T3-P6 适配] 拖拽退役→编辑 core_idea 写通道（同一
-    //   patch-node 失败面：handler 已 patch 抛错→error 保存态）
-    await nodeG(win, '脉络根文献').click({ button: 'right' })
-    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
-    await win.getByTestId('core-idea-input').fill('写失败探针（e2e 桩）')
-    // [②U2] 对话框内保存钮（工具组保存钮同名——dialog 作用域消歧）
-    await win.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
-    // [②U1] 会话语义：编辑入暂存（dirty）→点工具组保存钮→批量落库失败=
+    // 写失败触发=[T3-P6 适配] 拖拽退役→原编辑 core_idea 写通道（[A3
+    //   F-CONTRACTA-01 2026-10-04] 对话框随 core_idea 全退役删除）→改月写通道
+    //   （同一 patch-node 失败面：handler 已 patch 抛错→error 保存态）
+    const ymFail = nodeG(win, '脉络甲文献').locator('.c-ym')
+    await ymFail.click()
+    const popFail = win.getByTestId('month-pop')
+    await expect(popFail).toBeVisible()
+    await popFail.locator('.ws-item[data-ym="2023|null"]').click()
+    // moveTargetLabel(year, null)=「未定月」（不带年——null 月短路先例）：
+    // 甲 2022 未定月→2023 未定月=跨年 override patch 入暂存
+    await expect(win.getByText('已移至 未定月')).toBeVisible({ timeout: 10_000 })
+    // [②U1] 会话语义：改月入暂存（dirty）→点工具组保存钮→批量落库失败=
     // 行内错误+重试（退役行 4：chip→保存钮行内错误）
     await expect(win.getByTestId('lineage-save-btn')).toBeEnabled()
     await win.getByTestId('lineage-save-btn').click()
@@ -508,9 +507,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
     await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放') // [②U4/行 9] 已绑定文献徽章随 core UI 消费面退役——星标禁用呈现承接
-    // [T3-P6 适配] core_idea 双渲染面（时间线卡 .c-idea+侧板）——getByText
-    // 严格模式双元素冲突，断言收窄到侧板（T2 lineage-side-idea 同锚）
-    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的核心 idea（e2e）')
+    // [A3 F-CONTRACTA-01 2026-10-04] core_idea 侧板渲染面随全退役删除——
+    // 面板无 idea 区（负锚；原「脉络甲的核心 idea」文本锚消亡）
+    await expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)
     const aiSection = win.getByTestId('lineage-side-ai-notes')
     await expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })
     await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
@@ -561,8 +560,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 5 卡同月（2020-05）：PAPERS 三篇改同年同月+砖砌两篇（slot=种子序）
     await seedLineageGraph(userData, {
       nodes: [
-        ...PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5, coreIdea: '' })),
-        ...BRICK_PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5, coreIdea: '' }))
+        ...PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5 })),
+        ...BRICK_PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5 }))
       ],
       edges: []
     })
@@ -779,9 +778,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // （slot 显式=INV-75 组内全序——null 末序会颠倒 reload 后组内呈现）
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
-        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 }
       ],
       edges: []
     })
@@ -895,9 +894,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 组内序=服务端 max+1 归一可锚）
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
-        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 }
       ],
       edges: []
     })
@@ -983,9 +982,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     }
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '', libraryTags: ['方法', '流域', '调度'] },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
-        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, libraryTags: ['方法', '流域', '调度'] },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 }
       ],
       edges: []
     })
@@ -1039,8 +1038,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await seedLineagePapers(userData)
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
       ],
       edges: []
     })
@@ -1128,8 +1127,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await seedLineagePapers(userData)
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
       ],
       edges: []
     })
@@ -1220,8 +1219,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await seedLineagePapers(userData)
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '' },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' }
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
       ],
       edges: [{ from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' }]
     })

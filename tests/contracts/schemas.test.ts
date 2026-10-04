@@ -55,7 +55,6 @@ const lineageNode = {
   id: 'ln1',
   paperId: null,
   title: '主题',
-  coreIdea: '',
   year: null,
   x: null,
   y: null,
@@ -170,11 +169,13 @@ const VALID: Record<string, unknown[]> = {
     }
   ],
   // [F-ALIGN-01] upsert-node 通道退役（新建形态结构性不可表达）——patch-node
-  // 白名单=id+七编辑字段（[A1b] tags 已随标签域退役删除；coreIdea=A3 遗留面）
+  // 白名单=id+六编辑字段（[A1b] tags 随标签域退役删；[A3 F-CONTRACTA-01
+  // 2026-10-04] coreIdea 随 core_idea 全退役删——「核心想法」语义由全文笔记
+  // notes.contentMd 承接）
   lineagePatchNodeReqSchema: [
     { id: 'ln1' },
     { id: 'ln1', x: 1, y: 2 },
-    { id: 'ln1', title: 't', coreIdea: '', year: 2020, month: 6, slot: 1 },
+    { id: 'ln1', title: 't', year: 2020, month: 6, slot: 1 },
     { id: 'ln1', month: null }
   ],
   lineageIdReqSchema: [{ id: 'ln1' }],
@@ -457,20 +458,21 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     expect(S.lineagePatchNodeReqSchema.safeParse({ x: 1 }).success).toBe(false) // 缺 id 拒
     expect(S.lineagePatchNodeReqSchema.safeParse({ id: '' }).success).toBe(false) // 空串拒
     // 白名单外字段 strict 拒（新建载荷成员全数拒收；[A1b] tags 随脉络私有
-    // 标签域退役入拒收面——标签唯一源=文献库域）
-    for (const extra of ['paperId', 'folderId', 'createdAt', 'updatedAt', 'tags']) {
+    // 标签域退役入拒收面——标签唯一源=文献库域；[A3 F-CONTRACTA-01 2026-10-04]
+    // coreIdea 随 core_idea 全退役入拒收面——「核心想法」语义由全文笔记承接）
+    for (const extra of ['paperId', 'folderId', 'createdAt', 'updatedAt', 'tags', 'coreIdea']) {
       expect(
         S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', [extra]: 'x' }).success,
-        `${extra} 不可经 patch-node 携带（身份/移动/时间戳字段${extra === 'tags' ? '/已退役标签字段' : ''}）`
+        `${extra} 不可经 patch-node 携带（身份/移动/时间戳字段${extra === 'tags' ? '/已退役标签字段' : ''}${extra === 'coreIdea' ? '/已退役核心想法字段' : ''}）`
       ).toBe(false)
     }
     // month null=清除语义合法（移入未定月框）+全部白名单成员合法形
     expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', month: null }).success).toBe(true)
     expect(
-      S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', x: 1.5, y: 2, year: 2020, month: 6, slot: 1, title: 't', coreIdea: '' }).success
+      S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', x: 1.5, y: 2, year: 2020, month: 6, slot: 1, title: 't' }).success
     ).toBe(true)
     expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', tags: null }).success).toBe(false) // [A1b] tags 已退役——strict 拒（标签唯一源=文献库域）
-    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', coreIdea: null }).success).toBe(false) // coreIdea 不可空（DDL NOT NULL+节点 schema 单源——空串承载清面）
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', coreIdea: '' }).success).toBe(false) // [A3] coreIdea 已退役——strict 拒（core_idea 全退役；空串/null 形态同拒）
     // month 值域沿承节点 schema（1..12——非白名单弱化面）
     expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', month: 13 }).success).toBe(false)
     expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', slot: -1 }).success).toBe(false)

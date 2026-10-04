@@ -32,7 +32,7 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   // UI 添加面退役；paper 随种子归夹=INV-88 镜像语义）
   await seedLineageGraph(userData, {
     folders: [{ id: 'f-s4', name: '即将删除的图', position: 1 }],
-    nodes: [{ paperId: 'e2e-s4-guide', title: 'S4 种子文献', year: 2024, coreIdea: '', folderId: 'f-s4' }]
+    nodes: [{ paperId: 'e2e-s4-guide', title: 'S4 种子文献', year: 2024, folderId: 'f-s4' }]
   })
   const app = await launch(userData)
   const win = await app.firstWindow()
@@ -105,8 +105,8 @@ test('G④：存量幽灵边（直写库种子）→graph 子图过滤+导出 li
   await seedLineageGraph(userData, {
     folders: [{ id: 'f-g4', name: '跨图夹', position: 1 }],
     nodes: [
-      { paperId: GP1.id, title: GP1.title, year: GP1.year, coreIdea: '', folderId: 'f-g4' },
-      { paperId: GP2.id, title: GP2.title, year: GP2.year, coreIdea: '' }
+      { paperId: GP1.id, title: GP1.title, year: GP1.year, folderId: 'f-g4' },
+      { paperId: GP2.id, title: GP2.title, year: GP2.year }
     ],
     edges: [{ from: GP1.id, to: GP2.id, label: '跨图连线' }]
   })

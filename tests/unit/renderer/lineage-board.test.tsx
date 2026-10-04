@@ -4,12 +4,14 @@
  * 不经 guardedDescribe）。
  *
  * 覆盖：单击选中 onSelectNode 上抛（04 侧板消费面预留；[T3-P6] 拖拽 x/y
- * 写面随拖拽退役——载荷保留断言由 core_idea 编辑 it 承载）/加边全流程（源
+ * 写面随拖拽退役）/加边全流程（源
  * 节点菜单「连线到…」+目标选取）/树拒绝三路径
  * toast（service reason 透传——守卫宿主=LG-01 service）/改父=删+加两调用/
- * 删节点/删除父连线/core_idea 编辑（x/y 保留防清覆盖）/保存失败指示+重试
- * （[T3-P6] 写触发器=编辑 core_idea——drag 随拖拽退役，主控裁决 a）/
- * 组合根退出聚合（lineage dirty→system/set-quit-dirty，INV-22 扩面）。
+ * 删节点/删除父连线/保存失败指示+重试
+ * （[T3-P6] 写触发器原=编辑 core_idea；[A3 F-CONTRACTA-01 2026-10-04]
+ * core_idea 编辑对话框随全退役删除——触发器换 store.moveNode（x/y 数据面
+ * 未退役），保存态/聚合脏态断言语义保活）/组合根退出聚合（lineage
+ * dirty→system/set-quit-dirty，INV-22 扩面）。
  * [F-ALIGN-01] 加节点对话框两型 describe（library.list 搜索选取 vs 主题
  * title）随手动添加节点路径退役删除（2026-10-04——节点唯一来源=入库/移动）。
  */
@@ -52,7 +54,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2020,
     x: null,
     y: null,
@@ -117,22 +118,13 @@ function openMenu(id: string): void {
   })
 }
 
-/** [T3-P6 主控裁决 a] 写触发器=编辑 core_idea（[F-ALIGN-01] patch-node 写通道——
- *  drag 触发器随拖拽退役，保存态/聚合脏态断言语义迁移保活） */
-async function writeViaEditIdea(id: string): Promise<void> {
-  openMenu(id)
-  clickMenu('编辑核心想法')
-  const ta = q('[data-testid="core-idea-input"]') as HTMLTextAreaElement | null
-  if (ta === null) throw new Error('core_idea 输入未渲染')
+/** [A3 F-CONTRACTA-01 2026-10-04] 写触发器=store.moveNode（patch-node 写通道；
+ *  原编辑 core_idea 对话框路径随 core_idea 全退役删除——drag〔T3-P6〕→
+ *  EditIdea〔A3〕两代触发器退役后，保存态/聚合脏态断言语义经 store 动作直驱
+ *  保活〔x/y 数据面未退役〕） */
+async function writeViaNodePatch(id: string): Promise<void> {
   act(() => {
-    typeInto(ta, '保存态触发想法')
-  })
-  const save = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
-    (b) => b.textContent === '保存'
-  )
-  if (save === undefined) throw new Error('保存按钮未渲染')
-  act(() => {
-    save.click()
+    useLineageStore.getState().moveNode(id, 101, 102)
   })
   useLineageStore.getState().save() // [②U1] 点保存批量落库
   await flush()
@@ -147,14 +139,6 @@ function clickMenu(label: string): void {
   act(() => {
     btn.click()
   })
-}
-
-/** React 受控输入的 jsdom 驱动法：原生 setter+input 事件（直接赋 value 不生效——
- *  reader-notes-panel.test.tsx typeInto 同型） */
-function typeInto(el: HTMLInputElement | HTMLTextAreaElement, text: string): void {
-  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
-  Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, text)
-  el.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
 beforeEach(() => {
@@ -209,7 +193,7 @@ describe('LineageBoard —— 选中上抛（T3-P6 拖拽退役后）', () => {
   })
 })
 
-describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core_idea）', () => {
+describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点）', () => {
   it('加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}', async () => {
     seedLineage([node('A'), node('B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
@@ -277,30 +261,6 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     await flush()
     expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
   })
-
-  it('core_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）', async () => {
-    seedLineage([node('A', { ...OVL, coreIdea: '旧想法' })])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('A')
-    clickMenu('编辑核心想法')
-    const ta = q('[data-testid="core-idea-input"]') as HTMLTextAreaElement | null
-    if (ta === null) throw new Error('core_idea 输入未渲染')
-    act(() => {
-      typeInto(ta, '新的核心想法')
-    })
-    const save = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
-      (b) => b.textContent === '保存'
-    )
-    if (save === undefined) throw new Error('保存按钮未渲染')
-    act(() => {
-      save.click()
-    })
-    useLineageStore.getState().save() // [②U1]
-    await flush()
-    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'A', coreIdea: '新的核心想法', x: 500, y: 400 })
-    )
-  })
 })
 
 describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内错误——退役行 4 chip）', () => {
@@ -311,7 +271,7 @@ describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内
     seedLineage([node('A', OVL)])
     useLineageViewStore.getState().setMode('edit') // [②U2/A11] 工具组仅 edit 可见
     mount(<LineageBoard onSelectNode={() => undefined} />)
-    await writeViaEditIdea('A')
+    await writeViaNodePatch('A')
     const bar = q('[data-testid="lineage-save-error"]')
     expect(bar?.textContent).toContain('写入失败')
     const retry = q('[data-testid="lineage-save-retry"]') as HTMLButtonElement | null
@@ -347,7 +307,7 @@ describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lin
     })
     await flush()
     // [T3-P6 主控裁决 a] drag 触发器→编辑 core_idea 写通道（断言意图不变）
-    await writeViaEditIdea('A')
+    await writeViaNodePatch('A')
     await flush()
     const calls = stubApi.system.setQuitDirty.mock.calls
     expect(calls.length).toBeGreaterThanOrEqual(2) // false（初始）→true（失败）

@@ -40,7 +40,6 @@ function node(id: string, year: number | null, month: number | null): LineageNod
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year,
     x: null,
     y: null,

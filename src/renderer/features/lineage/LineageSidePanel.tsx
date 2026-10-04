@@ -147,12 +147,9 @@ export function LineageSidePanel(props: {
           </p>
         )}
       </section>
-      <section data-testid="lineage-side-idea">
-        <h4 className="idea-cap m-0 pl-1.5" style={{ color: 'var(--accent)' }}>核 心 想 法</h4>
-        <p className="idea m-0" style={{ color: 'var(--text)' }}>
-          {node.coreIdea === '' ? '（未填写）' : node.coreIdea}
-        </p>
-      </section>
+      {/* [A3 F-CONTRACTA-01 2026-10-04] 核心 idea 区随核心想法域全退役删除
+          （「核心想法」语义由全文笔记 notes.contentMd 承接——原
+          lineage-side-idea 区/testid 消亡） */}
       {node.paperId === null ? (
         <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
       ) : (

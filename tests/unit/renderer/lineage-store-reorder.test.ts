@@ -31,7 +31,6 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     id,
     paperId: `paper-${id}`,
     title: `节点${id}`,
-    coreIdea: '',
     year: 2022,
     x: null,
     y: null,
@@ -53,14 +52,14 @@ const settle = async (turns = 8): Promise<void> => {
 
 const state = () => useLineageStore.getState()
 
-/** [F-ALIGN-01] patchNode 载荷形状（断言面最小投影；[A1b] tags 键随标签域退役删） */
+/** [F-ALIGN-01] patchNode 载荷形状（断言面最小投影；[A1b] tags 键随标签域退役删；
+ *  [A3 F-CONTRACTA-01] coreIdea 键随 core_idea 全退役删） */
 interface PatchPayload {
   id?: string
   slot?: number
   month?: number | null
   year?: number
   title?: string
-  coreIdea?: string
 }
 
 /** 捕获 patchNode 载荷序列（调用序即派发序——FIFO 面） */
@@ -113,17 +112,18 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
       ['A', 1],
       ['B', 2]
     ])
-    // month 透传保留（防半更新清月）+全字段（title/coreIdea 随行）
+    // month 透传保留（防半更新清月）+全字段（title 随行；[A3] coreIdea 键随退役消失）
     for (const c of calls) {
       expect(c.month).toBe(9)
       expect(c.title).toBe(`节点${c.id}`)
       expect(c.year).toBe(2022)
+      expect(Object.prototype.hasOwnProperty.call(c, 'coreIdea')).toBe(false)
     }
     expect(state().saveStatus).toBe('clean')
   })
 
   it('派发窗 saving 闸（[回炉 R5] INV-94）：首动作 flight 悬挂中后续重排批拒绝；释放后队列空回 clean，clean 后重排正常入队', async () => {
-    const A = node('A', { month: 9, slot: 0, coreIdea: '旧想法' })
+    const A = node('A', { month: 9, slot: 0, x: 1, y: 1 })
     const B = node('B', { month: 9, slot: 1 })
     useLineageStore.setState({ nodes: [A, B] })
     let release: (() => void) | null = null
@@ -134,7 +134,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
       await gate
       return { ok: true, data: serverNode(useLineageStore.getState().nodes.find((n) => n.id === req.id) ?? A) }
     })
-    state().editCoreIdea('A', '新想法') // 先入暂存
+    state().moveNode('A', 2, 2) // 先入暂存
     state().save() // 首动作 flight（gate 悬挂）
     state().reorderMonthSlots(['B', 'A']) // saving 中编辑=拒绝（原排队语义随 R5 闸退役）
     await settle()
@@ -191,16 +191,16 @@ describe('[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组�
 })
 
 describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）', () => {
-  it('editCoreIdea 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁；[A1b] editTags 面随标签域退役删）', async () => {
+  it('moveNode 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁；[A1b] editTags/[A3] editCoreIdea 面随退役域删——触发器换 moveNode 同型承载）', async () => {
     const A = node('A', { month: 6, slot: 3 })
     useLineageStore.setState({ nodes: [A] })
-    state().editCoreIdea('A', '新想法')
+    state().moveNode('A', 7, 8)
     state().save()
     await settle()
     const req = payloads()[0]!
     expect(req.month).toBe(6)
     expect(req.slot).toBe(3)
-    expect(req.coreIdea).toBe('新想法')
+    expect(Object.prototype.hasOwnProperty.call(req, 'coreIdea')).toBe(false) // [A3] 退役键负锚
   })
 
   it('回填后 nodes 数组=lineageOrder 全序：重排写落定后渲染序随新 slot（消费方不得重排的单源兑现）', async () => {

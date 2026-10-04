@@ -3168,6 +3168,60 @@
       "caseTitle": "save：文献不存在抛 NOT_FOUND；存在则 upsert",
       "reason": "A 批 A2 title 停用——退役域用例有意收紧",
       "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-side-panel.test.tsx",
+      "caseTitle": "文献节点四区渲染：元信息/核心 idea/AI 分节分色单源/人工笔记",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-side-panel.test.tsx",
+      "caseTitle": "主题节点：仅前两区+空态文案；笔记通道零调用",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-side-panel.test.tsx",
+      "assertionText": "expect(h4s.length).toBe(3)",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-side-reskin.test.tsx",
+      "caseTitle": "既有 testid 面全保活：meta/idea/ai-notes/manual-note；主题节点空态零变+无后置章",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "assertionText": "expect(n1).toMatchObject({ paperId: 'p-1', title: '起源', coreIdea: '核心', year: 2018, x: null, y: null })",
+      "reason": "A 批 A3 core_idea 全退役——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
     }
   ]
 }

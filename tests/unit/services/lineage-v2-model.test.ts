@@ -24,7 +24,6 @@ function node(patch: Partial<LineageNode> & { id: string }): LineageNode {
   return {
     paperId: null,
     title: `节点${patch.id}`,
-    coreIdea: '',
     year: null,
     x: null,
     y: null,
@@ -42,7 +41,6 @@ describe('T3-P5 LineageNode month/slot（zod 边界）', () => {
     id: 'n-1',
     paperId: null,
     title: '节点',
-    coreIdea: '',
     year: 2023,
     x: null,
     y: null,

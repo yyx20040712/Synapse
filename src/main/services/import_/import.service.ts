@@ -189,7 +189,6 @@ export function createImportService(deps: {
         const seed = {
           paperId: row.id,
           title: row.title.trim() === '' ? '（无标题）' : row.title,
-          coreIdea: '',
           year: meta.year,
           x: null,
           y: null,

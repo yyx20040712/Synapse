@@ -5,7 +5,9 @@
  *
  * ── 行为层 ──
  * - 迁移 004_lineage.sql（ADR-0014 §数据模型 DDL 字面）：lineage_nodes
- *   （id/paper_id 可空 CASCADE/title/core_idea/year/x/y 手工位置覆盖
+ *   （id/paper_id 可空 CASCADE/title/核心想法列〔[A3 F-CONTRACTA-01
+ *   2026-10-04] 核心想法域全退役——DDL 列死置 NOT NULL DEFAULT ''，写面
+ *   无该列/读面不映射，清列归 D 批零迁移——tags 死置同型〕/year/x/y 手工位置覆盖
  *   NULL=自动布局——JSON Canvas 模式/created_at/updated_at）+
  *   lineage_edges（id/from_node/to_node CASCADE/label/UNIQUE(from_node,to_node)）
  * - **存储=图 schema（v2 DAG 升级免迁移）；v1 行为=树**（单父+无环）——
@@ -121,10 +123,10 @@ export interface LineageRepo {
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
   const upsertNodeStmt = db.prepare(
-    `INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, month, slot, folder_id, created_at, updated_at)
-     VALUES (@id, @paperId, @title, @coreIdea, @year, @x, @y, @month, @slot, @folderId, @now, @now)
+    `INSERT INTO lineage_nodes (id, paper_id, title, year, x, y, month, slot, folder_id, created_at, updated_at)
+     VALUES (@id, @paperId, @title, @year, @x, @y, @month, @slot, @folderId, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
-       paper_id = excluded.paper_id, title = excluded.title, core_idea = excluded.core_idea,
+       paper_id = excluded.paper_id, title = excluded.title,
        year = excluded.year, x = excluded.x, y = excluded.y,
        month = excluded.month, slot = excluded.slot, folder_id = excluded.folder_id,
        updated_at = excluded.updated_at`
@@ -168,7 +170,6 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         id,
         paperId: input.paperId,
         title: input.title,
-        coreIdea: input.coreIdea,
         year: input.year,
         x: input.x,
         y: input.y,

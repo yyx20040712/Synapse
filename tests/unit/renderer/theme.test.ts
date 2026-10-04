@@ -534,10 +534,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(LINEAGE_SPACING_TSX).not.toContain('LineageNodeMeta')
   })
 
-  it('侧板间距 class 在场（pl-1.5 载体——三件 h4 面全覆盖；[A1b] SideTags 面随标签域退役删）', () => {
-    expect(readSrc('../../../src/renderer/features/lineage/LineageSidePanel.tsx')).toContain(
-      'pl-1.5'
-    )
+  it('侧板间距 class 在场（pl-1.5 载体——两件 h4 面全覆盖；[A1b] SideTags 面随标签域退役删；[A3 F-CONTRACTA-01 2026-10-04] SidePanel idea-cap h4 随 core_idea 全退役删——三件减二）', () => {
     expect(readSrc('../../../src/renderer/features/lineage/LineageSideAiNotes.tsx')).toContain(
       'pl-1.5'
     )
