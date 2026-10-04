@@ -64,8 +64,10 @@ export interface LineageSeedNode {
   slot?: number | null
   coreIdea?: string
   folderId?: string
-  /** [F-LGRAPH-01②U4] 节点标签（JSON 列——卡 L1 标签断言面） */
+  /** [F-LGRAPH-01②U4] 节点标签（脉络私有域 JSON 列——[A1a 换源]后非卡断言源） */
   tags?: string[]
+  /** [A1a] 文献库标签种子（tags+paper_tags 两行挂接 paperId——卡 L1 标签断言面） */
+  libraryTags?: string[]
 }
 export interface LineageSeedEdge {
   from: string

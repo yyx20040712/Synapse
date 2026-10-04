@@ -166,7 +166,8 @@ const VALID: Record<string, unknown[]> = {
       edges: [lineageEdge],
       pubNos: { p1: 3 }, // [F-FOLDER-01] 库级编号表（键=paperId）
       paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } },
-      lineTypeNames: ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'] // [F-LGRAPH-01②U8] 色行名（恰 6）
+      lineTypeNames: ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'], // [F-LGRAPH-01②U8] 色行名（恰 6）
+      tagNames: { p1: ['方法', '流域'] } // [A1a] 文献库标签名组表（键=paperId，值=名序）
     }
   ],
   lineageUpsertNodeReqSchema: [

@@ -4,9 +4,11 @@
  * 原生模块文件锁，数据经环境变量传入不经 shell，SQL 一律 prepare 预编译+
  * 参数绑定）。
  * 载荷（SEED_LINEAGE_JSON）：{ folders?: [{id,name,position?}], nodes:
- * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?}], edges:
- * [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按 paper_id
- * 解析节点行 id，ORDER BY created_at,rowid 首条）。
+ * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?,libraryTags?}],
+ * edges: [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按
+ * paper_id 解析节点行 id，ORDER BY created_at,rowid 首条）。
+ * [A1a] libraryTags=文献库标签种子（tags+paper_tags 两行挂接该节点 paperId
+ * ——卡 L1 标签断言面换源；tags[脉络私有域 JSON 列]不再是卡断言源）。
  * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 则写为节点 folder
  * （镜像 ensurePaperFolder 入图即归档语义）。幽灵边种子（edges 两端 paper 分属
  * 不同文件夹——存量数据模拟）的跨图过滤单测覆盖=tests/unit/services/
@@ -55,6 +57,15 @@ try {
   const assignFolder = db.prepare(
     'UPDATE papers SET folder_id = ? WHERE id = ? AND folder_id IS NULL'
   )
+  // [A1a] 文献库标签种子（同名幂等：DO NOTHING+按名回读——tags.repo
+  // upsertByName 同型；挂接 OR IGNORE 同型）
+  const insTag = db.prepare(
+    'INSERT INTO tags (id, name) VALUES (?, ?) ON CONFLICT (name) DO NOTHING'
+  )
+  const tagIdByName = db.prepare('SELECT id FROM tags WHERE name = ?')
+  const attachPaperTag = db.prepare(
+    'INSERT OR IGNORE INTO paper_tags (paper_id, tag_id) VALUES (?, ?)'
+  )
   for (const n of payload.nodes ?? []) {
     const folderId = n.folderId ?? '__main__'
     const month = n.month ?? null
@@ -85,6 +96,14 @@ try {
       t
     )
     assignFolder.run(folderId, n.paperId)
+    for (const name of n.libraryTags ?? []) {
+      insTag.run(randomUUID(), name)
+      const row = tagIdByName.get(name)
+      if (row === undefined) {
+        throw new Error(`seed-lineage: 标签按名回读失败（${name}）`)
+      }
+      attachPaperTag.run(n.paperId, row.id)
+    }
   }
   const byPaper = db.prepare(
     'SELECT id FROM lineage_nodes WHERE paper_id = ? ORDER BY created_at, rowid LIMIT 1'

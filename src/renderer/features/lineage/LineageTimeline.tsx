@@ -61,12 +61,16 @@ export function LineageTimeline(props: {
   /** [F-FOLDER-01] pubNo 表（键=paperId；INV-92 库级派生——图内节点号与库号
    *  同源单一真相源；Board 自 store 分发传入；缺省=空表） */
   pubNos?: Record<string, number>
+  /** [A1a] 文献库标签名组表（键=paperId，值=名序标签名——卡标签行数据源
+   *  [换源：node.tags 私有域退役接替]；Board 自 store 分发传入；缺省=空表） */
+  tagNames?: Record<string, string[]>
   /** [T3-P7B] 工具条（缺省=saved 静默态） */
   toolbar?: TimelineToolbarProps
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
   const paperMetrics = props.paperMetrics ?? {}
   const pubNos = props.pubNos ?? {}
+  const tagNames = props.tagNames ?? {}
   const groups = useMemo(() => groupTimeline(nodes), [nodes])
   const pubNoByNode = useMemo(() => nodePubNoMap(nodes, pubNos), [nodes, pubNos])
 
@@ -204,6 +208,7 @@ export function LineageTimeline(props: {
             groups={drag.renderGroups}
             pubNos={pubNoByNode}
             paperMetrics={paperMetrics}
+            tagNames={tagNames}
             selectedNodeId={props.selectedNodeId ?? null}
             ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}

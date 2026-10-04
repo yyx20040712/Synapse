@@ -7,9 +7,11 @@
  *   focus 点击=no-op+title「星标功能即将开放」（F-STAR-01 DB 窗口后启用）；
  *   edit 点星标区=选中卡——onStarClick 上抛宿主按模式分派；命中区 14×14，
  *   T2×T3 仲裁：focus 点星标=仅星标域 no-op 不触发卡身聚焦 toggle——stopProp
- *   隔离两域）→标签紧随（最多 2+溢出「+N」——node.tags F-LG14）→骑缝号
- *   #NNN（INV-92 pubNo——右缘）。**核 chip 删**（退役行 9：core UI 消费面
- *   全退役——数据面留 AI 重做域；isCore 预计算传卡链随拆）。
+ *   隔离两域）→标签紧随（最多 2+溢出「+N」——[A1a 换源] 数据源=tagNames
+ *   伴生 map[文献库标签域，键=paperId]；node.tags 脉络私有域退役接替面[卡
+ *   渲染零消费——A1b 退役前账]）→骑缝号 #NNN（INV-92 pubNo——右缘）。
+ *   **核 chip 删**（退役行 9：core UI 消费面全退役——数据面留 AI 重做域；
+ *   isCore 预计算传卡链随拆）。
  * - **L2**：文献名 2 行 9.3px 截断（line-clamp 2——title 属性全文 tooltip）。
  * - **L3（高 12）**：期刊缩写（venue——faint）+IF（impactFactor——mono
  *   accent）+被引（citedByCount——mono dim「被引 N」）；**三字段全部可选
@@ -50,6 +52,9 @@ export function LineageTimelineCard(props: {
   no: number
   /** 含金量摘要（按 paperId 查表传入；null=主题节点/metrics 缺席→L3 全省略） */
   metrics: LineagePaperMetrics | null
+  /** [A1a] 文献库标签名组表（键=paperId——L1 标签行数据源[换源]；无键=
+   *  零标签行；主题节点 paperId null 短路不查表） */
+  tagNames?: Record<string, string[]>
   selected: boolean
   /** [F-LINEAGE-02] 瀑布错位量 px（P-15：步 82/节距 148/年内复位） */
   offset: number
@@ -88,8 +93,9 @@ export function LineageTimelineCard(props: {
     .join(' ')
   // 瀑布错位=按卡 inline（.rowshift 类退役先例——inline style 直传）
   const style = props.offset > 0 ? { marginLeft: `${props.offset}px` } : undefined
-  // L1 标签列：最多 2+溢出 +N（无标签=零渲染）
-  const tags = n.tags ?? []
+  // L1 标签列：最多 2+溢出 +N（无标签=零渲染）——[A1a 换源] 文献库标签域
+  // 伴生 map（键=paperId；主题节点 paperId null 直接短路 []——不造 '' 哨兵键）
+  const tags = n.paperId === null ? [] : (props.tagNames?.[n.paperId] ?? [])
   const shownTags = tags.slice(0, TAG_LIMIT)
   const overflow = tags.length - shownTags.length
   // L3 三字段可选省略（null/''/缺席=整字段省略——「被引 N」真文本）

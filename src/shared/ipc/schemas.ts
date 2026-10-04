@@ -305,14 +305,17 @@ export type LineageGraphReq = z.infer<typeof lineageGraphReqSchema>
  *  读面唯一保证）+lineTypeNames 恰 6 行（[F-LGRAPH-01②U8] 色行名——四组
  *  lineTypes 体系随 kind 退役）。
  *  [F-FOLDER-01] +pubNos（键=paperId，值=库级派生编号 INV-92——图内节点号
- *  与库号同源单一真相源，catalogNo 退役接替；主题节点无键） */
+ *  与库号同源单一真相源，catalogNo 退役接替；主题节点无键）。
+ *  [A1a] +tagNames（键=paperId，值=文献库标签名组[名序]——卡标签行换源读链：
+ *  两源未通根因修复，用户标签全在文献库域；主题节点/无标签文献无键） */
 export const lineageGraphResSchema = z
   .object({
     nodes: z.array(lineageNodeSchema),
     edges: z.array(lineageEdgeSchema),
     paperMetrics: z.record(z.string(), lineagePaperMetricsSchema),
     lineTypeNames: lineTypeNamesSchema,
-    pubNos: z.record(z.string(), z.number().int())
+    pubNos: z.record(z.string(), z.number().int()),
+    tagNames: z.record(z.string(), z.array(z.string()))
   })
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>

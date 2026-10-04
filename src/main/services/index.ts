@@ -178,7 +178,9 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       // [F-FOLDER-01] 幽灵 folderId 拦截（folders.repo 存在性——生产真实现）
       folderExists: (id) => deps.repos.folders.findById(id) !== null,
       // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口——pubNoByIds 单源）
-      pubNos: (ids) => deps.repos.papers.pubNoByIds(ids)
+      pubNos: (ids) => deps.repos.papers.pubNoByIds(ids),
+      // [A1a] 文献库标签伴生 map 装配（tags.tagNamesByIds 单源——卡标签行换源）
+      tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids)
     })
   }
 }

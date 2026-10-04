@@ -109,3 +109,63 @@ describe('P7E-01 tags.repo —— 生命周期（rename/merge/delete）', () => 
     expect(findStmt('DELETE FROM tags').run).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * [A1a] tagNamesByIds 批量名查（always-active——三屋纪律不经 guardedDescribe）。
+ *
+ * 覆盖：空 ids 早退零语句；多文献名序判别（ORDER BY paper_id, t.name ASC
+ * ——挂签顺序刻意乱序+入参乱序，漏 ORDER BY 必红）；同长度二次调用命中
+ * 语句缓存（prepare 仅一次——papers.repo 语句缓存同型口径）。
+ */
+describe('[A1a] tags.repo.tagNamesByIds —— 批量名查（动态 IN 单语句/名序/缓存）', () => {
+  let db: ReturnType<typeof createTestDb>
+  let repo: ReturnType<typeof createTagsRepo>
+
+  beforeEach(() => {
+    db = createTestDb()
+    const seedPaper = db.prepare(
+      `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?, 'a.pdf', ?, 't', 't')`
+    )
+    seedPaper.run('p-1', 'sha-a1a')
+    seedPaper.run('p-2', 'sha-a1b')
+    repo = createTagsRepo(db)
+  })
+
+  it('空 ids=返回 [] 且零语句执行（早退不发 SQL）', () => {
+    const prepareSpy = vi.spyOn(db, 'prepare')
+    expect(repo.tagNamesByIds([])).toEqual([])
+    expect(prepareSpy).not.toHaveBeenCalled()
+    prepareSpy.mockRestore()
+  })
+
+  it('多文献名序判别：行序=[{p-1,alpha},{p-1,zeta},{p-2,beta}]（挂签乱序+入参乱序下仍按 paper_id, t.name ASC）', () => {
+    // 标签行直插受控 id（t-a=zeta / t-z=alpha / t-b=beta，插入序=zeta 先）——
+    // 无论 planner 选 paper_tags PK 序（同 paper 内按 tag_id ASC→t-a[zeta] 先）
+    // 还是 tags rowid/插入序（zeta 先）还是挂接行序（zeta 先挂），自然序均
+    // ≠名序——SQL 漏 ORDER BY 必红（三类扫描计划下均确定性红，非撞运）
+    const insTag = db.prepare('INSERT INTO tags (id, name) VALUES (?, ?)')
+    insTag.run('t-a', 'zeta')
+    insTag.run('t-z', 'alpha')
+    insTag.run('t-b', 'beta')
+    repo.attach('p-1', 't-a') // 挂签乱序：zeta 先挂
+    repo.attach('p-1', 't-z') // alpha 后挂
+    repo.attach('p-2', 't-b')
+    expect(repo.tagNamesByIds(['p-2', 'p-1'])).toEqual([
+      // 入参乱序（p-2 在前）+断言按 paper_id ASC, t.name ASC 回收
+      { paperId: 'p-1', name: 'alpha' },
+      { paperId: 'p-1', name: 'zeta' },
+      { paperId: 'p-2', name: 'beta' }
+    ])
+  })
+
+  it('同长度二次调用命中语句缓存（IN 语句 prepare 仅一次）', () => {
+    const alpha = repo.upsertByName('alpha')
+    repo.attach('p-1', alpha.id)
+    const prepareSpy = vi.spyOn(db, 'prepare')
+    repo.tagNamesByIds(['p-1', 'p-2'])
+    repo.tagNamesByIds(['p-1', 'p-2']) // 同长度→复用预编译语句（缓存键=占位符个数）
+    const inPrepares = prepareSpy.mock.calls.filter(([sql]) => sql.includes(' IN (')).length
+    expect(inPrepares).toBe(1)
+    prepareSpy.mockRestore()
+  })
+})

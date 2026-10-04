@@ -7,6 +7,8 @@
  * cited null 判别；0=值非缺；未映射 venue=null；主题节点不入表；空图合法
  * 空表）。draft tags 校验面已随导入链退役删除（[F-BAKRET-01] 2026-09-30，
  * ADR-0022——schema 单源 lineageDraftSchema 同步删除）。
+ * [A1a] +graph tagNames 伴生 map（文献库标签域读链——Record<paperId,
+ * string[]> 批量一次装配；名序=namesByPaper 同序；主题节点/无标签文献无键）。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,6 +16,7 @@ import type { SqliteDb } from '../../../src/main/db/connection'
 import { MIGRATIONS, readUserVersion } from '../../../src/main/db/migrate'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
+import { createTagsRepo } from '../../../src/main/db/repos/tags.repo'
 import { createLineageService } from '../../../src/main/services/lineage/lineage.service'
 import { createTestDb } from '../../utils/fixtures'
 
@@ -22,9 +25,12 @@ const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id 
 let db: SqliteDb
 let repo: ReturnType<typeof createLineageRepo>
 let papersRepo: ReturnType<typeof createPapersRepo>
+let tagsRepo: ReturnType<typeof createTagsRepo>
 let svc: ReturnType<typeof createLineageService>
 /** 含金量批量查证 spy（禁 N+1 断言锚：graph() 单次单批） */
 let metricsSpy: ReturnType<typeof vi.fn>
+/** [A1a] 文献库标签批量查证 spy（禁 N+1 断言锚——tagNames 伴生 map 装配） */
+let tagNamesSpy: ReturnType<typeof vi.fn>
 
 function seedPaper(id: string, venue: string, cited: number | null): void {
   db.prepare(
@@ -39,7 +45,9 @@ beforeEach(() => {
   seedPaper('p-3', 'Water', 0) // T3 映射+0=已抓到且为 0（值非缺）
   repo = createLineageRepo(db)
   papersRepo = createPapersRepo(db)
+  tagsRepo = createTagsRepo(db)
   metricsSpy = vi.fn((ids: string[]) => papersRepo.listMetricsByIds(ids))
+  tagNamesSpy = vi.fn((ids: string[]) => tagsRepo.tagNamesByIds(ids))
   svc = createLineageService({
     repo,
     paperExists,
@@ -50,7 +58,8 @@ beforeEach(() => {
       paperId: string
       venue: string
       citedByCount: number | null
-    }>
+    }>,
+    tagNames: tagNamesSpy as (ids: string[]) => Array<{ paperId: string; name: string }>
   })
 })
 
@@ -134,5 +143,32 @@ describe('F-LG14 graph 含金量 join（{citedByCount, venueTier} 摘要）', ()
     const g = svc.graph()
     expect(g.paperMetrics).toEqual({})
     expect(g.nodes.find((n) => n.id === theme.id)?.tags).toBeNull()
+  })
+})
+
+// ── [A1a] graph tagNames（文献库标签伴生 map——卡标签行换源读链） ──
+
+describe('A1a graph tagNames（文献库标签域伴生 map——Record<paperId, string[]>）', () => {
+  it('文献节点带其文献库标签名（名序=namesByPaper 同序口径）+批量一次单批（禁 N+1）', () => {
+    svc.upsertNode({ paperId: 'p-1', title: '甲', coreIdea: '', year: 2018, x: null, y: null })
+    svc.upsertNode({ paperId: 'p-2', title: '乙', coreIdea: '', year: 2021, x: null, y: null })
+    // 挂接序乱序（调度→方法→流域）：断言按名序回收（ORDER BY t.name ASC 单源）
+    for (const name of ['调度', '方法', '流域']) {
+      tagsRepo.attach('p-1', tagsRepo.upsertByName(name).id)
+    }
+    tagNamesSpy.mockClear()
+    const g = svc.graph()
+    expect(tagNamesSpy).toHaveBeenCalledTimes(1) // 单次单批（paperMetrics 同型禁 N+1）
+    expect(tagNamesSpy).toHaveBeenCalledWith(['p-1', 'p-2'])
+    expect(g.tagNames).toEqual({ 'p-1': ['方法', '流域', '调度'] }) // 名序断言
+  })
+
+  it('主题节点（paperId null）不在 map；无标签文献不在 map（无键非空数组）；空图=空 map', () => {
+    svc.upsertNode({ paperId: null, title: '阶段分组', coreIdea: '', year: null, x: null, y: null })
+    svc.upsertNode({ paperId: 'p-2', title: '乙（无库标签）', coreIdea: '', year: 2021, x: null, y: null })
+    tagsRepo.attach('p-3', tagsRepo.upsertByName('孤儿标签面').id) // p-3 无节点行——不入 map
+    const g = svc.graph()
+    expect(g.tagNames).toEqual({})
+    expect('p-2' in g.tagNames).toBe(false) // 无标签=无键（非空数组）
   })
 })

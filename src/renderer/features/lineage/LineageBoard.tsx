@@ -93,6 +93,8 @@ export function LineageBoard(props: {
   const paperMetrics = useLineageStore((s) => s.paperMetrics)
   // [F-FOLDER-01] pubNo 表下发（节点号=库级同源——Timeline 经此单源传入）
   const pubNos = useLineageStore((s) => s.pubNos)
+  // [A1a] 文献库标签名组表下发（卡标签行换源——Timeline 经此单源传入）
+  const tagNames = useLineageStore((s) => s.tagNames)
   const store = useLineageStore.getState
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
@@ -124,6 +126,7 @@ export function LineageBoard(props: {
         edges={edges}
         paperMetrics={paperMetrics}
         pubNos={pubNos}
+        tagNames={tagNames}
         selectedNodeId={props.selectedNodeId ?? null}
         contextNodeId={menu?.node.id ?? null}
         toolbar={{ onAddNode: () => setAddOpen(true) }}

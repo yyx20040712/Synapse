@@ -986,7 +986,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     }
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '', tags: ['方法', '流域', '调度'] },
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, coreIdea: '', libraryTags: ['方法', '流域', '调度'] },
         { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2, coreIdea: '' },
         { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1, coreIdea: '' }
       ],

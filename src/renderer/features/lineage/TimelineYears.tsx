@@ -49,6 +49,8 @@ export function TimelineYears(props: {
   *  INV-92 库级同源；主题节点=0） */
   pubNos: Map<string, number>
   paperMetrics: Record<string, LineagePaperMetrics>
+  /** [A1a] 文献库标签名组表（键=paperId——卡标签行数据源[换源]；缺省=空表） */
+  tagNames?: Record<string, string[]>
   selectedNodeId: string | null
   /** [②U5] 右键反馈：节点菜单目标卡 accent 描边（.ctx-hlt——菜单关即撤） */
   ctxNodeId?: string | null
@@ -73,6 +75,7 @@ export function TimelineYears(props: {
   onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {
   const { groups, pubNos, paperMetrics } = props
+  const tagNames = props.tagNames ?? {}
   const slot = props.dragSlot ?? null
   const renderCard = (n: LineageNode, dragging: boolean): JSX.Element => (
     <LineageTimelineCard
@@ -80,6 +83,7 @@ export function TimelineYears(props: {
       node={n}
       no={pubNos.get(n.id) ?? 0}
       metrics={n.paperId !== null ? (paperMetrics[n.paperId] ?? null) : null}
+      tagNames={tagNames}
       selected={props.selectedNodeId === n.id}
       ctx={props.ctxNodeId === n.id}
       focused={props.focusIds?.has(n.id) === true}

@@ -7,6 +7,8 @@
  * - L1（高 18）=星标占位（书页图标线框——P-11 静态禁用）→标签紧随（最多 2+
  *   溢出「+N」）；核 chip 删（退役行 9——core UI 消费面全退役）；#NNN 骑缝号
  *   保留（INV-92）。
+ *   [A1a] 标签行数据源=tagNames 伴生 map（文献库标签域——Timeline props
+ *   透传，键=paperId；主题节点/无键=零标签行；node.tags 私有域不再上卡）。
  * - L2=文献名 2 行 9.3px 截断。
  * - L3（高 12）=期刊缩写（faint）+IF（mono accent）+被引（mono dim「被引 N」）
  *   ——三字段全部可选省略语义（数据缺席整字段省略渲染，无「—」占位）。
@@ -80,12 +82,17 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     mount(
       <LineageTimeline
         nodes={[
-          node('A', { year: 2022, month: 9, title: '甲文献', tags: ['方法', '流域', '调度', '余量'] }),
-          node('B', { year: 2022, month: 9, title: '乙文献', tags: ['单标签'] }),
+          // [A1a 换源] node.tags（脉络私有域）留存=不再上卡（断言面换 tagNames）
+          node('A', { year: 2022, month: 9, title: '甲文献', tags: ['脉络私有域标签'] }),
+          node('B', { year: 2022, month: 9, title: '乙文献' }),
           node('T', { paperId: null, year: 2022, month: 9, title: '主题节点' })
         ]}
         edges={[]}
         pubNos={{ 'paper-A': 12, 'paper-B': 7 }}
+        tagNames={{
+          'paper-A': ['方法', '流域', '调度', '余量'],
+          'paper-B': ['单标签']
+        }}
       />
     )
     const a = cardOf('A')
@@ -93,7 +100,7 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     const star = a.querySelector('[data-testid="card-star"]')
     expect(star).not.toBeNull()
     expect(star?.getAttribute('title')).toBe('星标功能即将开放')
-    // 标签最多 2+溢出 +N（4 标签→2 渲染+「+2」）
+    // 标签最多 2+溢出 +N（4 标签→2 渲染+「+2」）——源=文献库标签 map（A1a）
     expect([...a.querySelectorAll('.c-tag')].map((e) => e.textContent)).toEqual(['方法', '流域'])
     expect(a.querySelector('.c-tag-more')?.textContent).toBe('+2')
     // 骑缝号保留（INV-92——L1 右缘）
@@ -107,6 +114,19 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     // 无标签卡：零 .c-tag 零 .c-tag-more
     expect(cardOf('T').querySelectorAll('.c-tag')).toHaveLength(0)
     expect(cardOf('T').querySelector('.c-tag-more')).toBeNull()
+  })
+
+  it('[A1a] 标签行换源：无 tagNames 键（含缺省 props）→零标签行（node.tags 私有域不再上卡）', () => {
+    // 根因回归锚=用户视检「卡上标签完全不显示」：私有域有值+文献库 map 无键
+    // →零渲染（换源后 node.tags 非卡数据源；A1b 退役面前的行为锁定）
+    mount(
+      <LineageTimeline
+        nodes={[node('A', { year: 2022, month: 9, title: '甲文献', tags: ['脉络私有域标签'] })]}
+        edges={[]}
+      />
+    )
+    expect(cardOf('A').querySelectorAll('.c-tag')).toHaveLength(0)
+    expect(cardOf('A').querySelector('.c-tag-more')).toBeNull()
   })
 
   it('L3 三字段真文本：期刊缩写/IF/被引 N（mono 真文本断言）', () => {

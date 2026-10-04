@@ -45,6 +45,9 @@ export interface LineageStore {
   paperMetrics: Record<string, LineagePaperMetrics>
   /** [F-FOLDER-01] pubNo 表（键=paperId——INV-92 库级派生编号，graph 单读随行） */
   pubNos: Record<string, number>
+  /** [A1a] 文献库标签名组表（键=paperId，值=名序标签名——graph 单读随行；
+   *  卡标签行数据源[换源]；主题节点/无标签文献无键） */
+  tagNames: Record<string, string[]>
   /** [F-LGRAPH-01②U8] 图级色行名（恰 6 行——graph 单读随行；工具组线型列表消费） */
   lineTypeNames: string[]
   status: LineageStatus
@@ -195,6 +198,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     edges: [],
     paperMetrics: {},
     pubNos: {},
+    tagNames: {},
     lineTypeNames: defaultLineTypeNames(),
     status: 'loading',
     error: null,
@@ -225,6 +229,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           edges: graph.edges,
           paperMetrics: graph.paperMetrics ?? {},
           pubNos: graph.pubNos ?? {},
+          tagNames: graph.tagNames ?? {},
           lineTypeNames: graph.lineTypeNames,
           status: 'ready',
           error: null,

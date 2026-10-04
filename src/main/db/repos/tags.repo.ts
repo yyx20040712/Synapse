@@ -24,7 +24,9 @@
  * - 依赖：db/connection、shared/models/tag
  * - 孤儿标签（无任何文献引用）由 listWithCounts 自然呈现 paperCount=0；
  *   物理清理由 deleteTag 承担（P7E-01 起可清）
- * - 全部语句在工厂内 db.prepare 预编译一次，参数一律绑定（禁止拼接）
+ * - 全部语句在工厂内 db.prepare 预编译一次，参数一律绑定（禁止拼接）；
+ *   [A1a] 例外面=动态 IN 批查 tagNamesByIds——占位符个数为唯一动态面
+ *   （papers.repo 语句缓存同型：按个数缓存预编译，值一律绑定）
  * - 单表方法保持免事务；merge/delete 跨表多写用 db.transaction 包裹
  *   （P7E-01）——同步事务内多语句原子生效，第二步失败则后续不落地；
  *   better-sqlite3 单连接同步执行，upsert 的"写入后回读"之间不可能被插入其它语句
@@ -39,6 +41,7 @@
  *   + tests/unit/db/repos/tags-lifecycle.repo.test.ts（P7E-01，always-active）
  * - UUID 用 crypto.randomUUID()；tags 表无时间戳列
  */
+import type Database from 'better-sqlite3'
 import type { Tag } from '../../../shared/models/tag'
 import type { SqliteDb } from '../connection'
 
@@ -59,12 +62,22 @@ interface TagNameRow {
   name: string
 }
 
+/** [A1a] tagNamesByIds 的窄查询行（别名列直出——零映射） */
+interface TagNameByIdsRow {
+  paperId: string
+  name: string
+}
+
 export interface TagsRepo {
   upsertByName(name: string): Tag
   listWithCounts(): Array<Tag & { paperCount: number }>
   attach(paperId: string, tagId: string): void
   detach(paperId: string, tagId: string): void
   namesByPaper(paperId: string): string[]
+  /** [A1a] 批量名查（graph 通道 tagNames 伴生 map 装配源——动态 IN 一次查询
+   *  禁逐 id 循环 N+1；序=ORDER BY paper_id, t.name ASC——namesByPaper 名序
+   *  同源口径；空 ids=空数组） */
+  tagNamesByIds(paperIds: readonly string[]): Array<{ paperId: string; name: string }>
   /** P7E-01：rename 冲突预检（按名查行；TagRow 与 Tag 同形） */
   findByName(name: string): Tag | undefined
   /** P7E-01：改名（UPDATE…WHERE id=?；返回 changes>0——同名幂等时可能为 0，非错） */
@@ -104,6 +117,10 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
       WHERE pt.paper_id = ?
       ORDER BY t.name ASC`
   )
+  // [A1a] 批量名查语句缓存（占位符个数=唯一动态面——papers.repo 缓存同型）。
+  // 缓存上界假设：键=占位符个数，条目数上界=图文献节点数级的不同长度组合
+  // （有限小集，无逐调用增长面——papers.repo 同型假设）
+  const tagNamesByIdsStmts = new Map<number, Database.Statement<unknown[], TagNameByIdsRow>>()
   // ── P7E-01 生命周期语句 ──
   const renameTagStmt = db.prepare<[string, string]>('UPDATE tags SET name = ? WHERE id = ?')
   // [F-TAGS-01] 颜色身份（hex 小写正规化在 service；null=恢复默认）
@@ -159,6 +176,23 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
 
     namesByPaper(paperId: string): string[] {
       return tagNamesByPaper.all(paperId).map((row) => row.name)
+    },
+
+    tagNamesByIds(paperIds: readonly string[]): Array<{ paperId: string; name: string }> {
+      if (paperIds.length === 0) return []
+      // 按占位符个数缓存预编译语句（同长度复用——单次查询禁逐 id N+1）
+      let q = tagNamesByIdsStmts.get(paperIds.length)
+      if (q === undefined) {
+        q = db.prepare<unknown[], TagNameByIdsRow>(
+          `SELECT pt.paper_id AS paperId, t.name
+             FROM tags t
+             JOIN paper_tags pt ON pt.tag_id = t.id
+            WHERE pt.paper_id IN (${paperIds.map(() => '?').join(', ')})
+            ORDER BY pt.paper_id ASC, t.name ASC`
+        )
+        tagNamesByIdsStmts.set(paperIds.length, q)
+      }
+      return q.all(...paperIds)
     },
 
     findByName(name: string): Tag | undefined {

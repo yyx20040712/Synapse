@@ -68,13 +68,16 @@ export interface LineageService {
    *   读面唯一保证——消费方不得重排）+lineTypeNames 恰 6（meta KV 读出）。
    *   [F-FOLDER-01] folderId 提供=只取该图节点/边子图（W4 改写面——图切换器
    *   数据源；边=双端点均入图才保留）+pubNos（库级派生编号 INV-92——图内
-   *   节点号与库号同源单一真相源；主题节点无键） */
+   *   节点号与库号同源单一真相源；主题节点无键）。
+   *   [A1a] +tagNames（文献库标签伴生 map——键=paperId 值=名序标签名组；
+   *   主题节点/无标签文献无键；卡标签行换源读链） */
   graph(folderId?: string): {
     nodes: LineageNode[]
     edges: LineageEdge[]
     paperMetrics: Record<string, LineagePaperMetrics>
     lineTypeNames: LineTypeNames
     pubNos: Record<string, number>
+    tagNames: Record<string, string[]>
   }
 }
 
@@ -114,6 +117,10 @@ export interface LineageServiceDeps {
   /** [F-FOLDER-01] pubNo 批查（INV-92 库级派生——graph 通道 pubNos 装配；
    *  可选缺省=空面，生产装配接 repos.papers.pubNoByIds） */
   pubNos?: (paperIds: string[]) => Array<{ paperId: string; pubNo: number }>
+  /** [A1a] 文献库标签批量名查（graph 通道 tagNames 伴生 map 装配——卡标签行
+   *  换源读链；可选缺省=空面（既有单测装配兼容），生产装配接
+   *  repos.tags.tagNamesByIds） */
+  tagNames?: (paperIds: string[]) => Array<{ paperId: string; name: string }>
 }
 
 /**
@@ -314,6 +321,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       paperMetrics: Record<string, LineagePaperMetrics>
       lineTypeNames: LineTypeNames
       pubNos: Record<string, number>
+      tagNames: Record<string, string[]>
     } {
       const g = deps.repo.listGraph()
       // [F-FOLDER-01] 子图过滤（W4）：folderId 提供=节点按图归属过滤+边=双端点
@@ -347,6 +355,15 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       for (const r of pubNoRows) {
         pubNos[r.paperId] = r.pubNo
       }
+      // [A1a] tagNames 装配（文献库标签伴生 map——repo 行序 ORDER BY
+      // paper_id, t.name ASC，按 paperId 分组即名序；主题节点/无标签无键）
+      const tagNameRows = deps.tagNames?.(paperIds) ?? []
+      const tagNames: Record<string, string[]> = {}
+      for (const r of tagNameRows) {
+        const list = tagNames[r.paperId]
+        if (list === undefined) tagNames[r.paperId] = [r.name]
+        else list.push(r.name)
+      }
       // T3-P5 INV-75：nodes=排序契约序（唯一纯函数 lineageOrder 单源——消费方
       // 不得重排）；lineTypes=恒四组（repo 补齐+枚举序）
       return {
@@ -354,7 +371,8 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
         edges: scopedEdges,
         paperMetrics,
         lineTypeNames: deps.repo.getLineTypeNames(),
-        pubNos
+        pubNos,
+        tagNames
       }
     }
   }
