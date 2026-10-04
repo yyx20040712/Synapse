@@ -9,11 +9,12 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * [F-FOLDER-02·E/S2→F-UIRES-01 批 A U2] import-to-folder e2e —— 导入目标恒定
- * 全链（R2：folder 态=该文件夹；无筛选/未归档=主图 MAIN_GRAPH_ID 挂接——
- * 「仅入文献库」选项随 2026-09-30 用户裁决退役，ImportTargetSelect 删除）：
- * ①folder 目标导入→moveFolder 挂接→脉络节点自动建（真实 PDF 经 dialog 桩）；
- * ②无筛选态导入→主图挂接（节点建在主图——目标恒定语义新口径）；③S2 导入
- * 进行中禁切导航行/图（busy 全局信号）。断言锚真实渲染文本（导入到：X）。
+ * 全链（R2：folder 态=该文件夹；无筛选=主图 MAIN_GRAPH_ID 落点——「仅入文献
+ * 库」选项随 2026-09-30 用户裁决退役，ImportTargetSelect 删除）：
+ * [F-ALIGN-01 D3 2026-10-04] main 侧单跳：①folder 目标导入→main 侧落夹+建
+ * 节点（原 renderer 逐 imported moveFolder 后挂接链删除——夹计数 0→1 直达，
+ * 无中间挂接步）；②无筛选态导入→主图落点（节点建在主图）；③S2 导入进行中
+ * 禁切导航行/图（busy 全局信号）。断言锚真实渲染文本（导入到：X）。
  */
 
 /** 真实 PDF 落受管存储位（sha 寻址——corpus-export 同型）+返回路径 */
@@ -40,7 +41,7 @@ async function stubOpenDialog(app: ElectronApplication, paths: string[]): Promis
 
 const nodeCard = (win: Page, title: string) => win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 
-test('导入到当前文件夹：真实 PDF 导入→moveFolder 挂接→脉络节点自动建', async () => {
+test('导入到当前文件夹：真实 PDF 导入→[F-ALIGN-01 D3] main 侧单跳落夹建节点（夹计数 0→1 直达）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-imp1-'))
   await bootstrapMigrations(userData)
   // [RR1-14/e2e F3] 预播种破引导态（INV-87：fresh 库 0 篇=新建入口/未归档行隐藏）
@@ -65,12 +66,19 @@ test('导入到当前文件夹：真实 PDF 导入→moveFolder 挂接→脉络�
     .poll(async () => target.evaluate((el) => el.textContent ?? ''), { timeout: 10_000 })
     .toContain('调研计划')
 
-  // 真实导入（dialog 桩→fromDialog→importFiles 全链+进度事件；按钮=「导入 PDF」R4）
+  // 真实导入（dialog 桩→fromDialog({targetFolderId})→importFiles 单跳全链+进度
+  // 事件；按钮=「导入 PDF」R4）
   await stubOpenDialog(app, [writePdf(userData, '自动入图论文')])
   await win.getByRole('button', { name: '导入 PDF', exact: true }).click()
   await expect(win.getByText('自动入图论文')).toBeVisible({ timeout: 30_000 })
 
-  // 脉络页：该文件夹图含新节点（节点自动建——moveFolder 移入分支）
+  // [F-ALIGN-01 D3] 单跳落夹：夹计数 0→1 直达（folders.changed 广播——无中间
+  // moveFolder 挂接步；后挂接链删除的端到端可见面）
+  await expect(
+    win.locator('.lib-fn-row').filter({ hasText: '调研计划' }).locator('.lib-fn-ct')
+  ).toHaveText('1', { timeout: 10_000 })
+
+  // 脉络页：该文件夹图含新节点（节点在 importOne 事务内建——main 侧单跳）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '调研计划' }).click()
@@ -79,7 +87,7 @@ test('导入到当前文件夹：真实 PDF 导入→moveFolder 挂接→脉络�
   await app.close()
 })
 
-test('无筛选态：导入→主图挂接（目标恒定=主图——「仅入文献库」退役新口径）', async () => {
+test('无筛选态：导入→主图落点（[F-ALIGN-01 D3] 目标恒定=主图——单跳建节点）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-imp2-'))
   await bootstrapMigrations(userData)
   const app = await launch(userData)
@@ -97,6 +105,11 @@ test('无筛选态：导入→主图挂接（目标恒定=主图——「仅入�
   await stubOpenDialog(app, [writePdf(userData, '主图挂接论文')])
   await win.getByRole('button', { name: '导入 PDF', exact: true }).click()
   await expect(win.getByText('主图挂接论文')).toBeVisible({ timeout: 30_000 })
+
+  // [F-ALIGN-01 D3] 单跳落主图：主图行计数 0→1 直达（folders.changed 广播）
+  await expect(
+    win.locator('.lib-fn-row').filter({ hasText: '主图' }).locator('.lib-fn-ct')
+  ).toHaveText('1', { timeout: 10_000 })
 
   // 脉络页缺省图（库页无文件夹筛选→主图）：主图含新节点（目标恒定语义）
   await win.getByRole('button', { name: '脉络', exact: true }).click()

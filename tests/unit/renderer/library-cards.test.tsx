@@ -385,7 +385,8 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
   })
 
   it('d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）', async () => {
-    // [RR1-2] FolderNav unfiled 计数查询共享 library.list 桩——全查询面空态
+    // [RR1-2→F-ALIGN-01 D5] FolderNav 计数域已收敛 folders.list（未归档独立
+    // 计数查询退役）——library.list 桩仅服务列表查询面
     stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
     await render(<LibraryPage />)
     expect(host?.querySelector('.lib-cols')).toBeNull()

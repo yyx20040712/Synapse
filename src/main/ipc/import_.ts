@@ -3,10 +3,13 @@
  *
  * ── 行为层 ──
  * - fromDialog：deps.dialogs.pickPdfFiles() → null（用户取消）返回空结果
- *   { imported: [], duplicates: [], failed: [] }；有路径→ deps.services.import_.importFiles(paths)
- * - fromFolder：pickFolder() 同上 → importFolder(folder)
- * - fromPaths（P7E-02）：一行委托 importFiles(req.paths)——路径由 preload webUtils
- *   桥（apiDrag.importDropped）解析产生，通道对 renderer 隐藏（INV-07 修订/INV-54）
+ *   { imported: [], duplicates: [], failed: [] }；有路径→ deps.services.import_.importFiles(paths, req.targetFolderId)
+ * - fromFolder：pickFolder() 同上 → importFolder(folder, req.targetFolderId)
+ * - fromPaths（P7E-02）：一行委托 importFiles(req.paths, req.targetFolderId)——路径由
+ *   preload webUtils 桥（apiDrag.importDropped）解析产生，通道对 renderer 隐藏
+ *   （INV-07 修订/INV-54）
+ * - [F-ALIGN-01 D3 2026-10-04] 三通道透传 req.targetFolderId（导入落点——
+ *   INV-NEW-2：null 不达 importOne 落夹，schema 层已结构性拒收）
  * - 进度推送已由 bootstrap 注入 services 桶（services.sendProgress → webContents.send），
  *   本层是纯薄分发，不碰 sendProgress、不重建 service 实例
  *
@@ -34,15 +37,15 @@ const emptyImportResult = (): ImportResult => ({ imported: [], duplicates: [], f
 export function createImportIpc(deps: IpcDeps): ApiHandlers['import_'] {
   return {
     // 对话框取消（null）不是错误：返回空结果，不触发导入、不上抛
-    fromDialog: async () => {
+    fromDialog: async (req) => {
       const paths = await deps.dialogs.pickPdfFiles()
-      return paths === null ? emptyImportResult() : deps.services.import_.importFiles(paths)
+      return paths === null ? emptyImportResult() : deps.services.import_.importFiles(paths, req.targetFolderId)
     },
-    fromFolder: async () => {
+    fromFolder: async (req) => {
       const folder = await deps.dialogs.pickFolder()
-      return folder === null ? emptyImportResult() : deps.services.import_.importFolder(folder)
+      return folder === null ? emptyImportResult() : deps.services.import_.importFolder(folder, req.targetFolderId)
     },
     // 拖拽路径（P7E-02）：请求已过 preload 过滤（.pdf 后缀+数量上限）与 schema 双门
-    fromPaths: (req) => deps.services.import_.importFiles(req.paths)
+    fromPaths: (req) => deps.services.import_.importFiles(req.paths, req.targetFolderId)
   }
 }

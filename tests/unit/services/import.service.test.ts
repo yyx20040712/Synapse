@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 import { createImportService } from '../../../src/main/services/import_/import.service'
 import { createFileStore } from '../../../src/main/services/import_/file-store'
 import type { Repos, PaperRow } from '../../../src/main/db/repos'
@@ -13,6 +13,15 @@ import { createCollectionsRepo } from '../../../src/main/db/repos/collections.re
 import { createFoldersRepo } from '../../../src/main/db/repos/folders.repo'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 
+/**
+ * [F-ALIGN-01 D3 单元二] 导入三通道必携 targetFolderId（INV-NEW-2：null 不达
+ * importOne 落夹）——main 侧单跳：collection=null（对话框/根散文件）恒落
+ * targetFolderId 并建节点（renderer 后挂接 moveFolder 链已删）。K1 ①②锚定：
+ * ①对话框导入→恒落目标夹+建节点；②子目录导入→子目录夹+建节点；每形态
+ * INV-88 投影恒等（节点.folder_id===文献.folder_id）。
+ */
+const TARGET_FOLDER = 'f-import-target'
+
 const dirs: string[] = []
 afterAll(async () => {
   for (const d of dirs) await rm(d, { recursive: true, force: true })
@@ -22,6 +31,13 @@ afterAll(async () => {
 const noopGate = { enter: () => undefined, exit: () => undefined }
 
 function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
+  // [F-ALIGN-01 D3] 目标夹行种子（connection pragma foreign_keys=ON——
+  // papers.folder_id/lineage_nodes.folder_id 均 REFERENCES collections(id)，
+  // 落点行不在场即 FK 拒；生产面落点=LibraryPage 投影的现行夹恒在场）
+  db.prepare('INSERT OR IGNORE INTO collections (id, name, position) VALUES (?, ?, 0)').run(
+    TARGET_FOLDER,
+    '导入目标夹'
+  )
   // 用真实 repos（SR-DB-05 完成前 guarded 跳过；这是集成性质验收）
   const papers = {
     insert: (row: PaperRow) => {
@@ -53,7 +69,7 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
 }
 
 guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
-  it('importFiles：成功入库（元数据来自抽取器，标题回退文件名）', async () => {
+  it('importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）', async () => {
     const db = createTestDb()
     const storeDir = await mkdtemp(join(tmpdir(), 'imp-'))
     dirs.push(storeDir)
@@ -75,12 +91,53 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       }),
       onProgress: (e) => progress.push({ phase: e.phase, total: e.total })
     })
-    const result = await svc.importFiles([src])
+    const result = await svc.importFiles([src], TARGET_FOLDER)
     expect(result.imported).toHaveLength(1)
     expect(result.imported[0]?.title).toBe('论文一') // 抽取标题空 → 文件名去扩展
     expect(result.imported[0]?.doi).toBe('10.1/x')
+    expect(result.imported[0]?.folderId).toBe(TARGET_FOLDER) // D3：落点=targetFolderId
     expect(result.duplicates).toEqual([])
     expect(progress.at(-1)?.phase).toBe('done')
+    // [F-ALIGN-01 D3/K1①] 单跳落夹+建节点：year 取抽取元数据、month=null 缺省
+    // 归未定年月组、slot=目标图组 max+1；INV-NEW-2：folder_id 恒非空
+    const row = db.prepare('SELECT folder_id FROM papers WHERE id=?').get(result.imported[0]!.id) as { folder_id: string | null }
+    expect(row.folder_id).toBe(TARGET_FOLDER)
+    const node = db.prepare('SELECT folder_id, year, month, slot FROM lineage_nodes WHERE paper_id=?').get(result.imported[0]!.id) as { folder_id: string; year: number | null; month: number | null; slot: number | null }
+    expect(node.folder_id).toBe(TARGET_FOLDER) // INV-88 投影恒等：节点=文献归属
+    expect(node.folder_id).toBe(row.folder_id)
+    expect(node.year).toBe(2025)
+    expect(node.month).toBeNull()
+    expect(node.slot).toBe(1)
+  })
+
+  it('[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'bc-'))
+    dirs.push(storeDir)
+    const { writeFile } = await import('node:fs/promises')
+    const a = join(storeDir, 'a.pdf')
+    const b = join(storeDir, 'b.pdf')
+    await writeFile(a, createTinyPdf())
+    await writeFile(b, createTinyPdf(PDF_KNOWN_TEXT + '2'))
+    const foldersChanged = vi.fn()
+    const lineageChanged = vi.fn()
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
+      extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null }),
+      sendFoldersChanged: foldersChanged,
+      sendLineageChanged: lineageChanged
+    })
+    const first = await svc.importFiles([a], TARGET_FOLDER)
+    expect(first.imported).toHaveLength(1)
+    expect(foldersChanged).toHaveBeenCalledTimes(1)
+    expect(lineageChanged).toHaveBeenCalledTimes(1)
+    // 全重复批（imported=0）零播——取消/无产物路径不惊动侧栏/图订阅
+    const second = await svc.importFiles([a], TARGET_FOLDER)
+    expect(second.duplicates).toEqual(['a.pdf'])
+    expect(foldersChanged).toHaveBeenCalledTimes(1)
+    expect(lineageChanged).toHaveBeenCalledTimes(1)
   })
 
   it('重复 sha256 进 duplicates 不重复入库', async () => {
@@ -99,8 +156,8 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
-    const first = await svc.importFiles([a])
-    const second = await svc.importFiles([b])
+    const first = await svc.importFiles([a], TARGET_FOLDER)
+    const second = await svc.importFiles([b], TARGET_FOLDER)
     expect(first.imported).toHaveLength(1)
     expect(second.imported).toHaveLength(0)
     expect(second.duplicates).toEqual(['b.pdf'])
@@ -122,14 +179,14 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
-    const result = await svc.importFiles([bad, good])
+    const result = await svc.importFiles([bad, good], TARGET_FOLDER)
     expect(result.imported).toHaveLength(1)
     expect(result.failed).toHaveLength(1)
     expect(result.failed[0]?.fileName).toBe('bad.pdf')
     expect(result.failed[0]?.reason.length).toBeGreaterThan(0)
   })
 
-  it('importFolder：一级子目录名映射为集合并挂接；根文件不挂', async () => {
+  it('importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）', async () => {
     const db = createTestDb()
     const storeDir = await mkdtemp(join(tmpdir(), 'folder-'))
     dirs.push(storeDir)
@@ -144,16 +201,20 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       gate: noopGate,
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
-    const result = await svc.importFolder(storeDir)
+    const result = await svc.importFolder(storeDir, TARGET_FOLDER)
     expect(result.imported).toHaveLength(2)
     // [F-FOLDER-01] 单归属：一级子目录名→folderId（M2M collectionNames 退役）
     const inCollection = result.imported.find((p) => p.folderId !== null)
     expect(inCollection).toBeTruthy()
-    const rootPaper = result.imported.find((p) => p.folderId === null)
+    // [F-ALIGN-01 D3] 根散文件落 targetFolderId（「不挂集合」行为废止——INV-NEW-2）
+    const rootPaper = result.imported.find((p) => p.title === 'root')
     expect(rootPaper).toBeTruthy()
+    expect(rootPaper?.folderId).toBe(TARGET_FOLDER)
+    const inColl = result.imported.find((p) => p.title !== 'root')
+    expect(inColl?.folderId).not.toBe(TARGET_FOLDER) // 子目录文献仍落子目录夹（语义不变）
   })
 
-  it('[回炉码 2] 挂接即自动入图：一级子目录文献→节点落其文件夹（folder=归属）+year 取元数据+month=null 缺省组+slot 组末；根文件不建节点', async () => {
+  it('[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）', async () => {
     const db = createTestDb()
     const storeDir = await mkdtemp(join(tmpdir(), 'node-'))
     dirs.push(storeDir)
@@ -174,19 +235,27 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
         _: bytes
       })
     })
-    const result = await svc.importFolder(storeDir)
+    const result = await svc.importFolder(storeDir, TARGET_FOLDER)
     expect(result.imported).toHaveLength(2)
     const rows = db
       .prepare('SELECT n.paper_id, n.title, n.year, n.month, n.slot, n.folder_id, p.folder_id AS paper_folder FROM lineage_nodes n JOIN papers p ON p.id=n.paper_id')
       .all() as Array<{ paper_id: string; title: string; year: number | null; month: number | null; slot: number | null; folder_id: string; paper_folder: string }>
-    expect(rows).toHaveLength(1) // 根文件零节点（矩阵「导入→全部」行）
-    const node = rows[0]!
-    expect(node.paper_id).toBe(result.imported.find((x) => x.folderId !== null)!.id)
-    expect(node.title).toBe('节点文献')
-    expect(node.year).toBe(2024)
-    expect(node.month).toBeNull()
-    expect(node.slot).toBe(1)
-    expect(node.folder_id).toBe(node.paper_folder) // INV-88 统一规则：节点=文献归属
+    expect(rows).toHaveLength(2) // [F-ALIGN-01 D3] 根文件也建节点（单跳落夹）
+    for (const node of rows) {
+      expect(node.title).toBe('节点文献')
+      expect(node.year).toBe(2024)
+      expect(node.month).toBeNull()
+      expect(node.slot).toBe(1)
+      expect(node.folder_id).toBe(node.paper_folder) // INV-88 统一规则：节点=文献归属
+    }
+    // 根文件节点落 targetFolderId；子目录文件节点落「合集」夹（抽取桩两文件
+    // 同题名——按落点区分：folderId=TARGET_FOLDER 者=根散文件）
+    const rootPaper = result.imported.find((x) => x.folderId === TARGET_FOLDER)!
+    const rootNode = rows.find((r) => r.paper_id === rootPaper.id)!
+    expect(rootNode.folder_id).toBe(TARGET_FOLDER)
+    const inColl = result.imported.find((x) => x.folderId !== TARGET_FOLDER)!
+    const inCollNode = rows.find((r) => r.paper_id === inColl.id)!
+    expect(inCollNode.folder_id).not.toBe(TARGET_FOLDER)
   })
 
   it('挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）', async () => {
@@ -215,7 +284,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       gate: noopGate,
       extractMeta: async () => defaults
     })
-    const r1 = await failed.importFolder(storeDir)
+    const r1 = await failed.importFolder(storeDir, TARGET_FOLDER)
     expect(r1.failed).toHaveLength(1)
     // 核心断言：insert 不得残留（无事务时行已入库且 sha 判重导致永远无法重导）
     const rows = db.prepare('SELECT COUNT(*) AS c FROM papers').get() as { c: number }
@@ -228,7 +297,7 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
       gate: noopGate,
       extractMeta: async () => defaults
     })
-    const r2 = await retry.importFolder(storeDir)
+    const r2 = await retry.importFolder(storeDir, TARGET_FOLDER)
     expect(r2.imported).toHaveLength(1)
   })
 })
@@ -257,14 +326,14 @@ describe('F-D4 import.service —— 会话身份（gate 互斥 + sessionId）',
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null }),
       onProgress: (e) => events.push(e)
     })
-    await svc.importFiles([a])
+    await svc.importFiles([a], TARGET_FOLDER)
     const first = events.map((e) => e.sessionId)
     expect(first.length).toBeGreaterThan(0)
     expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)
     expect(new Set(first).size).toBe(1)
 
     const beforeSecond = events.length
-    await svc.importFiles([b])
+    await svc.importFiles([b], TARGET_FOLDER)
     const second = events.slice(beforeSecond).map((e) => e.sessionId)
     expect(new Set(second).size).toBe(1)
     expect(second[0]).not.toBe(first[0])
@@ -288,7 +357,7 @@ describe('F-D4 import.service —— 会话身份（gate 互斥 + sessionId）',
       gate: { enter: () => { enters++ }, exit: () => { exits++ } },
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
-    const result = await svc.importFiles([bad, good])
+    const result = await svc.importFiles([bad, good], TARGET_FOLDER)
     expect(result.failed).toHaveLength(1)
     expect(enters).toBe(1)
     expect(exits).toBe(1)
@@ -306,7 +375,7 @@ describe('F-D4 import.service —— 会话身份（gate 互斥 + sessionId）',
       gate: { enter: () => { enters++ }, exit: () => { exits++ } },
       extractMeta: async () => ({ title: '', authors: [], year: null, doi: null, arxivId: null })
     })
-    await expect(svc.importFolder(join(storeDir, '不存在'))).rejects.toMatchObject({
+    await expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({
       code: 'IO_ERROR'
     })
     expect(enters).toBe(1)

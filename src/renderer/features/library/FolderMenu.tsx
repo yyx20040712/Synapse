@@ -1,6 +1,6 @@
 /**
  * [F-UIRES-01 批 A] FolderMenu —— 文件夹行右键菜单（FolderNav 子组件，三件版：
- * 重命名[行内编辑单源]/删除文件夹…[空图直删子标注]/在脉络图中打开[P-8]——
+ * 重命名[行内编辑单源]/删除文件夹…[空夹直删子标注]/在脉络图中打开[P-8]——
  * mockup S2 .menu 逐值；TagLifecycleMenu 先例形态（该件已随 TagFilter 退役）：fixed 锚点+遮罩+
  * Esc 关闭）。动作只上抛——行内编辑/删除流/跳转宿主在 FolderNav。
  */
@@ -77,7 +77,7 @@ export function FolderMenu(props: {
           style={{ color: 'var(--danger)' }}
           onClick={() => props.onDelete(folder)}
         >
-          <ItemRow label="删除文件夹…" sub="空图直删" />
+          <ItemRow label="删除文件夹…" sub="空夹直删" />
         </button>
         <div className="lib-menu-sep" />
         <button

@@ -2,8 +2,8 @@
  * [F-FOLDER-02·A/C→F-UIRES-01 批 A] FolderDialogs —— 文件夹域保护弹窗
  * （FolderNav 子组件）。[F-UIRES-01] FolderRenameDialog 随批退役（重命名
  * 单源=FolderNav 行内编辑——消费面单点实证，方案切换=删除旧方案）；本件仅存
- * FolderDeleteDialog（F-DELCONF-01 有资产分支保护弹窗，design §4.3+N2 终裁
- * 文案逐字——零改承接）。
+ * FolderDeleteDialog（有资产分支保护弹窗；[F-ALIGN-01 D4 2026-10-04] 文案
+ * 重写=域删级联预告——「将永久删除夹内 N 篇文献及其脉络图、笔记与标注」）。
  *
  * ── 行为层 ──
  * - FolderDeleteDialog：nodeCount/edgeCount=挂载时 lineage.graph({folderId})
@@ -105,7 +105,7 @@ export function FolderDeleteDialog(props: {
       }
     >
       <p className="text-xs leading-6" style={{ color: 'var(--text)' }}>
-        {`该文件夹的脉络图将一并删除（${nodeCount ?? '…'} 个节点及 ${edgeCount ?? '…'} 条连线不可恢复）；其中 ${props.folder.paperCount} 篇文献不会被删除，将移至「未归档」。`}
+        {`将永久删除该文件夹内的 ${props.folder.paperCount} 篇文献及其脉络图（${nodeCount ?? '…'} 个节点、${edgeCount ?? '…'} 条连线）、笔记与标注——全部不可恢复。`}
       </p>
     </Dialog>
   )

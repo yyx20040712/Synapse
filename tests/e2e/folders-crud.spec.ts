@@ -8,8 +8,10 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * [F-FOLDER-02·A/C→F-UIRES-01 批 A] folders-crud e2e —— FolderNav 左栏全链
  * （设计稿 §2.1/§2.2；选择器自 FolderFilter chip 面迁移）：新建（底部常驻入口
  * →内联输入）/重名域错误中文 toast/右键菜单行内改名（FolderRenameDialog 退役
- * ——重命名单源=行内编辑）/删除（F-DELCONF-01 静默判据双路径：空图直删+有资产
- * 保护弹窗 N2 终裁文案）+S3 改名后脉络页图名联动+P-8 在脉络图中打开。
+ * ——重命名单源=行内编辑）/删除（静默判据双路径：空夹直删+有资产保护弹窗
+ * ——[F-ALIGN-01 D4 2026-10-04] 域删级联：文案预告「将永久删除夹内 N 篇文献
+ * 及其脉络图、笔记与标注」+确认后夹内文献随域灭零残留）+S3 改名后脉络页图名
+ * 联动+P-8 在脉络图中打开。
  * 断言全部锚真实渲染文本（宪法 e2e 纪律）。
  */
 
@@ -29,9 +31,10 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   // 迁移 012 兜底行：主图导航行在场（含 mono 计数真文本）
   await expect(navRow('主图')).toBeVisible({ timeout: 10_000 })
 
-  // S1 锚：未归档/全部文献导航行真文本（§3.9——每幕≥2 真实文本/aria 锚）
+  // S1 锚：全部文献导航行真文本（§3.9——每幕≥2 真实文本/aria 锚）；
+  // [F-ALIGN-01 D5] 第三筛选行随域退役——零残留负锚
   await expect(navRow('全部文献')).toBeVisible()
-  await expect(navRow('未归档')).toBeVisible()
+  await expect(navRow('未归档')).toHaveCount(0)
 
   // T1 新建：底部「新建文件夹」常驻入口（svg 加号承载+语义——批 α 双加号修复）→ 内联输入 Enter → 导航行出现（×0 计数）
   await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
@@ -97,17 +100,23 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   await expect(win.getByRole('dialog')).toHaveCount(0)
   await expect(navRow('速删验证图')).toHaveCount(0, { timeout: 10_000 })
 
-  // T4b 有资产弹窗：确认弹窗 N2 终裁文案逐字（计数=1 节点/0 连线/1 文献
-  // ——[F-ALIGN-01] 资产改 moveFolder 移入文献：节点+文献各 1）+危险色按钮执行
+  // T4b 有资产弹窗：确认弹窗 [F-ALIGN-01 D4] 域删级联文案逐字（计数=1 节点/
+  // 0 连线/1 文献——资产=moveFolder 移入文献：节点+文献各 1）+危险色按钮执行
   await navRow('改名后的图').click({ button: 'right' })
   await win.getByTestId('folder-menu').getByRole('menuitem', { name: '删除文件夹' }).click()
   const dialog = win.getByRole('dialog')
   await expect(dialog).toContainText('删除文件夹「改名后的图」？')
   await expect(dialog).toContainText(
-    '该文件夹的脉络图将一并删除（1 个节点及 0 条连线不可恢复）；其中 1 篇文献不会被删除，将移至「未归档」。'
+    '将永久删除该文件夹内的 1 篇文献及其脉络图（1 个节点、0 条连线）、笔记与标注——全部不可恢复。'
   )
   await dialog.getByRole('button', { name: '删除文件夹' }).click()
   await expect(navRow('改名后的图')).toHaveCount(0, { timeout: 10_000 })
+  // [F-ALIGN-01 D4] 域删级联零残留：夹内文献（壳层种子）随域灭——库行消失+
+  // 全部文献计数归零（INV-NEW-3 真实渲染锚）
+  await expect(win.locator('.lib-row', { hasText: '壳层种子文献' })).toHaveCount(0, {
+    timeout: 10_000
+  })
+  await expect(navRow('全部文献').locator('.lib-fn-ct')).toHaveText('0', { timeout: 10_000 })
 
   await app.close()
 })

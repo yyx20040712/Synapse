@@ -7,9 +7,11 @@
  *   ——DOMAIN_PINS，预检先例=tags rename）；成功→folders.changed 广播
  * - rename：trim 空→INVALID_REQUEST；不存在→NOT_FOUND；他名占用→CONFLICT；
  *   成功→folders.changed（图名 1:1 跟随=同表 name 列，无独立 graph 元数据——S3）
- * - delete：不存在→NOT_FOUND；单语句 DELETE（级联 DDL 承担：文献 SET NULL+
- *   节点 CASCADE+边二跳——DOMAIN_PINS）；成功→folders.changed+lineage.changed
- *   （图结构级联变=S4 脉络页回退依据）
+ * - delete：不存在→NOT_FOUND；[F-ALIGN-01 D4 2026-10-04] 域删级联（INV-NEW-3：
+ *   删夹=删除域内全部文献及其脉络/笔记/标注/标签关联）——应用层事务先文献后
+ *   夹行（papers.remove×N 的 DDL 级联链：paper_tags/annotations/notes/ai_notes/
+ *   lineage_nodes CASCADE→edges 二跳+FTS 触发器自清，再 folders.remove）；
+ *   成功→folders.changed+lineage.changed（图结构级联变=S4 脉络页回退依据）
  * - 写三入口（create/rename/delete）S1 队列闸（INV-91）：lineagePending()=true
  *   →CONFLICT 拒绝（沿 workspace.service importInFlight 先例——拒时零库副作用）
  *
@@ -99,10 +101,16 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
       if (folders.findById(req.id) === null) {
         throw new FoldersDomainError('NOT_FOUND', `文件夹不存在：${req.id}`)
       }
-      // 级联=DDL 承担（012：papers.folder_id SET NULL+lineage_nodes CASCADE
-      // ——边随节点二跳）；确认弹窗计数面（nodeCount/edgeCount）=renderer 经
-      // lineage.graph(folderId) 派生，不经本通道
-      folders.remove(req.id)
+      // [F-ALIGN-01 D4] 域删级联（INV-NEW-3）：事务内先删夹内全部文献（papers.remove
+      // 的 DDL 级联链：paper_tags/annotations/notes/ai_notes/lineage_nodes→edges
+      // 二跳+FTS 触发器自清）→再删夹行；确认弹窗计数面（paperCount/nodeCount/
+      // edgeCount）=renderer 经 folders.list+lineage.graph(folderId) 派生，不经本通道
+      deps.repos.withTransaction(() => {
+        for (const id of deps.repos.papers.listIdsByFolder(req.id)) {
+          deps.repos.papers.remove(id)
+        }
+        folders.remove(req.id)
+      })
       deps.sendFoldersChanged()
       deps.sendLineageChanged()
       return { ok: true as const }

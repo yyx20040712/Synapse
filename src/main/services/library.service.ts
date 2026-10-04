@@ -79,7 +79,8 @@ export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['lib
 
   return {
     // 查询已在上游（ipc register）过 zod 校验并补全默认值，此处原样透传；
-    // [F-FOLDER-01] folderScope 三态（all/unfiled/folder）在 buildFilters 收口
+    // [F-FOLDER-01] folderScope 两态（all/folder——[F-ALIGN-01 D5] null 归属
+    // 过滤变体随 D5 退役）在 buildFilters 收口
     async list(req) {
       return papers.searchSummaries(req)
     },
@@ -156,19 +157,19 @@ export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['lib
 
 /**
  * [F-FOLDER-01] papers 域 service（papers/move-folder 单通道；[F-UIRES-01 批 B]
- * +papers/delete）。移动事务序（design-final §3.4+W2 终裁，withTransaction 原子）：
- * 1. papers.folder_id F1→F2（toFolderId=null=移出→未归档）
- * 2. 移出分支（W2）：删该文献节点（边随节点 DDL CASCADE 灭）——节点删=政策性
- *    （INV-93：未归档文献可无节点，与未加入脉络正交）
- * 3. 移入分支：节点存在→UPDATE folder_id=F2 且 slot=目标图组 max+1 归一
+ * +papers/delete）。移动事务序（design-final §3.4，withTransaction 原子）：
+ * 1. papers.folder_id F1→F2（[F-ALIGN-01 D5 2026-10-04] toFolderId 收紧 string——
+ *    「移出」路径全域退役：null 载荷 schema 拒（INV-NEW-2 所有文献必在
+ *    文件夹），移出分支随之消亡）
+ * 2. 移入分支：节点存在→UPDATE folder_id=F2 且 slot=目标图组 max+1 归一
  *    （[回炉码 6/R2 勘正]不透写原 slot——跨图移入同组同 slot 值→归一保 INV-75
  *    唯一；旧注「不重排」句废止）；节点不存在→INSERT（year/month 取节点缺省
  *    null，slot=目标图组 max+1——normalizeMonthSlot 落组末）
- * 3b. 同值移动（folderId===toFolderId）幂等早退（R2——k1'-W2/d1'-W2：
+ * 2b. 同值移动（folderId===toFolderId）幂等早退（R2——k1'-W2/d1'-W2：
  *    无早退则 slot 自计重排组末+updated_at 刷新=非幂等副作用，早退零库写零广播）
- * 4. 跨图边清理：节点换图后其与旧图邻居的边=跨图（INV-90 违例）——同事务删除
+ * 3. 跨图边清理：节点换图后其与旧图邻居的边=跨图（INV-90 违例）——同事务删除
  *    （边属图派生，连线不迁移——survey 矩阵「移动 F1→F2」行用户明示）
- * 5. 广播 folders.changed + lineage.changed（侧栏计数+图结构双失效）
+ * 4. 广播 folders.changed + lineage.changed（侧栏计数+图结构双失效）
  *
  * [F-UIRES-01 批 B] delete 事务序（设计稿 §2.4 统一级联契约）：
  * 1. pending() → CONFLICT 拒（INV-91 S1 队列闸——图结构级联变，与 moveFolder/
@@ -191,21 +192,19 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
       if (pending()) throw lineageSavePending()
       const paper = papers.findById(req.paperId)
       if (paper === null) throw paperNotFound(req.paperId)
-      if (req.toFolderId !== null && folders.findById(req.toFolderId) === null) {
+      // [F-ALIGN-01 D5] toFolderId 恒 string（null 移出路径退役——schema 层拒收；
+      // 此处存在性判定随之收窄为无条件检查，类型外 null 载荷防御面=NOT_FOUND）
+      if (folders.findById(req.toFolderId) === null) {
         throw new DomainError('NOT_FOUND', `目标文件夹不存在：${req.toFolderId}`)
       }
       // 同值移动幂等早退（R2）：移到当前所在文件夹=零变更——不落库不重排不广播
-      // （归属读取走 folderIdOf 单源——findById 列单不保证携带 folder_id）
+      // （归属读取走 folderIdOf 单源——findById 列单不保证携带 folder_id；
+      // [F-ALIGN-01 D5] 两侧恒 string=同型比较）
       if (papers.folderIdOf(req.paperId) === req.toFolderId) {
         return { ok: true as const }
       }
       deps.repos.withTransaction(() => {
         papers.setFolderId(req.paperId, req.toFolderId)
-        if (req.toFolderId === null) {
-          // W2 移出分支：节点删+边随 CASCADE（未入脉络=0 行幂等）
-          lineage.removeNodeByPaperId(req.paperId)
-          return
-        }
         const node = lineage.nodeByPaperId(req.paperId)
         if (node === null) {
           // 移入且无节点：自动入图（「挂入=自动入同名图」——survey §2.3）；

@@ -32,7 +32,8 @@ export function LibraryDragGhost(): JSX.Element | null {
   }, [drag, moveGhost])
 
   if (drag === null || ghostPos === null) return null
-  const targetName = over === null ? '' : over.kind === 'folder' ? over.name : '未归档'
+  // [F-ALIGN-01 D5] 目标恒 folder 行（第三变体消亡——直取名）
+  const targetName = over === null ? '' : over.name
   return (
     <div
       className="lib-drag-ghost"

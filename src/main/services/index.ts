@@ -146,7 +146,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       fileStore: deps.fileStore,
       extractMeta: extractPdfMeta,
       gate: deps.importGate,
-      onProgress: deps.sendProgress
+      onProgress: deps.sendProgress,
+      // [F-ALIGN-01 D3] 单跳落夹双播出口（原 renderer 后挂接链的 moveFolder
+      // 广播面吸收——folderDeps 同源注入）
+      sendFoldersChanged: deps.sendFoldersChanged,
+      sendLineageChanged: deps.sendLineageChanged
     }),
     enrich: createEnrichService({
       repos: deps.repos,

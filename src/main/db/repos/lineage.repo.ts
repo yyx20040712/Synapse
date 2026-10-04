@@ -99,9 +99,6 @@ export interface LineageRepo {
   upsertNode(input: LineageNodeUpsert): LineageNode
   /** 删节点；关联边由 DDL CASCADE 承担。返回删行数 */
   removeNode(id: string): number
-  /** [F-FOLDER-01] 按文献删节点（移出→未归档事务序 W2 第 2 步——paper_id 唯一
-   *  由 INV-89 部分唯一索引保证单行）；返回删行数（0=无节点=移出幂等分支） */
-  removeNodeByPaperId(paperId: string): number
   /** 新建或更新边；UNIQUE(from,to) 冲突 DDL 抛错（应用层守卫在 service）。
    *  [F-LGRAPH-01②U8] kind 列恒 'manual' 写入（应用面单基型——旧值不透传）；
    *  dashed/color 缺省归一=false/色板首色；sub 列死置 NULL */
@@ -145,7 +142,6 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
   const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
   const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
-  const removeNodeByPaperStmt = db.prepare(`DELETE FROM lineage_nodes WHERE paper_id = ?`)
   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
   const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
   const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
@@ -193,10 +189,6 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
 
     removeNode(id: string): number {
       return removeNodeStmt.run(id).changes
-    },
-
-    removeNodeByPaperId(paperId: string): number {
-      return removeNodeByPaperStmt.run(paperId).changes
     },
 
     upsertEdge(input: LineageEdgeUpsert): LineageEdge {

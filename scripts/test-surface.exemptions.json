@@ -2994,6 +2994,66 @@
       "caseTitle": "slot 显式透写：提供值原样落库（含 null 清面）",
       "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：service upsert 形态退役；显式 slot 透写（同组主权/reorder 路径）由 patchNode 用例承接（跨组归一=W3 撞值防护语义沿承）——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
       "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/import-paths.test.ts",
+      "caseTitle": "fromPaths：请求 paths 逐参委托 importFiles，目录导入不被触碰",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/import-paths.test.ts",
+      "caseTitle": "fromPaths：importFiles 抛异常时原样上抛（异常折叠归 register 统一层）",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/import_.test.ts",
+      "caseTitle": "fromDialog：选中文件 → importFiles(paths)；取消 → 空结果不报错",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/import_.test.ts",
+      "caseTitle": "fromFolder：目录 → importFolder(folder)；取消 → 空结果",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/preload/drag-import.test.ts",
+      "caseTitle": "ok 分支：滤后有效 → invoke import/from-paths 且仅携 paths 载荷，响应原样透传",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/import-drag-ui.test.tsx",
+      "caseTitle": "D3 drop 有效：busy（按钮禁用）→apiDrag 载荷=File 列表→结果汇报 toast+onImported→idle",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/services/import.service.test.ts",
+      "caseTitle": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）",
+      "reason": "F-ALIGN-01 D3 导入落夹 main 侧单跳（单元二 B，设计稿 §1 D3 用户裁决）：三通道 Req 必携 targetFolderId，用例签名/断言随契约面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/services/import.service.test.ts",
+      "caseTitle": "importFolder：一级子目录名映射为集合并挂接；根文件不挂",
+      "reason": "F-ALIGN-01 D3/D5 导入落夹+未归档域退役（单元二 B，设计稿 §1 D3/D5 用户裁决）：根散文件落 targetFolderId+建节点，断言面改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
+    },
+    {
+      "file": "tests/unit/services/import.service.test.ts",
+      "assertionText": "expect(svc.importFolder(join(storeDir, '不存在'))).rejects.toMatchObject({ code: 'IO_ERROR' })",
+      "reason": "F-ALIGN-01 D3 导入落夹（单元二 B）：importFolder 签名扩 targetFolderId，断言行随调用签名改写",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md"
     }
   ]
 }

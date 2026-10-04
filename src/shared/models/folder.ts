@@ -36,12 +36,21 @@ export const folderRenameReqSchema = z
   .strict()
 export type FolderRenameReq = z.infer<typeof folderRenameReqSchema>
 
-/** folders/delete 载荷（级联=文献 SET NULL+节点 CASCADE——DDL 承担，DOMAIN_PINS） */
+/**
+ * folders/delete 载荷。[F-ALIGN-01 D4 2026-10-04] 域删级联语义（INV-NEW-3）：
+ * 删夹=删除域内全部文献及其脉络/笔记/标注/标签关联——级联链=应用层事务
+ * 先文献后夹行（papers.remove 的 DDL CASCADE：paper_tags/annotations/notes/
+ * ai_notes/lineage_nodes→edges 二跳+FTS 触发器）；主图禁删（service 层守卫）
+ */
 export const folderDeleteReqSchema = z.object({ id: z.string().min(1) }).strict()
 export type FolderDeleteReq = z.infer<typeof folderDeleteReqSchema>
 
-/** papers/move-folder 载荷（toFolderId=null=移出→未归档：节点删+边随 CASCADE 灭——W2 终裁） */
+/**
+ * papers/move-folder 载荷。[F-ALIGN-01 D5 2026-10-04] toFolderId 收紧
+ * z.string().min(1)（去 nullable）——「移出」路径全域退役（D5 2026-10-04）：
+ * null 载荷 schema 拒（renderer 无 null 入口）；所有文献必在文件夹（INV-NEW-2）
+ */
 export const paperMoveReqSchema = z
-  .object({ paperId: z.string().min(1), toFolderId: z.string().min(1).nullable() })
+  .object({ paperId: z.string().min(1), toFolderId: z.string().min(1) })
   .strict()
 export type PaperMoveReq = z.infer<typeof paperMoveReqSchema>

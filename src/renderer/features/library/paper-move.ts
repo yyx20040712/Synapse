@@ -1,6 +1,8 @@
 /**
  * [F-UIRES-01 批 A U4] paper-move —— 文献移动收口（菜单移动/拖放共用链，
  * §2.3/R12/R13）。moveFolder 既有通道（INV-88：节点随归属+同值幂等+跨图边拒）。
+ * [F-ALIGN-01 D5 2026-10-04] toFolderId 收窄 string——「移出」路径
+ * 全域退役（null 移出入口消亡，INV-NEW-2）。
  *
  * ── 行为层 ──
  * - 成功：await library.load() 重载后判收尾两分支——行离开当前视图→
@@ -10,7 +12,7 @@
  * - folders.changed 计数刷新=main 侧广播既有事件（FolderNav 订阅自愈，此处零耦合）
  *
  * ── 接口层 ──
- * - export async function movePaperToFolder(paperId, toFolderId): Promise<void>
+ * - export async function movePaperToFolder(paperId, toFolderId: string): Promise<void>
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 本域 store 直取（library feature 内——消费方 LibraryPage/FolderNav）
@@ -22,7 +24,7 @@ import { useLibraryStore } from './library.store'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const MOVE_PAPER_FAILED = '移动文献失败'
 
-export async function movePaperToFolder(paperId: string, toFolderId: string | null): Promise<void> {
+export async function movePaperToFolder(paperId: string, toFolderId: string): Promise<void> {
   try {
     await unwrap(api.papers.moveFolder({ paperId, toFolderId }))
   } catch (e) {

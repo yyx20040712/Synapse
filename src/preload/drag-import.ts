@@ -15,7 +15,8 @@
  *
  * ── 架构层 ──
  * 路径串生命周期限 preload 堆内（INV-07 修订/INV-54）：本模块产物只供
- * apiDrag.importDropped 组装 import/from-paths 载荷，不得流向其他任何面。
+ * apiDrag.importDropped 组装 import/from-paths 载荷（[F-ALIGN-01 D3] 连同
+ * targetFolderId 落点一并组装——三通道必携 INV-NEW-2），不得流向其他任何面。
  *
  * ── 生命周期层 ──
  * 已知残余（保守拒口径，W2）：无注册类型的真实 PDF（type=''）会被类型门保守

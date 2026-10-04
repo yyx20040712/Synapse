@@ -1,9 +1,10 @@
 /**
  * [F-UIRES-01 批 A U4→批 B 三项版] PaperRowMenu —— 文献行右键菜单（R12/P-10：
  * 「在阅读器中打开」+「移动到文件夹 ▸」+「删除文献」（danger——批 B 点亮，
- * §3.5）；星标项 DB 窗口点亮——不渲染禁用项=零死交互）。移动子面=folders.list+
- * 未归档移出（原地展开子列表——飞出子面板形态自裁申报）；移动执行走宿主注入
- * 的 onMove（movePaperToFolder 收尾两分支收口链）；删除执行走宿主注入的
+ * §3.5）；星标项 DB 窗口点亮——不渲染禁用项=零死交互）。移动子面=folders.list
+ * （[F-ALIGN-01 D5] 「移出」尾项随 D5 退役删除——子项纯文件夹
+ * 清单；原地展开子列表——飞出子面板形态自裁申报）；移动执行走宿主注入的
+ * onMove（movePaperToFolder 收口链）；删除执行走宿主注入的
  * onDelete（usePaperDelete 预检分流——静默直删/保护弹窗两分支在 hook+宿主）。
  * TagLifecycleMenu 先例形态：fixed 锚点+透明遮罩关闭+Esc。
  */
@@ -18,8 +19,9 @@ export function PaperRowMenu(props: {
   onClose(): void
   /** 「在阅读器中打开」（openPaper 既有通道——宿主接 store.openPaper） */
   onOpen(paperId: string): void
-  /** 移动执行（movePaperToFolder 收口链——宿主注入） */
-  onMove(paperId: string, toFolderId: string | null): void
+  /** 移动执行（movePaperToFolder 收口链——宿主注入；[F-ALIGN-01 D5] toFolderId
+   *  收窄 string——null 移出入口消亡） */
+  onMove(paperId: string, toFolderId: string): void
   /** [批 B] 删除执行（usePaperDelete.requestDelete 预检分流——宿主注入） */
   onDelete(paperId: string): void
 }): JSX.Element {
@@ -101,18 +103,6 @@ export function PaperRowMenu(props: {
                 </span>
               </button>
             ))}
-            <button
-              type="button"
-              role="menuitem"
-              className={MENU_ITEM_STYLE}
-              style={{ color: 'var(--text)' }}
-              onClick={() => {
-                props.onClose()
-                props.onMove(paper.id, null)
-              }}
-            >
-              未归档（移出）
-            </button>
           </div>
         )}
         <button

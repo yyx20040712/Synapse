@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 /**
  * [F-UIRES-01 批 A U1] FolderNav —— 库页左栏资源管理器导航（FolderFilter 退役
- * 承接件，设计稿 §2.1/§2.2+R8/R9）。覆盖：三态导航行与 folderScope 载荷/
- * 计数（RR1-2 域独立：全部=Σ folders.paperCount+未归档、未归档=独立计数查询
- * total、文件夹=paperCount——store.total 查询态零参与）/
- * 引导态隐藏面（INV-87）/busy 禁用清单/右键三件菜单（重命名=行内编辑·三键
- * 范式/删除=静默判据分流/在脉络图中打开=P-8 通道）/新建内联输入/选中夹消失
- * 回退/folders.changed 双失效/W1/W2 删除在途族三用例（RR2-2 自 folder-filter
- * 移植——hangGraph 挂起桩范式照搬；行内编辑流拆件=folder-nav-edit.test.tsx）。
+ * 承接件，设计稿 §2.1/§2.2+R8/R9）。覆盖：两态导航行与 folderScope 载荷
+ * （[F-ALIGN-01 D5] 未归档行/独立计数查询随未归档域退役删除）/计数（RR1-2
+ * 域独立：全部=Σ folders.paperCount、文件夹=paperCount——store.total 查询态
+ * 零参与+未归档计数查询零调用负锚）/引导态隐藏面（INV-87）/busy 禁用清单/
+ * 右键三件菜单（重命名=行内编辑·三键范式/删除=静默判据分流/在脉络图中打开
+ * =P-8 通道）/新建内联输入/选中夹消失回退/folders.changed 双失效/W1/W2
+ * 删除在途族三用例（RR2-2 自 folder-filter 移植——hangGraph 挂起桩范式照搬；
+ * 行内编辑流拆件=folder-nav-edit.test.tsx）。[F-ALIGN-01 D4] 静默判据扩
+ * paperCount（任一非零=弹窗）。
  * always-active（不经 guardedDescribe——K3 威胁结构性缺位）。
  */
 import { act } from 'react'
@@ -157,40 +159,36 @@ afterEach(() => {
   host = null
 })
 
-describe('F-UIRES-01 U1 FolderNav 三态导航行与计数', () => {
-  it('三态行渲染：全部文献/未归档/文件夹列表（folders.list 如实渲染含主图行零特判）+mono 计数', async () => {
+describe('F-UIRES-01 U1 FolderNav 两态导航行与计数（[F-ALIGN-01 D5] 未归档行退役）', () => {
+  it('行渲染：全部文献/文件夹列表（folders.list 如实渲染含主图行零特判）+未归档行零残留负锚+mono 计数', async () => {
     await render(BASE_QUERY)
     expect(navRow('全部文献')).toBeDefined()
-    expect(navRow('未归档')).toBeDefined()
+    expect(navRow('未归档')).toBeUndefined() // [F-ALIGN-01 D5] 未归档行消亡（在场即红）
     expect(navRow('主图')).toBeDefined()
     expect(navRow('调研计划')?.textContent).toContain('1')
   })
 
-  it('计数派生（RR1-2 域独立）：未归档=独立计数查询 total；全部文献=Σ paperCount+未归档', async () => {
+  it('计数派生（RR1-2 域独立）：全部文献=Σ folders.paperCount；未归档计数查询零调用（独立查询退役负锚）', async () => {
     await render(BASE_QUERY)
     const cells = host?.querySelectorAll('.lib-fn-ct') ?? []
-    // folders：主图 2+调研计划 1（Σ=3）+unfiled 计数查询 total=1 → 全部=4/未归档=1
-    expect(cells[0]?.textContent).toBe('4')
-    expect(cells[1]?.textContent).toBe('1')
-    expect(stubApi.library.list).toHaveBeenCalledWith(
-      expect.objectContaining({ folderScope: { kind: 'unfiled' }, limit: 1 })
-    )
+    // folders：主图 2+调研计划 1（Σ=3）→ 全部=3（未归档独立查询随域退役删除）
+    expect(cells[0]?.textContent).toBe('3')
+    expect(cells[1]?.textContent, '主图行计数=paperCount').toBe('2')
+    expect(cells[2]?.textContent, '调研计划行计数=paperCount').toBe('1')
+    expect(stubApi.library.list).not.toHaveBeenCalled() // 未归档计数查询零调用
   })
 
   it('RR1-2 判别锚：folder 态选中下计数不随查询命中数漂移（store.total=99 恒不入计数）', async () => {
     useLibraryStore.setState({ total: 99 })
     await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
     const cells = host?.querySelectorAll('.lib-fn-ct') ?? []
-    expect(cells[0]?.textContent, '全部文献=Σ+未归档（非 store.total）').toBe('4')
-    expect(cells[1]?.textContent).toBe('1')
-    expect(cells[2]?.textContent, '主图行计数=paperCount').toBe('2')
-    expect(cells[3]?.textContent, '调研计划行计数=paperCount').toBe('1')
+    expect(cells[0]?.textContent, '全部文献=Σ paperCount（非 store.total）').toBe('3')
+    expect(cells[1]?.textContent, '主图行计数=paperCount').toBe('2')
+    expect(cells[2]?.textContent, '调研计划行计数=paperCount').toBe('1')
   })
 
-  it('点按载荷：未归档→{kind:"unfiled"}；文件夹→{kind:"folder",folderId}；全部文献→清 undefined', async () => {
+  it('点按载荷：文件夹→{kind:"folder",folderId}；全部文献→清 undefined', async () => {
     await render(BASE_QUERY)
-    await click(navRow('未归档'))
-    expect(lastPatch).toEqual({ folderScope: { kind: 'unfiled' } })
     await click(navRow('调研计划'))
     expect(lastPatch).toEqual({ folderScope: { kind: 'folder', folderId: 'f-1' } })
     await click(navRow('全部文献'))
@@ -202,18 +200,12 @@ describe('F-UIRES-01 U1 FolderNav 三态导航行与计数', () => {
     expect(navRow('调研计划')?.getAttribute('aria-current')).toBe('true')
     expect(navRow('全部文献')?.getAttribute('aria-current')).toBe(null)
   })
-
-  it('未归档态选中：未归档行 aria-current（判别联合三态显式——F4 承接）', async () => {
-    await render({ ...BASE_QUERY, folderScope: { kind: 'unfiled' } })
-    expect(navRow('未归档')?.getAttribute('aria-current')).toBe('true')
-  })
 })
 
 describe('F-UIRES-01 U1 引导态（INV-87 三条件——guideHidden 注入）', () => {
-  it('引导态隐藏面：未归档行/分隔线/文件夹列表/新建入口全隐藏；仅「全部文献」一行', async () => {
+  it('引导态隐藏面：分隔线/文件夹列表/新建入口全隐藏；仅「全部文献」一行', async () => {
     await render(BASE_QUERY, true)
     expect(navRow('全部文献')).toBeDefined()
-    expect(navRow('未归档')).toBeUndefined()
     expect(navRow('主图')).toBeUndefined()
     expect(buttonByText('新建文件夹')).toBeUndefined()
     expect(host?.querySelector('.lib-fn-sep')).toBeNull()
@@ -225,33 +217,32 @@ describe('F-UIRES-01 U1 引导态（INV-87 三条件——guideHidden 注入）'
     await render(BASE_QUERY, false)
     expect(host?.querySelector('.lib-fn-sep')).not.toBeNull()
     expect(buttonByText('新建文件夹')).toBeDefined()
-    expect((host?.querySelectorAll('.lib-fn-row') ?? []).length).toBe(4)
+    expect((host?.querySelectorAll('.lib-fn-row') ?? []).length).toBe(3)
   })
 })
 
 describe('F-UIRES-01 U1 busy 禁用清单（§2.1——导航行切换/新建锁定）', () => {
-  it('导入 busy：全部文献/未归档/文件夹行与新建入口禁用（folderScope 锁定）', async () => {
+  it('导入 busy：全部文献/文件夹行与新建入口禁用（folderScope 锁定）', async () => {
     await render(BASE_QUERY)
     act(() => {
       useImportBusyStore.getState().setBusy(true)
     })
     await settle()
     expect(navRow('全部文献')?.disabled).toBe(true)
-    expect(navRow('未归档')?.disabled).toBe(true)
     expect(navRow('调研计划')?.disabled).toBe(true)
     expect(buttonByText('新建文件夹')?.disabled).toBe(true)
   })
 })
 
 describe('F-UIRES-01 U1 右键三件菜单（§2.2）', () => {
-  it('右键文件夹行→菜单三项文本：重命名/删除文件夹…/在脉络图中打开（空图直删子标注）', async () => {
+  it('右键文件夹行→菜单三项文本：重命名/删除文件夹…/在脉络图中打开（空夹直删子标注）', async () => {
     await render(BASE_QUERY)
     rightClick(navRow('调研计划'))
     const menu = host?.querySelector('[data-testid="folder-menu"]')
     expect(menu).not.toBeNull()
     expect(menu?.textContent).toContain('重命名')
     expect(menu?.textContent).toContain('删除文件夹…')
-    expect(menu?.textContent).toContain('空图直删')
+    expect(menu?.textContent).toContain('空夹直删')
     expect(menu?.textContent).toContain('在脉络图中打开')
   })
 
@@ -350,8 +341,16 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
     await settle()
   }
 
-  it('静默直删：空图→folders.delete+graph 预检+选中夹回退全部+onMutated（无弹窗）', async () => {
+  /** [RR1 W-A] 实时计数桩（library.list limit:1 只取 total——FolderNav 旧
+   * 计数查询同款手法；缺省 beforeEach total=1=任一预检均走弹窗路径） */
+  function mockPaperTotal(total: number): void {
+    stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total } })
+  }
+
+  it('静默直删：空图+实时零文献→folders.delete+graph/计数双预检+选中夹回退全部+onMutated（无弹窗）', async () => {
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
     await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    mockPaperTotal(0)
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
     foldersNow = [folder('__main__', '主图', 2)]
     await clickDelete()
@@ -361,6 +360,43 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
     expect(lastPatch).toEqual({ folderScope: undefined })
     expect(mutatedCalls).toBeGreaterThan(0)
     expect(navRow('调研计划')).toBeUndefined()
+  })
+
+  it('[F-ALIGN-01 D4] 静默判据扩面：实时计数 total>0 且空图→弹窗（域删语义——文献随夹灭，任一非零=弹窗）', async () => {
+    await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    mockPaperTotal(1)
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    // beforeEach 缺省 total=1（图空）——旧判据静默直删，D4 后=弹窗
+    await clickDelete()
+    const dialog = host?.querySelector('[role="dialog"]')
+    expect(dialog).not.toBeNull()
+    expect(stubApi.folders.delete).not.toHaveBeenCalled()
+  })
+
+  it('[RR1 W-A] 快照滞后注入：folders.list 快照 paperCount=0 但实时 total=1+空图→不静默（弹窗+零 delete——TOCTOU 修复主锚）', async () => {
+    // 快照滞后：菜单持有的 FolderDTO=旧快照（paperCount=0），库内实际 1 篇——
+    // 快照判据会 false-silent 直删（D4 域删下文献灭失无预告），实时源判据拒
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
+    await render(BASE_QUERY)
+    mockPaperTotal(1)
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    await clickDelete()
+    // 预检源锚：实时计数查询（folderScope=folder+limit:1 只取 total）
+    expect(stubApi.library.list).toHaveBeenCalledWith(
+      expect.objectContaining({ folderScope: { kind: 'folder', folderId: 'f-1' }, limit: 1 })
+    )
+    expect(host?.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(stubApi.folders.delete).not.toHaveBeenCalled()
+  })
+
+  it('[RR1 W-A] 判据单源=实时计数：快照 paperCount=1 但实时 total=0+空图→静默直删（快照值不入判据）', async () => {
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 1)]
+    await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
+    mockPaperTotal(0)
+    stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    await clickDelete()
+    expect(host?.querySelector('[role="dialog"]')).toBeNull()
+    expect(stubApi.folders.delete).toHaveBeenCalledWith({ id: 'f-1' })
   })
 
   /** [RR2-2] W1/W2 删除在途族三用例（自 folder-filter.test.tsx 移植——
@@ -391,6 +427,8 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
   it('W1：在途删除异目标→info toast 轻量告知+第二目标不执行（graph 预检都不发——hook 级串行语义保留）', async () => {
     const resolveGraph = hangGraph()
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
+    mockPaperTotal(0)
     await render(BASE_QUERY)
     await clickDeleteMenu()
     // 在途窗内右键删除另一目标（主图）
@@ -409,6 +447,8 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
   it('W1：同目标重复删除→静默早退（防双击面语义保留——无 toast+仅一次预检/删除）', async () => {
     const resolveGraph = hangGraph()
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
+    mockPaperTotal(0)
     await render(BASE_QUERY)
     await clickDeleteMenu()
     rightClick(navRow('调研计划'))
@@ -424,6 +464,8 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
   it('W2：删除在途用户切走筛选→落定后筛选不被清（仅当仍指向被删文件夹才回退）', async () => {
     const resolveGraph = hangGraph()
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
+    mockPaperTotal(0)
     await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
     await clickDeleteMenu()
     expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
@@ -436,7 +478,7 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
     expect(mutatedCalls).toBeGreaterThan(0)
   })
 
-  it('有资产→FolderDeleteDialog 保护弹窗（文案逐字承接）+确认删除回退联动', async () => {
+  it('有资产→FolderDeleteDialog 保护弹窗（[F-ALIGN-01 D4] 文案=域删级联预告）+确认删除回退联动', async () => {
     await render({ ...BASE_QUERY, folderScope: { kind: 'folder', folderId: 'f-1' } })
     stubApi.lineage.graph.mockResolvedValue({
       ok: true,
@@ -448,6 +490,9 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
     const dialog = host?.querySelector('[role="dialog"]')
     expect(dialog).not.toBeNull()
     expect(dialog?.textContent).toContain('删除文件夹「调研计划」？')
+    expect(dialog?.textContent).toContain(
+      '将永久删除该文件夹内的 1 篇文献及其脉络图（1 个节点、0 条连线）、笔记与标注——全部不可恢复。'
+    )
     const del = [...(dialog?.querySelectorAll('button') ?? [])].find(
       (b) => b.textContent === '删除文件夹'
     )

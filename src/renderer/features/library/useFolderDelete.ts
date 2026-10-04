@@ -4,13 +4,17 @@
  * 保留弹窗形态零改（本件只管「要不要弹」的分流）。
  *
  * ── 行为层 ──
- * - 静默判据（用户裁决 2026-09-30，v90 §4 第 5 条）：保护资产=脉络图唯一
- *   （edgeCount/nodeCount——摆位/月槽不视为资产，自动重派低成本）。
- *   nodeCount=0 ∧ edgeCount=0 →静默直删（不弹窗）；paperCount 不参与
- *   （文献仅移「未归档」可寻回）
- * - 有资产（nodeCount>0 ∨ edgeCount>0）→上抛 onHasAssets 由宿主挂
- *   FolderDeleteDialog（现状保护弹窗）
- * - fail-closed：lineage.graph 预检失败（含超时/异常）→不删不弹，动作型
+ * - 静默判据（[F-ALIGN-01 D4 2026-10-04] 域删语义重写——原 2026-09-30 裁决
+ *   「paperCount 不参与」的前提「文献仅移出可寻回」随 D5 移出路径消亡而失效）：
+ *   保护资产=paperCount/edgeCount/nodeCount 三计数。[RR1 W-A] 计数源=预检
+ *   **实时查询**（快照 TOCTOU 修复——FolderNav 的 folders.list 快照滞后 0
+ *   而库内有文献会 false-silent 直删=域删下文献灭失无预告）：graph/计数两
+ *   查询 Promise.all 并行（library.list folderScope=folder+limit:1 只取 total
+ *   ——FolderNav 旧计数查询同款手法）。total=0 ∧ nodeCount=0 ∧ edgeCount=0
+ *   →静默直删（不弹窗）；任一非零→上抛 onHasAssets（paperCount=实时 total
+ *   对象替换——FolderDeleteDialog 文案 K 值同步实时化，props 链零改）由宿主
+ *   挂 FolderDeleteDialog（域删级联预告弹窗——INV-NEW-3）
+ * - fail-closed：预检失败（graph/计数任一，含超时/异常）→不删不弹，动作型
  *   error toast（域错误 ApiClientError.message 透传+意外异常中文兜底）
  * - busy（W1 回炉 2026-09-30，门一）：双异步（预检+删除）全程 ref 守卫防
  *   同批双击（useBusyGuard pending ref 同型——菜单点击即关，无持续 busy
@@ -83,9 +87,18 @@ export function useFolderDeleteFlow(props: {
     }
     deletingIdRef.current = folder.id
     let silent: boolean
+    let paperCountNow: number
     try {
-      const graph = await unwrap(api.lineage.graph({ folderId: folder.id }))
-      silent = graph.nodes.length === 0 && graph.edges.length === 0
+      // [RR1 W-A] 双预检并行（实时源）：graph（node/edge）+library.list
+      // folderScope=folder+limit:1（total=实时文献计数——快照 TOCTOU 修复）
+      const [graph, count] = await Promise.all([
+        unwrap(api.lineage.graph({ folderId: folder.id })),
+        unwrap(api.library.list({ folderScope: { kind: 'folder', folderId: folder.id }, limit: 1 }))
+      ])
+      paperCountNow = count.total
+      // [F-ALIGN-01 D4] 静默判据扩 paperCount（实时值——域删语义：任一非零=
+      // 弹窗预告级联损失；全零=静默直删）
+      silent = count.total === 0 && graph.nodes.length === 0 && graph.edges.length === 0
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : FOLDER_PRECHECK_FAILED, 'error')
       deletingIdRef.current = null
@@ -93,7 +106,8 @@ export function useFolderDeleteFlow(props: {
     }
     if (!silent) {
       deletingIdRef.current = null
-      onHasAssets(folder)
+      // [RR1 W-A] 弹窗载荷 K 值=实时计数（对象替换——props 链零改）
+      onHasAssets({ ...folder, paperCount: paperCountNow })
       return
     }
     try {

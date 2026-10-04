@@ -2,11 +2,12 @@
 /**
  * [F-UIRES-01 批 A U4→批 B 三项版] PaperRowMenu（P-10：菜单=「在阅读器中
  * 打开」+「移动到文件夹 ▸」+「删除文献」（批 B 点亮）；星标项 DB 窗口点亮
- * ——不渲染禁用项=零死交互。删除流全矩阵=paper-delete.test.tsx[批 B 新增]）。
- * 覆盖：右键行弹出+命中行高亮（按下即高亮）；三项文本；移动子面（folders.list+
- * 未归档移出）；moveFolder 链+成功收尾两分支（行离开当前视图→选中清空+抽屉
- * 清空；仍在→保持）；失败→拒因中文 toast；「在阅读器中打开」走 openPaper
- * 通道。always-active（不经 guardedDescribe）。
+ * ——不渲染禁用项=零死交互。删除流全矩阵=paper-delete.test.tsx[批 B 新增]。
+ * 覆盖：右键行弹出+命中行高亮（按下即高亮）；三项文本；移动子面（folders.list
+ * ——[F-ALIGN-01 D5]「未归档（移出）」项随未归档域退役删除，在场即红）；
+ * moveFolder 链+成功收尾两分支（行离开当前视图→选中清空+抽屉清空；仍在→
+ * 保持）；失败→拒因中文 toast；「在阅读器中打开」走 openPaper 通道。
+ * always-active（不经 guardedDescribe）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -174,7 +175,7 @@ describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
     window.removeEventListener(OPEN_PAPER_EVENT, listener)
   })
 
-  it('移动子面：folders.list 自取+「未归档（移出）」行尾项', async () => {
+  it('移动子面：folders.list 自取+子项=文件夹清单（[F-ALIGN-01 D5]「未归档（移出）」零残留负锚）', async () => {
     setPapers([summary('p1', null)])
     await render()
     await rightClickRow('p1')
@@ -188,7 +189,7 @@ describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
     expect(sub).not.toBeNull()
     expect(sub?.textContent).toContain('主图')
     expect(sub?.textContent).toContain('调研计划')
-    expect(sub?.textContent).toContain('未归档（移出）')
+    expect(sub?.textContent).not.toContain('未归档') // D5：null 移出入口消亡（在场即红）
   })
 })
 
@@ -227,7 +228,7 @@ describe('F-UIRES-01 U4 菜单移动链（moveFolder+收尾两分支）', () => 
     expect(menu()).toBeNull()
   })
 
-  it('移出→未归档（folder 视图）：行离开当前视图→选中清空+抽屉清空', async () => {
+  it('移出收尾（folder 视图）：移动至他夹行离开当前视图→选中清空+抽屉清空（[F-ALIGN-01 D5] null 移出消亡——收尾分支沿移动语义保持）', async () => {
     useLibraryStore.setState({
       query: { sort: 'added_desc', offset: 0, limit: 50, folderScope: { kind: 'folder', folderId: 'f-1' } }
     })
@@ -241,10 +242,10 @@ describe('F-UIRES-01 U4 菜单移动链（moveFolder+收尾两分支）', () => 
     // 重载后列表为空（行已离开 folder 视图）
     stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
     await act(async () => {
-      subItem('未归档')!.click()
+      subItem('主图')!.click()
     })
     await settle()
-    expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: null })
+    expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: '__main__' })
     expect(useLibraryStore.getState().selectedId, '行离开视图→选中清空（抽屉随清）').toBeNull()
   })
 

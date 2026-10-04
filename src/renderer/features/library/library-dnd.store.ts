@@ -22,8 +22,9 @@ import { create } from 'zustand'
 /** 内部行拖拽自定义 MIME（dragstart 载荷=paperId） */
 export const PAPER_DRAG_MIME = 'application/x-synapse-paper'
 
-/** 拖放目标（folder 行/未归档行——「全部文献」=非目标） */
-export type DndTarget = { kind: 'folder'; folderId: string; name: string } | { kind: 'unfiled' }
+/** 拖放目标（folder 行——「全部文献」=非目标；[F-ALIGN-01 D5] 第三变体随
+ *  D5 退役删除，余 folder 单态——单形状对象类型） */
+export type DndTarget = { kind: 'folder'; folderId: string; name: string }
 
 export interface LibraryDndStore {
   drag: { paperId: string; title: string } | null

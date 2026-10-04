@@ -54,14 +54,16 @@ function buildApi(): PreloadApi {
  * 拖拽导入桥（P7E-02，INV-54）：File → 路径解析唯一口。
  * none/too-many 在 preload 堆内即拒（零通道 invoke）；ok 才组装
  * import/from-paths 载荷——renderer 全程不接触路径串。
+ * [F-ALIGN-01 D3] targetFolderId 随载荷组装（三通道必携落点——INV-NEW-2；
+ * 值由 renderer 投影单源传入，preload 不解析）。
  */
 function buildDrag(): PreloadDrag {
   return {
-    importDropped(files: File[]): Promise<Result<ImportResult>> {
+    importDropped(files: File[], targetFolderId: string): Promise<Result<ImportResult>> {
       const plan = planDroppedImports(files, (f) => webUtils.getPathForFile(f))
       if (plan.kind === 'none') return Promise.resolve(err('INVALID_REQUEST', '仅支持拖入 PDF 文件'))
       if (plan.kind === 'too-many') return Promise.resolve(err('INVALID_REQUEST', '一次最多拖入 100 个文件'))
-      return ipcRenderer.invoke('import/from-paths', { paths: plan.paths })
+      return ipcRenderer.invoke('import/from-paths', { paths: plan.paths, targetFolderId })
     }
   }
 }

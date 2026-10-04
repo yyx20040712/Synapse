@@ -229,10 +229,9 @@ describe('F-UIRES-01 U1 重命名行内编辑（单源——FolderRenameDialog �
     expect(input?.value).toBe('调研计划')
   })
 
-  it('双击虚拟行 no-op：全部文献/未归档双击不进重命名（不可重命名面）', async () => {
+  it('双击虚拟行 no-op：全部文献双击不进重命名（不可重命名面；[F-ALIGN-01 D5] 未归档虚拟行已退役）', async () => {
     await render(BASE_QUERY)
     dblClick(navRow('全部文献'))
-    dblClick(navRow('未归档'))
     await settle()
     expect(renameInput()).toBeNull()
   })

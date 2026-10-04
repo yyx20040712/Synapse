@@ -96,7 +96,7 @@ afterEach(async () => {
 
 describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
   it('挂载即订阅 importProgress；卸载成对退订（INV-14 消费方级）', async () => {
-    await render(<ImportDropZone onImported={() => undefined} />)
+    await render(<ImportDropZone onImported={() => undefined} targetFolderId="__main__" />)
     expect(onImportProgressSpy).toHaveBeenCalledTimes(1)
     await act(async () => {
       root?.unmount()
@@ -109,7 +109,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
     stubApi.import_.fromDialog.mockImplementation(
       () => new Promise<EmptyOk>((r) => { resolveInvoke = r })
     )
-    await render(<ImportDropZone onImported={() => undefined} />)
+    await render(<ImportDropZone onImported={() => undefined} targetFolderId="__main__" />)
     await click('导入 PDF')
     expect(statusText()).toBe('正在打开选择窗口…')
     await emit(ev('s1', { phase: 'copying', current: 1, total: 2, fileName: '论文一.pdf' }))
@@ -125,7 +125,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
 
   it('busy 中异 sessionId 事件→文案不变（旧会话污染被滤）', async () => {
     stubApi.import_.fromDialog.mockImplementation(() => new Promise<EmptyOk>(() => undefined))
-    await render(<ImportDropZone onImported={() => undefined} />)
+    await render(<ImportDropZone onImported={() => undefined} targetFolderId="__main__" />)
     await click('导入 PDF')
     await emit(ev('live', { phase: 'copying', current: 1, total: 3, fileName: '本会话.pdf' }))
     expect(statusText()).toBe('复制文件（1/3） 本会话.pdf')
@@ -135,7 +135,7 @@ describe('F-D4 ImportDropZone —— 进度事件会话身份过滤', () => {
 
   it('busy=false 时事件→不渲染进度且不锚定会话身份（state 不写）', async () => {
     stubApi.import_.fromDialog.mockImplementation(() => new Promise<EmptyOk>(() => undefined))
-    await render(<ImportDropZone onImported={() => undefined} />)
+    await render(<ImportDropZone onImported={() => undefined} targetFolderId="__main__" />)
     await emit(ev('stale', { phase: 'done', current: 9, total: 9, fileName: '旧会话.pdf' }))
     expect(statusText()).toBeNull()
     // 深断言：idle 事件若写了 state 或锚定了会话身份，后续本会话首事件会被

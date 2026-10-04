@@ -46,7 +46,7 @@ async function render(onImported: () => void = () => undefined): Promise<void> {
   document.body.appendChild(host)
   root = createRoot(host)
   await act(async () => {
-    root?.render(<ImportDropZone onImported={onImported} />)
+    root?.render(<ImportDropZone onImported={onImported} targetFolderId="__main__" />)
   })
 }
 
@@ -121,10 +121,11 @@ describe('P7E-02 ImportDropZone —— 拖拽导入接线（D2/D3/D5/D6）', () 
     await render(onImported)
     await drop([{ name: 'a.pdf' }, { name: 'b.pdf' }])
 
-    // busy 相：按钮禁用；apiDrag 收到的正是 dataTransfer.files 展开
+    // busy 相：按钮禁用；apiDrag 收到的正是 dataTransfer.files 展开+落点透传
     expect(busyNow()).toBe(true)
     const sent = dragSpy.mock.calls[0]?.[0] as { name: string }[]
     expect(sent.map((f) => f.name)).toEqual(['a.pdf', 'b.pdf'])
+    expect(dragSpy.mock.calls[0]?.[1]).toBe('__main__') // [F-ALIGN-01 D3] 拖拽面必携落点
 
     resolveDrop(okResult({ imported: [{ id: 'p1' }] as never, duplicates: [], failed: [] }))
     await settle()

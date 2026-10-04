@@ -76,11 +76,21 @@ export const trueAckSchema = z.object({ ok: z.literal(true) }).strict()
  * 拖拽导入请求（P7E-02）：paths 由 preload webUtils 桥（apiDrag.importDropped）
  * 解析产生——renderer 不可构造本请求（通道对 renderer 隐藏，INV-07 修订/INV-54）。
  * min(1)/max(100) 是 schema 层第二道数量门（第一道=preload planDroppedImports）。
+ * [F-ALIGN-01 D3 2026-10-04] +targetFolderId 必填（三通道 Req 一律必携落点——
+ * INV-NEW-2 主锚契约面：null 不达 importOne 落夹；「全部视图=主图」缺省语义
+ * 归 renderer 投影单源 LibraryPage）
  */
 export const importPathsReqSchema = z
-  .object({ paths: z.array(z.string().min(1)).min(1).max(100) })
+  .object({ paths: z.array(z.string().min(1)).min(1).max(100), targetFolderId: z.string().min(1) })
   .strict()
 export type ImportPathsReq = z.infer<typeof importPathsReqSchema>
+
+/**
+ * [F-ALIGN-01 D3 2026-10-04] 对话框/文件夹导入请求（fromDialog/fromFolder 两
+ * 通道共用）：targetFolderId 必填（导入落点——main 侧单跳落夹建节点，INV-NEW-2）
+ */
+export const importTargetReqSchema = z.object({ targetFolderId: z.string().min(1) }).strict()
+export type ImportTargetReq = z.infer<typeof importTargetReqSchema>
 
 export const importResultSchema = z
   .object({

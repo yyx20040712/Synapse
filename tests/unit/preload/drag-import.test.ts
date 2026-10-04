@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  *   混合/类型门——W2 回炉：目录项 type='' 击穿后缀滤的防护）；
  * - apiDrag.importDropped 三分支：none/too-many → INVALID_REQUEST 中文错误且
  *   **零通道 invoke**（合成 File/超量在 preload 堆内即拒——被攻陷 renderer 无法
- *   注入任意路径，INV-54）；ok → invoke('import/from-paths', { paths }) 载荷。
+ *   注入任意路径，INV-54）；ok → invoke('import/from-paths', { paths,
+ *   targetFolderId }) 载荷（[F-ALIGN-01 D3] 拖拽面必携落点——INV-NEW-2）。
  * electron mock 形态复用契约测试（preload-surface.test.ts）：exposed 收集
  * exposeInMainWorld、ipcRenderer/webUtils 打桩。
  */
@@ -108,15 +109,15 @@ describe('P7E-02 apiDrag.importDropped —— preload 桥三分支', () => {
     mocks.pathFor.mockReset()
   })
 
-  function drag(): { importDropped(files: File[]): Promise<unknown> } {
+  function drag(): { importDropped(files: File[], targetFolderId: string): Promise<unknown> } {
     const d = exposed.get('apiDrag')
     if (typeof d !== 'object' || d === null) throw new Error('window.apiDrag 未暴露')
-    return d as { importDropped(files: File[]): Promise<unknown> }
+    return d as { importDropped(files: File[], targetFolderId: string): Promise<unknown> }
   }
 
   it('none 分支：全滤除 → INVALID_REQUEST 中文错误，零通道 invoke', async () => {
     mocks.pathFor.mockReturnValue('') // 合成 File：webUtils 解析得 ''
-    const r = await drag().importDropped([file('a.pdf')])
+    const r = await drag().importDropped([file('a.pdf')], 'f-drop')
     expect(r).toEqual({
       ok: false,
       error: { code: 'INVALID_REQUEST', message: '仅支持拖入 PDF 文件' }
@@ -127,7 +128,7 @@ describe('P7E-02 apiDrag.importDropped —— preload 桥三分支', () => {
   it('too-many 分支：滤后超 100 → INVALID_REQUEST 中文错误，零通道 invoke', async () => {
     mocks.pathFor.mockImplementation((f) => `E:/${(f as { name: string }).name}`)
     const files = Array.from({ length: MAX_DROP_FILES + 1 }, (_, i) => file(`f${i}.pdf`))
-    const r = await drag().importDropped(files)
+    const r = await drag().importDropped(files, 'f-drop')
     expect(r).toEqual({
       ok: false,
       error: { code: 'INVALID_REQUEST', message: '一次最多拖入 100 个文件' }
@@ -135,13 +136,16 @@ describe('P7E-02 apiDrag.importDropped —— preload 桥三分支', () => {
     expect(mocks.invoke).not.toHaveBeenCalled()
   })
 
-  it('ok 分支：滤后有效 → invoke import/from-paths 且仅携 paths 载荷，响应原样透传', async () => {
+  it('ok 分支：滤后有效 → invoke import/from-paths 携 paths+targetFolderId 载荷（[F-ALIGN-01 D3] 拖拽必携落点），响应原样透传', async () => {
     const reply = { ok: true as const, data: { imported: [], duplicates: [], failed: [] } }
     mocks.invoke.mockResolvedValue(reply)
     mocks.pathFor.mockImplementation((f) => `E:/${(f as { name: string }).name}`)
-    const r = await drag().importDropped([file('一.pdf'), file('二.PDF'), file('三.docx')])
+    const r = await drag().importDropped([file('一.pdf'), file('二.PDF'), file('三.docx')], 'f-drop')
     expect(mocks.invoke).toHaveBeenCalledTimes(1)
-    expect(mocks.invoke).toHaveBeenCalledWith('import/from-paths', { paths: ['E:/一.pdf', 'E:/二.PDF'] })
+    expect(mocks.invoke).toHaveBeenCalledWith('import/from-paths', {
+      paths: ['E:/一.pdf', 'E:/二.PDF'],
+      targetFolderId: 'f-drop'
+    })
     expect(r).toBe(reply)
   })
 })

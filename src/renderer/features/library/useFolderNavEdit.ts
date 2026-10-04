@@ -22,7 +22,6 @@ const FOLDER_NAME_EMPTY = '文件夹名不能为空'
 export function useFolderNavEdit(props: {
   onMutated(): void
   reloadFolders(): Promise<void>
-  reloadUnfiledCount(): Promise<void>
 }): {
   creating: boolean
   setCreating(v: boolean): void
@@ -36,7 +35,7 @@ export function useFolderNavEdit(props: {
   commitCreate(name: string, viaBlur: boolean): void
   commitRename(state: RenameState, viaBlur: boolean): void
 } {
-  const { onMutated, reloadFolders, reloadUnfiledCount } = props
+  const { onMutated, reloadFolders } = props
   const [creating, setCreating] = useState(false)
   const [renaming, setRenaming] = useState<RenameState | null>(null)
   // Esc 收起标记（跳过紧随失焦提交——unmount 不触发 blur，防御窗口在）
@@ -57,7 +56,6 @@ export function useFolderNavEdit(props: {
       await unwrap(api.folders.create({ name: trimmed }))
       setCreating(false)
       await reloadFolders()
-      void reloadUnfiledCount()
       onMutated()
     } catch (e) {
       // CONFLICT 域错误中文原文透传；输入保留（§2.2）
@@ -79,7 +77,6 @@ export function useFolderNavEdit(props: {
       await unwrap(api.folders.rename({ id: state.folderId, name: trimmed }))
       setRenaming(null)
       await reloadFolders()
-      void reloadUnfiledCount()
       onMutated()
     } catch (e) {
       // CONFLICT 拒→toast+输入保留（本行提交权威——§2.2）

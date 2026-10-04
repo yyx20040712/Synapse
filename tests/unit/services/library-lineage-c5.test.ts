@@ -78,14 +78,13 @@ describe('F-FOLDER-01 pubNo 库级派生（INV-92——LIST_SQL 窗口；catalog
     expect(byId.get('p-nograph')!.impactFactor).toBeNull()
   })
 
-  it('B3 终裁：folderScope 过滤在窗口之后——全部/unfiled/folder 三态下同一文献 pubNo 恒同', () => {
+  it('B3 终裁：folderScope 过滤在窗口之后——[F-ALIGN-01 D5] 全部/folder 两态下同一文献 pubNo 恒同', () => {
     const { papers, folders, db } = makeDb()
     const f1 = folders.create('图一')
     seedPaper(db, 'p-a', 2020, '2026-01-01T00:00:00Z')
     seedPaper(db, 'p-b', 2021, '2026-01-02T00:00:00Z')
     papers.setFolderId('p-a', f1.id)
     const all = papers.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50, folderScope: { kind: 'all' } })
-    const unfiled = papers.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50, folderScope: { kind: 'unfiled' } })
     const inF1 = papers.searchSummaries({
       sort: 'added_desc',
       offset: 0,
@@ -93,25 +92,24 @@ describe('F-FOLDER-01 pubNo 库级派生（INV-92——LIST_SQL 窗口；catalog
       folderScope: { kind: 'folder', folderId: f1.id }
     })
     expect(all.items.map((p) => p.id)).toEqual(['p-b', 'p-a']) // items 序=sort（added_desc）
-    expect(unfiled.items.map((p) => p.id)).toEqual(['p-b'])
     expect(inF1.items.map((p) => p.id)).toEqual(['p-a'])
     const pubNoOf = (rows: typeof all.items, id: string) => rows.find((p) => p.id === id)!.pubNo
-    // 库级恒定：三态下 pubNo 同值（过滤不改编号——B3 字面）
+    // 库级恒定：两态下 pubNo 同值（过滤不改编号——B3 字面；INV-92 两态口径）
     expect(pubNoOf(all.items, 'p-a')).toBe(pubNoOf(inF1.items, 'p-a'))
-    expect(pubNoOf(all.items, 'p-b')).toBe(pubNoOf(unfiled.items, 'p-b'))
     expect(pubNoOf(all.items, 'p-a')).toBe(1)
     expect(pubNoOf(all.items, 'p-b')).toBe(2)
   })
 
-  it('folderScope 三态判别联合 schema 面：kind 未知值拒、folder 态缺 folderId 拒（W5 禁裸 nullable 二义）', async () => {
+  it('folderScope 两态判别联合 schema 面：kind 未知值拒、folder 态缺 folderId 拒（W5 禁裸 nullable 二义）；[F-ALIGN-01 D5] unfiled 变体拒收', async () => {
     const { libraryQuerySchema } = await import('../../../src/shared/models/paper')
     expect(libraryQuerySchema.safeParse({ folderScope: { kind: 'all' } }).success).toBe(true)
-    expect(libraryQuerySchema.safeParse({ folderScope: { kind: 'unfiled' } }).success).toBe(true)
     expect(
       libraryQuerySchema.safeParse({ folderScope: { kind: 'folder', folderId: 'f-1' } }).success
     ).toBe(true)
     expect(libraryQuerySchema.safeParse({ folderScope: { kind: 'weird' } }).success).toBe(false)
     expect(libraryQuerySchema.safeParse({ folderScope: { kind: 'folder' } }).success).toBe(false)
+    // [F-ALIGN-01 D5] unfiled 变体随未归档域退役删除——在场即红（负锚）
+    expect(libraryQuerySchema.safeParse({ folderScope: { kind: 'unfiled' } }).success).toBe(false)
   })
 
   it('list() 透传 searchSummaries（service join 退役——folderScope 收口在 buildFilters）', async () => {
@@ -122,7 +120,7 @@ describe('F-FOLDER-01 pubNo 库级派生（INV-92——LIST_SQL 窗口；catalog
       lineage: { nodeByPaperId: () => null, edgeCountByNode: () => 0, listGraph: () => ({ nodes: [], edges: [] }) }
     } as unknown as Repos
     const svc = createLibraryService({ repos })
-    const req = { sort: 'added_desc' as const, offset: 0, limit: 50, folderScope: { kind: 'unfiled' } as const }
+    const req = { sort: 'added_desc' as const, offset: 0, limit: 50, folderScope: { kind: 'all' } as const }
     await svc.list(req)
     expect(searchSummaries).toHaveBeenCalledWith(req)
   })

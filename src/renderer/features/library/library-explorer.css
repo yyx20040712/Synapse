@@ -1,8 +1,8 @@
 /* ══ [F-UIRES-01 批 A] 库页资源管理器形态皮肤（mockups/2026-10-02_
    f-uires01-library.html 逐值誊录；token 单源=theme.css :root——色值/尺寸
    不新造）。分域拆件自 library.css（CSS 450 行上限——F-CSS-01 口径）：
-   FolderNav 左栏/星标占位列/标签下拉 dd 族/导入条/行拖拽与命中高亮/
-   S6 未归档空态。由 LibraryPage.tsx 一并 import。══ */
+   FolderNav 左栏/星标占位列/标签下拉 dd 族/导入条/行拖拽与命中高亮。
+   由 LibraryPage.tsx 一并 import。══ */
 
 /* ── FolderNav 左栏 224px（mockup .fnav 族逐值）── */
 .lib-fnav {
@@ -419,6 +419,3 @@
   border-radius: 6px;
 }
 .lib-move-sub { border-top: 1px solid var(--line); margin: 2px 0; padding-top: 2px; max-height: 200px; overflow-y: auto; }
-
-/* ── S6 未归档空态图标（mockup .pl-empty svg 语汇——line 描边淡色）── */
-.lib-empty-unfiled svg { width: 34px; height: 34px; fill: none; stroke: var(--line); stroke-width: 1.4; }

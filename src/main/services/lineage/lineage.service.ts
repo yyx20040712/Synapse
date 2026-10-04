@@ -7,7 +7,7 @@
  * 零语义变化。
  *
  * [F-ALIGN-01 D1/D2 2026-10-04] upsertNode→patchNode（通道拆分）：
- * - 新建分支（文献节点 INV-88 统一规则/未归档 ensurePaperFolder 归档写）
+ * - 新建分支（文献节点 INV-88 统一规则/无归属行 ensurePaperFolder 归档写）
  *   +主题分支（paperId null 落图）+重复预检全部随 IPC 新建形态消亡删除
  *   （通道不再携带新建载荷——节点唯一来源=入库 import.service 挂接/移动
  *   moveFolder 两路 repo 直调，INV-NEW-1；INV-88 判别/落笔宿主仍在

@@ -213,7 +213,7 @@ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () =
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-x' }) // 库页上下文同步
     expect(useLineageStore.getState().folderId).toBe('f-x')
     expect(host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent).toBe('测试图乙') // 图名=folders 单源
-    // 负对照：unfiled/未选态→主图（mount 前 state 复位由 beforeEach 承载——此处仅锁正路径分支）
+    // 负对照：未选态→主图（mount 前 state 复位由 beforeEach 承载——此处仅锁正路径分支；[F-ALIGN-01 D5] unfiled 筛选态已退役）
   })
 
   it('[R6] 空态两分支：子图空图=「该文件夹无脉络图」提示在场；主图空图=不显示（通用空态承载）', async () => {

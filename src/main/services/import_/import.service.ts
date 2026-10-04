@@ -2,10 +2,14 @@
  * [SR-SVC-03] import.service —— 导入编排（工单：done / weak）
  *
  * ── 行为层 ──
- * - importFiles(paths)：逐个 file-store 拷贝（sha256 去重）→ extractPdfMeta → 入库
- *   → 结果三类：imported / duplicates（同 sha 已存在，记文件名）/ failed（原因中文）
- * - importFolder(folder)：递归找 *.pdf（不区分大小写）；每个一级子目录名 upsert 成
- *   collection 并挂接；根目录文件不挂集合；进度事件持续上报
+ * - importFiles(paths, targetFolderId)：逐个 file-store 拷贝（sha256 去重）→
+ *   extractPdfMeta → 入库 → 结果三类：imported / duplicates（同 sha 已存在，记
+ *   文件名）/ failed（原因中文）
+ * - importFolder(folder, targetFolderId)：递归找 *.pdf（不区分大小写）；每个一级
+ *   子目录名 upsert 成 collection 并挂接（落子目录夹）；根目录文件落
+ *   targetFolderId（[F-ALIGN-01 D3 2026-10-04] main 侧单跳：原「根目录文件不挂
+ *   集合/不建节点」行为废止——所有导入产物恒落夹并建节点，INV-NEW-2）；进度事件
+ *   持续上报
  * - 单文件失败不中断整批（尽力而为），失败原因进 failed
  * - 会话身份两合一（F-D4，INV-52）：
  *   ①gate 互斥——importFiles/importFolder 每次调用入口 gate.enter()，**finally**
@@ -19,13 +23,14 @@
  *
  * ── 接口层 ──
  * - export interface ImportService {
- *     importFiles(paths: string[]): Promise<ImportResult>
- *     importFolder(folder: string): Promise<ImportResult>
+ *     importFiles(paths: string[], targetFolderId: string): Promise<ImportResult>
+ *     importFolder(folder: string, targetFolderId: string): Promise<ImportResult>
  *   }
  * - export function createImportService(deps: {
  *     repos: Repos; fileStore: FileStore;
  *     gate: { enter(): void; exit(): void };
- *     onProgress?: (e: ImportProgressEvent) => void
+ *     onProgress?: (e: ImportProgressEvent) => void;
+ *     sendFoldersChanged?: () => void; sendLineageChanged?: () => void
  *   }): ImportService
  *
  * ── 架构层 ──
@@ -53,8 +58,8 @@ import type { FileStore } from './file-store'
 import type { PdfMetaExtraction } from './pdf-meta.extract'
 
 export interface ImportService {
-  importFiles(paths: string[]): Promise<ImportResult>
-  importFolder(folder: string): Promise<ImportResult>
+  importFiles(paths: string[], targetFolderId: string): Promise<ImportResult>
+  importFolder(folder: string, targetFolderId: string): Promise<ImportResult>
 }
 
 /**
@@ -64,7 +69,8 @@ export interface ImportService {
  */
 class ImportDomainError extends DomainError {}
 
-/** 批处理单元：源路径 + 所属集合（importFiles 一律 null，根目录文件也为 null） */
+/** 批处理单元：源路径 + 所属集合（importFiles 一律 null=落点取调用参数
+ *  targetFolderId；importFolder 的根目录文件同为 null，一级子目录文件=该夹） */
 interface BatchEntry {
   path: string
   collection: Collection | null
@@ -90,8 +96,24 @@ export function createImportService(deps: {
    *  finally 配对——workspace 变更三入口的互斥判定源） */
   gate: { enter(): void; exit(): void }
   onProgress?: (e: ImportProgressEvent) => void
+  /** [F-ALIGN-01 D3] 双失效事件出口（可选缺省=静默——单测装配兼容；
+   *  生产装配恒真值——LibraryServiceDeps 先例）。单跳落夹+建节点吸收了原
+   *  renderer 后挂接链的 moveFolder 双播面：导入产物>0 → folders.changed
+   *  （侧栏计数）+lineage.changed（图结构）双播（S3/S4 联动数据源） */
+  sendFoldersChanged?: () => void
+  sendLineageChanged?: () => void
 }): ImportService {
   const { repos, fileStore, extractMeta, gate, onProgress } = deps
+  const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
+  const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
+
+  /** [F-ALIGN-01 D3] 落夹产物广播（imported>0 才播——取消/全重复零播） */
+  const reportMutated = (result: ImportResult): void => {
+    if (result.imported.length > 0) {
+      sendFoldersChanged()
+      sendLineageChanged()
+    }
+  }
 
   /** 进度上报（onProgress 未注入时静默，便于无 UI 场景复用） */
   const report = (sessionId: string, core: ProgressCore): void => {
@@ -105,19 +127,24 @@ export function createImportService(deps: {
     | { kind: 'failed'; fileName: string; reason: string }
 
   /**
-   * 单文件流水线：拷贝（含 sha256）→ 查重 → 抽取 → 入库 → 挂集合。
+   * 单文件流水线：拷贝（含 sha256）→ 查重 → 抽取 → 入库 → 落夹建节点。
    * 任一步抛错（非 PDF / 读源失败等）都折叠成 failed，不中断整批。
    *
    * 写入顺序：insert 在前、folder 归属在后（[F-FOLDER-01] paper_collections
    * 退役——文件夹导入的一级子目录名→collections 行→papers.folder_id 单归属）。
    * 两条写入包在 repos.withTransaction 里——归属写失败（SQLITE_BUSY/IO 等）时
    * insert 一并回滚：没有事务时"失败"的文献已入库且 sha 被判重占用，永远无法重导。
+   *
+   * [F-ALIGN-01 D3 2026-10-04] main 侧单跳：落点=collection?.id ?? targetFolderId
+   * （子目录文件→子目录夹；对话框/根散文件→targetFolderId），所有导入产物建
+   * 节点（原「根文件不建节点」行为废止——INV-NEW-2 落夹恒非空+INV-88 投影恒等）。
    */
   async function importOne(
     entry: BatchEntry,
     current: number,
     total: number,
-    sessionId: string
+    sessionId: string,
+    targetFolderId: string
   ): Promise<OneOutcome> {
     const fileName = fileNameOf(entry.path)
     try {
@@ -150,32 +177,30 @@ export function createImportService(deps: {
         last_read_page: 0
       }
       const collection = entry.collection
+      const folderId = collection?.id ?? targetFolderId
       repos.withTransaction(() => {
         repos.papers.insert(row)
         // [F-FOLDER-01] 单归属直写（M2M attach 退役——一级子目录名→folder）+
-        // [回炉码 2/k1-W4] 挂接即自动入图（矩阵「导入→当前文件夹」行兑现）：
+        // [回炉码 2/k1-W4→F-ALIGN-01 D3] 落夹即自动入图（全形态统一）：
         // 节点 folder=papers.folder_id（setFolderId 先行——INV-88 统一规则同源）；
         // year 取抽取元数据、month 无源=null 缺省归未定年月组（W6 漏格）、
-        // slot=目标图组现行 max+1（normalizeMonthSlot 新建分支单源）；根文件
-        // （无文件夹）不建节点（矩阵「导入→全部」行——零自动图语义）
-        if (collection !== null) {
-          repos.papers.setFolderId(row.id, collection.id)
-          const seed = {
-            paperId: row.id,
-            title: row.title.trim() === '' ? '（无标题）' : row.title,
-            coreIdea: '',
-            year: meta.year,
-            x: null,
-            y: null,
-            tags: null,
-            month: null,
-            folderId: collection.id
-          }
-          const { month, slot } = normalizeMonthSlot(seed, repos.lineage.listGraph().nodes)
-          repos.lineage.upsertNode({ ...seed, month, slot })
+        // slot=目标图组现行 max+1（normalizeMonthSlot 新建分支单源）
+        repos.papers.setFolderId(row.id, folderId)
+        const seed = {
+          paperId: row.id,
+          title: row.title.trim() === '' ? '（无标题）' : row.title,
+          coreIdea: '',
+          year: meta.year,
+          x: null,
+          y: null,
+          tags: null,
+          month: null,
+          folderId
         }
+        const { month, slot } = normalizeMonthSlot(seed, repos.lineage.listGraph().nodes)
+        repos.lineage.upsertNode({ ...seed, month, slot })
       })
-      return { kind: 'imported', summary: toSummary(row, meta.authors, collection?.id ?? null) }
+      return { kind: 'imported', summary: toSummary(row, meta.authors, collection?.id ?? targetFolderId) }
     } catch (e) {
       // FileStoreError（UNSUPPORTED_FILE/IO_ERROR）的 message 已是中文；兜底防空串
       const reason = e instanceof Error && e.message !== '' ? e.message : `导入失败：${fileName}`
@@ -184,10 +209,14 @@ export function createImportService(deps: {
   }
 
   /** 批驱动：逐个跑流水线并汇成 ImportResult；current 从 1 计数 */
-  async function runBatch(sessionId: string, entries: BatchEntry[]): Promise<ImportResult> {
+  async function runBatch(
+    sessionId: string,
+    entries: BatchEntry[],
+    targetFolderId: string
+  ): Promise<ImportResult> {
     const result: ImportResult = { imported: [], duplicates: [], failed: [] }
     for (const [idx, entry] of entries.entries()) {
-      const outcome = await importOne(entry, idx + 1, entries.length, sessionId)
+      const outcome = await importOne(entry, idx + 1, entries.length, sessionId, targetFolderId)
       if (outcome.kind === 'imported') result.imported.push(outcome.summary)
       else if (outcome.kind === 'duplicate') result.duplicates.push(outcome.fileName)
       else result.failed.push({ fileName: outcome.fileName, reason: outcome.reason })
@@ -216,7 +245,8 @@ export function createImportService(deps: {
     return out
   }
 
-  /** 扫描 folder：根目录 *.pdf 不挂集合；一级子目录递归取 PDF 并记目录名与 position */
+  /** 扫描 folder：根目录 *.pdf 落 targetFolderId（[F-ALIGN-01 D3]）；一级子目录
+   *  递归取 PDF 并记目录名与 position（落子目录夹） */
   async function scanFolder(folder: string): Promise<PlannedFile[]> {
     let firstLevel
     try {
@@ -252,17 +282,23 @@ export function createImportService(deps: {
   return {
     // 路径列表已给定，无扫描阶段；进度直接从 copying 开始。
     // gate.enter/exit 必经 finally（F-D4 A 面——域错误上抛路径也释放互斥计数）
-    async importFiles(paths: string[]): Promise<ImportResult> {
+    async importFiles(paths: string[], targetFolderId: string): Promise<ImportResult> {
       gate.enter()
       try {
         const sessionId = randomUUID()
-        return await runBatch(sessionId, paths.map((path): BatchEntry => ({ path, collection: null })))
+        const result = await runBatch(
+          sessionId,
+          paths.map((path): BatchEntry => ({ path, collection: null })),
+          targetFolderId
+        )
+        reportMutated(result)
+        return result
       } finally {
         gate.exit()
       }
     },
 
-    async importFolder(folder: string): Promise<ImportResult> {
+    async importFolder(folder: string, targetFolderId: string): Promise<ImportResult> {
       gate.enter()
       try {
         const sessionId = randomUUID()
@@ -279,14 +315,17 @@ export function createImportService(deps: {
             )
           }
         }
-        return await runBatch(
+        const result = await runBatch(
           sessionId,
           planned.map((p): BatchEntry => {
             const collection =
               p.collectionName === null ? null : collectionByName.get(p.collectionName) ?? null
             return { path: p.path, collection }
-          })
+          }),
+          targetFolderId
         )
+        reportMutated(result)
+        return result
       } finally {
         gate.exit()
       }
@@ -312,9 +351,9 @@ function titleOf(extracted: string, fileName: string): string {
 }
 
 /** 刚插入的行 → 列表页摘要（新文献无标签/标注/笔记；[F-FOLDER-01] 归属=
- * folderId（单归属——导入落点文件夹；null=未归档），impactFactor 新建恒 null，
- * pubNo 无窗口语境省略——可选增量字段） */
-function toSummary(row: PaperRow, authors: string[], folderId: string | null): PaperSummary {
+ * folderId（单归属——[F-ALIGN-01 D3] 导入落点恒非空=collection 或 targetFolderId，
+ * INV-NEW-2），impactFactor 新建恒 null，pubNo 无窗口语境省略——可选增量字段） */
+function toSummary(row: PaperRow, authors: string[], folderId: string): PaperSummary {
   return {
     id: row.id,
     title: row.title,

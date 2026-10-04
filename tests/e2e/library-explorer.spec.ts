@@ -7,15 +7,17 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 /**
  * [F-UIRES-01 批 A→批 B] 库页资源管理器形态 e2e —— §3.9 锚清单补幕（每幕≥2
  * 真实文本/aria 锚）：
- * - S1：左栏「全部文献/未归档」导航行文本+选中行 aria-current；
+ * - S1：左栏「全部文献」导航行文本+选中行 aria-current（[F-ALIGN-01 D5]
+ *   第三筛选行随域退役——零残留负锚）；
  * - S4：drop 徽标文本「移入」+导入条「导入到：〈名〉」（合成内部拖拽经
  *   dispatchEvent——HTML5 DnD 手势 e2e 不可原生模拟，合成事件驱动 React
  *   合成 onDragStart/onDragOver/onDrop 同链）；
  * - S5a：行右键菜单「在阅读器中打开/移动到文件夹/删除文献」三项版（批 B
- *   删除项点亮；星标项 DB 窗口点亮不渲染）+子面移动执行；
+ *   删除项点亮；星标项 DB 窗口点亮不渲染）+子面移动执行（[F-ALIGN-01 D5]
+ *   「移出」尾项零残留负锚）；
  * - S5b（批 B）：删除两分支——保护弹窗三要素（「删除文献？」+「同时移除其
  *   节点与全部连线」+图名+连线数）/静默直删（无 Dialog）；
- * - S6：未归档空态句+归档双通道句。
+ * - S6：空文件夹态=通用「暂无文献」引导（[F-ALIGN-01 D5] 专属空态变体退役）。
  */
 
 const PAPERS = [
@@ -25,7 +27,7 @@ const PAPERS = [
 
 const navRow = (win: Page, name: string) => win.locator('.lib-fn-row').filter({ hasText: name })
 
-test('S1：左栏三态导航行+aria-current 选中锚+主图行零特判', async () => {
+test('S1：左栏两态导航行+aria-current 选中锚+主图行零特判（[F-ALIGN-01 D5] 第三筛选行零残留）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uix-s1-'))
   await bootstrapMigrations(userData)
   for (const p of PAPERS) {
@@ -37,14 +39,14 @@ test('S1：左栏三态导航行+aria-current 选中锚+主图行零特判', asy
 
   // 默认态：全部文献行选中（aria-current 锚——S1）
   await expect(navRow(win, '全部文献')).toBeVisible({ timeout: 10_000 })
-  await expect(navRow(win, '未归档')).toBeVisible()
+  await expect(navRow(win, '未归档')).toHaveCount(0) // [F-ALIGN-01 D5] 零残留负锚
   await expect(navRow(win, '主图')).toBeVisible() // folders.list 如实渲染（零特判）
   await expect(navRow(win, '全部文献')).toHaveAttribute('aria-current', 'true')
-  await expect(navRow(win, '未归档')).not.toHaveAttribute('aria-current', 'true')
+  await expect(navRow(win, '主图')).not.toHaveAttribute('aria-current', 'true')
 
-  // 切未归档：选中态迁移（aria-current 随 folderScope）
-  await navRow(win, '未归档').click()
-  await expect(navRow(win, '未归档')).toHaveAttribute('aria-current', 'true')
+  // 切文件夹：选中态迁移（aria-current 随 folderScope）
+  await navRow(win, '主图').click()
+  await expect(navRow(win, '主图')).toHaveAttribute('aria-current', 'true')
   await expect(navRow(win, '全部文献')).not.toHaveAttribute('aria-current', 'true')
 
   await app.close()
@@ -131,12 +133,12 @@ test('S5a：行右键菜单三项版（删除项批 B 点亮+星标项不渲染�
   // 命中行=按下即高亮
   await expect(row).toHaveClass(/hit/)
 
-  // 移动子面：folders.list+未归档移出（点目标夹执行 moveFolder）
+  // 移动子面：folders.list（[F-ALIGN-01 D5]「移出」尾项零残留——点目标夹执行 moveFolder）
   await menu.getByRole('menuitem', { name: '移动到文件夹' }).click()
   const sub = win.getByTestId('paper-move-sub')
   await expect(sub).toBeVisible({ timeout: 10_000 })
   await expect(sub.getByRole('menuitem', { name: '菜单移动夹' })).toBeVisible()
-  await expect(sub.getByRole('menuitem', { name: '未归档（移出）' })).toBeVisible()
+  await expect(sub.getByRole('menuitem', { name: '未归档（移出）' })).toHaveCount(0) // D5 负锚
   await sub.getByRole('menuitem', { name: '菜单移动夹' }).click()
   await expect(navRow(win, '菜单移动夹')).toContainText('1', { timeout: 10_000 })
 
@@ -212,7 +214,7 @@ test('S5b-2：删除文献静默分支——无节点直删（无 Dialog 行消�
   await app.close()
 })
 
-test('S6：未归档空态=空态句+归档双通道句（§3.9 锚逐字）', async () => {
+test('S6：空文件夹态=通用「暂无文献」引导（[F-ALIGN-01 D5] 专属空态变体退役——两真文本+专属句负锚）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uix-s6-'))
   await bootstrapMigrations(userData)
   await seedPaperRow(userData, 'a.pdf', 'c'.repeat(64), '已归档文献', 'e2e-uix-c')
@@ -220,21 +222,17 @@ test('S6：未归档空态=空态句+归档双通道句（§3.9 锚逐字）', a
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  // [RR1-15/e2e F5] 种子归夹（folders.create+papers.moveFolder 经真实 api）——
-  // 种子未归夹则未归档列表非空、S6 空态不渲染
-  await win.evaluate(async (pid: string) => {
-    const r = await window.api.folders.create({ name: 'S6 归档夹' })
-    if (r.ok) {
-      await window.api.papers.moveFolder({ paperId: pid, toFolderId: r.data.id })
-    }
-  }, 'e2e-uix-c')
+  // 建空文件夹并进入（空列表态的驱动面——FolderNav 导航行）
+  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
+  await win.getByLabel('新文件夹名').fill('S6 空夹')
+  await win.getByLabel('新文件夹名').press('Enter')
+  await expect(navRow(win, 'S6 空夹')).toBeVisible({ timeout: 10_000 })
+  await navRow(win, 'S6 空夹').click()
 
-  // 未归档态+空列表：S6 两句真文本（归档双通道提示）
-  await navRow(win, '未归档').click()
-  await expect(win.getByText('未归档文献将出现在这里')).toBeVisible({ timeout: 10_000 })
-  await expect(
-    win.getByText('归档方式：拖拽文献行至左侧文件夹，或右键文献行『移动到文件夹』')
-  ).toBeVisible()
+  // 空态=通用两句真文本；[F-ALIGN-01 D5] 专属空态变体句零残留（负锚）
+  await expect(win.getByText('暂无文献')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByText('可拖入 PDF 导入，或调整筛选条件')).toBeVisible()
+  await expect(win.getByText('未归档文献将出现在这里')).toHaveCount(0)
 
   await app.close()
 })

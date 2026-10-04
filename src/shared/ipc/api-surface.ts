@@ -44,8 +44,11 @@ export const API_SURFACE = {
     saveProgress: { channel: 'reader/save-progress', Req: S.saveProgressReqSchema, Res: S.trueAckSchema }
   },
   import_: {
-    fromDialog: { channel: 'import/from-dialog', Req: S.voidReqSchema, Res: S.importResultSchema },
-    fromFolder: { channel: 'import/from-folder', Req: S.voidReqSchema, Res: S.importResultSchema },
+    // [F-ALIGN-01 D3 2026-10-04] 三通道 Req 一律必携 targetFolderId（INV-NEW-2
+    // 主锚契约面——导入落点必填，null 结构性不可表达；「全部视图=主图」缺省
+    // 语义归 renderer 投影单源）
+    fromDialog: { channel: 'import/from-dialog', Req: S.importTargetReqSchema, Res: S.importResultSchema },
+    fromFolder: { channel: 'import/from-folder', Req: S.importTargetReqSchema, Res: S.importResultSchema },
     // P7E-02：拖拽路径通道——main 侧全量注册，但 preload 不暴露（见 PRELOAD_HIDDEN_METHODS）
     fromPaths: { channel: 'import/from-paths', Req: S.importPathsReqSchema, Res: S.importResultSchema }
   },
@@ -247,9 +250,10 @@ export type PreloadApi = {
  * 拖拽导入桥形状（P7E-02）：File → 路径解析唯一口（webUtils 经 preload），
  * 与 api 同级暴露为 window.apiDrag——非 renderer 直连 ipc。File 类型可用
  * （tsconfig.web / tsconfig.node 两套 lib 均含 DOM）。
+ * [F-ALIGN-01 D3] +targetFolderId 必携（三通道同口径——INV-NEW-2）。
  */
 export type PreloadDrag = {
-  importDropped(files: File[]): Promise<Result<S.ImportResult>>
+  importDropped(files: File[], targetFolderId: string): Promise<Result<S.ImportResult>>
 }
 
 /** 展平的通道名列表（注册与对账用） */

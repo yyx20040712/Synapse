@@ -5,10 +5,12 @@ import { join } from 'node:path'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * [F-FOLDER-02·F/S1] move-paper e2e —— 移动事务序（design §3.4+W2 终裁）：
- * ①移动 F1→F2：节点跟图+跨图直接连线清理（边清理面）；②移出→未归档：节点删
- * （边随 CASCADE 灭）+库页未归档态可见；③S1 队列闸互斥（INV-91——lineage
- * pending 期移动被拒，real setQuitDirty 通道注入 pending 信号=闸判定单源）。
+ * [F-FOLDER-02·F/S1] move-paper e2e —— 移动事务序（design §3.4 终裁）：
+ * ①S1 队列闸互斥（INV-91——lineage pending 期移动被拒，real setQuitDirty
+ * 通道注入 pending 信号=闸判定单源）；②移动 F1→F2：节点跟图+跨图直接连线
+ * 清理（边清理面）；③[F-ALIGN-01 D5 2026-10-04]「移出」路径 UI 零入口：
+ * null 载荷通道层 schema 拒（INVALID_REQUEST）+左栏无第三筛选行+菜单移动
+ * 子面无「移出」尾项（renderer 无 null 入口——主控裁决断言面）。
  * setup 经真实 window.api 通道（moveFolder 自动建节点=「导入到文件夹」同族
  * 语义链）；断言锚真实渲染文本（脉络卡片/库行）。
  */
@@ -33,7 +35,7 @@ const graphOf = (win: Page, folderId?: string): Promise<GraphFace> =>
 const nodeCard = (win: Page, title: string) =>
   win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 
-test('移动 F1→F2 边清理+移出→未归档节点删+S1 队列闸拒绝', async () => {
+test('移动 F1→F2 边清理+null 移出通道拒+S1 队列闸拒绝', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-move-'))
   await bootstrapMigrations(userData)
   for (const p of PAPERS) {
@@ -125,17 +127,34 @@ test('移动 F1→F2 边清理+移出→未归档节点删+S1 队列闸拒绝', 
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '文件夹二' }).click()
   await expect(nodeCard(win, '移动乙文献')).toBeVisible({ timeout: 10_000 })
 
-  // ③移出→未归档：B 节点删（边随 CASCADE 灭）+库页未归档态行可见
-  expect(
-    await win.evaluate(
-      async () =>
-        (await window.api.papers.moveFolder({ paperId: 'e2e-mp-b', toFolderId: null })).ok
-    )
-  ).toBe(true)
-  expect((await graphOf(win, f2)).nodes.map((n) => n.paperId)).toEqual(['e2e-mp-c'])
+  // ③[F-ALIGN-01 D5]「移出」路径 UI 零入口：null 载荷通道层 schema 拒
+  // （INVALID_REQUEST——renderer 无 null 入口，此处以类型外载荷直击通道守卫）
+  const nullMove = await win.evaluate(async () => {
+    const r = await window.api.papers.moveFolder({
+      paperId: 'e2e-mp-b',
+      toFolderId: null
+    } as never)
+    return r as { ok: boolean; error?: { code: string; message: string } }
+  })
+  expect(nullMove.ok).toBe(false)
+  expect(nullMove.error?.code).toBe('INVALID_REQUEST')
+  // [RR1 k1-N3] 拒后零副作用锚：库内零变动——B 归属/节点不变（f2 图仍 B/C
+  // 双节点+零边；graph 读取沿 spec 既有 helper）
+  const g2AfterNull = await graphOf(win, f2)
+  expect(g2AfterNull.nodes.map((n) => n.paperId).sort()).toEqual(['e2e-mp-b', 'e2e-mp-c'])
+  expect(g2AfterNull.edges).toHaveLength(0)
+  // 库页 UI 零入口：左栏无第三筛选行+右键菜单移动子面无「移出」尾项
   await win.getByRole('button', { name: '文献库' }).click()
-  await win.locator('.lib-fn-row').filter({ hasText: '未归档' }).click()
-  await expect(win.getByText('移动乙文献')).toBeVisible({ timeout: 10_000 })
+  await expect(win.locator('.lib-fn-row').filter({ hasText: '未归档' })).toHaveCount(0)
+  const rowB = win.locator('.lib-row', { hasText: '移动乙文献' })
+  await rowB.click({ button: 'right' })
+  await win.getByTestId('paper-row-menu').getByRole('menuitem', { name: '移动到文件夹' }).click()
+  const moveSub = win.getByTestId('paper-move-sub')
+  await expect(moveSub).toBeVisible({ timeout: 10_000 })
+  // 正锚：移动子面有文件夹项在场（子面非空渲染）——负锚「移出」项零出现才有鉴别力
+  await expect(moveSub.getByRole('menuitem', { name: /文件夹一/ })).toBeVisible()
+  await expect(moveSub.getByRole('menuitem', { name: '未归档（移出）' })).toHaveCount(0)
+  await expect(rowB).toBeVisible()
 
   // 收尾复位 dirty（S1 注入的 quit-dirty 信号会触发退出拦截——app.close 挂起）
   await win.evaluate(() => window.api.system.setQuitDirty({ dirty: false, lineagePending: false }))

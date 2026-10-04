@@ -8,15 +8,20 @@
  * 显式 folderId≠归属拒）+幽灵 folderId 主题面随新建分支退役删除（INV-88
  * 宿主=papers.repo+import/moveFolder 两调用方——本件 describe 1 移动族与
  * library.service 件锁定在役面）。
+ * [F-ALIGN-01 D5 单元二] 「移出→未归档」路径全域退役：null 载荷 schema 拒
+ * （生产=register 层 INVALID_REQUEST）+service 防御面 NOT_FOUND；W2 移出族
+ * 用例改写为 null 拒负锚。K1 ③④（移动迁入无节点→自动建/迁已有节点→随迁
+ * +跨图边清理）在本件承载——INV-88 投影恒等（节点.folder_id===文献.
+ * folder_id）逐用例锚定。
  * 覆盖（一致性矩阵服务面）：移动 F1→F2（节点在场：图归属改写+slot 不重排+
  * 跨图边清理+同图边保留）/移动 F1→F2（无节点：自动入图——W6 漏格 month=NULL
- * 缺省归组+slot=目标图组 max+1）/移出 F→U（W2：folder_id=NULL→节点删→边随
- * CASCADE 灭）/非法 toFolderId 拒（NOT_FOUND）/幽灵 paperId 拒/S1 队列闸
- * （pending 拒+零库副作用）/跨图边 ERR_CROSS_GRAPH_EDGE（INV-90——CONFLICT
- * 码+中文 reason 承载）/updateMeta year/month 节点排序键同步（组变 slot=
- * 目标图组 max+1）+impactFactor 落库/repo 写边界默认锚（主控追认补强①：
- * upsertNode 未显式给 folderId→落 '__main__'——NOT NULL DEFAULT 安全网
- * 自 DDL 移 repo 写边界，design-final 修订二）。
+ * 缺省归组+slot=目标图组 max+1）/toFolderId=null 拒（D5——schema 拒+防御
+ * NOT_FOUND+零库副作用）/非法 toFolderId 拒（NOT_FOUND）/幽灵 paperId 拒/
+ * S1 队列闸（pending 拒+零库副作用）/跨图边 ERR_CROSS_GRAPH_EDGE
+ * （INV-90——CONFLICT 码+中文 reason 承载）/updateMeta year/month 节点排序
+ * 键同步（组变 slot=目标图组 max+1）+impactFactor 落库/repo 写边界默认锚
+ * （主控追认补强①：upsertNode 未显式给 folderId→落 '__main__'——NOT NULL
+ * DEFAULT 安全网自 DDL 移 repo 写边界，design-final 修订二）。
  * always-active（不经 guardedDescribe）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +29,7 @@ import { createRepos } from '../../../src/main/db/repos'
 import { createLibraryService, createPapersService } from '../../../src/main/services/library.service'
 import { createLineageService } from '../../../src/main/services/lineage/lineage.service'
 import { MAIN_GRAPH_ID } from '../../../src/shared/models/lineage'
+import { paperMoveReqSchema } from '../../../src/shared/models/folder'
 import { createTestDb } from '../../utils/fixtures'
 import type { SqliteDb } from '../../../src/main/db/connection'
 
@@ -106,6 +112,8 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     expect(folderIdOf('p-mover')).toBe(f2.id)
     const node = nodeOf('p-mover')!
     expect(node.folder_id).toBe(f2.id)
+    // K1④ INV-88 投影恒等：节点随迁后 folder_id === 文献 folder_id
+    expect(node.folder_id).toBe(folderIdOf('p-mover'))
     expect(node.slot).toBe(2) // 回炉码 6：目标组 max(newNb=1)+1=2（旧 slot 亦 2——碰撞面专测见下例）
     // 边清理：mover 与旧图邻居的直接连线删（边属图派生——连线不迁移）；
     // 预置跨图边（对端本就他图）也清；其余图内边（无 mover 端点）不动
@@ -116,7 +124,7 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     expect(lineageChanged).toHaveBeenCalledTimes(1)
   })
 
-  it('移动 F1→F2（无节点）：自动入图——month=NULL 缺省归组（W6 漏格）+slot=目标图组 max+1', async () => {
+  it('移动 F1→F2（无节点）：自动入图——month=NULL 缺省归组（W6 漏格）+slot=目标图组 max+1；K1③INV-88 投影恒等', async () => {
     const f2 = repos.folders.create('图二')
     seedPaper('p-bare', 2023)
     seedPaper('p-existing', 2023)
@@ -132,27 +140,37 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     expect(node.month).toBeNull() // month 无源=未定月框（W6 漏格：month=NULL 缺省归组）
     expect(node.slot).toBe(4) // 目标图组 max+1（W3）
     expect(folderIdOf('p-bare')).toBe(f2.id)
+    // K1③ INV-88 投影恒等：节点 folder_id === 文献 folder_id
+    expect(node.folder_id).toBe(folderIdOf('p-bare'))
   })
 
-  it('移出 F→U（toFolderId=null）：folder_id=NULL→节点删（政策性 INV-93）→边随节点 CASCADE 灭+双广播', async () => {
+  it('[F-ALIGN-01 D5] toFolderId=null 移出路径退役：schema 拒+service 防御面 NOT_FOUND——归属/节点/边零变动+零广播', async () => {
     const f1 = repos.folders.create('图一')
     seedPaper('p-out', 2024)
     seedPaper('p-nbr', 2024)
     repos.papers.setFolderId('p-out', f1.id) // 统一规则前置（同上）
     repos.papers.setFolderId('p-nbr', f1.id)
-    const n1 = repos.lineage.upsertNode({ paperId: 'p-out', title: '移出', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
+    const n1 = repos.lineage.upsertNode({ paperId: 'p-out', title: '归档甲', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
     const n2 = repos.lineage.upsertNode({ paperId: 'p-nbr', title: '邻居', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
     lineage.upsertEdge({ fromNode: n2.id, toNode: n1.id, label: '' })
 
-    await papers.moveFolder({ paperId: 'p-out', toFolderId: null })
+    // 契约面：null 载荷 schema 拒（生产路径=register 层 INVALID_REQUEST，
+    // renderer 无 null 入口——UI 零入口断言面在 e2e）
+    expect(paperMoveReqSchema.safeParse({ paperId: 'p-out', toFolderId: null }).success).toBe(false)
+    // service 防御面（类型外载荷直击）：null 无「目标文件夹」→NOT_FOUND 拒
+    await expect(
+      papers.moveFolder({ paperId: 'p-out', toFolderId: null as unknown as string })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
 
-    expect(folderIdOf('p-out')).toBeNull() // 未归档（与「未加入脉络」正交——INV-93）
-    expect(nodeOf('p-out')).toBeUndefined() // W2：节点删
+    // 拒时零库副作用：归属/节点/边全保持（移出行为消亡——不再有 folder_id
+    // 置 NULL 与节点删除路径）
+    expect(folderIdOf('p-out')).toBe(f1.id)
+    expect(nodeOf('p-out')).toMatchObject({ id: n1.id })
     const edges = db.prepare('SELECT COUNT(*) c FROM lineage_edges').get() as { c: number }
-    expect(edges.c).toBe(0) // 边随节点 DDL CASCADE 灭
+    expect(edges.c).toBe(1)
     expect(nodeOf('p-nbr')).toBeDefined() // 邻居不动
-    expect(foldersChanged).toHaveBeenCalledTimes(1)
-    expect(lineageChanged).toHaveBeenCalledTimes(1)
+    expect(foldersChanged).not.toHaveBeenCalled()
+    expect(lineageChanged).not.toHaveBeenCalled()
   })
 
   it('[回炉码 6] 移入 slot 归一：目标图组已有同 slot 值→落组末 max+1 不重复（不透写原 slot——INV-75 同图内唯一）', async () => {

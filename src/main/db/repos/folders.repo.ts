@@ -6,13 +6,14 @@
  * collections.repo=导入面历史形状（upsertByName/list——import.service/library
  * collections 通道消费）。同表两件、方法零交叠（§3.1 职责分面字面）。
  *
- * 级联语义（DOMAIN_PINS，DDL 承担——012）：folder 删除=papers.folder_id
- * SET NULL+lineage_nodes CASCADE（边随节点二跳 CASCADE）——本层 delete 单语句，
- * 级联由引擎执行。
+ * 级联语义（[F-ALIGN-01 D4 2026-10-04] 域删级联——INV-NEW-3）：folder 删除=
+ * service 层事务先删夹内文献（papers.remove 的 DDL 级联链：paper_tags/
+ * annotations/notes/ai_notes/lineage_nodes→edges 二跳+FTS 触发器）再删夹行
+ * ——本层 delete 仍单语句，域删编排在 folders.service（应用层事务语义）。
  * 测试：service 层承载（[回炉码 10] 本票无 repo 独立测试件）——
  * tests/unit/services/folders.service.test.ts（CRUD 编排/桩面）+
  * folders-move-paper.test.ts（真库矩阵：create/listWithCounts 归属计数/
- * remove 级联/存在性预检全覆盖）。
+ * remove 级联/存在性预检全覆盖）+folders-delete-domain.test.ts（域删零残留）。
  */
 import { randomUUID } from 'node:crypto'
 import type { Folder } from '../../../shared/models/folder'
@@ -24,9 +25,10 @@ export interface FoldersRepo {
   create(name: string): Folder
   /** 改名（图名 1:1 跟随——单一真相源=本表 name 列）；未命中 0 changes */
   rename(id: string, name: string): number
-  /** 删除（级联 DDL 承担）；未命中 0 changes */
+  /** 删除（[F-ALIGN-01 D4] 域删编排在 service 层事务——先文献后夹行）；未命中 0 changes */
   remove(id: string): number
-  /** 列表+paperCount 聚合（LEFT JOIN papers.folder_id 计数——未归档文献不计入任何行） */
+  /** 列表+paperCount 聚合（LEFT JOIN papers.folder_id 计数——无归属历史行
+   *  不计入任何行；[F-ALIGN-01 D5] 应用层两写路恒非空） */
   listWithCounts(): Folder[]
   findByName(name: string): Folder | null
   findById(id: string): Folder | null

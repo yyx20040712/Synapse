@@ -24,9 +24,11 @@ export const paperSummarySchema = z
     noteCount: z.number().int(),
     lastReadPage: z.number().int(),
     addedAt: z.string(), // ISO 8601
-    // [F-FOLDER-01] 文件夹单归属（迁移 012 papers.folder_id；null=未归档——
-    // 与「未加入脉络」正交，INV-93）。collectionNames 随 paper_collections
-    // 退役删除（方案切换=删除旧方案）
+    // [F-FOLDER-01] 文件夹单归属（迁移 012 papers.folder_id）。[F-ALIGN-01 D5
+    // 2026-10-04] 「移出」路径全域退役：应用层两写路（导入 D3 落夹/
+    // 移动 moveFolder）恒非空（INV-NEW-2）——类型保持 nullable=DB 列 DDL 收紧
+    // 归 D 批的窗口期防御面（历史行/null 读面兼容）。collectionNames 已随
+    // paper_collections 退役删除（方案切换=删除旧方案）
     folderId: z.string().nullable(),
     // [F-FOLDER-01] D1 影响因子（手动填写——papers.impact_factor REAL 可空）
     impactFactor: z.number().nullable(),
@@ -122,11 +124,12 @@ export const libraryQuerySchema = z
     // schema 级拒收=防歧义；上界经 TAG_FILTER_MAX 同源（UI 消费同源——P7X-01）
     tagIds: z.array(z.string().min(1)).min(1).max(TAG_FILTER_MAX).optional(),
     // [F-FOLDER-01] collectionId 过滤随 paper_collections 退役删除；接替=
-    // folderScope 判别联合（W5 终裁——三态显式，禁裸 nullable 二义；缺省=全部）
+    // folderScope 判别联合（W5 终裁——显式态，禁裸 nullable 二义；缺省=全部）。
+    // [F-ALIGN-01 D5 2026-10-04] 第三筛选变体（folder_id IS NULL 过滤）随 D5
+    // 退役删除（余 all/folder 两态）
     folderScope: z
       .discriminatedUnion('kind', [
         z.object({ kind: z.literal('all') }).strict(),
-        z.object({ kind: z.literal('unfiled') }).strict(),
         z.object({ kind: z.literal('folder'), folderId: z.string().min(1) }).strict()
       ])
       .optional(),

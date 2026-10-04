@@ -95,10 +95,8 @@ const VALID: Record<string, unknown[]> = {
   folderCreateReqSchema: [{ name: '图一' }],
   folderRenameReqSchema: [{ id: 'f1', name: '新名' }],
   folderDeleteReqSchema: [{ id: 'f1' }],
-  paperMoveReqSchema: [
-    { paperId: 'p1', toFolderId: 'f1' },
-    { paperId: 'p1', toFolderId: null }
-  ],
+  // [F-ALIGN-01 D5] toFolderId 收紧 string（null=移出→未归档路径退役）
+  paperMoveReqSchema: [{ paperId: 'p1', toFolderId: 'f1' }],
   // [F-UIRES-01 批 B] papers/delete 载荷（文献域单源——models/paper）
   paperDeleteReqSchema: [{ paperId: 'p1' }],
   foldersChangedEventSchema: [{}],
@@ -121,7 +119,9 @@ const VALID: Record<string, unknown[]> = {
     { paperId: 'p1', page: 3 }
   ],
   trueAckSchema: [{ ok: true }],
-  importPathsReqSchema: [{ paths: ['C:/a.pdf'] }],
+  // [F-ALIGN-01 D3] 导入三通道 Req 必携 targetFolderId（INV-NEW-2 主锚契约面）
+  importPathsReqSchema: [{ paths: ['C:/a.pdf'], targetFolderId: 'f1' }],
+  importTargetReqSchema: [{ targetFolderId: 'f1' }],
   importResultSchema: [
     { imported: [paperSummary], duplicates: ['b.pdf'], failed: [{ fileName: 'c.pdf', reason: '损坏' }] }
   ],
@@ -252,6 +252,7 @@ const SCHEMA_NAMES = [
   'importPathsReqSchema',
   'importProgressEventSchema',
   'importResultSchema',
+  'importTargetReqSchema',
   'libraryListResSchema',
   'lineageChangedEventSchema',
   'lineageGraphReqSchema',
@@ -361,11 +362,26 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
 
   it('importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）', () => {
     const paths = (n: number): string[] => Array.from({ length: n }, (_, i) => `C:/${i}.pdf`)
-    expect(S.importPathsReqSchema.safeParse({ paths: paths(1) }).success).toBe(true)
-    expect(S.importPathsReqSchema.safeParse({ paths: paths(100) }).success).toBe(true)
-    expect(S.importPathsReqSchema.safeParse({ paths: paths(0) }).success).toBe(false)
-    expect(S.importPathsReqSchema.safeParse({ paths: paths(101) }).success).toBe(false)
-    expect(S.importPathsReqSchema.safeParse({ paths: [''] }).success).toBe(false)
+    expect(S.importPathsReqSchema.safeParse({ paths: paths(1), targetFolderId: 'f1' }).success).toBe(true)
+    expect(S.importPathsReqSchema.safeParse({ paths: paths(100), targetFolderId: 'f1' }).success).toBe(true)
+    expect(S.importPathsReqSchema.safeParse({ paths: paths(0), targetFolderId: 'f1' }).success).toBe(false)
+    expect(S.importPathsReqSchema.safeParse({ paths: paths(101), targetFolderId: 'f1' }).success).toBe(false)
+    expect(S.importPathsReqSchema.safeParse({ paths: [''], targetFolderId: 'f1' }).success).toBe(false)
+  })
+
+  it('[F-ALIGN-01] 导入三通道 targetFolderId 必填（INV-NEW-2 主锚契约面——缺省/null/空串全拒）+paperMoveReq null 拒（D5 未归档域退役）', () => {
+    // 拖拽通道（from-paths）：缺省/null/空串拒——null 不达 importOne 落夹赋值
+    expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'] }).success).toBe(false)
+    expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'], targetFolderId: null }).success).toBe(false)
+    expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'], targetFolderId: '' }).success).toBe(false)
+    // 对话框/文件夹两通道（importTargetReqSchema）：缺省/null/空串拒
+    for (const bad of [undefined, null, '']) {
+      expect(S.importTargetReqSchema.safeParse({ targetFolderId: bad }).success, `targetFolderId=${String(bad)} 应拒`).toBe(false)
+    }
+    // 移动载荷：toFolderId null/空串拒（「移出→未归档」路径契约面消亡）
+    expect(S.paperMoveReqSchema.safeParse({ paperId: 'p1', toFolderId: null }).success).toBe(false)
+    expect(S.paperMoveReqSchema.safeParse({ paperId: 'p1', toFolderId: '' }).success).toBe(false)
+    expect(S.paperMoveReqSchema.safeParse({ paperId: 'p1', toFolderId: 'f1' }).success).toBe(true)
   })
 
   it('exportSelection：paperIds 1/1000 过、0/1001 拒', () => {

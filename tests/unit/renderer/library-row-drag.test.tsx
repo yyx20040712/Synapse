@@ -2,11 +2,12 @@
 /**
  * [F-UIRES-01 批 A U4] 文献行拖拽（§2.3/R13）+ DnD 两域判别（§2.5）。
  * 覆盖：dragstart 设自定义 MIME application/x-synapse-paper+源行 faded 0.3；
- * 合法目标=文件夹行+未归档行（「全部文献」=非目标）；dragover 候选高亮+「移入
- * ↩」徽标；ghost「题名截断→目标」跟随；drop→moveFolder+成功收尾两分支；drag
- * 期目标消失→no-op+toast「目标文件夹已不存在」；跨图边拒/失败→拒因中文
- * toast；busy=dragstart 拒启+drop 双重+busy 上升沿取消进行中拖拽；两域判别
- * （左栏行仅响应内部 MIME；导入条 dragover 仅响应 Files）。
+ * 合法目标=文件夹行（[F-ALIGN-01 D5] 未归档行随未归档域退役删除——零残留
+ * 负锚；「全部文献」=非目标）；dragover 候选高亮+「移入↩」徽标；ghost「题名
+ * 截断→目标」跟随；drop→moveFolder+成功收尾两分支；drag 期目标消失→no-op+
+ * toast「目标文件夹已不存在」；跨图边拒/失败→拒因中文 toast；busy=dragstart
+ * 拒启+drop 双重+busy 上升沿取消进行中拖拽；两域判别（左栏行仅响应内部
+ * MIME；导入条 dragover 仅响应 Files）。
  * always-active（不经 guardedDescribe——K3 威胁结构性缺位）。
  */
 import { act } from 'react'
@@ -234,15 +235,9 @@ describe('F-UIRES-01 U4 拖放目标（左栏行——仅响应内部 MIME）', 
     expect(navRow('全部文献')?.classList.contains('drop'), '全部文献=非目标').toBe(false)
   })
 
-  it('未归档行=合法目标（移出——toFolderId:null）', async () => {
+  it('[F-ALIGN-01 D5] 未归档行零残留：左栏无未归档行（域退役负锚——在场即红）', async () => {
     await render()
-    act(() => {
-      row('移动甲文献')!.dispatchEvent(dragEvent('dragstart', []))
-    })
-    act(() => {
-      navRow('未归档')!.dispatchEvent(dragEvent('dragover', [PAPER_DRAG_MIME]))
-    })
-    expect(navRow('未归档')?.classList.contains('drop')).toBe(true)
+    expect(navRow('未归档')).toBeUndefined()
   })
 
   it('两域判别：OS 文件拖入（types 含 Files 无内部 MIME）左栏行不响应（无高亮零 dropEffect）', async () => {
@@ -253,7 +248,7 @@ describe('F-UIRES-01 U4 拖放目标（左栏行——仅响应内部 MIME）', 
     expect(navRow('方法工具箱')?.classList.contains('drop'), '文件悬停左栏行不响应').toBe(false)
   })
 
-  it('drop→moveFolder+成功收尾：行离开当前视图→选中清空（folder 视图移出）', async () => {
+  it('drop→moveFolder+成功收尾：行离开当前视图→选中清空（folder 视图移至他夹）', async () => {
     useLibraryStore.setState({
       query: { sort: 'added_desc', offset: 0, limit: 50, folderScope: { kind: 'folder', folderId: 'f-1' } },
       selectedId: 'p1'
@@ -265,10 +260,10 @@ describe('F-UIRES-01 U4 拖放目标（左栏行——仅响应内部 MIME）', 
     stubApi.papers.moveFolder.mockResolvedValue({ ok: true, data: { ok: true } })
     stubApi.library.list.mockResolvedValue({ ok: true, data: { items: [], total: 0 } })
     await act(async () => {
-      navRow('未归档')!.dispatchEvent(dragEvent('drop', [PAPER_DRAG_MIME]))
+      navRow('主图')!.dispatchEvent(dragEvent('drop', [PAPER_DRAG_MIME]))
     })
     await settle()
-    expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: null })
+    expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: '__main__' })
     expect(useLibraryStore.getState().selectedId, '行离开视图→选中清空+抽屉清空').toBeNull()
     expect(host?.querySelector('.lib-drag-ghost'), 'drop 后拖拽态清').toBeNull()
   })
@@ -349,7 +344,7 @@ describe('F-UIRES-01 U4 拖放目标（左栏行——仅响应内部 MIME）', 
     act(() => {
       row('移动甲文献')!.dispatchEvent(dragEvent('dragstart', []))
     })
-    const target = navRow('未归档')!
+    const target = navRow('方法工具箱')!
     act(() => {
       target.dispatchEvent(dragEvent('dragover', [PAPER_DRAG_MIME]))
     })

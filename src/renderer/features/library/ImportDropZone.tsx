@@ -1,20 +1,23 @@
 /**
  * [SR-LIB-06→F-UIRES-01 批 A U2] ImportDropZone —— 导入条（42px 横条形态，
  * mockup .ibar 逐值；ImportTargetSelect 随批退役——「仅入文献库」选项退役
- * 2026-09-30 用户裁决，目标恒定语义 R2：folder 态=该文件夹；无筛选/未归档=
- * 主图 MAIN_GRAPH_ID，由 LibraryPage 投影注入）。
+ * 2026-09-30 用户裁决，目标恒定语义 R2：folder 态=该文件夹；无筛选=主图
+ * MAIN_GRAPH_ID，由 LibraryPage 投影注入）。
+ * [F-ALIGN-01 D3 2026-10-04] main 侧单跳：三调用点（fromDialog/fromFolder/
+ * apiDrag.importDropped）必携 targetFolderId——导入产物在 main 侧落夹建节点；
+ * 原「导入成功逐 imported 论文 papers.moveFolder 挂接」后挂接链删除（中间
+ * 失败窗口与逐个挂接的未落夹中间态消亡）。
  *
  * ── 行为层 ──
- * - 两按钮：「导入 PDF」→ api.import_.fromDialog({})；「导入文件夹」→
- *   api.import_.fromFolder({})（R4 文案——hint=「或将 PDF 拖到此处导入」）
- * - 拖拽（P7E-02）：drop → window.apiDrag.importDropped(files)——File 经
- *   preload webUtils 解析（.pdf 滤+数量上限）→ import/from-paths，renderer
- *   全程不接触路径串；busy 期 drop 短路提示（零 invoke）
+ * - 两按钮：「导入 PDF」→ api.import_.fromDialog({targetFolderId})；「导入
+ *   文件夹」→ api.import_.fromFolder({targetFolderId})（R4 文案——hint=
+ *   「或将 PDF 拖到此处导入」）
+ * - 拖拽（P7E-02）：drop → window.apiDrag.importDropped(files, targetFolderId)
+ *   ——File 经 preload webUtils 解析（.pdf 滤+数量上限）→ import/from-paths，
+ *   renderer 全程不接触路径串；busy 期 drop 短路提示（零 invoke）
  * - drop 热区=导入条本体 div 级保持零变（R3——div 级热区语义不变）
  * - 目标徽标（.lib-import-target）：恒显「导入到：X」——X=当前夹名或主图名
- *   （folders.list 名解析=每渲染 find；取数两路=挂载+folders.changed）；
- *   导入成功逐 imported 论文 papers.moveFolder 挂接（移动语义自动入图）；
- *   失败逐篇 toast 继续（文献已入库，归属失败可见）
+ *   （folders.list 名解析=每渲染 find；取数两路=挂载+folders.changed）
  * - 进行中：订阅 apiEvents.onImportProgress 显示进度（文件名 current/total）
  * - 进度事件会话身份过滤（F-D4 B 面，INV-52）：busy=false 忽略+sessionRef
  *   首事件锚定异身份忽略；busyRef 镜像解决订阅回调旧闭包
@@ -23,9 +26,9 @@
  *
  * ── 接口层 ──
  * - export function ImportDropZone(props: { onImported(): void;
- *     targetFolderId?: string | null }): JSX.Element
- * - targetFolderId=导入目标文件夹 id（folder 态=该夹；无筛选/未归档=主图
- *   '__main__'——null 容错=零挂接，投影单源在 LibraryPage）
+ *     targetFolderId: string }): JSX.Element
+ * - targetFolderId=导入目标文件夹 id（folder 态=该夹；无筛选=主图 '__main__'
+ *   ——投影单源在 LibraryPage，恒非空 INV-NEW-2）
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 路径合法来源=main 侧系统对话框 + 拖拽 File 经 preload webUtils 解析
@@ -96,12 +99,11 @@ function reportImportResult(result: ImportResult, onImported: () => void): void 
 
 export function ImportDropZone(props: {
   onImported: () => void
-  /** [F-UIRES-01 R2] 导入目标文件夹 id（folder 态=该夹；无筛选/未归档=主图
-   *  '__main__'——LibraryPage 投影单源；null 容错=零挂接） */
-  targetFolderId?: string | null
+  /** [F-UIRES-01 R2→F-ALIGN-01 D3] 导入目标文件夹 id（folder 态=该夹；无筛选
+   *  =主图 '__main__'——LibraryPage 投影单源；三调用点必携，恒非空 INV-NEW-2） */
+  targetFolderId: string
 }): JSX.Element {
-  const { onImported } = props
-  const targetFolderId = props.targetFolderId ?? null
+  const { onImported, targetFolderId } = props
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<ImportProgressEvent | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -146,23 +148,8 @@ export function ImportDropZone(props: {
     setProgress(null)
     try {
       const result = await unwrap(call())
-      // [F-UIRES-01 R2] 目标恒定：逐 imported 论文 moveFolder 挂接（移动语义
-      // 自动入图——目标=该夹或主图）；失败逐篇 toast 继续（S1 闸拒绝等场景
-      // ——文献已入库，归属失败可见）
-      if (result.imported.length > 0 && targetFolderId != null) {
-        for (const p of result.imported) {
-          try {
-            await unwrap(api.papers.moveFolder({ paperId: p.id, toFolderId: targetFolderId }))
-          } catch (e) {
-            showToast(
-              e instanceof ApiClientError
-                ? `文献已入库但移入文件夹失败：${e.message}`
-                : '文献已入库但移入文件夹失败',
-              'error'
-            )
-          }
-        }
-      }
+      // [F-ALIGN-01 D3] main 侧单跳：落夹+建节点在 importOne 事务内完成——
+      // renderer 无后挂接链（逐个 moveFolder 的中间失败窗口消亡）
       reportImportResult(result, onImported)
     } catch (e) {
       // unwrap 已把 IPC 错误折叠为带中文 message 的 ApiClientError
@@ -178,7 +165,9 @@ export function ImportDropZone(props: {
 
   function startButtonImport(mode: ImportMode): void {
     void runImport(
-      mode === 'dialog' ? () => api.import_.fromDialog({}) : () => api.import_.fromFolder({})
+      mode === 'dialog'
+        ? () => api.import_.fromDialog({ targetFolderId })
+        : () => api.import_.fromFolder({ targetFolderId })
     )
   }
 
@@ -202,7 +191,7 @@ export function ImportDropZone(props: {
       return
     }
     const files = [...e.dataTransfer.files]
-    void runImport(() => window.apiDrag.importDropped(files))
+    void runImport(() => window.apiDrag.importDropped(files, targetFolderId))
   }
 
   return (

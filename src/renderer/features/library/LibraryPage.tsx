@@ -99,8 +99,8 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
         guideHidden={props.guideHidden ?? false}
       />
       <div className="lib-main">
-        {/* [F-UIRES-01 R2] 导入目标恒定：folder 态=该夹；无筛选/未归档=主图
-            （MAIN_GRAPH_ID——folders.list 真实行，moveFolder 挂接合法） */}
+        {/* [F-UIRES-01 R2→F-ALIGN-01 D3] 导入目标恒定：folder 态=该夹；无筛选
+            =主图（MAIN_GRAPH_ID——folders.list 真实行，main 侧单跳落夹建节点） */}
         <ImportDropZone
           onImported={() => void load()}
           targetFolderId={
@@ -135,7 +135,6 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
               tagColorByName={tagColorByName}
               hitPaperId={rowMenu?.paper.id ?? null}
               onRowContextMenu={(paper, pos) => setRowMenu({ paper, anchor: pos })}
-              emptyScope={query.folderScope?.kind === 'unfiled' ? 'unfiled' : undefined}
             />
           </div>
           <aside className="lib-drawer">

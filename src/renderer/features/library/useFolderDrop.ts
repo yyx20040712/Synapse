@@ -1,7 +1,8 @@
 /**
  * [F-UIRES-01 批 A U4] useFolderDrop —— 左栏行拖放目标逻辑（FolderNav 拆件：
  * 组件 250 行红线）。§2.3/§2.5/R13 承接：
- * - 合法目标=文件夹行+未归档行（「全部文献」=非目标）；仅响应内部 MIME
+ * - 合法目标=文件夹行（「全部文献」=非目标；[F-ALIGN-01 D5] 第三筛选态行随
+ *   D5 退役删除——DndTarget 恒 folder 单态）；仅响应内部 MIME
  *   （application/x-synapse-paper）——OS 文件拖入（types 含 Files）不响应；
  * - drop：busy 双重校验+moveFolder 链（收尾两分支在 paper-move）+drag 期目标
  *   消失护栏（folderId 不在现行列表→no-op+toast「目标文件夹已不存在」）；
@@ -30,7 +31,7 @@ export function useFolderDrop(folders: readonly Folder[] | null): {
   navDragOver(e: NavDragEvent): void
   navDrop(e: NavDragEvent): void
 } {
-  /** 目标在现行列表在场判定（null=未归档恒合法） */
+  /** 目标在现行列表在场判定 */
   function folderAlive(folderId: string): boolean {
     return (folders ?? []).some((f) => f.id === folderId)
   }
@@ -58,12 +59,12 @@ export function useFolderDrop(folders: readonly Folder[] | null): {
     dnd.end()
     if (paperId === undefined) return
     if (useImportBusyStore.getState().busy) return
-    const folderId = target.kind === 'folder' ? target.folderId : null
-    if (folderId !== null && !folderAlive(folderId)) {
+    // [F-ALIGN-01 D5] target 恒 folder 单态——直取 folderId（消失护栏同承）
+    if (!folderAlive(target.folderId)) {
       showToast(DROP_TARGET_GONE, 'info')
       return
     }
-    void movePaperToFolder(paperId, folderId)
+    void movePaperToFolder(paperId, target.folderId)
   }
 
   function navDragOver(e: NavDragEvent): void {
@@ -79,14 +80,12 @@ export function useFolderDrop(folders: readonly Folder[] | null): {
     const over = dnd.over
     dnd.end()
     if (paperId === undefined || over === null) return
-    // over 目标仍有效则按其执行（含消失护栏）；未归档/无 over=取消回 idle
-    if (over.kind === 'folder') {
-      if (!folderAlive(over.folderId)) {
-        showToast(DROP_TARGET_GONE, 'info')
-        return
-      }
-      void movePaperToFolder(paperId, over.folderId)
+    // over 目标仍有效则按其执行（含消失护栏）；无 over=取消回 idle
+    if (!folderAlive(over.folderId)) {
+      showToast(DROP_TARGET_GONE, 'info')
+      return
     }
+    void movePaperToFolder(paperId, over.folderId)
   }
 
   return { rowDragOver, rowDragLeave, rowDrop, navDragOver, navDrop }

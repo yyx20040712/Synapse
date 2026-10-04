@@ -7,7 +7,8 @@
  *   节点；lineage.edgeCount=连线数。静默判据（F-DELCONF C5 承接）：无节点 ∨
  *   edgeCount=0 →静默直删；有边→上抛 onProtect 由宿主挂 PaperDeleteDialog
  *   （弹窗计数=预检提示值——落定瞬态规避，不再二次查询）
- * - 图名派生：detail.folderId→folders.list 找 name；folderId=null（未归档）
+ * - 图名派生：detail.folderId→folders.list 找 name；folderId=null（无归属
+ *   历史行——[F-ALIGN-01 D5] 应用层不再产出，DDL 收紧前读面兼容）
  *   →「主图」（§2.1 缺省图映射）；夹行消失竞态同落「主图」（事务内级联按
  *   实际状态为权威——弹窗值=提示值）
  * - fail-closed：预检失败（detail/保护分支 folders.list）→不删不弹，error
@@ -53,8 +54,9 @@ const PAPER_DELETE_IN_FLIGHT = '上一次删除仍在进行，请稍候'
  *  失败」误报；PaperDeleteDialog 同语义单源 import（tags 域 TAG_OP_FAILED
  *  先例——组件→域件 import） */
 export const PAPER_RELOAD_FAILED = '列表刷新失败'
-/** §2.1 缺省图名（folderId=null 未归档映射）+竞态兜底；与 folders.list 主图
- *  行名互锚（__main__ 行恒在场——folders.list 真实载荷，RR1-5） */
+/** §2.1 缺省图名（folderId=null 无归属历史行映射——[F-ALIGN-01 D5] 兼容面）
+ *  +竞态兜底；与 folders.list 主图行名互锚（__main__ 行恒在场——folders.list
+ *  真实载荷，RR1-5） */
 const MAIN_GRAPH_NAME = '主图'
 
 /** 保护弹窗载荷（预检提示值——宿主挂 PaperDeleteDialog 经 props 传入） */

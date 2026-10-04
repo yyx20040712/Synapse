@@ -9,7 +9,8 @@
  * [F-FOLDER-01] 结构改造（design-final §2.2/INV-92）：
  * - pubNo=库级全序派生（ROW_NUMBER OVER ORDER BY year/month/added_at）——
  *   窗口恒在库级结果集求值（B3 终裁：一切过滤在窗口之后仅过滤显示不改编号，
- *   「全部/未归档/某文件夹」三态下同一文献 pubNo 恒同）；不落库。排序键
+ *   「全部/某文件夹」两态下同一文献 pubNo 恒同——[F-ALIGN-01 D5] null 归属
+ *   过滤态随 D5 退役）；不落库。排序键
  *   year/month 均 NULLS LAST（survey 项 5「无年份文献排尾部」）+added_at ASC
  *   +rowid ASC 决胜（确定性）。month 源=lineage 节点月框（papers 表无 month
  *   列——LEFT JOIN 单值安全：INV-89 部分唯一索引保证每文献至多一节点）。
@@ -135,7 +136,8 @@ export function toSummary(r: SummaryRow): Omit<PaperSummary, 'lineage'> {
 
 /** 组装搜索/过滤条件：片段固定、值参数绑定；cond 供拼 SQL 文本（进语句缓存）。
  *  [F-FOLDER-01] collectionId 过滤随 paper_collections 退役删除——接替=
- *  folderScope 判别联合（unfiled=folder_id IS NULL/folder=folder_id=?)；
+ *  folderScope 判别联合（folder=folder_id=?；all=无过滤）——[F-ALIGN-01 D5
+ *  2026-10-04] null 归属过滤分支随 D5 退役删除（余 all/folder 两态）；
  *  过滤在窗口之后（B3：不改 pubNo 编号）。 */
 export function buildFilters(q: LibraryQuery): { cond: string; params: unknown[] } {
   const where: string[] = []
@@ -157,9 +159,7 @@ export function buildFilters(q: LibraryQuery): { cond: string; params: unknown[]
     params.push(t)
   }
   const scope = q.folderScope
-  if (scope?.kind === 'unfiled') {
-    where.push('p.folder_id IS NULL')
-  } else if (scope?.kind === 'folder') {
+  if (scope?.kind === 'folder') {
     where.push('p.folder_id = ?')
     params.push(scope.folderId)
   }
@@ -211,7 +211,8 @@ export function patchFragments(patch: PaperMetaPatch): { columns: string[]; valu
   return { columns, values }
 }
 /** [F-FOLDER-01] 归属纯读（INV-88 统一规则判别源——显式 folderId≠归属拒的
- *  前置读，无副作用）；未命中/未归档=null */
+ *  前置读，无副作用）；未命中/无归属历史行=null（[F-ALIGN-01 D5] 应用层不再
+ *  产出 null 归属——DDL NOT NULL 归 D 批） */
 export function folderIdOfQuery(id: string, stmt: StmtGetter): string | null {
   const r = stmt('SELECT folder_id FROM papers WHERE id = ?').get(id) as
     | { folder_id: string | null }
