@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-04T10:57:33.9095632Z",
+    "generatedAt":  "2026-10-04T11:22:16.7388493Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,11 +7,11 @@
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",
-                      "sha256":  "30dcf91bcb9f8d09ac69ab39bbb39d152e706b2b3552178fb5da0fdde4714bd4"
+                      "sha256":  "e55d6171b7fec500c42082cdb1cafebbe92931a78da5d85165cdd05f24610f09"
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "b15d79806bc076a0824faf3ac30f40d7341a4fe2369d713a0f60a05f2ced5b43"
+                      "sha256":  "75855d022c844267e9b486d35da1980e7707c4150d32fa6b4a89175e75b19984"
                   },
                   {
                       "path":  "electron.vite.config.ts",
