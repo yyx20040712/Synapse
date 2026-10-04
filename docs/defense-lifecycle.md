@@ -13,7 +13,8 @@
 > 运行时安全防线（CSP/shell-guard/preload 隐藏面/app-file ACAO 等）**不入本表**
 > ——由 docs/invariants.md 与 docs/security.md 域承载（域不同源，勿双登记）；
 > 仓外/技能侧机器检查（如技能自带机检件）亦不入本表——归属=技能域自身治理。
-> 行集=主控预清点 20 项+实现核实补全 2 项（㉑㉒，CI 独有）=22 行。
+> 行集=主控预清点 20 项+实现核实补全 2 项（㉑㉒，CI 独有）+F-ALIGN-01 台账
+> 挂账 1 项（㉓，2026-10-04）=23 行。
 
 ## 登记表
 
@@ -41,6 +42,7 @@
 | ⑳指纹门 baseline+豁免双件（受锁信任根） | F-TESTREF-00 门一 R1 B1 入锁（check-locks.mjs 注释在档） | 双件任何篡改经 sha256 对账拦（与③同源）；F-GOV-01 单元一 manifest 摘行红证复验（68a7a0ba866，变异红证非有机拦截）。注：本行=两 JSON 文件级受锁保护；豁免条目管理机制面见⑮（行界互注） | 与⑧指纹门同退 | 默认 |
 | ㉑[dep-change] 尾注检查（CI） | 骨架基线 52ebd68d58d（ci.yml K4 依赖防线） | 无在档记录（依赖变更均主动带尾注——F-DEP-01/F-ELE-02/F-ELE-03/F-CI-01 先例链）。注：依赖面尾注闸，与⑩受锁面尾注闸独立（行界互注） | 依赖治理改机器锁形态（lockfile 冻结之外）时 | 默认 |
 | ㉒npm audit 依赖审计（CI，高危即红） | 骨架基线 52ebd68d58d（ci.yml 末步） | 无在档记录（高危依赖未出现） | 审计策略被订阅式告警/SCA 工具取代时 | 默认 |
+| ㉓D 批 DDL 收紧挂账（F-ALIGN-01 W2 条件台账） | F-ALIGN-01 单元四 A（2026-10-04）；上游=设计稿 §1 D2/D4 W2 条件+§0 W11 口径 | 无在档记录（新设——应用层闸单元一/二已落，DDL 面未动） | D 批落地三 DDL 后本行退役+INV-NEW-2 状态升「已锚定（DDL）」：①lineage_nodes 重建顺带 paper_id NOT NULL（D2 乙案条件）②papers.folder_id NOT NULL（INV-NEW-2 DDL 锚定——存量 NULL 行随迁移归一）③papers.folder_id ON DELETE SET NULL 动作改判（D4——应用层域删后该路径不可达）；评审触发器=D 批 DB 战役启动 | 默认 |
 
 ## 规则区
 
