@@ -80,7 +80,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0011 | md 语料接口契约（导出五件套——幂等 sha 口径） |
 | 0012 | 引文图数据模型（自动引文网络图维持不做——与人工策展 lineage 不复用表） |
 | 0013 | 备份/恢复姿态（不做自动机制+手动指引） |
-| 0014 | lineage 图数据模型（人工策展时间树——DDL 演进注记见该件） |
+| 0014 | lineage 图数据模型（人工策展时间树——DDL 演进注记见该件；v1.6=F-CONTRACTA-01 三死列应用层退役：标签唯一源/core_idea 全退役/title 停用） |
 | 0015 | AI 笔记回灌与伴随进程文件协议（含 observe 通道追认） |
 | 0016 | 闲时会话预裁决表 |
 | 0017 | 三屋模式默认（IPC 通道名冻结） |
@@ -139,6 +139,22 @@ folderScope 判别联合 all/unfiled/folder 收敛 all/folder，INV-NEW-2 应用
 闸；PaperSummary.folderId 保持可空=历史行读兼容窗口期，DDL NOT NULL 归 D
 批挂账 defense-lifecycle ㉓）；folders delete=域删级联（事务序=先逐文献
 remove〔DDL 级联链〕后 folders.remove——INV-NEW-3，主图禁删恒设）。
+
+[F-CONTRACTA-01]（2026-10-04）数据契约批实体面：**三死列应用层退役+DB 死置**
+（清列捆绑 D 批——defense-lifecycle ㉓ 扩行）——①标签唯一源=文献库域
+（tags+paper_tags）：lineage_nodes.tags 私有标签五层退役（A1b——schema/repo
+写链/patch-node 白名单/组件三件套/导出+GOLDEN 重冻结）；脉络卡标签=graph
+读面伴生 map tagNamesByPaper 查表（A1a 换源——tagNamesByIds 批量名查单
+查询 IN join）；②lineage_nodes.core_idea 全退役（A3——编辑对话框+宿主
+整件/store 写链/导出字段/创建占位/测试大扫；「核心想法」语义由全文笔记
+notes.contentMd 承接）；③notes.title 停用（A2——schema/repo 读写链/FTS
+LIKE/导出行；历史残留清零+NOT NULL DEFAULT '' 死置）；笔记三域分域=
+notes 1:1 全文/annotations kind='note' 片段/ai_notes 直读（INV-101~104
+登记）。导出 schema_version 不动（单向导出无消费方——A1b §5.3 同口径）。三死列清列跟踪=defense-lifecycle
+㉓④⑤⑥（终态判据+执行序+清列连带在该行）。前向债务（D 批票面承接）：
+6 件单测 SQL 直写夹具含死列（清列时必红——预期内）+--fs-tl-idea token
+名实不符（消费面 .c-tag/.c-venue 存活）+seed 字面量宽松类型缝隙
+（satisfies 收口候选）。
 
 ## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
 

@@ -146,3 +146,25 @@ CREATE TABLE lineage_edges (
 > `src/main/db/migrations/004/006/007/010/012/013/014`（013=边 via 路点列，
 > F-LINEAGE-02——v1.4 清单后新增，本修订记录补齐收录）。本文保留原始决策
 > 叙述不回改。
+
+## 修订记录 v1.6（2026-10-04 F-CONTRACTA-01：数据契约三死列——标签唯一源/title/core_idea 应用层退役）
+
+> **同日续批**（design-final=docs/design/2026-10-04_f-contracta01-design.md，
+> 四项用户裁决 §5）：本 ADR v1 DDL 快照三列语义**应用层全退役、DB 列死置**
+> （NOT NULL/DEFAULT 兜底——清列捆绑 D 批 DB 战役，台账=defense-lifecycle
+> ㉓ 扩行）：
+> - `tags`（007 列，v1.1 修订引入）——**标签唯一源=文献库域**（tags+
+>   paper_tags 两表）；脉络卡标签=graph 读面伴生 map tagNamesByPaper 查表
+>   （A1a 换源——读链零回退）；lineage 私有标签编辑面五层退役（A1b）。
+>   不变量锚=**INV-103**。
+> - `core_idea`（004 列，v1 原始字段）——**全退役**（用户裁决：显示面仅详情
+>   面板、AI/FTS/卡面/筛选零依赖、存量零行；「核心想法」语义由全文笔记
+>   notes.contentMd 承接）；编辑对话框/写链/导出字段/创建占位五面退役（A3）。
+> - `notes.title`（001 列，notes 域连带登记）——**停用**（历史残留清零+新代码
+>   零消费，A2；DDL NOT NULL DEFAULT '' 死置，FTS trigram 空串零 token——
+>   触发器行为主控亲验）。不变量锚=**INV-104**。
+> 笔记三域分域与片段锚不可变=**INV-101/102**（annotations kind='note'+comment
+> 数据终态，零 DDL）。导出 schema_version 不动（导出单向、无消费方——导入链
+> 已随 ADR-0022 退役）。DDL 现文=本 ADR 域清单 `004/006/007/010/012/013/014`
+> 外加 001（notes 域——title 死列所在，非本 ADR 域仅引注）。本文保留原始
+> 决策叙述不回改。
