@@ -8,7 +8,8 @@
  * [shared/inline-keys 单源]、Esc=清空、＋钮 mousedown preventDefault 防点击
  * 夺焦双发）；同名添加短路（同节点去重第一道 UX 防——第二道=main repo 写
  * 边界单源）；增删即时持久化=整组上抛 onSetTags（Page 编排→lineage.store
- * .setNodeTags→既有 upsert-node 通道）；空串不派发（draft 协议 min(1) 同源
+ * .setNodeTags→既有 patch-node 通道〔F-ALIGN-01：旧节点写通道随新建路退役
+ * 换名〕）；空串不派发（draft 协议 min(1) 同源
  * 口径——失焦/序 B 路同守）；名取 DOM 当前值（序 B 下 state 滞后——
  * INV-85⑥ 同型）。
  */

@@ -2,7 +2,9 @@
 /**
  * [F-LGRAPH-01②U5 回炉轮 1/2] 手动调线菜单面（R19/R14+RR1/RR9）——
  * lineage-edge-edit-ui 行数红线（≤500）拆件：视口钳制/来源标记/自动线重置
- * no-op/portal+画布空白菜单两路可达（RR1）+确定钮 INV-85④（RR9）。
+ * no-op/portal+确定钮 INV-85④（RR9）。
+ * [F-ALIGN-01 2026-10-04] 画布空白菜单（RR1 两路可达两用例）随「添加节点…」
+ * 唯一菜单项退役删除——空白 pointerdown 清选中正锚改写保留。
  * always-active 裸 describe（K3）。装配面与 ui 件同构。
  */
 import { act } from 'react'
@@ -265,32 +267,19 @@ describe('U5 菜单面收尾（回炉 R19/R14——视口钳制/来源标记/自
     docKey('Escape')
   })
 
-  it('[RR1] 画布空白菜单两路可达：未选中右键空白=「画布 ● 空白」菜单渲染+添加节点项', () => {
-    layout([{ x: 200, y: 66 }])
-    const blank = host!.querySelector('[data-testid="edge-canvas-ctx"]') as HTMLElement
-    expect(blank).not.toBeNull()
-    rc(blank, 60, 120)
-    const menu = document.querySelector('[data-testid="edge-menu"]')
-    expect(menu?.textContent).toContain('画布 ● 空白')
-    expect(menu?.textContent).toContain('添加节点…')
-    // 菜单执行项=宿主 onAddNode 透传（不 null 崩）+Esc 关闭
-    docKey('Escape')
-    expect(document.querySelector('[data-testid="edge-menu"]')).toBeNull()
-  })
-
-  it('[RR1] 已选中路：右键空白 pointerdown 清选中+contextmenu 开画布菜单（菜单渲染无 selEdge 依赖）', () => {
+  // [F-ALIGN-01] 画布空白菜单两用例（RR1 两路可达）随「添加节点…」唯一菜单项
+  // 退役删除——组空=菜单项区一并处置（禁留空壳组）；空白 pointerdown 清选中
+  // 语义经 document 级监听保持（use-edge-edit onDown），正锚保留：
+  it('[RR1 改写] 空白 pointerdown 清选中（画布菜单退役后防御正锚——handles 撤销）', () => {
     layout([{ x: 200, y: 66 }])
     click(hitOf('e1'))
     expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull() // 已选中在场
-    const blank = host!.querySelector('[data-testid="edge-canvas-ctx"]') as HTMLElement
-    // 真实事件序：pointerdown(button=2) 瞬选撤/清选中 → contextmenu 开菜单
+    // [F-ALIGN-01] 画布空白菜单零残留负锚（在场即红）
+    expect(host!.querySelector('[data-testid="edge-canvas-ctx"]')).toBeNull()
+    // 空白 pointerdown（document 级监听——svg 外即空白）清选中语义保持
     act(() => {
-      blank.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2, clientX: 60, clientY: 120 }))
+      host!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2, clientX: 60, clientY: 120 }))
     })
     expect(host!.querySelector('[data-testid="edge-handles"]')).toBeNull() // 空白 pointerdown 清选中语义保持
-    rc(blank, 60, 120)
-    const menu = document.querySelector('[data-testid="edge-menu"]')
-    expect(menu?.textContent).toContain('画布 ● 空白') // canvas 态渲染不依赖 selEdge
-    docKey('Escape')
   })
 })

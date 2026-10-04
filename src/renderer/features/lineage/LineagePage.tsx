@@ -143,7 +143,9 @@ export function LineagePage(): JSX.Element {
     <div className="flex h-full flex-col">
       {/* [F-LGRAPH-01①U4] 顶栏=模式栏（图名随 folders 单源）+空图提示：folder
           选中且子图空=「该文件夹无脉络图」（区别于时间线通用空态——含
-          「未选中文件夹」语境；主图空图不提示——bootstrap 添加节点路径） */}
+          「未选中文件夹」语境；主图空图不提示——D6 裁决=不引导〔新建文件夹/
+          导入 PDF 入口在库页在场〕；文献入库经导入链自动入图，无手动建点路径
+          ——F-ALIGN-01 建点入口退役） */}
       <div className="flex items-center gap-3 px-2 pt-2">
         <LineageModeBar graphName={graphName} />
         {folderId !== MAIN_GRAPH_ID && nodeCount === 0 && (

@@ -1,8 +1,10 @@
 // b3: P7-H
 /**
  * [T3-P7B→F-LGRAPH-01②U2] LineageToolbar —— 编辑工具组重做（mockup §3.3：
- * [保存●]│[小手选择][— 实线(色)][╌ 虚线(色)]│[↶撤销][↷重做]+添加节点钮随组
- * A11）——**仅 edit 模式可见**（browse/focus=仅 drag-hint）。
+ * [保存●]│[小手选择][— 实线(色)][╌ 虚线(色)]│[↶撤销][↷重做]——**仅 edit
+ * 模式可见**（browse/focus=仅 drag-hint）。[F-ALIGN-01 2026-10-04] 建点
+ * 钮随手动建点路径全退役删除（A11 组成员收窄——节点唯一来源=入库/移动
+ * 两路，INV-NEW-1）。
  *
  * - 保存钮（软盘图标）四态：dirty=亮可点/clean=灰暗禁用/saving=spinner+
  *   工具组锁定/error=行内错误+重试钮（§2.2——退役行 4：保存 chip 零残留，
@@ -14,7 +16,7 @@
  *   =一编辑单元——saveLineTypeNames 暂存）。
  * - 撤销/重做钮+Ctrl+Z/Y=U1 会话栈（栈空灰暗；键盘接线=LineagePage）。
  * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar
- *   直连 view.store 同型；props 面=mode/onAddNode 容器注入沿承）。
+ *   直连 view.store 同型；props 面=mode 容器注入沿承）。
  */
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
@@ -54,7 +56,6 @@ function SaveIcon({ marked }: { marked: boolean }): JSX.Element {
 
 export function LineageToolbar(props: {
   mode: 'edit' | 'browse' | 'focus'
-  onAddNode(): void
 }): JSX.Element {
   const mode = props.mode
   const saveStatus = useLineageStore((s) => s.saveStatus)
@@ -68,7 +69,7 @@ export function LineageToolbar(props: {
   const linetypeListOpenFor = useLineageViewStore((s) => s.linetypeListOpenFor)
 
   if (mode !== 'edit') {
-    // 非 edit：工具组隐藏（A11 含添加节点钮）——仅 drag-hint（三态文案）
+    // 非 edit：工具组隐藏——仅 drag-hint（三态文案）
     return (
       <div className="lg-toolbar slim">
         <span className="drag-hint" data-testid="drag-hint">
@@ -127,16 +128,8 @@ export function LineageToolbar(props: {
         <span className="sr-only">保存</span>
       </button>
       <span className="lg-sep" />
-      <button
-        type="button"
-        className="lg-btn ghost"
-        data-testid="lineage-add-node"
-        disabled={lock}
-        onClick={props.onAddNode}
-      >
-        添加节点
-      </button>
-      <span className="lg-sep" />
+      {/* [F-ALIGN-01] 建点钮随手动建点路径退役删除（组=保存│选择/线型│
+          撤销重做）——e2e 断言锚零残留（工单三.5 词表） */}
       {/* [F-UIRES-02 批 B R6] ✋ 字符→手掌 SVG（title 保活+sr-only 保
           accessible name「选择」） */}
       <button

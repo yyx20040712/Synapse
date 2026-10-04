@@ -27,13 +27,8 @@ let nB: string
 function boot(): void {
   db = createTestDb()
   repo = createLineageRepo(db)
-  svc = createLineageService({
-    repo,
-    paperExists: () => false,
-    paperFolderOf: () => null,
-    ensurePaperFolder: () => '__main__',
-    withTransaction: (fn) => fn()
-  })
+  // [F-ALIGN-01] deps 收窄=repo（新建分支注入面退役删）
+  svc = createLineageService({ repo })
   nA = repo.upsertNode({ paperId: null, title: '节点A', coreIdea: '', year: null, x: null, y: null }).id
   nB = repo.upsertNode({ paperId: null, title: '节点B', coreIdea: '', year: null, x: null, y: null }).id
 }

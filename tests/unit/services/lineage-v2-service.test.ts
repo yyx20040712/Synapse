@@ -4,10 +4,15 @@
  * [F-LGRAPH-01②U8] kind 四值体系退役重整：sub 三守卫/upsertLineTypes 恒四组/
  * inferred 单父守卫/ref 综述限定等用例随体系退役删除（替代断言面=
  * lineage-u8-linetype.test.ts——manual 单基型+色行名恰 6+环/重边/悬空保留）。
- * 保留面=slot 归一三分支+normalizeMonthSlot 组键两面+graph lineageOrder 序。
- * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §3/§4
- * +2026-10-01_f-lgraph01-editor-design-final.md §1（U8 重整）。
- * always-active（不经 guardedDescribe）。
+ * [F-ALIGN-01 2026-10-04] upsertNode 新建/主题分支随 lineage/upsert-node 通道
+ * 退役删除（原 :87-123 主题更新/跨月/禁搬图族+新建归一族同批删——update 语义
+ * 承接面=patchNode describe；新建分支归一仍在役〔import 挂接/moveFolder repo
+ * 直调消费 normalizeMonthSlot〕，经纯函数 describe 直测锚定）。
+ * 保留面=slot 归一三分支（patchNode+纯函数）+normalizeMonthSlot 组键两面+
+ * graph lineageOrder 序。真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-
+ * design-final.md §3/§4+2026-10-01_f-lgraph01-editor-design-final.md §1（U8
+ * 重整）+2026-10-04_f-align01-design.md §1 D1。always-active（不经
+ * guardedDescribe）。
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { SqliteDb } from '../../../src/main/db/connection'
@@ -15,10 +20,9 @@ import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 import {
   createLineageService
 } from '../../../src/main/services/lineage/lineage.service'
+import { DomainError } from '../../../src/main/services/shared/domain-error'
 import { normalizeMonthSlot } from '../../../src/main/services/lineage/lineage.write-guards'
 import { createTestDb } from '../../utils/fixtures'
-
-const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id === 'p-3'
 
 let db: SqliteDb
 let repo: ReturnType<typeof createLineageRepo>
@@ -58,77 +62,61 @@ beforeEach(() => {
     ).run(id, 'a.pdf', `s-${id}`, 't', 't')
   }
   repo = createLineageRepo(db)
-  svc = createLineageService({
-    repo,
-    paperExists,
-    paperFolderOf: () => null, // [回炉码 1] 统一规则桩（未归档语义——文件夹域用例在 move-paper 件）
-    ensurePaperFolder: () => '__main__',
-    withTransaction: (fn) => db.transaction(fn)()
-  })
+  // [F-ALIGN-01] deps 收窄=repo+可选伴生 map（paperExists/paperFolderOf/
+  // ensurePaperFolder/folderExists/withTransaction 注入面随新建分支退役删）
+  svc = createLineageService({ repo })
 })
 
-// ── upsertNode slot 归一（D-I-1 三分支） ────────────────────────
+// ── [F-ALIGN-01] patchNode（lineage/patch-node 通道——D1 通道拆分） ──
 
-describe('T3-P5 upsertNode month/slot 归一（主控预裁 D-I-1）', () => {
-  it('新建：slot 缺省=目标 (year,month) 组 max+1；month 缺省=null', () => {
-    seedNode({ id: 'x1', year: 2020, month: 3, slot: 1 })
-    seedNode({ id: 'x2', year: 2020, month: 3, slot: 4 })
-    seedNode({ id: 'y1', year: 2020, month: 5, slot: 2 })
-    const n = svc.upsertNode({ paperId: 'p-1', title: '新节点', coreIdea: '', year: 2020, x: null, y: null, month: 3 })
-    expect(n.slot).toBe(5) // 组内 max=4 → +1
-    expect(n.month).toBe(3)
-    const n2 = svc.upsertNode({ paperId: 'p-2', title: '无月', coreIdea: '', year: 2020, x: null, y: null })
-    expect(n2.month).toBeNull()
-    expect(n2.slot).toBe(1) // (2020,null) 组空 → 1
+describe('F-ALIGN-01 patchNode —— 既有节点编辑 patch 单一写面（新建/主题分支随 upsert-node 退役）', () => {
+  it('幽灵 id 拒：DomainError CONFLICT+中文 reason+零库副作用', () => {
+    seedNode({ id: 'pn-real', paperId: 'p-1', year: 2020, month: 3, slot: 1 })
+    let caught: unknown = null
+    try {
+      svc.patchNode('pn-ghost', { x: 1 })
+    } catch (e) {
+      caught = e
+    }
+    expect(caught, '幽灵 id 必须抛（update 形态幽灵拒沿承）').not.toBeNull()
+    expect(caught instanceof DomainError, '错误类型=DomainError（code 经 toAppError 透传）').toBe(true)
+    expect((caught as DomainError).code, '错误码=CONFLICT（write-queue 丢弃型）').toBe('CONFLICT')
+    expect((caught as DomainError).message).toContain('节点不存在')
+    const cnt = db.prepare('SELECT COUNT(*) c FROM lineage_nodes').get() as { c: number }
+    expect(cnt.c).toBe(1) // 拒路径零库副作用
   })
 
-  it('更新且组不变：保留原 slot（缺省不重排）；month 缺省=null=跨组（全量语义）落组末', () => {
-    const kept = seedNode({ id: 'k', year: 2020, month: 3, slot: 2 })
-    const u = svc.upsertNode({ id: kept.id, paperId: null, title: '改', coreIdea: '', year: 2020, x: null, y: null, month: 3 })
-    expect(u.slot).toBe(2)
-    // month 省略 → null（同 tags/x/y 反向清空惯例）→ 组变 (2020,null) → 落组末
-    seedNode({ id: 'z', year: 2020, month: null, slot: 7 })
-    const u2 = svc.upsertNode({ id: kept.id, paperId: null, title: '改', coreIdea: '', year: 2020, x: null, y: null })
-    expect(u2.month).toBeNull()
-    expect(u2.slot).toBe(8)
+  it('patch 合并落笔：x/y/title 覆盖+未携带字段保留（合并语义非整行替换——防半更新清字段）+同组 slot 保留', () => {
+    const n = seedNode({ id: 'pn-1', paperId: 'p-1', year: 2020, month: 3, slot: 2 })
+    const u = svc.patchNode(n.id, { x: 5, y: 6, title: '改题' })
+    expect(u.x).toBe(5)
+    expect(u.y).toBe(6)
+    expect(u.title).toBe('改题')
+    expect(u.month).toBe(3) // 未携带字段保留
+    expect(u.slot).toBe(2) // 同组（year/month 面未变）slot 保留
+    expect(u.paperId).toBe('p-1') // 身份字段不可 patch（沿用 existing）
+    expect(u.folderId).toBe(n.folderId) // 图归属不可 patch（移动归 moveFolder）
   })
 
-  it('更新且 month 变更=新组 max+1（原组余位不挤占）；year 变更同组语义', () => {
-    const m = seedNode({ id: 'm', year: 2020, month: 3, slot: 1 })
-    seedNode({ id: 't', year: 2021, month: 3, slot: 9 })
-    const u = svc.upsertNode({ id: m.id, paperId: null, title: '跨月', coreIdea: '', year: 2021, x: null, y: null, month: 3 })
-    expect(u.slot).toBe(10)
-    const u2 = svc.upsertNode({ id: m.id, paperId: null, title: '跨年', coreIdea: '', year: 2022, x: null, y: null, month: 3 })
+  it('month 变更触发归一：组变=目标组 max+1 落组末（D-I-1 跨组分支——显式 slot 亦归一，W3 撞值防护）；同组显式 slot 主权透写', () => {
+    const m = seedNode({ id: 'pn-m', paperId: 'p-1', year: 2020, month: 3, slot: 1 })
+    seedNode({ id: 'pn-t', paperId: 'p-2', year: 2021, month: 3, slot: 9 })
+    const u = svc.patchNode(m.id, { year: 2021, month: 3 })
+    expect(u.month).toBe(3)
+    expect(u.slot).toBe(10) // 目标组 max=9 → +1（归一归服务端）
+    // 跨组显式 slot=归一覆盖（W3 终裁——同组撞值防护；组 (2021,5) 空 → 1）
+    const u2 = svc.patchNode(m.id, { month: 5, slot: 42 })
+    expect(u2.month).toBe(5)
     expect(u2.slot).toBe(1)
-  })
-
-  it('slot 显式透写：提供值原样落库（含 null 清面）', () => {
-    const n = svc.upsertNode({ paperId: 'p-1', title: '显式', coreIdea: '', year: 2020, x: null, y: null, month: 6, slot: 42 })
-    expect(n.slot).toBe(42)
-    const u = svc.upsertNode({ id: n.id, paperId: 'p-1', title: '显式', coreIdea: '', year: 2020, x: null, y: null, month: 6, slot: null })
-    expect(u.slot).toBeNull()
-  })
-
-  it('[F-LGCLN-01] 主题节点更新禁搬图：显式 folderId≠现图被忽略（仍在原图）+slot 保留/显式透传——显式跨图路径退役（用户裁决 2026-09-30）', () => {
-    // 主题节点（paperId null）带 id 显式 folderId≠现图=旧 F5 跨图可达路径——
-    // LGCLN 后被忽略（选图时对论文卡片已失焦，交互上不可构成=冗余逻辑删除；
-    // 文献节点 folderId≠归属恒 INV-88 拒，moveFolder 跨图面由 folders-move-paper 件锁定）
-    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-a','图甲',1)").run()
-    db.prepare("INSERT INTO collections (id, name, position) VALUES ('f-b','图乙',2)").run()
-    seedNode({ id: 'f5-occ', year: 2020, month: 3, slot: 5 })
-    db.prepare("UPDATE lineage_nodes SET folder_id='f-b' WHERE id='f5-occ'").run()
-    // 显式 slot 路：folderId 被忽略+同组（year/month 面）slot 主权透写
-    const moved = seedNode({ id: 'f5-n', year: 2020, month: 3, slot: 1 })
-    db.prepare("UPDATE lineage_nodes SET folder_id='f-a' WHERE id='f5-n'").run()
-    const u = svc.upsertNode({ id: moved.id, paperId: null, title: '禁搬', coreIdea: '', year: 2020, x: null, y: null, month: 3, slot: 9, folderId: 'f-b' })
-    expect(u.folderId).toBe('f-a') // 仍在原图（显式 f-b 被忽略——不搬不拒）
-    expect(u.slot).toBe(9) // year/month 同组→显式 slot 主权透写（组键去 folderId 面）
-    // 缺省 slot 路：folderId 被忽略+slot 保留原值（组键两面下命中同组保留分支）
-    const moved2 = seedNode({ id: 'f5-n2', year: 2020, month: 3, slot: 2 })
-    db.prepare("UPDATE lineage_nodes SET folder_id='f-a' WHERE id='f5-n2'").run()
-    const u2 = svc.upsertNode({ id: moved2.id, paperId: null, title: '禁搬二', coreIdea: '', year: 2020, x: null, y: null, month: 3, folderId: 'f-b' })
-    expect(u2.folderId).toBe('f-a')
-    expect(u2.slot).toBe(2) // 保留原值（f-b 侧占用 5 不参与——忽略面零组变副作用）
+    // 同组显式 slot=主权透写（reorderMonthSlots 路径——year/month 面不变）
+    const u3 = svc.patchNode(m.id, { slot: 42 })
+    expect(u3.slot).toBe(42)
+    // month null=清除语义：移入未定月框（组变归一落组末）
+    const u4 = svc.patchNode(m.id, { month: null })
+    expect(u4.month).toBeNull()
+    // [RR1/d1-N4③] slot=组末断言承接（原「month 缺省=null=跨组落组末」用例
+    // 同格断言未承接——组 (2021,null) 空 → max+1=1）
+    expect(u4.slot).toBe(1)
   })
 })
 
@@ -136,16 +124,44 @@ describe('T3-P5 upsertNode month/slot 归一（主控预裁 D-I-1）', () => {
 
 describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 面随显式跨图退役删除）', () => {
   const upsertBase = {
-    paperId: null,
+    paperId: 'p-1',
     title: '组键',
     coreIdea: '',
     x: null,
     y: null
   } as const
 
+  it('新建（无既有行）slot 缺省=目标组 max+1（import 挂接/moveFolder repo 直调在役分支）；month 缺省=null', () => {
+    // [F-ALIGN-01] 新建归一分支仍在役（normalizeMonthSlot 单源消费=import/
+    // moveFolder repo 直调）——原 service 新建用例随通道退役改纯函数直测锚定
+    seedNode({ id: 'c1', paperId: 'p-1', year: 2020, month: 3, slot: 1 })
+    seedNode({ id: 'c2', paperId: 'p-2', year: 2020, month: 3, slot: 4 })
+    seedNode({ id: 'c3', paperId: 'p-3', year: 2020, month: 5, slot: 2 })
+    const nodes = repo.listGraph().nodes
+    const r = normalizeMonthSlot({ ...upsertBase, year: 2020, month: 3 }, nodes)
+    expect(r).toEqual({ month: 3, slot: 5 }) // 组内 max=4 → +1
+    const r2 = normalizeMonthSlot({ ...upsertBase, year: 2020 }, nodes)
+    expect(r2).toEqual({ month: null, slot: 1 }) // (2020,null) 组空 → 1
+  })
+
+  it('[RR1/d1-N4②] 新建+显式 slot=主权透写（原「slot 显式透写」service 用例删除后该格失锚——新建分支在役面补纯函数直测）', () => {
+    seedNode({ id: 'e1', paperId: 'p-1', year: 2020, month: 6, slot: 3 })
+    const r = normalizeMonthSlot(
+      { ...upsertBase, year: 2020, month: 6, slot: 42 },
+      repo.listGraph().nodes
+    )
+    expect(r).toEqual({ month: 6, slot: 42 }) // 新建显式值原样落库（不归组末）
+    // slot null 显式=透写清面（null 落库——防御兜底位）
+    const r2 = normalizeMonthSlot(
+      { ...upsertBase, year: 2020, month: 6, slot: null },
+      repo.listGraph().nodes
+    )
+    expect(r2).toEqual({ month: 6, slot: null })
+  })
+
   it('folderId 变+year/month 不变+显式 slot→透传（sameGroup 命中——moveFolder 主权值路径）', () => {
     // 纯函数直测：existing 行对象内存改 folderId（不走 DB UPDATE——外键零涉及）
-    const existing = { ...seedNode({ id: 'kg-x', year: 2020, month: 3, slot: 1 }), folderId: 'f-a' }
+    const existing = { ...seedNode({ id: 'kg-x', paperId: 'p-1', year: 2020, month: 3, slot: 1 }), folderId: 'f-a' }
     const r = normalizeMonthSlot(
       { ...upsertBase, id: existing.id, year: 2020, month: 3, slot: 9, folderId: 'f-b' },
       [existing]
@@ -156,7 +172,7 @@ describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 
   it('folderId 变+缺省 slot→throw（k1-N3 防御机锚——编程错误面，原静默保留行为废止）', () => {
     // 门一回炉 k1-N3：sameGroup 去 folderId 面后，「改图不传 slot」不再静默
     // 保留原 slot（跨图保留会撞 INV-75 组内唯一）——未来新调用方违契约即红
-    const existing = { ...seedNode({ id: 'kg-k', year: 2020, month: 3, slot: 2 }), folderId: 'f-a' }
+    const existing = { ...seedNode({ id: 'kg-k', paperId: 'p-1', year: 2020, month: 3, slot: 2 }), folderId: 'f-a' }
     expect(() =>
       normalizeMonthSlot(
         { ...upsertBase, id: existing.id, year: 2020, month: 3, folderId: 'f-b' },
@@ -166,8 +182,8 @@ describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 
   })
 
   it('year 变（folderId 同图）→组变归一目标组 max+1', () => {
-    const existing = seedNode({ id: 'kg-y', year: 2020, month: 3, slot: 1 })
-    seedNode({ id: 'kg-occ', year: 2021, month: 3, slot: 4 })
+    const existing = seedNode({ id: 'kg-y', paperId: 'p-1', year: 2020, month: 3, slot: 1 })
+    seedNode({ id: 'kg-occ', paperId: 'p-2', year: 2021, month: 3, slot: 4 })
     const r = normalizeMonthSlot(
       { ...upsertBase, id: existing.id, year: 2021, month: 3, slot: 9, folderId: existing.folderId },
       repo.listGraph().nodes

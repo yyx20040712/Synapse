@@ -20,7 +20,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
@@ -76,7 +76,7 @@ beforeEach(() => {
   // once 队列跨用例残留防御（clearAllMocks 不清 once）：逐 fn reset 后重设默认
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-  stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: serverNode(node(req.id ?? 'X', req)) })
   )
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
@@ -102,7 +102,7 @@ beforeEach(() => {
   })
 })
 
-describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷与主题节点当前图', () => {
+describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷', () => {
   it('[F-LGRAPH-01①U4] folderId 恒有值（并集退役——主图兜底）：初值主图+load 恒显式 {folderId} 载荷；setFolder 切图重取', async () => {
     expect(useLineageStore.getState().folderId).toBe('__main__')
     await state().load()
@@ -112,36 +112,37 @@ describe('F-FOLDER-02·B 图作用域（folderId）：load 载荷与主题节点
     expect(useLineageStore.getState().folderId).toBe('f-x')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-x' })
   })
-
-  it('主题节点 folderId=当前图：folderId=f-x 时 addThemeNode 载荷携 folderId（缺省=主图）', async () => {
-    useLineageStore.setState({ folderId: 'f-x' })
-    state().addThemeNode('阶段分组')
-    state().save()
-    await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
-      expect.objectContaining({ paperId: null, title: '阶段分组', folderId: 'f-x' })
-    )
-  })
 })
 
 describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 同型：失败不推进）', () => {
-  it('加节点两型载荷：文献型 paperId 绑定+元数据默认；主题型 paperId null', async () => {
-    state().addPaperNode({ id: 'paper-X', title: '扩散模型', year: 2021 })
-    state().addThemeNode('阶段二')
+  it('[RR1/k1-W1] tags=null 行全量件载荷恒含 tags:null（清空语义——与旧 IPC「tags ?? null 恒归一」严格等价；缺键=服务端合并保留旧值=清空失效）', async () => {
+    // fixture 行 tags=null（LineageNode.tags 可选缺省）——空组 setNodeTags=清空意图
+    useLineageStore.setState({ nodes: [node('A', { tags: null })] })
+    state().setNodeTags('A', [])
+    state().save()
+    await settle()
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'A', tags: null })
+    )
+    // 回填后 store 行 tags 仍 null（服务端回显 mock=serverNode 忠实回显）
+    expect(state().nodes[0]!.tags ?? null).toBeNull()
+    expect(state().saveStatus).toBe('clean')
+  })
+
+  it('[F-ALIGN-01 改写] moveNode 暂存→save 批量落库：暂存期不发 IPC+dirty；成功回填+clean（原加节点两型载荷用例随 addPaperNode/addThemeNode 退役删——节点唯一来源=入库/移动两路）', async () => {
+    useLineageStore.setState({ nodes: [node('A', { x: 1, y: 2 })] })
+    state().moveNode('A', 560, 430)
     // 暂存期：不发 IPC+dirty（A7）
-    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+    expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
     expect(state().saveStatus).toBe('dirty')
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
-      expect.objectContaining({ paperId: 'paper-X', title: '扩散模型', year: 2021 })
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'A', x: 560, y: 430 })
     )
-    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith(
-      expect.objectContaining({ paperId: null, title: '阶段二', folderId: '__main__' }) // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
-    )
-    // 回填：upsert 成功回传行入 store（nodes 追加）
-    expect(state().nodes.map((n) => n.title)).toEqual(['扩散模型', '阶段二'])
+    // 回填：patch 成功回传行入 store（updatedAt 刷新面）
+    expect(state().nodes.map((n) => n.id)).toEqual(['A'])
     expect(state().saveStatus).toBe('clean')
   })
 
@@ -154,14 +155,14 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     await settle()
     // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变
     //  仅锁新全字段形状；详 lineage-store-reorder.test 同族用例）
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'A', title: '锚点', coreIdea: '原想法', year: 2020, month: null, slot: null, x: 560, y: 430 })
     )
 
     state().editCoreIdea('A', '新想法')
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenLastCalledWith(
+    expect(stubApi.lineage.patchNode).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: 'A', coreIdea: '新想法', x: 560, y: 430, title: '锚点' })
     )
   })
@@ -174,8 +175,8 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     expect(state().queue).toHaveLength(1)
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'A', x: 300, y: 200 })
     )
     expect(state().saveStatus).toBe('clean')
@@ -183,7 +184,7 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
 
   it('系统型失败：saveStatus=error（dirty 投影真）+队列保留+toast；retry 重发成功恢复 clean', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
-    stubApi.lineage.upsertNode
+    stubApi.lineage.patchNode
       .mockResolvedValueOnce({ ok: false, error: { ...DB_LOCKED } })
       .mockResolvedValueOnce({ ok: true, data: serverNode(node('A', { x: 11, y: 22 })) })
     state().moveNode('A', 11, 22)
@@ -196,7 +197,7 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     // retry → 重发 → 成功恢复
     state().retrySave()
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(2)
     expect(state().saveStatus).toBe('clean')
     expect(state().lastWriteError).toBeNull()
   })

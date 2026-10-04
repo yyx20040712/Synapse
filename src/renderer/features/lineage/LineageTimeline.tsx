@@ -43,11 +43,8 @@ export interface TimelineCallbacks {
   onMoveNodeMonth?: (nodeId: string, year: number | null, month: number | null) => void
 }
 
-/** [②U2] 工具条 props（Board 下传最小面——保存/撤销/色行名=工具组直连
- * lineage.store；容器只注入模式与添加节点对话框开关） */
-export interface TimelineToolbarProps {
-  onAddNode(): void
-}
+/** [F-ALIGN-01] 工具条 props 面随建点入口退役删除（TimelineToolbarProps
+ *  唯一成员=onAddNode 对话框开关——工具组其余控件直连双 store，容器零注入） */
 
 export function LineageTimeline(props: {
   nodes: LineageNode[]
@@ -64,8 +61,6 @@ export function LineageTimeline(props: {
   /** [A1a] 文献库标签名组表（键=paperId，值=名序标签名——卡标签行数据源
    *  [换源：node.tags 私有域退役接替]；Board 自 store 分发传入；缺省=空表） */
   tagNames?: Record<string, string[]>
-  /** [T3-P7B] 工具条（缺省=saved 静默态） */
-  toolbar?: TimelineToolbarProps
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
   const paperMetrics = props.paperMetrics ?? {}
@@ -170,14 +165,13 @@ export function LineageTimeline(props: {
       onPointerDown={pan.onPointerDown}
     >
       {/* [②U2] 工具组重做挂接（.lg-toolbar sticky 挂 .timeline 内——仅 edit
-          模式可见；保存/撤销/线型=工具组直连 store） */}
-      <LineageToolbar
-        mode={viewMode}
-        onAddNode={() => props.toolbar?.onAddNode()}
-      />
+          模式可见；保存/撤销/线型=工具组直连 store——[F-ALIGN-01] 建点
+          钮随手动建点路径退役，容器零注入面） */}
+      <LineageToolbar mode={viewMode} />
       {nodes.length === 0 ? (
-        // 空态不短路滚动容器结构+工具条在场（添加节点=空图 bootstrap 路径）
-        <div className="tl-empty">暂无脉络图——添加节点</div>
+        // 空态不短路滚动容器结构+工具条在场（D6 裁决=不引导；[RR1/d1-W2]
+        // 文案随建点路径退役去动作指向——渲染行为零改；文献入库经导入链自动入图）
+        <div className="tl-empty">暂无脉络图</div>
       ) : (
         <div
           className={drawing ? 'tl-content drawing' : 'tl-content'}
@@ -198,7 +192,6 @@ export function LineageTimeline(props: {
             dimmed={drag.phase === 'dragging'}
             focusDim={dimActive}
             editEnabled={viewMode === 'edit' && tool === 'select'}
-            onAddNode={() => props.toolbar?.onAddNode()}
           />
           {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化） */}
           <DrawPreview state={draw.state} color={currentLineColor} />

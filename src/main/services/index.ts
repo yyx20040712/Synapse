@@ -169,14 +169,10 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     }),
     lineage: createLineageService({
       repo: deps.repos.lineage,
-      paperExists: (id) => deps.repos.papers.findById(id) !== null, // AI-07 同型
-      // [回炉码 1] INV-88 统一规则判别源+落笔（papers.repo 单源）
-      paperFolderOf: (id) => deps.repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => deps.repos.papers.ensureFolderAssigned(id),
-      withTransaction: deps.repos.withTransaction, // upsertNode 归档+落库原子边界（[F-BAKRET-01] 草稿清面重灌旧语义退役）
+      // [F-ALIGN-01] paperExists/paperFolderOf/ensurePaperFolder/folderExists/
+      // withTransaction 注入随旧节点写通道新建分支退役删除（INV-88 判别/
+      // 落笔宿主=papers.repo+import/moveFolder 两调用方，本 service 不再消费）
       paperMetrics: (ids) => deps.repos.papers.listMetricsByIds(ids), // F-LG14 含金量 join 单源
-      // [F-FOLDER-01] 幽灵 folderId 拦截（folders.repo 存在性——生产真实现）
-      folderExists: (id) => deps.repos.folders.findById(id) !== null,
       // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口——pubNoByIds 单源）
       pubNos: (ids) => deps.repos.papers.pubNoByIds(ids),
       // [A1a] 文献库标签伴生 map 装配（tags.tagNamesByIds 单源——卡标签行换源）

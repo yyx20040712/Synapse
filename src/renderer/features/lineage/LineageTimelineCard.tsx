@@ -53,7 +53,9 @@ export function LineageTimelineCard(props: {
   /** 含金量摘要（按 paperId 查表传入；null=主题节点/metrics 缺席→L3 全省略） */
   metrics: LineagePaperMetrics | null
   /** [A1a] 文献库标签名组表（键=paperId——L1 标签行数据源[换源]；无键=
-   *  零标签行；主题节点 paperId null 短路不查表） */
+   *  零标签行；paperId null 短路不查表——[F-ALIGN-01] 语义=DDL 窗口期防御
+   *  〔paper_id 列可空镜像；主题节点应用层已无产生路径，NOT NULL 收紧归
+   *  D 批〕） */
   tagNames?: Record<string, string[]>
   selected: boolean
   /** [F-LINEAGE-02] 瀑布错位量 px（P-15：步 82/节距 148/年内复位） */
@@ -94,7 +96,9 @@ export function LineageTimelineCard(props: {
   // 瀑布错位=按卡 inline（.rowshift 类退役先例——inline style 直传）
   const style = props.offset > 0 ? { marginLeft: `${props.offset}px` } : undefined
   // L1 标签列：最多 2+溢出 +N（无标签=零渲染）——[A1a 换源] 文献库标签域
-  // 伴生 map（键=paperId；主题节点 paperId null 直接短路 []——不造 '' 哨兵键）
+  // 伴生 map（键=paperId；paperId null 直接短路 []——不造 '' 哨兵键。
+  // [F-ALIGN-01·执行修正] 短路保留=DDL 窗口期防御：paper_id 列可空类型镜像，
+  // 主题节点应用层已无产生路径〔NOT NULL 收紧归 D 批〕）
   const tags = n.paperId === null ? [] : (props.tagNames?.[n.paperId] ?? [])
   const shownTags = tags.slice(0, TAG_LIMIT)
   const overflow = tags.length - shownTags.length

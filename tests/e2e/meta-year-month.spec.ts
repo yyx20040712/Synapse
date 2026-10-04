@@ -28,21 +28,14 @@ test('改 year/month→节点排序键更新+pubNo 重派生+表格不滞旧', a
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  // 两篇入图（未归档→主图，INV-88 入图即归档；节点排序键初值=year 2021/2023）
+  // 两篇入图（[F-ALIGN-01] upsert-node 通道退役→moveFolder 产品路径：未归档
+  // 移入主图=分支② 自动建节点〔节点排序键初值=文献 year 2021/2023——INV-88
+  // 移动路〕；节点唯一来源=入库/移动两路 INV-NEW-1）
   for (const p of [P1, P2]) {
     expect(
       await win.evaluate(
-        async (arg: { id: string; title: string; year: number }) =>
-          (
-            await window.api.lineage.upsertNode({
-              paperId: arg.id,
-              title: arg.title,
-              coreIdea: '',
-              year: arg.year,
-              x: null,
-              y: null
-            })
-          ).ok,
+        async (arg: { id: string }) =>
+          (await window.api.papers.moveFolder({ paperId: arg.id, toFolderId: '__main__' })).ok,
         p
       )
     ).toBe(true)

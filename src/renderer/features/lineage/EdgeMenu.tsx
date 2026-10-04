@@ -6,7 +6,8 @@
  * - 线身菜单：命名（行内输入——边级独立改名 P-14）/线形与颜色（实虚×6 色
  *   ——复用 LINE_TYPE_COLORS 色板数据）/重置走线（清 via 回自动）/删除连线。
  * - 顶点菜单：删除顶点（共线直删/真拐点 L 重连——edge-edit 代数）。
- * - 画布空白菜单：添加节点…（edit 态建卡入口——菜单项自裁申报）。
+ * - [F-ALIGN-01] 画布空白菜单随「建点入口…」唯一菜单项退役删除（组空=
+ *   菜单项区一并处置，禁留空壳组；线/顶点两态菜单项保留）。
  * - 关闭（Esc/点外部/执行项）即撤高亮=onClose（宿主联动 selected 撤销）。
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -18,7 +19,6 @@ import { useComposingCommit } from '../../shared/inline-keys'
 export type EdgeMenuTarget =
   | { kind: 'edge'; edgeId: string; label: string; x: number; y: number; transient?: boolean }
   | { kind: 'vertex'; edgeId: string; idx: number; x: number; y: number }
-  | { kind: 'canvas'; x: number; y: number }
 
 /** 菜宽（w-44=176px——钳制右缘用） */
 const MENU_W = 176
@@ -41,7 +41,6 @@ export function EdgeMenu(props: {
   onReset(): void
   onDelete(): void
   onDeleteVertex(): void
-  onAddNode(): void
   onClose(): void
 }): JSX.Element {
   const [renaming, setRenaming] = useState(false)
@@ -88,11 +87,7 @@ export function EdgeMenu(props: {
   }
   const t = props.target
   const title =
-    t.kind === 'edge'
-      ? `线「${t.label}」● 命中`
-      : t.kind === 'vertex'
-        ? `顶点 #${t.idx + 1}（方柄）● 命中`
-        : '画布 ● 空白'
+    t.kind === 'edge' ? `线「${t.label}」● 命中` : `顶点 #${t.idx + 1}（方柄）● 命中`
 
   return (
     <div
@@ -211,11 +206,6 @@ export function EdgeMenu(props: {
           onClick={() => act(props.onDeleteVertex)}
         >
           删除顶点
-        </button>
-      )}
-      {t.kind === 'canvas' && (
-        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => act(props.onAddNode)}>
-          添加节点…
         </button>
       )}
     </div>

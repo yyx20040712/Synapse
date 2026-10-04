@@ -3,8 +3,9 @@
  * [F-LG14] 标签增删 UI —— 节点菜单「添加标签」入口+对话框+侧板标签编辑+store
  * setNodeTags 写面（新增锁定面）。
  *
- * 覆盖：菜单项在场与上抛/Board 全链（右键→添加标签→输入→保存=upsert-node 全量
- * 载荷含 tags 合并——防半更新清字段同族）/对话框取消零写/侧板标签 chips 渲染+
+ * 覆盖：菜单项在场与上抛/Board 全链（右键→添加标签→输入→保存=patch-node 全量
+ * 载荷含 tags 合并——防半更新清字段同族〔F-ALIGN-01：upsert-node→patch-node，
+ * 载荷=白名单八字段去 paperId/folderId〕）/对话框取消零写/侧板标签 chips 渲染+
  * 移除/侧板输入添加（含同名去重面板面短路）/store setNodeTags 载荷与回填。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  */
@@ -20,7 +21,7 @@ const stubApi = makeApiStub({
   notes: { get: vi.fn() },
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn()
@@ -115,7 +116,7 @@ beforeEach(() => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] }) // 侧板 AI 分节空态
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-  stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
+  stubApi.lineage.patchNode.mockResolvedValue({ ok: true, data: node('X') })
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
   stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
@@ -132,9 +133,9 @@ afterEach(() => {
 
 // ── 节点菜单「添加标签」入口+Board 全链 ─────────────────────────
 
-it('Board 全链：右键→「添加标签…」→对话框输入→保存=upsert-node 全量载荷含 tags 合并', async () => {
+it('Board 全链：右键→「添加标签…」→对话框输入→保存=patch-node 全量载荷含 tags 合并', async () => {
   seedLineage([node('A', { tags: ['综述'], coreIdea: '想法', title: '锚点', year: 2019 })])
-  stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: serverNode(node('A', req)) })
   )
   mount(<LineageBoard onSelectNode={() => undefined} />)
@@ -154,9 +155,8 @@ it('Board 全链：右键→「添加标签…」→对话框输入→保存=ups
   useLineageStore.getState().save() // [②U1] 点保存批量落库
   await settle()
   // [T3-P8] 全字段载荷补 month/slot（防半更新清月——夹具本就 null，语义零变）
-  expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
+  expect(stubApi.lineage.patchNode).toHaveBeenCalledWith({
     id: 'A',
-    paperId: 'paper-A',
     title: '锚点',
     coreIdea: '想法',
     year: 2019,
@@ -182,7 +182,7 @@ it('对话框取消=零写；主题节点同样有「添加标签…」入口', 
     cancel?.click()
   })
   await settle()
-  expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+  expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
   expect(q('[data-testid="lineage-tag-input"]')).toBeNull() // 对话框已关
 })
 
@@ -198,7 +198,7 @@ it('空标签名不派发（按钮禁用或提交短路——空串标签不入�
     save?.click()
   })
   await settle()
-  expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+  expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
 })
 
 // ── 侧板标签编辑 ──────────────────────────────────────────────
@@ -253,18 +253,17 @@ it('侧板同名标签短路：已存在标签再添加不派发（同节点同�
 
 // ── store setNodeTags 写面 ────────────────────────────────────
 
-it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经既有 upsert 通道）', async () => {
+it('store.setNodeTags：全量载荷+tags 数组；回填后 nodes.tags 更新（写路径经 patch-node 通道〔F-ALIGN-01〕）', async () => {
   seedLineage([node('A', { tags: ['综述'], x: 500, y: 400 })])
-  stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: serverNode(node('A', req)) })
   )
   useLineageStore.getState().setNodeTags('A', ['综述', '早期'])
   useLineageStore.getState().save() // [②U1]
   await settle()
   // [T3-P8] 同上：全字段载荷补 month/slot
-  expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith({
+  expect(stubApi.lineage.patchNode).toHaveBeenCalledWith({
     id: 'A',
-    paperId: 'paper-A',
     title: '节点A',
     coreIdea: '',
     year: 2020,
@@ -294,7 +293,7 @@ it('F-TAGS-01 对话框输入 IME 组词期 Enter（isComposing=true）不派发
     )
   })
   await settle()
-  expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+  expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
   // 非组合态回车恢复提交语义（同一输入框守卫不误伤正常路）
   act(() => {
     input!.dispatchEvent(
@@ -304,7 +303,7 @@ it('F-TAGS-01 对话框输入 IME 组词期 Enter（isComposing=true）不派发
   await settle()
   useLineageStore.getState().save() // [②U1] 提交入暂存后点保存
   await settle()
-  expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
+  expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1)
 })
 
 it('F-TAGS-01 侧板标签输入 IME 组词期 Enter（isComposing=true）不派发', async () => {

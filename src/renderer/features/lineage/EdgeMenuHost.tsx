@@ -1,13 +1,12 @@
 // b3: P7-H
 /**
  * [F-LGRAPH-01②U5] EdgeMenuHost —— 调线菜单宿主（EdgeOverlay 拆件——组件
- * 250 行红线）：线/顶点/画布三态菜单渲染+动作收口（store 单口——一动作=一
+ * 250 行红线）：线/顶点两态菜单渲染+动作收口（store 单口——一动作=一
  * 编辑单元沿 store 各方法；删点分治=edge-edit 代数单源）。
  * [回炉 R14] 菜单 portal 出 .tl-content（transform 祖先劫持 fixed 包含块
  * ——缩放态错位根治；fixed 定位恢复视口基准）。
- * [RR1] kind='canvas' 免 selEdge（null 合法——画布空白菜单无选中边依赖，
- * 原「menu!==null && selEdge!==null」渲染闸使 canvas 态恒 null 死路）；
- * 边/顶点两态动作经 null 守卫（canvas 态不触达）。
+ * [F-ALIGN-01] 画布空白菜单态随「建点入口…」唯一菜单项退役删除——本件
+ * 收窄为线/顶点两态（selEdge 恒非空——宿主闸保证，动作经 null 守卫防御）。
  */
 import { createPortal } from 'react-dom'
 import type { LineageEdge, LineageViaPoint } from '@shared/models/lineage'
@@ -18,10 +17,8 @@ import { useLineageStore } from './lineage.store'
 
 export function EdgeMenuHost(props: {
   target: EdgeMenuTarget
-  /** [RR1] canvas 态=null（画布空白菜单）；线/顶点态恒非空（宿主闸保证） */
   selEdge: LineageEdge | null
   handlesPl: EditPolyline | null
-  onAddNode(): void
   onClose(): void
 }): JSX.Element {
   const { selEdge } = props
@@ -50,7 +47,6 @@ export function EdgeMenuHost(props: {
         const out: { via: LineageViaPoint[] | undefined } = deleteVertexAlgebra(props.handlesPl, menu.idx)
         useLineageStore.getState().setEdgeVia(selEdge.id, out.via)
       }}
-      onAddNode={props.onAddNode}
       onClose={props.onClose}
     />,
     document.body

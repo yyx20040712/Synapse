@@ -2,6 +2,12 @@
  * [F-FOLDER-01] papers/move-folder 移动事务序+slot 语义+跨图边+updateMeta
  * 年月同步锁定测试（真库——§3.4+W2/W3 终裁+S1 队列闸+INV-88/89/90/93）。
  *
+ * [F-ALIGN-01 2026-10-04] service.upsertNode 建节点装置全数改 repo 直插
+ * （:221 先例「绕 service 直插」同型——service 新建分支随 upsert-node 通道
+ * 退役）；INV-88 统一规则 service 面三用例（未归档入图即归档/事务原子性/
+ * 显式 folderId≠归属拒）+幽灵 folderId 主题面随新建分支退役删除（INV-88
+ * 宿主=papers.repo+import/moveFolder 两调用方——本件 describe 1 移动族与
+ * library.service 件锁定在役面）。
  * 覆盖（一致性矩阵服务面）：移动 F1→F2（节点在场：图归属改写+slot 不重排+
  * 跨图边清理+同图边保留）/移动 F1→F2（无节点：自动入图——W6 漏格 month=NULL
  * 缺省归组+slot=目标图组 max+1）/移出 F→U（W2：folder_id=NULL→节点删→边随
@@ -55,21 +61,16 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     lineageChanged = vi.fn()
     const deps = { repos, lineagePending: () => pending, sendFoldersChanged: foldersChanged, sendLineageChanged: lineageChanged }
     papers = createPapersService(deps)
-    lineage = createLineageService({
-      repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction,
-      folderExists: (id) => repos.folders.findById(id) !== null
-    })
+    // [F-ALIGN-01] service deps 收窄=repo（新建分支五注入面退役删）；
+    // upsertEdge 守卫消费照旧
+    lineage = createLineageService({ repo: repos.lineage })
   })
 
   it('同值移动（F→F）：幂等早退——零库写/零 slot 重排/零广播（R2——k1-W2/d1-W2：无早退则 slot 自计重排组末+updated_at 刷新）', async () => {
     const f1 = repos.folders.create('图一')
     seedPaper('p-same', 2024)
     repos.papers.setFolderId('p-same', f1.id)
-    const n = lineage.upsertNode({ paperId: 'p-same', title: '同', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
+    const n = repos.lineage.upsertNode({ paperId: 'p-same', title: '同', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
     const before = db.prepare('SELECT updated_at FROM papers WHERE id=?').get('p-same') as { updated_at: string }
     await expect(papers.moveFolder({ paperId: 'p-same', toFolderId: f1.id })).resolves.toEqual({ ok: true })
     expect(folderIdOf('p-same')).toBe(f1.id)
@@ -90,9 +91,9 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     repos.papers.setFolderId('p-mover', f1.id)
     repos.papers.setFolderId('p-oldnbr', f1.id)
     repos.papers.setFolderId('p-newnbr', f2.id)
-    const mover = lineage.upsertNode({ paperId: 'p-mover', title: '移', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 2, folderId: f1.id })
-    const oldNb = lineage.upsertNode({ paperId: 'p-oldnbr', title: '旧邻', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
-    lineage.upsertNode({ paperId: 'p-newnbr', title: '新邻', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f2.id })
+    const mover = repos.lineage.upsertNode({ paperId: 'p-mover', title: '移', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 2, folderId: f1.id })
+    const oldNb = repos.lineage.upsertNode({ paperId: 'p-oldnbr', title: '旧邻', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
+    repos.lineage.upsertNode({ paperId: 'p-newnbr', title: '新邻', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f2.id })
     // F1 内一条直接连线（oldNb→mover——树守卫禁反向成环，双连线索以单边+预置跨图边承载）
     lineage.upsertEdge({ fromNode: oldNb.id, toNode: mover.id, label: '' })
     // 手工预置一条反向边（mover→旧邻——端点对与树边互逆不撞 UNIQUE；移动后
@@ -121,7 +122,7 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     seedPaper('p-existing', 2023)
     // F2 图同年同月（null 月）已有一节点 slot=3——新节点应落组末 4
     repos.papers.setFolderId('p-existing', f2.id) // 统一规则前置（同上）
-    lineage.upsertNode({ paperId: 'p-existing', title: '在图', coreIdea: '', year: 2023, x: null, y: null, month: null, slot: 3, folderId: f2.id })
+    repos.lineage.upsertNode({ paperId: 'p-existing', title: '在图', coreIdea: '', year: 2023, x: null, y: null, month: null, slot: 3, folderId: f2.id })
 
     await papers.moveFolder({ paperId: 'p-bare', toFolderId: f2.id })
 
@@ -139,8 +140,8 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     seedPaper('p-nbr', 2024)
     repos.papers.setFolderId('p-out', f1.id) // 统一规则前置（同上）
     repos.papers.setFolderId('p-nbr', f1.id)
-    const n1 = lineage.upsertNode({ paperId: 'p-out', title: '移出', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
-    const n2 = lineage.upsertNode({ paperId: 'p-nbr', title: '邻居', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
+    const n1 = repos.lineage.upsertNode({ paperId: 'p-out', title: '移出', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
+    const n2 = repos.lineage.upsertNode({ paperId: 'p-nbr', title: '邻居', coreIdea: '', year: 2024, x: null, y: null, folderId: f1.id })
     lineage.upsertEdge({ fromNode: n2.id, toNode: n1.id, label: '' })
 
     await papers.moveFolder({ paperId: 'p-out', toFolderId: null })
@@ -162,9 +163,9 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     repos.papers.setFolderId('p-o1', f2.id)
     repos.papers.setFolderId('p-o2', f2.id)
     // 移动者旧 slot=1（F1 组）；F2 同 (year,month) 组已占 slot=1 与 2 → 落 3
-    lineage.upsertNode({ paperId: 'p-m', title: '移', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
-    lineage.upsertNode({ paperId: 'p-o1', title: '占一', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f2.id })
-    lineage.upsertNode({ paperId: 'p-o2', title: '占二', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 2, folderId: f2.id })
+    repos.lineage.upsertNode({ paperId: 'p-m', title: '移', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f1.id })
+    repos.lineage.upsertNode({ paperId: 'p-o1', title: '占一', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 1, folderId: f2.id })
+    repos.lineage.upsertNode({ paperId: 'p-o2', title: '占二', coreIdea: '', year: 2024, x: null, y: null, month: 5, slot: 2, folderId: f2.id })
     await papers.moveFolder({ paperId: 'p-m', toFolderId: f2.id })
     const moved = nodeOf('p-m')!
     expect(moved.folder_id).toBe(f2.id)
@@ -190,85 +191,12 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
   })
 })
 
-describe('F-FOLDER-01·回炉码 1/3 INV-88 统一规则——upsert-node 文献节点图归属', () => {
-  it('未归档文献建节点（缺省）：先写 papers.folder_id=主图（入图即归档）再建节点——节点 folder=主图', () => {
-    const db = createTestDb()
-    const repos = createRepos(db)
-    const lineage = createLineageService({
-      repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction
-    })
-    db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run('p-1', 'a.pdf', 's-1', 't', 't')
-    const node = lineage.upsertNode({ paperId: 'p-1', title: '入图即归档', coreIdea: '', year: 2024, x: null, y: null })
-    expect(node.folderId).toBe('__main__')
-    expect(repos.papers.folderIdOf('p-1')).toBe('__main__') // 统一规则落笔（文献侧同步归档）
-  })
-
-  it('[R2·k1-W3] upsertNode 原子性：ensurePaperFolder 归档写与节点 INSERT 同事务——INSERT 抛（坑 a 索引撞）时无「已归档未建节点」残留', () => {
-    const db = createTestDb()
-    const repos = createRepos(db)
-    const lineage = createLineageService({
-      repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction
-    })
-    db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run('p-1', 'a.pdf', 's-1', 't', 't')
-    // 预置手工节点占坑 a 唯一域（绕 service 直插——012 前旧形态同族），文献保持未归档
-    db.prepare(
-      'INSERT INTO lineage_nodes (id, paper_id, title, core_idea, year, x, y, month, slot, folder_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
-    ).run('n-legacy', 'p-1', '旧行', '', 2023, null, null, null, 1, '__main__', 't', 't')
-    // service 首支：未归档→ensurePaperFolder 归档写→随後 INSERT 撞部分唯一索引
-    // 裸抛（INV-89 DDL 面）→ withTransaction 回滚
-    expect(() =>
-      lineage.upsertNode({ paperId: 'p-1', title: '撞索引', coreIdea: '', year: 2025, x: null, y: null })
-    ).toThrow()
-    // 原子性：归档写随事务回滚——文献仍 NULL（无「已归档未建节点」残留）
-    expect(repos.papers.folderIdOf('p-1')).toBeNull()
-    const cnt = db.prepare('SELECT COUNT(*) c FROM lineage_nodes WHERE paper_id=?').get('p-1') as { c: number }
-    expect(cnt.c).toBe(1) // 仅预置旧行
-  })
-
-  it('显式 folderId=归属→过；≠归属→CONFLICT 拒（消息含「文献不在该文件夹——用移动文献操作」；不隐式移动+零库副作用）', () => {
-    const db = createTestDb()
-    const repos = createRepos(db)
-    const lineage = createLineageService({
-      repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction
-    })
-    db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run('p-1', 'a.pdf', 's-1', 't', 't')
-    const f2 = repos.folders.create('图二')
-    repos.papers.setFolderId('p-1', f2.id)
-    // 显式=归属 → 过
-    const ok = lineage.upsertNode({ paperId: 'p-1', title: '同图', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
-    expect(ok.folderId).toBe(f2.id)
-    // 显式≠归属（主图）→ 拒；文献归属不被隐式移动、节点不落库
-    expect(() =>
-      lineage.upsertNode({ paperId: 'p-1', title: '异图', coreIdea: '', year: 2024, x: null, y: null, folderId: '__main__' })
-    ).toThrow('文献不在该文件夹——用移动文献操作')
-    expect(repos.papers.folderIdOf('p-1')).toBe(f2.id) // 不隐式移动
-    const nodes = db.prepare('SELECT COUNT(*) c FROM lineage_nodes').get() as { c: number }
-    expect(nodes.c).toBe(1) // 拒路径零节点残留（仅首条合法节点）
-  })
-})
-
 describe('F-FOLDER-01·回炉码 13（d1-W11）graph(folderId) 子图过滤+pubNos 装配', () => {
   it('同图节点/边保留；跨图边滤掉；跨图端点边不残；pubNos 键值=paperId→库级编号', () => {
     const db = createTestDb()
     const repos = createRepos(db)
     const lineage = createLineageService({
       repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction,
       pubNos: (ids) => repos.papers.pubNoByIds(ids)
     })
     const f2 = repos.folders.create('图二')
@@ -280,9 +208,9 @@ describe('F-FOLDER-01·回炉码 13（d1-W11）graph(folderId) 子图过滤+pubN
     }
     repos.papers.setFolderId('p-a', f2.id)
     repos.papers.setFolderId('p-b', f2.id) // p-c 未归档→主图
-    const na = lineage.upsertNode({ paperId: 'p-a', title: 'A', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
-    const nb = lineage.upsertNode({ paperId: 'p-b', title: 'B', coreIdea: '', year: 2025, x: null, y: null, folderId: f2.id })
-    const nc = lineage.upsertNode({ paperId: 'p-c', title: 'C', coreIdea: '', year: 2024, x: null, y: null }) // 主图
+    const na = repos.lineage.upsertNode({ paperId: 'p-a', title: 'A', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
+    const nb = repos.lineage.upsertNode({ paperId: 'p-b', title: 'B', coreIdea: '', year: 2025, x: null, y: null, folderId: f2.id })
+    const nc = repos.lineage.upsertNode({ paperId: 'p-c', title: 'C', coreIdea: '', year: 2024, x: null, y: null }) // 主图
     lineage.upsertEdge({ fromNode: na.id, toNode: nb.id, label: '同图' })
     // 手工预置跨图边（a↔c——迁移期遗留形态）：子图读应滤掉
     db.prepare('INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at) VALUES (?,?,?,?,?,?,?)')
@@ -300,29 +228,20 @@ describe('F-FOLDER-01 跨图边守卫（INV-90——ERR_CROSS_GRAPH_EDGE 以 CON
   it('两端分属不同图：upsertEdge 拒（CONFLICT+跨图边拒绝 reason）；同图边不受限', () => {
     const db = createTestDb()
     const repos = createRepos(db)
-    const lineage = createLineageService({
-      repo: repos.lineage,
-      paperExists: (id) => repos.papers.findById(id) !== null,
-      paperFolderOf: (id) => repos.papers.folderIdOf(id),
-      ensurePaperFolder: (id) => repos.papers.ensureFolderAssigned(id),
-      withTransaction: repos.withTransaction,
-      folderExists: (id) => repos.folders.findById(id) !== null
-    })
+    const lineage = createLineageService({ repo: repos.lineage })
     const f2 = repos.folders.create('图二')
     for (const id of ['p-1', 'p-2']) {
       db.prepare('INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES (?,?,?,?,?)').run(id, 'a.pdf', `s-${id}`, 't', 't')
     }
     repos.papers.setFolderId('p-2', f2.id) // 统一规则前置：p-2 归图二（p-1 未归档→主图）
-    const n1 = lineage.upsertNode({ paperId: 'p-1', title: '主图节点', coreIdea: '', year: 2024, x: null, y: null })
-    const n2 = lineage.upsertNode({ paperId: 'p-2', title: '图二节点', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
+    // [F-ALIGN-01] 建节点装置=repo 直插（service 新建分支退役；p-1 不带
+    // folderId→repo 写边界兜底主图）
+    const n1 = repos.lineage.upsertNode({ paperId: 'p-1', title: '主图节点', coreIdea: '', year: 2024, x: null, y: null })
+    const n2 = repos.lineage.upsertNode({ paperId: 'p-2', title: '图二节点', coreIdea: '', year: 2024, x: null, y: null, folderId: f2.id })
     expect(n1.folderId).toBe(MAIN_GRAPH_ID)
     expect(() => lineage.upsertEdge({ fromNode: n1.id, toNode: n2.id, label: '' })).toThrow('跨图边拒绝')
     const edges = db.prepare('SELECT COUNT(*) c FROM lineage_edges').get() as { c: number }
     expect(edges.c).toBe(0) // 拒时零库副作用
-    // 幽灵 folderId（upsertNode 显式给值不存在）拒
-    expect(() =>
-      lineage.upsertNode({ paperId: null, title: '幽灵图节点', coreIdea: '', year: 2024, x: null, y: null, folderId: 'f-ghost' })
-    ).toThrow('幽灵 folderId')
   })
 })
 

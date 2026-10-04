@@ -32,8 +32,8 @@
  */
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
-import { LINE_TYPE_COLORS, MAIN_GRAPH_ID, lineageOrder } from '@shared/models/lineage'
-import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } from '@shared/models/lineage'
+import { LINE_TYPE_COLORS, lineageOrder } from '@shared/models/lineage'
+import type { LineageEdge, LineageEdgeUpsert, LineageNode } from '@shared/models/lineage'
 
 /**
  * [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：
@@ -43,20 +43,28 @@ import type { LineageEdge, LineageEdgeUpsert, LineageNode, LineageNodeUpsert } f
  */
 export type LineageSaveStatus = 'clean' | 'dirty' | 'saving' | 'error'
 
-export interface LazyNodeUpsert {
-  kind: 'upsert-node'
+/** [F-ALIGN-01] patch-node 白名单载荷面（=IPC lineagePatchNodeReqSchema 去 id
+ *  ——id=定位键；paperId/folderId/时间戳不可 patch；tags/coreIdea=A1b/A3
+ *  退役遗留面随各单元删） */
+export type LineageNodePatchBody = Partial<
+  Pick<LineageNode, 'title' | 'coreIdea' | 'year' | 'month' | 'slot' | 'x' | 'y' | 'tags'>
+>
+
+export interface LazyNodePatch {
+  kind: 'patch-node'
   id: string
-  patch: Partial<Pick<LineageNodeUpsert, 'coreIdea' | 'tags' | 'x' | 'y'>>
+  patch: Partial<Pick<LineageNode, 'coreIdea' | 'tags' | 'x' | 'y'>>
   /** 语义轴整替（后到胜出）：{slot}=月内序透写；{year,month}=改月（合成时
    *  slot 键缺省——服务端组变 max+1 尾部既有分支；乐观应用=组内末预估） */
   override?: { slot: number } | { year: number | null; month: number | null }
 }
 
 /** 写动作（排队单元；reparent 的加边动作带标记——N5 部分失败 toast 前缀；
- *  [回炉 R9] silentSave=画线动作面——flush 成功 toast 抑制（暂存提示已承载） */
+ *  [回炉 R9] silentSave=画线动作面——flush 成功 toast 抑制（暂存提示已承载）。
+ *  [F-ALIGN-01] 新建节点形态（input 全载荷）随旧节点写通道退役删除
+ *  ——节点动作恒=既有节点 patch（INV-NEW-1：节点唯一来源=入库/移动两路） */
 export type WriteAction =
-  | { kind: 'upsert-node'; input: LineageNodeUpsert }
-  | LazyNodeUpsert
+  | LazyNodePatch
   | { kind: 'remove-node'; id: string }
   | { kind: 'upsert-edge'; input: LineageEdgeUpsert; reparent?: boolean; isNew?: boolean; silentSave?: boolean }
   | { kind: 'remove-edge'; id: string }
@@ -102,14 +110,12 @@ export interface WriteQueue {
   flush(): Promise<void>
 }
 
-/** 同实体判定（排队合并=最后写胜出）：同 kind 且目标相同（新建节点无 id 不合并） */
+/** 同实体判定（排队合并=最后写胜出）：同 kind 且目标相同（[F-ALIGN-01] 节点
+ *  动作恒=patch（id 型）——按 id 判等，新建不合并分支随 input 形态退役删） */
 function sameTarget(a: WriteAction, b: WriteAction): boolean {
   if (a.kind !== b.kind) return false
-  if (a.kind === 'upsert-node' && b.kind === 'upsert-node') {
-    // [R3] 新建（input 无 id）不合并；更新 lazy（id 型）按 id 判等
-    const idA = 'input' in a ? a.input.id : a.id
-    const idB = 'input' in b ? b.input.id : b.id
-    return idA !== undefined && idA === idB
+  if (a.kind === 'patch-node' && b.kind === 'patch-node') {
+    return a.id === b.id
   }
   if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
     return a.input.fromNode === b.input.fromNode && a.input.toNode === b.input.toNode
@@ -135,49 +141,19 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
 
   /** [R3] lazy 同实体融合：patch 字段级合并（不同字段共存；同字段后值胜）；
    *  override 整替（语义轴互斥） */
-  const fuseLazy = (a: LazyNodeUpsert, b: LazyNodeUpsert): LazyNodeUpsert => ({
-    kind: 'upsert-node',
+  const fuseLazy = (a: LazyNodePatch, b: LazyNodePatch): LazyNodePatch => ({
+    kind: 'patch-node',
     id: b.id,
     patch: { ...a.patch, ...b.patch },
     override: b.override ?? a.override
   })
 
-  const isLazyUpsert = (x: WriteAction): x is LazyNodeUpsert =>
-    x.kind === 'upsert-node' && !('input' in x)
+  const isLazyPatch = (x: WriteAction): x is LazyNodePatch => x.kind === 'patch-node'
 
   /** [F-LGRAPH-01②U1] 乐观应用：编辑动作即时投影到本地数据态（A7——本地
-   *  即时更新+暂存；新建类动作本地 uuid=落库 id（repo 采纳 provided id，
-   *  无临时 id 漂移）；节点变更后 lineageOrder 重排=渲染序单源沿承） */
+   *  即时更新+暂存；节点变更后 lineageOrder 重排=渲染序单源沿承） */
   const applyOptimistic = (action: WriteAction): void => {
-    if (action.kind === 'upsert-node') {
-      const now = new Date().toISOString()
-      if ('input' in action) {
-        const input = action.input
-        const id = input.id ?? crypto.randomUUID()
-        const next: LineageNode = {
-          id,
-          paperId: input.paperId,
-          title: input.title,
-          coreIdea: input.coreIdea,
-          year: input.year,
-          x: input.x ?? null,
-          y: input.y ?? null,
-          month: input.month ?? null,
-          slot: input.slot ?? null,
-          folderId: input.folderId ?? MAIN_GRAPH_ID, // [R21] 常量单源（MAIN_GRAPH_ID）
-          ...(input.tags != null ? { tags: input.tags } : { tags: null }),
-          createdAt: now,
-          updatedAt: now
-        }
-        set((s) => ({
-          nodes: lineageOrder(
-            s.nodes.some((n) => n.id === id)
-              ? s.nodes.map((n) => (n.id === id ? { ...n, ...next, createdAt: n.createdAt } : n))
-              : [...s.nodes, next]
-          )
-        }))
-        return
-      }
+    if (action.kind === 'patch-node') {
       // lazy 更新：patch 应用+override 语义轴（改月乐观=跨组组内末预估——
       // slot null 组末渲染近似；落库归一回填真值）
       set((s) => ({
@@ -232,13 +208,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     set({ lineTypeNames: [...action.input] })
   }
 
-  /** 新建类动作本地 uuid 回写（A7 乐观一致性）：本地乐观行 id=落库 id
+  /** 新建类动作本地 uuid 回写（A7 乐观一致性）：本地乐观边 id=落库 id
    *  （repo 采纳 provided id）——无临时 id 漂移、服务器回显按同 id 覆盖；
-   *  isNew 标记=新建 toast 判据（id 补齐后 undefined 判据失效） */
+   *  isNew 标记=新建 toast 判据（id 补齐后 undefined 判据失效）。
+   *  [F-ALIGN-01] 节点新建形态随旧节点写通道退役删除——本面仅边新建 */
   const withLocalId = (a: WriteAction): WriteAction => {
-    if (a.kind === 'upsert-node' && 'input' in a && a.input.id === undefined) {
-      return { ...a, input: { ...a.input, id: crypto.randomUUID() } }
-    }
     if (a.kind === 'upsert-edge' && a.input.id === undefined) {
       return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
     }
@@ -249,11 +223,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     const action = withLocalId(rawAction)
     set((s) => {
       let queue: WriteAction[]
-      if (isLazyUpsert(action)) {
+      if (isLazyPatch(action)) {
         // [R3] 融合仅限**未派发**队列项（saving 派发窗内 flight 项保留原位）
         let hit = false
         queue = s.queue.map((x) => {
-          if (x === inflight || !isLazyUpsert(x) || !sameTarget(x, action)) return x
+          if (x === inflight || !isLazyPatch(x) || !sameTarget(x, action)) return x
           hit = true
           return fuseLazy(x, action)
         })
@@ -272,11 +246,14 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     return n
   }
 
-  /** 既有节点→整行 upsert 载荷（全字段防半更新清字段——A8 全载荷合成；via
-   *  随行读现值：editManualEdgeLabel/applyEdgeLineStyle 后继动作不再清 via） */
-  const fullRowInput = (n: LineageNode): LineageNodeUpsert => ({
-    id: n.id,
-    paperId: n.paperId,
+  /** 既有节点→patch-node 全字段载荷（白名单八字段防半更新清字段——A8 全载荷
+   *  合成语义等价迁移：服务端 {...existing, ...patch} 合并，本地行全字段随发
+   *  =整行面等价；身份/图归属/时间戳不在白名单——沿用库行）。
+   *  [RR1/k1-W1] tags 恒发 `n.tags ?? null`（非条件缺键）：服务端合并语义下
+   *  缺键=保留旧值，null 行缺键即「清空标签」失效——与旧 IPC 面
+   *  `tags: req.tags ?? null` 恒归一 null（repo 写边界 null=清空）严格等价。
+   *  tags 面=A1b 退役面，本句随 A1b 消亡 */
+  const fullPatchBody = (n: LineageNode): LineageNodePatchBody => ({
     title: n.title,
     coreIdea: n.coreIdea,
     year: n.year,
@@ -284,13 +261,13 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     slot: n.slot,
     x: n.x,
     y: n.y,
-    ...(n.tags != null ? { tags: n.tags } : {})
+    tags: n.tags ?? null
   })
 
-  /** [R3] lazy 载荷执行时点合成：fullRowInput 读当前 store 行+patch 覆盖
+  /** [R3] lazy 载荷执行时点合成：fullPatchBody 读当前 store 行+patch 覆盖
    *  +override 语义轴 */
-  const lazyInput = (a: LazyNodeUpsert): LineageNodeUpsert => {
-    const patched: LineageNodeUpsert = { ...fullRowInput(nodeOf(a.id)), ...a.patch }
+  const lazyInput = (a: LazyNodePatch): LineageNodePatchBody => {
+    const patched: LineageNodePatchBody = { ...fullPatchBody(nodeOf(a.id)), ...a.patch }
     if (a.override === undefined) return patched
     if ('slot' in a.override) return { ...patched, slot: a.override.slot }
     const { slot: _omit, ...rest } = patched // 改月=slot 键缺省（组变尾部归一）
@@ -299,9 +276,8 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
   }
 
   const applyAction = async (action: WriteAction): Promise<void> => {
-    if (action.kind === 'upsert-node') {
-      const input = 'input' in action ? action.input : lazyInput(action)
-      const saved = await unwrap(api.lineage.upsertNode(input))
+    if (action.kind === 'patch-node') {
+      const saved = await unwrap(api.lineage.patchNode({ id: action.id, ...lazyInput(action) }))
       // 回填后按 lineageOrder 重排（INV-75 消费面扩——store 数组序=渲染序单源）
       set((s) => ({
         nodes: lineageOrder(

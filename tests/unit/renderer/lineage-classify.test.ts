@@ -49,10 +49,8 @@ describe('isCore —— 核心档判定（决2 D1\'：文献节点出度 ≥2）
     expect(isCore(n, [])).toBe(false)
   })
 
-  it('主题排除：paperId null（主题节点）即使出度 ≥2 非核心', () => {
-    const n = node('T', { paperId: null, title: '主题分组' })
-    expect(isCore(n, [edge('T', 'A'), edge('T', 'B')])).toBe(false)
-  })
+  // [F-ALIGN-01] 主题排除用例随主题节点应用层退役删除（paperId null 防御
+  // 短路保留=DDL 窗口期防御——主题节点应用层已无产生路径，NOT NULL 收紧归 D 批）
 
   it('入度不计：入度 5（多父非法图直喂——树内不可达形态）出度 1 仍非核心', () => {
     const n = node('P', { title: '开宗' })

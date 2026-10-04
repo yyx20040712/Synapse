@@ -67,24 +67,22 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主图' }).click()
   await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图')
-  // [F-DELCONF-01] 造资产：给「改名后的图」加 1 主题节点（脉络页产品路径；
-  // 主题节点 folderId=当前图随选。T4b 弹窗路径需有资产（静默判据下空图不弹窗）
+  // [F-DELCONF-01] 造资产：给「改名后的图」移入 1 篇文献（moveFolder 产品
+  // 路径——[F-ALIGN-01] 主题节点 UI 添加退役：移动迁入自动建节点〔分支②〕
+  // =节点唯一来源两路之「移动」路，INV-NEW-1）。T4b 弹窗路径需有资产
+  // （静默判据下空图不弹窗）
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '改名后的图' }).click()
   await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
-  // [F-LGRAPH-01②U2/A11] 添加节点钮随工具组仅 edit 模式可见——先进编辑模式
-  await win.getByTestId('lineage-mode-edit').click()
-  await win.getByTestId('lineage-add-node').click()
-  await win.getByTestId('add-node-mode-theme').click()
-  await win.getByLabel('主题名称（阶段分组）').fill('crud 资产节点')
-  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
-  await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: 'crud 资产节点' })).toBeVisible({
+  await win.evaluate(async () => {
+    const r = await window.api.folders.list({})
+    const fid = r.ok ? (r.data.find((f) => f.name === '改名后的图')?.id ?? '') : ''
+    if (fid !== '') await window.api.papers.moveFolder({ paperId: 'e2e-crud-guide', toFolderId: fid })
+  })
+  // folders.changed→图重取链：节点卡在场（文献随迁自动入图）
+  await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: '壳层种子文献' })).toBeVisible({
     timeout: 10_000
   })
-  // [②U1/INV-91 S1 队列闸] 编辑会话暂存未落库时 folders 写被互斥拒——保存后
-  // 再跨域（①批 autosave 语义翻转的 spec 迁移面）
-  await win.getByTestId('lineage-save-btn').click()
-  await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
 
   await win.getByRole('button', { name: '文献库' }).click()
 
@@ -99,13 +97,14 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   await expect(win.getByRole('dialog')).toHaveCount(0)
   await expect(navRow('速删验证图')).toHaveCount(0, { timeout: 10_000 })
 
-  // T4b 有资产弹窗：确认弹窗 N2 终裁文案逐字（计数=1/0/0）+危险色按钮执行
+  // T4b 有资产弹窗：确认弹窗 N2 终裁文案逐字（计数=1 节点/0 连线/1 文献
+  // ——[F-ALIGN-01] 资产改 moveFolder 移入文献：节点+文献各 1）+危险色按钮执行
   await navRow('改名后的图').click({ button: 'right' })
   await win.getByTestId('folder-menu').getByRole('menuitem', { name: '删除文件夹' }).click()
   const dialog = win.getByRole('dialog')
   await expect(dialog).toContainText('删除文件夹「改名后的图」？')
   await expect(dialog).toContainText(
-    '该文件夹的脉络图将一并删除（1 个节点及 0 条连线不可恢复）；其中 0 篇文献不会被删除，将移至「未归档」。'
+    '该文件夹的脉络图将一并删除（1 个节点及 0 条连线不可恢复）；其中 1 篇文献不会被删除，将移至「未归档」。'
   )
   await dialog.getByRole('button', { name: '删除文件夹' }).click()
   await expect(navRow('改名后的图')).toHaveCount(0, { timeout: 10_000 })

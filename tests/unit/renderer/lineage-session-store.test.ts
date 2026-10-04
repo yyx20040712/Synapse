@@ -12,7 +12,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
@@ -56,7 +56,7 @@ const state = () => useLineageStore.getState()
 beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-  stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: { ...node(req.id ?? 'X'), ...req, updatedAt: 'server' } as LineageNode })
   )
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
@@ -87,25 +87,19 @@ describe('F-LGRAPH-01②U1 暂存（enqueue 不 flush——A7 单一写路径）
     useLineageStore.setState({ nodes: [node('A', { coreIdea: '原想法' })] })
     state().editCoreIdea('A', '新想法')
     await settle()
-    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled() // 不自动落库（A7）
+    expect(stubApi.lineage.patchNode).not.toHaveBeenCalled() // 不自动落库（A7）
     expect(state().saveStatus).toBe('dirty')
     expect(state().nodes[0]?.coreIdea).toBe('新想法') // 乐观应用即时可见
     expect(state().queue).toHaveLength(1)
     expect(state().undoStack).toHaveLength(1) // 一单元=一撤销步
   })
 
-  it('新建类动作乐观生成 id：addPaperNode 本地节点立即在场（uuid=落库 id——无临时 id 漂移）', () => {
-    state().addPaperNode({ id: 'paper-N', title: '新文献', year: 2024 })
-    expect(state().nodes).toHaveLength(1)
-    const n = state().nodes[0]!
-    expect(n.paperId).toBe('paper-N')
-    expect(n.id).toBeTruthy()
-    expect(state().saveStatus).toBe('dirty')
-    // 画线类新建（linkNodes）：乐观边即时在场
+  it('[F-ALIGN-01 改写] 新建类动作乐观生成 id（画线）：linkNodes 乐观边即时在场（uuid=落库 id——无临时 id 漂移；原 addPaperNode 面随节点新建路径退役删——节点唯一来源=入库/移动两路）', () => {
     useLineageStore.setState({ nodes: [node('A'), node('B')] })
     state().linkNodes('A', 'B')
     expect(state().edges).toHaveLength(1)
     expect(state().edges[0]!.fromNode).toBe('A')
+    expect(state().saveStatus).toBe('dirty')
   })
 
   it('删节点乐观级联：本地边随亡（DDL CASCADE 的会话镜像）', () => {
@@ -137,7 +131,7 @@ describe('F-LGRAPH-01②U1 撤销/重做（快照制——每单元前图态全�
     expect(state().nodes[0]?.coreIdea).toBe('基线')
     expect(state().saveStatus).toBe('clean') // §2.2：undo 回到基线=clean
     expect(state().queue).toHaveLength(0)
-    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+    expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
   })
 
   it('redo 重放：undo 后 redo 恢复编辑值+dirty；新编辑即清 redo 栈', async () => {
@@ -172,7 +166,7 @@ describe('F-LGRAPH-01②U1 撤销/重做（快照制——每单元前图态全�
     state().save()
     await settle()
     expect(state().saveStatus).toBe('clean')
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1)
     expect(state().undoStack).toHaveLength(0)
     state().undo() // 栈空——no-op 不回保存前
     expect(state().nodes[0]?.coreIdea).toBe('甲')
@@ -195,7 +189,7 @@ describe('F-LGRAPH-01②U1 save() 批量落库（§2.2 saving 态+行内错误�
 
   it('save 失败=dirty 保持（队首保留）+error 指示+重试成功恢复 clean', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
-    stubApi.lineage.upsertNode
+    stubApi.lineage.patchNode
       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
       .mockResolvedValueOnce({ ok: true, data: { ...node('A'), updatedAt: 'server' } })
     state().editCoreIdea('A', '甲')
@@ -216,8 +210,8 @@ describe('F-LGRAPH-01②U1 save() 批量落库（§2.2 saving 态+行内错误�
     state().editCoreIdea('A', '二')
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'A', coreIdea: '二' })
     )
     expect(state().saveStatus).toBe('clean')
@@ -282,7 +276,7 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
   it('saving 态 undo/redo/编辑锁定（§2.2 工具组锁定）', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
     let resolveWrite!: (v: { ok: true; data: LineageNode }) => void
-    stubApi.lineage.upsertNode.mockImplementationOnce(
+    stubApi.lineage.patchNode.mockImplementationOnce(
       () => new Promise((r) => { resolveWrite = r })
     )
     state().editCoreIdea('A', '甲')
@@ -297,7 +291,7 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
   it('[回炉 R5] saving 中编辑不入栈不入队（INV-94 saving 闸——beginUnit 域 flushing 拒绝）', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
     let resolveWrite!: (v: { ok: true; data: LineageNode }) => void
-    stubApi.lineage.upsertNode.mockImplementationOnce(
+    stubApi.lineage.patchNode.mockImplementationOnce(
       () => new Promise((r) => { resolveWrite = r })
     )
     state().editCoreIdea('A', '甲')
@@ -319,7 +313,7 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
   it('[RRB4] flushing 中 setFolder no-op（store 级守卫——S4 回退径/同 tick 竞逐残余缝绝对化）', async () => {
     useLineageStore.setState({ nodes: [node('A')] })
     let resolveWrite!: (v: { ok: true; data: LineageNode }) => void
-    stubApi.lineage.upsertNode.mockImplementationOnce(
+    stubApi.lineage.patchNode.mockImplementationOnce(
       () => new Promise((r) => { resolveWrite = r })
     )
     state().editCoreIdea('A', '甲')

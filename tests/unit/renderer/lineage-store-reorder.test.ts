@@ -15,7 +15,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
@@ -53,8 +53,8 @@ const settle = async (turns = 8): Promise<void> => {
 
 const state = () => useLineageStore.getState()
 
-/** upsertNode 载荷形状（断言面最小投影） */
-interface UpsertPayload {
+/** [F-ALIGN-01] patchNode 载荷形状（断言面最小投影） */
+interface PatchPayload {
   id?: string
   slot?: number
   month?: number | null
@@ -64,13 +64,13 @@ interface UpsertPayload {
   tags?: string[]
 }
 
-/** 捕获 upsertNode 载荷序列（调用序即派发序——FIFO 面） */
-const payloads = (): UpsertPayload[] =>
-  (stubApi.lineage.upsertNode.mock.calls as unknown as [UpsertPayload][]).map((c) => c[0])
+/** 捕获 patchNode 载荷序列（调用序即派发序——FIFO 面） */
+const payloads = (): PatchPayload[] =>
+  (stubApi.lineage.patchNode.mock.calls as unknown as [PatchPayload][]).map((c) => c[0])
 
 /** 忠实回显 mock：读 store 现行行+载荷覆盖（含 slot 键缺省语义——缺省键不落） */
 const echoMock = (): void => {
-  stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) => {
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) => {
     const cur = useLineageStore.getState().nodes.find((n) => n.id === (req.id ?? '')) ?? node('X')
     return { ok: true, data: serverNode({ ...cur, ...req } as LineageNode) }
   })
@@ -104,7 +104,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     useLineageStore.setState({ nodes: [A, B, C] })
     state().reorderMonthSlots(['C', 'A', 'B'])
     expect(state().saveStatus).toBe('dirty') // 暂存期不派发（A7）
-    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+    expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
     state().save()
     await settle()
     const calls = payloads()
@@ -131,7 +131,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     const gate = new Promise<void>((r) => {
       release = r
     })
-    stubApi.lineage.upsertNode.mockImplementation(async (req: { id?: string }) => {
+    stubApi.lineage.patchNode.mockImplementation(async (req: { id?: string }) => {
       await gate
       return { ok: true, data: serverNode(useLineageStore.getState().nodes.find((n) => n.id === req.id) ?? A) }
     })
@@ -139,7 +139,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     state().save() // 首动作 flight（gate 悬挂）
     state().reorderMonthSlots(['B', 'A']) // saving 中编辑=拒绝（原排队语义随 R5 闸退役）
     await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(1) // 队首编辑在飞
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1) // 队首编辑在飞
     expect(state().queue).toHaveLength(1) // 零新入队（重排批被拒）
     release!()
     await settle()
@@ -153,7 +153,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     const A = node('A', { month: 9, slot: 0 })
     const B = node('B', { month: 9, slot: 1 })
     useLineageStore.setState({ nodes: [A, B] })
-    stubApi.lineage.upsertNode
+    stubApi.lineage.patchNode
       .mockRejectedValueOnce(new Error('写入失败'))
     state().reorderMonthSlots(['B', 'A'])
     state().save()
@@ -217,7 +217,7 @@ describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消�
   })
 })
 
-describe('[T3-P8 回炉] R3 —— upsert-node lazy 载荷（②U1 暂存期同实体融合——合成读最新行）', () => {
+describe('[T3-P8 回炉] R3 —— patch-node lazy 载荷（②U1 暂存期同实体融合——合成读最新行）', () => {
   it('跨格：改月→同节点 setNodeTags→save 单发终值 month=新月+tags 新值（暂存期融合，载荷合成读执行时点最新行）', async () => {
     const A = node('A', { year: 2022, month: 9, slot: 0 })
     useLineageStore.setState({ nodes: [A] })

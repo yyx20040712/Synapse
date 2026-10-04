@@ -12,7 +12,7 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { useLineageViewStore, type LineageViewMode } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -77,13 +77,6 @@ const setMode = (m: LineageViewMode): void => {
   })
 }
 
-/** 工具条 props 桩（Board 下传面；[F-BAKRET-01] 导入回调随导入链退役删） */
-const toolbarProps = () => ({
-  saveStatus: 'saved' as const,
-  lastWriteError: null,
-  onAddNode: vi.fn(),
-  onRetrySave: vi.fn()
-})
 
 beforeEach(() => {
   useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
@@ -104,7 +97,6 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
       <LineageTimeline
         nodes={[node('A', { year: 2022, month: 9 })]}
         edges={[]}
-        toolbar={toolbarProps()}
       />
     )
     const timeline = req('.timeline')
@@ -121,8 +113,9 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
     expect(q('[data-testid="lineage-edit-toggle"]')).toBeNull()
     setMode('edit')
     expect(timeline.classList.contains('editing')).toBe(true)
-    // edit=工具组全控件在场（A11 含添加节点）+新文案
-    expect(req('.lg-toolbar [data-testid="lineage-add-node"]')).not.toBeNull()
+    // edit=工具组全控件在场+新文案；[F-ALIGN-01] 添加节点钮随手动添加路径退役
+    // ——edit 态零残留负锚（在场即红）
+    expect(q('[data-testid="lineage-add-node"]')).toBeNull()
     for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
       expect(q(`[data-testid="${id}"]`)).not.toBeNull()
     }
@@ -135,7 +128,6 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
       <LineageTimeline
         nodes={[node('A', { year: 2022, month: 9 })]}
         edges={[]}
-        toolbar={toolbarProps()}
       />
     )
     setMode('edit')

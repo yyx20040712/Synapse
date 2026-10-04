@@ -84,12 +84,14 @@ export const API_SURFACE = {
   // lineage 域（LG-01 立域，ADR-0014）：全图读+写四通道（LG-03 交互编辑接线
   // ——树守卫宿主=service upsertEdge，IPC 零守卫透传）
   // [T3-P5] 6→7 通道：upsertLineTypes 图级线型整体替换（D-P5-4 弃双通道 CRUD）
-  // [F-FOLDER-01] graph 入参 +folderId（图切换器子图读——W4 改写面）；
-  // upsertNode 载荷 +folderId（节点 DTO/models 侧扩——本表仅随 Res schema 变）
+  // [F-FOLDER-01] graph 入参 +folderId（图切换器子图读——W4 改写面）
   // [F-BAKRET-01] 7→6 通道：lineage/import 草稿导入退役（用户裁决 2026-09-30）
+  // [F-ALIGN-01 D1] 旧节点写通道退役→patch-node（脉络手动建点路径
+  // 全退役——节点唯一来源=入库/移动两路 INV-NEW-1；载荷=既有节点编辑 patch，
+  // 新建形态契约面结构性不可表达——设计稿 docs/design/2026-10-04_f-align01-design.md §1 D1）
   lineage: {
     graph: { channel: 'lineage/graph', Req: S.lineageGraphReqSchema, Res: S.lineageGraphResSchema },
-    upsertNode: { channel: 'lineage/upsert-node', Req: S.lineageUpsertNodeReqSchema, Res: lineageNodeSchema },
+    patchNode: { channel: 'lineage/patch-node', Req: S.lineagePatchNodeReqSchema, Res: lineageNodeSchema },
     removeNode: { channel: 'lineage/remove-node', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },
     upsertEdge: { channel: 'lineage/upsert-edge', Req: S.lineageUpsertEdgeReqSchema, Res: lineageEdgeSchema },
     removeEdge: { channel: 'lineage/remove-edge', Req: S.lineageIdReqSchema, Res: S.trueAckSchema },

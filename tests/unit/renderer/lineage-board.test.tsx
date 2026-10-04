@@ -9,8 +9,9 @@
  * toast（service reason 透传——守卫宿主=LG-01 service）/改父=删+加两调用/
  * 删节点/删除父连线/core_idea 编辑（x/y 保留防清覆盖）/保存失败指示+重试
  * （[T3-P6] 写触发器=编辑 core_idea——drag 随拖拽退役，主控裁决 a）/
- * 加节点对话框两型（library.list 搜索选取 vs 主题 title）/组合根退出聚合
- * （lineage dirty→system/set-quit-dirty，INV-22 扩面）。
+ * 组合根退出聚合（lineage dirty→system/set-quit-dirty，INV-22 扩面）。
+ * [F-ALIGN-01] 加节点对话框两型 describe（library.list 搜索选取 vs 主题
+ * title）随手动添加节点路径退役删除（2026-10-04——节点唯一来源=入库/移动）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -22,7 +23,7 @@ import { seedLineage } from '../../utils/factories'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn()
@@ -116,7 +117,7 @@ function openMenu(id: string): void {
   })
 }
 
-/** [T3-P6 主控裁决 a] 写触发器=编辑 core_idea（既有 upsert-node 写通道——
+/** [T3-P6 主控裁决 a] 写触发器=编辑 core_idea（[F-ALIGN-01] patch-node 写通道——
  *  drag 触发器随拖拽退役，保存态/聚合脏态断言语义迁移保活） */
 async function writeViaEditIdea(id: string): Promise<void> {
   openMenu(id)
@@ -176,7 +177,7 @@ beforeEach(() => {
     value: { onWindowState: vi.fn(() => () => undefined) }
   })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] } })
-  stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
+  stubApi.lineage.patchNode.mockResolvedValue({ ok: true, data: node('X') })
   stubApi.lineage.removeNode.mockResolvedValue({ ok: true, data: { ok: true } })
   stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('ex', 'a', 'b') })
   stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
@@ -204,7 +205,7 @@ describe('LineageBoard —— 选中上抛（T3-P6 拖拽退役后）', () => {
     clickNode(nodeEl('A'))
     await flush()
     expect(onSelect).toHaveBeenCalledWith('A')
-    expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()
+    expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
   })
 })
 
@@ -296,7 +297,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
     })
     useLineageStore.getState().save() // [②U1]
     await flush()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'A', coreIdea: '新的核心想法', x: 500, y: 400 })
     )
   })
@@ -304,7 +305,7 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点/core
 
 describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内错误——退役行 4 chip）', () => {
   it('失败指示+重试：行内错误可见，重试点击重发；成功后指示消退', async () => {
-    stubApi.lineage.upsertNode
+    stubApi.lineage.patchNode
       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
     seedLineage([node('A', OVL)])
@@ -319,102 +320,11 @@ describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内
       retry.click()
     })
     await flush()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
+    expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(2)
     expect(q('[data-testid="lineage-save-error"]')).toBeNull() // clean 不占指示
   })
 })
 
-describe('LineageBoard —— 添加节点对话框（两型）', () => {
-  it('文献型：library.list 搜索选取→paperId 绑定+元数据默认', async () => {
-    useLineageViewStore.getState().setMode('edit') // [②U2/A11] 添加节点钮随工具组
-    stubApi.library.list.mockResolvedValue({
-      ok: true,
-      data: {
-        items: [
-          { id: 'paper-9', title: '扩散模型综述', year: 2021, authors: [] }
-        ],
-        total: 1
-      }
-    })
-    stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('N9', { paperId: 'paper-9' }) })
-    seedLineage([])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
-    })
-    const search = q('[data-testid="add-node-search"]') as HTMLInputElement | null
-    if (search === null) throw new Error('搜索框未渲染')
-    act(() => {
-      typeInto(search, '扩散')
-    })
-    await flush()
-    const item = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find((b) =>
-      b.textContent?.includes('扩散模型综述')
-    )
-    if (item === undefined) throw new Error('搜索结果条目未渲染')
-    act(() => {
-      item.click()
-    })
-    const confirm = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
-      (b) => b.textContent === '添加'
-    )
-    act(() => {
-      confirm?.click()
-    })
-    useLineageStore.getState().save() // [②U1]
-    await flush()
-    expect(stubApi.library.list).toHaveBeenCalledWith(expect.objectContaining({ search: '扩散' }))
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paperId: 'paper-9',
-        title: '扩散模型综述',
-        coreIdea: '',
-        year: 2021,
-        x: null,
-        y: null
-      })
-    ) // [②U1] uuid 随行
-  })
-
-  it('主题型：title 输入→paperId null 节点', async () => {
-    useLineageViewStore.getState().setMode('edit') // [②U2/A11]
-    stubApi.lineage.upsertNode.mockResolvedValue({
-      ok: true, data: node('T1', { paperId: null, title: '阶段二' })
-    })
-    seedLineage([])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      (q('[data-testid="lineage-add-node"]') as HTMLButtonElement).click()
-    })
-    act(() => {
-      (q('[data-testid="add-node-mode-theme"]') as HTMLButtonElement).click()
-    })
-    const title = q('[data-testid="add-node-title"]') as HTMLInputElement | null
-    if (title === null) throw new Error('主题 title 输入未渲染')
-    act(() => {
-      typeInto(title, '阶段二')
-    })
-    const confirm = [...(q('[role="dialog"]')?.querySelectorAll('button') ?? [])].find(
-      (b) => b.textContent === '添加'
-    )
-    act(() => {
-      confirm?.click()
-    })
-    useLineageStore.getState().save() // [②U1]
-    await flush()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paperId: null,
-        title: '阶段二',
-        coreIdea: '',
-        year: null,
-        x: null,
-        y: null,
-        folderId: '__main__' // [F-FOLDER-02·B] 主题节点=当前图（缺省主图——显式携键）
-      })
-    ) // [②U1] uuid 随行
-  })
-})
 
 describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）', () => {
   it('lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）', async () => {
@@ -423,7 +333,7 @@ describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lin
       ok: true,
       data: { nodes: [node('A', OVL)], edges: [] }
     })
-    stubApi.lineage.upsertNode.mockResolvedValue({
+    stubApi.lineage.patchNode.mockResolvedValue({
       ok: false,
       error: { code: 'DB_ERROR', message: '写入失败' }
     })

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 /**
  * [F-LGRAPH-01②U2] 工具组+线型列表锁定合约面——仅 edit 可见（browse/focus
- * 隐藏含添加节点钮 A11）/保存钮四态（dirty 亮·clean 灰禁·saving spinner·
+ * 隐藏）/保存钮四态（dirty 亮·clean 灰禁·saving spinner·
  * error 行内错误+重试——退役行 4 chip）/A12 线型图标交互/线型列表 6 色行+
  * 行内改名=编辑单元/撤销重做钮接会话栈（mockup §3.3+A11/A12 仲裁）。
+ * [F-ALIGN-01 2026-10-04] 添加节点钮随手动添加节点路径退役删除——控件清单
+ * 收窄+零残留负锚（在场即红）。
  * always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
@@ -14,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
-  lineage: { graph: vi.fn(), upsertNode: vi.fn(), removeNode: vi.fn(), upsertEdge: vi.fn(), removeEdge: vi.fn(), upsertLineTypes: vi.fn() }
+  lineage: { graph: vi.fn(), patchNode: vi.fn(), removeNode: vi.fn(), upsertEdge: vi.fn(), removeEdge: vi.fn(), upsertLineTypes: vi.fn() }
 })
 
 import type { LineageNode } from '../../../src/shared/models/lineage'
@@ -65,7 +67,7 @@ function mountToolbar(): void {
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
-    root?.render(<LineageToolbar mode="edit" onAddNode={() => undefined} />)
+    root?.render(<LineageToolbar mode="edit" />)
   })
 }
 
@@ -107,17 +109,18 @@ afterEach(() => {
 })
 
 describe('F-LGRAPH-01②U2 工具组形态（仅 edit 可见——A11）', () => {
-  it('edit 模式：全控件在场（保存/添加节点/选择/实线/虚线/撤销/重做）', () => {
+  it('edit 模式：全控件在场（保存/选择/实线/虚线/撤销/重做）+添加节点钮零残留负锚（[F-ALIGN-01]）', () => {
     mountToolbar()
-    for (const id of ['lineage-save-btn', 'lineage-add-node', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
+    for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
       expect(q(`[data-testid="${id}"]`)).not.toBeNull()
     }
+    expect(q('[data-testid="lineage-add-node"]')).toBeNull()
   })
 
-  it('browse/focus 模式：工具组隐藏（含添加节点钮 A11）+drag-hint 在场', () => {
+  it('browse/focus 模式：工具组隐藏+drag-hint 在场', () => {
     for (const mode of ['browse', 'focus'] as const) {
-      mountEl(<LineageToolbar mode={mode} onAddNode={() => undefined} />)
-      for (const id of ['lineage-save-btn', 'lineage-add-node', 'lineage-tool-select', 'lineage-undo']) {
+      mountEl(<LineageToolbar mode={mode} />)
+      for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-undo']) {
         expect(q(`[data-testid="${id}"]`)).toBeNull()
       }
       expect(q('[data-testid="drag-hint"]')).not.toBeNull()
@@ -160,7 +163,7 @@ describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零�
     const snap = { nodes: [node('A')], edges: [], lineTypeNames: [], queue: [] }
     setState({ saveStatus: 'saving', flushing: true, undoStack: [snap], redoStack: [snap] })
     expect(q('.spinner')).not.toBeNull() // spinner 在场
-    for (const id of ['lineage-add-node', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
+    for (const id of ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
       expect(btn(id).disabled, `${String(id)} 应禁用`).toBe(true)
     }
     expect(btn('lineage-save-btn').disabled).toBe(true) // saving 保存钮禁用

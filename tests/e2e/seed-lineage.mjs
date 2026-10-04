@@ -4,7 +4,8 @@
  * 原生模块文件锁，数据经环境变量传入不经 shell，SQL 一律 prepare 预编译+
  * 参数绑定）。
  * 载荷（SEED_LINEAGE_JSON）：{ folders?: [{id,name,position?}], nodes:
- * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?,libraryTags?}],
+ * [{paperId,title,year,month?,slot?,coreIdea?,folderId?,tags?,libraryTags?}]
+ * （[F-ALIGN-01] paperId 必填非空——主题节点形态退役，null 即 fail-fast），
  * edges: [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按
  * paper_id 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * [A1a] libraryTags=文献库标签种子（tags+paper_tags 两行挂接该节点 paperId
@@ -67,6 +68,12 @@ try {
     'INSERT OR IGNORE INTO paper_tags (paper_id, tag_id) VALUES (?, ?)'
   )
   for (const n of payload.nodes ?? []) {
+    // [F-ALIGN-01 D2] 主题节点兼容面退役（原 null paperId 静默落库行为废止）：
+    // 种子载荷仅文献节点（INV-NEW-1——节点唯一来源=入库/移动
+    // 两路，应用层已无主题产生路径），null/缺 paperId 即报错优于静默落库
+    if (typeof n.paperId !== 'string' || n.paperId.length === 0) {
+      throw new Error('seed-lineage: 主题节点（paperId null）已退役——种子载荷仅文献节点（INV-NEW-1）')
+    }
     const folderId = n.folderId ?? '__main__'
     const month = n.month ?? null
     const key = groupKey(folderId, n.year ?? null, month)

@@ -8,13 +8,15 @@ import { createTinyPdf } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 
 /**
- * [F-FOLDER-02·F/S4/G④] lineage-topic-node e2e —— 图绑定三面：
- * ①主题节点 folderId=当前图（design §5 矩阵「主题节点」行——store.addThemeNode
- * 显式携键）；②S4 删除当前图→脉络页回退主图+「该文件夹无脉络图」空态；
- * ③G④ 存量幽灵边（跨图边）→graph 子图过滤+导出 lineage.json 零跨图边
- * （C2 主控终裁 2026-09-30——[F-BAKRET-01] 导入链退役后：幽灵边改由
- * seedLineageGraph 直写库模拟存量数据（产品路径 INV-90 已不可产生），
- * 导出面 INV-77 过滤兜底锚保活；git 历史导入面根治锚=548dfda~95d40c2）。
+ * [F-FOLDER-02·F/S4/G④] lineage-topic-node e2e —— 图绑定三面（历史名沿承）：
+ * ②S4 删除当前图→脉络页回退主图+「该文件夹无脉络图」空态；③G④ 存量幽灵边
+ * （跨图边）→graph 子图过滤+导出 lineage.json 零跨图边（C2 主控终裁
+ * 2026-09-30——[F-BAKRET-01] 导入链退役后：幽灵边改由 seedLineageGraph 直写
+ * 库模拟存量数据（产品路径 INV-90 已不可产生），导出面 INV-77 过滤兜底锚
+ * 保活；git 历史导入面根治锚=548dfda~95d40c2）。
+ * [F-ALIGN-01 2026-10-04] ①主题节点图域隔离用例随主题节点应用层退役删除
+ * （节点唯一来源=入库/移动两路 INV-NEW-1——主题形态不可产生即不可断言）；
+ * ②装置改种子直写（原主题节点 UI 添加=退役面——图非空锚改 paper 节点种子）。
  * 断言锚真实渲染文本。测试 1/2 零真实文献场景需壳层种子破引导态（INV-87——
  * default 课题+0 篇 rail 全禁用；幽灵行不入图=图断言不受扰）。
  */
@@ -22,87 +24,27 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 const nodeCard = (win: Page, title: string) =>
   win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 
-test('主题节点 folderId=当前图：F 图添加→主图不可见→图域隔离（reload 持久）', async () => {
-  const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-topic-'))
-  await bootstrapMigrations(userData)
-  await seedPaperRow(userData, 'a.pdf', 'sha-topic-guide', '主题种子文献', 'e2e-topic-guide')
-  const app = await launch(userData)
-  const win = await app.firstWindow()
-  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-
-  // 建文件夹「主题图」（真实通道）
-  const fid = await win.evaluate(async () => {
-    const r = await window.api.folders.create({ name: '主题图' })
-    return r.ok ? r.data.id : ''
-  })
-  expect(fid).not.toBe('')
-
-  // 切到主题图→添加主题节点（工具条→主题型→添加）——[F-LGRAPH-01①] 图切换
-  // 经导航窗格下拉（role=listbox option；并集切换器 select 退役）
-  await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await win.getByTestId('lineage-nav-graph').click()
-  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主题图' }).click()
-  // [②U2/A11] 添加节点钮随工具组（edit 态）
-  await win.getByTestId('lineage-mode-edit').click()
-  await win.getByTestId('lineage-add-node').click()
-  await win.getByTestId('add-node-mode-theme').click()
-  await win.getByLabel('主题名称（阶段分组）').fill('阶段一分组')
-  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
-  await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
-  // [②U1] 会话语义：编辑入暂存→点工具组保存钮批量落库（后续切图/reload 真
-  // 持久；dirty 切图走确认分支前先落库=数据面确立）
-  await win.getByTestId('lineage-save-btn').click()
-  await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
-  // [回炉 R23] 保存后断言补：clean 回落锁定（保存钮回禁用+spinner 消退）
-  await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
-
-  // 图域隔离：主图视角不可见（folderId=当前图——非主图落地）+空图提示在场
-  await win.getByTestId('lineage-nav-graph').click()
-  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主图' }).click()
-  await expect(nodeCard(win, '阶段一分组')).toHaveCount(0)
-  // [F-LGRAPH-01①] 主图空图=画布内通用空态（「该文件夹无脉络图」仅子图）
-  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
-
-  // reload 持久（真写盘非乐观渲染）：缺省图回主图（folderScope 未选）仍不可见
-  await win.reload()
-  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-  await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(nodeCard(win, '阶段一分组')).toHaveCount(0)
-  // 切回主题图=节点在场（写盘真持久）
-  await win.getByTestId('lineage-nav-graph').click()
-  await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '主题图' }).click()
-  await expect(nodeCard(win, '阶段一分组')).toBeVisible({ timeout: 10_000 })
-
-  await app.close()
-})
-
 test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主图+空态文案', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-s4-'))
   await bootstrapMigrations(userData)
-  await seedPaperRow(userData, 'a.pdf', 'sha-s4-guide', 'S4 种子文献', 'e2e-s4-guide')
+  await seedPaperRow(userData, 'a.pdf', 'sha-s4-guide', 'S4 种子文献', 'e2e-s4-guide', { year: 2024 })
+  // [F-ALIGN-01 改写] 图非空锚=种子直写（文件夹行+paper 节点——原主题节点
+  // UI 添加面退役；paper 随种子归夹=INV-88 镜像语义）
+  await seedLineageGraph(userData, {
+    folders: [{ id: 'f-s4', name: '即将删除的图', position: 1 }],
+    nodes: [{ paperId: 'e2e-s4-guide', title: 'S4 种子文献', year: 2024, coreIdea: '', folderId: 'f-s4' }]
+  })
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-  // 建文件夹 F 并在其中建图（主题节点=图非空锚）
-  await win.getByRole('button', { name: '新建文件夹', exact: true }).click()
-  await win.getByLabel('新文件夹名').fill('即将删除的图')
-  await win.getByLabel('新文件夹名').press('Enter')
+  // 切到该图（[F-LGRAPH-01①] 图切换经导航窗格下拉——role=listbox option）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '即将删除的图' }).click()
-  // [②U2/A11] 添加节点钮随工具组（edit 态）
-  await win.getByTestId('lineage-mode-edit').click()
-  await win.getByTestId('lineage-add-node').click()
-  await win.getByTestId('add-node-mode-theme').click()
-  await win.getByLabel('主题名称（阶段分组）').fill('将随图删除的节点')
-  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
-  await expect(nodeCard(win, '将随图删除的节点')).toBeVisible({ timeout: 10_000 })
-  // [②U1] 会话语义：点保存落库（图非空锚=真写盘；后续删图级联有对象）
-  await win.getByTestId('lineage-save-btn').click()
-  await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
+  await expect(nodeCard(win, 'S4 种子文献')).toBeVisible({ timeout: 10_000 })
 
-  // 库页删除该文件夹（确认弹窗执行）
+  // 库页删除该文件夹（确认弹窗执行——图有资产〔1 节点 1 文献〕走弹窗路径）
   await win.getByRole('button', { name: '文献库' }).click()
   await win.locator('.lib-fn-row').filter({ hasText: '即将删除的图' }).click({ button: 'right' })
   await win.getByTestId('folder-menu').getByRole('menuitem', { name: '删除文件夹' }).click()
@@ -113,8 +55,10 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图', { timeout: 10_000 })
   await expect(win.getByText('该文件夹无脉络图')).toHaveCount(0)
-  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
-  await expect(nodeCard(win, '将随图删除的节点')).toHaveCount(0)
+  // [RR3/d1-ΔW1] exact 匹配：子串形态对旧文案「——添加节点」后缀同样命中
+  // （文案修复无回归锁）——精确锁当前文案
+  await expect(win.getByText('暂无脉络图', { exact: true })).toBeVisible({ timeout: 10_000 })
+  await expect(nodeCard(win, 'S4 种子文献')).toHaveCount(0)
 
   await app.close()
 })

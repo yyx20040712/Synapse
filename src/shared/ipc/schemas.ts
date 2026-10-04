@@ -14,7 +14,6 @@ import {
   lineageNodeSchema,
   lineageEdgeSchema,
   lineTypeNamesSchema,
-  lineageNodeUpsertSchema,
   lineageEdgeUpsertSchema
 } from '../models/lineage'
 
@@ -320,26 +319,38 @@ export const lineageGraphResSchema = z
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>
 
-// ── lineage 写四通道（LG-03 交互编辑：autosave-first，每编辑动作即写）────
-/** lineage/upsert-node 请求：应用面 camelCase 输入（模型单源派生语义——id 缺省=新建；
- *  paperId 省略/null=主题节点；x/y 省略/null=自动布局（JSON Canvas 覆盖语义的反向清空）；
- *  消费方须知=整行 upsert：编辑部分字段须带全量（store 语义化动作收口，防半更新清字段）；
- *  tags 省略/null=清空标签（F-LG14——整行全量语义同款反向清空）；
- *  [T3-P5] month 省略/null=清月（全量语义同款）；slot 省略=service 归一
- *  （D-I-1：新建组 max+1/同组更新保留/跨组落组末），显式提供（含 null）透写。
- *  [F-LGCLN-01] folderId=仅主题节点新建落图值（当前图——幽灵值 service 拒）；
- *  更新场景与文献节点忽略/拒绝（文献≠归属仍 CONFLICT——INV-88；显式跨图
- *  移动语义退役——用户裁决 2026-09-30）。
- *  [F-CONSOL-02] 本 schema=models lineageNodeUpsertSchema 派生；差异字段仅
- *  （node：paperId/x/y 可整体省略——ipc 宽面）——规则单源 models */
-export const lineageUpsertNodeReqSchema = lineageNodeUpsertSchema
-  .extend({
-    paperId: z.string().min(1).nullable().optional(),
+// ── lineage 写四通道（LG-03 交互编辑：编辑会话暂存+点保存批量落库）────
+/** [F-ALIGN-01] lineage/patch-node 请求（D1 通道拆分——2026-10-04 对齐批单元一）：
+ *  旧节点写通道（upsert 整行形态）随脉络手动建点路径全退役删除（节点唯一来源=入库/移动
+ *  两路——INV-NEW-1；新建形态在本 schema 结构性不可表达：id 必填+白名单外
+ *  字段 strict 拒）。载荷=既有节点编辑 patch（合并语义：未携带字段保留——
+ *  service 层 {...existing, ...patch} 合并落笔，非整行替换）；month/slot
+ *  归一沿承 D-I-1（patch 触发组变=目标组 max+1，显式 slot 主权透写）。
+ *  白名单=x/y/year/month/slot/title/tags/coreIdea 八编辑字段——tags/coreIdea
+ *  =A1b/A3 退役遗留面（写队列 tags/coreIdea patch 路径随各单元删）。
+ *  folderId/paperId/created/updated 不可 patch（id=定位键；folderId=移动
+ *  语义归 papers/move-folder；paperId=身份）。x/y/month/tags null=清除语义
+ *  （自动布局/未定月框/清空标签）；coreIdea 不可空（DDL NOT NULL DEFAULT ''
+ *  +lineageNodeSchema 单源——空串承载清面，null 无落点）。
+ *  [RR1/d1-N2] 值域单源注记：本 schema 为非派生链——patch 白名单窄化重写
+ *  （id 必填+strict 需独立形状，不能自 lineageNodeUpsertSchema omit/
+ *  extend 派生），year/month/slot 的 int/min/max 与 models/lineage 节点
+ *  schema 人工对齐——漂移风险由 schemas.test 值域负锚锚定（month 13/slot
+ *  -1 拒等在档）。 */
+export const lineagePatchNodeReqSchema = z
+  .object({
+    id: z.string().min(1),
     x: z.number().nullable().optional(),
-    y: z.number().nullable().optional()
+    y: z.number().nullable().optional(),
+    year: z.number().int().nullable().optional(),
+    month: z.number().int().min(1).max(12).nullable().optional(),
+    slot: z.number().int().min(0).nullable().optional(),
+    title: z.string().optional(),
+    tags: z.array(z.string()).nullable().optional(),
+    coreIdea: z.string().optional()
   })
   .strict()
-export type LineageUpsertNodeReq = z.infer<typeof lineageUpsertNodeReqSchema>
+export type LineagePatchNodeReq = z.infer<typeof lineagePatchNodeReqSchema>
 
 /** remove-node/remove-edge 共用形（tags attach/detach 复用同 schema 先例） */
 export const lineageIdReqSchema = z.object({ id: z.string().min(1) }).strict()

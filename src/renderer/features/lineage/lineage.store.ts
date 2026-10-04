@@ -16,7 +16,8 @@
  * 会话态机单源=lineage-write-queue.ts 头注（saveStatus/queue/undoStack/flush）。
  *
  * ── [F-LGRAPH-01②U1] 编辑会话域（A7：脉络页一切写动作统一入暂存）──
- * 节点增删改/改月/调序/标签/画线/删线/命名/线形/改父→beginUnit（单元前
+ * 节点删/改（[F-ALIGN-01] 增随手动建点路径退役）/改月/调序/标签/画线/删线/
+ * 命名/线形/改父→beginUnit（单元前
  * 快照入 undo 栈+redo 清）→乐观应用+入队（不发 IPC）；save()=批量落库
  * （成功 clean+栈基线重置）；undo/redo=快照栈；discardSession=dirty 切图
  * 确认分支弃暂存。拖放类单元（调线/拖拽）由轮 2 接入 beginUnit。
@@ -34,7 +35,12 @@ import { createWriteQueue } from './lineage-write-queue'
 import { useLineageViewStore } from './lineage-view.store'
 import type { LineageSaveStatus, SessionSnapshot, WriteAction } from './lineage-write-queue'
 
-export type { LineageSaveStatus, LazyNodeUpsert, SessionSnapshot } from './lineage-write-queue'
+export type {
+  LineageSaveStatus,
+  LazyNodePatch,
+  LineageNodePatchBody,
+  SessionSnapshot
+} from './lineage-write-queue'
 
 export type LineageStatus = 'loading' | 'ready' | 'error'
 
@@ -53,12 +59,12 @@ export interface LineageStore {
   status: LineageStatus
   error: string | null
   /** [F-LGRAPH-01①U4] 当前图作用域：**恒有值**（并集退役——每图只显示自身，
-   *  主图 __main__ 兜底不可删）；消费面=load 载荷（恒显式 folderId）+主题节点
-   *  当前图（addThemeNode）+导航窗格图/文件夹下拉。IPC/main 侧 folderId 可选性
-   *  保留（历史兼容，不收紧 schema）。缺省图=库页文件夹上下文同步（接缝
-   *  双向锚定：本头注+library.store 头注——LineagePage 挂载时读
-   *  library.store query.folderScope：kind='folder' 用其 folderId，否则主图；
-   *  [②U1] 会话 dirty 时挂载同步跳过=暂存图保留，申报） */
+   *  主图 __main__ 兜底不可删）；消费面=load 载荷（恒显式 folderId）+导航窗格
+   *  图/文件夹下拉。[F-ALIGN-01] 主题节点当前图消费面随主题建点动作退役
+   *  删除。IPC/main 侧 folderId 可选性保留（历史兼容，不收紧 schema）。缺省图
+   *  =库页文件夹上下文同步（接缝双向锚定：本头注+library.store 头注
+   *  ——LineagePage 挂载时读 library.store query.folderScope：kind='folder'
+   *  用其 folderId，否则主图；[②U1] 会话 dirty 时挂载同步跳过=暂存图保留，申报） */
   folderId: string
   /** [F-LGRAPH-01②U1] 会话保存态四态（clean=库一致基线/dirty=暂存未落库/
    *  saving=批量落库中/error=保存失败——≠clean 即脏：退出拦截聚合输入） */
@@ -77,11 +83,9 @@ export interface LineageStore {
    *  dirty 切图两分支（确认=discardSession 后切/取消=留守）在 NavGraphPicker
    *  编排层承载 */
   setFolder(folderId: string): void
-  /** 加节点两型：文献型（paperId 绑定+元数据默认）/主题型（阶段分组） */
-  addPaperNode(paper: { id: string; title: string; year: number | null }): void
-  addThemeNode(title: string): void
   /** 拖拽落点→x/y 覆盖（全字段载荷收口防半更新清字段；x/y 数据面未退役+直测
-   *  =非孤儿，主控裁决 e 保留） */
+   *  =非孤儿，主控裁决 e 保留）。[F-ALIGN-01] 加节点两型 store 动作随手动
+   *  建点路径退役删除——节点唯一来源=入库/移动两路（INV-NEW-1） */
   moveNode(id: string, x: number, y: number): void
   /** [T3-P8] 月组槽位全序重排：按传入序 slot=0..n-1 逐节点透写排队（settle
    *  落定后调用；[②U1] 整组=一编辑单元——一次 undo 整组回退） */
@@ -259,36 +263,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       void get().load()
     },
 
-    addPaperNode(paper) {
-      if (!beginUnit()) return
-      wq.enqueue({
-        kind: 'upsert-node',
-        input: { paperId: paper.id, title: paper.title, coreIdea: '', year: paper.year, x: null, y: null }
-      })
-    },
-
-    addThemeNode(title) {
-      // 主题节点 folderId=当前图（[F-LGRAPH-01①U4] folderId 恒有值——主图
-      // 兜底；文献节点不走此路：INV-88 folder=文献归属）
-      if (!beginUnit()) return
-      wq.enqueue({
-        kind: 'upsert-node',
-        input: {
-          paperId: null,
-          title,
-          coreIdea: '',
-          year: null,
-          x: null,
-          y: null,
-          folderId: get().folderId
-        }
-      })
-    },
-
     moveNode(id, x, y) {
       mustNode(get().nodes, id)
       if (!beginUnit()) return
-      wq.enqueue({ kind: 'upsert-node', id, patch: { x, y } })
+      wq.enqueue({ kind: 'patch-node', id, patch: { x, y } })
     },
 
     reorderMonthSlots(nodeIds) {
@@ -297,7 +275,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       if (!beginUnit()) return
       nodeIds.forEach((id, slot) => {
         mustNode(get().nodes, id)
-        wq.enqueue({ kind: 'upsert-node', id, patch: {}, override: { slot } })
+        wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { slot } })
       })
     },
 
@@ -305,20 +283,23 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       mustNode(get().nodes, id)
       // override={year,month}：合成时 slot 键缺省（服务端组变 max+1——D-I-1）
       if (!beginUnit()) return
-      wq.enqueue({ kind: 'upsert-node', id, patch: {}, override: { year, month } })
+      wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { year, month } })
     },
 
     editCoreIdea(id, coreIdea) {
       mustNode(get().nodes, id)
       if (!beginUnit()) return
-      wq.enqueue({ kind: 'upsert-node', id, patch: { coreIdea } })
+      wq.enqueue({ kind: 'patch-node', id, patch: { coreIdea } })
     },
 
     setNodeTags(id, tags) {
       mustNode(get().nodes, id)
-      // 空组=patch 无 tags 键（合成缺省→null 语义，「清空标签」一致）
+      // [RR3/d1-ΔN2 措辞精确化] 空组=patch 本身无 tags 键；清空由
+      // fullPatchBody 全量件恒携 tags:null 承载（服务端合并收 null=清空
+      // ——patch 面缺键不再承载清空语义）。
+      // tags 面=A1b 退役面，本句随 A1b 消亡
       if (!beginUnit()) return
-      wq.enqueue({ kind: 'upsert-node', id, patch: tags.length > 0 ? { tags } : {} })
+      wq.enqueue({ kind: 'patch-node', id, patch: tags.length > 0 ? { tags } : {} })
     },
 
     linkNodes(from, to, label = '') {

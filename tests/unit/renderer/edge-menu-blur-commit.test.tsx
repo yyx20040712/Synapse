@@ -69,7 +69,6 @@ function renderMenu(): void {
         onReset={() => undefined}
         onDelete={() => undefined}
         onDeleteVertex={() => undefined}
-        onAddNode={() => undefined}
         onClose={close}
       />
     )

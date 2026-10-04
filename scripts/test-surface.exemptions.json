@@ -2922,6 +2922,78 @@
       "assertionText": "expect(css).toMatch(/\\.lib-c-tags\\s*\\{[^}]*width:\\s*180px;[^}]*flex:\\s*none/)",
       "reason": "B案 runId=20261003-libfix1 主控裁决 A（条件1/5）：表头 .lib-c-tags 旧锚「width:180px+flex:none 定宽形态」随窄窗塌 0 修复退役——INV-73 表头行同源收缩新契约为 flex: 0 1 180px+min-width: 0（回填定宽形态新锚红证在案）。设计值变更→锁同步，非放宽断言",
       "rulingLink": "主控批内裁决 A·B案 runId=20261003-libfix1（2026-10-03 批内消息）——executor 回执自裁申报段+批次收口档承载"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "lineageUpsertNodeReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：upsert-node 通道删除→lineagePatchNodeReqSchema 夹具/负锚用例整体替换（新增 [F-ALIGN-01] lineagePatchNodeReq 专项用例承接——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区））",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "assertionText": "expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：节点写通道换名 upsert-node→patch-node，断言面随 mock 键同步改名（语义零变——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区））",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "core_idea 编辑保存：textarea 改值→upsert 载荷含新想法且 x/y 保留（防清覆盖）",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：断言面随通道换名（upsertNode→patchNode mock 键+载荷去 paperId/folderId），标题含旧通道语义——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "文献型：library.list 搜索选取→paperId 绑定+元数据默认",
+      "reason": "F-ALIGN-01 D1/D2：添加节点对话框两型 describe 随手动添加节点路径退役删除（节点唯一来源=入库/移动两路 INV-NEW-1——设计稿 final §1 D1/对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区））",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "assertionText": "expect(stubApi.lineage.upsertNode).not.toHaveBeenCalled()",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：节点写通道换名，零写断言随 mock 键同步改名（tags 字段逻辑=A1b 禁动面零触碰——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区））",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-tag-edit.test.tsx",
+      "caseTitle": "空标签名不派发（按钮禁用或提交短路——空串标签不入库）",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：断言面随通道换名（upsertNode→patchNode mock 键），标题不变断言签名变——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-import.test.ts",
+      "caseTitle": "upsertNode 幽灵 paperId 拒绝（中文）；removeNode/removeEdge 透传",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：service.upsertNode 随通道退役删除，幽灵 paperId 拒（新建分支守卫）面消亡；透传断言保留改 repo 装置承载——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "主题节点（paperId null）不入 paperMetrics；空图=空表合法态",
+      "reason": "F-ALIGN-01 D2：主题节点用例族删（应用层无产生路径）；空图合法态半边改写保留——设计稿 final §1 D2/对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "新建：slot 缺省=目标 (year,month) 组 max+1；month 缺省=null",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：service 新建分支随通道退役删除；新建归一分支（import/moveFolder repo 直调在役）改 normalizeMonthSlot 纯函数直测承载——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "更新且组不变：保留原 slot（缺省不重排）；month 缺省=null=跨组（全量语义）落组末",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：主题更新族（paperId null update 形态）随主题节点退役删；同组保留/组变归一语义由 patchNode describe 承接——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "更新且 month 变更=新组 max+1（原组余位不挤占）；year 变更同组语义",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：主题跨月族随主题节点退役删；month 变更触发归一语义由 patchNode 用例承接——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
+    },
+    {
+      "file": "tests/unit/services/lineage-v2-service.test.ts",
+      "caseTitle": "slot 显式透写：提供值原样落库（含 null 清面）",
+      "reason": "F-ALIGN-01 D1 通道拆分（设计稿 final §1 D1+§3 单元一）：service upsert 形态退役；显式 slot 透写（同组主权/reorder 路径）由 patchNode 用例承接（跨组归一=W3 撞值防护语义沿承）——对齐批单元一工单（scripts-audits/2026-10-04_align-u1-brief.md，仓外档案区）",
+      "rulingLink": "docs/design/2026-10-04_f-align01-design.md#3"
     }
   ]
 }

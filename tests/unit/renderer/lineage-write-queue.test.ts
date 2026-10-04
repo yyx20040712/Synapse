@@ -3,7 +3,8 @@
  * [F-LGRAPH-01②U1] lineage-write-queue —— 编辑会话暂存机制行为锁（语义翻
  * 转：enqueue 即 flush→暂存+save 批量落库——mockup §2.2/A7）。
  * 本件锁拆件自足性（createWriteQueue 独立实例可运行）+lazy 融合字段级合并
- * 面（不同字段 patch 共存单发）+新建节点不合并面+flush 串行 FIFO。
+ * 面（不同字段 patch 共存单发）+flush 串行 FIFO。[F-ALIGN-01] 新建节点不
+ * 合并面随节点新建路径退役删除（节点动作恒=patch——id 型恒可判等合并）。
  * always-active（不经 guardedDescribe——K3 威胁结构性缺位）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,7 +13,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
-    upsertNode: vi.fn(),
+    patchNode: vi.fn(),
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
@@ -53,7 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-  stubApi.lineage.upsertNode.mockResolvedValue({ ok: true, data: node('X') })
+  stubApi.lineage.patchNode.mockResolvedValue({ ok: true, data: node('X') })
   stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
   useLineageStore.setState({
     nodes: [],
@@ -107,7 +108,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
   it('lazy 融合字段级合并：同节点不同字段 patch（coreIdea×x/y）融合后单发共存（save 时合成读最新行）', async () => {
     const A = node('A', { coreIdea: '旧' })
     useLineageStore.setState({ nodes: [A] })
-    stubApi.lineage.upsertNode.mockImplementation(async (req: Partial<LineageNode>) =>
+    stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
       ({ ok: true, data: { ...A, ...req } as LineageNode })
     )
     state().editCoreIdea('A', '想法') // 入队（lazy：patch={coreIdea}）
@@ -116,7 +117,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     state().save()
     await settle()
     // 融合单发：两字段共存（拆散即两次派发或字段互吞即红）
-    const calls = stubApi.lineage.upsertNode.mock.calls as unknown as Array<[Partial<LineageNode>]>
+    const calls = stubApi.lineage.patchNode.mock.calls as unknown as Array<[Partial<LineageNode>]>
     expect(calls.length).toBe(1)
     expect(calls[0]![0]).toMatchObject({ id: 'A', coreIdea: '想法', x: 3, y: 4 })
     expect(state().saveStatus).toBe('clean')
@@ -135,18 +136,4 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     await settle()
   })
 
-  it('新建节点不合并：两条 addPaperNode（input 无 id）各自独立派发', async () => {
-    stubApi.lineage.upsertNode.mockImplementation(async (req: { paperId?: string; id?: string }) =>
-      // 回显同 id（本地 uuid=落库 id——A7 乐观一致性；mock 半行追加即红）
-      ({ ok: true, data: node(req.id ?? 'X', req.paperId !== undefined ? { paperId: req.paperId } : {}) })
-    )
-    state().addPaperNode({ id: 'paper-1', title: '甲', year: 2020 })
-    state().addPaperNode({ id: 'paper-2', title: '乙', year: 2021 })
-    expect(state().queue.length).toBe(2) // sameTarget id 缺席=不融合（误合即 1 即红）
-    expect(state().nodes.length).toBe(2) // 乐观应用即时在场
-    state().save()
-    await settle()
-    expect(stubApi.lineage.upsertNode).toHaveBeenCalledTimes(2)
-    expect(state().nodes.length).toBe(2)
-  })
 })

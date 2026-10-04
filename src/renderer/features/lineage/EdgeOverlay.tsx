@@ -42,8 +42,6 @@ export function EdgeOverlay(props: {
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
   /** [F-LGRAPH-01②U5] 调线编辑态使能（edit 模式+select 工具——宿主注入） */
   editEnabled?: boolean
-  /** [②U5] 画布空白菜单「添加节点…」（宿主注入——A11 建卡入口） */
-  onAddNode?: () => void
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [paths, setPaths] = useState<RoutedPath[]>([])
@@ -203,29 +201,15 @@ export function EdgeOverlay(props: {
       onHoverChange={handleHoverChange}
       hoverScan={focused}
     />
-    {/* [②U5] 画布空白菜单（右键空白=无对象高亮——mockup §3.6） */}
-    {props.editEnabled === true && (
-      <div
-        style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-        data-testid="edge-canvas-ctx"
-        onContextMenu={(ev) => {
-          const t = ev.target
-          if (t instanceof Element && (t.closest('.tl-edge-hit') !== null || t.closest('.edge-handle') !== null || t.closest('.tl-card') !== null)) return
-          ev.preventDefault()
-          if (props.editEnabled === true) {
-            edit.openCanvasMenu(ev.clientX, ev.clientY)
-          }
-        }}
-      />
-    )}
-    {/* [②U5] 调线菜单宿主（线/顶点/画布三态——动作收口拆件 EdgeMenuHost）；
-        [RR1] canvas 态免 selEdge（原 selEdge!==null 恒闸=idle 态画布菜单死路） */}
-    {edit.menu !== null && (edit.menu.kind === 'canvas' || selEdge !== null) && (
+    {/* [F-ALIGN-01] 画布空白菜单随「建点入口…」唯一菜单项退役删除（组空
+        =菜单项区一并处置，禁留空壳组；线/顶点两态菜单不动） */}
+    {/* [②U5] 调线菜单宿主（线/顶点两态——动作收口拆件 EdgeMenuHost）；
+        [RR1] 顶点/线身态动作经 null 守卫 */}
+    {edit.menu !== null && selEdge !== null && (
       <EdgeMenuHost
         target={edit.menu}
         selEdge={selEdge}
         handlesPl={edit.handlesPl}
-        onAddNode={() => props.onAddNode?.()}
         onClose={edit.closeMenu}
       />
     )}

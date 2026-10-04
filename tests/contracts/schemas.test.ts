@@ -170,10 +170,13 @@ const VALID: Record<string, unknown[]> = {
       tagNames: { p1: ['方法', '流域'] } // [A1a] 文献库标签名组表（键=paperId，值=名序）
     }
   ],
-  lineageUpsertNodeReqSchema: [
-    { title: '新节点', coreIdea: '', year: null },
-    { id: 'ln1', paperId: 'p1', title: 't', coreIdea: '', year: 2020, x: 1, y: 2, tags: ['a'] },
-    { title: '带月', coreIdea: '', year: 2020, month: 6, slot: 1 }
+  // [F-ALIGN-01] upsert-node 通道退役（新建形态结构性不可表达）——patch-node
+  // 白名单=id+八编辑字段（tags/coreIdea=A1b/A3 退役遗留面，随各单元删）
+  lineagePatchNodeReqSchema: [
+    { id: 'ln1' },
+    { id: 'ln1', x: 1, y: 2 },
+    { id: 'ln1', title: 't', coreIdea: '', year: 2020, month: 6, slot: 1, tags: ['a'] },
+    { id: 'ln1', month: null }
   ],
   lineageIdReqSchema: [{ id: 'ln1' }],
   lineageUpsertEdgeReqSchema: [
@@ -255,9 +258,9 @@ const SCHEMA_NAMES = [
   'lineageGraphResSchema',
   'lineageIdReqSchema',
   'lineagePaperMetricsSchema',
+  'lineagePatchNodeReqSchema',
   'lineageUpsertEdgeReqSchema',
   'lineageUpsertLineTypesReqSchema',
-  'lineageUpsertNodeReqSchema',
   'mergeTagReqSchema',
   'netDiagItemSchema',
   'netDiagResSchema',
@@ -438,6 +441,29 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T1' }).success).toBe(true)
     expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T3' }).success).toBe(true)
     expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T9' }).success).toBe(false)
+  })
+
+  it('[F-ALIGN-01] lineagePatchNodeReq：id 必填拒缺/空串；白名单外字段 strict 拒；paperId/folderId 不可 patch 拒；month null=清除语义合法', () => {
+    // id=定位键必填（新建形态结构性不可表达——INV-NEW-1 契约机检锚）
+    expect(S.lineagePatchNodeReqSchema.safeParse({ x: 1 }).success).toBe(false) // 缺 id 拒
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: '' }).success).toBe(false) // 空串拒
+    // 白名单外字段 strict 拒（新建载荷成员全数拒收）
+    for (const extra of ['paperId', 'folderId', 'createdAt', 'updatedAt']) {
+      expect(
+        S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', [extra]: 'x' }).success,
+        `${extra} 不可经 patch-node 携带（身份/移动/时间戳字段）`
+      ).toBe(false)
+    }
+    // month null=清除语义合法（移入未定月框）+全部白名单成员合法形
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', month: null }).success).toBe(true)
+    expect(
+      S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', x: 1.5, y: 2, year: 2020, month: 6, slot: 1, title: 't', tags: ['a'], coreIdea: '' }).success
+    ).toBe(true)
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', tags: null }).success).toBe(true) // tags null=清空合法
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', coreIdea: null }).success).toBe(false) // coreIdea 不可空（DDL NOT NULL+节点 schema 单源——空串承载清面）
+    // month 值域沿承节点 schema（1..12——非白名单弱化面）
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', month: 13 }).success).toBe(false)
+    expect(S.lineagePatchNodeReqSchema.safeParse({ id: 'ln1', slot: -1 }).success).toBe(false)
   })
 
   it('嵌套模型层 strict 探针：rects/patch/failed/skipped/errors/annotations 元素与 paperMetrics 值去 strict 即红（首层探针覆盖不到的第二层）', () => {

@@ -36,7 +36,7 @@
  *   注入）：四写方法（含 upsertEdge 树守卫）+graph()
  * - IPC 面：**新立 lineage 域**（契约测试 10→11 域穷举 [locked-change]——
  *   契约扩展非放宽；ai_sensor 立域 AI-07 同型）：lineage/graph
- *   （voidReq→全图）+写四通道（upsert-node/remove-node/upsert-edge/
+ *   （voidReq→全图）+写四通道（patch-node/remove-node/upsert-edge/
  *   remove-edge）**接口预留面在 LG-03 票面**（lineage/import 通道已随
  *   [F-BAKRET-01] 退役删除——通道终态 60）
  * - 交付面：migrations/004_lineage.sql+repos/lineage.repo.ts+services/

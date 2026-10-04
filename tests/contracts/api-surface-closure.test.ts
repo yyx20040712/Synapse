@@ -17,6 +17,7 @@ import * as S from '../../src/shared/ipc/schemas'
 
 /** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道；
  *  [F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法；
+ *  [F-ALIGN-01 D1] lineage 域 upsertNode→patchNode（通道拆分——2026-10-04）；
  *  [F-UIRES-01 批 B] papers 域 +delete——1→2 方法） */
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
@@ -25,7 +26,7 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['folders', ['create', 'delete', 'list', 'rename']],
   ['import_', ['fromDialog', 'fromFolder', 'fromPaths']],
   ['library', ['collections', 'detail', 'list', 'updateMeta']],
-  ['lineage', ['graph', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes', 'upsertNode']],
+  ['lineage', ['graph', 'patchNode', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes']],
   ['notes', ['get', 'remove', 'save']],
   ['papers', ['delete', 'moveFolder']],
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
@@ -36,7 +37,8 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 ]
 
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(61)（[F-UIRES-01
+// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(61)（[F-ALIGN-01
+// D1] upsert-node→patch-node 换名零增减；[F-UIRES-01
 // 批 B] 60→61：+papers/delete——§2.4 统一级联契约；此前 [F-BAKRET-01]
 // 61→60：lineage/import 退役——用户裁决 2026-09-30；[F-FOLDER-01]
 // 56→61：+folders 四通道+papers/move-folder 单通道）

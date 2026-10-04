@@ -1,8 +1,8 @@
 # 对齐批「脉络全面向文献库对齐」设计稿（主控终裁版，2026-10-04）
 
 > 三段通道产物：拟定者岗设计书草案 v0.1 → 审核者岗对抗审（B0/W11/N7，有条件
-> 放行）→ 主控终裁（C1-C5 条件全处置+C2 四清单亲核销项）→ §5 呈裁（用户
-> 裁决位三问）。本文=实施依据稿（呈裁落定后 final 化）。
+> 放行）→ 主控终裁（C1-C5 条件全处置+C2 四清单亲核销项）→ 用户三呈裁
+> 落定（§5，2026-10-04 同日）。本文=实施依据稿（**final**）。
 > 上游=用户四项方向裁决（方向轮 2026-10-04，详单 docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §7c）。
 
@@ -100,7 +100,12 @@ N1（D1 保名收紧变体）列入 D1 对照（终裁仍取拆分——通道�
    title?, tags?, coreIdea? }`（tags/coreIdea=A 批余项遗留面，注记随
    A1b/A3 退役；其余=编辑 patch 语义），Res 沿用 lineageNodeSchema。
    service 层：新建分支+主题分支删除（四清单-1 推论），保留 update 形态
-   （id 在场 patch——幽灵 id 拒保留）；`LineageNodeUpsert` 类型退役。
+   （id 在场 patch——幽灵 id 拒保留）。**〔执行修正 2026-10-04 派发前核〕
+   `LineageNodeUpsert` 类型不退役**——它是 repo 写面输入类型（repo.upsertNode
+   签名 lineage.repo.ts:99/write-guards normalizeMonthSlot 入参/import+move
+   建节点 repo 直调在役）；退役面=IPC 契约别名 `lineageUpsertNodeReqSchema`
+   （schemas.ts:335，随通道删）+该类型头注用途收窄改写（IPC 契约→repo
+   写面输入，内部建节点路径专用）。
    负锚词表=W6 口径。回退路线 a+b 仅在拆分体量实证不可控时由主控重裁。
 2. **D2 主题节点退役=应用层本批全退+DDL 归 D 批（乙+W2 条件）**：应用层
    面=service 主题分支/renderer 全部 paperId null 短路（含 A1a tagNames
@@ -109,26 +114,37 @@ N1（D1 保名收紧变体）列入 D1 对照（终裁仍取拆分——通道�
    **本批收口时在 D 批挂账台账登记（附退出条件+触发器，W11 口径）**；
    登记不成改走甲（本批迁移 016，存量 0 行零障碍）。窗口期防线=INV-NEW-1
    契约机检（新建形态结构性不可表达）+活库探针断言 paper_id IS NULL 零行。
-3. **D3 导入落夹=【呈裁】推荐 b'（main 侧单跳落主图）**：candidates：
-   a) 导入 UI 强制选夹（+1 步/空库阻断）；**b) 默认落主图——实现=
-   fromDialog/fromFolder Req 扩 targetFolderId（renderer 恒传：folder 态=
-   该夹，否则 MAIN_GRAPH_ID——LibraryPage:102 既有值直通）+importOne
-   事务内 collection=null 时落 targetFolderId（缺省主图）并建节点**
-   （四清单-2 两跳链收口为单跳：消除逐个 moveFolder 中间失败窗口+未归档
-   中间态）；c) 两级（默认主图+可选目标，对话框膨胀）。b 与 b'（维持
-   renderer 两跳）对照：b'保留中间失败窗口与「main 可产 null」面，弃。
-   「全部」视图（folderScope undefined）保留只读聚合。不变量=null 永不
-   到达 importOne 的落夹赋值（INV-NEW-2 主锚）。
+3. **D3 导入落夹=【用户裁决落定 2026-10-04】当前文件夹/主图（=原推荐 b，
+   main 侧单跳）**：实现=fromDialog/fromFolder Req 扩 targetFolderId
+   （renderer 恒传：folder 态=该夹，否则 MAIN_GRAPH_ID——LibraryPage:102
+   既有值直通）+importOne 事务内 collection=null 时落 targetFolderId（缺省
+   主图）并建节点（四清单-2 两跳链收口为单跳：消除逐个 moveFolder 中间
+   失败窗口+未归档中间态）。「全部」视图（folderScope undefined）保留
+   只读聚合。不变量=null 永不到达 importOne 的落夹赋值（INV-NEW-2 主锚）。
    **连带**：renderer 后挂接链（ImportDropZone:152-155）随单跳化删除
    （moveFolder 挂接语义由 main 侧吸收）；子目录结构导入语义不变（一级
    子目录名→该夹+建节点，现有行为）。
-4. **D4 删夹处置=【呈裁】推荐 a（禁删非空夹）；层次=应用层闸本批+DDL 归
-   D 批（主控终裁 c）**：a) service 删夹前检查非空→CONFLICT 拒+提示
-   「先将夹内文献移至其他文件夹」（N4 文案）；b) 删夹→文献自动移主图
-   ——**附带脉络边随节点级联删除（DDL 事实）且无 undo（ADR-0014），确认
-   弹窗现不预告边损失=用户不可预期损失**（W1 口径）；c) 删夹弹窗要求选
-   目标夹（节点按随迁规则③转移，复用 moveFolder——N2 候选）。DDL
-   （NOT NULL+SET NULL 改判）归 D 批合并处置（同 D2 理由）。
+4. **D4 删夹处置=【用户裁决落定 2026-10-04】删夹=删除域内全部数据（级联
+   语义——超出原 a/b/c 三候选，用户业务语义：「删除文件夹就相当于删除了
+   所有数据，包括标签、文献、脉络、笔记等等」）**：文件夹=数据域容器。
+   - **实现（单元二 B）**：folders.service.delete 改写=事务内「先删夹内
+     全部文献（papers.remove×N——DDL 级联链：paper_tags/annotations/
+     notes/ai_notes/lineage_nodes→edges 二跳+FTS 触发器自清）→再
+     folders.remove」。主图禁删守卫保留（folders.service:95-97 既有
+     CONFLICT 拒——删主图=删全库，恒禁）。
+   - **renderer 连带**：useFolderDelete 静默判据重写——原判据
+     （nodeCount=0∧edgeCount=0 静默，paperCount 不参与——2026-09-30
+     裁决「文献仅移未归档可寻回」前提随未归档域消亡而失效）改为
+     **paperCount=0∧nodeCount=0∧edgeCount=0 静默直删；任一非零=弹窗**；
+     FolderDeleteDialog 文案重写（预告「将永久删除夹内 N 篇文献及其脉络
+     图、笔记、标注」）；计数面扩 paperCount。
+   - **边界如实申报**：①tags 定义行（库级实体）保留——paper_tags 关联随
+     文献级联删，空标签不自动清理（可复用；如需清理另立票）；②PDF 分桶
+     物理文件不随删——与既有单文献删除语义同族（papers.remove 本不清
+     fileStore，孤儿文件=既有行为面；清理另立票不混本批）。
+   - DDL（papers.folder_id NOT NULL+SET NULL 动作改判）归 D 批合并处置
+     （同 D2 理由——应用层事务语义本批先行，DDL 层 SET NULL 动作在应用
+     层路径外不再可达）。
 5. **D5 未归档域一揽子退役（乙）**：moveFolder 分支①（toFolderId=null
    移出）删——null 恒 CONFLICT 拒；`paperMoveReq.toFolderId` 收紧
    `z.string().min(1)`；folderScope 删 `{kind:'unfiled'}`；DndTarget
@@ -137,11 +153,12 @@ N1（D1 保名收紧变体）列入 D1 对照（终裁仍取拆分——通道�
    票面开工前复核）；`ensurePaperFolder` 保留转角色（D3 落夹实现+防御
    兜底，INV-88 注明）。用户可见删除项依据=§7c 裁决 2（文件资源管理器
    模型）。
-6. **D6 空图/空库引导=分层（b，W9 修正判据）=【呈裁文案偏好可选】**：
-   空库（**全库 papers 计数=0**）=行动引导（导入 CTA+「文献入库后自动
-   出现在脉络」文案）；当前图空且非空库=状态说明（「该文件夹暂无文献
-   ——文献入库后自动出现在脉络」）；主图有文献=无提示。机检验收=分层
-   testid+互斥断言（单元三 B）。
+6. **D6 空图/空库引导=【用户裁决落定 2026-10-04】不做空库引导**：「新建
+   文件夹和导入 PDF 按钮都在，研究者能看到」——不新增引导组件/CTA。既有
+   「该文件夹无脉络图」提示（LineagePage:143-149，folderId≠主图且空）
+   **维持现状**；其头注中「主图空图不提示——bootstrap 添加节点路径」
+   stale 注释随单元一 B（添加节点退役）连带改写。原 W9 空主图判据议题
+   随引导取消消亡。
 7. **D7 测试面收紧**：承草案 D7+W4 处置——保留用例装置改造（service 建
    节点装置→repo 直插装置）；topic-node①删②③装置适配（单元一 A）+D6
    断言适配（单元三 A）；INV-92 三态→两态；W2 移出族删；「未归档→入图
@@ -169,20 +186,23 @@ INV-96 前车之鉴）。本批唯一义务=不制造阻塞：paperId 非空化�
 | INV-88（改写：两路=挂接导入落夹建节点/moveFolder 自动建与随迁；未归档分支删（语义由 D3 吸收）；主题节点子句全删；ensurePaperFolder 角色注明） | docs/invariants.md+import.service/library.service/lineage.service 头注 | 正向锚定测试（K1 五形态，归属单元二 B） | 节点存在⇒文献 folder_id=节点 folder_id |
 | INV-92（改写：「全部/某文件夹」两态恒同） | docs/invariants.md+library-lineage-c5.test 头注 | 两态恒同锚定测试（改写族，单元二 A） | 同文献 pubNo 两态同值 |
 | INV-NEW-1 节点唯一来源=入库/移动两路，无手动创建路径 | docs/invariants.md+api-surface.ts patch-node 注册处注释 | 契约机检（patch-node schema id 必填+白名单类型测试，单元一 B）+负锚词表入 quality 段（W6 口径，单元四 B+治理登记） | 词表 src 面零命中+schema 无新建形态可表达 |
-| INV-NEW-2 所有文献必在文件夹（papers.folder_id 非空） | docs/invariants.md+import.service/library.service 头注 | 应用层闸（null 不达 importOne 落夹+moveFolder 拒 null+删夹非空拒——单元二 B）+探针断言（主控收口亲验） | 探针 null-folder=0；D 批 DDL NOT NULL 后升级 DDL 锚定 |
+| INV-NEW-2 所有文献必在文件夹（papers.folder_id 非空） | docs/invariants.md+import.service/library.service 头注 | 应用层闸（null 不达 importOne 落夹+moveFolder 拒 null——单元二 B）+探针断言（主控收口亲验） | 探针 null-folder=0；D 批 DDL NOT NULL 后升级 DDL 锚定 |
+| INV-NEW-3 文件夹=数据域容器：删夹=域内数据全删（文献/脉络/笔记/标注/标签关联随级联）；主图禁删 | docs/invariants.md+folders.service 头注 | 正向锚定测试（删夹后 papers/lineage_nodes/notes/annotations 域内零残留+主图删拒——单元二 B） | 删除事务语义（先文献后夹行） |
 
 ## §3 单元切分与实施序（全串行——锁纪律）
 
 | 单元 | 内容（决策点） | 提交序列 | 门链 |
 |---|---|---|---|
-| 一 | D1+D2：通道拆分+主题节点+新建路退役 | A=[locked-change][test-refactor] 删 topic-node①/主题用例族/seed 兼容行+保留用例装置改造+exemptions；B=[locked-change] patch-node 通道+service 两分支删+renderer 三入口/对话框/store 两方法删+graph() 收紧+LineageSideTags:11 注释连带+schema 类型测试 | 门一双审 k1+d1+门二实证终审 |
-| 二 | D5+D3+D4 应用层：未归档域+导入落夹+删夹闸 | A=[双尾注] W2 族删/INV-92 两态改写+exemptions；B=[locked-change] 契约收紧+moveFolder 分支①删+五消费面删+Req 扩 targetFolderId+importOne 单跳+挂接链删+删夹闸+K1 五形态正向用例+INV-NEW-2 探针步骤 | 同上 |
-| 三 | D6：空图/空库分层引导 | A=[双尾注] 空态断言适配（spec②③ D6 面）；B=[locked-change] LineagePage 分层引导+分层 testid | 同上 |
-| 四 | D9+D7 收尾：INV 登记+test-surface 收口 | A=[locked-change] invariants.md 改写+两新 INV 登记+defense-lifecycle 治理登记+D 批台账挂账登记（W2 条件）；B=[locked-change] 负锚词表入 quality+exemptions 终审+基线再生成+全量 diff 审计+ADR/架构回写（ADR-0014 修订+§6 实体表） | 同上 |
+| 一 | D1+D2：通道拆分+主题节点+新建路退役 | A=[locked-change][test-refactor] 删 topic-node①/主题用例族/seed 兼容行+保留用例装置改造+exemptions；B=[locked-change] patch-node 通道+service 两分支删+renderer 三入口/对话框/store 两方法删+graph() 收紧+LineageSideTags:11 注释连带+LineagePage「bootstrap 添加节点」stale 注释改写+schema 类型测试 | 门一双审 k1+d1+门二实证终审 |
+| 二 | D5+D3+D4 应用层：未归档域+导入落夹+删夹级联删除 | A=[双尾注] W2 族删/INV-92 两态改写+exemptions；B=[locked-change] 契约收紧+moveFolder 分支①删+五消费面删+Req 扩 targetFolderId+importOne 单跳+挂接链删+删夹级联删除（folders.service 事务重写+useFolderDelete 静默判据/FolderDeleteDialog 文案与计数面）+K1 五形态正向用例+INV-NEW-2/3 锚定用例与探针步骤 | 同上 |
+| 四 | D9+D7 收尾：INV 登记+test-surface 收口 | A=[locked-change] invariants.md 改写+三新 INV 登记+defense-lifecycle 治理登记+D 批台账挂账登记（W2 条件）；B=[locked-change] 负锚词表入 quality+exemptions 终审+基线再生成+全量 diff 审计+ADR/架构回写（ADR-0014 修订+§6 实体表） | 同上 |
 
-（每单元独立 commit+即时 locks:apply+tickets registry 翻状态；单元二
-开工前置=§5 呈裁落定；单元一开工前置=A 批余项票面按 §0-四清单-4 微调
-对齐——A1b/A3 的写队列面改 patch-node 口径。）
+（**单元三取消**——D6 用户裁决落定为不做空库引导：原单元三内容消亡，
+spec②③ 空态断言维持现状无需适配，LineagePage stale 注释归单元一 B。
+每单元独立 commit+即时 locks:apply+tickets registry 翻状态；呈裁已全部
+落定（§5）——单元二开工前置已满足；单元一开工前置=A 批余项票面按
+§0-四清单-4 微调对齐——A1b/A3 的写队列面改 patch-node 口径，已随本场
+A 批设计稿连带修订落档。）
 
 ## §4 风险清单
 
@@ -199,15 +219,16 @@ INV-96 前车之鉴）。本批唯一义务=不制造阻塞：paperId 非空化�
 6. 行号漂移：票面按符号/语义定位。
 7. moveFolder 分支③跨图边清理：保留既有用例跑通（单元二验收项）。
 
-## §5 呈裁点（用户裁决位——单元二开工前须落定）
+## §5 裁决记录（用户位，2026-10-04 全部落定——本稿 final 化）
 
-1. **D3 导入落夹**：a 强制选夹 / **b 默认落目标文件夹（folder 态=该夹，
-   否则主图；main 侧单跳——推荐）** / c 两级对话框。
-2. **D4 删夹处置**：**a 禁删非空夹（推荐——先移出再删）** / b 自动移主图
-   （附注：脉络边随节点级联删除且无 undo，现确认弹窗不预告边损失） /
-   c 删夹弹窗选目标夹（节点随迁）。
-3. **D6 引导文案偏好（可选）**：分层语义已定（空库=导入 CTA/当前图空=
-   状态说明），文案措辞可指定或交实现批。
+1. **D3 导入落夹**：「当前在看哪个文件夹就落哪个，如果是在主文献库就放
+   主图」——=推荐案 b（main 侧单跳；folder 态=该夹，「全部」=主图）。
+2. **D4 删夹处置**：「删除文件夹就相当于删除了所有数据，包括标签、文献、
+   脉络、笔记等等，这才是业务语义」——=级联删除域数据（超出原 a/b/c
+   三候选的第四语义；主图禁删保留；边界申报见 §1.4——tags 定义行保留/
+   PDF 物理文件不随删）。
+3. **D6 空库引导**：「可以不引导，因为新建文件夹和导入 PDF 按钮都在，
+   研究者能看到」——=不做引导；既有「该文件夹无脉络图」提示维持现状。
 
 （主控终裁位已全部落定于 §1；待核实项开工前票面复核——迁移序号 016
-占用/INV-87 作用面。）
+占用/INV-87 作用面。上游四裁决详单=反馈台账 §7c。）

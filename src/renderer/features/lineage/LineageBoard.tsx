@@ -6,11 +6,11 @@
  * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父+改 core_idea）：
  *   **[T3-P6] 节点拖拽=写 x/y 覆盖已退役**（JSON Canvas 模式随 SVG 画布
  *   方案切换退役——P8 槽位重排接缝；store moveNode 保留待重接）；
- *   **加节点**两型（从文献库添加=搜索选取
- *   paper 建节点（paperId 绑定+title/year 取元数据默认可改）/添加主题节点=
- *   纯手工 title——「阶段分组」语义）+core_idea 编辑=textarea（负面清单
+ *   **[F-ALIGN-01 2026-10-04] 加节点两型对话框随手动建点路径全退役
+ *   删除**（节点唯一来源=入库/移动两路——INV-NEW-1；主题节点应用层同步
+ *   退役）；core_idea 编辑=textarea（负面清单
  *   红线——md 只展示不渲染同族）的对话框装配职责归 LineageBoardDialogs.tsx
- *   （[F-SPLIT-01] 自本件拆出 2026-09-05，语句零改）；**加边**=源节点菜单
+ *   （[F-SPLIT-01] 自本件拆出 2026-09-05）；**加边**=源节点菜单
  *   「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有子边删除+
  *   新边添加两动作组合（UI 呈现单操作，service 两调用——树约束下改父=换父）
  *   的菜单+目标选取提示职责归 LineageBoardMenu.tsx（[F-SPLIT-01] 自本件
@@ -24,8 +24,9 @@
  *   autosave-first 语义翻转：编辑动作乐观应用入暂存，保存钮触发 flush）；失败不推进 savedAt+脏态投影（lineage.store 保存态三态：
  *   saved/saving/error+重试——notes.store save-status 先例族）；写
  *   面=**LG-01 已交付 service 四写方法（含守卫），本单接线 IPC 四
- *   通道**（lineage/upsert-node 等——[locked-change] 扩 schemas/
- *   api-surface：契约扩展非放宽，十一域穷举不变）
+ *   通道**（[F-ALIGN-01] 节点写通道=lineage/patch-node——既有节点编辑
+ *   patch；[locked-change] 扩 schemas/api-surface：契约扩展非放宽，
+ *   十一域穷举不变）
  * - **退出拦截聚合面扩**（ADR-0014 接缝条款：图视图工单自带，**不动
  *   TABS-04 已冻结行为面**）：lineage.store 导出 dirty 布尔（保存态≠
  *   saved 即脏）；App.tsx 退出判定=useTabDirtyAggregate() ||
@@ -53,10 +54,11 @@
  *
  * ── 架构层 ──
  * - renderer/features/lineage 域内聚（Board 编辑层与渲染宿主
- *   分文件——组件 ≤250 行红线拆分预案：节点菜单/添加节点对话框子
- *   组件化=LineageNodeMenu/LineageAddNodeDialog/LineageEditIdeaDialog
+ *   分文件——组件 ≤250 行红线拆分预案：节点菜单/编辑对话框子
+ *   组件化=LineageNodeMenu/LineageEditIdeaDialog/LineageTagDialog
  *   三件+[F-SPLIT-01] 装配分组件 LineageBoardMenu/LineageBoardDialogs
- *   两件；[T3-P6] 渲染宿主=LineageTimeline 时间线（Canvas/layout/
+ *   两件（[F-ALIGN-01] 建点对话框件随手动建点路径退役删除）；
+ *   [T3-P6] 渲染宿主=LineageTimeline 时间线（Canvas/layout/
  *   viewport 退役）；依赖 window.api 写四通道+02 交付（store）；
  *   禁直调 ipc/禁 Node API
  *
@@ -99,7 +101,6 @@ export function LineageBoard(props: {
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
-  const [addOpen, setAddOpen] = useState(false)
   const [ideaNodeId, setIdeaNodeId] = useState<string | null>(null)
   const [tagNodeId, setTagNodeId] = useState<string | null>(null)
 
@@ -129,7 +130,6 @@ export function LineageBoard(props: {
         tagNames={tagNames}
         selectedNodeId={props.selectedNodeId ?? null}
         contextNodeId={menu?.node.id ?? null}
-        toolbar={{ onAddNode: () => setAddOpen(true) }}
         onNodeClick={handleNodeClick}
         onNodeDblClick={props.onNodeDblClick}
         onNodeContextMenu={(id, anchor) => {
@@ -146,9 +146,10 @@ export function LineageBoard(props: {
       <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink}
         setIdeaNodeId={setIdeaNodeId} setTagNodeId={setTagNodeId} />
 
-      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——加节点两型/core_idea/标签三
-          对话框装配；[②U5] 人工父双对话框退役） */}
-      <LineageBoardDialogs nodes={nodes} addOpen={addOpen} setAddOpen={setAddOpen}
+      {/* 节点编辑对话框组（[F-SPLIT-01] 拆件——core_idea/标签两对话框装配；
+          [F-ALIGN-01] 加节点对话框随手动建点路径退役删除；[②U5] 人工父双
+          对话框退役） */}
+      <LineageBoardDialogs nodes={nodes}
         ideaNodeId={ideaNodeId} setIdeaNodeId={setIdeaNodeId} tagNodeId={tagNodeId} setTagNodeId={setTagNodeId} />
     </div>
   )

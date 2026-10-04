@@ -70,7 +70,7 @@ test('课题切换：管理页新建课题 B 后库/脉络整体切换，改名�
   await expect(win.getByText('智慧水务 e2e 课题文献')).toHaveCount(0)
   // 脉络空态（真实文本——宪法 e2e 红线）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
-  await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByText('暂无脉络图')).toBeVisible({ timeout: 10_000 })
 
   // 页内行内改名（锚③：rename IPC+清单即时改名——不 reload，rail 短名就地
   // 自新；新名前 4 码点≠旧名——短名=name 前 4 码点截断，同名前缀不显迁移）

@@ -27,13 +27,8 @@ beforeEach(() => {
     ).run(id, 'a.pdf', `s-${id}`, 't', 't')
   }
   repo = createLineageRepo(db)
-  svc = createLineageService({
-    repo,
-    paperExists: (id) => ['p-1', 'p-2', 'p-3', 'p-4'].includes(id),
-    paperFolderOf: () => null, // [回炉码 1] 统一规则桩（未归档语义）
-    ensurePaperFolder: () => '__main__',
-    withTransaction: (fn) => db.transaction(fn)()
-  })
+  // [F-ALIGN-01] deps 收窄=repo（新建分支注入面退役删——upsertEdge 守卫消费）
+  svc = createLineageService({ repo })
 })
 
 /** 四节点种子：A/B/C/D 文献节点（自动布局） */

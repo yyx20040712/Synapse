@@ -3,21 +3,22 @@
  * [SR2-LG-05] 脉络图 e2e 全链（工单：open / strong——实现时展开）
  *
  * ── 行为层（验收面，蓝图 N3+ROADMAP P7-H 验收行）──
- * - 全链用例组：①脉络页 UI 添加文献节点→
- *   画布渲染**真实文本**（节点标题/年份可见——宪法 e2e 纪律；[F-BAKRET-01]
- *   原导入草稿链随退役改述，用户裁决 2026-09-30——ADR-0022）；②
+ * - 全链用例组：①脉络页时间线渲染**真实文本**（节点标题/年份可见——宪法
+ *   e2e 纪律；[F-BAKRET-01] 原导入草稿链随退役改述，用户裁决 2026-09-30
+ *   ——ADR-0022；[F-ALIGN-01] UI 添加节点路径退役——T1 节点改种子直写，
+ *   UI 交互面=连线/编辑/保存）；②
  *   滚动容器锚（[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
- *   ③时间线真文本 reload 持久；④加边重复端点对拒绝 toast（②U8 起多父守卫
- *   文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目双击→阅读器
- *   打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
+ *   ③时间线真文本 reload 持久+core_idea 编辑持久（⑧主题面随主题节点退役删
+ *   ——[F-ALIGN-01]；core_idea 持久锚迁 paper 节点承载）；④加边重复端点对拒绝
+ *   toast（②U8 起多父守卫文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目
+ *   双击→阅读器打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
  *   自动保存失败路径→退出拦截弹窗（聚合面）——**mock 实现路径注
  *   （门一 N8）：contextIsolation 下 renderer 不可 mock contextBridge；
  *   须 electronApp.evaluate 在 main 侧 patch 写通道 handler，禁静默降级
- *   删用例**；⑧主题节点添加+编辑 core_idea→reload 持久
+ *   删用例**
  * - 环境：SYNAPSE_USER_DATA 隔离（e2e-env 既有机制——08/10 同型）；
  *   [F-BAKRET-01] 种子链=launch 前子进程直写库（e2e-env.seedLineageGraph
- *   ——seedPaperRow 同型基建）+T1 用真实产品路径（脉络页「添加节点」/
- *   右键「连线到…」——行为规约种子三路之路①）
+ *   ——seedPaperRow 同型基建）+T1 连线用真实产品路径（右键「连线到…」）
  *
  * ── 文化层 ──
  * - **e2e 原生守卫（双条件，门一 W2 处置）**：skip=自身工单未 done
@@ -29,20 +30,21 @@
  *
  * ── 实现注（LG-05 交付，主控简报六段裁决落点；[F-BAKRET-01] 种子链改述）──
  * - **守卫修订（主控裁定 5）**：skip 条件从「依赖组∪自身」收敛为**仅依赖组**。
- * - **用例组映射（裁决 1）**：T1=①UI 添加文献节点渲染真实文本+②滚动容器锚；
- *   T2=③时间线真文本 reload 持久+⑧主题节点添加/编辑 core_idea reload
- *   持久（同一 launch 两轮 reload）；T3=④重复加边拒绝 toast（②U8 迁移面）+⑦写通道
- *   patch 失败→保存失败指示条→真聚合脏态→close 拦截两态；T4=⑤侧板
- *   分节分色+⑥AI 条目双击跳阅读器+锚定位。
- * - **种子链（[F-BAKRET-01] 改述）**：papers 经 e2e-env.seedPaperRow
+ * - **用例组映射（裁决 1）**：T1=①时间线真文本渲染（种子直写）+②滚动容器锚；
+ *   T2=③时间线真文本 reload 持久+core_idea 编辑持久（paper 节点承载
+ *   ——[F-ALIGN-01] ⑧主题面退役，同一 launch 两轮 reload）；T3=④重复加边拒绝
+ *   toast（②U8 迁移面）+⑦写通道 patch 失败→保存失败指示条→真聚合脏态→close
+ *   拦截两态；T4=⑤侧板分节分色+⑥AI 条目双击跳阅读器+锚定位。
+ * - **种子链（[F-BAKRET-01] 改述+[F-ALIGN-01]）**：papers 经 e2e-env.seedPaperRow
  *   （甲=真实 PDF 供⑥跳转与⑤产物重锚；根/乙=幽灵行+year 元数据）；
- *   T1 走脉络页 UI 添加节点+右键连线（产品路径①——空态文案锚随链保活）；
+ *   T1=launch 前 seedLineageGraph 直写节点+右键连线走产品路径（UI 添加节点
+ *   随 [F-ALIGN-01] 退役——节点唯一来源=入库/移动两路）；
  *   T2-T10/T-P1b=launch 前 seedLineageGraph 直写库（month/slot 形态
  *   由种子载荷精确控制——UI 链无法表达的月组场景）。AI 笔记走 08 先例
  *   预置链不变。
  * - **⑦ mock**：app.evaluate 于 main 侧 ipcMain.removeHandler+handle 重注册
- *   'lineage/upsert-node' 抛错；退出拦截走**真聚合链**，close/断言形态=
- *   reader-text.spec.ts:285 退出拦截先例同型。
+ *   'lineage/patch-node' 抛错（[F-ALIGN-01] 通道拆分换名）；退出拦截走
+ *   **真聚合链**，close/断言形态=reader-text.spec.ts:285 退出拦截先例同型。
  * - **写落地证据**：编辑后 poll 落点/序到位（store 回填在 await unwrap
  *   之后）再 reload，不用裸 sleep。
  */
@@ -72,9 +74,6 @@ const PAPERS = [
   { id: 'e2e-lg-a', title: '脉络甲文献', year: 2022, real: true },
   { id: 'e2e-lg-b', title: '脉络乙文献', year: 2023, real: false }
 ] as const
-const THEME_TITLE = '研究阶段一主题（e2e）'
-const THEME_IDEA = '主题节点的核心想法（e2e 持久锚）'
-
 
 /** [T3-P6 回炉 T6] 砖砌锚两篇（幽灵行——月组种子载荷直写） */
 const BRICK_PAPERS = [
@@ -96,6 +95,11 @@ function chainSeed(): { nodes: LineageSeedNode[]; edges: LineageSeedEdge[] } {
       { from: 'e2e-lg-root', to: 'e2e-lg-b', label: '' }
     ]
   }
+}
+
+/** [F-ALIGN-01] T1 种子载荷：三节点零边（边走 UI 产品路径——右键连线） */
+function nodesOnlySeed(): { nodes: LineageSeedNode[]; edges: LineageSeedEdge[] } {
+  return { nodes: chainSeed().nodes, edges: [] }
 }
 
 /** 时间线节点小卡（DOM .tl-card）——按内含标题文本过滤
@@ -128,21 +132,6 @@ async function seedLineagePapers(userData: string): Promise<void> {
   }
 }
 
-/**
- * [F-BAKRET-01] T1 产品路径种子链：脉络页「添加节点」文献型（搜索选取→
- * 添加）——行为规约种子三路之路①（title/year 取 papers 元数据）。
- */
-async function addPaperNodeViaUi(win: Page, title: string): Promise<void> {
-  await win.getByTestId('lineage-mode-edit').click() // [②U2/A11] 添加节点钮随工具组（edit 态）
-  await win.getByTestId('lineage-add-node').click()
-  await win.getByTestId('add-node-search').fill(title)
-  const item = win.getByRole('dialog').locator('li button').filter({ hasText: title }).first()
-  await expect(item).toBeVisible({ timeout: 10_000 })
-  await item.click()
-  await win.getByRole('dialog').getByRole('button', { name: '添加', exact: true }).click()
-  await expect(nodeG(win, title)).toBeVisible({ timeout: 10_000 })
-}
-
 /** [F-BAKRET-01] T1 产品路径连线链：右键源卡「连线到…」→点目标卡 */
 async function linkNodesViaUi(win: Page, fromTitle: string, toTitle: string): Promise<void> {
   const from = nodeG(win, fromTitle)
@@ -151,6 +140,19 @@ async function linkNodesViaUi(win: Page, fromTitle: string, toTitle: string): Pr
   await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '连线到…' }).click()
   await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
   await nodeG(win, toTitle).click()
+}
+
+/**
+ * [RR3/d1-ΔN3] 点画布空白收线型列表（A12：点实线图标=armed+列表展开；
+ * 展开列表浮层盖画布顶部带——建点钮删除后工具条几何左移，展开列表恰覆盖
+ * 首组卡拖拽起点（RR2 探针实证：down 落 .lg-toolbar 域不达 .tl-content→
+ * 画线链断零边；收列表后同几何拖拽边即产生）。点空白=onOutside 收列表+
+ * armed 保持（A12 产品语义路径）——对工具条几何去敏感化的用例前置步。
+ */
+async function collapseLinetypeList(win: Page): Promise<void> {
+  const tlBox = await win.getByTestId('lineage-timeline').boundingBox()
+  if (tlBox === null) throw new Error('画布不可见')
+  await win.mouse.click(tlBox.x + tlBox.width / 2, tlBox.y + tlBox.height * 0.9)
 }
 
 /** reload 后回脉络视图并等画布 ready（store 模块随 reload 重置→重 load） */
@@ -166,32 +168,36 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
 
   /**
-   * T1=验收面①②：脉络页 UI 添加文献节点→时间线渲染真实文本（年份头/月
-   * 标签/小卡题名/骑缝号——宪法 e2e 红线；[F-BAKRET-01] 原导入链改述为
-   * 添加节点产品路径）+空态先行+滚动容器锚。
+   * T1=验收面①②：时间线渲染真实文本（年份头/月标签/小卡题名/骑缝号——
+   * 宪法 e2e 红线；[F-BAKRET-01] 原导入链改述；[F-ALIGN-01] UI 添加节点
+   * 退役——节点=launch 前种子直写，UI 产品路径面=右键连线）+滚动容器锚。
    */
-  test('T1 UI 添加文献节点→时间线渲染真实文本→滚动容器锚后节点仍可断言', async () => {
+  test('T1 种子节点时间线渲染真实文本→UI 连线→滚动容器锚后节点仍可断言', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t1-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
+    // [F-ALIGN-01] 三节点零边种子（边走 UI 产品路径——右键「连线到…」）
+    await seedLineageGraph(userData, nodesOnlySeed())
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
-    // 空图空态文案（真实文本——[F-BAKRET-01] 随导入退役改述）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await expect(win.getByText('暂无脉络图——添加节点')).toBeVisible({ timeout: 10_000 })
-    // 侧板空态（04 交付面顺带锚）
+    // 侧板空态（04 交付面顺带锚——无选中态）
     await expect(win.getByTestId('lineage-side-panel')).toHaveText('点击卡片查看详情') // [②U4/P-16] 迁移文案
 
-    // ①UI 添加三节点（产品路径①）+两树边（根→甲/乙，跨年=绕行折线族）——
+    // ①种子三节点在场+两树边走 UI 产品路径（根→甲/乙，跨年=绕行折线族）——
     //   卡片/连线即时渲染（store 写回填）；骑缝号 .c-no=graph 通道 pubNos
     //   派生表（INV-92），UI 增量写不重取整图——编号断言置于段末 reload 后
     //   （冷读全图载荷——与原导入链「导入后 store 重取」等价数据面）
-    for (const p of PAPERS) {
-      await addPaperNodeViaUi(win, p.title)
+    for (const pp of PAPERS) {
+      await expect(nodeG(win, pp.title)).toBeVisible({ timeout: 10_000 })
     }
+    // [RR2] 补回进 edit 态：保存钮在 edit 工具组（browse=slim 条零 save-btn）
+    // ——原 addPaperNodeViaUi 内含的 mode-edit click 随其删除丢失（本地指纹
+    // =click 永 waiting；非编辑动作链不受影响：右键连线/乐观渲染无模式门）
+    await win.getByTestId('lineage-mode-edit').click()
     await linkNodesViaUi(win, '脉络根文献', '脉络甲文献')
     await linkNodesViaUi(win, '脉络根文献', '脉络乙文献')
     await expect(win.getByText('脉络根文献')).toBeVisible()
@@ -253,7 +259,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // [回炉 1 W4] 滚动前后 y 差恒定（错位即红——路径与卡同文档流证据）
     expect(await yDiffOf()).toBeCloseTo(yDiffBefore, 1)
 
-    // [②U1] 会话语义：三节点+两边全在暂存→点工具组保存钮批量落库（edit 态）
+    // [②U1] 会话语义：两边在暂存→点工具组保存钮批量落库（edit 态；节点=种子直写）
     await win.getByTestId('lineage-save-btn').click()
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
 
@@ -273,11 +279,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T2=验收面③⑧：时间线真文本 reload 持久（[T3-P6 主控裁决] 拖拽 x/y
+   * T2=验收面③：时间线真文本 reload 持久（[T3-P6 主控裁决] 拖拽 x/y
    * 持久随自由拖拽退役——P8 槽位重排接缝；持久锚=年份头/月标签/小卡
-   * 题名）；主题节点添加+编辑 core_idea→reload 持久。同一 launch 两轮 reload。
+   * 题名）+core_idea 编辑持久（paper 节点承载——[F-ALIGN-01] ⑧主题面随
+   * 主题节点退役删）。同一 launch 两轮 reload。
    */
-  test('T2 时间线真文本 reload 持久+主题节点添加编辑 core_idea reload 持久', async () => {
+  test('T2 时间线真文本 reload 持久+paper 节点编辑 core_idea reload 持久', async () => {
     test.slow() // 两轮 reload+四段写链
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t2-'))
     await firstHop(userData)
@@ -297,41 +304,30 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.locator('.month-tag').first()).toHaveText('未定月 · 1 篇')
     await expect(win.getByText('脉络根文献')).toBeVisible()
 
-    // ⑧添加主题节点（阶段分组语义——虚线框 data-kind=theme）
-    await win.getByTestId('lineage-mode-edit').click() // [②U2/A11] 添加节点钮随工具组（edit 态）
-    await win.getByTestId('lineage-add-node').click()
-    await win.getByTestId('add-node-mode-theme').click()
-    await win.getByTestId('add-node-title').fill(THEME_TITLE)
-    await win.getByRole('button', { name: '添加', exact: true }).click()
-    const themeG = nodeG(win, THEME_TITLE)
-    await expect(themeG).toBeVisible({ timeout: 10_000 })
-    await expect(themeG).toHaveAttribute('data-kind', 'theme')
-
-    // 主题节点侧板：主题绑定态+无笔记空态
-    await themeG.click()
-    await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'theme')
-    await expect(win.getByText('主题节点无笔记')).toBeVisible()
-
-    // 右键→编辑核心想法→保存（自动保存落库）；[T3-P7B] 工具条入流后内容
+    // [F-ALIGN-01 改写] core_idea 编辑持久（paper 节点承载——原⑧主题面随
+    // 主题节点退役删）：右键→编辑核心想法→保存；[T3-P7B] 工具条入流后内容
     // 下移——右键前滚卡至视口中心（fixed 菜单锚点防下缘溢出视口）
-    await themeG.evaluate((el) => el.scrollIntoView({ block: 'center' }))
-    await themeG.click({ button: 'right' })
+    const ideaG = nodeG(win, '脉络甲文献')
+    // [RR2] 右键前先左键点选：selectedNode 置位（右键不触发 onSelectNode——
+    // 侧板 lineage-side-idea 挂载门=选中态；旧主题流程的左键选中前置随改写丢失）
+    await ideaG.click()
+    await ideaG.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await ideaG.click({ button: 'right' })
     await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
-    await win.getByTestId('core-idea-input').fill(THEME_IDEA)
+    await win.getByTestId('core-idea-input').fill('脉络甲的编辑后核心想法（e2e 持久锚）')
     await win.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
-    await expect(win.getByTestId('lineage-side-idea')).toContainText(THEME_IDEA)
+    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的编辑后核心想法（e2e 持久锚）')
     // [②U1] 会话语义：编辑入暂存→点工具组保存钮批量落库（edit 态）
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-save-btn').click()
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
 
-    // reload→主题节点+core_idea 持久
+    // reload→core_idea 持久
     await reloadToLineage(win)
-    const themeG2 = nodeG(win, THEME_TITLE)
-    await expect(themeG2).toBeVisible()
-    await expect(themeG2).toHaveAttribute('data-kind', 'theme')
-    await themeG2.click()
-    await expect(win.getByTestId('lineage-side-idea')).toContainText(THEME_IDEA)
+    const ideaG2 = nodeG(win, '脉络甲文献')
+    await expect(ideaG2).toBeVisible()
+    await ideaG2.click()
+    await expect(win.getByTestId('lineage-side-idea')).toContainText('脉络甲的编辑后核心想法（e2e 持久锚）')
 
     await app.close()
   })
@@ -381,14 +377,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
           }
         }
       ).ipcMain
-      ipcMain.removeHandler('lineage/upsert-node')
-      ipcMain.handle('lineage/upsert-node', async () => {
+      // [F-ALIGN-01] 写通道=patch-node（upsert-node 随新建路退役换名）
+      ipcMain.removeHandler('lineage/patch-node')
+      ipcMain.handle('lineage/patch-node', async () => {
         throw new Error('模拟写库失败（e2e 桩）')
       })
     })
 
     // 写失败触发=[T3-P6 适配] 拖拽退役→编辑 core_idea 写通道（同一
-    //   upsert-node 失败面：handler 已 patch 抛错→error 保存态）
+    //   patch-node 失败面：handler 已 patch 抛错→error 保存态）
     await nodeG(win, '脉络根文献').click({ button: 'right' })
     await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '编辑核心想法' }).click()
     await win.getByTestId('core-idea-input').fill('写失败探针（e2e 桩）')
@@ -1054,6 +1051,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
+    // [RR2→RR3 helper 化] 点外部收线型列表（几何去敏感化——见 collapseLinetypeList 注记）
+    await collapseLinetypeList(win)
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
     const rb = await root.boundingBox()
@@ -1141,6 +1140,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
+    // [RR2→RR3 helper 化] 点外部收线型列表（几何去敏感化——见 collapseLinetypeList 注记）
+    await collapseLinetypeList(win)
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
     const rb = await root.boundingBox()

@@ -235,7 +235,7 @@ describe('F-UIRES-02 批 B 脉络域', () => {
         target={{ kind: 'edge', edgeId: 'e1', label: '主线', x: 10, y: 10 }}
         dashed={false} color={LINE_TYPE_COLORS[0]}
         onRename={() => undefined} onLineStyle={() => undefined} onReset={() => undefined}
-        onDelete={() => undefined} onDeleteVertex={() => undefined} onAddNode={() => undefined} onClose={() => undefined}
+        onDelete={() => undefined} onDeleteVertex={() => undefined} onClose={() => undefined}
       />
     )
     act(() => {
@@ -271,7 +271,7 @@ describe('F-UIRES-02 批 B 脉络域', () => {
       mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
       tool: 'select', currentLineColor: LINE_TYPE_COLORS[0], linetypeListOpenFor: null
     })
-    mount(<LineageToolbar mode="edit" onAddNode={() => undefined} />)
+    mount(<LineageToolbar mode="edit" />)
     const save = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-save-btn"]')!
     expect(save.textContent).toBe('保存')
     expectSvg(save, '保存钮')
@@ -371,7 +371,7 @@ describe('F-UIRES-02 批 B R14 组词守卫锁（C5——对删守卫变异红�
         target={{ kind: 'edge', edgeId: 'e1', label: '主线', x: 10, y: 10 }}
         dashed={false} color={LINE_TYPE_COLORS[0]}
         onRename={onRename} onLineStyle={() => undefined} onReset={() => undefined}
-        onDelete={() => undefined} onDeleteVertex={() => undefined} onAddNode={() => undefined} onClose={onClose}
+        onDelete={() => undefined} onDeleteVertex={() => undefined} onClose={onClose}
       />
     )
     act(() => {

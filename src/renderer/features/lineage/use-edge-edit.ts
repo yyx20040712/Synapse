@@ -98,8 +98,6 @@ export function useEdgeEdit(args: {
   onSegDown(pt: Pt, button: number): void
   /** 视口→内容坐标注入（EdgeOverlay 挂载置入——z 逆变换 timeline-zoom 单源） */
   setPointConverter(fn: (clientX: number, clientY: number) => Pt): void
-  /** 画布空白菜单（右键空白——无对象高亮） */
-  openCanvasMenu(x: number, y: number): void
 } {
   const [state, setState] = useState<EdgeEditState>({ phase: 'idle' })
   const [menu, setMenu] = useState<EdgeMenuTarget | null>(null)
@@ -394,10 +392,6 @@ export function useEdgeEdit(args: {
   const setPointConverter = useCallback((fn: (clientX: number, clientY: number) => Pt): void => {
     ptHook.current = fn
   }, [])
-  const openCanvasMenu = useCallback((x: number, y: number): void => {
-    if (!enabledRef.current) return
-    setMenu({ kind: 'canvas', x, y })
-  }, [])
   /** 中断收尾（[RR2] pointercancel/blur 同路——§2.5 定案中断=不成立） */
   const abortDrag = useCallback((): void => {
     setState((s) => (s.phase === 'selected' ? s : { phase: 'idle' }))
@@ -505,7 +499,6 @@ export function useEdgeEdit(args: {
     onVertexContext,
     onEndDown,
     onSegDown,
-    setPointConverter,
-    openCanvasMenu
+    setPointConverter
   }
 }

@@ -207,6 +207,12 @@ export function validateLineageVia(via: readonly LineageViaPoint[]): string | nu
 
 /** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（created_at 保留）。
  *  [F-LGRAPH-01②U8] 边 kind 字段退役（manual 单基型——repo 写边界恒 'manual'）；dashed/color 可选缺省归一在 repo（false/色板首色）。
+ *  [F-ALIGN-01 D1 2026-10-04] 用途收窄：本类型=**repo 写面输入**（repo.upsertNode
+ *  签名/write-guards normalizeMonthSlot 入参/import 挂接建节点与 moveFolder
+ *  自动建/随迁的 repo 直调路径专用——内部建节点路径，不经 IPC）。IPC 契约面
+ *  已随旧节点写通道退役删除（2026-10-04 对齐批 D1；现通道=patch-node，载荷=既有节点
+ *  编辑 patch——见 ipc/schemas lineagePatchNodeReqSchema；新建形态对 IPC 面
+ *  结构性不可表达，INV-NEW-1）。
  *  [T3-P5] month/slot/sub 可选（缺省语义=undefined——归一/守卫在 service：
  *  month=input.month ?? null（全量语义同 tags/x/y 反向清空惯例）；slot 缺省走
  *  D-I-1 归一（新建=max+1/同组更新保留/跨组落组末）；sub 缺省=null 基础型）。
@@ -215,10 +221,10 @@ export function validateLineageVia(via: readonly LineageViaPoint[]): string | nu
  *  不变）；显式提供（含跨图移动）经 service 存在性校验后透写【该显式跨图
  *  语义已随下段 LGCLN 收窄退役——历史句保留备溯】。
  *  [F-LGCLN-01 2026-09-30] 语义收窄（显式跨图路径退役——用户裁决「选图时对
- *  论文卡片已失焦，交互上不可构成=冗余逻辑删掉」）：folderId=**仅主题节点
- *  新建落图值**（当前图，幽灵值 service 拒）；更新场景被忽略（existing 在场
- *  恒现图——禁搬图）；文献节点显式值仅=归属合法（≠归属仍 CONFLICT——INV-88
- *  主句不动，节点跨图唯一合法路径=papers.moveFolder 文献随迁）。 */
+ *  论文卡片已失焦，交互上不可构成=冗余逻辑删掉」）：folderId 显式值唯一合法
+ *  消费=moveFolder 随迁路径（恒显式携 slot 主权值——normalizeMonthSlot 透传）；
+ *  [F-ALIGN-01] 主题节点新建落图值语义随主题节点应用层退役消亡（节点唯一
+ *  来源=入库/移动两路——INV-NEW-1）。 */
 export const lineageNodeUpsertSchema = lineageNodeSchema
   .omit({ createdAt: true, updatedAt: true })
   .extend({

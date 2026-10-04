@@ -2,14 +2,15 @@
  * [LG-01] lineage 数据基座（锁定合约；文件名沿承历史）。
  * [F-BAKRET-01] 草稿导入链用例（三段校验/全有或全无/文件读入/C2 跨图跳过/
  * INV-88 draft 重灌归属）随导入链退役删除（用户裁决 2026-09-30——ADR-0022）。
+ * [F-ALIGN-01] upsertNode 幽灵 paperId 拒用例随 upsert-node 通道新建形态退役
+ * 删除（2026-10-04——服务层新建分支消亡；透传断言保留）。
  * 保留覆盖面：repo 方法真库夹具（upsert 往返/级联链/UNIQUE 拒/空图合法）/
  * upsertEdge 运行时守卫（W1 宿主用例：自环/多父/成环三拒绝+重复边中文收口+
- * 节点不存在拒）/upsertNode 幽灵 paperId 拒/R2-LG12 参考边（kind=ref）写守卫。
+ * 节点不存在拒）/removeNode/removeEdge 透传。
  * repo 交互=真库夹具（AI-01 测试同型）；always-active（ADR-0017 裁决 3）。
  */
 import { beforeEach, expect, it } from 'vitest'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
-import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
 import type { SqliteDb } from '../../../src/main/db/connection'
 import { createTestDb } from '../../utils/fixtures'
 import { createLineageService } from '../../../src/main/services/lineage/lineage.service'
@@ -17,7 +18,6 @@ import { createLineageService } from '../../../src/main/services/lineage/lineage
 let db: SqliteDb
 let repo: ReturnType<typeof createLineageRepo>
 let svc: ReturnType<typeof createLineageService>
-const paperExists = (id: string): boolean => id === 'p-1' || id === 'p-2' || id === 'p-3'
 
 beforeEach(() => {
   db = createTestDb()
@@ -27,14 +27,7 @@ beforeEach(() => {
     ).run(id, 'a.pdf', `s-${id}`, 't', 't')
   }
   repo = createLineageRepo(db)
-  svc = createLineageService({
-    repo,
-    paperExists,
-    // [回炉码 1] INV-88 统一规则装配（真库——folderIdOf/ensureFolderAssigned 直连）
-    paperFolderOf: (id) => createPapersRepo(db).folderIdOf(id),
-    ensurePaperFolder: (id) => createPapersRepo(db).ensureFolderAssigned(id),
-    withTransaction: (fn) => db.transaction(fn)()
-  })
+  svc = createLineageService({ repo })
 })
 
 // ── repo 方法（真库夹具）────────────────────────────────────────
@@ -131,11 +124,8 @@ it('upsertEdge 重复边中文收口（UNIQUE 收口面）；节点不存在中�
   expect(svc.graph().edges).toHaveLength(2)
 })
 
-it('upsertNode 幽灵 paperId 拒绝（中文）；removeNode/removeEdge 透传', () => {
-  expect(() =>
-    svc.upsertNode({ paperId: 'ghost-2', title: 'x', coreIdea: '', year: null, x: null, y: null })
-  ).toThrow('幽灵')
-  const n = svc.upsertNode({ paperId: 'p-1', title: 'x', coreIdea: '', year: null, x: null, y: null })
+it('[F-ALIGN-01 改写] removeNode/removeEdge 透传（原幽灵 paperId 拒用例随新建形态退役——节点建装置=repo 直插）', () => {
+  const n = repo.upsertNode({ paperId: 'p-1', title: 'x', coreIdea: '', year: null, x: null, y: null })
   expect(svc.removeNode(n.id)).toBe(1)
 })
 
