@@ -17,29 +17,34 @@ guardedDescribe('SR-DB-03', 'notes.repo —— 笔记 upsert 与 FTS', () => {
   })
 
   it('首次 upsert 创建；同 paper 再次 upsert 更新同一条（不产生第二篇）', () => {
-    const first = repo.upsert({ paperId: 'p-1', title: '标题', contentMd: '内容一' })
-    const second = repo.upsert({ paperId: 'p-1', title: '新标题', contentMd: '内容二' })
+    const first = repo.upsert({ paperId: 'p-1', contentMd: '内容一' })
+    const second = repo.upsert({ paperId: 'p-1', contentMd: '内容二' })
     expect(second.id).toBe(first.id)
-    expect(repo.findByPaper('p-1')?.title).toBe('新标题')
+    expect(repo.findByPaper('p-1')?.contentMd).toBe('内容二')
     expect(repo.countByPaper('p-1')).toBe(1)
   })
 
   it('findByPaper 无笔记返回 null；delete 生效', () => {
     expect(repo.findByPaper('p-1')).toBeNull()
-    const n = repo.upsert({ paperId: 'p-1', title: '', contentMd: '' })
+    const n = repo.upsert({ paperId: 'p-1', contentMd: '' })
     expect(repo.delete(n.id)).toBe(true)
     expect(repo.findByPaper('p-1')).toBeNull()
   })
 
-  it('search：FTS 命中标题或正文', () => {
+  // [A2 F-CONTRACTA-01] title 停用迁移性行为锚：upsert 不给列 → DDL
+  // DEFAULT '' 死置生效；FTS 空串零 token——命中只由 content 驱动（虚表与
+  // 触发器零触碰）。title 列直查断言=DDL 死置口径锚（清列归 D 批）。
+  it('search：FTS 按 content 命中；title 列死置（DEFAULT 空）', () => {
     db.prepare(
       `INSERT INTO papers (id, file_ref, sha256, added_at, updated_at) VALUES ('p-2','b.pdf','s2','t','t')`
     ).run()
-    repo.upsert({ paperId: 'p-1', title: '漏损笔记', contentMd: '' })
-    repo.upsert({ paperId: 'p-2', title: '另一篇', contentMd: '管网水力模型讨论' })
+    repo.upsert({ paperId: 'p-1', contentMd: '漏损笔记' })
+    repo.upsert({ paperId: 'p-2', contentMd: '管网水力模型讨论' })
     expect(repo.search('漏损')).toHaveLength(1)
     expect(repo.search('水力模型')).toHaveLength(1)
     expect(repo.search('不存在词')).toHaveLength(0)
+    const rows = db.prepare('SELECT title FROM notes ORDER BY paper_id').all() as { title: string }[]
+    expect(rows.map((r) => r.title)).toEqual(['', ''])
   })
 })
 
@@ -67,7 +72,7 @@ describe('notes.repo search LIKE 兜底排序确定性（排序雷清扫）', ()
     const seed = (id: string, paperId: string): void => {
       db.prepare(
         `INSERT INTO notes (id, paper_id, title, content_md, created_at, updated_at)
-         VALUES (?, ?, '漏损笔记', '', '2026-08-27T00:00:00.000Z', '2026-08-27T00:00:00.000Z')`
+         VALUES (?, ?, '', '漏损笔记', '2026-08-27T00:00:00.000Z', '2026-08-27T00:00:00.000Z')`
       ).run(id, paperId)
     }
     seed('z-first', 'p-1') // 先插

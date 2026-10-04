@@ -424,11 +424,11 @@ export const tagSetColorReqSchema = z
   .strict()
 
 // ── notes ───────────────────────────────────────────────────────
+// [A2 F-CONTRACTA-01 2026-10-04] title 停用：noteSaveReq 收紧为
+// paperId+contentMd 两项（原 title 项与 NOTE_TITLE_MAX 界常量随字段退役）
 export const noteGetResSchema = noteSchema.nullable()
-/** 笔记标题长度上限（INV-11 单一真相源：schema 校验与面板 maxLength 同源消费，禁止两处字面量对齐） */
-export const NOTE_TITLE_MAX = 200
 export const noteSaveReqSchema = z
-  .object({ paperId: z.string().min(1), title: z.string().max(NOTE_TITLE_MAX), contentMd: z.string() })
+  .object({ paperId: z.string().min(1), contentMd: z.string() })
   .strict()
 export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
 
@@ -445,7 +445,7 @@ export const workspaceItemSchema = z
   .strict()
 export type WorkspaceItem = z.infer<typeof workspaceItemSchema>
 
-/** 课题名长度上限（单一真相源：schema 校验与 WS2 输入框 maxLength 同源消费——NOTE_TITLE_MAX 同型） */
+/** 课题名长度上限（单一真相源：schema 校验与 WS2 输入框 maxLength 同源消费——TAG_NAME_MAX 同型） */
 export const WORKSPACE_NAME_MAX = 40
 
 export const workspaceListResSchema = z

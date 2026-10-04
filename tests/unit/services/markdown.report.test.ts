@@ -52,7 +52,7 @@ guardedDescribe('SR-SVC-08', 'markdown.report —— 读书报告生成（golden
     const data: ReportData = {
       paper,
       annotations: [ann(2, 9, '后一条'), ann(2, 3, '前一条', '重要'), ann(0, 0, '第零页')],
-      note: { id: 'n-1', paperId: 'p-1', title: '读后感', contentMd: '值得精读。', createdAt: 't', updatedAt: 't' }
+      note: { id: 'n-1', paperId: 'p-1', contentMd: '值得精读。', createdAt: 't', updatedAt: 't' }
     }
     const md = buildReadingReport(data)
     expect(md).toContain('# 智慧水务综述')

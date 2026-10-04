@@ -49,7 +49,7 @@ const paperSummary = {
   lastReadPage: 0,
   addedAt: ISO
 }
-const note = { id: 'n1', paperId: 'p1', title: '题', contentMd: '# m', createdAt: ISO, updatedAt: ISO }
+const note = { id: 'n1', paperId: 'p1', contentMd: '# m', createdAt: ISO, updatedAt: ISO }
 const collection = { id: 'c1', name: '组', position: 0 }
 const lineageNode = {
   id: 'ln1',
@@ -199,7 +199,7 @@ const VALID: Record<string, unknown[]> = {
   mergeTagReqSchema: [{ sourceId: 't1', targetId: 't2' }],
   tagSetColorReqSchema: [{ tagId: 't1', color: '#e11d48' }, { tagId: 't1', color: null }],
   noteGetResSchema: [null, note],
-  noteSaveReqSchema: [{ paperId: 'p1', title: '', contentMd: '' }],
+  noteSaveReqSchema: [{ paperId: 'p1', contentMd: '' }],
   noteIdReqSchema: [{ noteId: 'n1' }],
   workspaceItemSchema: [wsItem],
   workspaceListResSchema: [{ items: [wsItem], currentId: 'ws1' }],
@@ -408,12 +408,6 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     expect(S.renameTagReqSchema.safeParse({ tagId: 't1', name: '课'.repeat(51) }).success).toBe(false)
     expect(S.workspaceCreateReqSchema.safeParse({ name: '课'.repeat(S.WORKSPACE_NAME_MAX) }).success).toBe(true)
     expect(S.workspaceCreateReqSchema.safeParse({ name: '课'.repeat(S.WORKSPACE_NAME_MAX + 1) }).success).toBe(false)
-  })
-
-  it('noteSave 标题界=NOTE_TITLE_MAX 常量接线：N 过、N+1 拒（INV-11 单一真相源）', () => {
-    expect(S.NOTE_TITLE_MAX).toBe(200)
-    expect(S.noteSaveReqSchema.safeParse({ paperId: 'p1', title: '题'.repeat(S.NOTE_TITLE_MAX), contentMd: '' }).success).toBe(true)
-    expect(S.noteSaveReqSchema.safeParse({ paperId: 'p1', title: '题'.repeat(S.NOTE_TITLE_MAX + 1), contentMd: '' }).success).toBe(false)
   })
 
   it('extractRequestEvent：annotations 上界 5000 过、5001 拒', () => {

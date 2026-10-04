@@ -5,7 +5,7 @@
  * ── 行为层 ──
  * - α 双层落地面（B3 裁决 1：片段层=标注锚定+总评层=论文级综述，迁移阅读器
  *   侧栏修复可发现性）：
- *   · 总评层：textarea+标题（notes.store.load/edit/saveSoon 消费——**五模块
+ *   · 总评层：textarea（notes.store.load/edit/saveSoon 消费——**五模块
  *     编辑元数据结构与 ADR-0008 裁决不动，不坍缩不新增维度**）；本组件与库侧
  *     NotesPanel 同语义：挂载/paperId 变化即 load（动作型失败 toast+载入重试）；
  *     迟到失败比对 paperIdRef 丢弃；保存状态四态消费 deriveSaveStatus/
@@ -18,6 +18,8 @@
  *   （五模块合并保护既有：pendingEdit 路径保用户字段——U2/A4 锁定用例覆盖）；
  *   面板本地态仅 loadFailed/saveFailed 两布尔；**不新增任何 notes.store 字段**
  * - notes 面 dirty 投影（TABS-03 既有）零改动——pending 语义自动覆盖本编辑面
+ * - [A2 F-CONTRACTA-01 2026-10-04] note.title 停用：标题输入框退役为静态
+ *   「全文笔记」节标（样式落位归 B 批；noteSave 载荷/编辑域随之单字段化）
  * - 设计事实两条（r2 审计 W1/W2 裁决存档）：①加载中不禁用输入（NotesPanel 同
  *   语义既有裁决——store 编辑期保护兜底：发起后的 edit 不被响应覆盖）；②本
  *   面板仅挂载于 active tab 视图（P7-B 单视图渲染模型——无隐藏 tab 挂载，
@@ -48,7 +50,6 @@ import { ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
 import { RetryButton } from '../../../shared/ui/RetryButton'
 import { deriveSaveStatus, detectSaveFailed } from '../../../shared/save-status'
-import { NOTE_TITLE_MAX } from '@shared/ipc/schemas'
 import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../../notes/notes.store'
 import { AiNotesSection } from './AiNotesSection'
@@ -116,7 +117,7 @@ export function ReaderNotesPanel(props: {
   }, [paperId, saving, savedAt])
 
   /** 编辑入口：写 store 草稿（pending 镜像随 edit 置 true）+重排防抖自动保存 */
-  const onEdit = (patch: { title?: string; contentMd?: string }): void => {
+  const onEdit = (patch: { contentMd?: string }): void => {
     if (paperId === null) return
     setSaveFailedByPaper((m) => ({ ...m, [paperId]: false }))
     edit(paperId, patch)
@@ -137,15 +138,10 @@ export function ReaderNotesPanel(props: {
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 p-2 text-sm" data-testid="reader-notes-panel">
       <div className="flex items-center gap-2">
-        <input
-          aria-label="笔记标题"
-          className="syn-input min-w-0 flex-1 rounded border px-2 py-1 text-sm"
-          style={inputStyle}
-          value={entry?.title ?? ''}
-          disabled={loadFailed}
-          maxLength={NOTE_TITLE_MAX}
-          onChange={(e) => onEdit({ title: e.target.value })}
-        />
+        {/* [A2 F-CONTRACTA-01] 标题输入框退役——静态「全文笔记」节标（样式归 B 批） */}
+        <span className="min-w-0 flex-1 truncate text-sm font-medium" style={{ color: 'var(--text-dim)' }}>
+          全文笔记
+        </span>
         {entry !== undefined && (
           <span className="shrink-0 text-xs" style={{ color: saveFailed ? 'var(--danger)' : 'var(--text-dim)' }} role="status">
             {status}

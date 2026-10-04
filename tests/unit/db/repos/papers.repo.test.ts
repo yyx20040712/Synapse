@@ -157,8 +157,8 @@ guardedDescribe(
            VALUES ('a-1','p-1',0,'highlight','0000:01','t','t')`
         ).run()
         db.prepare(
-          `INSERT INTO notes (id, paper_id, title, content_md, created_at, updated_at)
-           VALUES ('n-1','p-1','笔记','','t','t')`
+          `INSERT INTO notes (id, paper_id, content_md, created_at, updated_at)
+           VALUES ('n-1','p-1','','t','t')`
         ).run()
         const r = repo.searchSummaries({ sort: 'added_desc', offset: 0, limit: 50 })
         const p1 = r.items.find((i) => i.id === 'p-1')

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-04T12:49:15.7519550Z",
+    "generatedAt":  "2026-10-04T13:18:34.9111348Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "d010fd926f89a67c2c2c21fda1cf837e2e1743cfa5c6140f8da452cc023b15c2"
+                      "sha256":  "5c31d69aee04813ea6cde592db7bb9e32ea6cccec8aaca155774c17c85fa6ad9"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -191,7 +191,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "3302d65dd92f2c6dba32ef378fc740962087dabf1fa986a484cd8aa081355398"
+                      "sha256":  "4e232f02f3f6f31db668f5ca5e5a3de3e249fa1266af0036479e61012a3a5f85"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -215,7 +215,7 @@
                   },
                   {
                       "path":  "src/shared/models/note.ts",
-                      "sha256":  "b9dfc2d1eee448f44a4c72e2fbe32b3530445f0e8f7c51e7fae63027b85d4319"
+                      "sha256":  "682627b0a013cf581f28eede7aee7fab625fd732c829deffae16322393c47a02"
                   },
                   {
                       "path":  "src/shared/models/paper.ts",
@@ -223,7 +223,7 @@
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
-                      "sha256":  "569b75b138e28958e6bf44ad9a2ced3606f161454aeaa69676d1c38df9d44f8c"
+                      "sha256":  "02065ecbb7fe21f092ed0883fda0a47b3d65044f00355615912e003e7b11bf25"
                   },
                   {
                       "path":  "src/shared/venue-tier.ts",
@@ -255,7 +255,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "25186022bb0daf6468552f3d6199b27b3d3b3c2e4d7d720ef9da1e717a52e4f1"
+                      "sha256":  "8e5118ec592a066af1d1df62b786819a02ddc39df541422601bec0ee3cc9ac66"
                   },
                   {
                       "path":  "tests/e2e/ai-notes-section.spec.ts",
@@ -439,11 +439,11 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/notes.repo.test.ts",
-                      "sha256":  "6bcd70502d0fd0fd243c64a05de59fdd85a6fc6de0d59f79f6cfa0891d6f8210"
+                      "sha256":  "f9ec9272245b9fa5b7f0b3aefdd24b3721939b3da99c3298f3d37ac5829340a2"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers.repo.test.ts",
-                      "sha256":  "6eae43927c6abcf2008e21b5fb7d42a9f6d6216a3d05842193256449560eada4"
+                      "sha256":  "cc22cd484b52c9b2e3d1ca1bb7f00a56d3dd47d979f03c025e6787eb42a2a5f8"
                   },
                   {
                       "path":  "tests/unit/db/repos/papers-cited-sort.test.ts",
@@ -503,7 +503,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/notes.test.ts",
-                      "sha256":  "5a4cceca818b523f3a22b9e77dbbcee4ac3dbda0b4e3a2c33349ff28e3d0cfb3"
+                      "sha256":  "c1a3ed43dbd2bfc982f5d76816fdd2e6c730e7345b4e1751d742a3de150584ea"
                   },
                   {
                       "path":  "tests/unit/ipc/reader.test.ts",
@@ -599,7 +599,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-quit-dirty.test.tsx",
-                      "sha256":  "63f25c26263bed5d0b4b4f704e83babe19b756300e819b561ae685ccd8a52e9d"
+                      "sha256":  "2d0391844fcbb70fd82c078bb355d97ef8099ee7d2e97a0dfc5c0098d210400e"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
@@ -847,7 +847,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
-                      "sha256":  "7d30575366dbd57f21d1eaac5c1b52f853fb050713b5f040664354a2ce9b9652"
+                      "sha256":  "eed7280da441d13322703681dbd6d6757caebc37f3b0586eca45837fdec6e380"
                   },
                   {
                       "path":  "tests/unit/renderer/notes-panel-status.test.tsx",
@@ -923,7 +923,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
-                      "sha256":  "602e385a2d5e4662d6dacbe4a741cc9b32aee9d6f3b697f4de5b879382551723"
+                      "sha256":  "1551e38899345d20e4017b0a7a6c1944e6925149424259d1f6defe1fcd5f0772"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
@@ -1019,7 +1019,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tab-dirty.test.tsx",
-                      "sha256":  "875ab35f65c129583b2d870f5958ab5a2694da349a422d7b42c7e21306c25a3f"
+                      "sha256":  "1ab18fa322e144d57a0df0d3c1ee2b29b1d9b55b2f5f2ea0edeb819c68d61ab7"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-color-dialog.test.tsx",
@@ -1143,7 +1143,7 @@
                   },
                   {
                       "path":  "tests/unit/services/corpus.assemble.test.ts",
-                      "sha256":  "8194f57648f37069c8155f282592ecfc8cd7b36f4c2f2513bb5aa026443b8022"
+                      "sha256":  "b2954fe281aeaa71a7f352a302ffb8a683d2bd33a31a34162f923357820bb0de"
                   },
                   {
                       "path":  "tests/unit/services/corpus.export.test.ts",
@@ -1223,11 +1223,11 @@
                   },
                   {
                       "path":  "tests/unit/services/markdown.report.test.ts",
-                      "sha256":  "e928f1cb873ce4f772d9bc735bade9334e2d90fce900340a226ddd6b82ed35d5"
+                      "sha256":  "0a974b3a8e872ed2a49a2296a6f00782e7e9643f27695dc36ce895a4a6d0964d"
                   },
                   {
                       "path":  "tests/unit/services/notes.service.test.ts",
-                      "sha256":  "52bd750564c4e16d8525e61872cca224698567b607230758a3d76ad4125a8e90"
+                      "sha256":  "ed57217e6767116dc91a124ec1f98e789614bb0733f7f5ffda92f3f9d0674c98"
                   },
                   {
                       "path":  "tests/unit/services/papers-delete.test.ts",

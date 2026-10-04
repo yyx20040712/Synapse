@@ -80,10 +80,10 @@ guardedDescribe('SR2-TABS-03', 'tab-dirty —— 两写面灰点信号聚合', (
       order: ['p-1'],
       activeId: 'p-1'
     })
-    useNotesStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: 'x', saving: false, savedAt: null, pending: true } } })
+    useNotesStore.setState({ noteByPaper: { 'p-1': { contentMd: 'x', saving: false, savedAt: null, pending: true } } })
     expect(isTabDirty('p-1', { annoDirty: false, notesPending: useNotesStore.getState().noteByPaper['p-1']?.pending ?? false })).toBe(true)
     // pending 落定（保存成功）后不 dirty
-    useNotesStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: 'x', saving: false, savedAt: 't2', pending: false } } })
+    useNotesStore.setState({ noteByPaper: { 'p-1': { contentMd: 'x', saving: false, savedAt: 't2', pending: false } } })
     expect(isTabDirty('p-1', { annoDirty: false, notesPending: false })).toBe(false)
   })
 
@@ -114,13 +114,13 @@ guardedDescribe('SR2-TABS-03', 'tab-dirty —— 两写面灰点信号聚合', (
     // notes 面：清 p-1 的 annotations 面后，p-1（tab 键集内）pending 仍触发
     act(() => {
       useReaderStore.getState().clearTabDirty('p-2')
-      useNotesStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: true } } })
+      useNotesStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: true } } })
     })
     expect(agg).toBe(true)
     // 非 tab 键集的 pending 残留（已关 tab 草稿）不触发聚合误报（W1 锁定）
     act(() => {
       useNotesStore.setState({
-        noteByPaper: { 'p-closed': { title: '', contentMd: '', saving: false, savedAt: null, pending: true } }
+        noteByPaper: { 'p-closed': { contentMd: '', saving: false, savedAt: null, pending: true } }
       })
     })
     expect(agg).toBe(false)
@@ -181,7 +181,7 @@ guardedDescribe('SR2-TABS-03', 'TabBar —— 灰点渲染与关闭脏 tab 确�
     act(() => {
       useReaderStore.getState().clearTabDirty('p-1')
       useNotesStore.setState({
-        noteByPaper: { 'p-2': { title: '', contentMd: 'x', saving: false, savedAt: null, pending: true } }
+        noteByPaper: { 'p-2': { contentMd: 'x', saving: false, savedAt: null, pending: true } }
       })
     })
     expect(dirtyDots()).toHaveLength(1)

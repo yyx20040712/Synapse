@@ -3090,6 +3090,84 @@
       "caseTitle": "tags 列在场（TEXT 可空）；存量行缺列写入=tags NULL=无标签（零迁移兼容）",
       "reason": "A 批 A1b 标签域退役——退役域用例有意收紧",
       "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "noteSave 标题界=NOTE_TITLE_MAX 常量接线：N 过、N+1 拒（INV-11 单一真相源）",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/db/repos/notes.repo.test.ts",
+      "caseTitle": "首次 upsert 创建；同 paper 再次 upsert 更新同一条（不产生第二篇）",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/db/repos/notes.repo.test.ts",
+      "caseTitle": "search：FTS 命中标题或正文",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/ipc/notes.test.ts",
+      "caseTitle": "get/save/remove 透传",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "load 期间草稿被编辑：字段级合并，用户碰过的字段赢（同毫秒 edit 同样受保护）",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "首次 load 落地前编辑不触发保存，落地后自动补存",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "load 失败→用户编辑→重试成功：编辑不被覆盖且被补存",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "防抖窗口内切走切回：未保存编辑不被覆盖",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "保存进行中再编辑：旧保存成功不误清新编辑的未保存标记",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "补存失败后再 load：触碰记录仍在，用户编辑不被服务器值覆盖",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/renderer/reader-notes-panel.test.tsx",
+      "caseTitle": "载入：api.notes.get → 标题/正文回填；pending=false 显示「已保存」",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/services/corpus.assemble.test.ts",
+      "caseTitle": "golden 全量：固定夹具逐字节比对（front-matter+总评+片段+ai 段）",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
+    },
+    {
+      "file": "tests/unit/services/notes.service.test.ts",
+      "caseTitle": "save：文献不存在抛 NOT_FOUND；存在则 upsert",
+      "reason": "A 批 A2 title 停用——退役域用例有意收紧",
+      "rulingLink": "docs/design/2026-10-04_f-contracta01-design.md"
     }
   ]
 }

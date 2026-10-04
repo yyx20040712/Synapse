@@ -70,7 +70,6 @@ function ann(id: string, page: number, off: number, comment: string): Annotation
 const note: Note = {
   id: 'n-1',
   paperId: 'p-1',
-  title: '总评标题',
   contentMd: '这篇论文提出……',
   createdAt: '2026-05-01T00:00:00Z',
   updatedAt: '2026-05-01T00:00:00Z'
@@ -107,8 +106,6 @@ guardedDescribe('SR2-C-02', 'corpus.assemble —— corpus md 装配（ADR-0011 
         '# Water Quality Model',
         '',
         '## 总评',
-        '',
-        '**总评标题**',
         '',
         '这篇论文提出……',
         '',

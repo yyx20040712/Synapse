@@ -19,14 +19,14 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
   it('load 写入；edit 标 dirty；1.5s 内防抖后保存一次', async () => {
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: 't', contentMd: 'c', createdAt: 't', updatedAt: 't' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: 'c', createdAt: 't', updatedAt: 't' }
       })
     )
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '标题', contentMd: '旧', createdAt: 't', updatedAt: 't' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '旧', createdAt: 't', updatedAt: 't' }
     }))
     const useStore = await loadStore({ notes: { get, save } })
 
@@ -46,13 +46,13 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
   it('保存后 savedAt 更新；saving 态翻转', async () => {
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't2' }
       })
     )
     const useStore = await loadStore({ notes: { get: vi.fn(), save } })
-    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
     useStore.getState().saveSoon('p-1')
     await vi.advanceTimersByTimeAsync(1600)
     expect(useStore.getState().noteByPaper['p-1']?.savedAt).toBe('t2')
@@ -61,36 +61,30 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
   it('load 期间草稿被编辑：字段级合并，用户碰过的字段赢（同毫秒 edit 同样受保护）', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't-saved' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't-saved' }
     }))
 
     // 场景 1：fake timers 冻结时间轴——load 发起与 edit 同处一个毫秒（>= 语义：
-    // 同毫秒的 edit 必然晚于 load 调用，同样受保护）。用户只改 contentMd →
-    // contentMd 保用户输入，title 取服务器，savedAt 取服务器
+    // 同毫秒的 edit 必然晚于 load 调用，同样受保护）。用户改 contentMd →
+    // contentMd 保用户输入，savedAt 取服务器
     const useStore = await loadStore({ notes: { get, save: vi.fn() } })
     const loading = useStore.getState().load('p-1')
     useStore.getState().edit('p-1', { contentMd: '用户输入' })
     await loading
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('用户输入')
-    expect(merged?.title).toBe('服务器标题')
     expect(merged?.savedAt).toBe('t-saved')
 
-    // 场景 2：只改 title → contentMd 取服务器
-    const useStore2 = await loadStore({ notes: { get, save: vi.fn() } })
-    const loading2 = useStore2.getState().load('p-1')
-    useStore2.getState().edit('p-1', { title: '用户标题' })
-    await loading2
-    const merged2 = useStore2.getState().noteByPaper['p-1']
-    expect(merged2?.title).toBe('用户标题')
-    expect(merged2?.contentMd).toBe('服务器旧内容')
+    // 场景 2：不触碰字段（无编辑的另一侧）由场景 3 整版承载
+    // （[A2 F-CONTRACTA-01] title 停用——编辑域坍缩为 contentMd 单字段，
+    //  原「只改 title → contentMd 取服务器」场景随字段消亡）
 
     // 场景 3（新不变量的另一侧）：编辑已落库（save 成功清"未保存编辑"标记）→
     // 再次 load 整版落地取服务器
     const save3 = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't3' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't3' }
       })
     )
     const useStore3 = await loadStore({ notes: { get, save: save3 } })
@@ -101,7 +95,6 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore3.getState().load('p-1') // 无未保存编辑 → 整版落地
     const landed = useStore3.getState().noteByPaper['p-1']
     expect(landed?.contentMd).toBe('服务器旧内容')
-    expect(landed?.title).toBe('服务器标题')
   })
 
   it('迟到的旧 load 响应被丢弃', async () => {
@@ -118,7 +111,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
     resolveFirst({
       ok: true,
-      data: { id: 'n-1', paperId: 'p-1', title: '旧标题', contentMd: '迟到内容', createdAt: 't', updatedAt: 't' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '迟到内容', createdAt: 't', updatedAt: 't' }
     })
     await first
     expect(useStore.getState().noteByPaper['p-1']?.contentMd).toBe('')
@@ -143,9 +136,9 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     let resolveGet!: (v: unknown) => void
     const get = vi.fn().mockImplementationOnce(() => new Promise((r) => { resolveGet = r }))
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't2' }
       })
     )
     const useStore = await loadStore({ notes: { get, save } })
@@ -159,14 +152,13 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
     resolveGet({
       ok: true,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
     })
     await loading // 保护合并落地 → 自动补存排程
     await vi.advanceTimersByTimeAsync(1600)
     expect(save).toHaveBeenCalledTimes(1)
     expect(save.mock.calls[0]?.[0]).toMatchObject({
       paperId: 'p-1',
-      title: '服务器标题', // 未触碰字段取服务器基线
       contentMd: '用户输入' // 用户编辑被补存
     })
   })
@@ -176,12 +168,12 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'E_NOTES', message: '失败' } }))
       .mockImplementationOnce(async () => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
       }))
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't2' }
       })
     )
     const useStore = await loadStore({ notes: { get, save } })
@@ -196,21 +188,20 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore.getState().load('p-1')
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('用户输入')
-    expect(merged?.title).toBe('服务器标题')
     await vi.advanceTimersByTimeAsync(1600)
     expect(save).toHaveBeenCalledTimes(1) // 恰一次：合并路径的补存
-    expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', title: '服务器标题', contentMd: '用户输入' })
+    expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '用户输入' })
   })
 
   it('防抖窗口内切走切回：未保存编辑不被覆盖', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
     }))
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't2' }
       })
     )
     const useStore = await loadStore({ notes: { get, save } })
@@ -222,14 +213,13 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore.getState().load('p-1') // 切回触发：须合并非覆盖
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('窗口内编辑')
-    expect(merged?.title).toBe('服务器标题')
     expect(save).not.toHaveBeenCalled() // 窗口未到 + 补存重排：尚无保存
   })
 
   it('保存进行中再编辑：旧保存成功不误清新编辑的未保存标记', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't0' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't0' }
     }))
     let resolveSave!: (v: unknown) => void
     const save = vi.fn().mockImplementation(() => new Promise((r) => { resolveSave = r }))
@@ -246,20 +236,19 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
     resolveSave({
       ok: true,
-      data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't1' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't1' }
     })
     await vi.advanceTimersByTimeAsync(0) // 冲微任务：旧保存的成功回调落地
 
     await useStore.getState().load('p-1') // 旧保存成功后立即 load
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('新编辑') // 新编辑标记未被误清 → 合并非整版覆盖
-    expect(merged?.title).toBe('服务器标题')
   })
 
   it('补存失败后再 load：触碰记录仍在，用户编辑不被服务器值覆盖', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
     }))
     const save = vi.fn(async () => ({ ok: false as const, error: { code: 'E_NOTES', message: '保存失败' } }))
     const useStore = await loadStore({ notes: { get, save } })
@@ -276,7 +265,6 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore.getState().load('p-1') // 切回再 load：仍须合并保用户输入
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('用户输入') // 保存失败不得使下次合并退化为整版取服务器
-    expect(merged?.title).toBe('服务器标题')
     expect(merged?.savedAt).toBe('t') // 服务器值未变（保存失败）——面板周期比对不误判成功
     expect(merged?.pending).toBe(true) // S5 跨格序列终点：显示输入仍为"有未落库编辑"
   })
@@ -290,12 +278,12 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     const save = vi.fn()
       .mockImplementationOnce(async () => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't2' }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't2' }
       }))
       .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'E', message: '写盘失败' } }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1') // 首载成功（空草稿）——过首载门控，否则 saveSoon 被吞
-    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
 
     useStore.getState().edit('p-1', { contentMd: 'x' })
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
@@ -312,18 +300,18 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
   })
 
   it('pending：保存成功但派发后又有新编辑（编辑序号前进）→ 保留 true', async () => {
-    let resolveSave!: (v: { ok: true; data: { id: string; paperId: string; title: string; contentMd: string; createdAt: string; updatedAt: string } }) => void
+    let resolveSave!: (v: { ok: true; data: { id: string; paperId: string; contentMd: string; createdAt: string; updatedAt: string } }) => void
     const get = vi.fn(async () => ({ ok: true as const, data: null }))
-    const save = vi.fn().mockImplementationOnce(() => new Promise<{ ok: true; data: { id: string; paperId: string; title: string; contentMd: string; createdAt: string; updatedAt: string } }>((r) => { resolveSave = r }))
+    const save = vi.fn().mockImplementationOnce(() => new Promise<{ ok: true; data: { id: string; paperId: string; contentMd: string; createdAt: string; updatedAt: string } }>((r) => { resolveSave = r }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1') // 首载成功——过首载门控，否则 saveSoon 被吞
-    useStore.setState({ noteByPaper: { 'p-1': { title: '', contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
 
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
     await vi.advanceTimersByTimeAsync(1600) // 派发（快照 seq=1），保存悬挂
     useStore.getState().edit('p-1', { contentMd: '第二次' }) // 派发后新编辑（seq=2）
-    resolveSave({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '', createdAt: 't', updatedAt: 't3' } })
+    resolveSave({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't3' } })
     await vi.advanceTimersByTimeAsync(0)
     // 成功不清：新编辑仍未落库（由重排防抖收尾）
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
@@ -332,11 +320,11 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
   it('pending：load 合并落地保持 true（补存落库前不得谎称已保存）；整版落地 false', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't-saved' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't-saved' }
     }))
     const save = vi.fn(async () => ({
       ok: true as const,
-      data: { id: 'n-1', paperId: 'p-1', title: '服务器标题', contentMd: '用户输入', createdAt: 't', updatedAt: 't-saved2' }
+      data: { id: 'n-1', paperId: 'p-1', contentMd: '用户输入', createdAt: 't', updatedAt: 't-saved2' }
     }))
     const useStore = await loadStore({ notes: { get, save } })
 
@@ -380,17 +368,17 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       let serverContent = '服务器初值'
       let saveCounter = 0
       let serverSavedAt = 't0000'
-      const save = vi.fn(async (req: { title: string; contentMd: string }) => {
+      const save = vi.fn(async (req: { contentMd: string }) => {
         if (rng() < 0.3) {
           return { ok: false as const, error: { code: 'E', message: '写盘失败' } }
         }
         serverContent = req.contentMd
         serverSavedAt = `t${String(++saveCounter).padStart(4, '0')}`
-        return { ok: true as const, data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt } }
+        return { ok: true as const, data: { id: 'n-1', paperId: 'p-1', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt } }
       })
       const get = vi.fn(async () => ({
         ok: true as const,
-        data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt }
+        data: { id: 'n-1', paperId: 'p-1', contentMd: serverContent, createdAt: 't', updatedAt: serverSavedAt }
       }))
       const useStore = await loadStore({ notes: { get, save } })
       await useStore.getState().load('p-1') // 首载基线（过首载门控）
@@ -450,7 +438,6 @@ describe('notes.store discard 族（A3 悬置写修票）', () => {
   const SERVER_NOTE = {
     id: 'n-1',
     paperId: 'p-1',
-    title: '服务器标题',
     contentMd: '服务器内容',
     createdAt: 't',
     updatedAt: 't'
@@ -525,7 +512,7 @@ describe('notes.store discard 族（A3 悬置写修票）', () => {
 
   it('discard 后再 edit：正常重新起步（代际守卫不误伤后续编辑链，gen 每次派发重取）', async () => {
     const save = vi.fn(
-      async (_req: { paperId: string; title: string; contentMd: string }) => ({
+      async (_req: { paperId: string; contentMd: string }) => ({
         ok: true as const,
         data: { ...SERVER_NOTE, updatedAt: 't2' }
       })

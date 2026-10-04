@@ -10,7 +10,8 @@ import { z } from 'zod'
 export const tagColorSchema = z.string().regex(/^#[0-9a-f]{6}$/).nullable()
 
 /**
- * [T4 小挂账] 标签名长度上限单源常量（NOTE_TITLE_MAX 同型）：schema 校验
+ * [T4 小挂账] 标签名长度上限单源常量（先例原 NOTE_TITLE_MAX 同型——该常量
+ * 已随 [A2 F-CONTRACTA-01] note.title 停用退役）：schema 校验
  * （tagSchema/tagNameReqSchema/renameTagReqSchema）与渲染层四输入点
  * maxLength 同源消费，禁止两处字面量对齐。
  */

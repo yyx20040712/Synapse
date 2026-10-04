@@ -2,9 +2,11 @@
  * [SR-NOTE-02] notes.store —— 笔记编辑状态（工单：done / weak）
  *
  * ── 行为层 ──
- * - { noteByPaper: Record<string, { title: string; contentMd: string; saving: boolean;
+ * - { noteByPaper: Record<string, { contentMd: string; saving: boolean;
  *     savedAt: string | null; pending: boolean }> }（pending=未落库编辑镜像，见
- *     NoteDraft 字段注释——面板"未保存/已保存"诚实显示的依据）
+ *     NoteDraft 字段注释——面板"未保存/已保存"诚实显示的依据；
+ *     [A2 F-CONTRACTA-01 2026-10-04] title 停用——草稿/编辑域坍缩为
+ *     contentMd 单字段，字段级合并语义随之单字段化）
  * - load(paperId)：unwrap(api.notes.get) 重建草稿（无笔记 → 空草稿，savedAt=null）；
  *   带请求序号 stale-guard（对齐 library.store）——晚到的旧响应（含旧失败）直接
  *   丢弃。落地不变量：本地存在未保存编辑（模块级 pendingEdit，save 成功清、
@@ -49,7 +51,6 @@ import { api, unwrap } from '../../api/client'
 import type { Note } from '@shared/models/note'
 
 export interface NoteDraft {
-  title: string
   contentMd: string
   saving: boolean
   savedAt: string | null
@@ -62,7 +63,7 @@ export interface NoteDraft {
 export interface NotesStore {
   noteByPaper: Record<string, NoteDraft>
   load(paperId: string): Promise<void>
-  edit(paperId: string, patch: { title?: string; contentMd?: string }): void
+  edit(paperId: string, patch: { contentMd?: string }): void
   saveSoon(paperId: string): void
   /** 单篇弃改收口（关脏 tab 确认丢弃后调）——幂等，条目/元数据不存在亦无害 */
   discardPendingEdit(paperId: string): void
@@ -73,13 +74,13 @@ export interface NotesStore {
 /** 自动保存防抖窗口（毫秒） */
 const SAVE_DEBOUNCE_MS = 1500
 
-const EMPTY_DRAFT: NoteDraft = { title: '', contentMd: '', saving: false, savedAt: null, pending: false }
+const EMPTY_DRAFT: NoteDraft = { contentMd: '', saving: false, savedAt: null, pending: false }
 
 /** 每篇文献最近一次 edit 的时刻（Date.now()）——saveSoon 首载门控的判定依据（仅取存在性） */
 const lastEditedAt = new Map<string, number>()
 
 /** 每篇文献"用户已触碰字段"（edit 打点；save 成功清/整版落地清，合并路径保留）——字段级合并的依据 */
-const touchedFields = new Map<string, { title?: boolean; contentMd?: boolean }>()
+const touchedFields = new Map<string, { contentMd?: boolean }>()
 
 /** 已成功落地过服务器基线的文献（load 成功路径打点，失败不打）——首载完成前挂起自动保存的门控 */
 const loadedOnce = new Set<string>()
@@ -152,7 +153,6 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         const note = await unwrap(api.notes.get({ paperId }))
         // 旧响应晚到（load 已被再次发起）：丢弃，不覆盖新结果/编辑中的草稿
         if (seq !== loadSeq) return
-        const serverTitle = note?.title ?? ''
         const serverContent = note?.contentMd ?? ''
         const serverSavedAt = note?.updatedAt ?? null
         // 不变量：本地存在未保存编辑（pendingEdit，含保存失败）→ 一律字段级合并：
@@ -162,7 +162,6 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
           const draft = get().noteByPaper[paperId] ?? EMPTY_DRAFT
           const touched = touchedFields.get(paperId)
           setDraft(paperId, {
-            title: touched?.title ? draft.title : serverTitle,
             contentMd: touched?.contentMd ? draft.contentMd : serverContent,
             saving: false,
             savedAt: serverSavedAt,
@@ -182,7 +181,6 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         // 整版落地：清"已触碰字段"（无未保存编辑，触碰值已落库/被覆盖，回到同步态语义）
         touchedFields.delete(paperId)
         setDraft(paperId, {
-          title: serverTitle,
           contentMd: serverContent,
           saving: false,
           savedAt: serverSavedAt,
@@ -204,7 +202,6 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       pendingEdit.add(paperId)
       editSeq.set(paperId, (editSeq.get(paperId) ?? 0) + 1)
       const touched = touchedFields.get(paperId) ?? {}
-      if (patch.title !== undefined) touched.title = true
       if (patch.contentMd !== undefined) touched.contentMd = true
       touchedFields.set(paperId, touched)
       setDraft(paperId, { ...patch, pending: true })
@@ -212,7 +209,7 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
 
     saveSoon(paperId) {
       // 首载完成前挂起保存：从未成功载入且草稿已含用户编辑（服务器基线未知，
-      // 可能半成品——如正文有输入而标题仍空）时不排程自动保存。用户输入由
+      // 可能半成品——如正文有输入而服务器侧尚无对应行）时不排程自动保存。用户输入由
       // load 的字段级合并保护、落地后补存；load 失败不打卡（面板禁用无输入，
       // 重试成功走合并+补存）。重开面板不受影响：loadedOnce 已打卡，正常防抖
       if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return
@@ -229,7 +226,7 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         const genAtDispatch = discardGen.get(paperId) ?? 0
         setDraft(paperId, { saving: true })
         void unwrap(
-          api.notes.save({ paperId, title: draft.title, contentMd: draft.contentMd })
+          api.notes.save({ paperId, contentMd: draft.contentMd })
         )
           .then((saved: Note) => {
             // 代际守卫（首行）：discard 已发生——全 no-op，不 setDraft、不动

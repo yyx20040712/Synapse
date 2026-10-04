@@ -1,16 +1,19 @@
 /**
  * [SR-DB-03] notes.repo —— notes 表仓储（工单：open / weak）
+ * [A2 F-CONTRACTA-01 2026-10-04] title 停用：写链去列（DDL DEFAULT '' 自动
+ * 生效）、读面不映射（NoteRow.title 死置=DDL 镜像，清列归 D 批）；FTS 虚表
+ * 与触发器零触碰（空串零 token——命中只由 content 驱动）。
  *
  * ── 行为层 ──
  * - 每篇文献一篇笔记的 upsert（唯一性：同 paper_id 已有则更新，无则插入）
- * - 笔记 FTS 搜索（标题+内容）
+ * - 笔记 FTS 搜索（内容）
  *
  * ── 接口层 ──
  * - export interface NotesRepo：
- *     upsert(input: { paperId: string; title: string; contentMd: string }): Note
+ *     upsert(input: { paperId: string; contentMd: string }): Note
  *     findByPaper(paperId: string): Note | null
  *     delete(id: string): boolean
- *     search(q: string): Note[]                // FTS：title/content
+ *     search(q: string): Note[]                // FTS：content
  *     countByPaper(paperId: string): number
  *
  * ── 架构层 ──
@@ -29,14 +32,16 @@ import { escapeFtsQuery } from '../fts'
 import type { SqliteDb } from '../connection'
 
 export interface NotesRepo {
-  upsert(input: { paperId: string; title: string; contentMd: string }): Note
+  upsert(input: { paperId: string; contentMd: string }): Note
   findByPaper(paperId: string): Note | null
   delete(id: string): boolean
   search(q: string): Note[]
   countByPaper(paperId: string): number
 }
 
-/** notes 表行形状（列名原样，蛇形） */
+/** notes 表行形状（列名原样，蛇形；title=[A2] 死置列——DDL 镜像保留
+ *  （NOT NULL DEFAULT ''，SELECT 不取、运行时无此键；清列归 D 批）——
+ *  LineageNodeRow.tags 死置先例同型） */
 interface NoteRow {
   id: string
   paper_id: string
@@ -46,12 +51,11 @@ interface NoteRow {
   updated_at: string
 }
 
-/** 行 → 领域模型（蛇列名 → 驼峰字段） */
+/** 行 → 领域模型（蛇列名 → 驼峰字段；title 死置不映射——见 NoteRow 注） */
 function toNote(row: NoteRow): Note {
   return {
     id: row.id,
     paperId: row.paper_id,
-    title: row.title,
     contentMd: row.content_md,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -65,30 +69,28 @@ function escapeLike(input: string): string {
 
 export function createNotesRepo(db: SqliteDb): NotesRepo {
   const selectByPaper = db.prepare(
-    'SELECT id, paper_id, title, content_md, created_at, updated_at FROM notes WHERE paper_id = ?'
+    'SELECT id, paper_id, content_md, created_at, updated_at FROM notes WHERE paper_id = ?'
   )
   const selectById = db.prepare(
-    'SELECT id, paper_id, title, content_md, created_at, updated_at FROM notes WHERE id = ?'
+    'SELECT id, paper_id, content_md, created_at, updated_at FROM notes WHERE id = ?'
   )
   const insertNote = db.prepare(
-    'INSERT INTO notes (id, paper_id, title, content_md, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO notes (id, paper_id, content_md, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
   )
-  const updateNote = db.prepare(
-    'UPDATE notes SET title = ?, content_md = ?, updated_at = ? WHERE id = ?'
-  )
+  const updateNote = db.prepare('UPDATE notes SET content_md = ?, updated_at = ? WHERE id = ?')
   const deleteById = db.prepare('DELETE FROM notes WHERE id = ?')
   const countStmt = db.prepare('SELECT COUNT(*) AS n FROM notes WHERE paper_id = ?')
   // FTS5 external content：行数据在 notes 表，notes_fts 只存索引（触发器自动同步）
   const selectByFts = db.prepare(
-    `SELECT n.id, n.paper_id, n.title, n.content_md, n.created_at, n.updated_at
+    `SELECT n.id, n.paper_id, n.content_md, n.created_at, n.updated_at
      FROM notes_fts JOIN notes n ON n.rowid = notes_fts.rowid
      WHERE notes_fts MATCH ? ORDER BY notes_fts.rank`
   )
   // trigram 分词器查询串须 ≥3 字符；更短（如 2 字中文"漏损"）用 LIKE 兜底
   // （平局决胜=rowid 插入序，DESC 序后插在前——id=随机 uuid 不作决胜键）
   const selectByLike = db.prepare(
-    `SELECT id, paper_id, title, content_md, created_at, updated_at FROM notes
-     WHERE title LIKE ? ESCAPE '\\' OR content_md LIKE ? ESCAPE '\\'
+    `SELECT id, paper_id, content_md, created_at, updated_at FROM notes
+     WHERE content_md LIKE ? ESCAPE '\\'
      ORDER BY updated_at DESC, rowid DESC`
   )
 
@@ -103,15 +105,15 @@ export function createNotesRepo(db: SqliteDb): NotesRepo {
 
   // 表无 paper_id 唯一约束，无法用 ON CONFLICT —— 事务内"先查后插/改"保证原子
   const upsertTx = db.transaction(
-    (input: { paperId: string; title: string; contentMd: string }): Note => {
+    (input: { paperId: string; contentMd: string }): Note => {
       const existing = selectByPaper.get(input.paperId) as NoteRow | undefined
       const now = new Date().toISOString()
       if (existing !== undefined) {
-        updateNote.run(input.title, input.contentMd, now, existing.id)
+        updateNote.run(input.contentMd, now, existing.id)
         return readById(existing.id)
       }
       const id = randomUUID()
-      insertNote.run(id, input.paperId, input.title, input.contentMd, now, now)
+      insertNote.run(id, input.paperId, input.contentMd, now, now)
       return readById(id)
     }
   )
@@ -132,7 +134,7 @@ export function createNotesRepo(db: SqliteDb): NotesRepo {
         return (selectByFts.all(escapeFtsQuery(trimmed)) as NoteRow[]).map(toNote)
       }
       const pattern = `%${escapeLike(trimmed)}%`
-      return (selectByLike.all(pattern, pattern) as NoteRow[]).map(toNote)
+      return (selectByLike.all(pattern) as NoteRow[]).map(toNote)
     },
     countByPaper: (paperId) => (countStmt.get(paperId) as { n: number }).n
   }

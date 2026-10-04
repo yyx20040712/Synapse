@@ -6,7 +6,8 @@
  *   # {title}
  *   元信息行（作者 / 年份 / 期刊 / DOI / 已读进度）
  *   ## 高亮摘录：每条 "- > {quote}（p.{page+1}）"；评论非空时缩进 4 空格另起一行
- *   ## 笔记：note 的标题与 Markdown 原文（无笔记则省略整节）
+ *   ## 笔记：note 的 Markdown 原文（无笔记则省略整节；[A2 F-CONTRACTA-01]
+ *   title 停用——原「### {title}」小节行随字段退役）
  *   末行：生成时间（本地时区 YYYY-MM-DD HH:mm）
  *
  * ── 接口层 ──
@@ -77,9 +78,6 @@ export function buildReadingReport(data: ReportData): string {
 
   if (note !== null) {
     lines.push('', '## 笔记', '')
-    if (note.title !== '') {
-      lines.push(`### ${note.title}`, '')
-    }
     lines.push(note.contentMd)
   }
 

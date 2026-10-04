@@ -181,9 +181,7 @@ export function assembleCorpusMd(input: CorpusAssembleInput): string {
 
   if (note !== null) {
     lines.push('## 总评', '')
-    if (note.title !== '') {
-      lines.push(`**${note.title}**`, '')
-    }
+    // [A2 F-CONTRACTA-01] note.title 停用——原加粗标题行随字段退役
     lines.push(note.contentMd, '')
   }
 

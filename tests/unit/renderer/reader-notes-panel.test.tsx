@@ -82,16 +82,17 @@ function typeInto(el: HTMLInputElement | HTMLTextAreaElement, text: string): voi
 }
 
 guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消费）', () => {
-  it('载入：api.notes.get → 标题/正文回填；pending=false 显示「已保存」', async () => {
-    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: '标题', contentMd: '正文内容', createdAt: 't', updatedAt: 't' } })
+  it('载入：api.notes.get → 正文回填+静态「全文笔记」节标；pending=false 显示「已保存」', async () => {
+    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: '正文内容', createdAt: 't', updatedAt: 't' } })
     mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
     await act(async () => {
       await vi.runOnlyPendingTimersAsync()
     })
-    const title = host?.querySelector('input[aria-label="笔记标题"]') as HTMLInputElement
+    // [A2 F-CONTRACTA-01] 标题输入框退役——节标静态「全文笔记」，无标题输入面
+    expect(host?.querySelector('input[aria-label="笔记标题"]')).toBeNull()
     const body = host?.querySelector('textarea[aria-label="笔记正文"]') as HTMLTextAreaElement
-    expect(title.value).toBe('标题')
     expect(body.value).toBe('正文内容')
+    expect(host?.textContent).toContain('全文笔记')
     expect(host?.textContent).toContain('已保存')
   })
 
@@ -108,7 +109,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
 
   it('编辑写草稿：pending 镜像置位→「未保存」；防抖保存成功→「已保存」', async () => {
     notesGet.mockResolvedValue({ ok: true, data: null })
-    notesSave.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: '', contentMd: '草稿', createdAt: 't', updatedAt: 't2' } })
+    notesSave.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: '草稿', createdAt: 't', updatedAt: 't2' } })
     mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
     await act(async () => {
       await vi.runOnlyPendingTimersAsync()
@@ -128,7 +129,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
   })
 
   it('换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）', async () => {
-    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: 'T', contentMd: 'C', createdAt: 't', updatedAt: 't' } })
+    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: 'C', createdAt: 't', updatedAt: 't' } })
     mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
     await act(async () => {
       await vi.runOnlyPendingTimersAsync()
@@ -161,7 +162,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
 
   it('跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」', async () => {
     // A：载入既有笔记并让保存周期在飞
-    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: 'T', contentMd: 'C', createdAt: 't', updatedAt: 't1' } })
+    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: 'C', createdAt: 't', updatedAt: 't1' } })
     let rejectSave: ((e: Error) => void) | null = null
     notesSave.mockImplementation(
       () => new Promise((_res, rej) => { rejectSave = rej })
@@ -194,7 +195,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     expect(host?.textContent).not.toContain('保存失败')
     expect(host?.textContent).toContain('已保存')
     // W3：切回 A——A 的保存失败必须可见（重试入口不失联；周期判定 per-paper 分键）
-    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', title: 'T', contentMd: 'A 的编辑', createdAt: 't', updatedAt: 't1' } })
+    notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: 'A 的编辑', createdAt: 't', updatedAt: 't1' } })
     act(() => {
       useReaderStore.setState({ activeId: 'p-1' })
     })

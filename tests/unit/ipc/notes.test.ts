@@ -12,10 +12,10 @@ guardedDescribe('SR-IPC-03', 'ipc/notes —— 纯委托装配', () => {
     }
     const ipc = createNotesIpc(makeIpcDeps({ services: { notes: notes as never } }))
     await ipc.get({ paperId: 'p' })
-    await ipc.save({ paperId: 'p', title: 't', contentMd: 'c' })
+    await ipc.save({ paperId: 'p', contentMd: 'c' })
     await ipc.remove({ noteId: 'n' })
     expect(notes.get).toHaveBeenCalledWith({ paperId: 'p' })
-    expect(notes.save).toHaveBeenCalledWith({ paperId: 'p', title: 't', contentMd: 'c' })
+    expect(notes.save).toHaveBeenCalledWith({ paperId: 'p', contentMd: 'c' })
     expect(notes.remove).toHaveBeenCalledWith({ noteId: 'n' })
   })
 })

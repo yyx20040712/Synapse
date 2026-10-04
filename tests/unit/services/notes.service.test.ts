@@ -7,7 +7,6 @@ import { guardedDescribe } from '../../utils/guard'
 const note: Note = {
   id: 'n-1',
   paperId: 'p-1',
-  title: '标题',
   contentMd: '内容',
   createdAt: 't',
   updatedAt: 't'
@@ -37,12 +36,12 @@ guardedDescribe('SR-SVC-10', 'notes.service —— get/save/remove', () => {
   it('save：文献不存在抛 NOT_FOUND；存在则 upsert', async () => {
     const repos = stubRepos({ papers: { findById: () => null } })
     const svc = createNotesService({ repos })
-    await expect(svc.save({ paperId: 'ghost', title: '', contentMd: '' })).rejects.toMatchObject({
+    await expect(svc.save({ paperId: 'ghost', contentMd: '' })).rejects.toMatchObject({
       code: 'NOT_FOUND'
     })
 
     const okSvc = createNotesService({ repos: stubRepos() })
-    await expect(okSvc.save({ paperId: 'p-1', title: '标题', contentMd: '内容' })).resolves.toMatchObject({
+    await expect(okSvc.save({ paperId: 'p-1', contentMd: '内容' })).resolves.toMatchObject({
       id: 'n-1'
     })
   })
