@@ -7,7 +7,9 @@
  * import 该件；双写面物理消失，6b 哨兵段哨内联回退）/ 色值 token 同值
  * 守卫（②）/ 内联回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——
  * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）
- * / e2e 截图比对负锚（第 9 段——INV-64）。
+ * / e2e 截图比对负锚（第 9 段——INV-64）/ 模型代号负锚（第 8 段——扫描面
+ * 单源=scripts/check-model-names.mjs）/ 节点唯一来源负锚词表（第 10 段——
+ * INV-NEW-1，F-ALIGN-01）+治理表行格数校验（10b 段）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -50,6 +52,10 @@ function walk(dir, filter, acc = []) {
 
 const srcFiles = walk(join(root, 'src'), (p) => /\.(ts|tsx)$/.test(p))
 const testFiles = walk(join(root, 'tests'), (p) => /\.(ts|tsx)$/.test(p))
+// [F-ALIGN-01 d1-N3] src 扫描面空集哨兵——srcFiles 供段 1/8/10 消费，路径
+// 漂移/结构变更致空集时全段静默绿=负锚无声解除武装（fail-closed 教义，
+// theme.test.ts/10b 零行哨同族）
+if (srcFiles.length === 0) violations.push('哨兵：src 下 walk 零 ts/tsx 文件——扫描面失能（段 1/8/10 全体）')
 
 // 1) 占位标记（NotImplementedError 机制除外——那是受控工单占位，由 check-tickets 管）
 const PLACEHOLDER_RE = /\b(TODO|FIXME|XXX|HACK)\b|placeholder/i
@@ -395,6 +401,75 @@ for (const f of walk(join(root, 'tests', 'e2e'), (p) => /\.(ts|tsx)$/.test(p))) 
   if (/\btoHaveScreenshot\b/.test(readFileSync(f, 'utf8'))) {
     violations.push(`${relative(root, f)}: e2e 含 toHaveScreenshot 截图比对（INV-64——像素 diff 限 scripts/ 工具层；e2e 断言=计算样式+文本）`)
   }
+}
+
+// 10) 节点唯一来源负锚词表（[F-ALIGN-01 W6] 2026-10-04 起，INV-NEW-1）——
+//     src 下 .ts/.tsx 出现手动建点/主题节点退役符号即红（防回潮；扫描含注释
+//     ——注释残留=stale 注释需改写，LineageSideTags:11 先例）。词表五项=设计稿
+//     §0 W6 精确口径：upsert-node（IPC 通道名+写队列 kind 字面量）/addPaperNode
+//     /addThemeNode（service 新建与主题分支）/lineage-add-node（testid）/
+//     LineageAddNodeDialog（组件名）；不含 upsertNode 符号（repo 层合法符号——
+//     import/move/updateMeta 直调在役）。已知边界（RR1 声明）：\b 精确 token
+//     口径=词符紧贴变体（addPaperNodeFoo/xupsert-node 类）不在锚面、连字符
+//     后缀变体（upsert-node-v2 类）在锚面——命中/逃逸不对称为精确口径固有
+//     边界；派生名/功能级重写（新名新实现）超出负锚定位，由契约机检（zod
+//     schema 类型测试）+评审承载。加词约束=新词禁含正则元字符（构造处无
+//     转义，词表为受锁常量自维护面）。治理登记=defense-lifecycle.md ㉔行
+//     （退出条件/评审触发器在册）。
+const NODE_SOURCE_RETIRE_WORDS = ['upsert-node', 'addPaperNode', 'addThemeNode', 'lineage-add-node', 'LineageAddNodeDialog']
+const retireWordRes = NODE_SOURCE_RETIRE_WORDS.map((w) => new RegExp(`\\b${w}\\b`))
+for (const f of srcFiles) {
+  const content = readFileSync(f, 'utf-8')
+  for (let i = 0; i < NODE_SOURCE_RETIRE_WORDS.length; i++) {
+    if (!retireWordRes[i].test(content)) continue
+    const lines = content.split('\n') // 命中文件才逐行定位（零命中常态=全文 test 同成本）
+    for (let ln = 0; ln < lines.length; ln++) {
+      if (retireWordRes[i].test(lines[ln])) {
+        violations.push(
+          `${relative(root, f)}:${ln + 1}: 退役符号 "${NODE_SOURCE_RETIRE_WORDS[i]}"（INV-NEW-1 节点唯一来源负锚——手动建点/主题节点路径已全域退役，F-ALIGN-01 W6）`
+        )
+      }
+    }
+  }
+}
+
+// 10b) 治理表行格数校验（[F-ALIGN-01] 2026-10-04 起——v126 §5 机构检化：
+//      k1-B1 先例=登记表行格数与列数一致性此前无机检，落笔靠人肉数竖线）——
+//      defense-lifecycle.md 登记表节（「## 登记表」起至下一二级标题）内以 |
+//      开头的行（容忍行首空白），竖线数须恒=6（5 列+首尾）。文件缺席/表节零
+//      表行=哨兵硬红（fail-closed，theme.test.ts 先例）。边界申报：①表内容若
+//      用 \| 转义竖线会被误计数（现表零转义——未来需要时先剥转义再数）；
+//      ②登记表节内=唯一表（节内未来新增非 5 列表会被误伤红——显式约束非
+//      误报，加表须迁节）；③三级标题不复位状态机（节内 ### 小节下若出现
+//      表行仍计入——现节内无此形态）；④invariants.md 主表同型风险记为后续
+//      候选（先例未现，暂不扩面）。治理登记=defense-lifecycle.md ㉕行。
+let govTableOk = true
+let govTableText
+try {
+  govTableText = readFileSync(join(root, 'docs', 'defense-lifecycle.md'), 'utf-8')
+} catch (e) {
+  violations.push(`哨兵：defense-lifecycle.md 读取失败（${e.message}）——治理表格数关卡失能（10b）`)
+  govTableOk = false
+  govTableText = ''
+}
+let govRowCount = 0
+let inGovTable = false
+const govLines = govTableText.split('\n')
+for (let ln = 0; ln < govLines.length; ln++) {
+  const line = govLines[ln]
+  if (line.startsWith('## ')) {
+    inGovTable = line.startsWith('## 登记表')
+    continue
+  }
+  if (!inGovTable || !line.trimStart().startsWith('|')) continue
+  govRowCount++
+  const bars = (line.match(/\|/g) ?? []).length
+  if (bars !== 6) {
+    violations.push(`docs/defense-lifecycle.md:${ln + 1}: 登记表行 ${bars} 竖线≠6（5 列结构——错位即红，v126 §5 k1-B1 先例）`)
+  }
+}
+if (govTableOk && govRowCount === 0) {
+  violations.push('哨兵：defense-lifecycle.md 登记表零表行——表节缺席或标题漂移（10b fail-closed）')
 }
 
 if (violations.length > 0) {

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-04T11:22:16.7388493Z",
+    "generatedAt":  "2026-10-04T11:56:32.6743633Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -7,11 +7,11 @@
                   },
                   {
                       "path":  "docs/defense-lifecycle.md",
-                      "sha256":  "e55d6171b7fec500c42082cdb1cafebbe92931a78da5d85165cdd05f24610f09"
+                      "sha256":  "7c29d95d5b1ebf713ce0699f4b78f5a090981e3ee37035676d4236448e595ec8"
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "75855d022c844267e9b486d35da1980e7707c4150d32fa6b4a89175e75b19984"
+                      "sha256":  "40dd7f04e30cf24571d3a65e532ad9fdc0b6ba9dc6518d12bc886a9b4279a95a"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -39,7 +39,7 @@
                   },
                   {
                       "path":  "scripts/check-quality.mjs",
-                      "sha256":  "d69b124ff577f26728f14aa8d6be6c00a03bb6dccfdaf2c223822cd9f19de7d9"
+                      "sha256":  "540a5b1ca81f42d294638836fc37640ae249a93d45ebbce0439fbcdc6b4fd7bf"
                   },
                   {
                       "path":  "scripts/check-test-surface.mjs",
