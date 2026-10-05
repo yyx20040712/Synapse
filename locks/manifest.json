@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-05T00:46:49.4806111Z",
+    "generatedAt":  "2026-10-05T04:38:41.3586361Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -278,6 +278,10 @@
                       "sha256":  "d87dfa1d36981c40c7582857eb66965d81711bbbdabd66fe489bb8e7cb5590f6"
                   },
                   {
+                      "path":  "tests/e2e/geo-probes.ts",
+                      "sha256":  "619ecd8fc0c1d5b3b9dc40fda9f8f7df091a8837f58eb6ac802ec9220c0b08c0"
+                  },
+                  {
                       "path":  "tests/e2e/import-drag.spec.ts",
                       "sha256":  "10ee8e1c8753735717dad062b2838b58459029b90fcff5e82ccd8cebcc63fed9"
                   },
@@ -295,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "a767956e3fffe6fd31533b73432347f33721182b1ddf2f186f14b64f1c727f2a"
+                      "sha256":  "019d8d3950dd3ba2428abac4a3c2e778d7d0f424315244afbdc78866d7b7b99e"
                   },
                   {
                       "path":  "tests/e2e/lineage-topic-node.spec.ts",
@@ -687,7 +691,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
-                      "sha256":  "a3e394d4ce492ed06b4233d261ff3b399c5a31ea87823fb2d91b1ac9f565a0b4"
+                      "sha256":  "36b2dd11881ac6d6a9881b5cd53bc90a1a7214f3edc1d1e175c17925e04eb078"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-flight.test.ts",
@@ -699,7 +703,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-stretch.test.tsx",
-                      "sha256":  "c6588fc00b4094060be96f4631f56d5da81bf32d7de2d1ddb180549e1f9bfa32"
+                      "sha256":  "9116eeaba7f4b2ecf171aaba1f57c923b04e6c239742750b73c011961dfec7f1"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-classify.test.ts",
@@ -1380,6 +1384,10 @@
                   {
                       "path":  "tests/utils/ipc-deps.ts",
                       "sha256":  "964b4d220f6adefc4ec82331b360d097b5271da1ba4712093f9eb7d933c59d88"
+                  },
+                  {
+                      "path":  "tests/utils/live-frame.ts",
+                      "sha256":  "ab2bf9f43c523835a6386e714cb7fe51d739d0b0b869fc27b4d0bc92b509bd7a"
                   },
                   {
                       "path":  "tests/utils/pdf-factory.ts",

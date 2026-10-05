@@ -17,6 +17,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toastStoreSpy } from '../../utils/api-client-mock'
+import { stubRowFollowFlow } from '../../utils/live-frame'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { insertIndexFromRects } from '../../../src/renderer/features/lineage/useCardDrag'
@@ -208,12 +209,13 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
   })
 
   it('月内槽位实时移位（同行判卡左半）+框外槽淡化 .35', () => {
+    // [F-UIRES-03 T0] 随动模型示范应用（§8.1.6）：静态定值 mock 改 DOM 流序
+    // 派生（stubRowFollowFlow——占位槽插入/移位=真机腾位语义；起步/步进与
+    // 原静态定值同值 12/18/148）。判别语义升级：插位后其余卡 rect 随流移位
+    // 参与后续 pointermove 的 insertIndexFromRects 派生（静态 mock 下恒不移）
     mount([node('A'), node('B'), node('C')])
-    const f = req('.month-frame')
-    stubRect(f, 0, 0, 600, 200)
-    stubRect(cardOf('A'), 12, 18)
-    stubRect(cardOf('B'), 160, 18)
-    stubRect(cardOf('C'), 308, 18)
+    const f = req('.month-frame') as HTMLElement
+    stubRowFollowFlow(f)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
     let ph = req('.drag-slot')

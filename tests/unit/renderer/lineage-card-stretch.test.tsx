@@ -13,6 +13,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toastStoreSpy } from '../../utils/api-client-mock'
+import { stubLiveFrame } from '../../utils/live-frame'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -143,29 +144,15 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
   /** 真机布局随动模型（k1 断点 A/B 复现源）：stretch 挂载→padding-bottom
    *  +94；实态槽组末（其后无任何非拖卡）→腾新行 +92——判定读实时 rect 的
    *  实现形态下下拉带被撑高框吞噬（几何不可达/挂载即振荡），本模型使其在
-   *  jsdom 可判别（静态 rect mock 下现行代码也能瞬时 extend，真机不能） */
-  const stubLiveFrame = (frame: HTMLElement): void => {
-    vi.spyOn(frame, 'getBoundingClientRect').mockImplementation(() => {
-      let bottom = 200
-      if (frame.classList.contains('stretch')) bottom += 94
-      const ph = frame.querySelector('.drag-slot:not(.cand)')
-      const cards = [...frame.querySelectorAll('.tl-card:not(.dragging)')]
-      const last = cards[cards.length - 1]
-      if (ph !== null && last !== undefined && (last.compareDocumentPosition(ph) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) {
-        bottom += 92
-      }
-      return {
-        left: 0, top: 0, right: 600, bottom, width: 600, height: bottom, x: 0, y: 0,
-        toJSON: () => ({})
-      } as unknown as DOMRect
-    })
-  }
+   *  jsdom 可判别（静态 rect mock 下现行代码也能瞬时 extend，真机不能）。
+   *  [F-UIRES-03 T0] 随动模型 helper 化零语义迁移——实现单源=
+   *  tests/utils/live-frame.ts（§8.1.6 推广首件），参数=原内联定值 */
 
   /** 三卡同月挂载+框随动模型（bottom0=200，下拉带=(200,282]） */
   const setup = (): HTMLElement => {
     mount()
     const frame = req('.month-frame') as HTMLElement
-    stubLiveFrame(frame)
+    stubLiveFrame(frame, { baseBottom: 200, stretchPad: 94, slotRowGrow: 92, width: 600 })
     stubRect(cardOf('A'), 12, 18)
     stubRect(cardOf('B'), 160, 18)
     stubRect(cardOf('C'), 308, 18)
