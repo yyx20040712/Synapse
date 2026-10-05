@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-04T15:01:29.3937817Z",
+    "generatedAt":  "2026-10-05T00:46:49.4806111Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -83,11 +83,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "b160c9a0a11cae32ec894cc2becefb5a2abf7afedb4db9e0c1151b98b873892b"
+                      "sha256":  "5df0e8c9175eb0febdc9ee4b0ea122b13dd2eded71b3193021ff5f8823d87bee"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "873375c0e01ec2c7151f70679fb8d00d1313311e31572ba6a064566ad27d57fb"
+                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
