@@ -100,6 +100,10 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 // query.folderScope 一次（缺省图=库页文件夹上下文同步——mockup §3.2 明文；
 // 接缝双向锚定两 store 头注），聚合消费单点受控例外，lineage 域其余文件
 // 引用 library 仍是红线。
+// F-UIRES-03 B2（2026-10-05）：LineageSideFragments 是脉络侧板片段笔记分节，
+// kind 色点消费 annotation-style 的 COLOR_SWATCH 单源（ai-note-style 同型
+// 受控例外——色点单源防双源；数据面走 window.api 直连不经 reader store），
+// lineage 域其余文件引用 reader 仍是红线。
 const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagDropdown']],
@@ -108,7 +112,8 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
-  ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']]
+  ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']],
+  ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')

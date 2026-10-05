@@ -6,13 +6,15 @@
  * 真命中之三，2026-09-10 全收敛（值零变，仅声明收敛+引用名统一）。
  *
  * 消费清单：
- * - OP_FAILED：usePaperDetailActions / AiNotesStatus / ZcodeLinkSection /
+ * - OP_FAILED：usePaperDetailActions / ZcodeLinkSection /
  *   SettingsPage / UiScaleSection / WorkspacesPage（[F-WS-02] WorkspaceSection
- *   与 rail-shared 两消费面随课题管理面迁移/弹层退役删除）
+ *   与 rail-shared 两消费面随课题管理面迁移/弹层退役删除；
+ *   [F-UIRES-03 B2] AI 状态行组件消费面随阅读器 AI 区整删退役）
  *   （意外异常[非 ApiClientError]时的兜底中文消息——toast error 载体；
  *   ACTION_FAILED 旧名退役，统一 OP_FAILED）
- * - STATUS_POLL_MS：AiNotesStatus / ZcodeLinkSection（5s 门控轮询周期
- *   ——组件挂载期间，卸载清 interval，INV-14 成对）
+ * - STATUS_POLL_MS：ZcodeLinkSection（5s 门控轮询周期
+ *   ——组件挂载期间，卸载清 interval，INV-14 成对；
+ *   [F-UIRES-03 B2] AI 状态行组件消费面随阅读器 AI 区整删退役）
  * - MENU_ITEM_STYLE：LineageNodeMenu / FolderMenu（fixed 右键菜单
  *   菜单项类名串——两处同型菜单项；原 ITEM_STYLE 旧名退役；TagDropdown
  *   行菜单已随 TagRowMenu 退役[F-UIRES-03 B1]）

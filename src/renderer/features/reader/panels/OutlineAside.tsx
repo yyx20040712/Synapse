@@ -21,6 +21,9 @@
  *   highlightAnnotationId 接 reader.store noteHighlight（C-05 建位）
  * - 目录/缩略图跳页 onNavigate 收敛为 store 自取（setPage via getState）；
  *   pdfDoc 保留 props（ReaderPage 组件态非 store，PdfCanvas onDocReady 链不动）
+ * - [F-UIRES-03 B2] AI 高亮信号订阅+闪切 effect+AI 高亮透传
+ *   随阅读器左栏 AI 区整删退役（AI-09 反向同步链消亡——INV-105；noteHighlight
+ *   链〔C-05〕不动）
  *
  * ── 接口层 ──
  * - export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JSX.Element
@@ -34,8 +37,8 @@
  *   onNavigate——净负）/OutlineThumb.tsx 零改动
  *
  * ── 生命周期层 ──
- * - 预留：第四面板（P7-G AI 分节并入笔记 tab 下部，非并列新栏——骨架 §2）；
- *   tab 选择持久化（v2 预留，不做）
+ * - [F-UIRES-03 B2] 第四面板（P7-G AI 分节并入笔记 tab 下部——骨架 §2）随
+ *   AI 区整删退役终结；tab 选择持久化（v2 预留，不做）
  * - 不做：三栏同时可见（WPS 范式=单侧栏切换——B3 裁决解释）；右侧栏
  *
  * ── 文化层 ──
@@ -86,8 +89,6 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
   const activeTab = useActiveTab()
   const currentPage = activeTab?.page ?? 0
   const noteHighlight = useReaderStore((s) => s.noteHighlight)
-  // AI 段单击反向同步（AI-09，C-05 同型）：切笔记 tab+highlightAiNoteId 分发
-  const aiNoteHighlight = useReaderStore((s) => s.aiNoteHighlight)
 
   /** 目录/缩略图跳页：作用于 active tab（store 自取——props 链收敛） */
   const navigate = (page: number): void => {
@@ -118,12 +119,6 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
   useEffect(() => {
     if (noteHighlight !== null) setTab('notes')
   }, [noteHighlight])
-
-  // AI 段单击反向同步（AI-09）：切笔记 tab（高亮滚动由 AiNotesSection 消费
-  // highlightAiNoteId 信号完成——AiNoteGroupList data-highlight）
-  useEffect(() => {
-    if (aiNoteHighlight !== null) setTab('notes')
-  }, [aiNoteHighlight])
 
   return (
     <aside
@@ -186,7 +181,6 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
             annotations={activeTab?.annotations ?? []}
             onLocate={locateFragment}
             highlightAnnotationId={noteHighlight?.annotationId ?? null}
-            highlightAiNoteId={aiNoteHighlight?.aiNoteId ?? null}
           />
         )}
       </div>

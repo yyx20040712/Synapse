@@ -32,7 +32,7 @@
  *
  * ── 架构层 ──
  * - 全项目唯一操作 DOM 文本遍历的地方；消费形（F-ARCH4 拆件后）：SelectionLayer
- *   只经 anchor-serialize 间接调用；AnnotationLayer/AiAnnotationLayer 直调
+ *   只经 anchor-serialize 间接调用；AnnotationLayer 直调
  *   findRangeAtOffset（几何）+经 anchor-serialize 调 verifyQuote（校验）。
  *   几何原语公共面亦在本模块（F-ARCH4 起 anchor-serialize 消费此面——依赖
  *   单向 anchor-serialize→本模块→annotation-merge；[F-LINT-03→F-GEOM-01-G1]

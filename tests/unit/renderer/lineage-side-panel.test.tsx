@@ -1,30 +1,33 @@
 // @vitest-environment jsdom
 /**
- * [LG-04] LineageSidePanel —— 节点侧板+笔记双击跳阅读器组件测试（锁定合约，
- * always-active——不经 guardedDescribe）。
+ * [LG-04→F-UIRES-03 B2] LineageSidePanel —— 节点侧板三节新序+片段双击跳
+ * 阅读器组件测试（锁定合约，always-active——不经 guardedDescribe）。
  *
- * 覆盖：文献节点四区渲染（元信息/核心 idea/AI 分节分色单源/人工笔记）/
- * 主题节点空态（仅前两区+「主题节点无笔记」，笔记通道零调用）/AI 条目双击→
- * onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）/无锚条目→
- * anchor 缺省（篇级防线）/有页码无引文→anchor 保留页码（页级跳转）/
- * 单击不触发跳转/取数失败 error+重试（AI 面与人工面独立，INV-02 列表型）/
- * 空数据空态文案/换节点 stale 守卫（晚到旧响应不覆盖）/未选中空态/
- * Page 编排全链（单击节点→侧板挂载→双击→requestOpenPaperAnchored 锚载荷）/
- * Canvas 选中视觉态（Board selectedNodeId 兑现）/消费方级 INV-20（open-paper-
- * anchor：带锚→locateAnchor 单入口+页级降级静默；无锚→openPaper 既有链路）/
- * 消费方级 LG-06（带 aiNoteId 锚→notifyAiNoteHighlight 先于 locateAnchor
- * +定位照常；无 aiNoteId 锚→notify 不调）。
+ * 覆盖（B2 口径）：文献节点三节新序=全文笔记→片段笔记→AI 评估与建议
+ * （DOM 序断标题数组）/AI 双击链退役负锚（dblClick AI 条目零跳转——全应用
+ * 唯一保留双击链=片段条目）/片段节（loading/error+重试/空态/条目形态
+ * 色点+截断/双击载荷 spy 钉形 anchorPage=Annotation.page 0 基直传/stale
+ * 守卫）/后置占位章退役负锚（lineage-side-postpone 不存在）/主题节点空态
+ * （三通道零调用）/取数失败 error+重试（AI 面与全文面独立，INV-02 列表型）/
+ * 空数据空态文案/换节点 stale 守卫/未选中空态/Page 编排全链（单击节点→
+ * 侧板挂载→片段双击→requestOpenPaperAnchored 锚载荷）/[RR1-A] 两节三态
+ * 文案字节级+[RR1-C] 键盘等价（Enter 载荷钉形/Space 不触发）+[RR1-D]
+ * 排序集成（page×startOffset 双维乱→DOM 序断言）。消费方级 INV-20
+ * （open-paper-anchor）4 例=[RR1] 拆出 lineage-open-bus.test.tsx
+ * （主件 500 行红线——B1 tag-dropdown 拆件先例）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AiNote } from '../../../src/shared/models/ai-note'
+import type { Annotation } from '../../../src/shared/models/annotation'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },
+  reader: { listAnnotations: vi.fn() },
   lineage: { graph: vi.fn() },
   // [F-FOLDER-02·B] LineagePage 页首图切换器文件夹域面
   folders: { list: vi.fn() }
@@ -37,17 +40,17 @@ stubApiEvents({
   onFoldersChanged: vi.fn(() => () => undefined)
 })
 
-const { openPaperStub, locateAnchorStub, requestAnchoredStub, notifyAiNoteStub } = vi.hoisted(() => ({
+const { openPaperStub, locateAnchorStub, requestAnchoredStub } = vi.hoisted(() => ({
   openPaperStub: vi.fn(),
   locateAnchorStub: vi.fn(),
-  requestAnchoredStub: vi.fn(),
-  notifyAiNoteStub: vi.fn()
+  requestAnchoredStub: vi.fn()
 }))
 
-// 消费方级用例：reader.store 仅需 getState().openPaper + notifyAiNoteHighlight
-// （open-paper-anchor 面——LG-06 起 anchor 分支亦发面板信号）
+// 消费方级用例（[RR1] 拆出=tests/unit/renderer/lineage-open-bus.test.tsx——
+// 主件 500 行红线拆分，B1 tag-dropdown 先例）：reader.store 仅需
+// getState().openPaper（open-paper-anchor 面）；本件 mock 沿承供 Page 编排级
 vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
-  useReaderStore: { getState: () => ({ openPaper: openPaperStub, notifyAiNoteHighlight: notifyAiNoteStub }) }
+  useReaderStore: { getState: () => ({ openPaper: openPaperStub }) }
 }))
 vi.mock('../../../src/renderer/features/reader/anchors/anchor-locate', () => ({
   locateAnchor: locateAnchorStub
@@ -60,12 +63,11 @@ vi.mock('../../../src/renderer/shared/open-paper-bus', () => ({
   takePendingOpenPaper: vi.fn(() => null)
 }))
 
-import { showToast } from '../../../src/renderer/shared/ui/toast-store'
 import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
 import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
-import { openFromBus } from '../../../src/renderer/features/reader/anchors/open-paper-anchor'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { QUESTION_COLOR } from '../../../src/renderer/features/reader/anchors/ai-note-style'
+import { COLOR_SWATCH } from '../../../src/renderer/features/reader/anchors/annotation-style'
 
 function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   return {
@@ -99,6 +101,27 @@ function aiNote(id: string, patch: Partial<AiNote> = {}): AiNote {
     contentMd: `内容-${id}`,
     createdAt: 't',
     updatedAt: 't',
+    ...patch
+  }
+}
+
+/** 片段条目夹具（Annotation.page 0 基——B2 载荷直传口径） */
+function ann(id: string, patch: Partial<Annotation> = {}): Annotation {
+  return {
+    id,
+    paperId: 'paper-A',
+    page: 2,
+    kind: 'highlight',
+    color: 'yellow',
+    quoteText: `引文-${id}`,
+    prefixText: '前置',
+    suffixText: '后置',
+    startOffset: 5,
+    endOffset: 9,
+    rects: [{ page: 2, x: 0.1, y: 0.1, w: 0.3, h: 0.02 }],
+    comment: '',
+    createdAt: '2026-05-01T00:00:00Z',
+    updatedAt: '2026-05-01T00:00:00Z',
     ...patch
   }
 }
@@ -150,9 +173,11 @@ beforeEach(() => {
   vi.clearAllMocks()
   for (const fn of Object.values(stubApi.ai_sensor)) fn.mockReset()
   stubApi.notes.get.mockReset()
+  stubApi.reader.listAnnotations.mockReset()
   stubApi.lineage.graph.mockReset()
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] })
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [] })
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] } })
   locateAnchorStub.mockResolvedValue('exact')
   openPaperStub.mockResolvedValue(undefined)
@@ -179,105 +204,41 @@ afterEach(() => {
   host = null
 })
 
-// ── 消费方级（open-paper-anchor，INV-20 单入口接缝） ──────────────────
-
-it('消费方级：带锚请求→locateAnchor 单入口（锚三元组+aiNoteId 透传；openPaper 不重复调）', async () => {
-  openFromBus({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
-  await flush()
-  expect(locateAnchorStub).toHaveBeenCalledWith({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
-  expect(openPaperStub).not.toHaveBeenCalled()
-})
-
-it('消费方级 LG-06：带 aiNoteId 锚请求→notifyAiNoteHighlight("a1") 先于 locateAnchor+定位照常', async () => {
-  openFromBus({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
-  await flush()
-  expect(notifyAiNoteStub).toHaveBeenCalledTimes(1)
-  expect(notifyAiNoteStub).toHaveBeenCalledWith('a1')
-  // 顺序：notify 先于 locateAnchor——面板信号早发（持久 state 非瞬态事件，
-  // tab 未开/loading 期间不丢失，挂载后效应补切）
-  expect(notifyAiNoteStub.mock.invocationCallOrder[0]).toBeDefined()
-  expect(locateAnchorStub.mock.invocationCallOrder[0]).toBeDefined()
-  expect(notifyAiNoteStub.mock.invocationCallOrder[0]!).toBeLessThan(
-    locateAnchorStub.mock.invocationCallOrder[0]!
-  )
-  expect(locateAnchorStub).toHaveBeenCalledWith({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
-})
-
-it('消费方级 LG-06：无 aiNoteId 锚请求（裸锚）→notifyAiNoteHighlight 不调（信号仅 AI 笔记跳转发）', async () => {
-  openFromBus({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: '', suffixText: '' }
-  })
-  await flush()
-  expect(notifyAiNoteStub).not.toHaveBeenCalled()
-  // 定位照常（既有透传形状：paperId/anchor/aiNoteId 三字段；OpenPaperRequest
-  // 载荷无 annotationId——标注跳转不经本总线消费点）
-  expect(locateAnchorStub).toHaveBeenCalledWith({
-    paperId: 'p-1',
-    anchor: { quoteText: 'q', prefixText: '', suffixText: '' },
-    aiNoteId: undefined
-  })
-})
-
-it('消费方级：无锚请求→openPaper 既有链路（locateAnchor 不介入）', async () => {
-  openFromBus({ paperId: 'p-1' })
-  await flush()
-  expect(openPaperStub).toHaveBeenCalledWith('p-1')
-  expect(locateAnchorStub).not.toHaveBeenCalled()
-})
-
-it('消费方级：页级降级（resolve page）静默——降级提示归 locateAnchor 内部，不重复 toast', async () => {
-  locateAnchorStub.mockResolvedValue('page')
-  openFromBus({ paperId: 'p-1', anchor: { quoteText: 'q', prefixText: '', suffixText: '' }, aiNoteId: 'a1' })
-  await flush()
-  expect(showToast).not.toHaveBeenCalled()
-})
-
-it('消费方级：无锚打开失败→动作型 toast（既有文案保持）', async () => {
-  openPaperStub.mockRejectedValue(new Error('文件不存在'))
-  openFromBus({ paperId: 'p-1' })
-  await flush()
-  expect(showToast).toHaveBeenCalledWith('文件不存在', 'error')
-})
+// ── 消费方级（open-paper-anchor，INV-20 单入口接缝）：[RR1] 4 例拆出
+//    lineage-open-bus.test.tsx（主件 500 行红线）——覆盖清单见该件头注 ──
 
 // ── SidePanel 组件级 ────────────────────────────────────────────────
 
-it('文献节点三区渲染：元信息/AI 分节分色单源/人工笔记（[A3 F-CONTRACTA-01 2026-10-04] core_idea 区随全退役删除——「核心想法」语义由全文笔记承接）', async () => {
+it('文献节点三节新序：全文笔记→片段笔记→AI 评估与建议（DOM 序断标题数组；[A3] core_idea 区负锚沿承）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({
     ok: true,
     data: [aiNote('a1', { question: 'Q1' }), aiNote('c1', { role: 'adjudicate', question: 'divergence' })]
   })
   stubApi.notes.get.mockResolvedValue({
     ok: true,
-    data: { id: 'n1', paperId: 'paper-A', title: '', contentMd: '人工总评内容', createdAt: 't', updatedAt: 't' }
+    data: { id: 'n1', paperId: 'paper-A', title: '', contentMd: '全文总评内容', createdAt: 't', updatedAt: 't' }
   })
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   expect(stubApi.ai_sensor.listByPaper).toHaveBeenCalledWith({ paperId: 'paper-A' })
   expect(stubApi.notes.get).toHaveBeenCalledWith({ paperId: 'paper-A' })
-  // 区1 元信息（title/年份/绑定徽标）
+  expect(stubApi.reader.listAnnotations).toHaveBeenCalledWith({ paperId: 'paper-A' })
+  // 区1 元信息
   expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('节点A')
   expect(q('[data-testid="lineage-side-meta"]')?.textContent).toContain('2020')
   expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
   // [A3] 原「区2 核心 idea」整区随 core_idea 全退役删除——面板无该区（负锚）
   expect(q('[data-testid="lineage-side-idea"]')).toBeNull()
-  // 区2 AI 分节：question 组中文标签+组内 role 标签+七问分色单源（SR2-AI-11 转置）
+  // B2 三节新序=DOM 序（h4 标题数组）
+  const h4s = Array.from(host?.querySelectorAll('h4') ?? []).map((h) => h.textContent)
+  expect(h4s).toEqual(['全文笔记', '片段笔记', 'AI 评估与建议'])
+  // 全文笔记（现名承「人工笔记」位——contentMd 呈现）
+  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('全文总评内容')
+  // 片段笔记条目（色点+1 基页码显示）
+  expect(q('[data-testid="lineage-side-fragments"] [data-fragment-id="f1"]')).not.toBeNull()
+  expect(q('[data-testid="lineage-side-fragments"]')?.textContent).toContain('p.3 · 高亮')
+  // AI 评估与建议分色分组（question 组头+组内 role 标签——七问分色单源）
   const groups = Array.from(q('[data-testid="lineage-side-ai-notes"]')?.querySelectorAll('[data-question]') ?? [])
   expect(groups.map((g) => g.getAttribute('data-question'))).toEqual(['Q1', 'divergence'])
   expect(groups.map((g) => g.querySelector('h5')?.textContent)).toEqual(['第一问：核心 idea 是什么', '分歧报告'])
@@ -287,22 +248,21 @@ it('文献节点三区渲染：元信息/AI 分节分色单源/人工笔记（[A
   expect(dot.style.background).toBe(QUESTION_COLOR.Q1)
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('quote-a1')
   expect(q('[data-ai-note-id="a1"]')?.textContent).toContain('内容-a1')
-  // 区3 人工笔记（总评层）
-  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('人工总评内容')
 })
 
-it('主题节点：仅元信息区+空态文案；笔记通道零调用', async () => {
+it('主题节点：仅元信息区+空态文案；三通道零调用', async () => {
   mount(<LineageSidePanel node={node('T', { paperId: null, year: null })} onJumpToPaper={JUMP} />)
   await flush()
   expect(q('[data-testid="lineage-side-idea"]')).toBeNull() // [A3] 退役区不渲染
   expect(host?.textContent).toContain('主题节点无笔记')
   expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
   expect(stubApi.notes.get).not.toHaveBeenCalled()
+  expect(stubApi.reader.listAnnotations).not.toHaveBeenCalled()
 })
 
-it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 accent 左缘条；条目卡白底淡描边（防回退）', async () => {
+it('R2-LG11 侧板浅色化：白玻璃底+边；三节 h4 accent 左缘条；条目卡白底淡描边（防回退）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1', { question: 'Q1' })] })
-  stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   // 面板白玻璃底（R2-LG11 浅色严谨板）。backdrop-filter 在 jsdom 不入 style
@@ -311,18 +271,15 @@ it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 
   // [F-CSS-03] 断言载体随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定；
   // var() 载体在 jsdom style 序列化原样保留，无 CSSOM rgb 归一）
   expect(rootEl.getAttribute('style')).toContain('var(--panel-a92)')
-  // 边 --border（原 #e4ded1——值面由 theme.test.ts 既有 token 正锚锁定）
   expect(rootEl.getAttribute('style')).toContain('var(--border)')
   expect(rootEl.style.backdropFilter).toBe('blur(12px)')
-  // 分组 h4 accent 左缘条（AI 笔记/人工笔记两处齐改——去金夜色；[A3] 核心
-  // idea 区随 core_idea 全退役删除——h4 由三减二）
+  // 三节 h4 accent 左缘条（B2 三节齐改——去金夜色）
   const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
-  expect(h4s.length).toBe(2)
+  expect(h4s.length).toBe(3)
   for (const h of h4s) {
     expect(h.getAttribute('style')).toContain('var(--accent)')
   }
-  // AI 条目卡（白底 --panel+沿用淡描边 --note-border）——[F-CSS-03] 断言载体
-  // 随 token 化迁移（值面由 theme.test.ts TOKENS 正锚独立锁定）
+  // AI 条目卡（白底 --panel+沿用淡描边 --note-border）
   const card = q('[data-ai-note-id="a1"]')?.getAttribute('style') ?? ''
   expect(card).toContain('var(--panel)')
   expect(card).toContain('var(--note-border)')
@@ -330,50 +287,150 @@ it('R2-LG11 侧板浅色化：白玻璃底 --panel-a92+边 --border+blur12；h4 
   expect(q('[data-question="Q1"] h5')?.getAttribute('style')).toContain(QUESTION_COLOR.Q1)
 })
 
-it('AI 条目双击→onJumpToPaper 载荷含锚三元组+aiNoteId（anchorPage 1 基→0 基）', async () => {
+it('[B2] AI 双击链退役负锚：dblClick AI 条目→onJumpToPaper 不调（全应用唯一保留双击链=片段条目）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   dblClick(q('[data-ai-note-id="a1"]') as Element)
-  expect(JUMP).toHaveBeenCalledWith({
-    paperId: 'paper-A',
-    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
+  expect(JUMP).not.toHaveBeenCalled()
 })
 
-it('无锚条目（无引文且无页码）→anchor 缺省（篇级防线）', async () => {
-  stubApi.ai_sensor.listByPaper.mockResolvedValue({
-    ok: true,
-    data: [aiNote('a1', { quoteText: '', anchorPage: null })]
-  })
-  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
-  await flush()
-  dblClick(q('[data-ai-note-id="a1"]') as Element)
-  expect(JUMP).toHaveBeenCalledWith({ paperId: 'paper-A', anchor: undefined, aiNoteId: 'a1' })
-})
-
-it('有页码无引文→anchor 保留页码（页级跳转不回退第 0 页）', async () => {
-  stubApi.ai_sensor.listByPaper.mockResolvedValue({
-    ok: true,
-    data: [aiNote('a1', { quoteText: '', anchorPage: 3 })]
-  })
-  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
-  await flush()
-  dblClick(q('[data-ai-note-id="a1"]') as Element)
-  expect(JUMP).toHaveBeenCalledWith({
-    paperId: 'paper-A',
-    anchor: { quoteText: '', prefixText: '', suffixText: '', anchorPage: 2 },
-    aiNoteId: 'a1'
-  })
-})
-
-it('条目单击不触发跳转（双击显式语义——防误触）', async () => {
+it('AI 条目单击不触发跳转（纯展示——防误触）', async () => {
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   click(q('[data-ai-note-id="a1"]') as Element)
   expect(JUMP).not.toHaveBeenCalled()
+})
+
+it('片段节：loading→error（role=alert）+重试按钮→重试成功恢复呈现（INV-02 列表型）', async () => {
+  stubApi.reader.listAnnotations.mockRejectedValueOnce(new Error('数据库占用'))
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  const err = q('[data-testid="lineage-side-fragments-error"]')
+  expect(err?.getAttribute('role')).toBe('alert')
+  expect(err?.textContent).toContain('片段笔记加载失败：数据库占用')
+  stubApi.reader.listAnnotations.mockResolvedValueOnce({ ok: true, data: [ann('f1')] })
+  const retry = err?.querySelector('button[data-action="retry"]') as HTMLButtonElement
+  act(() => {
+    retry.click()
+  })
+  await flush()
+  expect(stubApi.reader.listAnnotations).toHaveBeenCalledTimes(2)
+  expect(q('[data-testid="lineage-side-fragments"] [data-fragment-id="f1"]')).not.toBeNull()
+  expect(q('[data-testid="lineage-side-fragments-error"]')).toBeNull()
+})
+
+it('片段节：空态文案（空数组非错误）', async () => {
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  expect(q('[data-testid="lineage-side-fragments"]')?.textContent).toContain('暂无片段笔记')
+})
+
+it('片段节：条目形态镜像 reader 域（kind 色点单源+1 基页码显示+引文/批注截断+title=comment||quoteText）+排序集成（page×startOffset 双维乱→DOM 序=sortByDocumentOrder 期望）', async () => {
+  stubApi.reader.listAnnotations.mockResolvedValue({
+    ok: true,
+    data: [
+      // 双维乱序固件（[k1-W5] 封「删排序调用仍绿」盲区）：f1=page 2/startOffset 1、
+      // f2=page 1/startOffset 9——页优先（f2 前）且偏移反向（9>1 不救）——入参序
+      // 与文档序全反，DOM 序只可能来自 sortByDocumentOrder 消费
+      ann('f1', { kind: 'underline', color: 'blue', comment: '有批注', quoteText: '引文-f1', page: 2, startOffset: 1, endOffset: 5 }),
+      ann('f2', {
+        id: 'f2',
+        kind: 'note',
+        page: 1,
+        startOffset: 9,
+        endOffset: 13,
+        quoteText: '长引文'.repeat(21),
+        comment: '长批注'.repeat(30)
+      })
+    ]
+  })
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  const section = q('[data-testid="lineage-side-fragments"]')
+  // 排序集成断言：DOM 序=文档序（page 升序优先——f2(page1) 先于 f1(page2)，
+  // 偏移反向不改变页优先级；删 sortByDocumentOrder 调用→入参序 ['f1','f2'] 即红）
+  const items = Array.from(section?.querySelectorAll('[data-fragment-id]') ?? [])
+  expect(items.map((el) => el.getAttribute('data-fragment-id'))).toEqual(['f2', 'f1'])
+  // kind 色点=COLOR_SWATCH 单源（跨域受控例外——色点单源防双源）
+  const dot = items[1]?.querySelector('span[aria-hidden]') as HTMLElement
+  expect(dot.style.background).toBe(COLOR_SWATCH.blue)
+  expect(items[1]?.textContent).toContain('p.3 · 下划线')
+  expect(items[1]?.textContent).toContain('引文-f1')
+  expect(items[1]?.textContent).toContain('有批注')
+  // title=comment||quoteText
+  expect(items[1]?.querySelector('button')?.getAttribute('title')).toBe('有批注')
+  expect(items[0]?.querySelector('button')?.getAttribute('title')).toBe('长批注'.repeat(30))
+  // 引文截断（EXCERPT_MAX=60——超长省略号收尾；截断镜像 reader 域 FragmentNotesList）
+  const quote = items[0]?.querySelectorAll('span.block.truncate')[0]?.textContent ?? ''
+  expect(quote.endsWith('…')).toBe(true)
+  expect(quote.length).toBeLessThanOrEqual(61)
+})
+
+it('片段双击→onJumpToPaper 载荷钉形（anchorPage=Annotation.page 0 基直传——禁 ±1 换算；三元组透传）', async () => {
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  // onDoubleClick 挂条目 button（形态镜像 reader 域——交互承载元素）
+  dblClick(q('[data-fragment-id="f1"] button') as Element)
+  expect(JUMP).toHaveBeenCalledTimes(1)
+  expect(JUMP).toHaveBeenCalledWith({
+    paperId: 'paper-A',
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
+  })
+})
+
+it('片段单击不触发跳转（双击显式语义——防误触，AI 节先例）', async () => {
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  click(q('[data-fragment-id="f1"] button') as Element)
+  expect(JUMP).not.toHaveBeenCalled()
+})
+
+it('[RR1-C] 片段条目 Enter=键盘等价路径→同一上抛单点（载荷钉形与双击同）；Space 不触发+[RR2] e.repeat 不触发', async () => {
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  const btn = q('[data-fragment-id="f1"] button') as Element
+  act(() => {
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+  })
+  expect(JUMP).toHaveBeenCalledTimes(1)
+  expect(JUMP).toHaveBeenCalledWith({
+    paperId: 'paper-A',
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
+  })
+  act(() => {
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+  })
+  expect(JUMP).toHaveBeenCalledTimes(1) // Space 不触发（防误触口径沿承）
+  // [RR2] 长按 Enter 自动重复（e.repeat=true）不连发跳转上抛
+  act(() => {
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', repeat: true, bubbles: true }))
+  })
+  expect(JUMP).toHaveBeenCalledTimes(1)
+})
+
+it('片段节换节点 stale 守卫：晚到的旧节点响应不覆盖新节点条目', async () => {
+  let resolveOld: (v: { ok: boolean; data: Annotation[] }) => void = () => undefined
+  stubApi.reader.listAnnotations
+    .mockImplementationOnce(() => new Promise((r) => { resolveOld = r }))
+    .mockResolvedValueOnce({ ok: true, data: [ann('f-b', { id: 'f-b', paperId: 'paper-B' })] })
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  act(() => {
+    root?.render(<LineageSidePanel node={node('B')} onJumpToPaper={JUMP} />)
+  })
+  await flush()
+  expect(q('[data-testid="lineage-side-fragments"] [data-fragment-id="f-b"]')).not.toBeNull()
+  act(() => {
+    resolveOld({ ok: true, data: [ann('f-old', { id: 'f-old' })] })
+  })
+  await flush()
+  expect(q('[data-testid="lineage-side-fragments"] [data-fragment-id="f-old"]')).toBeNull()
+  expect(q('[data-testid="lineage-side-fragments"] [data-fragment-id="f-b"]')).not.toBeNull()
 })
 
 it('AI 取数失败→error+重试按钮；重试成功恢复呈现（INV-02 列表型）', async () => {
@@ -382,7 +439,7 @@ it('AI 取数失败→error+重试按钮；重试成功恢复呈现（INV-02 列
   await flush()
   const err = q('[data-testid="lineage-side-ai-error"]')
   expect(err?.getAttribute('role')).toBe('alert')
-  expect(err?.textContent).toContain('AI 笔记加载失败：数据库占用')
+  expect(err?.textContent).toContain('AI 评估加载失败：数据库占用')
   stubApi.ai_sensor.listByPaper.mockResolvedValueOnce({ ok: true, data: [aiNote('a1')] })
   const retry = err?.querySelector('button[data-action="retry"]') as HTMLButtonElement
   act(() => {
@@ -394,12 +451,12 @@ it('AI 取数失败→error+重试按钮；重试成功恢复呈现（INV-02 列
   expect(q('[data-testid="lineage-side-ai-error"]')).toBeNull()
 })
 
-it('人工笔记取数失败→error+重试（与 AI 面独立）', async () => {
+it('全文笔记取数失败→error+重试（与 AI 面独立）', async () => {
   stubApi.notes.get.mockRejectedValueOnce(new Error('IO 失败'))
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
   const err = q('[data-testid="lineage-side-note-error"]')
-  expect(err?.textContent).toContain('人工笔记加载失败：IO 失败')
+  expect(err?.textContent).toContain('全文笔记加载失败：IO 失败')
   expect(q('[data-testid="lineage-side-ai-error"]')).toBeNull()
   stubApi.notes.get.mockResolvedValueOnce({
     ok: true,
@@ -413,11 +470,38 @@ it('人工笔记取数失败→error+重试（与 AI 面独立）', async () => 
   expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('补取内容')
 })
 
-it('空数据：AI 空态+人工 null 空态（非错误）', async () => {
+it('空数据：AI 空态+全文 null 空态+片段空态（非错误）', async () => {
   mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
   await flush()
-  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('暂无 AI 笔记')
-  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('暂无人工笔记')
+  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('暂无 AI 评估与建议')
+  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('暂无全文笔记')
+  expect(q('[data-testid="lineage-side-fragments"]')?.textContent).toContain('暂无片段笔记')
+})
+
+it('[RR1-A] 全文笔记节三态文案字节级：loading「全文笔记加载中…」（挂起取数期间）→落定空态「暂无全文笔记」（同例收口过渡）', async () => {
+  let resolveNote: (v: { ok: boolean; data: unknown }) => void = () => undefined
+  stubApi.notes.get.mockImplementationOnce(() => new Promise((r) => { resolveNote = r }))
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('全文笔记加载中…')
+  act(() => {
+    resolveNote({ ok: true, data: null })
+  })
+  await flush()
+  expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('暂无全文笔记')
+})
+
+it('[RR1-A] AI 评估与建议节三态文案字节级：loading「AI 评估加载中…」（挂起取数期间）→落定空态「暂无 AI 评估与建议」（loading=「AI 评估」短名/空态=「AI 评估与建议」全名——票面不对称保真；error 态字节级由既有「AI 取数失败」例锁定）', async () => {
+  let resolveAi: (v: { ok: boolean; data: AiNote[] }) => void = () => undefined
+  stubApi.ai_sensor.listByPaper.mockImplementationOnce(() => new Promise((r) => { resolveAi = r }))
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('AI 评估加载中…')
+  act(() => {
+    resolveAi({ ok: true, data: [] })
+  })
+  await flush()
+  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('暂无 AI 评估与建议')
 })
 
 it('未选中节点→空态提示（[②U4/P-16] 占位文案=「点击卡片查看详情」）', async () => {
@@ -427,7 +511,7 @@ it('未选中节点→空态提示（[②U4/P-16] 占位文案=「点击卡片�
   expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
 })
 
-it('换节点 stale 守卫：晚到的旧节点响应不覆盖新节点数据', async () => {
+it('换节点 stale 守卫（AI 面）：晚到的旧节点响应不覆盖新节点数据', async () => {
   let resolveOld: (v: { ok: boolean; data: AiNote[] }) => void = () => undefined
   stubApi.ai_sensor.listByPaper
     .mockImplementationOnce(() => new Promise((r) => { resolveOld = r }))
@@ -447,7 +531,20 @@ it('换节点 stale 守卫：晚到的旧节点响应不覆盖新节点数据', 
   expect(q('[data-ai-note-id="b1"]')).not.toBeNull()
 })
 
-// ── Page 编排级（全链：单击→侧板→双击→总线锚载荷） ────────────────────
+it('[B2] 后置占位章退役：lineage-side-postpone 不存在+退役文案零命中（真节已替代）', async () => {
+  mount(<LineageSidePanel node={node('A')} onJumpToPaper={JUMP} />)
+  await flush()
+  expect(q('[data-testid="lineage-side-postpone"]')).toBeNull()
+  // 退役文案分段构造（负锚断言不落整词字面量——src+tests 词面零命中口径）
+  const retiredBody = ['评估功能', '后置'].join('')
+  const retiredHeading = ['AI ', '评 ', '估 ', '笔 ', '记'].join('')
+  expect(host?.textContent).not.toContain(retiredBody)
+  expect(host?.textContent).not.toContain(retiredHeading)
+  // 真节在场（AI 评估与建议——被③替代证据）
+  expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('AI 评估与建议')
+})
+
+// ── Page 编排级（全链：单击→侧板→片段双击→总线锚载荷） ──────────────────
 
 async function mountPage(): Promise<void> {
   stubApi.lineage.graph.mockResolvedValue({
@@ -473,23 +570,12 @@ it('Page 全链：单击节点→侧板挂载呈现节点+Timeline 选中视觉�
   expect(q('[data-node-id="T"]')?.classList.contains('sel')).toBe(false)
 })
 
-it('Page 全链：AI 条目双击→requestOpenPaperAnchored 锚载荷（0 基页）', async () => {
-  stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [aiNote('a1')] })
+it('Page 全链：片段条目双击→requestOpenPaperAnchored 锚载荷（anchorPage 0 基直传）', async () => {
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [ann('f1')] })
   await mountPage()
-  dblClick(q('[data-ai-note-id="a1"]') as Element)
+  dblClick(q('[data-fragment-id="f1"] button') as Element)
   expect(requestAnchoredStub).toHaveBeenCalledWith({
     paperId: 'paper-A',
-    anchor: { quoteText: 'quote-a1', prefixText: '', suffixText: '', anchorPage: 2 },
-    aiNoteId: 'a1'
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
   })
-})
-
-it('Page 全链：无锚条目双击→载荷 anchor 缺省（仅开篇）', async () => {
-  stubApi.ai_sensor.listByPaper.mockResolvedValue({
-    ok: true,
-    data: [aiNote('a1', { quoteText: '', anchorPage: null })]
-  })
-  await mountPage()
-  dblClick(q('[data-ai-note-id="a1"]') as Element)
-  expect(requestAnchoredStub).toHaveBeenCalledWith({ paperId: 'paper-A', aiNoteId: 'a1' })
 })

@@ -5,10 +5,31 @@
  * （第 2 次保持重复），本文件为第 3 次出现——按 AGENTS 抽共用；W1C
  * （F-TESTREF-W1C）把各 spec 内联的 launch 5 副本、seedPaperRow 4 份本地
  * 定义与第一跳迁移配方（14 处复制）收敛到本单源。
+ * [F-UIRES-03 B2] seedAiNote+seedAnnotation（seedPaperRow 同型子进程
+ * better-sqlite3 INSERT——lineage.spec T4 种子链改 launch 前直写库，
+ * 替代退役的 08 传感器导入链）。
  */
 import { _electron as electron, type ElectronApplication } from '@playwright/test'
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
+
+/** 拉起子进程跑指定种子脚本；退出码非 0 即拒绝 */
+function runSeed(script: string, env: NodeJS.ProcessEnv): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', script)], {
+      env,
+      stdio: 'inherit'
+    })
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`${script} 退出码 ${code ?? 'null'}`))
+      }
+    })
+    child.on('error', reject)
+  })
+}
 
 export async function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
   const app = await electron.launch({
@@ -30,24 +51,6 @@ export async function bootstrapMigrations(userData: string): Promise<void> {
   const app = await launch(userData)
   await (await app.firstWindow()).waitForTimeout(500)
   await app.close()
-}
-
-/** 拉起子进程跑 seed-paper.mjs；退出码非 0 即拒绝 */
-function runSeedScript(env: NodeJS.ProcessEnv): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-paper.mjs')], {
-      env,
-      stdio: 'inherit'
-    })
-    child.on('exit', (code) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`seed-paper.mjs 退出码 ${code ?? 'null'}`))
-      }
-    })
-    child.on('error', reject)
-  })
 }
 
 /**
@@ -125,7 +128,7 @@ export async function seedPaperRow(
   if (extra.venue !== undefined) optionalEnv.SEED_VENUE = extra.venue
   if (extra.cited !== undefined) optionalEnv.SEED_CITED = String(extra.cited)
   if (extra.impact !== undefined) optionalEnv.SEED_IMPACT = String(extra.impact)
-  await runSeedScript({
+  await runSeed('seed-paper.mjs', {
     ...process.env,
     SEED_DB: join(userData, 'synapse.db'),
     SEED_FILE_REF: fileRef,
@@ -133,5 +136,75 @@ export async function seedPaperRow(
     SEED_TITLE: title,
     SEED_ID: id,
     ...optionalEnv
+  } as NodeJS.ProcessEnv)
+}
+
+/**
+ * [F-UIRES-03 B2] ai_notes 种子（seedPaperRow 同型子进程 INSERT——launch 前
+ * 直写库；role/question 值域=迁移 003 DDL CHECK/zod 单源镜像）。annotationId
+ * 恒 null（篇级/自持锚定段——D3 解耦口径）。
+ */
+export interface AiNoteSeedRow {
+  id: string
+  paperId: string
+  role: 'first-read' | 'second-read' | 'adjudicate'
+  question: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6' | 'Q7' | 'divergence'
+  model: string
+  quoteText: string
+  prefixText: string
+  suffixText: string
+  /** 1 基辅助页码（AiNote.anchorPage 口径）；null=篇级 */
+  anchorPage: number | null
+  contentMd: string
+}
+export async function seedAiNote(userData: string, row: AiNoteSeedRow): Promise<void> {
+  await runSeed('seed-ai-note.mjs', {
+    ...process.env,
+    SEED_DB: join(userData, 'synapse.db'),
+    SEED_ID: row.id,
+    SEED_PAPER_ID: row.paperId,
+    SEED_ROLE: row.role,
+    SEED_QUESTION: row.question,
+    SEED_MODEL: row.model,
+    SEED_QUOTE: row.quoteText,
+    SEED_PREFIX: row.prefixText,
+    SEED_SUFFIX: row.suffixText,
+    ...(row.anchorPage !== null ? { SEED_PAGE: String(row.anchorPage) } : {}),
+    SEED_CONTENT: row.contentMd
+  } as NodeJS.ProcessEnv)
+}
+
+/**
+ * [F-UIRES-03 B2] annotations 种子（seedPaperRow 同型子进程 INSERT）。page=
+ * 0 基存储（INV-24）；rects_json='[]'（B2 侧板/锚定位断言面不消费 rects）。
+ */
+export interface AnnotationSeedRow {
+  id: string
+  paperId: string
+  page: number
+  kind: 'highlight' | 'underline' | 'note'
+  color: 'yellow' | 'green' | 'blue' | 'red' | 'purple'
+  quoteText: string
+  prefixText: string
+  suffixText: string
+  startOffset: number
+  endOffset: number
+  comment: string
+}
+export async function seedAnnotation(userData: string, row: AnnotationSeedRow): Promise<void> {
+  await runSeed('seed-annotation.mjs', {
+    ...process.env,
+    SEED_DB: join(userData, 'synapse.db'),
+    SEED_ID: row.id,
+    SEED_PAPER_ID: row.paperId,
+    SEED_PAGE: String(row.page),
+    SEED_KIND: row.kind,
+    SEED_COLOR: row.color,
+    SEED_QUOTE: row.quoteText,
+    SEED_PREFIX: row.prefixText,
+    SEED_SUFFIX: row.suffixText,
+    SEED_START: String(row.startOffset),
+    SEED_END: String(row.endOffset),
+    SEED_COMMENT: row.comment
   } as NodeJS.ProcessEnv)
 }

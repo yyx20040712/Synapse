@@ -5,7 +5,8 @@
  * 设计真相源=mockup §3.4+A5/P-16/P-13/P-20：右侧常驻栏位宽 252；详情域收编
  * （完整题名/期刊缩写/IF/被引/年月/标签列/星标态禁用呈现+底部注记「双击卡片
  * 跳转阅读器」）；空选中态=「点击卡片查看详情」占位；core 徽章退役（行 9）
- * ；AI 笔记/人工笔记/标签编辑域保留（非退役面）。always-active 裸 describe。
+ * ；[F-UIRES-03 B2] 笔记三节=全文笔记→片段笔记→AI 评估与建议（B2 新序
+ * ——「四删三立」后节名，零占位章）。always-active 裸 describe。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,12 +18,14 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
 
-// 面板内 AI 笔记/人工笔记分节直连 window.api（side-panel.test 同型 stub）
+// 面板内 AI 评估/全文笔记/片段笔记分节直连 window.api（side-panel.test 同型 stub）
 const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },
+  reader: { listAnnotations: vi.fn() },
   lineage: { graph: vi.fn() }
 })
+stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [] })
 void stubApi
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true

@@ -4,11 +4,12 @@
  *
  * 覆盖：总评层（载入/载入失败重试/编辑写草稿 pending 镜像/保存四态消费——
  * save-status 下沉 shared 后的组件级复用）；片段层（C-01 单源序消费/单击
- * onLocate/空态/高亮滚动）；per-tab 语义（换 tab 草稿驻 store 不失忆）。
+ * onLocate/空态/高亮滚动）；per-tab 语义（换 tab 草稿驻 store 不失忆）；
+ * [F-UIRES-03 B2] AI 节退役负锚（显示面唯一=脉络详情面板——INV-105）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationKind } from '../../../src/shared/models/annotation'
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
@@ -236,5 +237,21 @@ guardedDescribe('SR2-C-03', 'FragmentNotesList —— 片段层（C-01 序消费
     } finally {
       Element.prototype.scrollIntoView = originalScroll
     }
+  })
+})
+
+// [F-UIRES-03 B2] AI 节退役负锚（always-active 裸 describe——阅读器左栏 AI 区
+// 整删：显示面唯一=脉络详情面板「AI 评估与建议」节，INV-105）
+describe('F-UIRES-03 B2 阅读器左栏 AI 区退役负锚', () => {
+  it('面板无「AI 笔记」节标+ai-notes-section testid 不存在（AiNotesSection 挂载链删除）', async () => {
+    notesGet.mockResolvedValue({ ok: true, data: null })
+    mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync()
+    })
+    expect(host?.querySelector('[data-testid="ai-notes-section"]')).toBeNull()
+    const h4s = Array.from(host?.querySelectorAll('h4') ?? []).map((h) => h.textContent)
+    expect(h4s).toEqual(['片段笔记'])
+    expect(host?.textContent).not.toContain('AI 笔记')
   })
 })

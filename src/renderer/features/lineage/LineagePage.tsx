@@ -100,24 +100,23 @@ export function LineagePage(): JSX.Element {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一） */
+  /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一；
+   *  [F-UIRES-03 B2] AI 条目标识载荷字段随 AI 双击链退役删除——片段双击=唯一链） */
   const handleJumpToPaper = (payload: {
     paperId: string
     anchor?: { quoteText: string; prefixText: string; suffixText: string; anchorPage: number | null }
-    aiNoteId?: string
   }): void => {
     requestOpenPaperAnchored({
       paperId: payload.paperId,
       anchor:
         payload.anchor === undefined
           ? undefined
-          : { ...payload.anchor, anchorPage: payload.anchor.anchorPage ?? undefined },
-      aiNoteId: payload.aiNoteId
+          : { ...payload.anchor, anchorPage: payload.anchor.anchorPage ?? undefined }
     })
   }
 
   /** [F-LGRAPH-01②U4/A6] 卡双击=跳阅读器（OPEN_PAPER_EVENT 总线单入口 INV-20
-   *  ——与笔记条目同入口；已开 tab 跳转语义由阅读器侧承载） */
+   *  ——与侧板片段条目双击同入口；已开 tab 跳转语义由阅读器侧承载） */
   const handleCardDblClick = (nodeId: string): void => {
     const n = useLineageStore.getState().nodes.find((x) => x.id === nodeId)
     if (n === undefined || n.paperId === null) return // 主题节点无阅读器面

@@ -53,8 +53,8 @@ function pct(v: number): string {
   return `${Number((v * 100).toFixed(4))}%`
 }
 
-/** [F-A5] band → 垂直几何（top/height 百分比——三消费点同源映射：
- *  rectStyle 标注块/SelectionPaint 自绘块/AiAnnotationLayer AI 段） */
+/** [F-A5] band → 垂直几何（top/height 百分比——消费点同源映射：
+ *  rectStyle 标注块/SelectionPaint 自绘块） */
 export function bandVertical(band: { top: number; bottom: number }): { top: string; height: string } {
   return { top: pct(band.top), height: pct(band.bottom - band.top) }
 }

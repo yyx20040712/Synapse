@@ -13,10 +13,11 @@
  *   驱动覆盖层挂/卸=PageFrame 卸载哨的触发面）+最新 props（九件全形）暴露给
  *   测试（onPageRender 回报入口+⑥ 透传锚断言面）；PageColumn 自身行为已由
  *   page-column.test 锁定，本票不重复锁（主控预裁 3）。
- * - TextLayer/AnnotationLayer/ReaderAiLayer：prop 快照桩——断言点是
+ * - TextLayer/AnnotationLayer：prop 快照桩——断言点是
  *   viewportScale/pageWidth/Height/geometry（F-A6-b1 页几何下钻）/page/pageRoot
  *   等 prop 值，层自身行为各有测试锁；真挂会拖入 pdfjs-dist 渲染链+api/client
- *   顶层 window.api 赋值+双 store（reader-page-open-race 申报的 jsdom 桩面同源）。
+ *   顶层 window.api 赋值+双 store（reader-page-open-race 申报的 jsdom 桩面同源）；
+ *   [F-UIRES-03 B2] ReaderAiLayer 桩随页内 AI 高亮层整删退役（INV-105）。
  * jsdom 手工造 [data-page-root]+canvas[data-pdf-canvas] DOM 片段供
  * handlePageRender 量测（getBoundingClientRect 实例级覆写——jsdom 无布局）。
  * always-active（ADR-0017 裁决 3——新测试不经 guardedDescribe）。
@@ -45,11 +46,10 @@ const probe = vi.hoisted(() => ({
   },
   /** 桩当前渲染页集（测试改写+rerender 驱动 renderPage 内容挂/卸） */
   rendered: [] as number[],
-  /** 三层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询）；
+  /** 两层桩最近一次渲染的 props 快照（仅挂载期更新——缺席断言走 DOM 查询）；
    *  textLayer.geometry=F-A6-b1 页几何下钻透传锚（T1/T9 通道装配面） */
   textLayer: null as null | { viewportScale: number; pageWidth: number; pageHeight: number; geometry: { rotate: number; view: number[] } },
-  annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null },
-  aiLayer: null as null | { page: number; pageRoot: HTMLElement | null }
+  annotationLayer: null as null | { page: number; pageRoot: HTMLElement | null }
 }))
 
 vi.mock('../../../src/renderer/features/reader/view/PageColumn', () => ({
@@ -91,12 +91,7 @@ vi.mock('../../../src/renderer/features/reader/view/AnnotationLayer', () => ({
   }
 }))
 
-vi.mock('../../../src/renderer/features/reader/view/AiAnnotationLayer', () => ({
-  ReaderAiLayer: (props: { page: number; pageRoot: HTMLElement | null }) => {
-    probe.aiLayer = props
-    return <div data-stub="ai-layer" data-page={props.page} />
-  }
-}))
+// [F-UIRES-03 B2] ReaderAiLayer 桩随页内 AI 高亮层整删退役（INV-105）
 
 import { PagesOverlay } from '../../../src/renderer/features/reader/view/PagesOverlay'
 
@@ -173,7 +168,6 @@ beforeEach(() => {
   probe.rendered = [1]
   probe.textLayer = null
   probe.annotationLayer = null
-  probe.aiLayer = null
   manualHost = document.createElement('div')
   document.body.appendChild(manualHost)
 })
@@ -190,17 +184,13 @@ afterEach(() => {
 })
 
 describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
-  it('① 回报前：renderPage(no) 不挂 TextLayer/AnnotationLayer（挂载条件 pt/pr 缺席）；ReaderAiLayer 恒挂且 pageRoot=null', () => {
+  it('① 回报前：renderPage(no) 不挂 TextLayer/AnnotationLayer（挂载条件 pt/pr 缺席）', () => {
     mount(makeOverlay())
     expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
     expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
-    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
-    expect(ai).not.toBeNull()
-    expect(ai!.dataset.page).toBe('0')
-    expect(probe.aiLayer?.pageRoot).toBeNull()
   })
 
-  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒、geometry=回报第三参原值下钻)+AnnotationLayer(page=no−1、pageRoot=页根元素)+ReaderAiLayer(同页根)', () => {
+  it('② onPageRender 回报（canvas DOM 在位）→条目写入：TextLayer(viewportScale=zoom、宽高=Math.round 量测盒、geometry=回报第三参原值下钻)+AnnotationLayer(page=no−1、pageRoot=页根元素)', () => {
     const pageRoot = makePageRoot(1, 612.4, 792.6)
     mount(makeOverlay())
     report(1, makeText('首页文本'))
@@ -213,8 +203,6 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
     expect(host!.querySelector('[data-stub="annotation-layer"]')).not.toBeNull()
     expect(probe.annotationLayer?.page).toBe(0)
     expect(probe.annotationLayer?.pageRoot).toBe(pageRoot)
-    expect(probe.aiLayer?.page).toBe(0)
-    expect(probe.aiLayer?.pageRoot).toBe(pageRoot)
   })
 
   it('③ PageFrame 卸载（renderPage 内容随桩页集摘除）→两表条目同删（W3/INV-30）——重挂后层不复活', () => {
@@ -226,14 +214,11 @@ describe('PagesOverlay 页面缓存注册表（F-ARCH3 七件契约）', () => {
     // 摘页→rerender：PageFrame 卸载哨触发（onRecycle→dropPageState 两表同删）
     probe.rendered = []
     remount(makeOverlay())
-    // 复挂同页：条目已删——层不再挂（ReaderAiLayer 恒挂但 pageRoot 归 null）
+    // 复挂同页：条目已删——层不再挂
     probe.rendered = [1]
     remount(makeOverlay())
     expect(host!.querySelector('[data-stub="text-layer"]')).toBeNull()
     expect(host!.querySelector('[data-stub="annotation-layer"]')).toBeNull()
-    const ai = host!.querySelector<HTMLElement>('[data-stub="ai-layer"]')
-    expect(ai).not.toBeNull()
-    expect(probe.aiLayer?.pageRoot).toBeNull()
   })
 
   it('④ fileUrl 变化（换文献）→两表清空——层消失（效应键 [fileUrl]；setPdfDoc 留宿主 ReaderPage 不在本组件）', () => {

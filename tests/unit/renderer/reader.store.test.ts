@@ -446,17 +446,14 @@ describe('F-ARCH1 closeTab 瞬态信号清理', () => {
     expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-2', page: 5, seq: 1 })
   })
 
-  it('noteHighlight/aiNoteHighlight 残留清空（OutlineAside 闪切防线）', async () => {
+  it('noteHighlight 残留清空（OutlineAside 闪切防线）', async () => {
     const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
     await openReady(useStore, 'p-1')
     useStore.getState().notifyNoteHighlight('a-1')
-    useStore.getState().notifyAiNoteHighlight('ai-1')
     // 门一 W-3：前置断言防恒真（notify 未生效时本用例必须红）
     expect(useStore.getState().noteHighlight).toMatchObject({ annotationId: 'a-1' })
-    expect(useStore.getState().aiNoteHighlight).toMatchObject({ aiNoteId: 'ai-1' })
     useStore.getState().closeTab('p-1')
     expect(useStore.getState().noteHighlight).toBeNull()
-    expect(useStore.getState().aiNoteHighlight).toBeNull()
   })
 
   it('关后台 tab 不清激活 tab 的瞬态通知（门一 W-1：关 B 不干扰 A 的 noteHighlight）', async () => {

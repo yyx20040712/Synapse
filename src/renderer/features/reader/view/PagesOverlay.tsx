@@ -16,8 +16,9 @@
  *     rotate/view 随条目存储——F-A6-b1 T1/T9 通道）；
  *   ⑥ dropPageState（W3：两表同删）；
  *   ⑦ renderPageLayers 覆盖层工厂（TextLayer 挂载条件 pt!==undefined /
- *     AnnotationLayer 挂载条件 pr!==undefined / ReaderAiLayer 恒挂
- *     pageRoot=pr??null；page 传 no−1；viewportScale=zoom；geometry 下钻透传）。
+ *     AnnotationLayer 挂载条件 pr!==undefined；page 传 no−1；
+ *     viewportScale=zoom；geometry 下钻透传）。[F-UIRES-03 B2] AI 高亮层
+ *     恒挂面随页内 AI 高亮层整删退役（INV-105）。
  * - 内装 PageColumn（十 props 全透传——F-R1 增 layout）：onPageRender（写
  *   注册表）与 renderPage（读注册表）读写同源必须同居一组件——这是本组件
  *   包 PageColumn 而非只提供工厂的原因（F-ARCH3 票面行为层）。
@@ -45,7 +46,6 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import type { Annotation } from '@shared/models/annotation'
 import { AnnotationLayer } from './AnnotationLayer'
-import { ReaderAiLayer } from './AiAnnotationLayer'
 import { PageColumn, type PageScrollRequest } from './PageColumn'
 import { SearchHighlightLayer } from './SearchHighlightLayer'
 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
@@ -109,8 +109,9 @@ export function PagesOverlay(props: {
   }, [])
 
   /** 段④层实例化：每渲染页一套覆盖层（props 不变；标注层自同步 store 父级无动作）。
-      P7E-03：SearchHighlightLayer 挂 ReaderAiLayer 后（DOM 序在 AnnotationLayer
-      后=叠于标注块之上——搜索瞬态视觉合理；内部订阅 reader-search.store） */
+      P7E-03：SearchHighlightLayer 在 AnnotationLayer 后（DOM 序=叠于标注块之上
+      ——搜索瞬态视觉合理；内部订阅 reader-search.store）。[F-UIRES-03 B2] AI
+      高亮层挂载行随页内 AI 高亮层整删退役 */
   const renderPageLayers = (no: number): JSX.Element => {
     const pt = pageTexts[no]
     const pr = pageRoots[no]
@@ -118,7 +119,6 @@ export function PagesOverlay(props: {
       <PageFrame no={no} onRecycle={dropPageState}>
         {pt !== undefined ? <TextLayer textContent={pt.text} viewportScale={zoom} pageWidth={pt.box.w} pageHeight={pt.box.h} geometry={pt.geometry} /> : null}
         {pr !== undefined ? <AnnotationLayer annotations={annotations} page={no - 1} pageRoot={pr} onChanged={() => undefined} /> : null}
-        <ReaderAiLayer page={no - 1} pageRoot={pr ?? null} />
         <SearchHighlightLayer page={no - 1} pageRoot={pr ?? null} />
       </PageFrame>
     )

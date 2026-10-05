@@ -4,8 +4,9 @@
  * A5] 迁移：详情域收编（期刊缩写/IF/被引/年月/T 档——三字段可选省略语义）
  * +core 徽章退役（行 9——UI 消费面全退役）+星标态禁用呈现+底部注记双击跳
  * 阅读器。覆盖：insp-cap「节点详情」+骑缝编号徽章（pubNo 分发）/insp-title
- * 题名/徽章行/idea-cap「核 心 想 法」/AI 评估后置章占位/insp-foot 提示行/
- * 既有 testid 面全保活（meta/idea/ai-notes/manual-note）+主题节点空态零变。
+ * 题名/徽章行/[F-UIRES-03 B2] AI 评估与建议真节（后置占位章退役负锚）/
+ * insp-foot 提示行/既有 testid 面全保活（meta/ai-notes/manual-note/fragments）
+ * +主题节点空态零变。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -15,6 +16,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },
+  reader: { listAnnotations: vi.fn() },
   lineage: { graph: vi.fn() }
 })
 
@@ -63,6 +65,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] })
   stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+  stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [] })
 })
 
 afterEach(() => {
@@ -134,7 +137,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(themeBadges).toEqual(['2023-06'])
   })
 
-  it('[A3 F-CONTRACTA-01 2026-10-04] 核心 idea 区随 core_idea 全退役删除（idea-cap/idea 面零渲染负锚）；AI 评估后置章（postpone 徽标+说明行，零假数据）；insp-foot 提示行', async () => {
+  it('[A3 F-CONTRACTA-01 2026-10-04] 核心 idea 区随 core_idea 全退役删除（idea-cap/idea 面零渲染负锚）；[F-UIRES-03 B2] AI 评估与建议真节在场+后置占位章退役负锚（postpone 徽标零渲染）；insp-foot 提示行', async () => {
     mount(
       <LineageSidePanel
         node={node('A')}
@@ -147,21 +150,26 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(q('[data-testid="lineage-side-idea"]')).toBeNull()
     expect(q('.idea-cap')).toBeNull()
     expect(q('.idea')).toBeNull()
-    const postpone = q('[data-testid="lineage-side-postpone"]')
-    expect(postpone?.textContent).toContain('AI 评 估 笔 记')
-    expect(postpone?.querySelector('.postpone')?.textContent).toBe('后置')
-    // 占位说明在场且不渲染任何评估条目（B4 后置——无 note-card 假数据）
-    expect(host?.textContent).toContain('评估功能后置——当前版本不生成 AI 评估内容')
+    // [B2] 真节替代占位章：节名在场（AI 评估与建议——LineageSideAiNotes 改名）
+    expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('AI 评估与建议')
+    // 占位章退役负锚：testid/徽标/说明行零渲染（真节替占位——B4 后置章消亡）；
+    // 退役文案分段构造（负锚断言不落整词字面量——src+tests 词面零命中口径）
+    const retiredBody = ['评估功能', '后置'].join('')
+    const retiredHeading = ['AI ', '评 ', '估 ', '笔 ', '记'].join('')
+    expect(q('[data-testid="lineage-side-postpone"]')).toBeNull()
+    expect(q('.postpone')).toBeNull()
+    expect(host?.textContent).not.toContain(retiredBody)
+    expect(host?.textContent).not.toContain(retiredHeading)
     expect(host?.querySelectorAll('.note-card').length).toBe(0)
     expect(q('.insp-foot')?.textContent).toBe(
       '双击卡片跳转阅读器 · 编辑模式：改月 / 调序 / 画线 / 调线'
     )
   })
 
-  it('既有 testid 面全保活：meta/ai-notes/manual-note（[A3] idea 面退役出集）；主题节点空态零变+无后置章', async () => {
+  it('既有 testid 面全保活：meta/ai-notes/manual-note（[A3] idea 面退役出集）+[B2] fragments 面；主题节点空态零变+无后置章', async () => {
     mount(<LineageSidePanel node={node('A')} onJumpToPaper={vi.fn()} />)
     await flush()
-    for (const tid of ['lineage-side-panel', 'lineage-side-meta', 'lineage-side-ai-notes', 'lineage-side-manual-note']) {
+    for (const tid of ['lineage-side-panel', 'lineage-side-meta', 'lineage-side-ai-notes', 'lineage-side-manual-note', 'lineage-side-fragments']) {
       expect(q(`[data-testid="${tid}"]`)).not.toBeNull()
     }
     expect(q('[data-testid="lineage-side-idea"]')).toBeNull() // [A3] 退役面负锚

@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 /**
- * [F-A3] 标注「选择模式」——票面 5.1 用例 ①~⑧（锁定合约，always-active，
+ * [F-A3] 标注「选择模式」——票面 5.1 用例 ①~⑤⑦⑧（锁定合约，always-active，
  * 不经 guardedDescribe——ADR-0017 裁决 3；⑧=回炉 1 W1 编辑器臂补锁）。
  *
  * 覆盖：store 面（setSelectionMode 写 active/per-tab 记忆 S3/activeId=null
  * no-op）、AnnotationLayer 面（rect pointerEvents 常规全 auto/选择全 none+
- * 点击零副作用+进入选择关菜单/编辑器 S1 不自动恢复）、AiAnnotationLayer 面
- * （rect none+选中描边清除 S4+点击守卫）、ReaderToolbar 面（aria-pressed/
- * 选中态强调边框/onToggle 恰调一次）。SelectionToolbar 不消费模式（正交零改动）。
+ * 点击零副作用+进入选择关菜单/编辑器 S1 不自动恢复）、ReaderToolbar 面
+ * （aria-pressed/选中态强调边框/onToggle 恰调一次）。SelectionToolbar 不
+ * 消费模式（正交零改动）。[F-UIRES-03 B2] AiAnnotationLayer 面（原⑥）随
+ * 页内 AI 高亮层整删退役（INV-105——AI 显示面唯一=脉络详情面板）。
  * 形态 crib annotation-layer.test.tsx（jsdom 指令/api mock/act 环境/存量
- * rects 夹具）+ai-annotation-layer.test.tsx（pageRoot+.textLayer 真锚+syncRaf）。
+ * rects 夹具）。
  * 布态=useReaderStore.setState 直植完整 TabState+activeId（免 openPaper 异步
  * 链）；afterEach setState(createReaderStoreInitialState()) 复位（zustand
  * 浅合并保 actions）。
@@ -18,13 +19,11 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import type { AiNote } from '../../../src/shared/models/ai-note'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
 
 makeApiStub({ reader: {} })
 import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
-import { AiAnnotationLayer } from '../../../src/renderer/features/reader/view/AiAnnotationLayer'
 import { ReaderToolbar } from '../../../src/renderer/features/reader/view/ReaderToolbar'
 import {
   createReaderStoreInitialState,
@@ -57,36 +56,6 @@ function ann(): Annotation {
 }
 
 /** ready 态完整 tab（tab-bar.test 同配方+selectionMode 维度） */
-/** AI 段夹具（ai-annotation-layer.test 同配方） */
-function aiNoteFixture(): AiNote {
-  return {
-    id: 'n1',
-    paperId: 'p-1',
-    annotationId: null,
-    role: 'first-read',
-    question: 'Q1',
-    model: 'test-model',
-    quoteText: 'WATER',
-    prefixText: '',
-    suffixText: '',
-    anchorPage: 1,
-    contentMd: '内容-n1',
-    createdAt: 't',
-    updatedAt: 't'
-  }
-}
-
-/** 页根：.textLayer 内单 span 全文（AI 层重锚管线真锚） */
-function makePageRoot(text: string): HTMLDivElement {
-  const root = document.createElement('div')
-  const textLayer = document.createElement('div')
-  textLayer.className = 'textLayer'
-  const span = document.createElement('span')
-  span.textContent = text
-  textLayer.appendChild(span)
-  root.appendChild(textLayer)
-  return root
-}
 
 /** rAF 同步化（jsdom 假帧——重锚 effect 即时收敛，测试确定性） */
 function syncRaf(): void {
@@ -111,9 +80,6 @@ function mount(node: JSX.Element): void {
 const annRects = (): NodeListOf<HTMLElement> =>
   host!.querySelectorAll<HTMLElement>('[data-testid="annotation-rect"]')
 
-const aiRects = (): NodeListOf<HTMLElement> =>
-  host!.querySelectorAll<HTMLElement>('[data-testid="ai-note-rect"]')
-
 beforeEach(() => {
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
   syncRaf()
@@ -121,8 +87,7 @@ beforeEach(() => {
     tabs: { 'p-1': makeTab('p-1') },
     order: ['p-1'],
     activeId: 'p-1',
-    noteHighlight: null,
-    aiNoteHighlight: null
+    noteHighlight: null
   })
 })
 
@@ -248,40 +213,8 @@ describe('F-A3 选择模式 —— AnnotationLayer 面', () => {
   })
 })
 
-describe('F-A3 选择模式 —— AiAnnotationLayer 面', () => {
-  it('⑥ 常规点击置 selectedId（有 true）→ 切选择：rect none+data-highlight 全 false（S4）+点击守卫', () => {
-    const onJump = vi.fn()
-    mount(
-      <AiAnnotationLayer
-        aiNotes={[aiNoteFixture()]}
-        page={0}
-        pageRoot={makePageRoot('SMART WATER TEST DOC')}
-        onJumpToNote={onJump}
-      />
-    )
-    expect(aiRects().length).toBeGreaterThan(0)
-    expect(aiRects()[0]!.style.pointerEvents).toBe('auto')
-    act(() => {
-      aiRects()[0]!.click()
-    })
-    const hasTrue = Array.from(aiRects()).some(
-      (r) => r.getAttribute('data-highlight') === 'true'
-    )
-    expect(hasTrue).toBe(true)
-    expect(onJump).toHaveBeenCalledTimes(1)
-    act(() => {
-      useReaderStore.getState().setSelectionMode(true)
-    })
-    expect(aiRects()[0]!.style.pointerEvents).toBe('none')
-    for (const r of Array.from(aiRects())) {
-      expect(r.getAttribute('data-highlight')).toBe('false')
-    }
-    act(() => {
-      aiRects()[0]!.click()
-    })
-    expect(onJump).toHaveBeenCalledTimes(1)
-  })
-})
+// [F-UIRES-03 B2] AiAnnotationLayer 面（原用例⑥）随页内 AI 高亮层整删退役
+// ——选择模式对该层的 S4/点击守卫语义随显示面消亡（INV-105）。
 
 describe('F-A3 选择模式 —— ReaderToolbar 面', () => {
   it('⑦ aria-pressed 反映 selectionMode；选中态强调边框；点击恰调一次 onToggleSelectionMode', () => {

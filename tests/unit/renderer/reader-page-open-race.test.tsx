@@ -73,8 +73,7 @@ beforeEach(() => {
     tabs: {},
     order: [],
     activeId: null,
-    noteHighlight: null,
-    aiNoteHighlight: null
+    noteHighlight: null
   })
   openPaperSpy = vi.fn(async () => undefined)
   useReaderStore.getState().openPaper = openPaperSpy
@@ -95,8 +94,7 @@ describe('ReaderPage 挂载时序 —— 打开请求消费 vs 监听器注册�
     // 脉络双击场景：事件①派发时 ReaderPage 未挂载（App 尚未切视图）——闩锁承载
     requestOpenPaperAnchored({
       paperId: 'p1',
-      anchor: { quoteText: '竞态锚文', prefixText: '', suffixText: '', anchorPage: 0 },
-      aiNoteId: 'n1'
+      anchor: { quoteText: '竞态锚文', prefixText: '', suffixText: '', anchorPage: 0 }
     })
     mount(<ReaderPage />)
     await flush()

@@ -15,14 +15,15 @@
  * **[F-05 增补] 程序滚动单容器收敛（缺陷 A：TabBar 被
  * 顶出视口）**——flashElement 的 scrollIntoView（滚所有可滚祖先——泄漏面含
  * document viewport/main）换 scrollIntoNearestScroller(el,'center')（只滚最近
- * 滚动祖先，INV-34）：页内 rect→阅读器滚动容器居中；flashAiNote 兜底命中
- * aside 面板条目→aside 自身滚动容器（保持 AI-09 列表滚动语义）；无滚动祖先
+ * 滚动祖先，INV-34）：页内 rect→阅读器滚动容器居中；无滚动祖先
  * →不滚。flashElement/flashTarget 目标注解窄化为 HTMLElement（目标实为
  * HTMLElement）；LocateAnchor/LocateTarget/locateAnchor 签名零触碰（F-02
  * 冻结面）。票面=scripts/audits/sr2-f-05-brief.md。
+ * [F-UIRES-03 B2] AI 条目 exact 层滚动面（AI-09 延展）随页内
+ * AI 高亮层整删退役（INV-105——exact 层目标锚唯一=data-annotation-id）。
  *
  * ⚠ INV-20 单入口（N2 裁决「三层防线升格验收条款」+N1/N3 共享）：一切跳转
- * 消费方（本单=阅读器片段列表 N1；未来=P7-G AI 面板/LG 脉络侧板 N3）共用
+ * 消费方（本单=阅读器片段列表 N1；LG 脉络侧板片段条目 N3）共用
  * locateAnchor，**禁各写降级**。
  *
  * ── 行为层 ──
@@ -60,7 +61,7 @@
  * - export interface LocateTarget { paperId: string; anchor: {
  *     quoteText: string; prefixText: string; suffixText: string;
  *     anchorPage?: number; startOffset?: number } | null;
- *     annotationId?: string; aiNoteId?: string }
+ *     annotationId?: string }
  * - export type LocateResult = 'exact' | 'page' | 'paper'
  * - export async function locateAnchor(target: LocateTarget): Promise<LocateResult>
  * - export const LOCATE_OPEN_TIMEOUT_MS = 8000
@@ -101,11 +102,9 @@ export interface LocateTarget {
   paperId: string
   anchor: LocateAnchor | null
   /** exact 层滚动目标锚（AnnotationLayer rect 的 data-annotation-id）——
-   *  消费方持完整标注对象时随锚传递；缺省则 exact 只完成页级停驻 */
+   *  消费方持完整标注对象时随锚传递；缺省则 exact 只完成页级停驻。
+   *  [F-UIRES-03 B2] AI 条目标识兄弟字段随 AI 双击链退役删除（INV-105） */
   annotationId?: string
-  /** exact 层滚动目标锚（AI 09 扩展：AiAnnotationLayer rect 的 data-ai-note-id）
-   *  ——AI 笔记条目定位传递；与 annotationId 互斥（同时给优先 annotationId） */
-  aiNoteId?: string
 }
 
 export type LocateResult = 'exact' | 'page' | 'paper'
@@ -209,25 +208,10 @@ async function verifyWhenReady(anchor: LocateAnchor, paperId: string, seq: numbe
 }
 
 /** exact 副作用：滚动目标元素居中+闪烁（AnnotationLayer data-annotation-id 锚；
- *  属性值转义防选择器注入） */
+ *  属性值转义防选择器注入）。[F-UIRES-03 B2] AI 条目滚动面（AI-09 扩展）随
+ *  页内 AI 高亮层整删退役——exact 层滚动目标锚唯一=data-annotation-id */
 function flashAnnotation(annotationId: string): void {
   flashTarget('data-annotation-id', annotationId)
-}
-
-/**
- * exact 副作用（AI-09 扩展）：滚动 [data-ai-note-id] 目标居中+闪烁。
- * 同属性值也会出现在 08 面板条目（AiNoteGroupList）上——优先取页面主区内的
- * 渲染 rect（定位语义=在 PDF 里看见该段），面板命中兜底。
- */
-function flashAiNote(aiNoteId: string): void {
-  const escaped = aiNoteId.replace(/(["\\])/g, '\\$1')
-  const candidates = document.querySelectorAll<HTMLElement>(`[data-ai-note-id="${escaped}"]`)
-  const el =
-    Array.from(candidates).find((c) => c.closest('[data-testid="reader-aside"]') === null) ??
-    candidates[0] ??
-    null
-  if (el === null) return
-  flashElement(el)
 }
 
 function flashTarget(attr: string, value: string): void {
@@ -285,7 +269,6 @@ export async function locateAnchor(target: LocateTarget): Promise<LocateResult> 
     // S6：verifying 中 tab 被关——不追写已删 TabState/不滚动
     if (useReaderStore.getState().tabs[target.paperId] === undefined) return 'paper'
     if (target.annotationId !== undefined) flashAnnotation(target.annotationId)
-    else if (target.aiNoteId !== undefined) flashAiNote(target.aiNoteId)
     return 'exact'
   }
   if (locateSeq === seq) showToast('锚定失效，已定位到所在页', 'info')

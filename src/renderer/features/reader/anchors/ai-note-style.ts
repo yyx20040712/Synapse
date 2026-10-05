@@ -3,11 +3,12 @@
  * ai-note-style —— 七问分色+中文标签+原始命题单源（INV-11 单源模式，
  * annotation-style 同族新模块）。
  *
- * 接缝双向锚定声明：消费方=AiNoteGroupList（08 分节）+AI-09 AI 标注渲染层
- * （同源消费，禁 09 另建映射）+LG-04 LineageSideAiNotes（脉络侧板跨域只读
- * 消费——check-quality COMPOSITION_ROOT_ALLOW 受控例外，映射单源不因跨域
- * 复写）。取色只允许 theme.css 变量（本映射为 question→theme.css 变量的
- * 唯一出处），禁止散落硬编码色值。
+ * 接缝双向锚定声明：消费方=LG-04 LineageSideAiNotes（脉络侧板跨域只读消费
+ * ——check-quality COMPOSITION_ROOT_ALLOW 受控例外，映射单源不因跨域复写；
+ * [F-UIRES-03 B2] reader 域消费面（分组列表/页内 AI 高亮层）随阅读器
+ * AI 区整删退役——本件为分色/标签唯一出处沿承，INV-105）。取色只允许
+ * theme.css 变量（本映射为 question→theme.css 变量的唯一出处），禁止散落
+ * 硬编码色值。
  */
 import type { AiNoteQuestion, AiNoteRole } from '@shared/models/ai-note'
 import { AI_NOTE_ROLES } from '@shared/models/ai-note'

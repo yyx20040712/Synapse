@@ -1,13 +1,14 @@
 // b3: P7-H
 /**
- * LineageSideManualNote —— 侧板人工笔记总评层（LG-04 交付件，
- * LineageSidePanel 区4；C-03 notes/get 数据面复用——只读呈现）。
+ * LineageSideManualNote —— 侧板全文笔记分节（LG-04 交付件→[F-UIRES-03 B2]
+ * 「四删三立」更名：原「人工笔记」节名退役，文件名/组件名/testid 不变；
+ * C-03 notes/get 数据面复用——只读呈现，数据零迁移=INV-101 域不变）。
  *
  * 行为：选中节点 paperId 驱动惰性取数（notes/get→Note|null）；loading/
- * error+重试/空态（null=「暂无人工笔记」非错误——INV-02 列表型）/
+ * error+重试/空态（null=「暂无全文笔记」非错误——INV-02 列表型）/
  * contentMd 纯文本呈现（负面清单红线——md 不渲染只展示）。stale 守卫
- * 同 LineageSideAiNotes（请求序号）。无跳转交互（无锚语义，票面测试面
- * 仅 AI 条目——见 LineageSidePanel 实现注）。
+ * 同 LineageSideAiNotes（请求序号）。无跳转交互（全文笔记无锚语义——
+ * 双击链唯一=片段条目，见 LineageSidePanel 实现注）。
  */
 import { useEffect, useState } from 'react'
 import { api, unwrap } from '../../api/client'
@@ -58,9 +59,9 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
         className="m-0 pl-1.5 font-medium"
         style={{ color: 'var(--text-dim)', borderLeft: '3px solid var(--accent)' }}
       >
-        人工笔记
+        全文笔记
       </h4>
-      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>人工笔记加载中…</p>}
+      {phase === 'loading' && <p className="m-0" style={{ color: 'var(--text-dim)' }}>全文笔记加载中…</p>}
       {phase === 'error' && (
         <div
           role="alert"
@@ -68,7 +69,7 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
           className="flex items-center gap-2 rounded border px-2 py-1"
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
-          <span>人工笔记加载失败：{message}</span>
+          <span>全文笔记加载失败：{message}</span>
           {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（data-action
               受锁锚透传） */}
           <RetryButton dataAction="retry" onClick={() => setRetryTick((t) => t + 1)} />
@@ -76,7 +77,7 @@ export function LineageSideManualNote(props: { paperId: string }): JSX.Element {
       )}
       {phase === 'ready' &&
         (note === null ? (
-          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无人工笔记</p>
+          <p className="m-0" style={{ color: 'var(--text-dim)' }}>暂无全文笔记</p>
         ) : (
           <p className="m-0 whitespace-pre-wrap rounded border px-2 py-1" style={{ ...NOTE_CARD, color: 'var(--text)' }}>{note.contentMd}</p>
         ))}

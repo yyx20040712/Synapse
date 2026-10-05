@@ -20,7 +20,7 @@
  *   渲染回退 F-11 分数路径（缺省兼容）。
  * - [F-A5 a/b] band 单源（[F-GEOM-01-G3] 档位勘正——现行口径 INV-68）：①自绘
  *   选区=selection 产链（档1 bandsFromItems 主链/档2 bandsForTextNodes 显示
- *   回退）②S4 段（Annotation+AI 经 annotation-resolve-layered）=档2
+ *   回退）②S4 段（Annotation 经 annotation-resolve-layered）=档2
  *   bandsForTextNodes③存量回退（AnnotationLayer S3b/S6）=档3 bandsNearRects
  *   唯一消费——三档各自同源（C5），span→带核心=bandFromMetrics+同行近并。
  *   节点口径免疫 CSS 行盒整体偏移（真机实锤：小字号紧排文档行盒偏上 ~9px
@@ -204,7 +204,7 @@ function mergeNear(bands: RowBand[], band: RowBand): void {
  *  匹配，免疫 CSS 行盒整体偏移：真机实锤小字号紧排文档上 Range 行盒比
  *  pdf.js span 盒整体高 ~9px，几何最近中心会把带绑到上一行=图2 下偏根因。
  *  消费方：标注重锚（resolveAnnotationRects）+自绘选区（SelectionLayer
- *  evaluate）+AI 段（AiAnnotationLayer resolve）；span 去重+同带合并；
+ *  evaluate）；span 去重+同带合并；
  *  无 canvas/量测退化（jsdom）→ []） */
 export function bandsForTextNodes(nodes: Text[], base: PixelBox): RowBand[] {
   const ctx = measureContext()
@@ -376,7 +376,7 @@ export function resolveAnnotationRectsItem(
  *  box 反推 scale=Math.round 后 CSS 盒/跨度，与 clampScale(zoom) 真值差 <1px
  *  取整粒度——水平轴（宽）scale/base 严格约除消取整差；垂直轴依赖 box 宽高
  *  比≈view 跨度比，有界 ~1px 级相对残差=同族精度带内[门一 W3 口径]）。
- *  [F-A8 门2] 导出：AI 段编排（annotation-resolve-layered）同源消费。
+ *  [F-A8 门2] 导出：三层编排（annotation-resolve-layered）同源消费。
  *  [F-GEOM-01-G3] 域归属：产物 viewport 只入项几何族数学
  *  （itemSelectionGeometry/rectsForOffsetRange），禁直接混入 DOM 量测域
  *  比较（r3a 型域差防线） */

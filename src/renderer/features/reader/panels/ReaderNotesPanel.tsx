@@ -20,6 +20,8 @@
  * - notes 面 dirty 投影（TABS-03 既有）零改动——pending 语义自动覆盖本编辑面
  * - [A2 F-CONTRACTA-01 2026-10-04] note.title 停用：标题输入框退役为静态
  *   「全文笔记」节标（样式落位归 B 批；noteSave 载荷/编辑域随之单字段化）
+ * - [F-UIRES-03 B2] AI 面分节（P7-G 预留位曾兑现的分节挂载）随阅读器
+ *   左栏 AI 区整删退役——显示面唯一=脉络详情面板「AI 评估与建议」节（INV-105）
  * - 设计事实两条（r2 审计 W1/W2 裁决存档）：①加载中不禁用输入（NotesPanel 同
  *   语义既有裁决——store 编辑期保护兜底：发起后的 edit 不被响应覆盖）；②本
  *   面板仅挂载于 active tab 视图（P7-B 单视图渲染模型——无隐藏 tab 挂载，
@@ -27,8 +29,8 @@
  *
  * ── 接口层 ──
  * - export function ReaderNotesPanel(props: { annotations: Annotation[];
- *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null;
- *     highlightAiNoteId?: string | null }): JSX.Element
+ *     onLocate(annotationId: string): void; highlightAnnotationId?: string | null
+ *   }): JSX.Element
  * - paperId 经 useActiveTab 自取（挂 active tab 视图内——props 不传 paperId 防双源）
  *
  * ── 架构层 ──
@@ -36,13 +38,13 @@
  *   （tab-dirty.ts 同型先例——notes.store 不迁不动，归属 notes 域维持）
  *
  * ── 生命周期层 ──
- * - 预留：P7-G AI 面分节（AiNotesSection 并入本面板下部分节——骨架 §2 指针）
  * - 不做：Markdown 预览（负面清单）；片段层行内编辑（批注写面唯一=标注菜单）
  *
  * ── 文化层 ──
  * - 组件级测试 tests/unit/renderer/reader-notes-panel.test.tsx：总评层载入/失败
  *   重试/编辑 pending 镜像/防抖保存四态/换 tab 不失忆；片段层序消费/单击/空态/
- *   高亮滚动。textarea 焦点原生 undo=既有 keymap editable 避让（P7-A 已锚）
+ *   高亮滚动；[B2] AI 节退役负锚。textarea 焦点原生 undo=既有 keymap editable
+ *   避让（P7-A 已锚）
  * - 组件 ≤250 行（两层拆 FragmentNotesList 守恒）
  */
 import { useEffect, useRef, useState } from 'react'
@@ -52,7 +54,6 @@ import { RetryButton } from '../../../shared/ui/RetryButton'
 import { deriveSaveStatus, detectSaveFailed } from '../../../shared/save-status'
 import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../../notes/notes.store'
-import { AiNotesSection } from './AiNotesSection'
 import { FragmentNotesList } from './FragmentNotesList'
 import { useActiveTab } from '../state/useActiveTab'
 
@@ -63,10 +64,8 @@ export function ReaderNotesPanel(props: {
   annotations: Annotation[]
   onLocate(annotationId: string): void
   highlightAnnotationId?: string | null
-  /** AI 段单击反向同步高亮（AI-09——OutlineAside 分发，AiNotesSection 消费） */
-  highlightAiNoteId?: string | null
 }): JSX.Element {
-  const { annotations, onLocate, highlightAnnotationId = null, highlightAiNoteId = null } = props
+  const { annotations, onLocate, highlightAnnotationId = null } = props
   const tab = useActiveTab()
   const paperId = tab?.paperId ?? null
 
@@ -186,10 +185,8 @@ export function ReaderNotesPanel(props: {
         <h4 className="rdr-aside-h4">片段笔记</h4>
         <FragmentNotesList annotations={annotations} onLocate={onLocate} highlightAnnotationId={highlightAnnotationId} />
       </div>
-      {/* P7-G 预留位兑现：AI 面分节并入本面板下部（AiNotesSection 经
-          useActiveTab 自取 paperId——防双源同本面板） */}
-      <h4 className="rdr-aside-h4">AI 笔记</h4>
-      <AiNotesSection highlightAiNoteId={highlightAiNoteId} />
+      {/* [F-UIRES-03 B2] AI 面分节随阅读器左栏 AI 区整删退役（INV-105——
+          AI 评估语料渲染显示面唯一=脉络详情面板「AI 评估与建议」节） */}
     </div>
   )
 }

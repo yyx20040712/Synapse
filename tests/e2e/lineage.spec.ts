@@ -11,8 +11,10 @@
  *   ③时间线真文本 reload 持久（core_idea 编辑持久面随 [A3 F-CONTRACTA-01
  *   2026-10-04] core_idea 全退役删除——节点写链 reload 持久由 T10 承载）；
  *   ④加边重复端点对拒绝
- *   toast（②U8 起多父守卫文本）；⑤节点单击→侧板 AI 分节分色呈现；⑥AI 条目
- *   双击→阅读器打开+锚定位（data-ai-note-id exact 层——AI-09 延展消费）；⑦
+ *   toast（②U8 起多父守卫文本）；⑤节点单击→侧板「AI 评估与建议」分节
+ *   分色呈现（[F-UIRES-03 B2] 三节新序：全文笔记→片段笔记→AI 评估与建议；
+ *   AI 条目双击链退役负锚）；⑥片段条目双击→阅读器打开+目标页可见
+ *   （B2 后全应用唯一保留双击链）；⑦
  *   自动保存失败路径→退出拦截弹窗（聚合面）——**mock 实现路径注
  *   （门一 N8）：contextIsolation 下 renderer 不可 mock contextBridge；
  *   须 electronApp.evaluate 在 main 侧 patch 写通道 handler，禁静默降级
@@ -35,14 +37,17 @@
  *   T2=③时间线真文本 reload 持久（[A3] core_idea 编辑持久段退役删——
  *   写链持久面由 T10 改月全流承载）；T3=④重复加边拒绝
  *   toast（②U8 迁移面）+⑦写通道 patch 失败→保存失败指示条→真聚合脏态→close
- *   拦截两态；T4=⑤侧板分节分色+⑥AI 条目双击跳阅读器+锚定位。
+ *   拦截两态；T4=⑤侧板「AI 评估与建议」分节分色（B2 三节新序+AI 双击退役
+ *   负锚）+⑥片段条目双击跳阅读器目标页可见。
  * - **种子链（[F-BAKRET-01] 改述+[F-ALIGN-01]）**：papers 经 e2e-env.seedPaperRow
  *   （甲=真实 PDF 供⑥跳转与⑤产物重锚；根/乙=幽灵行+year 元数据）；
  *   T1=launch 前 seedLineageGraph 直写节点+右键连线走产品路径（UI 添加节点
  *   随 [F-ALIGN-01] 退役——节点唯一来源=入库/移动两路）；
  *   T2-T10/T-P1b=launch 前 seedLineageGraph 直写库（month/slot 形态
- *   由种子载荷精确控制——UI 链无法表达的月组场景）。AI 笔记走 08 先例
- *   预置链不变。
+ *   由种子载荷精确控制——UI 链无法表达的月组场景）。[F-UIRES-03 B2] AI
+ *   评估+片段种子=launch 前经 e2e-env.seedAiNote/seedAnnotation 直写库
+ *   （08 传感器预置+07 导入器链随阅读器 AI 区整删退役——INV-105 后唯一
+ *   显示面=脉络侧板，种子直写即断言面）。
  * - **⑦ mock**：app.evaluate 于 main 侧 ipcMain.removeHandler+handle 重注册
  *   'lineage/patch-node' 抛错（[F-ALIGN-01] 通道拆分换名）；退出拦截走
  *   **真聚合链**，close/断言形态=reader-text.spec.ts:285 退出拦截先例同型。
@@ -56,11 +61,13 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+import { createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 import { expectRectNear, freezeAnimations, zoomProbe } from './geo-probes'
 import {
   bootstrapMigrations,
   launch,
+  seedAiNote,
+  seedAnnotation,
   seedLineageGraph,
   seedPaperRow,
   type LineageSeedEdge,
@@ -437,85 +444,118 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T4=验收面⑤⑥：AI 笔记导入（08 预置链+真 07 导入器）→节点单击→侧板
-   * 分节分色→AI 条目双击→阅读器打开+锚定位（data-ai-note-id 可见性——
-   * exact 层 AI-09 延展消费）。
+   * T4=验收面⑤⑥（[F-UIRES-03 B2] 改写；[RR1-B] 页级维 fixture 化）：种子直写
+   * （seedAiNote/seedAnnotation launch 前落库——08 传感器链退役后 AI 评估显示面
+   * 唯一=脉络侧板）→节点单击→侧板三节新序+「AI 评估与建议」分节分色→AI 条目
+   * 双击退役负锚（不跳）→片段条目双击→阅读器打开+目标页文本层可见（甲=多页
+   * fixture〔createMultiPagePdf(3)——每页单行 P<n> 文本〕+annotation page=1。
+   * 判别面=总线跳转链（视图切换）+文档加载+多页文本层渲染（P2 行在场=文档
+   * 装载证明）；**页级停驻维无判别力**（toBeVisible=CSS 可见非视口相交，跳转
+   * 空操作与停驻被覆盖终态同形）——停驻竞争缺陷在案=F-LOCATE-01（registry
+   * open），页级判别断言随该票修复回补；seedLineagePapers 固定单页形态束缚
+   * 故 T4 自种甲文献）。
    */
-  test('T4 AI 笔记导入→侧板分节分色→双击跳阅读器锚定位', async () => {
+  test('T4 侧板三节新序+AI 评估分色→AI 双击退役负锚→片段双击跳阅读器目标页', async () => {
     // F-02 批 2：跳页兼容（exact 层经目标页盒文本层验证）——逐测守卫（describe
     // 级 DEPS 之外单列，T1~T3 不被 F-02 绑架）
     const pendingF02 = ['SR2-F-02'].filter((d) => !isTicketDone(d))
     test.skip(pendingF02.length > 0, `延期：依赖工单未完成 [${pendingF02.join(', ')}]`)
-    test.slow() // AI 面板 5s 轮询消费 fixture+PDF 加载+跳转链
+    test.slow() // PDF 加载+双段跳转链
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t4-'))
-    const sensorRoot = join(userData, 'ai-sensor')
     await firstHop(userData)
-    await seedLineagePapers(userData)
+    // [RR1-B] T4 自种三篇（seedLineagePapers 甲分支固定 createTinyPdf 单页——
+    // 页级导航维不可判；甲换 createMultiPagePdf(3) 每页单行「P<n> <text>」页序
+    // 可断言；根/乙=幽灵行同 seedLineagePapers 形态）
+    for (const p of [PAPERS[0], PAPERS[2]]) {
+      const ghostSha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
+      await seedPaperRow(
+        userData,
+        `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`,
+        ghostSha,
+        p.title,
+        p.id,
+        { year: p.year }
+      )
+    }
+    const bytesA = createMultiPagePdf(3, PDF_KNOWN_TEXT)
+    const shaA = createHash('sha256').update(bytesA).digest('hex')
+    const fileRefA = `${shaA.slice(0, 2)}/${shaA.slice(2, 4)}/${shaA}.pdf`
+    const absA = join(userData, 'files', ...fileRefA.split('/'))
+    mkdirSync(dirname(absA), { recursive: true })
+    writeFileSync(absA, bytesA)
+    await seedPaperRow(userData, fileRefA, shaA, '脉络甲文献', 'e2e-lg-a', { year: 2022 })
     await seedLineageGraph(userData, chainSeed())
+    // [F-UIRES-03 B2] 种子直写（launch 前）：AI 评估两行（Q1 一审=真实 PDF 引文
+    // 锚；divergence 裁决=篇级）+片段一行（page=1 即 0 基第 2 页——[RR1-B] 页级
+    // 导航断言面：侧板条目显示「p.2 · 高亮」，双击后目标=第 2 页非开篇页）
+    await seedAiNote(userData, {
+      id: 'e2e-lg-ai-q1',
+      paperId: 'e2e-lg-a',
+      role: 'first-read',
+      question: 'Q1',
+      model: 'e2e-lg-model',
+      quoteText: PDF_KNOWN_TEXT,
+      prefixText: '',
+      suffixText: '',
+      anchorPage: 1,
+      contentMd: '脉络侧板 AI 一读笔记（e2e 真实文本锚）'
+    })
+    await seedAiNote(userData, {
+      id: 'e2e-lg-ai-div',
+      paperId: 'e2e-lg-a',
+      role: 'adjudicate',
+      question: 'divergence',
+      model: 'e2e-lg-model',
+      quoteText: '',
+      prefixText: '',
+      suffixText: '',
+      anchorPage: null,
+      contentMd: '脉络侧板裁决分节条目（e2e）'
+    })
+    await seedAnnotation(userData, {
+      id: 'e2e-lg-ann-1',
+      paperId: 'e2e-lg-a',
+      page: 1,
+      kind: 'highlight',
+      color: 'yellow',
+      quoteText: PDF_KNOWN_TEXT,
+      prefixText: '',
+      suffixText: '',
+      startOffset: 0,
+      endOffset: 8,
+      comment: ''
+    })
 
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
 
-    // 先开阅读器（AI 面板宿主）：双击甲→笔记 tab（08 先例）
-    await win.getByText('脉络甲文献').first().dblclick()
-    await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
-    await win.locator('[data-testid="reader-aside"]').getByRole('tab', { name: '笔记' }).click()
-    await expect(win.getByRole('button', { name: 'AI 读文献' })).toBeVisible({ timeout: 10_000 })
-
-    // 产物预置（工具完成语义：corpus-ai 落盘+status 空闲——真 07 导入器消费）
-    // quote=PDF 已渲染真实文本（exact 重锚充要输入）；两 question=两组分节
-    mkdirSync(join(sensorRoot, 'corpus-ai'), { recursive: true })
-    writeFileSync(
-      join(sensorRoot, 'corpus-ai', 'e2e-lg-a.json'),
-      JSON.stringify([
-        {
-          role: 'first-read',
-          question: 'Q1',
-          model: 'e2e-lg-model',
-          quote_text: PDF_KNOWN_TEXT,
-          prefix_text: '',
-          suffix_text: '',
-          anchor_page: 1,
-          content_md: '脉络侧板 AI 一读笔记（e2e 真实文本锚）'
-        },
-        {
-          role: 'adjudicate',
-          question: 'divergence',
-          model: 'e2e-lg-model',
-          quote_text: '',
-          prefix_text: '',
-          suffix_text: '',
-          anchor_page: null,
-          content_md: '脉络侧板裁决分节条目（e2e）'
-        }
-      ])
-    )
-    const now = new Date().toISOString()
-    writeFileSync(
-      join(sensorRoot, 'status.json'),
-      JSON.stringify({ state: '空闲', currentPaper: null, role: null, updatedAt: now, heartbeatAt: now })
-    )
-    // 状态行轮询（5s 周期——12s 余量同 08）→导入（真 07 导入器→真 DB）
-    await expect(win.getByTestId('ai-status-line')).toHaveText('AI 已读完，待导入', { timeout: 12_000 })
-    await win.getByRole('button', { name: '导入 AI 笔记' }).click()
-    await expect(win.getByText('AI 笔记导入完成：导入 1 篇，跳过 0 篇')).toBeVisible({ timeout: 10_000 })
-
-    // 回脉络→单击甲节点（[F-BAKRET-01] 图已种子——无导入动作）
+    // 脉络→单击甲节点（[F-BAKRET-01] 图已种子）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await nodeG(win, '脉络甲文献').click()
 
-    // ⑤侧板分节分色+真实文本（question 组分节×组内 role 标签×QUESTION_COLOR 分色单源）
+    // ⑤侧板三节新序（DOM 序）+分节分色+真实文本（question 组分节×组内 role
+    //    标签×QUESTION_COLOR 分色单源）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
     await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放') // [②U4/行 9] 已绑定文献徽章随 core UI 消费面退役——星标禁用呈现承接
     // [A3 F-CONTRACTA-01 2026-10-04] core_idea 侧板渲染面随全退役删除——
     // 面板无 idea 区（负锚；原「脉络甲的核心 idea」文本锚消亡）
     await expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)
+    // [B2] 三节新序=DOM 序（h4 标题数组——全文笔记→片段笔记→AI 评估与建议）
+    await expect
+      .poll(
+        async () =>
+          await win
+            .locator('[data-testid="lineage-side-panel"] h4')
+            .evaluateAll((els) => els.map((e) => e.textContent))
+      )
+      .toEqual(['全文笔记', '片段笔记', 'AI 评估与建议'])
     const aiSection = win.getByTestId('lineage-side-ai-notes')
     await expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })
     await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()
     const q1Entry = aiSection.locator('div[data-question="Q1"] div[data-ai-note-id]').first()
-    await expect(q1Entry).toHaveAttribute('data-ai-note-id', /.+/)
+    await expect(q1Entry).toHaveAttribute('data-ai-note-id', 'e2e-lg-ai-q1')
     // 分色：Q1 色块=annotation-yellow；divergence 色块=danger（两色相异即分色证据）
     await expect(q1Entry.locator('span[aria-hidden]')).toHaveAttribute(
       'style',
@@ -526,16 +566,29 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 条目真实文本（渲染出真实文本红线）
     await expect(win.getByText('脉络侧板 AI 一读笔记（e2e 真实文本锚）')).toBeVisible()
     await expect(win.getByText('脉络侧板裁决分节条目（e2e）')).toBeVisible()
-
-    // ⑥双击 Q1 条目→总线→App 切阅读器→PDF 加载→exact 层锚目标可见
-    // （data-ai-note-id 与被双击条目一致——可见性选项，头注 flash 竞态声明）
-    const noteId = await q1Entry.getAttribute('data-ai-note-id')
-    expect(noteId).not.toBeNull()
+    // [B2] AI 条目纯展示（dblClick 不跳——全应用唯一保留双击链=片段条目）。
+    // 阅读器未开的判定面=reader-aside 专属 testid（PDF 引文文本不可作负锚——
+    // 侧板条目 quote=同一引文，脉络视图内恒在场）
     await q1Entry.dblclick()
-    await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
-    await expect(
-      win.locator(`[data-testid="ai-note-rect"][data-ai-note-id="${noteId}"]`)
-    ).toBeVisible({ timeout: 10_000 })
+    await win.waitForTimeout(500) // 负向观察窗（错实现下跳转链 ~100ms 内切视图）
+    await expect(win.getByTestId('reader-aside')).toHaveCount(0)
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible() // 仍在脉络视图
+
+    // ⑥片段条目（片段笔记节——真实引文+1 基页码显示：page=1 0 基→「p.2」）
+    //   双击→总线→App 切阅读器→PDF 加载→目标页文本层渲染（P2 行在场）。
+    //   [RR2-k1-W-RR1-1/d1-W1 如实口径] 判别面=总线跳转链（视图切换）+文档
+    //   加载+多页文本层渲染（P2 行在场=文档装载证明）；**页级停驻维无判别
+    //   力**（toBeVisible=CSS 可见非视口相交，跳转空操作与停驻被覆盖终态
+    //   同形）——停驻竞争缺陷在案=F-LOCATE-01（registry open，RR1 探针指纹
+    //   =TabState.page 回写 0+scrollTop 恒 12 为立案证据），页级判别断言随
+    //   该票修复回补。
+    const fragments = win.getByTestId('lineage-side-fragments')
+    const fragEntry = fragments.locator('[data-fragment-id="e2e-lg-ann-1"]').first()
+    await expect(fragEntry).toBeVisible({ timeout: 10_000 })
+    await expect(fragEntry).toContainText('p.2 · 高亮')
+    await expect(fragEntry).toContainText(PDF_KNOWN_TEXT)
+    await fragEntry.locator('button').dblclick()
+    await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
 
     await app.close()
   })

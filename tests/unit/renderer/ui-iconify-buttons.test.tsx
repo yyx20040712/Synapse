@@ -52,8 +52,6 @@ import { LineageNavPane } from '../../../src/renderer/features/lineage/LineageNa
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { LINE_TYPE_COLORS } from '../../../src/shared/models/lineage'
-import { AiNoteGroupList } from '../../../src/renderer/features/reader/panels/AiNoteGroupList'
-import type { AiNote } from '../../../src/shared/models/ai-note'
 import { WorkspaceRenameRow } from '../../../src/renderer/features/workspaces/WorkspaceRenameRow'
 import { TitleBarControls } from '../../../src/renderer/app/TitleBarControls'
 
@@ -182,25 +180,8 @@ describe('F-UIRES-02 批 B Reader 域', () => {
     }
   })
 
-  it('AiNoteGroupList 段头：chevron svg 随态+title 展开/收起+aria-expanded 保活', () => {
-    const mk = (id: string, role: AiNote['role']): AiNote => ({
-      id, paperId: 'p-1', annotationId: null, role, question: 'Q1', model: 'm',
-      quoteText: '', prefixText: '', suffixText: '', anchorPage: 1, contentMd: `c-${id}`, createdAt: 't', updatedAt: 't'
-    })
-    mount(<AiNoteGroupList notes={[mk('a1', 'first-read'), mk('c1', 'adjudicate')]} onLocate={() => undefined} />)
-    const collapsed = host!.querySelector<HTMLButtonElement>('button[data-role-section="first-read"]')!
-    const expanded = host!.querySelector<HTMLButtonElement>('button[data-role-section="adjudicate"]')!
-    expect(collapsed.getAttribute('title')).toBe('展开')
-    expect(expanded.getAttribute('title')).toBe('收起')
-    expectSvg(collapsed, '一审段头')
-    expectSvg(expanded, '裁决段头')
-    expect(collapsed.getAttribute('aria-expanded')).toBe('false')
-    expect(expanded.getAttribute('aria-expanded')).toBe('true')
-    // [RR1-3] 方向流派锁：原 ▸/▾ 字符=down/right 流派（最小视觉变更原则）——
-    // 收起=右向 chevron、展开=下向 chevron（path d 特征断言防再翻流派）
-    expect(collapsed.querySelector('svg path')?.getAttribute('d')).toBe('M9 4l8 8-8 8')
-    expect(expanded.querySelector('svg path')?.getAttribute('d')).toBe('M4 9l8 8 8-8')
-  })
+  // [F-UIRES-03 B2] AiNoteGroupList 段头 chevron 用例随阅读器左栏 AI 区整删
+  // 退役删除（段头折叠钮唯一消费面——INV-105 显示面唯一=脉络详情面板）。
 })
 
 describe('F-UIRES-02 批 B 标签域——TagEditor', () => {

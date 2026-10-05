@@ -15,7 +15,7 @@
  * - 段②占位盒布局+ready JSX 职责归 PageColumnView.tsx（容器+行/列页盒装配，[F-SPLIT-01] 自本件拆出 2026-09-05）。
  * - 段③懒渲染窗口职责归 usePageLazyWindow.ts（visible/rendered 状态对+IO 占位盒驱动+回收调度——视口±1 页真渲染、离屏>2 页销毁、INV-30 canvas 生命周期=渲染窗口绑定，[F-SPLIT-01] 自本件拆出 2026-09-05）。
  * - 段⑤程序滚动+段⑥滚动位置镜像职责归 usePageColumnScroll.ts（PageScrollRequest 接口随迁、本件再导出；[F-SPLIT-01] 自本件拆出 2026-09-05）。
- * - 段④层实例化分工：覆盖层（TextLayer/AnnotationLayer/AiAnnotationLayer）经 renderPage(no) 每渲染页一套（props 不变父层循环）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02；挂载位=可见首报告）。
+ * - 段④层实例化分工：覆盖层（TextLayer/AnnotationLayer）经 renderPage(no) 每渲染页一套（props 不变父层循环）；SelectionLayer 单实例挂锚定页盒（锚定根动态归 F-02；挂载位=可见首报告）。
  * - 段⑤双源机制：scrollRequest（reader.store setPage 默认 'to' 时 bump）变化→scrollToPage(no)（盒顶）；'none'（滚动回写）不 bump 不滚（INV-29）。
  * - 段⑥缩放中心锚（F-04）：zoom prop 变化（就绪后）→盒高按缓存×新 zoom 重算→布局效应程序修正滚动容器 scrollTop（anchoredScrollTop 纯函数）；滚动位置镜像=容器 scroll 事件被动监听（程序/用户滚动皆覆盖——镜像效应归 usePageColumnScroll.ts）；修正属程序性 scrollTop 赋值，不经 wheel/keydown/pointerdown 接管链（INV-32 语义不受扰）。
  * - 布局态状态机：loading（尺寸未齐）→ready；每页 empty→rendering→rendered→recycling→empty；跨格：快速滚动（rendering 中滚出窗口→cancel→recycling）；zoom 变化（缓存×新 zoom 重算→窗口重评估，就绪后无 loading）；F-R1 布局切换（就绪后重派生行+重报 basis，无 loading；切布局位置保持走 onReady 恢复链非 zoom 锚）。

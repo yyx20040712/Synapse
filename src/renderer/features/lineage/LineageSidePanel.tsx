@@ -1,9 +1,9 @@
 // b3: P7-H
 /**
  * [F-LGRAPH-01②U4/A5] LineageSidePanel —— 右侧常驻详情面板（宽 252；P-16
- * 常驻不收——点空白保持占位）+笔记双击跳阅读器。
+ * 常驻不收——点空白保持占位）+片段双击跳阅读器。
  *
- * ── 行为层（②批 A5 收编重整）──
+ * ── 行为层（②批 A5 收编重整；[F-UIRES-03 B2] 三节新序）──
  * - **详情域收编**：完整题名/期刊缩写（venue）/IF（impactFactor）/被引
  *   （citedByCount）/年月/星标态禁用呈现（P-11——title「星标功能即将开放」）
  *   +底部注记「双击卡片跳转阅读器」（A6）。三字段可选省略（缺席整行省略
@@ -13,20 +13,27 @@
  *   面），文献节点=期刊/IF/被引域隐式承载绑定态（不双渲染徽章）。
  * - **空选中态**=「点击卡片查看详情」占位（P-16）；三模式点卡联动（P-13）
  *   编排归 Page（selectedNodeId 单源）。
- * - **AI 笔记/人工笔记域保留**（现侧板面——非退役面）；[A1b
- *   F-CONTRACTA-01 2026-10-04] 标签编辑分节拆件随脉络私有标签域退役
- *   删除——标签唯一源=文献库域（卡面标签行=A1a 伴生 map）。
- * - **笔记双击=跳阅读器**（N3/INV-20 单入口——总线载荷锚三元组传递链与
- *   open-paper-bus/open-paper-anchor 三方头注锚定不变）。
- * - 数据单源：AI 笔记本板直连 window.api.ai_notes/list（quality 跨域互引
- *   红线——reader 域 store 不可引，接缝声明见 ai-notes.store 头注）。
+ * - **笔记三节新序**（B2「四删三立」——node.paperId 非 null 时渲染，DOM 序
+ *   即此序）：①全文笔记（LineageSideManualNote——原「人工笔记」更名）→
+ *   ②片段笔记（LineageSideFragments——B2 新立）→③AI 评估与建议
+ *   （LineageSideAiNotes——原 AI 节更名+双击链退役，纯展示；
+ *   后置占位章随真节替代整删——B4 范围裁决终结）；核心想法/标签两节已在
+ *   先批退役（A3/A1b）。[A1b F-CONTRACTA-01] 标签唯一源=文献库域沿承。
+ * - **片段双击=跳阅读器**（N3/INV-20 单入口——B2 后全应用唯一保留双击链；
+ *   AI 条目双击链退役）。跳转载荷构造单点=本组件 handleFragmentDblClick
+ *   （anchorPage=Annotation.page 0 基直传——OutlineAside.locateFragment
+ *   同口径，禁 ±1 换算；锚三元组与 open-paper-bus/open-paper-anchor 三方
+ *   头注锚定不变）。
+ * - 数据单源：AI 评估/片段两分节直连 window.api（quality 跨域互引红线
+ *   ——reader 域组件/store 不可引；接缝声明见各分节头注）。
  */
 import type { CSSProperties } from 'react'
-import type { AiNote } from '@shared/models/ai-note'
+import type { Annotation } from '@shared/models/annotation'
 import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { ICON_CHEVRONS_RIGHT } from '../../shared/icons'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
+import { LineageSideFragments } from './LineageSideFragments'
 import { LineageSideManualNote } from './LineageSideManualNote'
 
 /** 白玻璃卡（R2-LG11 浅色严谨板——沿承） */
@@ -36,11 +43,6 @@ const SIDE_GLASS: CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 12,
   boxShadow: 'var(--shadow-2)'
-}
-
-/** 锚存在判定（quote 不足 2 字符且无页码=无锚——locateAnchor 验证阈值同源） */
-function hasAnchor(n: AiNote): boolean {
-  return n.quoteText.length >= 2 || n.anchorPage !== null
 }
 
 /** 年月徽章文本（YYYY-MM 补零/null 退化） */
@@ -74,7 +76,6 @@ export function LineageSidePanel(props: {
       suffixText: string
       anchorPage: number | null
     }
-    aiNoteId?: string
   } | null): void
   /** [F-FOLDER-01] 骑缝编号（INV-92 pubNo——Page 自 store pubNos 分发） */
   pubNo?: number | null
@@ -97,18 +98,19 @@ export function LineageSidePanel(props: {
     )
   }
 
-  /** AI 条目双击→跳转载荷（构造单点：三元组透传+1 基→0 基；无锚=anchor 缺省） */
-  const handleNoteDblClick = (n: AiNote): void => {
+  /** 片段条目双击→跳转载荷（构造单点：锚三元组透传+anchorPage 0 基直传——
+   *  Annotation.page 已 0 基，禁任何 ±1 换算；OutlineAside.locateFragment 同口径） */
+  const handleFragmentDblClick = (a: Annotation): void => {
     if (node.paperId === null) return
-    const anchor = hasAnchor(n)
-      ? {
-          quoteText: n.quoteText,
-          prefixText: n.prefixText,
-          suffixText: n.suffixText,
-          anchorPage: n.anchorPage === null ? null : n.anchorPage - 1
-        }
-      : undefined
-    props.onJumpToPaper({ paperId: n.paperId, anchor, aiNoteId: n.id })
+    props.onJumpToPaper({
+      paperId: a.paperId,
+      anchor: {
+        quoteText: a.quoteText,
+        prefixText: a.prefixText,
+        suffixText: a.suffixText,
+        anchorPage: a.page
+      }
+    })
   }
 
   // [②U4] 详情域徽章：期刊/IF/被引/年月/T 档（可选省略——缺席零渲染）
@@ -172,13 +174,11 @@ export function LineageSidePanel(props: {
         <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
       ) : (
         <>
-          <LineageSideAiNotes paperId={node.paperId} onNoteDblClick={handleNoteDblClick} />
+          {/* [F-UIRES-03 B2] 三节新序（DOM 序即此序）：全文笔记→片段笔记→
+              AI 评估与建议；后置占位章随③真节替代整删（B4 裁决终结） */}
           <LineageSideManualNote paperId={node.paperId} />
-          {/* AI 评估后置章占位（B4 范围裁决——不渲染任何假数据） */}
-          <div className="sec-cap" data-testid="lineage-side-postpone">
-            AI 评 估 笔 记<span className="postpone">后置</span>
-          </div>
-          <p className="m-0" style={{ color: 'var(--text-dim)' }}>评估功能后置——当前版本不生成 AI 评估内容</p>
+          <LineageSideFragments paperId={node.paperId} onFragmentDblClick={handleFragmentDblClick} />
+          <LineageSideAiNotes paperId={node.paperId} />
         </>
       )}
       {/* [②U4/A5] 底部注记（双击跳阅读器——A6 消费面提示）+编辑操作提要 */}
