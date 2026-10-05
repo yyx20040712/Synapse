@@ -9,12 +9,14 @@
  * - 保存钮（软盘图标）四态：dirty=亮可点/clean=灰暗禁用/saving=spinner+
  *   工具组锁定/error=行内错误+重试钮（§2.2——退役行 4：保存 chip 零残留，
  *   testid=lineage-save-btn/lineage-save-error/lineage-save-retry）。
- * - 线型图标（实线/虚线）线样颜色=当前线型色（选色后变色——inline stroke）；
- *   A12 交互（select 点=armed+列表展开/armed 再点=取消回 select/点另一图标=
- *   切换+列表随迁/点外部=收起 armed 保持/选行=收起+变色+✓）——工具态驻
- *   lineage-view.store（申报）。线型列表=LineTypeMenu 拆件（6 色行+行内改名
- *   =一编辑单元——saveLineTypeNames 暂存）。
- * - 撤销/重做钮+Ctrl+Z/Y=U1 会话栈（栈空灰暗；键盘接线=LineagePage）。
+ * - 线型组 [F-UIRES-03 C1]：每 kind（solid/dashed）=图标钮（描边=该 kind
+ *   当前色 per-kind——INV-108）+右独立「展开」chevron 钮（aria-expanded+
+ *   aria-label「展开色板」——testid lineage-tool-{kind}-expand；paletteFor
+ *   归属维渲染锚槽）。点图标本体=进/切 draw-X 且收板；draw-X 再点同图标=
+ *   no-op〔N9〕；点外部=收板（点击不吞）。线型列表=LineTypeMenu 拆件
+ *   （6 色行+行内改名=一编辑单元——saveLineTypeNames 暂存；改名功能保留）。
+ * - 撤销/重做钮+Ctrl+Z/Y=U1 会话栈（栈空灰暗；键盘接线=LineagePage——
+ *   Esc 分层退出接线同页）。
  * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar
  *   直连 view.store 同型；props 面=mode 容器注入沿承）。
  */
@@ -23,9 +25,12 @@ import { useLineageViewStore } from './lineage-view.store'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
 import { ICON_HAND, ICON_REDO, ICON_UNDO } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
-import { LineTypeMenu } from './LineTypeMenu'
+import { ExpandButton, LineTypeMenu } from './LineTypeMenu'
 
-/** 线型图标（13×9 线样——实/虚两态；stroke=当前线型色） */
+/** 线型图标（13×9 线样——实/虚两态；描边载体=SVG **表现属性** stroke={color}
+ *  非 inline style（[RR1 d1-N2] 口径勘正——全仓无 CSS stroke 竞争者；边界
+ *  声明：表现属性可被未来 CSS `line { stroke }` 类选择器静默压制，新增
+ *  stroke 相关 CSS 须排查本钮）；色=该 kind 当前色 [F-UIRES-03 C1 per-kind]） */
 function LineToolIcon({ kind, color }: { kind: 'solid' | 'dashed'; color: string }): JSX.Element {
   return (
     <svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true">
@@ -66,7 +71,7 @@ export function LineageToolbar(props: {
   const redoDepth = useLineageStore((s) => s.redoStack.length)
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
-  const linetypeListOpenFor = useLineageViewStore((s) => s.linetypeListOpenFor)
+  const paletteFor = useLineageViewStore((s) => s.paletteFor)
 
   if (mode !== 'edit') {
     // 非 edit：工具组隐藏——仅 drag-hint（三态文案）
@@ -88,21 +93,22 @@ export function LineageToolbar(props: {
   const lock = saving
   const undoDisabled = lock || undoDepth === 0
   const redoDisabled = lock || redoDepth === 0
-  const listOpen = linetypeListOpenFor !== null
-  // [回炉 R6] 列表单例（渲染进当前展开图标的锚槽内——随迁）
+  const listOpen = paletteFor !== null
+  // [回炉 R6] 列表单例（渲染进当前展开钮的锚槽内——[F-UIRES-03 C1] paletteFor
+  // 归属维；per-kind 选色行写）
   const linetypeMenu = listOpen ? (
     <LineTypeMenu
       names={lineTypeNames}
-      currentColor={currentLineColor}
-      anchorKind={linetypeListOpenFor === 'dashed' ? 'dashed' : 'solid'}
-      onPick={(color) => view().pickLineColor(color)}
+      currentColor={currentLineColor[paletteFor === 'dashed' ? 'dashed' : 'solid']}
+      anchorKind={paletteFor === 'dashed' ? 'dashed' : 'solid'}
+      onPick={(color) => view().pickLineColor(paletteFor === 'dashed' ? 'dashed' : 'solid', color)}
       onRename={(index, name) => {
         // 行内改名=一编辑单元：整批写（恰 6——index 定位色行）
         const next = LINE_TYPE_COLORS.map((_, i) => lineTypeNames[i] ?? '')
         next[index] = name
         store().saveLineTypeNames(next)
       }}
-      onOutside={() => view().closeLinetypeList()}
+      onOutside={() => view().closePalette()}
     />
   ) : null
 
@@ -143,20 +149,22 @@ export function LineageToolbar(props: {
         {ICON_HAND}
         <span className="sr-only">选择</span>
       </button>
-      {/* [回炉 R6] 线型图标锚槽（relative）：列表挂**当前展开图标**正下方
-          （solid/dashed 随迁——ref 槽位方案：列表渲染进 open 锚内） */}
+      {/* [F-UIRES-03 C1] 线型组锚槽（relative）：图标钮（描边=该 kind 当前色
+          per-kind）+右独立「展开」chevron 钮——列表挂 paletteFor 指向 kind 的
+          锚槽（[回炉 R6] 槽位方案沿承；delta-W5 错位态根除） */}
       <span className="lg-tool-anchor" data-testid="lineage-tool-anchor-solid">
         <button
           type="button"
           className={tool === 'draw-solid' ? 'lg-btn ghost on' : 'lg-btn ghost'}
           data-testid="lineage-tool-solid"
           disabled={lock}
-          title="画实线（点击卡片锚点拖到目标）"
+          title="画实线（点两卡连边）"
           onClick={() => view().toggleLineTool('solid')}
         >
-          <LineToolIcon kind="solid" color={currentLineColor} />
+          <LineToolIcon kind="solid" color={currentLineColor.solid} />
         </button>
-        {listOpen && linetypeListOpenFor === 'solid' && linetypeMenu}
+        <ExpandButton kind="solid" open={paletteFor === 'solid'} lock={lock} onToggle={view().togglePalette} />
+        {listOpen && paletteFor === 'solid' && linetypeMenu}
       </span>
       <span className="lg-tool-anchor" data-testid="lineage-tool-anchor-dashed">
         <button
@@ -164,12 +172,13 @@ export function LineageToolbar(props: {
           className={tool === 'draw-dashed' ? 'lg-btn ghost on' : 'lg-btn ghost'}
           data-testid="lineage-tool-dashed"
           disabled={lock}
-          title="画虚线（点击卡片锚点拖到目标）"
+          title="画虚线（点两卡连边）"
           onClick={() => view().toggleLineTool('dashed')}
         >
-          <LineToolIcon kind="dashed" color={currentLineColor} />
+          <LineToolIcon kind="dashed" color={currentLineColor.dashed} />
         </button>
-        {listOpen && linetypeListOpenFor === 'dashed' && linetypeMenu}
+        <ExpandButton kind="dashed" open={paletteFor === 'dashed'} lock={lock} onToggle={view().togglePalette} />
+        {listOpen && paletteFor === 'dashed' && linetypeMenu}
       </span>
       <span className="lg-sep" />
       {/* [F-UIRES-02 批 B R5] ↶↷ 字符→ICON_UNDO/ICON_REDO（两域复用）；补
@@ -199,10 +208,9 @@ export function LineageToolbar(props: {
         <span className="sr-only">重做</span>
       </button>
       <span className="drag-hint" data-testid="drag-hint">
-        {/* [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107——
-            改月唯一入口=MetaEditDialog）；「画线＝点两卡连边」终态文案= C1 单元
-            交互落地后随其票面换（主控预裁留痕——现文案如实=从卡边拖出） */}
-        编辑中：拖动＝月内调序 · 画线＝点线型工具后从卡边拖出
+        {/* [F-UIRES-03 C1] 终态文案（主控裁决 h）：画线=点两卡连边（click-click
+            链落地）；拖动段=C3 月内调序（INV-107 改月单口沿承） */}
+        编辑中：拖动＝月内调序 · 画线＝点两卡连边
       </span>
       {saveStatus === 'error' && (
         <span
@@ -216,8 +224,8 @@ export function LineageToolbar(props: {
           <RetryButton testId="lineage-save-retry" onClick={() => store().retrySave()} />
         </span>
       )}
-      {/* A12 线型列表：挂当前 armed/交互图标正下方（随迁——[回炉 R6] 锚槽
-          渲染已上移至两图标锚槽内） */}
+      {/* [F-UIRES-03 C1] 线型列表：挂 paletteFor 指向 kind 的展开钮锚槽内
+          （[回炉 R6] 锚槽渲染已上移至两锚槽内） */}
     </div>
   )
 }

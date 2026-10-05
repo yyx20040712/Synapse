@@ -49,7 +49,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   }
 }
 
-function edge(id: string, from: string, to: string, dashed = false, color = '#3a5bd9'): LineageEdge {
+function edge(id: string, from: string, to: string, dashed = false, color = '#1e3a8a'): LineageEdge {
   return { id, fromNode: from, toNode: to, label: '', dashed, color, createdAt: 't', updatedAt: 't' }
 }
 

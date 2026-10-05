@@ -56,7 +56,7 @@ function node(
 }
 
 function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 /** 三节点链：A(2020)→B(2021)→C(2022)，B 为主题节点（paperId null） */

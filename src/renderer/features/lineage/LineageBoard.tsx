@@ -82,8 +82,9 @@
  *   导入草稿入口（动作件）随草稿导入链退役删除
  *   （用户裁决 2026-09-30——ADR-0022）
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLineageStore } from './lineage.store'
+import { useLineageViewStore } from './lineage-view.store'
 import { LineageTimeline } from './LineageTimeline'
 import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
 
@@ -106,6 +107,22 @@ export function LineageBoard(props: {
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
   const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
+
+  // [RR1 d1-W2/k1-N6] pendingLink⇔画线域互斥（主控裁定——双向闸）：
+  // ①发起 pendingLink 时若 tool≠select→resetTool（pendingLink 完成语义
+  //   恒 select 态路由——draw 态下 Timeline 点卡走锚链，早退阻断 onNodeClick
+  //   =完成链死路+第二击建无关边）；
+  // ②tool 进入 draw-X 时清 pendingLink（effect——防「先意图后进画线」残留态）
+  const tool = useLineageViewStore((s) => s.tool)
+  useEffect(() => {
+    if (tool !== 'select') setPendingLink(null)
+  }, [tool])
+  const armPendingLink = (p: PendingLink | null): void => {
+    if (p !== null && useLineageViewStore.getState().tool !== 'select') {
+      useLineageViewStore.getState().resetTool()
+    }
+    setPendingLink(p)
+  }
 
   const handleNodeClick = (nodeId: string): void => {
     if (pendingLink !== null) {
@@ -148,7 +165,7 @@ export function LineageBoard(props: {
           absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响）。
           [A3 F-CONTRACTA-01] 对话框组挂点随核心想法域全退役消亡
           （对话框组装配件整件删除） */}
-      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={setPendingLink} />
+      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={armPendingLink} />
     </div>
   )
 }

@@ -52,7 +52,7 @@ function edge(from: string, to: string): LineageEdge {
     toNode: to,
     label: '',
     dashed: false,
-    color: '#3a5bd9',
+    color: '#1e3a8a',
     createdAt: 't',
     updatedAt: 't'
   }

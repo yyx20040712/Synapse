@@ -1,21 +1,31 @@
 // b3: P7-H
 /**
- * [F-LGRAPH-01②U3] useDrawLine —— 画线子态机 hook（mockup §2.4 定案）。
+ * [F-LGRAPH-01②U3] useDrawLine —— 画线子态机 hook（mockup §2.4 定案；
+ * [F-UIRES-03 C1] anchor 维增补+per-kind 色——设计稿 v1.9 §2 C1）。
  *
  * ── 态空间（宪法状态纪律）──
  * armed=工具态（view.tool ∈ {draw-solid, draw-dashed}——驻 view.store，页面
  * 内持久：切 select/切模式/切图中止=resetTool 承载）× drag ∈ {idle, dragging} ×
- * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚}。
+ * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚} × [C1] anchor ∈
+ * {none, picked(nodeId)}（点两卡连边链第一卡——驻本 hook 现域不迁 view.store：
+ * 行为层瞬态，单测经组件层可测——lineage-c1-clickchain 先例）。
  *
- * ── 迁移表（§2.4 逐条）──
+ * ── 迁移表（§2.4 逐条+C1 增补）──
  * - armed+pointerdown 近锚（12 锚/卡±12 内容坐标——[lnfix1] 6→12 容差放宽）
  *   → dragging（预览线+吸附指示
  *   +源卡 .link-src 高亮[回炉 R15]）——**document 级拖拽会话**（[回炉 R1①]
  *   pointermove/up/pointercancel+window blur——use-edge-edit runDragSession
  *   先例：指针离画布仍跟随，中断=取消无残留）
- * - dragging+pointerup 落另一卡近锚 → 建边（drawEdge：manual+dashed/color=
- *   当前工具线型+label=当前色行名快照 P-14）→ idle（tool 回 select）+入撤销栈
+ * - dragging+pointerup 落另一卡近锚 → 建边（drawEdge：manual+dashed=
+ *   (tool==='draw-dashed')+color=currentLineColor[kind] **提交时读**（C1
+ *   latch delta-W4——在途 DrawPreview 跟随当前色，已落边不可变）+label=当前
+ *   色行名快照 P-14）→ idle（tool 回 select——拖拽径沿承 §2.4）+入撤销栈
  *   （收尾带 armed 闸[回炉 R1③]——工具已非画线不建边）
+ * - [C1] armed+点卡 A（卡身 click——非近锚拖拽域）→ anchor=picked(A)（**禁开
+ *   详情——裁决 11a**，路由=LineageTimeline.handleCardClick）；picked(A)+点卡
+ *   B≠A→建边（dashed/color 同上 per-kind 提交读）→anchor=none+**保持 draw-X
+ *   连画**（拟稿推荐③）；picked(A)+点 A→anchor=none；查重对=toast 拒绝+
+ *   anchor 保持（换目标可续）
  * - dragging+pointerup 空白/同卡 → 取消 → idle（**armed 保留**——tool 不动）；
  *   [lnfix1] 落空分层反馈：落点命中他卡 rect 外扩 DRAW_SNAP_R 膨胀圈（排除源
  *   卡——同卡面沿承静默）=error toast「落点未在连接点上」；空白=静默取消
@@ -23,7 +33,8 @@
  *   pointermove 数学命中最近锚（≤DRAW_SNAP_R——与可起拖判定同一数学，所见即
  *   可拖）驱动 DrawAnchorHint 渲染；leading 节流 50ms（禁每 move 全卡 rect 采集）
  * - 切模式/切 select/切图下降沿：dragging 中止=取消（[回炉 R1②] effect 监听
- *   tool/mode/folderId 三源——会话监听同步拆除）
+ *   tool/mode/folderId 三源——会话监听同步拆除）；[C1] anchor 同沿清（退出
+ *   画线域=锚无残留；draw-X→draw-Y kind 切换不清——仍在画线域，锚跨切换续用）
  * - UI 预检（现行语义沿承）：同卡近邻=自环不建；同端点对无向查重=toast 拒绝；
  *   环检测留 service 保存面（CONFLICT 丢弃+toast）
  * - 拖拽抑制：dragging 会话收尾（pointerup 落定/取消）→ 下一 click 吞（防建
@@ -66,6 +77,9 @@ export interface DrawLineState {
   from: DrawAnchor | null
   cursor: Pt | null
   snap: DrawAnchor | null
+  /** [F-UIRES-03 C1] 点两卡连边锚（picked nodeId——none=null；高亮消费=
+   *  TimelineYears .link-src，容器经 state.anchor 透传） */
+  anchor: string | null
 }
 
 /** 卡 rect 采集（.tl-card[data-node-id] getBoundingClientRect→内容坐标；
@@ -128,10 +142,12 @@ export function useDrawLine(args: {
   hint: DrawAnchor | null
   /** .tl-content pointerdown（draw 态消费；返回 true=已消费——容器不分发拖拽） */
   handlePointerDown(ev: ReactPointerEvent<HTMLDivElement>): boolean
+  /** [F-UIRES-03 C1] 点两卡连边链（卡身 click 路由——draw 态消费禁开详情） */
+  handleCardClick(nodeId: string): void
   /** dragging 收尾后的 click 抑制（一次性——防建边触发卡选中） */
   consumeClickSuppress(): boolean
 } {
-  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null })
+  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null, anchor: null })
   const [hint, setHint] = useState<DrawAnchor | null>(null)
   const suppressClickRef = useRef(false)
   const stateRef = useRef(state)
@@ -145,19 +161,28 @@ export function useDrawLine(args: {
   }
 
   const cancel = useCallback((): void => {
-    setState({ phase: 'idle', from: null, cursor: null, snap: null })
+    // [RR1 k1-N2] 保锚死码删除：dragging 期 anchor 恒 null（起拖即清锚——
+    // handlePointerDown/finish 两处置 null），取消复位恒 anchor:null
+    setState({ phase: 'idle', from: null, cursor: null, snap: null, anchor: null })
   }, [])
 
   // [回炉 R1②] 下降沿清理：切模式/切 select/切图（tool/mode/folderId 任一变化）
-  // =dragging 中止（取消无残留+会话监听拆除）
+  // =dragging 中止（取消无残留+会话监听拆除）；[F-UIRES-03 C1] 退出画线域
+  // （→select）同沿清 anchor（kind 切换不清——锚跨 draw-X→draw-Y 续用）
   const tool = useLineageViewStore((s) => s.tool)
   const mode = useLineageViewStore((s) => s.mode)
   const folderId = useLineageStore((s) => s.folderId)
+  const armedNow = tool === 'draw-solid' || tool === 'draw-dashed'
   useEffect(() => {
-    if (stateRef.current.phase !== 'dragging') return
-    sessionCleanupRef.current()
-    cancel()
-  }, [tool, mode, folderId, cancel])
+    if (stateRef.current.phase === 'dragging') {
+      sessionCleanupRef.current()
+      cancel()
+      return
+    }
+    if (!armedNow && stateRef.current.anchor !== null) {
+      setState((s) => (s.anchor === null ? s : { ...s, anchor: null }))
+    }
+  }, [tool, mode, folderId, cancel, armedNow])
 
   // [lnfix1] armed 待机锚点指示：armed+idle 时 document pointermove 数学命中
   // 最近锚（nearestAnchor 与可起拖判定同一数学——所见即可拖，不引入第二容差）。
@@ -167,7 +192,6 @@ export function useDrawLine(args: {
   // [RR1-2a] trailing 补发：窗内被丢的 move 记 pending 位，窗尾（50ms）补算一次
   // ——窗口续期（新 move 重置 timer）：持续移动不补发、停驻 50ms 后 hint=停驻位，
   // leading 与 trailing 双沿保「停驻位=hint 位」一致；cleanup 清 timer 防泄漏
-  const armedNow = tool === 'draw-solid' || tool === 'draw-dashed'
   useEffect(() => {
     if (!armedNow || state.phase === 'dragging') return
     let lastAt = 0
@@ -236,7 +260,7 @@ export function useDrawLine(args: {
     (clientX: number, clientY: number): void => {
       const from = stateRef.current.from
       suppressClickRef.current = true // click 抑制（一次性）
-      setState({ phase: 'idle', from: null, cursor: null, snap: null })
+      setState({ phase: 'idle', from: null, cursor: null, snap: null, anchor: null })
       if (!armed()) return // [回炉 R1③] armed 闸：收尾时工具已非画线=不建边
       if (from === null) return
       const content = args.contentRef.current
@@ -270,15 +294,50 @@ export function useDrawLine(args: {
         return
       }
       const view = useLineageViewStore.getState()
-      const dashed = view.tool === 'draw-dashed'
-      const colorIndex = LINE_TYPE_COLORS.indexOf(view.currentLineColor as (typeof LINE_TYPE_COLORS)[number])
+      // [F-UIRES-03 C1] per-kind 色：kind=当前工具维，color=currentLineColor[kind]
+      // **提交时读**（latch delta-W4——在途预览跟随当前色，已落边不可变）
+      const kind: 'solid' | 'dashed' = view.tool === 'draw-dashed' ? 'dashed' : 'solid'
+      const color = view.currentLineColor[kind]
+      const colorIndex = LINE_TYPE_COLORS.indexOf(color as (typeof LINE_TYPE_COLORS)[number])
       const label = useLineageStore.getState().lineTypeNames[colorIndex === -1 ? 0 : colorIndex] ?? ''
-      useLineageStore.getState().drawEdge(from.nodeId, target.nodeId, { dashed, color: view.currentLineColor, label })
-      // 建边后回 select（§2.4——idle(select)）
+      useLineageStore.getState().drawEdge(from.nodeId, target.nodeId, {
+        dashed: kind === 'dashed',
+        color,
+        label
+      })
+      // 建边后回 select（§2.4——idle(select)；拖拽径沿承，点两卡径连画见 handleCardClick）
       useLineageViewStore.getState().resetTool()
     },
     [args.contentRef]
   )
+
+  /** [F-UIRES-03 C1] 点两卡连边链（卡身 click——容器 draw 态路由；**禁开详情**
+   *  由路由层承担裁决 11a）：none→picked(A)→点 B 建边（per-kind 提交读）→
+   *  anchor=none+保持 draw-X 连画；点同卡=取消锚；查重=toast+anchor 保持 */
+  const handleCardClick = useCallback((nodeId: string): void => {
+    if (!armed()) return // 画线域外零消费（容器已闸——防御面）
+    const cur = stateRef.current.anchor
+    if (cur === null) {
+      setState((s) => ({ ...s, anchor: nodeId })) // draw-X+点卡 A→picked(A)
+      return
+    }
+    if (cur === nodeId) {
+      setState((s) => (s.anchor === null ? s : { ...s, anchor: null })) // picked(A)+点 A→none
+      return
+    }
+    if (hasPair(cur, nodeId)) {
+      showToast('两节点间已存在连线', 'error') // 查重预检（drag 径同语义）
+      return // anchor 保持（换目标可续）
+    }
+    const view = useLineageViewStore.getState()
+    // per-kind 色：kind=当前工具维，color=currentLineColor[kind] 提交时读（latch）
+    const kind: 'solid' | 'dashed' = view.tool === 'draw-dashed' ? 'dashed' : 'solid'
+    const color = view.currentLineColor[kind]
+    const colorIndex = LINE_TYPE_COLORS.indexOf(color as (typeof LINE_TYPE_COLORS)[number])
+    const label = useLineageStore.getState().lineTypeNames[colorIndex === -1 ? 0 : colorIndex] ?? ''
+    useLineageStore.getState().drawEdge(cur, nodeId, { dashed: kind === 'dashed', color, label })
+    setState((s) => ({ ...s, anchor: null })) // anchor=none；tool 不动=连画（拟稿推荐③）
+  }, [])
 
   const handlePointerDown = useCallback(
     (ev: ReactPointerEvent<HTMLDivElement>): boolean => {
@@ -296,7 +355,9 @@ export function useDrawLine(args: {
       if (hit === null) return false
       ev.preventDefault()
       ev.stopPropagation() // [回炉 R13] 消费即止泡（防 pan 等并行激活）
-      setState({ phase: 'dragging', from: hit, cursor: p, snap: null })
+      // [F-UIRES-03 C1] 起拖=新手势，click 链锚让位（拖拽会话自持源锚；
+      // 混手势可预期性：拖拽起=锚清，点链不复活旧锚）
+      setState({ phase: 'dragging', from: hit, cursor: p, snap: null, anchor: null })
       // [RR 补批 RR17] 会话指针绑定：他指事件（pointerId 异于会话主指）不
       // 驱动不收尾不取消；pid 缺省（鼠标/jsdom MouseEvent 型）放行
       const pid = ev.pointerId
@@ -348,5 +409,5 @@ export function useDrawLine(args: {
     return v
   }, [])
 
-  return { state, hint, handlePointerDown, consumeClickSuppress }
+  return { state, hint, handlePointerDown, handleCardClick, consumeClickSuppress }
 }

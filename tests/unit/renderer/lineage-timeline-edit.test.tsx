@@ -43,7 +43,7 @@ function edge(from: string, to: string): LineageEdge {
     toNode: to,
     label: '',
     dashed: false,
-    color: '#3a5bd9',
+    color: '#1e3a8a',
     createdAt: 't',
     updatedAt: 't'
   }
@@ -118,8 +118,9 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
     for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
       expect(q(`[data-testid="${id}"]`)).not.toBeNull()
     }
-    // [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107）
-    expect(req('.lg-toolbar .drag-hint').textContent).toBe('编辑中：拖动＝月内调序 · 画线＝点线型工具后从卡边拖出')
+    // [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107）；
+    // [C1 裁决 h] 终态文案=点两卡连边
+    expect(req('.lg-toolbar .drag-hint').textContent).toBe('编辑中：拖动＝月内调序 · 画线＝点两卡连边')
   })
 
   it('保存态行内错误 [②U2]（退役行 4：chip 零残留）：error 态=保存钮行内错误+重试钮', async () => {

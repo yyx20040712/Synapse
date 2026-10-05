@@ -6,14 +6,23 @@
  * ── 态空间（宪法状态纪律）──
  * mode ∈ {edit, browse, focus}（互斥单选，页面级）× focusSet: string[]
  * （focus 模式内 toggle 多卡集——T2 再点同卡取消）× navCollapsed × navWidth
- * （导航窗格 P-17：缺省 208 可调 160–320——U4 消费）× [②U2] 编辑工具态
- * tool ∈ {select, draw-solid, draw-dashed} × currentLineColor ×
- * linetypeListOpenFor ∈ {solid, dashed, null}（A12 线型图标交互——
- * 工具态驻 view.store 申报：编辑工具选择=页面级 UI 态与模式态同域；
- * armed 持久域=页面内：切模式/切图中止回 select）。
+ * （导航窗格 P-17：缺省 208 可调 160–320——U4 消费）× [F-UIRES-03 C1] 编辑
+ * 工具态三维正交：tool ∈ {select, draw-solid, draw-dashed} × paletteFor ∈
+ * {null, solid, dashed}（kind 归属维——色板挂载面）× currentLineColor:
+ * LineTypeColorPair（per-kind 双值——INV-108 线色双值）。anchor 维（picked
+ * nodeId）驻 useDrawLine 现域不迁本件（状态表归属注记——单测经组件层可测，
+ * lineage-c1-clickchain 先例）。
  *
- * ── 迁移（定案）──
- * - P-1 进页缺省=browse。
+ * ── 迁移（C1 状态机——设计稿 v1.9 §2 C1）──
+ * - select+点 kind 图标→draw-X 且 paletteFor 归 null（切模式即收板——
+ *   delta-W5 防「虚线模式开实线色板」错位态）；draw-X+点另一 kind 图标→
+ *   draw-Y 且 paletteFor 归 null；draw-X+再点同图标=无操作〔N9 非双击退出〕。
+ * - 任意 tool+点 kind K 展开钮→paletteFor=K（toggle：再点同钮→null）。
+ * - paletteFor=K+点色行→paletteFor=null+写 currentLineColor[K]（per-kind
+ *   独立互不影响——INV-108；localStorage 双键持久化，读写钳回色板值域）。
+ * - Esc 分层退出（delta-W3a）：paletteFor≠null 只关板；paletteFor=null 时
+ *   =退画线（→select）——键盘接线=LineagePage（edit 模式+输入焦点外）。
+ * - P-1 进页缺省=browse（resetForMount：色值不重置——per-kind 色跨挂载驻留）。
  * - P-3 聚焦退出**单出口**=点浏览/编辑按钮（再点聚焦=no-op——T1 三轮裁决）
  *   →focusSet 清空；再进 focus=空集。
  * - focus 中切图=clearFocus（集清空+模式保持 focus——图域隔离，空集合法）；
@@ -25,12 +34,48 @@
  * 分工；「禁双取」约=window.api.lineage.graph 数据面，本件不涉）。
  */
 import { create } from 'zustand'
-import { LINE_TYPE_COLORS } from '@shared/models/lineage'
+import { LINE_TYPE_COLORS, type LineTypeColorPair } from '@shared/models/lineage'
 
 export type LineageViewMode = 'edit' | 'browse' | 'focus'
 
 /** [F-LGRAPH-01②U2] 编辑工具态（§3.3——select=小手选择/draw-*=画线 armed） */
 export type LineageTool = 'select' | 'draw-solid' | 'draw-dashed'
+
+/** [F-UIRES-03 C1] 线型 kind（实/虚——paletteFor 归属维+per-kind 色键） */
+export type LineTypeKind = 'solid' | 'dashed'
+
+/** [F-UIRES-03 C1] per-kind 色持久化键前缀（B4 裁定冒号键形——synapse:
+ *  splitpane/synapse:sidebar 仓惯例先例；完整键=前缀+kind） */
+const COLOR_STORAGE_PREFIX = 'synapse:linetype:color:'
+
+/** 读写钳制：值须在色板值域内，非法/缺省回落 LINE_TYPE_COLORS[0]（同 kind 缺省） */
+function clampPaletteColor(value: string | null): string {
+  return value !== null && (LINE_TYPE_COLORS as readonly string[]).includes(value)
+    ? value
+    : LINE_TYPE_COLORS[0]
+}
+
+/** 读面：localStorage 双键→per-kind 对（disabled/异常=缺省回落——容错不炸） */
+function loadStoredColorPair(): LineTypeColorPair {
+  let solid: string | null = null
+  let dashed: string | null = null
+  try {
+    solid = window.localStorage.getItem(`${COLOR_STORAGE_PREFIX}solid`)
+    dashed = window.localStorage.getItem(`${COLOR_STORAGE_PREFIX}dashed`)
+  } catch {
+    // localStorage 不可用（隐私态等）=缺省回落
+  }
+  return { solid: clampPaletteColor(solid), dashed: clampPaletteColor(dashed) }
+}
+
+/** 写面：单键持久化（选色行消费——钳制后值恒在域内） */
+function storeColor(kind: LineTypeKind, color: string): void {
+  try {
+    window.localStorage.setItem(`${COLOR_STORAGE_PREFIX}${kind}`, color)
+  } catch {
+    // 写失败=会话内仍生效（下次启动回落缺省——可接受）
+  }
+}
 
 export interface LineageViewStore {
   mode: LineageViewMode
@@ -42,12 +87,14 @@ export interface LineageViewStore {
   navScrollTarget: { key: string; nonce: number } | null
   /** 画布→导航窗格当前视口所在月（accent 指示条数据源；Timeline 滚动上报） */
   activeFrameKey: string | null
-  /** [F-LGRAPH-01②U2] 编辑工具态（A12——select 态点图标=armed；再点=取消） */
+  /** [F-UIRES-03 C1] 编辑工具态（点图标=进 draw-X；draw-X 再点同图标=no-op〔N9〕） */
   tool: LineageTool
-  /** [②U2] 当前线型色（6 色板值域——画线工具+线型图标色指示） */
-  currentLineColor: string
-  /** [②U2] 线型列表挂载面（null=收起；solid/dashed=挂对应图标下——A12） */
-  linetypeListOpenFor: 'solid' | 'dashed' | null
+  /** [F-UIRES-03 C1] per-kind 当前线色（INV-108 线色双值：solid/dashed 独立
+   *  互不影响——6 色板值域；localStorage 双键持久化） */
+  currentLineColor: LineTypeColorPair
+  /** [F-UIRES-03 C1] 色板挂载归属维（null=收起；solid/dashed=挂对应展开钮
+   *  锚槽——列表渲染单例随迁） */
+  paletteFor: LineTypeKind | null
   /** [②U7] 画布缩放系数（P-4：50%–200% 步进 10%——transform scale 作用于
    *  内容层内容坐标不变；缺省 1=无变换） */
   zoom: number
@@ -55,17 +102,24 @@ export interface LineageViewStore {
   zoomStep(dir: 1 | -1): void
   /** [②U7/T9] 复位 100%（缩放角标单动作） */
   resetZoom(): void
-  /** [②U2] A12 图标点击（select 态点=armed+列表展开；armed 再点同图标=取消回
-   *  select+收起；armed 点另一图标=切换+列表随迁） */
-  toggleLineTool(kind: 'solid' | 'dashed'): void
-  /** [②U2] 列表收起（点外部/选行——armed 保持） */
-  closeLinetypeList(): void
-  /** [②U2] 选行：当前色变+列表收起（armed 保持——A12） */
-  pickLineColor(color: string): void
+  /** [F-UIRES-03 C1] 图标本体点击：进/切 draw-X 且 paletteFor 归 null（切模式
+   *  即收板——delta-W5）；draw-X 再点同图标=无操作〔N9——退出径=小手钮/Esc〕 */
+  toggleLineTool(kind: LineTypeKind): void
+  /** [F-UIRES-03 C1] 展开钮点击：paletteFor toggle（同钮→null；异钮→随迁） */
+  togglePalette(kind: LineTypeKind): void
+  /** [F-UIRES-03 C1] 点外部收板（该次点击不吞——事件正常路由；tool 不动） */
+  closePalette(): void
+  /** [F-UIRES-03 C1] 选色行：写 currentLineColor[kind]（per-kind）+paletteFor
+   *  归 null+localStorage 持久化 */
+  pickLineColor(kind: LineTypeKind, color: string): void
+  /** [F-UIRES-03 C1] Esc 分层退出单口（delta-W3a）：paletteFor≠null 只关板；
+   *  paletteFor=null 时=退画线（→select）——键盘接线=LineagePage */
+  escapeStep(): void
   /** [②U2] 工具态中止（切模式/切图/进入 select——画线中止无残留） */
   resetTool(): void
   /** [F-LGRAPH-01②A1] 挂载 reset（P-1「进页缺省」直读：mode='browse'+focusSet
-   *  清空+工具态归位——二次进页=再进页缺省；与编辑会话数据暂存[P-2]正交） */
+   *  清空+工具态归位——二次进页=再进页缺省；与编辑会话数据暂存[P-2]正交；
+   *  [C1] per-kind 色不随挂载重置——跨挂载驻留同 P-17 语义） */
   resetForMount(): void
   setMode(mode: LineageViewMode): void
   /** focus 模式内 toggle：加入/移出（非 focus 态 no-op） */
@@ -95,8 +149,8 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
   navScrollTarget: null,
   activeFrameKey: null,
   tool: 'select', // [②U2] 缺省小手选择
-  currentLineColor: LINE_TYPE_COLORS[0], // [②U2] 缺省色板首色（蓝）
-  linetypeListOpenFor: null,
+  currentLineColor: loadStoredColorPair(), // [F-UIRES-03 C1] per-kind（读面钳制）
+  paletteFor: null,
   zoom: 1, // [②U7] 100%=无变换
 
   zoomStep(dir) {
@@ -116,40 +170,50 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
       mode,
       // P-3：退出聚焦（→browse/edit）即清空；再进=空集
       focusSet: get().mode === 'focus' && mode !== 'focus' ? [] : get().focusSet,
-      // [②U2] 模式切换=工具态中止（armed 中止无残留——§2.4；页面级 UI 态
-      // 归位 select+列表收起）
+      // [F-UIRES-03 C1] 模式切换=工具态中止（armed/色板无残留——§2.4 沿承）
       tool: 'select',
-      linetypeListOpenFor: null
+      paletteFor: null
     })
   },
 
   toggleLineTool(kind) {
-    const cur = get().tool
-    const curKind = cur === 'draw-solid' ? 'solid' : cur === 'draw-dashed' ? 'dashed' : null
-    if (curKind === kind) {
-      // P-19：armed 再点同图标=取消回选择+列表收起
-      set({ tool: 'select', linetypeListOpenFor: null })
+    // [F-UIRES-03 C1] draw-X 再点同图标=无操作〔N9——非双击退出〕
+    if (get().tool === (kind === 'solid' ? 'draw-solid' : 'draw-dashed')) return
+    // 切模式即收板（delta-W5：防「虚线模式开实线色板」错位态）
+    set({ tool: kind === 'solid' ? 'draw-solid' : 'draw-dashed', paletteFor: null })
+  },
+
+  togglePalette(kind) {
+    set({ paletteFor: get().paletteFor === kind ? null : kind })
+  },
+
+  closePalette() {
+    set({ paletteFor: null }) // tool 不动（点外部收板=伴随效果）
+  },
+
+  pickLineColor(kind, color) {
+    const safe = clampPaletteColor(color) // 钳回色板值域（防御面）
+    storeColor(kind, safe)
+    set({ currentLineColor: { ...get().currentLineColor, [kind]: safe }, paletteFor: null })
+  },
+
+  escapeStep() {
+    if (get().paletteFor !== null) {
+      set({ paletteFor: null }) // Esc 分层①：只关板（画线态保持）
       return
     }
-    set({ tool: kind === 'solid' ? 'draw-solid' : 'draw-dashed', linetypeListOpenFor: kind })
-  },
-
-  closeLinetypeList() {
-    set({ linetypeListOpenFor: null }) // armed 保持（A12——点外部收起不撤 armed）
-  },
-
-  pickLineColor(color) {
-    set({ currentLineColor: color, linetypeListOpenFor: null }) // 选行=变色+收起（armed 保持）
+    set({ tool: 'select' }) // Esc 分层②：退画线（→select）
   },
 
   resetTool() {
-    set({ tool: 'select', linetypeListOpenFor: null })
+    set({ tool: 'select', paletteFor: null })
   },
 
   resetForMount() {
     // [②A1] 挂载恒走（不与数据暂存互斥——P-2 脏态跳过面仅数据同步，view 态
-    // reset 恒定；navWidth/navCollapsed 个性化记忆不随挂载重置——P-17 语义）
-    set({ mode: 'browse', focusSet: [], tool: 'select', linetypeListOpenFor: null })
+    // reset 恒定；navWidth/navCollapsed 个性化记忆不随挂载重置——P-17 语义；
+    // [C1] currentLineColor 同驻留——localStorage 单源）
+    set({ mode: 'browse', focusSet: [], tool: 'select', paletteFor: null })
   },
 
   toggleFocus(nodeId) {

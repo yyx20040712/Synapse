@@ -145,6 +145,13 @@ export function LineageTimeline(props: {
   const handleCardClick = (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }): void => {
     if (drag.consumeClickSuppress()) return // [T3-P8] 拖后 click 抑制（一次性）
     if (draw.consumeClickSuppress()) return // [②U3] 画线收尾后 click 抑制（防误选）
+    // [F-UIRES-03 C1] 画线域点卡=点两卡连边链路由（anchor 维——useDrawLine），
+    // **禁开详情**（裁决 11a：draw-X+点卡 A=anchor picked 非选中）；回 select
+    // 后详情正常开（负锚见 lineage-c1-clickchain）
+    if (tool !== 'select') {
+      draw.handleCardClick(nodeId)
+      return
+    }
     // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
     // 照常转发——toggle 与详情面板联动并行不冲突）
     if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
@@ -152,9 +159,11 @@ export function LineageTimeline(props: {
   }
 
   // [F-LGRAPH-01②U4/A4] 星标区分派（卡内已 stopProp——星标域优先不触发卡身）：
-  // edit=选中卡（P-6）；browse/focus=no-op（P-11 静态禁用态——title 行内提示）
+  // edit=选中卡（P-6）；browse/focus=no-op（P-11 静态禁用态——title 行内提示）；
+  // [F-UIRES-03 C1] 画线域=no-op（卡内子域同守「禁开详情」）
   const handleStarClick = (nodeId: string, ev: ReactMouseEvent<HTMLElement>): void => {
     if (viewMode !== 'edit') return
+    if (tool !== 'select') return
     if (drag.consumeClickSuppress()) return
     props.onNodeClick?.(nodeId, ev)
   }
@@ -195,8 +204,9 @@ export function LineageTimeline(props: {
             focusDim={dimActive}
             editEnabled={viewMode === 'edit' && tool === 'select'}
           />
-          {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化） */}
-          <DrawPreview state={draw.state} color={currentLineColor} />
+          {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化）；[F-UIRES-03 C1]
+              色源=active draw kind 的 per-kind 当前色（在途跟随当前色——latch） */}
+          <DrawPreview state={draw.state} color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid} />
           {/* [lnfix1] armed 待机锚点指示（近锚 accent 圆点——所见即可拖） */}
           <DrawAnchorHint hint={draw.hint} />
           <TimelineYears
@@ -208,7 +218,7 @@ export function LineageTimeline(props: {
             ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}
             offsets={offsets}
-            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : null}
+            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : draw.state.anchor}
             dragSlot={drag.slot}
             dimUnfocused={dimActive}
             onCardClick={handleCardClick}

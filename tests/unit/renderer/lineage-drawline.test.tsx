@@ -31,7 +31,7 @@ function node(id: string): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 let root: Root | null = null
@@ -96,7 +96,9 @@ beforeEach(() => {
   })
   useLineageViewStore.setState({
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
-    tool: 'select', currentLineColor: LINE_TYPE_COLORS[0], linetypeListOpenFor: null
+    tool: 'select',
+    currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
+    paletteFor: null
   })
 })
 
@@ -138,7 +140,8 @@ describe('F-LGRAPH-01②U3 画线子态机（§2.4——armed/近锚/down/up）'
     mountTimeline()
     act(() => {
       useLineageStore.setState({ lineTypeNames: ['主供水线', '对比线', '待命名', '待命名', '待命名', '待命名'] })
-      useLineageViewStore.setState({ currentLineColor: LINE_TYPE_COLORS[1]! })
+      // [F-UIRES-03 C1] per-kind：dashed 色独立（solid 保持首色）
+      useLineageViewStore.setState({ currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[1]! } })
       act(() => {
         useLineageViewStore.getState().toggleLineTool('dashed')
       })
@@ -366,7 +369,7 @@ describe('F-LGRAPH-01②U3 画线收尾 click 抑制（[RR4] suppress 旗同手�
     })
   }
 
-  it('RR4 收尾（空白取消）后：先点空白（旗就地消费）→下一次卡点击不被吞', async () => {
+  it('RR4 收尾（空白取消）后：先点空白（旗就地消费）→退出画线后卡点击不被吞（[C1] 画线域点卡=锚链非选中）', async () => {
     const onNodeClick = vi.fn()
     mountTimeline(onNodeClick)
     act(() => {
@@ -376,8 +379,13 @@ describe('F-LGRAPH-01②U3 画线收尾 click 抑制（[RR4] suppress 旗同手�
     pointer(content, 'pointerdown', 228, 136)
     docPointer('pointerup', 800, 700) // 空白取消收尾（旗置位——原实现仅在卡点击点消费）
     docClick(content) // 后续 click 落非卡面（空白）=旗残留场景（RR4 缺陷本体）
-    docClick(req('.tl-card[data-node-id="A"]')) // 下一次卡点击
-    expect(onNodeClick).toHaveBeenCalled() // 不被吞（原实现：残留旗吞此点击）
+    docClick(req('.tl-card[data-node-id="A"]')) // 画线域卡点击=锚链消费（[C1] 禁开详情——非选中面）
+    expect(onNodeClick).not.toHaveBeenCalled()
+    act(() => {
+      useLineageViewStore.getState().resetTool() // 退画线（Esc 分层②同效）
+    })
+    docClick(req('.tl-card[data-node-id="A"]')) // 下一次卡点击（新手势）
+    expect(onNodeClick).toHaveBeenCalledTimes(1) // 不被吞（原实现：残留旗吞此点击）
   })
 
   it('RR4 画布内首 click 抑制语义沿承：收尾（建边）后紧邻卡点击仍被吞（防误选卡）', async () => {

@@ -77,8 +77,20 @@ export function lineageOrder(nodes: readonly LineageNode[]): LineageNode[] {
  * hex 值=用户数据面（lineage_graph_meta 色行名配置与边 color 持久值的固定
  * 候选集——非组件 chrome 色）。前四色沿旧 PALETTE（蓝/橙/绿/紫），灰/洋红
  * 随 6 色定案新定值。消费方=renderer 工具组线型列表+repo 视觉列缺省。
+ * [F-UIRES-03 C1] 首色蓝换深蓝 #1e3a8a（呈裁①用户亲裁——区分选中卡边框蓝
+ * --accent；存量边单值迁移挂 015——migrations/015_lineage_edge_blue_recolor.sql）。
  */
-export const LINE_TYPE_COLORS = ['#3a5bd9', '#c07a2a', '#0f8a6d', '#8a4fbf', '#8a8f98', '#c2447f'] as const
+export const LINE_TYPE_COLORS = ['#1e3a8a', '#c07a2a', '#0f8a6d', '#8a4fbf', '#8a8f98', '#c2447f'] as const
+
+/**
+ * [F-UIRES-03 C1] 线色 per-kind 双值（实/虚线各自独立当前色——INV-108
+ * 「线色双值」：per-kind 独立互不影响；shared 单源〔N2〕，四消费面=
+ * lineage-view.store/useDrawLine/LineageToolbar/LineageTimeline）。
+ */
+export interface LineTypeColorPair {
+  solid: string
+  dashed: string
+}
 
 /** [F-LGRAPH-01②U8] 未命名色行缺省名（mockup §3.3——「待命名」） */
 export const LINE_TYPE_DEFAULT_NAME = '待命名'
@@ -147,7 +159,7 @@ export const lineageEdgeSchema = z
     label: z.string(),
     /** 虚线=true（视觉线型内联——A3） */
     dashed: z.boolean(),
-    /** 线色 hex（视觉线型内联——A3；缺省归一=色板首色蓝） */
+    /** 线色 hex（视觉线型内联——A3；缺省归一=色板首色深蓝 [F-UIRES-03 C1]） */
     color: z.string(),
     /** [F-LINEAGE-02] 手动调线中间路点（内容坐标，有序——design-final §2.1）。
      *  缺省=省略字段（undefined）**不产出 []**（N-1：空数组与缺省同义=自动

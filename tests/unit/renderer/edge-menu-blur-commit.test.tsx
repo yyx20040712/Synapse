@@ -63,7 +63,7 @@ function renderMenu(): void {
       <EdgeMenu
         target={EDGE_TARGET}
         dashed={false}
-        color="#3a5bd9"
+        color="#1e3a8a"
         onRename={onRename}
         onLineStyle={() => undefined}
         onReset={() => undefined}

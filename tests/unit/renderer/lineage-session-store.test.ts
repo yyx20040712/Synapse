@@ -43,7 +43,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 const settle = async (turns = 8): Promise<void> => {

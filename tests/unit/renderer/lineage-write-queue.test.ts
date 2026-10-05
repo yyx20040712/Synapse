@@ -76,7 +76,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
   it('拆件自足性：createWriteQueue 独立实例（不经 store）enqueue→queue 入态+dirty（不派发）；flush=save 派发 api→clean', async () => {
     let host: WriteQueueHost = {
       nodes: [],
-      edges: [{ id: 'e1', fromNode: 'a', toNode: 'b', label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }],
+      edges: [{ id: 'e1', fromNode: 'a', toNode: 'b', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }],
       lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
       saveStatus: 'clean',
       lastWriteError: null,

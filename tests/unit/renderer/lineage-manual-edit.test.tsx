@@ -49,7 +49,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 }
 
 function edge(id: string, from: string, to: string, label = ''): LineageEdge {
-  return { id, fromNode: from, toNode: to, label, dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label, dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 const settle = async (turns = 6): Promise<void> => {
@@ -188,7 +188,7 @@ describe('F-LG15 store manual 写面', () => {
       to: 'B',
       label: '新说明',
       dashed: false,
-      color: '#3a5bd9'
+      color: '#1e3a8a'
     })
     expect(useLineageStore.getState().edges[0]!.label).toBe('新说明')
     expect(useLineageStore.getState().edges).toHaveLength(1) // 更新非新建

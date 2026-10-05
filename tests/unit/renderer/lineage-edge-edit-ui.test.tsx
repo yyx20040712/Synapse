@@ -48,7 +48,7 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
 
 /** manual-override 边（via 在场——正交链） */
 function edge(id: string, from: string, to: string, via: Array<{ x: number; y: number }>): LineageEdge {
-  return { id, fromNode: from, toNode: to, label: `线${id}`, dashed: false, color: '#3a5bd9', via, createdAt: 't', updatedAt: 't' }
+  return { id, fromNode: from, toNode: to, label: `线${id}`, dashed: false, color: '#1e3a8a', via, createdAt: 't', updatedAt: 't' }
 }
 
 let root: Root | null = null

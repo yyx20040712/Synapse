@@ -65,11 +65,11 @@ function openV11(): ReturnType<typeof openDatabase> {
 }
 
 describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）', () => {
-  it('新库：全量应用到 12（[F-LINEAGE-02] 013 起=14 终值）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）', () => {
+  it('新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
-    expect(result.currentVersion).toBe(14)
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+    expect(result.currentVersion).toBe(15)
     const paperCols = (db.prepare('PRAGMA table_info(papers)').all() as Array<{ name: string }>).map(
       (c) => c.name
     )
@@ -193,7 +193,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
     seedPaper(db, 'p-d')
     seedNode(db, 'n-d', 'p-d')
     migrate(db)
-    expect(readUserVersion(db)).toBe(14)
+    expect(readUserVersion(db)).toBe(15)
     const tag = db.prepare('SELECT color FROM tags WHERE id = ?').get('t-1') as { color: string | null }
     expect(tag.color).toBe('#112233')
     const paper = db.prepare('SELECT folder_id FROM papers WHERE id = ?').get('p-d') as {
@@ -228,7 +228,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
     db.close()
   })
 
-  it('[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 14（[F-LGRAPH-01②U8] 014 起）', () => {
+  it('[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 15（[F-UIRES-03 C1] 015 起）', () => {
     const db = openV11()
     seedCollection(db, 'c-legacy', '主图', 0)
     seedCollection(db, 'c-squatter', '主图 (主图)', 1)
@@ -248,7 +248,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
       name: string
     }
     expect(mainRow.name).toBe('主图')
-    expect(readUserVersion(db)).toBe(14)
+    expect(readUserVersion(db)).toBe(15)
     db.close()
   })
 
@@ -271,7 +271,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
       const row = db.prepare('SELECT name FROM collections WHERE id = ?').get(sid) as { name: string }
       expect(row.name).toBe(sname)
     }
-    expect(readUserVersion(db)).toBe(14)
+    expect(readUserVersion(db)).toBe(15)
     db.close()
   })
 
@@ -291,7 +291,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
       name: string
     }
     expect(residue.name).toBe('主图 (主图)')
-    expect(readUserVersion(db)).toBe(14)
+    expect(readUserVersion(db)).toBe(15)
     db.close()
   })
 
@@ -375,7 +375,7 @@ describe('db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M �
       name: string
     }
     expect(row.name).toBe('既有主图行')
-    expect(readUserVersion(db)).toBe(14)
+    expect(readUserVersion(db)).toBe(15)
     db.close()
   })
 })

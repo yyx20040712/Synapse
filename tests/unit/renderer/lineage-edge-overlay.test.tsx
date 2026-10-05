@@ -35,7 +35,7 @@ function edge(
   from: string,
   to: string,
   dashed = false,
-  color = '#3a5bd9',
+  color = '#1e3a8a',
   via?: Array<{ x: number; y: number }>
 ): LineageEdge {
   return { id, fromNode: from, toNode: to, label: '', dashed, color, ...(via !== undefined ? { via } : {}), createdAt: 't', updatedAt: 't' }
@@ -142,7 +142,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(dashedPath?.style.stroke).toBe('#c07a2a')
     expect(dashedPath?.style.strokeDasharray).toBe('6 3')
     const solid = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e2"]')
-    expect(solid?.style.stroke).toBe('#3a5bd9')
+    expect(solid?.style.stroke).toBe('#1e3a8a')
     expect(solid?.style.strokeDasharray).toBe('none')
   })
 
@@ -264,7 +264,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       [node('A'), node('B')],
       [
         edge('e0', 'A', 'B'),
-        edge('e1', 'A', 'B', false, '#3a5bd9', [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
+        edge('e1', 'A', 'B', false, '#1e3a8a', [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
         edge('e2', 'B', 'A')
       ]
     )

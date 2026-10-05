@@ -115,7 +115,10 @@ export function toEdge(row: LineageEdgeRow): LineageEdge {
     // [F-LGRAPH-01②U8] kind/sub 读面退役：旧 kind 值（tree/ref/inferred）
     // 丢弃不映射——manual 单基型（存量免迁移授权，A3 读面归一口径）
     dashed: row.dashed === 1,
-    color: row.color === '' ? LINE_TYPE_COLORS[0] : row.color,
+    // [F-UIRES-03 C1] 色板值域读面钳制：域外值（空串/014 遗留 DEFAULT
+    // '#3a5bd9'——列默认不动 N 级备案/手改库）归一色板首色深蓝——「值域=
+    // LINE_TYPE_COLORS」不变量在读面恒真（原仅空串归一）
+    color: (LINE_TYPE_COLORS as readonly string[]).includes(row.color) ? row.color : LINE_TYPE_COLORS[0],
     via: parseViaTolerant(row.via),
     createdAt: row.created_at,
     updatedAt: row.updated_at

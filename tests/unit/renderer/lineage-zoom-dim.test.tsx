@@ -104,13 +104,13 @@ describe('U7 聚焦 dim（P-12/P-18）', () => {
 
 describe('A1 挂载 reset（P-1「进页缺省」直读——与数据暂存 P-2 正交）', () => {
   it('resetForMount：mode→browse+focusSet 清空+工具态归位；navWidth 记忆不重置（P-17）', () => {
-    useLineageViewStore.setState({ mode: 'focus', focusSet: ['A', 'B'], tool: 'draw-solid', linetypeListOpenFor: 'solid', navWidth: 260 })
+    useLineageViewStore.setState({ mode: 'focus', focusSet: ['A', 'B'], tool: 'draw-solid', paletteFor: 'solid', navWidth: 260 })
     useLineageViewStore.getState().resetForMount()
     const v = useLineageViewStore.getState()
     expect(v.mode).toBe('browse')
     expect(v.focusSet).toEqual([])
     expect(v.tool).toBe('select')
-    expect(v.linetypeListOpenFor).toBeNull()
+    expect(v.paletteFor).toBeNull()
     expect(v.navWidth).toBe(260) // P-17 记忆不随挂载重置
   })
 })

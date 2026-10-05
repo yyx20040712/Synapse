@@ -33,6 +33,7 @@ import { gotoLibraryPlan } from './goto-library-plan'
 import { LineageBoard } from './LineageBoard'
 import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
+import { useLineageEscapeKey } from './use-lineage-esc'
 import type { NavFolder } from './nav-graph-picker'
 import { LineageSidePanel } from './LineageSidePanel'
 import {
@@ -101,6 +102,9 @@ export function LineagePage(): JSX.Element {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [])
+
+  // [F-UIRES-03 C1] Esc 分层退出键盘接线（delta-W3a——拆件 use-lineage-esc）
+  useLineageEscapeKey()
 
   /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一；
    *  [F-UIRES-03 B2] AI 条目标识载荷字段随 AI 双击链退役删除——片段双击=唯一链） */

@@ -62,7 +62,7 @@ function edges(): LineageEdge[] {
       createdAt: ISO_B, updatedAt: 't'
     },
     {
-      id: 'e1', fromNode: 'nA', toNode: 'nB', label: '继承', dashed: false, color: '#3a5bd9',
+      id: 'e1', fromNode: 'nA', toNode: 'nB', label: '继承', dashed: false, color: '#1e3a8a',
       createdAt: ISO_A, updatedAt: 't'
     }
   ]
@@ -94,7 +94,7 @@ function input(): LineageAssembleInput {
 const GOLDEN = `{
   "edges": [
     {
-      "color": "#3a5bd9",
+      "color": "#1e3a8a",
       "created_at": "${ISO_A}",
       "dashed": false,
       "edge_id": "e1",
@@ -124,7 +124,7 @@ const GOLDEN = `{
   ],
   "line_types": [
     {
-      "color": "#3a5bd9",
+      "color": "#1e3a8a",
       "name": "主线"
     },
     {
@@ -255,11 +255,11 @@ describe('T3-P5 assembleLineageJson（确定性装配——INV-77；U8 v3 重锁
         ],
         edges: [
           {
-            id: 'e-same', fromNode: 'nA', toNode: 'nC', label: '同图', dashed: false, color: '#3a5bd9',
+            id: 'e-same', fromNode: 'nA', toNode: 'nC', label: '同图', dashed: false, color: '#1e3a8a',
             createdAt: ISO_A, updatedAt: 't'
           },
           {
-            id: 'e-cross', fromNode: 'nA', toNode: 'nD', label: '跨图幽灵', dashed: false, color: '#3a5bd9',
+            id: 'e-cross', fromNode: 'nA', toNode: 'nD', label: '跨图幽灵', dashed: false, color: '#1e3a8a',
             createdAt: ISO_B, updatedAt: 't'
           }
         ],

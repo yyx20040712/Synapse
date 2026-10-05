@@ -97,7 +97,9 @@ beforeEach(() => {
   })
   useLineageViewStore.setState({
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
-    tool: 'select', currentLineColor: LINE_TYPE_COLORS[0], linetypeListOpenFor: null
+    tool: 'select',
+    currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
+    paletteFor: null
   })
 })
 
@@ -184,61 +186,83 @@ describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零�
   })
 })
 
-describe('F-LGRAPH-01②U2 线型图标+A12 交互+线型列表', () => {
-  it('图标线样颜色=当前线型色（选色后变色——inline stroke）', () => {
+describe('F-LGRAPH-01②U2 线型图标+[F-UIRES-03 C1] 交互+线型列表', () => {
+  it('图标线样颜色=per-kind 当前色（INV-108：solid 变色 dashed 不动——inline stroke）', () => {
     mountToolbar()
-    setViewState({ currentLineColor: LINE_TYPE_COLORS[2]! })
+    setViewState({ currentLineColor: { solid: LINE_TYPE_COLORS[2]!, dashed: LINE_TYPE_COLORS[0] } })
     const solid = btn('lineage-tool-solid').querySelector('svg line') as SVGLineElement | null
     expect(solid?.getAttribute('stroke')).toBe(LINE_TYPE_COLORS[2])
+    const dashed = btn('lineage-tool-dashed').querySelector('svg line') as SVGLineElement | null
+    expect(dashed?.getAttribute('stroke')).toBe(LINE_TYPE_COLORS[0])
   })
 
-  it('A12：select 态点图标=armed+列表展开；再点同图标=取消回 select+列表收起', () => {
+  it('C1：select 态点图标=进 draw-X 且收板（切模式即收板 delta-W5）；draw-X 再点同图标=no-op（N9 非双击退出）', () => {
     mountToolbar()
     expect(q('[data-testid="lineage-linetype-list"]')).toBeNull() // 初始收起
     click(btn('lineage-tool-solid'))
     expect(useLineageViewStore.getState().tool).toBe('draw-solid')
-    expect(useLineageViewStore.getState().linetypeListOpenFor).toBe('solid')
-    expect(q('[data-testid="lineage-linetype-list"]')).not.toBeNull()
-    click(btn('lineage-tool-solid')) // 再点同图标=取消
-    expect(useLineageViewStore.getState().tool).toBe('select')
+    expect(useLineageViewStore.getState().paletteFor).toBeNull() // 不开板
+    expect(q('[data-testid="lineage-linetype-list"]')).toBeNull()
+    click(btn('lineage-tool-solid')) // 再点同图标=no-op（N9）
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid')
     expect(q('[data-testid="lineage-linetype-list"]')).toBeNull()
   })
 
-  it('A12：armed 态点另一图标=切换+列表随迁展开', () => {
+  it('C1：draw-X+点另一 kind 图标=切换 draw-Y 且收板（delta-W5 错位态根除）', () => {
     mountToolbar()
     click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
+    expect(useLineageViewStore.getState().paletteFor).toBe('solid') // 板开（下步验切换收板）
     click(btn('lineage-tool-dashed'))
     expect(useLineageViewStore.getState().tool).toBe('draw-dashed')
-    expect(useLineageViewStore.getState().linetypeListOpenFor).toBe('dashed')
+    expect(useLineageViewStore.getState().paletteFor).toBeNull() // 切换=收板
   })
 
-  it('A12：列表开时点外部=收起（armed 保持）', () => {
+  it('C1：展开钮 toggle（任意 tool）：点开 paletteFor=K+aria-expanded；再点同钮=收', () => {
+    mountToolbar()
+    const expand = btn('lineage-tool-solid-expand')
+    // [RR1-W1] svg 规格类判别（icons.tsx D7：stroke 走 CSS 类唯一供应者
+    // theme-buttons.css .syn-icon-btn——同排 hand/undo/redo 先例对齐）
+    expect(expand.classList.contains('syn-icon-btn')).toBe(true)
+    expect(expand.getAttribute('aria-expanded')).toBe('false')
+    click(expand)
+    expect(useLineageViewStore.getState().paletteFor).toBe('solid')
+    expect(expand.getAttribute('aria-expanded')).toBe('true')
+    expect(q('[data-testid="lineage-linetype-list"]')).not.toBeNull()
+    click(btn('lineage-tool-solid-expand'))
+    expect(useLineageViewStore.getState().paletteFor).toBeNull()
+    expect(q('[data-testid="lineage-linetype-list"]')).toBeNull()
+  })
+
+  it('C1：列表开时点外部=收板（tool 不动——点击不吞伴随效果）', () => {
     mountToolbar()
     click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     act(() => {
       document.body.click()
     })
     expect(q('[data-testid="lineage-linetype-list"]')).toBeNull()
-    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // armed 保持
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // tool 保持
   })
 
-  it('线型列表=6 色行（色板固定序）：色线样+名称；当前色行✓；选行=当前色变+列表收起', () => {
+  it('线型列表=6 色行（色板固定序）：色线样+名称；当前色行✓；选行=per-kind 色变+列表收起（另一 kind 不动——INV-108）', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     const rows = [...(q('[data-testid="lineage-linetype-list"]')?.querySelectorAll('[data-testid="lineage-linetype-row"]') ?? [])]
     expect(rows).toHaveLength(6)
     expect(rows[0]!.textContent).toContain(LINE_TYPE_DEFAULT_NAME)
     // 当前色（首行）✓
     expect(rows[0]!.textContent).toContain('✓')
     click(rows[2]!)
-    expect(useLineageViewStore.getState().currentLineColor).toBe(LINE_TYPE_COLORS[2])
-    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // 选行 armed 保持（A12）
+    expect(useLineageViewStore.getState().currentLineColor.solid).toBe(LINE_TYPE_COLORS[2])
+    expect(useLineageViewStore.getState().currentLineColor.dashed).toBe(LINE_TYPE_COLORS[0])
+    expect(useLineageViewStore.getState().tool).toBe('select') // 选行 tool 不动（C1）
     expect(q('[data-testid="lineage-linetype-list"]')).toBeNull() // 收起
   })
 
   it('行内改名=一编辑单元：提交→saveLineTypeNames 暂存（dirty+undo 栈 1）', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     const rows = [...(q('[data-testid="lineage-linetype-list"]')?.querySelectorAll('[data-testid="lineage-linetype-row"]') ?? [])]
     // 点名称进入编辑
     click(req('[data-testid="lineage-linetype-list"] [data-testid="lineage-linetype-name"]'))
@@ -261,7 +285,7 @@ describe('F-LGRAPH-01②U2 线型图标+A12 交互+线型列表', () => {
 
   it('[回炉 R12] IME 组词期 Enter（isComposing）→no-op：编辑态保持零写（INV-85 同面）', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     click(req('[data-testid="lineage-linetype-list"] [data-testid="lineage-linetype-name"]'))
     const input = q('[data-testid="lineage-linetype-name-input"]') as HTMLInputElement
     act(() => {
@@ -279,7 +303,7 @@ describe('F-LGRAPH-01②U2 线型图标+A12 交互+线型列表', () => {
 
   it('[回炉 R12] 组词中 blur→拒提交；compositionend 后到=定案文本补提交（取 DOM 值非滞后 state）', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     click(req('[data-testid="lineage-linetype-list"] [data-testid="lineage-linetype-name"]'))
     const input = q('[data-testid="lineage-linetype-name-input"]') as HTMLInputElement
     act(() => {
@@ -305,7 +329,7 @@ describe('F-LGRAPH-01②U2 线型图标+A12 交互+线型列表', () => {
 
   it('[回炉 R12] 聚焦态常规组词确认（compositionend 未失焦）→不自动提交（Enter/blur 路自负）', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     click(req('[data-testid="lineage-linetype-list"] [data-testid="lineage-linetype-name"]'))
     const input = q('[data-testid="lineage-linetype-name-input"]') as HTMLInputElement
     act(() => {
@@ -316,14 +340,14 @@ describe('F-LGRAPH-01②U2 线型图标+A12 交互+线型列表', () => {
     expect(useLineageStore.getState().lineTypeNames[0]).toBe('待命名') // 不自动提交
   })
 
-  it('[回炉 R6] 列表挂当前展开图标正下方（随迁）：solid 开=挂 solid 锚内；切 dashed=随迁至 dashed 锚内', () => {
+  it('[回炉 R6/F-UIRES-03 C1] 列表挂 paletteFor 指向展开钮锚槽内（随迁）：solid 开=挂 solid 锚内；切 dashed 展开钮=随迁至 dashed 锚内', () => {
     mountToolbar()
-    click(btn('lineage-tool-solid'))
+    click(btn('lineage-tool-solid-expand'))
     const solidAnchor = req('[data-testid="lineage-tool-anchor-solid"]')
     const list = q('[data-testid="lineage-linetype-list"]')
     expect(list).not.toBeNull()
-    expect(solidAnchor.contains(list)).toBe(true) // 锚定=当前展开图标槽位
-    click(btn('lineage-tool-dashed')) // armed 点另一图标=切换+列表随迁
+    expect(solidAnchor.contains(list)).toBe(true) // 锚定=当前展开钮槽位
+    click(btn('lineage-tool-dashed-expand')) // 异钮展开=单例随迁
     const dashedAnchor = req('[data-testid="lineage-tool-anchor-dashed"]')
     const list2 = q('[data-testid="lineage-linetype-list"]')
     expect(dashedAnchor.contains(list2)).toBe(true) // 随迁至 dashed 锚

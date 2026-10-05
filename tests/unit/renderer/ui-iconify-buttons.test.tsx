@@ -238,7 +238,9 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     })
     useLineageViewStore.setState({
       mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
-      tool: 'select', currentLineColor: LINE_TYPE_COLORS[0], linetypeListOpenFor: null
+      tool: 'select',
+    currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
+    paletteFor: null
     })
     mount(<LineageToolbar mode="edit" />)
     const save = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-save-btn"]')!
@@ -266,7 +268,9 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     })
     useLineageViewStore.setState({
       mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208,
-      tool: 'select', currentLineColor: LINE_TYPE_COLORS[0], linetypeListOpenFor: null
+      tool: 'select',
+    currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
+    paletteFor: null
     })
     mount(<LineageNavPane />)
     const collapse = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-nav-collapse"]')!

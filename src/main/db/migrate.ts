@@ -27,6 +27,7 @@ import tagsColorSql from './migrations/011_tags_color.sql?raw'
 import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
 import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
 import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
+import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolor.sql?raw'
 
 export interface Migration {
   version: number
@@ -63,8 +64,12 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 13, name: 'lineage_edge_via', sql: lineageEdgeViaSql },
   // [F-LGRAPH-01②U8] 边视觉线型内联：dashed INTEGER/color TEXT NOT NULL
   // DEFAULT（存量行零迁移归一=实线+蓝；kind 列保留恒 'manual'——A3 DDL 最小
-  // 化；新库 user_version 终值 14）
-  { version: 14, name: 'lineage_edge_visual', sql: lineageEdgeVisualSql }
+  // 化；新库 user_version 终值 15（k1-N1 勘正——015 起））
+  { version: 14, name: 'lineage_edge_visual', sql: lineageEdgeVisualSql },
+  // [F-UIRES-03 C1] 存量边旧蓝换深蓝：色板首色 '#3a5bd9'→'#1e3a8a'（呈裁①
+  // ——shared 单源换值随批；014 DEFAULT 不动=repo 写面恒显式色死路径；
+  // 新库 user_version 终值 15）
+  { version: 15, name: 'lineage_edge_blue_recolor', sql: lineageEdgeBlueRecolorSql }
 ]
 
 export interface MigrateResult {

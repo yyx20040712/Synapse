@@ -12,7 +12,11 @@
 > **v1.9（2026-10-06 C3 交付回写）**：§2 C3 落地态注记（改月链全退役
 > INV-107 锚定+INV-98 语义收窄+症一/症二/漂移三修复+v1.7 卡钮落地+
 > 主题节点「去阅读器」=零渲染定稿+drag-hint 画线段保现状文案——
-> 终态「点两卡连边」随 C1 落地换）。
+> 终态「点两卡连边」随 C1 落地换）→
+> **v1.10（2026-10-06 C1 交付回写）**：§2 C1 落地态注记（状态机三维
+> 重定义+per-kind 四消费面+迁移 015+drag-hint 终态文案兑现+pendingLink
+> 互斥增补）+localStorage 键形点形→冒号形更正（B4 仓惯例预裁——
+> 裁决部条件 C2）+§4.2 INV-108 指针。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -267,7 +271,10 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
 - per-kind 色：currentLineColor 单值→`{solid:string,dashed:string}`
   四消费面（lineage-view.store/useDrawLine/LineageToolbar/
   LineageTimeline）同步改，类型 shared 单源〔N2〕。持久化=**localStorage
-  双键（主控自裁=甲案）**，键 `synapse.linetype.color.solid/.dashed`。
+  双键（主控自裁=甲案）**，键 `synapse:linetype:color:solid` /
+  `synapse:linetype:color:dashed`〔v1.10 更正：原文本位点形键，依 B4
+  「设计稿点号与仓惯例冲突以仓为准」预裁（synapse:splitpane/
+  synapse:sidebar 先例）改冒号形——实装与 INV-108 同形，销票面-实装分叉〕。
 - 换色：#3a5bd9→深蓝（**呈裁①**候选 #1e3a8a 推荐/#27408b/#0b2a6f）；
   **迁移 015 挂本单元**（migrations 受锁 [locked-change]）：`UPDATE
   lineage_edges SET color='<新蓝>' WHERE LOWER(color)=LOWER('#3a5bd9')`
@@ -276,6 +283,26 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   单值 currentLineColor；e2e 线型序列用例重写（豁免登记）。
 - 测试：单测=per-kind 独立（设 solid 不动 dashed）+状态机迁移矩阵逐格
   〔N8〕；e2e=跨格全序列+新蓝值断言。
+
+> **〔v1.10 C1 落地态·2026-10-06——三屋全链毕（executor 基批 39,125,155
+> +RR1 12,110,094 tok→门一 k1 B0W3N10/d1 B0W3N8 双 PWC→RR1 八件（syn
+> -icon-btn 图标规格/pendingLink 互斥双向闸/判别力四件/注释死码三小修/
+> esc+anchor 直测/报告更正）→双席复核双 PASS 升放行（k1 B0W0N2/d1
+> B0W0N4）→probe 九项矩阵 8 绿 1 口径红（红='#3a5bd9' src 9 命中 vs
+> 申报「值承载两处」——裁决部定性口径差非缺陷：功能字面量 3（015
+> WHERE 票面必然/014 DEFAULT 历史锁定/theme.css --accent chrome 域）
+> +注释 6）→裁决部 GO_WITH_CONDITIONS 三条件全兑现〕**。落地：状态机
+> 11 格全格+anchor 维驻 useDrawLine（裁决 c）+LineTypeColorPair shared
+> 单源+localStorage 冒号双键（读写钳制回色板域）+迁移 015 纯 UPDATE
+> LOWER（014 DEFAULT 不动预裁 b）+INV-108 登记+repo 读面钳制（自裁②
+> ——014 DEFAULT 死路径读面防线）+Esc 拆件 use-lineage-esc+drag-hint
+> 终态「点两卡连边」兑现（C3 预裁闭）+**pendingLink⇔画线域互斥双向闸
+> （主控裁并案 k1-N6/d1-W2：发起 resetTool+进 draw 清意图——票面外
+> 增补，接缝归责裁定）**+ExpandButton 补 syn-icon-btn（RR1）。挂账 11
+> 项入交接书 v138（Esc 全局层序→本单元 C2 承接为首选——EdgeMenu×
+> palette 组合同关两层，delta-W3a 只立 palette↔draw 两层）。verify 终态
+> =256 件/2610 例 EXIT=0+locks 361+豁免 138 hits stale 0+e2e 四件
+> 17/6/18/2（T12c 跨格全序列新增）。
 
 ### C2 连线锚点+吸附（F8 单位域定稿）
 
@@ -314,7 +341,9 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
    守卫形态=单测 fs 扫描（src/renderer .ts/.tsx 面；CSS 注释 token 由
    dod-grep 终态清单 4 条登记承载）〕**
 2. **线色双值**：currentLineColor per-kind 独立互不影响。强制=C1 单测
-   （设 solid 断言 dashed 不变）。锚定=C1 落地。
+   （设 solid 断言 dashed 不变）。锚定=C1 落地。**〔v1.10 已登记=INV-108
+   （2026-10-06）——强制面=C1 单测两例+repo 读面钳制（域外色归一首色，
+   自裁②）；变异②串格红证在档〕**
 3. **锚几何一致**：连线锚=卡四边中点（画布坐标）；高亮出现⇔落点吸附。
    强制=C2 e2e 三档 zoom+一致性断言。锚定=C2 落地。
 4. **保存按钮协议**：四态+pending 缓冲（saving 中输入不丢）；点击立即

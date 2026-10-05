@@ -70,7 +70,7 @@ const lineageEdge = {
   toNode: 'ln2',
   label: '',
   dashed: false, // [F-LGRAPH-01②U8] 视觉线型内联（kind/sub 退役）
-  color: '#3a5bd9',
+  color: '#1e3a8a',
   createdAt: ISO,
   updatedAt: ISO
 }

@@ -22,6 +22,11 @@
   padding: 1px 8px; border-radius: 5px; font-size: var(--fs-micro);
   background: var(--accent-soft); color: var(--accent);
 }
+/* [F-UIRES-03 C1] 展开 chevron 钮（线型图标右侧独立钮——aria-expanded 随
+   paletteFor；开态=accent 指示（.on 沿承）+chevron 翻转指示） */
+.lg-btn.ghost.lg-expand { padding: 2px 3px; }
+.lg-btn.ghost.lg-expand svg { width: 12px; height: 12px; }
+.lg-btn.ghost.lg-expand.on svg { transform: rotate(180deg); }
 /* [F-LGRAPH-01②U2/回炉 R6] 线型图标锚槽：列表挂当前展开图标正下方（随迁）
    ——锚槽 relative+列表 top:100%/left:0 定位 */
 .lg-tool-anchor { position: relative; display: inline-flex; }

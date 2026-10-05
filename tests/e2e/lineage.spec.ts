@@ -152,19 +152,6 @@ async function linkNodesViaUi(win: Page, fromTitle: string, toTitle: string): Pr
   await nodeG(win, toTitle).click()
 }
 
-/**
- * [RR3/d1-ΔN3] 点画布空白收线型列表（A12：点实线图标=armed+列表展开；
- * 展开列表浮层盖画布顶部带——建点钮删除后工具条几何左移，展开列表恰覆盖
- * 首组卡拖拽起点（RR2 探针实证：down 落 .lg-toolbar 域不达 .tl-content→
- * 画线链断零边；收列表后同几何拖拽边即产生）。点空白=onOutside 收列表+
- * armed 保持（A12 产品语义路径）——对工具条几何去敏感化的用例前置步。
- */
-async function collapseLinetypeList(win: Page): Promise<void> {
-  const tlBox = await win.getByTestId('lineage-timeline').boundingBox()
-  if (tlBox === null) throw new Error('画布不可见')
-  await win.mouse.click(tlBox.x + tlBox.width / 2, tlBox.y + tlBox.height * 0.9)
-}
-
 /** reload 后回脉络视图并等画布 ready（store 模块随 reload 重置→重 load） */
 async function reloadToLineage(win: Page): Promise<void> {
   await win.reload()
@@ -1053,8 +1040,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
-    // [RR2→RR3 helper 化] 点外部收线型列表（几何去敏感化——见 collapseLinetypeList 注记）
-    await collapseLinetypeList(win)
+    // [F-UIRES-03 C1] 点图标=进画线态不开板（原 A12「点图标=armed+列表展开」
+    // 语义退役——色板改挂独立展开钮；RR3 几何去敏感化前置步随之零需求）
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
     const rb = await root.boundingBox()
@@ -1142,8 +1129,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
-    // [RR2→RR3 helper 化] 点外部收线型列表（几何去敏感化——见 collapseLinetypeList 注记）
-    await collapseLinetypeList(win)
+    // [F-UIRES-03 C1] 点图标=进画线态不开板（A12 列表随图标展开语义退役）
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
     const rb = await root.boundingBox()
@@ -1207,6 +1193,115 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(hint).toHaveCount(1)
     // 收尾保存（quit-dirty 拦截防 close 挂死：b 建边入暂存=dirty，未保存时
     // app.close 被 main preventDefault+确认对话框拦——T12 保存后 close 同型）
+    await win.getByTestId('lineage-save-btn').click()
+    await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
+    await app.close()
+  })
+
+  /**
+   * [F-UIRES-03 C1] T12c=线型链跨格全序列（设计稿 v1.9 §2 C1 票面直引）：
+   * 展开钮开板（aria）→点色行（paletteFor=null+图标描边新色）→点图标进
+   * draw-solid→点卡1（锚高亮且详情未开——裁决 11a）→点卡2 边落新色→连画
+   * 第二边（卡3/卡4）→Esc（paletteFor=null 时=退画线→select）→详情面板可
+   * 正常打开。新蓝值断言=#1e3a8a（呈裁①——首色缺省图标描边）；Esc 分层两
+   * 格各断言（板开时只关板〔select/draw 两 tool 面〕；板 null 时退画线）。
+   * 建边入暂存=dirty，quit-dirty 拦截防 close 挂死→收尾保存后 close。
+   */
+  test('T12c 线型链跨格全序列（C1：展开钮/色行 per-kind/点两卡连边/连画/Esc 分层/详情不开）', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t12c-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 第四卡（脉络丙）=T12c 私有幽灵文献行（PAPERS 面外单种——本例 userData
+    // 私有目录零他例影响；连画第二边需 4 卡）
+    const ghostSha4 = createHash('sha256').update('lg-ghost-e2e-lg-c').digest('hex')
+    await seedPaperRow(
+      userData,
+      `${ghostSha4.slice(0, 2)}/${ghostSha4.slice(2, 4)}/${ghostSha4}.pdf`,
+      ghostSha4,
+      '脉络丙文献',
+      'e2e-lg-c',
+      { year: 2020 }
+    )
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 },
+        { paperId: 'e2e-lg-c', title: '脉络丙文献', year: 2020, month: 6, slot: 2 }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    // 新蓝值断言（呈裁①）：缺省图标描边=LINE_TYPE_COLORS[0] 新值 #1e3a8a
+    // （属性面 getAttribute——CSSOM 不归一；样式面另走 rgb 序列化口径）
+    const iconStroke = (): Promise<string> =>
+      win.getByTestId('lineage-tool-solid').locator('svg line').evaluate((el) => el.getAttribute('stroke') ?? '')
+    expect(await iconStroke()).toBe('#1e3a8a')
+    // ① 点展开钮→paletteFor=solid（aria-expanded 断言）
+    const expand = win.getByTestId('lineage-tool-solid-expand')
+    await expect(expand).toHaveAttribute('aria-expanded', 'false')
+    await expand.click()
+    await expect(expand).toHaveAttribute('aria-expanded', 'true')
+    const list = win.getByTestId('lineage-linetype-list')
+    await expect(list).toBeVisible()
+    // Esc 分层①（select 面）：板开时 Esc 只关板（未进画线态）
+    await win.keyboard.press('Escape')
+    await expect(list).toHaveCount(0)
+    await expect(expand).toHaveAttribute('aria-expanded', 'false')
+    // ② 再开板点色行（#c07a2a）→paletteFor=null+图标描边新色（选下一根边色）
+    // （行点击=色样区旁定位点击——名称 span=改名域 stopPropagation，中心点击
+    // 会误入改名态）
+    await expand.click()
+    await list.locator('[data-testid="lineage-linetype-row"][data-color="#c07a2a"]').click({ position: { x: 12, y: 12 } })
+    await expect(list).toHaveCount(0)
+    expect(await iconStroke()).toBe('#c07a2a')
+    // ③ 点图标→draw-solid
+    await win.getByTestId('lineage-tool-solid').click()
+    await expect(win.getByTestId('lineage-tool-solid')).toHaveClass(/on/)
+    // Esc 分层①（draw 面）：draw-X+板开→Esc 只关板（画线保持）
+    await expand.click()
+    await expect(list).toBeVisible()
+    await win.keyboard.press('Escape')
+    await expect(list).toHaveCount(0)
+    await expect(win.getByTestId('lineage-tool-solid')).toHaveClass(/on/)
+    // ④ 点卡1→锚高亮且详情未开（裁决 11a：draw-X 点卡=anchor picked 非选中）
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    const cardB = nodeG(win, '脉络乙文献')
+    const cardC = nodeG(win, '脉络丙文献')
+    await root.click()
+    await expect(root).toHaveClass(/link-src/)
+    await expect(win.getByTestId('lineage-side-panel')).toContainText('点击卡片查看详情')
+    // ⑤ 点卡2→边落新色（提交时 per-kind 读）→anchor=none+保持 draw-X 连画
+    await cardA.click()
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 5_000 })
+    // inline style.stroke=Chromium CSSOM 序列化 rgb 形（#c07a2a=rgb(192,122,42)）
+    const stroke = await win
+      .locator('svg.tl-edges path.tl-edge')
+      .first()
+      .evaluate((el) => (el as SVGPathElement).style.stroke)
+    expect(stroke).toBe('rgb(192, 122, 42)')
+    await expect(root).not.toHaveClass(/link-src/)
+    await expect(win.getByTestId('lineage-tool-solid')).toHaveClass(/on/)
+    // ⑥ 连画第二边：卡3→卡4（同链复用——拟稿推荐③）
+    await cardB.click()
+    await expect(cardB).toHaveClass(/link-src/)
+    await cardC.click()
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(2)
+    // ⑦ Esc 分层②：paletteFor=null 时 Esc=退画线（→select）
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('lineage-tool-solid')).not.toHaveClass(/on/)
+    // ⑧ 回 select 后点卡开详情（面板正常打开——画线路由不劫持负锚）
+    await cardA.click()
+    await expect(win.getByTestId('lineage-side-panel')).toContainText('脉络甲文献')
+    // 收尾保存（建边 dirty——quit-dirty 拦截防 close 挂死）
     await win.getByTestId('lineage-save-btn').click()
     await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
     await app.close()
@@ -1683,8 +1778,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
 
   /**
    * [F-UIRES-03 T0] 样板③=画线锚点几何（设计稿 §8.1.3/§2 C2——INV-96 锚
-   * 渲染面）。进画线模式（lineage-tool-solid+收线型列表——collapseLinetypeList
-   * 几何去敏感化先例）+armed hover 近右缘中点锚，断言锚点 DOM（DrawAnchorHint
+   * 渲染面）。进画线模式（lineage-tool-solid——[F-UIRES-03 C1] 点图标=进
+   * 画线态不开板，原收列表前置步零需求）+armed hover 近右缘中点锚，断言锚点 DOM（DrawAnchorHint
    * 渲染物=svg.draw-anchor-hint 内 circle）中心 vs 所属卡右缘几何中点
    * |diff|≤1px（expectRectNear 同口径——circle r=3.2 画布 px→屏 r=3.2×z，
    * bbox 四维全断）。冻结优先（静态中间态）。zoom 矩阵 {0.8,1.0,1.5}
@@ -1714,7 +1809,6 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
-    await collapseLinetypeList(win)
     const root = nodeG(win, '脉络根文献')
     const hintSvg = win.getByTestId('draw-anchor-hint')
     for (const z of [0.8, 1.0, 1.5]) {

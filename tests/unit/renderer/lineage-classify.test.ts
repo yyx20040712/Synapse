@@ -33,7 +33,7 @@ function node(
 
 /** 边工厂（from=父→to=子——出度计数面=fromNode） */
 function edge(from: string, to: string): LineageEdge {
-  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#3a5bd9', createdAt: 't', updatedAt: 't' }
+  return { id: `e-${from}-${to}`, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 describe('isCore —— 核心档判定（决2 D1\'：文献节点出度 ≥2）', () => {
