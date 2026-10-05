@@ -91,32 +91,41 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
   候选甲）**，点窄条任意处展开；折叠态 `synapse.sidebar.collapsed`。
   e2e=clamp 两界+刷新持久恢复。
 
-### C3 拖拽域重构（F7 修正版票面+用户候选槽语义澄清 2026-10-05 三轮）
-- **退役**：跨月 drop 判定（拖至其他年月框触发改月的路径——用户澄清
-  「跨月业务语义很早就被删除了」：产品语义已亡，代码残留待清）+
-  onMoveNodeMonth 回调链（useCardDrag:64/:179）+lineage.store
-  moveNodeMonth+其 IPC 通道+undo 栈条目类型+**跨月相关 e2e/单测族**
-  （豁免登记）+月标点击改月交互+drag-hint 首段（新文案「拖动＝月内
-  调序 · 画线＝点两卡连边」）。
+### C3 拖拽域重构（v1.3 票面修正——跨月语义考古后重写；F7+三轮澄清）
+- **跨月语义史实（2026-10-05 考古定稿）**：拖拽跨月**从来不是活路径**
+  ——初代 T3-P8 即「跨月拒绝落当前槽」、②U6「限本月回弹 no-op」
+  （INV-98 限本月物理域）；改月一直走月标点击弹层（MonthPop→
+  moveNodeMonth）。lnfix2（61a8771cf72，2026-10-03）已按用户裁决清掉
+  跨月联动死码（frameAt/frameContains+framesRef 注册链，全仓 grep 零
+  残留亲验）。**v1.2「跨月 drop 判定退役」系虚构票面（该路径不存在）
+  ——本版作废修正**。
+- **退役**：月标点击改月整链（handleYmClick+MonthPop/useMonthPop+
+  pickMonth+onMoveNodeMonth 回调+store moveNodeMonth+其 IPC 通道+undo
+  栈条目+movePreview/applyMovePreview 预演+moveTargetLabel 文案）——
+  裁决①「改月全域退役唯一入口=MetaEditDialog」的正身；drag-hint 首段
+  删（新文案「拖动＝月内调序 · 画线＝点两卡连边」）；**限本月回弹/
+  跨月拒绝判定（overSourceFrame/PULL_BAND_PX 域+INV-98）随改月退役
+  评估清理**（若判定仅防拖出框，保留为纯回弹护栏不动亦可——实施时
+  核消费面后定，呈报主控）；跨月/月标相关 e2e/单测族（A3 T3
+  moveTargetLabel 用例等——豁免登记）。
 - **保留+修复**：DragCandidates 月内候选槽+月内 slot 调序+
-  reorderMonthSlots 写链+其 undo。**图四两症=月内候选槽显示缺陷
-  （用户三轮澄清定稿：「候选槽指示从头到尾都是希望一个月份框内部
-  显示候选阵列位置，与跨月没有任何关系」——v1.1「随跨月消亡不修而
-  删」判断作废）**：
+  reorderMonthSlots 写链+其 undo+同框下拉扩展（stretch，lnfix2 交付）。
+  **图四两症=月内候选槽显示缺陷（用户三轮澄清定稿：「候选槽指示
+  从头到尾都是希望一个月份框内部显示候选阵列位置，与跨月没有任何
+  关系」——v1.1「随跨月消亡不修而删」判断作废）**：
   - 症一「拖动时月框内插入位候选阵列不显示」——DragCandidates 渲染
     链调查（active 门控条件/frameKey 查询命中/其余卡 rect 派生/
     insertIdx 传递），修复=拖动相位全程候选阵列可见（faded 0.35
     态——头注设计本义）；
-  - 症二「只能放到已有的第一个（插入位）上」——插入位计算/settle
-    落点链调查（insertIdx 恒首或候选不可见致落点退化），修复=全部
-    插入位可达；
+  - 症二「只能放到已有的第一个（插入位）上」——insertIdx 更新链
+    调查（pointermove 重算断链/insertIndexFromRects 几何失效致恒 0），
+    修复=全部插入位可达；
   - e2e 断言=拖起后候选槽 DOM 计数与几何可见性+逐插入位 settle 落
     序断言（DoD 附测量口径）。
   - **DoD 附核对清单（delta-N1）：保留面引用 grep 被删符号全零命中**
-    ——onMoveNodeMonth 三链路（useCardDrag 回调/store action/IPC
-    通道）调用点逐一核对月内提交路径（reorderMonthSlots）确不经被删
-    链；undo 栈=内存会话态（实现时核——若跨会话持久化另立兼容面
-    呈报）。
+    ——moveNodeMonth 三链路（回调/store action/IPC 通道）调用点逐一
+    核对月内提交路径（reorderMonthSlots）确不经被删链；undo 栈=内存
+    会话态（实现时核——若跨会话持久化另立兼容面呈报）。
 - 漂移修复=**甲案（主控自裁）**：dragstart 记录「指针−卡角」偏移，
   ghost 全程画布坐标系定位（根除 fixed/zoom 换算链——INV-96 族）。
   e2e=zoom 0.8/1.0/1.5 三档 |ghost 角−（指针−偏移）|≤1px（测量口径=
