@@ -51,10 +51,14 @@
 ## §3 操作条款增补（承 v132 §3 全项外）
 
 - **尾注口径（裁决部阻断级裁定——防 CI 范围闸红）**：**src+tests 同批
-  的提交只带 [locked-change] 单尾注，禁带 [test-refactor]**——CI 范围闸
-  对带 [test-refactor] 的 src/** 一律红（VFIX-01 埋雷同族教训在册）。
-  设计稿 §6「动 tests 用例者带 [test-refactor]」表述仅适用纯 tests 面
-  提交（T0 批先例零 src 双尾注合规）。
+  的提交只带 [locked-change] 单尾注，禁带测试重构类尾注**——CI 范围闸
+  对带该尾注的 src/** 一律红（VFIX-01 埋雷同族教训在册）。设计稿 §6
+  「动 tests 用例者带」表述仅适用纯 tests 面提交（T0 批先例零 src 双
+  尾注合规）。
+- **commit message 解释性文本禁含尾注标记字面量**（本批实锤：防红说明
+  「禁带 [test-refactor]」字面本身命中范围闸 grep→首推 b45275a8 CI 尾注
+  闸红→reword 去字面量→6bf6ddfb28d 绿。尾注族第二犯变体——类名一律
+  中文描述替代）。哈希映射：b45275a8da4→6bf6ddfb28d。
 - 豁免登记纪律重申：豁免权在主控（executor 列建议清单报裁）；登记后
   必跑 check 确认 hits 全中 stale 0（本批首轮 39/40——正则字面量转义
   失真 1 条，按机器输出原文修正后 40/40）。
