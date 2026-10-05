@@ -11,8 +11,6 @@ import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
-import { OPEN_PAPER_EVENT } from '../shared/open-paper-bus'
-import { OPEN_LINEAGE_EVENT } from '../shared/open-lineage-bus'
 import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
@@ -26,6 +24,7 @@ import { Rail, type ViewId } from './Rail'
 import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
 import { ErrorBoundary } from './ErrorBoundary'
+import { useViewBridges } from './useViewBridges'
 
 /** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
@@ -117,19 +116,9 @@ export function App(): JSX.Element {
       .catch(() => undefined)
   }, [quitDirty, lineageDirty])
 
-  // 跨页事件桥订阅（单 effect 合并挂载）："打开文献"切阅读器（补读/监听在
-  // ReaderPage，见 open-paper-bus）；[F-UIRES-01 R7/P-8]"在脉络图中打开"切
-  // 脉络（FolderNav 右键→requestOpenLineage 广播；缺省图=库页 folderScope 接缝）
-  useEffect(() => {
-    const toReader = (): void => setView('reader')
-    const toLineage = (): void => setView('lineage')
-    window.addEventListener(OPEN_PAPER_EVENT, toReader)
-    window.addEventListener(OPEN_LINEAGE_EVENT, toLineage)
-    return () => {
-      window.removeEventListener(OPEN_PAPER_EVENT, toReader)
-      window.removeEventListener(OPEN_LINEAGE_EVENT, toLineage)
-    }
-  }, [])
+  // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
+  // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）
+  useViewBridges(setView)
 
   // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
   // 课题名/篇数/脉络计数/已选 0-1/主题名单源推导；[F-WS-02] 显示位=

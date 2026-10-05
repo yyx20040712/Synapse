@@ -8,7 +8,11 @@
 > 「并入任意一票」，主控落位 C3）→
 > **v1.8（2026-10-05 B3 交付注记）**：§2 B3 卸载面机制句补退出路径
 > 收窄注记（门二 C1 兑现——退出=INV-22 拦截族承载，「等待在途落盘」
-> 不适用退出路径，d1-W1 裁决记录）。
+> 不适用退出路径，d1-W1 裁决记录）→
+> **v1.9（2026-10-06 C3 交付回写）**：§2 C3 落地态注记（改月链全退役
+> INV-107 锚定+INV-98 语义收窄+症一/症二/漂移三修复+v1.7 卡钮落地+
+> 主题节点「去阅读器」=零渲染定稿+drag-hint 画线段保现状文案——
+> 终态「点两卡连边」随 C1 落地换）。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -201,6 +205,28 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   节点无 paperId=「去阅读器」零渲染/禁用态（实现时定）、「去文献库」
   随所在文件夹语义；④测试=卡双击退役负锚+两钮单击 e2e（真实跳转断言）
   +按钮区布局回归。
+- **〔v1.9 C3 落地态·2026-10-06——三屋全链毕（executor 基批+RR1→
+  门一 k1 B0W2N8/d1 B0W3N9 双 PWC→RR1 四件→双席复核双 PASS→
+  probe 九项矩阵全绿→裁决部 GO_WITH_CONDITIONS 三条件兑现）〕**
+  改月链 9 符号族 src 全零命中（MonthPop/useMonthPop 整件删+useCardDrag
+  收窄 82 行+store 动作/applyMovePreview 预演/moveTargetLabel 文案链全
+  退役；写链=write-queue 'patch-node'→api.lineage.patchNode 通道保留=
+  MetaEditDialog 正身）；undo=会话快照栈通用机制留驻（改月入栈路径退役）；
+  INV-107 登记（改月单口）+INV-98 修订（回弹护栏≠改月判定面）。
+  症一=DragCandidates stableEpoch 布局稳定信号重捕获（样板①去包装
+  翻转直陈转绿）；症二=插入位全部可达（多样性新例绿——「恒 0」形态
+  未复现，归因症一视觉投影未证实，用户复测再立案）；漂移=frameOrigin
+  包含块补偿甲案（样板②直陈转绿+两轴残差对账 X/Y 并含）；回弹判定
+  overSourceFrame/PULL_BAND_PX=保留纯回弹护栏+stretch 服务者。v1.7
+  卡钮落地=hover 呈现+编辑态 display:none!important 恒隐；**主题节点
+  「去阅读器」=零渲染（自裁定稿——非禁用态，无阅读器面）、「去文献库」
+  =在场点击不置选中**；「去文献库」链=open-library-bus 新建（零载荷
+  事件切视图）+goto-library-plan 单源编排（先置数后广播；folderId=
+  '__main__' 未归夹→清夹全库视图+选中该文降级语义；MAIN_GRAPH_ID
+  常量单源）。drag-hint 画线段=**保现状真文案**（终态「点两卡连边」
+  随 C1 落地换——主控预裁留痕，用户可否决）。附带=timeline-pan
+  PAN_EXCLUDE .c-ym 死条目清除+TimelineYears 头注改写+geo-probes
+  try/finally 加固+EdgeMenu 注释清理。
 
 ### C1 线型交互链+色板换色（F2/F3/F4 状态机重定义+迁移挂靠）
 - 每线型 kind（solid/dashed）=图标钮（描边=该 kind 当前色）+右独立
@@ -284,7 +310,9 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
 ## §4 不变量候选（F9 三要素成文——实施单元随批登记 invariants.md）
 1. **改月单口**：改月唯一入口=MetaEditDialog 月份字段；画布零写月路径。
    强制方式=C3 退役后 src grep 守卫（moveNodeMonth 零命中）+MetaEdit
-   通道单测。锚定=C3 落地。
+   通道单测。锚定=C3 落地。**〔v1.9 已登记=INV-107（2026-10-06）——
+   守卫形态=单测 fs 扫描（src/renderer .ts/.tsx 面；CSS 注释 token 由
+   dod-grep 终态清单 4 条登记承载）〕**
 2. **线色双值**：currentLineColor per-kind 独立互不影响。强制=C1 单测
    （设 solid 断言 dashed 不变）。锚定=C1 落地。
 3. **锚几何一致**：连线锚=卡四边中点（画布坐标）；高亮出现⇔落点吸附。

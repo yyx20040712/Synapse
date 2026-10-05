@@ -3,7 +3,10 @@
 // 同源消除）；registerFrame/framesRef 注册链退役（跨月联动死码）
 /**
  * [F-LGRAPH-01①U2] card-drag-session —— pointer 拖拽会话域（自 useCardDrag
- * 拆出，行为零变；几何判定=card-drag-geometry，飞行机制=card-drag-flight）。
+ * 拆出；几何判定=card-drag-geometry，飞行机制=card-drag-flight）。
+ * [F-UIRES-03 C3] 改月弹层互斥闸随改月链退役删除
+ * （INV-107）；源框物理域判定（overSourceFrame/PULL_BAND_PX）收窄语义=
+ * 纯回弹护栏+同框下拉带（stretch 保留面）——非改月判定面（呈报主控处置）。
  *
  * ── 态空间（宪法状态纪律）──
  * drag ∈ {idle, pending(按下未过 5px), dragging, settle(飞行过渡期——
@@ -21,7 +24,6 @@ import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import { frameKeyOf } from './lineage-timeline'
-import type { TimelineYearGroup } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
 import { insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
 import { contentScale } from './timeline-zoom'
@@ -55,12 +57,18 @@ interface DragSession {
   srcIds: string[]
   sx: number
   sy: number
-  /** [②U7] 抓取偏移=**内容坐标**（拖影 absolute 驻 .tl-content——视口偏移/z） */
+  /** [②U7] 抓取偏移=**内容坐标**（拖影 absolute——视口偏移/z） */
   ox: number
   oy: number
   moved: boolean
   /** [②U7] 拖影位置=内容坐标（flight job 同域传递） */
   ghost: { x: number; y: number }
+  /** [C3 甲案] 包含块原点补偿：卡 offsetParent=.month-frame（frame padding
+   *  box 原点）的**内容坐标**——inline left/top 写入=ghost−frameOrigin（ghost
+   * 数学保持内容域，渲染定位域=frame；激活帧由「内容坐标 ghost − 流内
+   * offsetLeft/Top」两已知量导出，不读 frame 过渡期 rect——根除 frame 原点
+   * 双计，INV-96 族） */
+  frameOrigin: { x: number; y: number }
   insertIdx: number
   /** [②U6] 原始槽位（回弹基准——源框外松手飞行落点） */
   srcIdx: number
@@ -100,14 +108,11 @@ const toContent = (content: HTMLElement, clientX: number, clientY: number): { x:
 
 export function useDragSession(args: {
   nodes: LineageNode[]
-  groups: TimelineYearGroup[]
-  /** [F-LGRAPH-01①U5] 拖拽闸：拖卡=edit 专属（browse/focus pointerdown 即拒
-   *  ——现「view/edit 双态无 mode 门槛」退役） */
+  /** [F-LGRAPH-01①U5] 拖拽闸：拖卡=edit 专属（browse/focus pointerdown 即拒） */
   dragEnabled: boolean
-  /** 互斥闸：拾取中/线型弹层开/改月弹层开（三者任一禁拖） */
+  /** 互斥闸：拾取中/线型弹层开（任一禁拖） */
   isPicking: boolean
   popOpen: boolean
-  monthPopOpen: boolean
   contentRef: RefObject<HTMLDivElement | null>
   /** 松手构造飞行任务落此（编排层 settle effect 消费） */
   onFlightReady(job: FlightJob): void
@@ -124,7 +129,7 @@ export function useDragSession(args: {
   handleCardPointerDown(nodeId: string, ev: ReactPointerEvent<HTMLElement>): void
   consumeClickSuppress(): boolean
 } {
-  const { nodes, groups, contentRef } = args
+  const { nodes, contentRef } = args
   const [phase, setPhase] = useState<DragPhase>('idle')
   const [slot, setSlot] = useState<DragSlotPreview | null>(null)
 
@@ -148,17 +153,22 @@ export function useDragSession(args: {
         const card = findCard(s.nodeId)
         if (card !== null && content !== null) {
           const r = card.getBoundingClientRect()
-          // [②U7] 拖影=absolute 驻内容层+内容坐标（transform 祖先劫持 fixed）：
+          // [②U7] 拖影=absolute+内容坐标（transform 祖先劫持 fixed）：
           // 起点/偏移经 z 逆变换（z=1 时与旧视口系同值）；偏移锚=pointerdown
           // 坐标 s.sx/s.sy（激活帧 e=首个 move 事件——非按点位）
           s.ox = (s.sx - r.left) / contentScale()
           s.oy = (s.sy - r.top) / contentScale()
           const ghostContent = toContent(content, r.left, r.top)
           s.ghost = ghostContent
+          // [C3 甲案] 包含块补偿：offsetLeft/Top=流内位（相对 frame padding
+          // box——inline left:0 同基准）；frameOrigin=两已知量差（激活帧卡
+          // inline=gFrame → 渲染位=原位零跳；move 帧 left=ghost−frameOrigin）
+          const gFrame = { x: card.offsetLeft, y: card.offsetTop }
+          s.frameOrigin = { x: ghostContent.x - gFrame.x, y: ghostContent.y - gFrame.y }
           s.marginLeft0 = card.style.marginLeft
           card.style.position = 'absolute'
-          card.style.left = `${ghostContent.x}px`
-          card.style.top = `${ghostContent.y}px`
+          card.style.left = `${gFrame.x}px`
+          card.style.top = `${gFrame.y}px`
           card.style.width = `${r.width / contentScale()}px`
           // [回炉 R1/B-1] absolute 盒 left 定位 margin edge——压 0 后 left=视觉
           // 位（无双计）；[回炉 R8/d1-B1] 同步禁断过渡（基类 margin-left
@@ -181,13 +191,14 @@ export function useDragSession(args: {
           s.frameRight0 = fr.right
         })
       }
-      // [②U7] 指针→内容坐标−内容域抓取偏移（z 判定时点取值——缩放正交）
+      // [②U7] 指针→内容坐标−内容域抓取偏移（z 判定时点取值——缩放正交）；
+      // [C3 甲案] inline 写入=ghost−frameOrigin（渲染定位域=frame padding box）
       const p = content !== null ? toContent(content, e.clientX, e.clientY) : { x: e.clientX, y: e.clientY }
       s.ghost = { x: p.x - s.ox, y: p.y - s.oy }
       const card = findCard(s.nodeId)
       if (card !== null) {
-        card.style.left = `${s.ghost.x}px`
-        card.style.top = `${s.ghost.y}px`
+        card.style.left = `${s.ghost.x - s.frameOrigin.x}px`
+        card.style.top = `${s.ghost.y - s.frameOrigin.y}px`
       }
       // [lnfix2] extend 判定读冻结基准（grab 帧+校准值）：实时 rect 被占位槽
       //  腾行/stretch padding 推高（k1 断点 A/B——下拉带几何不可达+挂载即
@@ -241,6 +252,8 @@ export function useDragSession(args: {
         nodeId: s.nodeId,
         fromX: s.ghost.x,
         fromY: s.ghost.y,
+        // [C3 甲案] 飞行起点/目标写入同补偿域（flight 内 left/top=值−hostOffset）
+        hostOffset: s.frameOrigin,
         marginLeft0: s.marginLeft0,
         finish: () => {
           setPhase('idle')
@@ -264,7 +277,7 @@ export function useDragSession(args: {
     }
     // args 回调经 ref 闭包稳定（finish 期读回调需最新——依赖注入点整组随会话
     // 读取，phase 之外零重挂）
-  }, [phase, nodes, groups])
+  }, [phase, nodes])
 
   const handleCardPointerDown = (nodeId: string, ev: ReactPointerEvent<HTMLElement>): void => {
     // [R6] 未消费抑制随新会话清零（拖后 click 落在祖先时旗标残留会吞下次
@@ -273,8 +286,7 @@ export function useDragSession(args: {
     if (phase !== 'idle') return // settle/dragging/pending 期忽略
     if (!args.dragEnabled) return // [U5] 模式闸：拖卡=edit 专属（pointerdown 即拒）
     if (ev.button !== 0) return
-    if ((ev.target as Element).closest('.c-ym') !== null) return // 月标点击面
-    if (args.isPicking || args.popOpen || args.monthPopOpen) return // 拾取/弹层互斥
+    if (args.isPicking || args.popOpen) return // 拾取/弹层互斥
     const cardEl = ev.currentTarget
     const n = nodes.find((x) => x.id === nodeId)
     const frameEl = cardEl.closest('.month-frame') as HTMLDivElement | null
@@ -284,7 +296,7 @@ export function useDragSession(args: {
     // 入驻；后续占位槽腾行与 stretch padding 推高均不再反噬判定）
     const fr0 = frameEl.getBoundingClientRect()
     const srcKey = frameKeyOf(n.year, n.month)
-    const srcIds = srcGroupIdsOf(groups, nodes, srcKey)
+    const srcIds = srcGroupIdsOf(nodes, srcKey)
     sessionRef.current = {
       nodeId,
       srcKey,
@@ -296,6 +308,7 @@ export function useDragSession(args: {
       oy: ev.clientY - r.top,
       moved: false,
       ghost: { x: r.left, y: r.top },
+      frameOrigin: { x: 0, y: 0 },
       insertIdx: srcIds.indexOf(nodeId),
       srcIdx: srcIds.indexOf(nodeId),
       overFrame: true,

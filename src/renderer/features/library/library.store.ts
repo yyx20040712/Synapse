@@ -20,7 +20,12 @@
  *   失败上抛（unwrap 的 ApiClientError），由调用组件 catch 后 toast
  * - [F-LGRAPH-01①U4] query.folderScope 跨域只读消费面：脉络页缺省图=库页
  *   文件夹上下文同步（kind='folder' 用其 folderId，否则主图——接缝双向锚定
- *   本头注+lineage.store 头注；本 store 对该消费零感知零耦合）
+ *   本头注+lineage.store 头注；本 store 对该消费零感知零耦合）。
+ *   [F-UIRES-03 C3·v1.7] **跨域写面扩注**：脉络卡面「去文献库」钮（LineagePage
+ *   编排单点——COMPOSITION_ROOT_ALLOW 受控例外）调 setQuery（所在文件夹
+ *   过滤）+selectPaper（定位该文）后 requestOpenLibrary 广播切视图（先置数
+ *   后广播——FolderNav→lineage 同序先例）；folderId='__main__'=未归夹文献
+ *   →folderScope 置 undefined 全库视图（降级语义，C3 自裁申报）。
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/library.store.test.ts（已锁定，api 桩）

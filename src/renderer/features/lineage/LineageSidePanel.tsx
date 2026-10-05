@@ -181,8 +181,11 @@ export function LineageSidePanel(props: {
           <LineageSideAiNotes paperId={node.paperId} />
         </>
       )}
-      {/* [②U4/A5] 底部注记（双击跳阅读器——A6 消费面提示）+编辑操作提要 */}
-      <div className="insp-foot">双击卡片跳转阅读器 · 编辑模式：改月 / 调序 / 画线 / 调线</div>
+      {/* [②U4/A5] 底部注记。[F-UIRES-03 C3 第一段] 「改月」子句随改月链退役删
+          （INV-107）；[C3 第二段·v1.7] 「双击卡片跳转阅读器」子句随卡双击退役
+          删（全应用唯一保留双击=片段条目——B2 终态）——跳转入口=卡面「去阅读
+          器」钮（hover 呈现） */}
+      <div className="insp-foot">编辑模式：调序 / 画线 / 调线</div>
     </div>
   )
 }

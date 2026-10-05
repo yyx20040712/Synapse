@@ -23,7 +23,7 @@ export type EdgeMenuTarget =
 /** 菜宽（w-44=176px——钳制右缘用） */
 const MENU_W = 176
 
-/** [回炉 R19] 视口钳制（MonthPop clampPopoverPos 先例）：left=clamp(6,cx,vw−w−6)
+/** [回炉 R19] 视口钳制（先例=弹层族共用钳制语义）：left=clamp(6,cx,vw−w−6)
  *  /top=clamp(6,cy,vh−h−10)，h=实测菜单高 */
 function clampMenuPos(cx: number, cy: number, h: number): { left: number; top: number } {
   const left = Math.max(6, Math.min(cx, window.innerWidth - MENU_W - 6))

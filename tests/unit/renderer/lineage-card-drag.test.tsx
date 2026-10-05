@@ -2,12 +2,13 @@
 /**
  * [T3-P8] useCardDrag 拖拽状态机测试（锁定合约，always-active）。
  * 态空间（宪法前置）：drag∈{idle,pending(<5px),dragging,settle}×mode∈{view,edit}
- * ×composer{picker,popover,monthPop}——[F-LGRAPH-01①U5] 拖卡=edit 专属
- * （三模式闸——browse/focus pointerdown 即拒，闸面=lineage-mode-canvas.test）
- * /picker≠idle 禁拖（拾取优先）/popover·
- * monthPop 开禁拖/拖拽无 Esc 取消（松手恒落当前槽）/settle 期再 pointerdown
+ * ——[F-LGRAPH-01①U5] 拖卡=edit 专属（三模式闸——browse/focus pointerdown
+ * 即拒，闸面=lineage-mode-canvas.test）/picker≠idle 禁拖（拾取优先）/popover
+ * 开禁拖/拖拽无 Esc 取消（松手恒落当前槽）/settle 期再 pointerdown
  * =忽略/阈值未过=单击选中既有链。跨格序列与几何槽位（同行左半/跨行上半/
- * 框外淡化）+纯函数 insertIndexFromRects/frameKeyOf/applyMovePreview 直测。
+ * 框外淡化）+纯函数 insertIndexFromRects/frameKeyOf 直测。
+ * [F-UIRES-03 C3] 改月域用例（预演纯函数直测/改月弹层链）随改月链退役删除
+ * （INV-107——MonthPop 链测试=lineage-month-pop.test 整件退役）。
  * （几何经 getBoundingClientRect spy 定值——jsdom 零布局；transitionend 以
  * Object.assign(new Event) 附 propertyName 派发。）
  * [lnfix2] 下拉扩展（冻结基准）组拆驻 lineage-card-stretch.test.tsx（本件
@@ -21,7 +22,7 @@ import { stubRowFollowFlow } from '../../utils/live-frame'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { insertIndexFromRects } from '../../../src/renderer/features/lineage/useCardDrag'
-import { applyMovePreview, frameKeyOf, groupTimeline } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { frameKeyOf } from '../../../src/renderer/features/lineage/lineage-timeline'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -54,7 +55,6 @@ const req = (sel: string): Element => {
 const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`) as HTMLElement
 
 const reorder = vi.fn()
-const moveMonth = vi.fn()
 const onNodeClick = vi.fn()
 
 function mount(nodes: LineageNode[]): void {
@@ -68,7 +68,6 @@ function mount(nodes: LineageNode[]): void {
         edges={[]}
         onNodeClick={onNodeClick}
         onReorderMonthSlots={reorder}
-        onMoveNodeMonth={moveMonth}
       />
     )
   })
@@ -114,7 +113,6 @@ function stubRect(el: Element, x: number, y: number, w = 128, h = 72): void {
 beforeEach(() => {
   toastStoreSpy.mockClear()
   reorder.mockClear()
-  moveMonth.mockClear()
   onNodeClick.mockClear()
   // [F-LGRAPH-01①U3] 模式态单源复位（P-1 缺省 browse——composer 受控注入面）
   useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
@@ -138,33 +136,12 @@ afterEach(() => {
 })
 
 describe('[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）', () => {
+  // [F-UIRES-03 C3] describe 名保留历史原文（test-surface 按例签名比对——
+  // 内嵌保留例 frameKeyOf/insertIndexFromRects 签名稳定）；applyMovePreview
+  // 两例随改月链退役删除（INV-107）
   it('frameKeyOf：year|month 序列化含 null 形', () => {
     expect(frameKeyOf(2022, 9)).toBe('2022|9')
     expect(frameKeyOf(null, null)).toBe('null|null')
-  })
-
-  it('applyMovePreview：移出原组+落目标组尾部；空组收纳框移除', () => {
-    const groups = groupTimeline([
-      node('A', { year: 2022, month: 9 }),
-      node('B', { year: 2022, month: 9 }),
-      node('C', { year: 2022, month: 10 })
-    ])
-    const out = applyMovePreview(groups, 'A', 2022, 10)
-    const oct = out[0]!.months.find((m) => m.month === 10)!
-    const sep = out[0]!.months.find((m) => m.month === 9)
-    expect(oct.nodes.map((n) => n.id)).toEqual(['C', 'A']) // 尾插
-    expect(sep?.nodes.map((n) => n.id)).toEqual(['B'])
-    // 移出后空组（单节点月）：该月收纳框整组移除
-    const solo = groupTimeline([node('A', { year: 2022, month: 9 }), node('C', { year: 2022, month: 10 })])
-    const out2 = applyMovePreview(solo, 'A', 2022, 10)
-    expect(out2[0]!.months.map((m) => m.month)).toEqual([10])
-    expect(out2[0]!.months[0]!.nodes.map((n) => n.id)).toEqual(['C', 'A'])
-  })
-
-  it('applyMovePreview：目标组不存在=原样返回（防御面）；nodeId 缺席=原样', () => {
-    const groups = groupTimeline([node('A', { year: 2022, month: 9 })])
-    expect(applyMovePreview(groups, 'A', 2030, 1)).toEqual(groups)
-    expect(applyMovePreview(groups, 'Z', 2022, 9)).toEqual(groups)
   })
 
   it('insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位', () => {
@@ -495,13 +472,15 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     // 切片起点取激活块 gBCR 之后（激活读 rect 在 pointerMove 阈值判定内
     // ——pDown 时零采样；起点取早则激活样本 '82px' 混入切片恒真）
     const settleSamplesStart = marginAtRect.length
-    // dragging：[②U7] absolute 驻内容层+内容坐标（transform 祖先劫持 fixed 包含
-    // 块）；border box=left（marginLeft 压 0px——无双计）。
-    // left=指针派生 ghost：ox=140−94=46 → 146−46=100；双计形态=同 left 而
-    // margin 恒 82px（border box 再偏 +82 → 视觉落 182）
+    // dragging：[②U7+C3 甲案] absolute+内容坐标 ghost、渲染定位域=frame
+    // padding box（inline left=ghost−frameOrigin；border box=left——marginLeft
+    // 压 0px 无双计）。jsdom 推导链：ghost=指针派生（ox=140−94=46 →
+    // 146−46=100）；frameOrigin=ghostContent−offsetLeft/Top=(94−0, 110−72)
+    // （offsetLeft jsdom 零布局=0/offsetTop=瀑布 stub 72）→ left=100−94=6。
+    // 双计形态（旧缺陷）=left 直写 ghost 100 而渲染视觉再偏 frame 原点
     expect(cardOf('C').style.position).toBe('absolute')
     expect(cardOf('C').style.marginLeft).toBe('0px')
-    expect(cardOf('C').style.left).toBe('100px')
+    expect(cardOf('C').style.left).toBe('6px')
     // [回炉 R8/d1-B1] 激活同步禁断：基类 margin-left .25s 过渡在场则压 0
     // 即启 +82px 滑移——inline transition='none' 先于类过渡接管（settle 段
     // SETTLE_TRANSITION 只含 left/top）

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 /**
- * [T3-P8] lineage.store 槽位重排/改月写面测试（[F-LGRAPH-01②U1] 编辑会话
+ * [T3-P8] lineage.store 槽位重排写面测试（[F-LGRAPH-01②U1] 编辑会话
  * 语义重整版：动作入暂存+save 批量落库。锁定合约，always-active）。
  * 覆盖：reorderMonthSlots 月组全序重写（slot=0..n-1 透写+month 保留+队列
- * FIFO）/moveNodeMonth 改月载荷（slot 键缺省——服务端组变 max+1 尾部既有
- * 分支）/全字段载荷 month/slot 保留（防半更新清月）/upsert 回填后 nodes=
+ * FIFO）/全字段载荷 month/slot 保留（防半更新清月）/upsert 回填后 nodes=
  * lineageOrder 全序（INV-75 消费面扩）/写失败 error+重试（乐观值保持）。
+ * [F-UIRES-03 C3] 改月动作用例组随改月单口裁决退役删除（INV-107——改月
+ * 唯一入口=MetaEditDialog；meta-edit-dialog.test 既有承载）；lazy 融合
+ * 机制锁改以 reorder×reorder 同节点融合承载（override 轴生产者收窄）。
  * （环境=jsdom：client.ts 顶层读 window.api；独立于 lineage-store-write.test
  * ——文件 500 行红线拆件。）
  */
@@ -166,30 +168,6 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
   })
 })
 
-describe('[T3-P8] moveNodeMonth —— 改月载荷（slot 缺省=服务端组变 max+1）', () => {
-  it('载荷含目标 year/month 且 slot 键缺省（归一归服务端）；全字段随行', async () => {
-    const A = node('A', { year: 2022, month: 9, slot: 2 })
-    useLineageStore.setState({ nodes: [A] })
-    state().moveNodeMonth('A', 2023, 1)
-    state().save()
-    await settle()
-    const req = payloads()[0]!
-    expect(req.year).toBe(2023)
-    expect(req.month).toBe(1)
-    expect(Object.prototype.hasOwnProperty.call(req, 'slot')).toBe(false) // 键缺省非 null
-    expect(req.title).toBe('节点A')
-  })
-
-  it('未定月目标：month=null 载荷（未定月框收纳）', async () => {
-    const A = node('A', { year: 2022, month: 9, slot: 0 })
-    useLineageStore.setState({ nodes: [A] })
-    state().moveNodeMonth('A', 2022, null)
-    state().save()
-    await settle()
-    expect(payloads()[0]!.month).toBeNull()
-  })
-})
-
 describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消费面扩）', () => {
   it('moveNode 载荷带现月与槽位（防半更新清月——P8 激活的潜伏缺陷锁；[A1b] editTags/[A3] editCoreIdea 面随退役域删——触发器换 moveNode 同型承载）', async () => {
     const A = node('A', { month: 6, slot: 3 })
@@ -220,22 +198,25 @@ describe('[T3-P8 回炉] R3 —— patch-node lazy 载荷（②U1 暂存期同�
   // [A1b F-CONTRACTA-01] 两用例「跨格：改月→同节点 setNodeTags→save 单发终值」
   // 「跨格反序：setNodeTags 先入暂存→改月后入融合」随脉络私有标签域退役删除
   // （setNodeTags 写路径消亡=唯一 override+patch 混轴生产者；融合机制两半边
-  // 仍各在锁：override 轴=本组 reorder/改月用例、patch 轴=lineage-store-write
-  // 连续编辑合并用例）。
+  // 仍各在锁：override 轴=本组 reorder 融合用例、patch 轴=lineage-store-write
+  // 连续编辑合并用例）。[F-UIRES-03 C3] 改月×reorder 跨轴融合例随改月动作
+  // 退役删除——改写为 reorder×reorder 同轴融合承载（override 整替胜出语义
+  // 门二 C4 终裁保持锁定）。
 
-  it('reorder 暂存窗内同节点改月：lazy 融合派发=改月后落（月对）+slot 透写不被吞', async () => {
+  it('reorder 暂存窗内同节点再 reorder：lazy 融合派发=末次 override 整替胜出（slot 末次透写）', async () => {
     const A = node('A', { year: 2022, month: 9, slot: 0 })
     const B = node('B', { year: 2022, month: 9, slot: 1 })
     useLineageStore.setState({ nodes: [A, B] })
-    state().reorderMonthSlots(['B', 'A']) // B slot=0、A slot=1（两条 lazy）
-    state().moveNodeMonth('A', 2023, 1) // A 融合：改月整替 slot 透写
+    state().reorderMonthSlots(['B', 'A']) // B slot=0、A slot=1（两条 lazy 入队）
+    state().reorderMonthSlots(['A', 'B']) // 同节点融合：末次 override 整替（A=0、B=1）
+    expect(state().queue.length).toBe(2) // 融合按 id 保持两条（非同实体不合并）
     state().save()
     await settle()
-    const calls = payloads().map((c) => [c.id, c.month ?? null, c.slot ?? null])
+    const calls = payloads().map((c) => [c.id, c.slot ?? null])
     expect(calls).toEqual([
-      ['B', 9, 0],
-      ['A', 1, null] // A 融合派发：month 新+slot 缺省（改月整替槽位语义）
+      ['B', 1], // B 末次 override={slot:1} 整替首次 {slot:0}
+      ['A', 0]
     ])
-    expect(state().nodes.map((n) => n.id)).toEqual(['B', 'A'])
+    expect(state().nodes.map((n) => n.id)).toEqual(['A', 'B'])
   })
 })

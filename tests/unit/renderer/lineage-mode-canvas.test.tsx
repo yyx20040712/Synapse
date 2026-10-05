@@ -235,7 +235,7 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     setMode('focus')
     expect(hint()).toBe('◎ 单击卡片＝聚焦标记（再点取消） · 拖动空白＝平移画布')
     setMode('edit')
-    expect(hint()).toBe('编辑中：点卡片月标改月 · 拖动＝月内调序 · 画线＝点线型工具后从卡边拖出') // [②U2] 工具组文案（画线入口提示）
+    expect(hint()).toBe('编辑中：拖动＝月内调序 · 画线＝点线型工具后从卡边拖出') // [②U2] 工具组文案（画线入口提示）；[F-UIRES-03 C3] 改月子句退役删（INV-107）
   })
 
   it('.timeline 挂模式类（mode-browse/mode-focus/mode-edit——CSS 光标域承载）', () => {

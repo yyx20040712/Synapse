@@ -131,11 +131,16 @@ export async function zoomProbe(page: Page, scale: number, probeFn: () => Promis
     const tlBox = await page.getByTestId('lineage-timeline').boundingBox()
     if (tlBox === null) throw new Error('zoomProbe：画布不可见')
     await page.mouse.move(tlBox.x + tlBox.width / 2, tlBox.y + tlBox.height / 3)
+    // [F-UIRES-03 C3 搭车] Ctrl 持键段 try/finally 加固：滚轮步进抛错（用例
+    // 断言失败重抛径）时 keyUp 不丢——残留按住态会污染后续键盘交互用例
     await page.keyboard.down('Control')
-    for (let i = 0; i < Math.abs(steps); i++) {
-      await page.mouse.wheel(0, steps > 0 ? -120 : 120)
+    try {
+      for (let i = 0; i < Math.abs(steps); i++) {
+        await page.mouse.wheel(0, steps > 0 ? -120 : 120)
+      }
+    } finally {
+      await page.keyboard.up('Control')
     }
-    await page.keyboard.up('Control')
   }
   const zNum = steps10 / 10
   // z=1 档=contentStyle 空对象（transform none——100% 基线无扰动语义）；z≠1

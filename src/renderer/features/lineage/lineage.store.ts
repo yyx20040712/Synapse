@@ -16,7 +16,7 @@
  * 会话态机单源=lineage-write-queue.ts 头注（saveStatus/queue/undoStack/flush）。
  *
  * ── [F-LGRAPH-01②U1] 编辑会话域（A7：脉络页一切写动作统一入暂存）──
- * 节点删/改（[F-ALIGN-01] 增随手动建点路径退役）/改月/调序/画线/删线/
+ * 节点删/改（[F-ALIGN-01] 增随手动建点路径退役）/调序/画线/删线/
  * 命名/线形/改父→beginUnit（单元前
  * 快照入 undo 栈+redo 清）→乐观应用+入队（不发 IPC）；save()=批量落库
  * （成功 clean+栈基线重置）；undo/redo=快照栈；discardSession=dirty 切图
@@ -89,13 +89,10 @@ export interface LineageStore {
    *  建点路径退役删除——节点唯一来源=入库/移动两路（INV-NEW-1） */
   moveNode(id: string, x: number, y: number): void
   /** [T3-P8] 月组槽位全序重排：按传入序 slot=0..n-1 逐节点透写排队（settle
-   *  落定后调用；[②U1] 整组=一编辑单元——一次 undo 整组回退） */
+   *  落定后调用；[②U1] 整组=一编辑单元——一次 undo 整组回退）。
+   *  [F-UIRES-03 C3] 改月 store 动作随改月单口裁决退役删除
+   *  （INV-107——改月唯一入口=MetaEditDialog 月份字段经 library.updateMeta） */
   reorderMonthSlots(nodeIds: string[]): void
-  /** [T3-P8] 改月：month+year 全字段载荷、slot 键缺省——服务端组变分支
-   *  （新组 max+1 落尾部）归一，月组内槽位不在此写。
-   *  [A3 F-CONTRACTA-01 2026-10-04] 核心想法编辑 store 动作随核心想法域
-   *  全退役删除（节点内容编辑面=全文笔记 notes.contentMd 承接） */
-  moveNodeMonth(id: string, year: number | null, month: number | null): void
   linkNodes(from: string, to: string, label?: string): void
   /** [F-LGRAPH-01②U3] 画线建边（拖拽锚点流——§2.4）：kind=manual+视觉字段=
    *  当前工具线型（dashed/color）+label=当前色行名快照（P-14 继承制） */
@@ -277,13 +274,6 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         mustNode(get().nodes, id)
         wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { slot } })
       })
-    },
-
-    moveNodeMonth(id, year, month) {
-      mustNode(get().nodes, id)
-      // override={year,month}：合成时 slot 键缺省（服务端组变 max+1——D-I-1）
-      if (!beginUnit()) return
-      wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { year, month } })
     },
 
     linkNodes(from, to, label = '') {

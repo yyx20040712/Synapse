@@ -13,8 +13,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 
-/** 平移排除面（卡/月标/工具条/图例——点选与编辑域不触发平移） */
-const PAN_EXCLUDE = '.tl-card, .c-ym, .lg-toolbar, .tl-legend, .month-tag'
+/** 平移排除面（卡/工具条/图例——点选与编辑域不触发平移）。[F-UIRES-03 C3]
+ *  月标 .c-ym 死条目随改月链退役清除（该 DOM 类已删——RR1-C 终态 grep 抓出） */
+const PAN_EXCLUDE = '.tl-card, .lg-toolbar, .tl-legend, .month-tag'
 /** 激活阈值 px（[R12]——DRAG_THRESHOLD 同值先例） */
 const PAN_THRESHOLD = 5
 

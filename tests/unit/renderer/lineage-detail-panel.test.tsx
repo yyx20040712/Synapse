@@ -114,14 +114,15 @@ describe('U4 详情面板（A5/P-16/P-20）', () => {
     expect(text).not.toContain('核心') // core UI 消费面全退役（徽章行零「核心」字样）
   })
 
-  it('底部注记=「双击卡片跳转阅读器」（A6 消费面提示；[A1b] 标签编辑域随私有域退役删）', () => {
+  it('底部注记=编辑操作提要（[F-UIRES-03 C3] 双击跳转子句随卡双击链退役删——入口=卡面「去阅读器」钮；改月子句随改月链退役删 INV-107；[A1b] 标签编辑域随私有域退役删）', () => {
     mount(
       <LineageSidePanel
         node={node('A')}
         onJumpToPaper={JUMP}
       />
     )
-    expect(host?.textContent).toContain('双击卡片跳转阅读器')
+    expect(host?.textContent).toContain('编辑模式：调序 / 画线 / 调线')
+    expect(host?.textContent).not.toContain('双击卡片跳转阅读器') // 退役负锚
     expect(host?.querySelector('[data-testid="lineage-side-tags"]')).toBeNull() // [A1b] 标签编辑分节退役零渲染
   })
 

@@ -2,12 +2,16 @@
 // b3: T3-P8
 /**
  * [T3-P7B] TimelineYears —— 年/月/卡渲染体（LineageTimeline 拆件——组件
- * 250 行红线；纯展示：分组遍历+编号/核徽章/选中/瀑布错位/拾取源高亮全经
- *  props，交互回调沿 TimelineCallbacks 透传）。
+ * 250 行红线；纯展示：分组遍历+编号/选中/瀑布错位/拾取源高亮全经
+ * props，交互回调沿 TimelineCallbacks 透传）。
  * [T3-P8] 槽位拖拽渲染：dragSlot 在场时源月组按「其余卡+拖卡@insertIdx」
  * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡尾挂 .dragging
- * fixed 离流+框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
- * FLIP 飞行由 useCardDrag 命令式接管）。改月飞行目标框 .flash 高亮。
+ * **absolute 离流**（定位驻卡链 offsetParent——坐标域见 card-drag-session）
+ * +框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
+ * FLIP 飞行由 useCardDrag 命令式接管）。
+ * [F-UIRES-03 C3] 改月飞行 flash 高亮+月标点击回调随改月链退役删除
+ * （INV-107）；[F 项搭车] 头注「fixed 离流」陈旧句按真实机制改写
+ * （absolute 非 fixed——含块=.month-frame，见 card-drag-session 头注）。
  * [lnfix2] 月组框 ref 注册链退役（跨月联动死码）；data-frame-key 属性保留
  * （DragCandidates 查询源——drag-slot-candidates.tsx）。
  */
@@ -60,8 +64,6 @@ export function TimelineYears(props: {
   linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
   dragSlot?: DragSlotPreview | null
-  /** [T3-P8] 改月飞行目标框高亮（.flash——框高亮动画） */
-  flashKey?: string | null
   /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框） */
   focusIds?: ReadonlySet<string>
   /** [②U7/P-18] 聚焦 dim 激活（集非空）——非聚焦卡挂 .dim（0.3/hover 0.6） */
@@ -69,10 +71,11 @@ export function TimelineYears(props: {
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
   /** [F-LGRAPH-01②U4] 星标区点击（宿主模式分派——edit=选中/browse+focus=no-op） */
   onCardStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
-  /** [F-LGRAPH-01②U4/A6] 双击卡跳阅读器 */
-  onCardDblClick?: (nodeId: string) => void
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
-  onYmClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
+  /** [F-UIRES-03 C3·v1.7] 卡面两钮（卡双击链退役的显式入口接替——见
+   *  LineageTimelineCard 按钮区） */
+  onCardGotoLibrary?: NonNullable<TimelineCallbacks['onCardGotoLibrary']>
+  onCardGotoReader?: NonNullable<TimelineCallbacks['onCardGotoReader']>
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {
   const { groups, pubNos, paperMetrics } = props
   const tagNames = props.tagNames ?? {}
@@ -92,11 +95,11 @@ export function TimelineYears(props: {
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
-      onNodeDblClick={props.onCardDblClick}
       onNodeContextMenu={props.onNodeContextMenu}
       onStarClick={props.onCardStarClick}
       onCardPointerDown={props.onCardPointerDown}
-      onYmClick={props.onYmClick}
+      onGotoLibrary={props.onCardGotoLibrary}
+      onGotoReader={props.onCardGotoReader}
     />
   )
   return (
@@ -145,11 +148,9 @@ export function TimelineYears(props: {
               // [②U6] 框底缘下拉态（拖过底缘=stretch 框高动画腾新行——.38s 曲线
               // CSS 承载）；候选槽族（faded 多预览）挂源框内
               const stretching = isSrc && slot !== null && slot.active && slot.extend === true
-              const frameCls = [
-                'month-frame',
-                props.flashKey === key ? 'flash' : '',
-                stretching ? 'stretch' : ''
-              ].filter((c) => c !== '').join(' ')
+              const frameCls = ['month-frame', stretching ? 'stretch' : '']
+                .filter((c) => c !== '')
+                .join(' ')
               return (
                 <div
                   className={m.month === null ? 'tl-month unknown' : 'tl-month'}

@@ -10,8 +10,8 @@
  *   腾新行空位+插位=组末。
  * - 限本月=物理域：跨月回弹归 lineage-card-drag.test（本组不重复）；无 toast
  *   零残留（grep 面）。
- * - 挂账③：MonthPop 开层后切出 edit 模式=关闭（下降沿对称化——Esc/外点/切
- *   模式三径统一）。
+ * - [F-UIRES-03 C3] 挂账③例（改月弹层切出 edit 关闭）随改月链退役删除
+ *   （INV-107）；本件收窄=保留面（候选槽/下拉带）两例。
  * always-active 裸 describe。
  */
 import { act } from 'react'
@@ -126,15 +126,5 @@ describe('U6 候选占位与月框下拉', () => {
     expect(reorder).toHaveBeenCalledWith(['B', 'A'])
     // 松手清场=stretch 摘（框高回落）
     expect(frame.classList.contains('stretch')).toBe(false)
-  })
-
-  it('挂账③：MonthPop 开层后切出 edit 模式=关闭（下降沿对称化——Esc/外点/切模式统一关闭路径）', () => {
-    mount([node('A')])
-    const card = host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement
-    const ym = card.querySelector('[data-testid="card-ym"]') as HTMLElement
-    act(() => { ym.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
-    expect(host!.querySelector('[data-testid="month-pop"]')).not.toBeNull()
-    act(() => { useLineageViewStore.getState().setMode('browse') })
-    expect(host!.querySelector('[data-testid="month-pop"]')).toBeNull()
   })
 })

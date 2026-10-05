@@ -22,12 +22,14 @@
  */
 import { useEffect, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
-import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { requestOpenPaper, requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { requestOpenLibrary } from '../../shared/open-library-bus'
 import { ICON_CHEVRONS_LEFT } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
+import { gotoLibraryPlan } from './goto-library-plan'
 import { LineageBoard } from './LineageBoard'
 import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
@@ -115,12 +117,25 @@ export function LineagePage(): JSX.Element {
     })
   }
 
-  /** [F-LGRAPH-01②U4/A6] 卡双击=跳阅读器（OPEN_PAPER_EVENT 总线单入口 INV-20
-   *  ——与侧板片段条目双击同入口；已开 tab 跳转语义由阅读器侧承载） */
-  const handleCardDblClick = (nodeId: string): void => {
-    const n = useLineageStore.getState().nodes.find((x) => x.id === nodeId)
-    if (n === undefined || n.paperId === null) return // 主题节点无阅读器面
-    requestOpenPaperAnchored({ paperId: n.paperId })
+  /** [F-UIRES-03 C3·v1.7] 卡面「去文献库」钮编排（先置数后广播——FolderNav→
+   *  lineage 同序先例）：分支计划=gotoLibraryPlan 单源（[RR1-A] 抽件——分支
+   *  单测面；__main__ 哨兵=MAIN_GRAPH_ID 常量单源）——所在文件夹过滤+选中
+   *  该文（__main__ 未归夹→folderScope 置 undefined 全库降级）→
+   *  requestOpenLibrary 切视图。跨域写接缝锚=library.store 头注 */
+  const handleCardGotoLibrary = (paperId: string | null, folderId: string): void => {
+    const plan = gotoLibraryPlan(paperId, folderId)
+    const lib = useLibraryStore.getState()
+    lib.setQuery({ folderScope: plan.folderScope })
+    if (plan.paperId !== null) useLibraryStore.getState().selectPaper(plan.paperId)
+    requestOpenLibrary()
+  }
+
+  /** [F-UIRES-03 C3·v1.7] 卡面「去阅读器」钮编排（requestOpenPaper 单字段
+   *  开篇语义——B2 已分流锚定态 requestOpenPaperAnchored，卡钮不带锚）。
+   *  [F-LGRAPH-01②U4/A6] 卡双击链（handleCardDblClick）随 v1.7 双击退役删除
+   *  （全应用唯一保留双击=详情面板片段条目——B2 终态兑现） */
+  const handleCardGotoReader = (paperId: string): void => {
+    requestOpenPaper(paperId)
   }
 
   if (status === 'loading') {
@@ -168,7 +183,8 @@ export function LineagePage(): JSX.Element {
           <LineageBoard
             onSelectNode={setSelectedNodeId}
             selectedNodeId={selectedNodeId}
-            onNodeDblClick={handleCardDblClick}
+            onCardGotoLibrary={handleCardGotoLibrary}
+            onCardGotoReader={handleCardGotoReader}
           />
         </div>
         {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留

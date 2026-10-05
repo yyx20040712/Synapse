@@ -441,7 +441,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
     expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--accent\)/)
     expect(css).toMatch(/\.timeline\.editing \.drag-hint\s*\{[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\);[^}]*border-color:\s*var\(--signal\)/)
-    // .pop 弹层（mockup L287 逐值——fixed 240px 挂视口；MonthPop 沿用基础面）
+    // .pop 弹层基础面（mockup L287 逐值——fixed 240px 挂视口；[F-UIRES-03 C3]
+    // 脉络侧弹层消费面已随改月链退役——基础面留驻供通用弹层族）
     expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)
     expect(css).toMatch(/\.pop h4\s*\{[^}]*letter-spacing:\s*2px;[^}]*color:\s*var\(--faint\)/)
     // .acc 手风琴（mockup L304-310）+schip chip i 预览（L294-296——[R6②]

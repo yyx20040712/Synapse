@@ -26,9 +26,10 @@
  * - 编辑单元=单次拖放/加点/删点/重置走线/端点重连/画线/删线/命名提交（含
  *   线型行内改名）/线形变更——与撤销栈单元同构（一单元=一撤销步；拖放类
  *   单元由轮 2 调线/拖拽接入，store.beginUnit 为统一入口）。
- * - [T3-P8 R3] lazy 载荷：enqueue 只存 id+差异（patch=字段覆盖/override=槽位·
- *   改月语义轴），applyAction 执行时点 fullRowInput(最新行) 合成——暂存窗内
- *   先行落地的乐观变更自然并入。
+ * - [T3-P8 R3] lazy 载荷：enqueue 只存 id+差异（patch=字段覆盖/override=槽位
+ *   语义轴），applyAction 执行时点 fullRowInput(最新行) 合成——暂存窗内
+ *   先行落地的乐观变更自然并入。[F-UIRES-03 C3] 改月语义轴（override
+ *   year/month 形）随改月动作退役删除（INV-107——override 生产者收窄=slot 透写）。
  */
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
@@ -55,9 +56,9 @@ export interface LazyNodePatch {
   kind: 'patch-node'
   id: string
   patch: Partial<Pick<LineageNode, 'x' | 'y'>>
-  /** 语义轴整替（后到胜出）：{slot}=月内序透写；{year,month}=改月（合成时
-   *  slot 键缺省——服务端组变 max+1 尾部既有分支；乐观应用=组内末预估） */
-  override?: { slot: number } | { year: number | null; month: number | null }
+  /** 语义轴整替（后到胜出）：{slot}=月内序透写。[F-UIRES-03 C3] year/month
+   *  改月形随改月动作退役删除（INV-107） */
+  override?: { slot: number }
 }
 
 /** 写动作（排队单元；reparent 的加边动作带标记——N5 部分失败 toast 前缀；
@@ -155,19 +156,14 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
    *  即时更新+暂存；节点变更后 lineageOrder 重排=渲染序单源沿承） */
   const applyOptimistic = (action: WriteAction): void => {
     if (action.kind === 'patch-node') {
-      // lazy 更新：patch 应用+override 语义轴（改月乐观=跨组组内末预估——
-      // slot null 组末渲染近似；落库归一回填真值）
+      // lazy 更新：patch 应用+override 语义轴（slot 透写）
       set((s) => ({
         nodes: lineageOrder(
           s.nodes.map((n): LineageNode => {
             if (n.id !== action.id) return n
             const patched: LineageNode = { ...n, ...action.patch }
             if (action.override === undefined) return { ...patched, updatedAt: new Date().toISOString() }
-            if ('slot' in action.override) {
-              return { ...patched, slot: action.override.slot, updatedAt: new Date().toISOString() }
-            }
-            // 改月乐观=组内末预估（slot null 组末渲染近似——落库归一回填真值）
-            return { ...patched, ...action.override, slot: null, updatedAt: new Date().toISOString() }
+            return { ...patched, slot: action.override.slot, updatedAt: new Date().toISOString() }
           })
         )
       }))
@@ -263,14 +259,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
   })
 
   /** [R3] lazy 载荷执行时点合成：fullPatchBody 读当前 store 行+patch 覆盖
-   *  +override 语义轴 */
+   *  +override 语义轴（slot 透写） */
   const lazyInput = (a: LazyNodePatch): LineageNodePatchBody => {
     const patched: LineageNodePatchBody = { ...fullPatchBody(nodeOf(a.id)), ...a.patch }
     if (a.override === undefined) return patched
-    if ('slot' in a.override) return { ...patched, slot: a.override.slot }
-    const { slot: _omit, ...rest } = patched // 改月=slot 键缺省（组变尾部归一）
-    void _omit
-    return { ...rest, ...a.override }
+    return { ...patched, slot: a.override.slot }
   }
 
   const applyAction = async (action: WriteAction): Promise<void> => {

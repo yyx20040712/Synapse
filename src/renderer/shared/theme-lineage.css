@@ -131,27 +131,8 @@
   transition: opacity .2s;
 }
 .drag-slot.faded { opacity: .35; }
-/* [T3-P8] 月标 chip（mockup L257-258 逐值：absolute top -8px right -3px
-   mono accent 底白字「YYYY.M」/未定月形；display:none↔.editing block；
-   裸白→--accent-ink 三族恒定白 token） */
-.c-ym {
-  display: none;
-  position: absolute;
-  top: -8px;
-  right: -3px;
-  font-family: var(--mono);
-  font-size: var(--fs-tl-meta);
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 1px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 6;
-}
-.timeline.editing .c-ym { display: block; }
-/* [T3-P8] 改月飞行目标框高亮（框高亮动画——month-frame 既有
-   border-color/background 过渡承载进出淡变） */
-.month-frame.flash { border-color: var(--accent); background: var(--accent-soft); }
+/* [F-UIRES-03 C3] 月标 chip（.c-ym）+改月飞行框高亮（.month-frame.flash）
+   随改月链退役删除（INV-107——改月唯一入口=MetaEditDialog） */
 /* [F-LGRAPH-01②U6] 框底缘下拉：拖过底缘=padding-bottom 增高腾新行（height
    auto 不可插值——padding 变化承载 .38s 同曲线下拉动画；mockup §3.5 承载面
    申报：现行 height .38s 过渡字段保留不拆） */
@@ -235,6 +216,30 @@
 /* sel=inset 1.6px accent 环+外辉（mockup 裸色值→--shadow-tl-sel token
    承载——check-quality 色值字面量禁令，注释面同禁 ⑤ 裁决） */
 .tl-card.sel { box-shadow: inset 0 0 0 1.6px var(--accent), var(--shadow-tl-sel); }
+/* [F-UIRES-03 C3·v1.7] 卡面两钮（双击链退役的显式入口）：按钮行 absolute
+   右下、hover 呈现（桌面卡片悬停显操作钮常态形态——128×72 三层结构零挤占）；
+   编辑态收钮避让=恒隐藏（拖拽/画线交互期按钮区不干扰 pointer） */
+.card-jumps {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  display: none;
+  gap: 3px;
+  z-index: 5;
+}
+.tl-card:hover .card-jumps { display: flex; }
+.timeline.editing .card-jumps { display: none !important; }
+.c-jump {
+  font-size: var(--fs-micro);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
+}
+.c-jump:hover { background: var(--accent-soft); }
 /* ══ [T3-P7B] 编辑交互族（工具条换装+编辑态+线型弹层——mockup L204-219/L247/
    L259-260/L287-311 逐值；字号/阴影 token 映射注记见文件头 [T3-P7B] 段）══ */
 /* 工具条：sticky 挂 .timeline 内（D-P7B-1——mockup L204-205：color-mix var(--bg)
@@ -412,26 +417,6 @@
 }
 .zoom-badge:hover { border-color: var(--accent); color: var(--accent); }
 
-/* 改月弹层月份行（mockup .ws-item 族 L313-318——workspace.css 同源值，
-   本域驻留副本：ws 皮肤仅 WsRailPopover 挂载期在场，lineage 视图不保证） */
-.month-pop .ws-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 9px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font-size: var(--fs-body);
-  font-family: inherit;
-}
-.month-pop .ws-item:hover { background: var(--line-soft); }
-.month-pop .ws-item.on { background: var(--accent-soft); }
-.month-pop .ws-item .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.month-pop .ws-item .nm { flex: 1; }
-.month-pop .ws-item .ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+/* [F-UIRES-03 C3] 改月弹层皮肤（.month-pop .ws-item 族）随改月链退役删除
+   （INV-107——弹层组件已删，死样式即删） */
 

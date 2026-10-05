@@ -19,7 +19,6 @@ import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawPreview } from './DrawPreview'
 import { DrawAnchorHint } from './DrawAnchorHint'
-import { MonthPop } from './MonthPop'
 import { useLineageViewStore } from './lineage-view.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useWaterfallOffsets } from './timeline-waterfall'
@@ -31,16 +30,20 @@ import { ZoomBadge } from './ZoomBadge'
 export interface TimelineCallbacks {
   /** 单击选中（04 侧板消费面上抛；事件透传=拾取定位面） */
   onNodeClick?: (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
-  /** [F-LGRAPH-01②U4/A6] 双击卡=跳阅读器（paperId 在场才上抛——主题节点
-   *  no-op；消费面=Page 编排→OPEN_PAPER_EVENT 总线单入口 INV-20） */
-  onNodeDblClick?: (nodeId: string) => void
   /** 右键节点开菜单（03 节点菜单锚点） */
   onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
+  /** [F-UIRES-03 C3·v1.7] 卡面「去文献库」钮（paperId 在场才渲染——主题节点
+   *  恒 folderId 语义；编排=Page 接 library.store 预置+requestOpenLibrary） */
+  onCardGotoLibrary?: (paperId: string | null, folderId: string) => void
+  /** [F-UIRES-03 C3·v1.7] 卡面「去阅读器」钮（paperId 在场才渲染——主题节点
+   *  零渲染；编排=Page 接 requestOpenPaper 单字段开篇语义） */
+  onCardGotoReader?: (paperId: string) => void
   /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
-   *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报） */
+   *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报）。
+   *  [F-UIRES-03 C3] 改月回调 prop 随改月链退役删除（INV-107）；
+   *  卡双击链（onNodeDblClick）随 v1.7 双击退役删除（全应用唯一保留双击=
+   *  详情面板片段条目——B2 终态） */
   onReorderMonthSlots?: (nodeIds: string[]) => void
-  /** [T3-P8] 改月写路径（month+year 载荷、slot 键缺省=服务端组变尾部） */
-  onMoveNodeMonth?: (nodeId: string, year: number | null, month: number | null) => void
 }
 
 /** [F-ALIGN-01] 工具条 props 面随建点入口退役删除（TimelineToolbarProps
@@ -88,29 +91,28 @@ export function LineageTimeline(props: {
   // [②U3] 画线子态机（armed=工具态；容器 pointer 流——拖拽互斥闸）
   const draw = useDrawLine({ contentRef })
   const drawing = tool !== 'select'
-  // [T3-P8] 槽位拖拽+改月状态机（编排本体驻 hook——Timeline 增量红线）
+  // [T3-P8] 槽位拖拽状态机（编排本体驻 hook——Timeline 增量红线）；
+  // [F-UIRES-03 C3] 改月域（弹层/预演）随改月链退役——groups 直用
   const drag = useCardDrag({
     nodes,
-    groups,
     isEditing: viewMode === 'edit',
     isPicking: drawing, // [②U3] 画线 armed=拖拽闸（拾取优先沿承——重命名申报）
     popOpen: false,
     contentRef,
     onReorderMonthSlots: props.onReorderMonthSlots,
-    onMoveNodeMonth: props.onMoveNodeMonth,
     onRouteRecalc: () => bumpRouteRef.current()
   })
   // 瀑布错位不动点迭代（P-15：机制本体=timeline-waterfall.ts 拆件——组件
   // 250 行红线；冻结跳过/收敛 bump 细节见该件头注）
   const waterfall = useWaterfallOffsets({
     contentRef,
-    recomputeKey: drag.renderGroups,
+    recomputeKey: groups,
     dragPhase: drag.phase
   })
   const { offsets, routeEpoch } = waterfall
   bumpRouteRef.current = waterfall.bumpRoute
   // [F-LGRAPH-01①U4] 导航窗格联动：索引点击定位+当前月上报（重算键=渲染组）
-  useTimelineNavSync(timelineRef, drag.renderGroups)
+  useTimelineNavSync(timelineRef, groups)
   // [F-LGRAPH-01①U5] 平移小手：browse/focus 拖空白=滚动跟随（edit 不平移）
   const pan = useTimelinePan({
     enabled: viewMode === 'browse' || viewMode === 'focus',
@@ -119,7 +121,7 @@ export function LineageTimeline(props: {
   // [②U7] 缩放：ctrl+滚轮（P-4 三模式均生效——滚动容器非被动监听）+内容层
   // transform+sizer（scale 不改布局盒——sizer 按 z 放大自然尺寸供滚动域）+
   // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件
-  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: drag.renderGroups })
+  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: groups })
   // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空（非聚焦卡+全部线 0.3）
   const dimActive = viewMode === 'focus' && focusSet.length > 0
 
@@ -187,7 +189,7 @@ export function LineageTimeline(props: {
             nodes={nodes}
             edges={edges}
             shiftedIds={offsetIds}
-            groups={drag.renderGroups}
+            groups={groups}
             routeEpoch={routeEpoch}
             dimmed={drag.phase === 'dragging'}
             focusDim={dimActive}
@@ -198,7 +200,7 @@ export function LineageTimeline(props: {
           {/* [lnfix1] armed 待机锚点指示（近锚 accent 圆点——所见即可拖） */}
           <DrawAnchorHint hint={draw.hint} />
           <TimelineYears
-            groups={drag.renderGroups}
+            groups={groups}
             pubNos={pubNoByNode}
             paperMetrics={paperMetrics}
             tagNames={tagNames}
@@ -208,14 +210,13 @@ export function LineageTimeline(props: {
             offsets={offsets}
             linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : null}
             dragSlot={drag.slot}
-            flashKey={drag.flashKey}
             dimUnfocused={dimActive}
             onCardClick={handleCardClick}
             onCardStarClick={handleStarClick}
-            onCardDblClick={props.onNodeDblClick}
             onCardPointerDown={drag.handleCardPointerDown}
-            onYmClick={drag.handleYmClick}
             onNodeContextMenu={props.onNodeContextMenu}
+            onCardGotoLibrary={props.onCardGotoLibrary}
+            onCardGotoReader={props.onCardGotoReader}
           />
         </div>
       )}
@@ -227,16 +228,6 @@ export function LineageTimeline(props: {
       {/* [②U7/T9] 缩放角标（右下——图例上位堆叠：单动作点击=复位；拆件
           ZoomBadge——组件 250 行红线） */}
       <ZoomBadge />
-      {/* [T3-P8] 改月弹层（position:fixed——沿 popover-shared 钳制） */}
-      {drag.monthPop !== null && (
-        <MonthPop
-          cx={drag.monthPop.cx}
-          cy={drag.monthPop.cy}
-          current={{ year: drag.monthPop.year, month: drag.monthPop.month }}
-          months={drag.monthPopMonths}
-          onPick={drag.pickMonth}
-        />
-      )}
     </div>
   )
 }

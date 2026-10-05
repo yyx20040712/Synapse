@@ -199,7 +199,10 @@ export function LineageToolbar(props: {
         <span className="sr-only">重做</span>
       </button>
       <span className="drag-hint" data-testid="drag-hint">
-        编辑中：点卡片月标改月 · 拖动＝月内调序 · 画线＝点线型工具后从卡边拖出
+        {/* [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107——
+            改月唯一入口=MetaEditDialog）；「画线＝点两卡连边」终态文案= C1 单元
+            交互落地后随其票面换（主控预裁留痕——现文案如实=从卡边拖出） */}
+        编辑中：拖动＝月内调序 · 画线＝点线型工具后从卡边拖出
       </span>
       {saveStatus === 'error' && (
         <span

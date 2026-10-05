@@ -232,8 +232,8 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     expect(useLineageViewStore.getState().focusSet).toEqual(['A']) // 卡身=聚焦 toggle
   })
 
-  it('双击卡=跳阅读器（A6——paperId 上抛）；主题节点双击 no-op', () => {
-    const onDbl = vi.fn()
+  it('[F-UIRES-03 C3·v1.7] 卡双击退役负锚：dblclick 零动作（链已删——全应用唯一保留双击=详情面板片段条目 B2 终态）', () => {
+    const onNodeClick = vi.fn()
     mount(
       <LineageTimeline
         nodes={[
@@ -241,17 +241,52 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
           node('T', { paperId: null, year: 2022, month: 9, title: '主题节点' })
         ]}
         edges={[]}
-        onNodeDblClick={onDbl}
+        onNodeClick={onNodeClick}
       />
     )
     act(() => {
       cardOf('A').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     })
-    expect(onDbl).toHaveBeenCalledWith('A')
+    // 退役负锚：双击不触发跳转类回调（唯一点击面=单击选中——onNodeClick 由
+    // 随后的 click 事件承载，dblclick 自身零专属动作）
+    expect(onNodeClick).not.toHaveBeenCalled()
+  })
+
+  it('[F-UIRES-03 C3·v1.7] 卡面两钮：载荷上抛（paperId/folderId 透传）+主题节点「去阅读器」零渲染+点击不触发卡身选中', () => {
+    const onGotoLibrary = vi.fn()
+    const onGotoReader = vi.fn()
+    const onNodeClick = vi.fn()
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9, title: '甲文献' }),
+          node('T', { paperId: null, year: 2022, month: 9, title: '主题节点' })
+        ]}
+        edges={[]}
+        onNodeClick={onNodeClick}
+        onCardGotoLibrary={onGotoLibrary}
+        onCardGotoReader={onGotoReader}
+      />
+    )
+    // 文献节点：两钮在场（hover 显隐=CSS 承载——jsdom 断言 DOM 在场与载荷）
+    const libBtn = cardOf('A').querySelector('[data-testid="card-goto-library"]') as HTMLElement
+    const readBtn = cardOf('A').querySelector('[data-testid="card-goto-reader"]') as HTMLElement
+    expect(libBtn.textContent).toBe('去文献库')
+    expect(readBtn.textContent).toBe('去阅读器')
     act(() => {
-      cardOf('T').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      libBtn.click()
     })
-    expect(onDbl).toHaveBeenCalledTimes(1) // 主题节点（无 paperId）=no-op
+    expect(onGotoLibrary).toHaveBeenCalledWith('paper-A', '__main__')
+    act(() => {
+      readBtn.click()
+    })
+    expect(onGotoReader).toHaveBeenCalledWith('paper-A')
+    // stopPropagation：钮点击不触发卡身选中（单选态不被跳转动作污染）
+    expect(onNodeClick).not.toHaveBeenCalled()
+    // 主题节点：「去阅读器」零渲染（无阅读器面——自裁申报）；「去文献库」在场
+    const themeCard = cardOf('T')
+    expect(themeCard.querySelector('[data-testid="card-goto-reader"]')).toBeNull()
+    expect(themeCard.querySelector('[data-testid="card-goto-library"]')).not.toBeNull()
   })
 
   it('CSS：L1 高 18/L3 高 12/题名两行截断（line-clamp 2）/星标命中区 14×14', () => {

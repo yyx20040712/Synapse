@@ -9,7 +9,8 @@
  *   UI 交互面=连线/编辑/保存）；②
  *   滚动容器锚（[T3-P6] pan/zoom 随 SVG 画布退役——scrollTo 后节点文本仍可断言）；
  *   ③时间线真文本 reload 持久（core_idea 编辑持久面随 [A3 F-CONTRACTA-01
- *   2026-10-04] core_idea 全退役删除——节点写链 reload 持久由 T10 承载）；
+ *   2026-10-04] core_idea 全退役删除——节点写链 reload 持久由 T9 调序全流承载
+ *   ；[F-UIRES-03 C3] T10 改月全流随改月链退役删除 INV-107）；
  *   ④加边重复端点对拒绝
  *   toast（②U8 起多父守卫文本）；⑤节点单击→侧板「AI 评估与建议」分节
  *   分色呈现（[F-UIRES-03 B2] 三节新序：全文笔记→片段笔记→AI 评估与建议；
@@ -35,7 +36,7 @@
  * - **守卫修订（主控裁定 5）**：skip 条件从「依赖组∪自身」收敛为**仅依赖组**。
  * - **用例组映射（裁决 1）**：T1=①时间线真文本渲染（种子直写）+②滚动容器锚；
  *   T2=③时间线真文本 reload 持久（[A3] core_idea 编辑持久段退役删——
- *   写链持久面由 T10 改月全流承载）；T3=④重复加边拒绝
+ *   写链持久面由 T9 拖拽调序全流承载）；T3=④重复加边拒绝
  *   toast（②U8 迁移面）+⑦写通道 patch 失败→保存失败指示条→真聚合脏态→close
  *   拦截两态；T4=⑤侧板「AI 评估与建议」分节分色（B2 三节新序+AI 双击退役
  *   负锚）+⑥片段条目双击跳阅读器目标页可见。
@@ -43,7 +44,7 @@
  *   （甲=真实 PDF 供⑥跳转与⑤产物重锚；根/乙=幽灵行+year 元数据）；
  *   T1=launch 前 seedLineageGraph 直写节点+右键连线走产品路径（UI 添加节点
  *   随 [F-ALIGN-01] 退役——节点唯一来源=入库/移动两路）；
- *   T2-T10/T-P1b=launch 前 seedLineageGraph 直写库（month/slot 形态
+ *   T2-T9/T-P1b=launch 前 seedLineageGraph 直写库（month/slot 形态
  *   由种子载荷精确控制——UI 链无法表达的月组场景）。[F-UIRES-03 B2] AI
  *   评估+片段种子=launch 前经 e2e-env.seedAiNote/seedAnnotation 直写库
  *   （08 传感器预置+07 导入器链随阅读器 AI 区整删退役——INV-105 后唯一
@@ -345,7 +346,20 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t3-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    await seedLineageGraph(userData, chainSeed())
+    // [F-UIRES-03 C3] 种子改局部载荷：甲/乙同月组（2022-05 双卡——写失败触发
+    // 段=月内拖拽调序承载，改月写通道随改月链退役 INV-107）；根/乙/边型与
+    // chainSeed 等形（重复加边/边数断言不受影响）
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2022, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2022, month: 5, slot: 2 }
+      ],
+      edges: [
+        { from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' },
+        { from: 'e2e-lg-root', to: 'e2e-lg-b', label: '' }
+      ]
+    })
 
     const app = await launch(userData)
     const win = await app.firstWindow()
@@ -387,20 +401,19 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       })
     })
 
-    // 写失败触发=[T3-P6 适配] 拖拽退役→原编辑 core_idea 写通道（[A3
-    //   F-CONTRACTA-01 2026-10-04] 对话框随 core_idea 全退役删除）→改月写通道
-    //   （同一 patch-node 失败面：handler 已 patch 抛错→error 保存态）
-    const ymFail = nodeG(win, '脉络甲文献').locator('.c-ym')
-    await ymFail.click()
-    const popFail = win.getByTestId('month-pop')
-    await expect(popFail).toBeVisible()
-    await popFail.locator('.ws-item[data-ym="2023|null"]').click()
-    // moveTargetLabel(year, null)=「未定月」（不带年——null 月短路先例）：
-    // 甲 2022 未定月→2023 未定月=跨年 override patch 入暂存
-    await expect(win.getByText('已移至 未定月')).toBeVisible({ timeout: 10_000 })
-    // [②U1] 会话语义：改月入暂存（dirty）→点工具组保存钮→批量落库失败=
-    // 行内错误+重试（退役行 4：chip→保存钮行内错误）
-    await expect(win.getByTestId('lineage-save-btn')).toBeEnabled()
+    // 写失败触发=[F-UIRES-03 C3] 改月写通道随改月链退役（INV-107）→月内
+    //   拖拽调序承载（同一 patch-node 失败面：reorder 落定入暂存→保存→
+    //   handler 已 patch 抛错→error 保存态）；[A3 F-CONTRACTA-01] 对话框
+    //   写通道同批退役（历史沿革）
+    const bBox = await nodeG(win, '脉络乙文献').boundingBox()
+    const aBox = await nodeG(win, '脉络甲文献').boundingBox()
+    if (bBox === null || aBox === null) throw new Error('调序双卡不可见')
+    await win.mouse.move(bBox.x + bBox.width / 2, bBox.y + bBox.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(aBox.x + aBox.width * 0.25, aBox.y + aBox.height / 2, { steps: 6 })
+    await expect(win.locator('.drag-slot:not(.cand)')).toHaveText('置 入', { timeout: 5_000 })
+    await win.mouse.up()
+    await expect(win.getByTestId('lineage-save-btn')).toBeEnabled({ timeout: 10_000 })
     await win.getByTestId('lineage-save-btn').click()
     const statusBar = win.getByTestId('lineage-save-error')
     await expect(statusBar).toBeVisible({ timeout: 10_000 })
@@ -886,17 +899,18 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .toBe(true)
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0)
 
-    // [②U6/退役行 7] 跨月=物理域回弹：拖乙（2020-06 框）落 2020-05 框→无 toast
-    // （INV-83 子句退役）+回弹原位（乙仍在原框、源月序不受染——no-op 零写）
+    // [②U6/退役行 7] 跨月=物理域回弹：拖乙（2020-06 框）落 2020-05 框→回弹
+    // 原位（乙仍在原框、源月序不受染——no-op 零写）。[F-UIRES-03 C3] 负锚
+    // 改写：历史「不能跨月拖动」toast 文案引用改月路径已随改月链退役
+    // （INV-107）——回弹护栏行为保持锁定+改月弹层零在场负锚（结构面）
     const bBox = await cardBox('脉络乙文献')
     const aBox2 = await cardBox('脉络甲文献')
     await win.mouse.move(bBox.x + bBox.width / 2, bBox.y + bBox.height / 2)
     await win.mouse.down()
     await win.mouse.move(aBox2.x + aBox2.width / 2, aBox2.y + aBox2.height / 2, { steps: 6 })
     await win.mouse.up()
-    await expect(
-      win.getByText('不能跨月拖动——请进入编辑模式，点卡片月标修改月份')
-    ).toHaveCount(0, { timeout: 3_000 })
+    await expect(win.getByTestId('month-pop')).toHaveCount(0, { timeout: 3_000 })
+    await expect(win.locator('.c-ym')).toHaveCount(0)
     await expect
       .poll(async () => await frameTitles(1), { timeout: 10_000 })
       .toEqual(['脉络乙文献'])
@@ -931,78 +945,6 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect
       .poll(async () => await frameTitles(0), { timeout: 10_000 })
       .toEqual(['脉络根文献', '脉络甲文献'])
-
-    await app.close()
-  })
-
-  /**
-   * T10=[T3-P8] 改月全流：edit→月标 .c-ym→month-pop（月份列表+篇数）→选月
-   * →toast 已移至+飞行落位→reload 持久 slot 尾部（服务端组变 max+1 归一）。
-   */
-  test('T10 改月全流：edit→月标→month-pop→选月→toast+reload 持久 slot 尾部', async () => {
-    test.slow()
-    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t10-'))
-    await firstHop(userData)
-    await seedLineagePapers(userData)
-    // 同月双卡+他月单卡（T9 同族——slot 显式=INV-75 组内全序，改月后 reload
-    // 组内序=服务端 max+1 归一可锚）
-    await seedLineageGraph(userData, {
-      nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
-        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 }
-      ],
-      edges: []
-    })
-
-    const app = await launch(userData)
-    const win = await app.firstWindow()
-    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-    await win.setViewportSize({ width: 1280, height: 860 })
-    await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
-
-    // edit 态：甲卡月标「2020.5」在场（CSS display:none↔block）→点击开弹层
-    await win.getByTestId('lineage-mode-edit').click()
-    const ym = nodeG(win, '脉络甲文献').locator('.c-ym')
-    await expect(ym).toHaveText('2020.5')
-    await ym.click()
-    const pop = win.getByTestId('month-pop')
-    await expect(pop).toBeVisible()
-    await expect(pop.locator('h4')).toHaveText('移 动 到 月 份')
-    await expect(pop.locator('.ws-item .nm').first()).toHaveText('2020 年 5 月')
-    await expect(pop.locator('.ws-item .ct').first()).toHaveText('2 篇')
-    // 当前月 on 态（dot ok 色）
-    await expect(pop.locator('.ws-item.on').first()).toHaveText(/2020 年 5 月/)
-    // 选 2020-06：toast+飞行落位（预演→settle→写落定真迁）
-    await pop.locator('.ws-item[data-ym="2020|6"]').click()
-    await expect(win.getByText('已移至 2020 年 6 月')).toBeVisible({ timeout: 10_000 })
-    await expect(pop).toHaveCount(0)
-    // data-node-id=UUID——标题映射序（同 T9）
-    const frameTitles = async (i: number): Promise<string[]> =>
-      await win.locator('.month-frame').nth(i).locator('.tl-card').evaluateAll(
-        (els, titles) =>
-          els.map((e) => titles.find((t) => (e.textContent ?? '').includes(t)) ?? ''),
-        ['脉络根文献', '脉络甲文献', '脉络乙文献']
-      )
-    await expect
-      .poll(async () => await frameTitles(1), { timeout: 10_000 })
-      .toEqual(['脉络乙文献', '脉络甲文献']) // slot 尾部（乙前甲后）
-    // 月标签计数随组迁移（5 月 1 篇/6 月 2 篇）——预演面即时
-    await expect(win.getByText('5 月 · 1 篇')).toBeVisible()
-    await expect(win.getByText('6 月 · 2 篇')).toBeVisible()
-    // 数据落定信号：.flash 高亮驻留至 store 回填对齐（预演清除=写已完成）
-    // ——reload 前必等（飞行 .32s+写错峰；preview 面早于此，裸 reload 丢写）
-    await expect(win.locator('.month-frame.flash')).toHaveCount(0, { timeout: 10_000 })
-    // [②U1] 会话语义：改月入暂存→点工具组保存钮批量落库
-    await win.getByTestId('lineage-save-btn').click()
-    await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
-
-    // reload 持久：甲仍在 2020-06 尾部（服务端组变 max+1 归一+lineageOrder）
-    await reloadToLineage(win)
-    await expect
-      .poll(async () => await frameTitles(1), { timeout: 10_000 })
-      .toEqual(['脉络乙文献', '脉络甲文献'])
 
     await app.close()
   })
@@ -1061,9 +1003,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-side-panel')).toContainText('Water Res.')
     await expect(win.getByTestId('lineage-side-panel')).toContainText('IF 11.2')
     await expect(win.getByTestId('lineage-side-panel')).toContainText('被引 17')
-    await expect(win.getByTestId('lineage-side-panel')).toContainText('双击卡片跳转阅读器')
+    // [F-UIRES-03 C3·v1.7] insp-foot 双击子句退役删（改月子句第一段已删——
+    // INV-107）；卡双击跳转链退役→负锚（dblclick 不跳）+两钮新入口承载
+    await expect(win.getByTestId('lineage-side-panel')).toContainText('编辑模式：调序 / 画线 / 调线')
     await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放')
     await cardA.dblclick()
+    await win.waitForTimeout(500) // 负向观察窗（错实现下跳转链 ~100ms 内切视图）
+    await expect(win.getByTestId('reader-aside')).toHaveCount(0)
+    await expect(cardA).toBeVisible() // 仍在脉络视图（双击退役负锚）
+    await cardA.hover()
+    await cardA.getByTestId('card-goto-reader').click()
     await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 15_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(cardA).toBeVisible({ timeout: 10_000 })
@@ -1345,14 +1294,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * 激活+候选槽族渲染）。冻结优先（§8.1.3）：拖中指针停住后冻结再断（cand
    * 槽 opacity .2s 过渡在场——几何虽不受 opacity 影响，冻结消时序依赖）。
    */
-  // [F-UIRES-03 T0 红证锚·预期失败包装]（vitest it.fails 语义的 playwright 手工
-  // 承载：本仓 quality 门禁占位标记字面量使 test. 后缀跳过标记不可用+
-  // test-surface skipSites 双向红使新增任何 skip 站点必红——两层机检与票面
-  // 字面互斥，机制探查实录申报见简报）。语义=缺陷在场锁定：强断言（槽位
-  // 命中）必抛→捕获即绿；C3 修复落地→强断言通过→外层 expect 自动转红
-  // （去标提醒=翻转直陈式）。当场红实录（包装前普通 test 实跑）：候选槽 0
-  // 左上角实测 (385.2,404.0)，距最近插入位 64.4px>容差 2px——候选位捕获自
-  // 布局过渡中期 rect 且不随布局稳定重算。
+  // [F-UIRES-03 C3 修复落地·去包装翻转直陈]（原 T0 承载=预期失败包装：强断言
+  // 必抛→捕获绿锁定缺陷在场；C3 症一修复=DragCandidates 布局稳定信号重捕获
+  // 落地——包装绊线红即翻转为直陈式，缺陷锁销项）。历史红实录（包装前普通
+  // test 实跑）：候选槽 0 左上角实测 (385.2,404.0)，距最近插入位 64.4px>容差
+  // 2px——候选位捕获自布局过渡中期 rect 且不随布局稳定重算。
   test('样板① 拖拽候选槽计数几何（图四症一实锚：C3 修复后去标转绿）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-s1-'))
@@ -1391,7 +1337,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 计数断言：候选槽族=源月框内其余卡数（甲+乙=2——「first 可见」不封计数）
     const cands = win.locator('.drag-slot.cand')
     await expect(cands).toHaveCount(2, { timeout: 5_000 })
-    // 几何断言（冻结优先——§8.1.3）：每槽宽高>0+全落源月框 boundingBox 内
+    // 几何断言（冻结优先——§8.1.3）：每槽宽高>0+落源月框 boundingBox 内
+    // **∪ 末位换行延伸域**（[C3 修复落地·口径补注] DragCandidates 末位候选
+    // 超框宽右界=换行首位（y=尾卡 bottom+20）——候选槽 absolute 不占流，
+    // 框不为其腾高=合法落在框下方一行延伸域；T0 时该候选捕获自过渡中期
+    // rect 位置恰在框内故未触发，症一修复后槽位=真值即显此口径缺口——下界
+    // 断言容许至「尾卡下+20+槽高」的换行延伸一行）
     const restore = await freezeAnimations(win)
     const frameBox = await win.locator('.month-frame[data-frame-key="2020|5"]').boundingBox()
     if (frameBox === null) throw new Error('源月框不可见：2020|5')
@@ -1402,6 +1353,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       })
     )
     expect(boxes.length).toBe(2)
+    // 末卡下界（换行延伸域锚——expected 同源式：尾卡 bottom+20）
+    const lastBottom = await win.evaluate((frameKey) => {
+      const frame = document.querySelector(`.month-frame[data-frame-key="${frameKey}"]`)
+      if (!(frame instanceof HTMLElement)) return null
+      const others = Array.from(frame.querySelectorAll('.tl-card[data-node-id]:not(.dragging)'))
+      const last = others[others.length - 1]
+      return last === undefined ? null : last.getBoundingClientRect().bottom
+    }, '2020|5')
+    if (lastBottom === null) throw new Error('其余卡不可见：2020|5')
     // ±0.5=浮点边界容差（框内判定的 box 边界比较残差——包含类断言，非
     // expectRectNear 语义；出处=RR1-2 口径单源边界声明）
     for (let i = 0; i < boxes.length; i++) {
@@ -1411,7 +1371,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       expect(b.x, `候选槽 ${i} 左界落源框内`).toBeGreaterThanOrEqual(frameBox.x - 0.5)
       expect(b.y, `候选槽 ${i} 上界落源框内`).toBeGreaterThanOrEqual(frameBox.y - 0.5)
       expect(b.x + b.w, `候选槽 ${i} 右界落源框内`).toBeLessThanOrEqual(frameBox.x + frameBox.width + 0.5)
-      expect(b.y + b.h, `候选槽 ${i} 下界落源框内`).toBeLessThanOrEqual(frameBox.y + frameBox.height + 0.5)
+      expect(
+        b.y + b.h,
+        `候选槽 ${i} 下界落源框内∪末位换行延伸域（框底 ${(frameBox.y + frameBox.height).toFixed(1)} / 延伸底 ${(lastBottom + 20 + b.h).toFixed(1)}+边框 2px 容差）`
+      ).toBeLessThanOrEqual(Math.max(frameBox.y + frameBox.height, lastBottom + 20 + b.h) + 2)
     }
     // 槽位语义断言（自裁扩展——用户三轮澄清语义「月份框内部显示候选阵列
     // **位置**」+DragCandidates 契约「候选 k=插入 others[k] 前→槽位=该卡
@@ -1436,32 +1399,155 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       return [...ob.map((b) => ({ x: b.x, y: b.y })), ...tail]
     }, '2020|5')
     if (expected === null) throw new Error('源月框不可见：2020|5')
-    // [预期失败包装区]——仅槽位命中断言入包装（缺陷在场必抛=捕获绿；修复后
-    // 通过=外层红提醒去标）。infra 缺位（上方 throw/evaluate 异常）不入包装
-    // ——穷尽必红，禁被包装吞成假绿。
-    let slotOriginThrew = false
-    try {
-      for (let i = 0; i < boxes.length; i++) {
-        const b = boxes[i]!
-        const hit = expected.find(
-          (e) => Math.abs(e.x - b.x) <= 2 && Math.abs(e.y - b.y) <= 2
-        )
-        expect(
-          hit !== undefined,
-          `候选槽 ${i} 左上角 (${b.x.toFixed(1)}, ${b.y.toFixed(1)}) 未命中任何插入位（其余卡稳定槽位∪末位派生位=${JSON.stringify(expected.map((e) => [e.x, e.y]))}——陈旧几何/错位实锤，容差 2px）`
-        ).toBe(true)
-        if (hit !== undefined) expected.splice(expected.indexOf(hit), 1) // 单射——两槽不共位
-      }
-    } catch {
-      slotOriginThrew = true
+    // [C3 修复落地] 槽位命中断言直陈（原预期失败包装已翻转——DragCandidates
+    // 稳定重捕获修复后必绿；再红=陈旧几何回归）
+    for (let i = 0; i < boxes.length; i++) {
+      const b = boxes[i]!
+      const hit = expected.find(
+        (e) => Math.abs(e.x - b.x) <= 2 && Math.abs(e.y - b.y) <= 2
+      )
+      expect(
+        hit !== undefined,
+        `候选槽 ${i} 左上角 (${b.x.toFixed(1)}, ${b.y.toFixed(1)}) 未命中任何插入位（其余卡稳定槽位∪末位派生位=${JSON.stringify(expected.map((e) => [e.x, e.y]))}——陈旧几何/错位实锤，容差 2px）`
+      ).toBe(true)
+      if (hit !== undefined) expected.splice(expected.indexOf(hit), 1) // 单射——两槽不共位
     }
-    expect(
-      slotOriginThrew,
-      '槽位命中强断言全通过=候选槽陈旧几何缺陷已修复（C3 已落地）——去本例预期失败包装，翻转直陈式断言销项'
-    ).toBe(true)
     await restore()
     await win.mouse.up()
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
+    await app.close()
+  })
+
+  /**
+   * [F-UIRES-03 C3] 插入位多样性（设计稿 §8.1.1 第三强制——症二「只能放到
+   * 已有的第一个插入位上」的联动验证例；样板①联动=同一驱动链不同断言面）。
+   * 3 卡同月组拖根卡，指针依次落**两个不同插入区**（乙右半=插位 2 / 甲左半
+   * =插位 0），各断言实态槽（.drag-slot:not(.cand)）的 DOM 位置随插位真实
+   * 变化（previousElementSibling/nextElementSibling 序）——恒首位（症二形态）
+   * 即红。insertIdx 更新链核验=pointermove 逐帧重算（card-drag-session
+   * onMove→insertIndexFromRects——其余卡实时 rect 派生）+占位槽腾位后的
+   * 推挤反馈循环；本例以行为断言封「几何失效恒 0」面。
+   */
+  test('插入位多样性：拖中≥2 个不同插入区各断言实态槽位置/序变化（图四症二联动验证）', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c3-idx-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 5, slot: 3 }
+      ],
+      edges: []
+    })
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1000, height: 800 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    const cardB = nodeG(win, '脉络乙文献')
+    const slot = win.locator('.drag-slot:not(.cand)')
+    /** 实态槽前后邻卡题名（序断言载体——DOM 序即插入位） */
+    const slotNeighbors = async (): Promise<{ prev: string; next: string }> =>
+      await slot.evaluate((el) => {
+        const title = (e: Element | null): string =>
+          e === null ? '' : (e.textContent ?? '').replace(/\s+/g, '')
+        return { prev: title(el.previousElementSibling), next: title(el.nextElementSibling) }
+      })
+    const rb = await root.boundingBox()
+    const ab = await cardA.boundingBox()
+    const bb = await cardB.boundingBox()
+    if (rb === null || ab === null || bb === null) throw new Error('卡不可见')
+    await win.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+    await win.mouse.down()
+    // 插入区一：乙右半（指针 x>乙中心）→插位=乙后=组末（实态槽 prev=乙）
+    await win.mouse.move(bb.x + bb.width * 0.75, bb.y + bb.height / 2, { steps: 6 })
+    await expect(slot).toHaveText('置 入', { timeout: 5_000 })
+    const n1 = await slotNeighbors()
+    expect(n1.prev, '插入区一（乙右半）实态槽应在乙之后（插位=组末）').toContain('脉络乙文献')
+    // 插入区二：甲左半（指针 x<甲中心）→插位=甲前（实态槽 next=甲——序变化断言）
+    await win.mouse.move(ab.x + ab.width * 0.25, ab.y + ab.height / 2, { steps: 6 })
+    const n2 = await slotNeighbors()
+    expect(n2.next, '插入区二（甲左半）实态槽应在甲之前（插位=首位——与插入区一序不同）').toContain('脉络甲文献')
+    await win.mouse.up()
+    await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
+    await app.close()
+  })
+
+  /**
+   * [F-UIRES-03 C3·v1.7] 卡面两钮（卡双击退役的显式入口——用户裁决）：
+   * ①布局回归=hover 卡→按钮行可见+两钮同行排列（y 差≤1+左库右读序）+落卡
+   * bbox 内；②「去文献库」=library 视图+所在文件夹过滤+该文选中态（aria-
+   * current）；③「去阅读器」=reader 视图（reader-aside 特征）+PDF 文本层
+   * 装载（KNOWN_TEXT 可见——文档装载证明）；④编辑态收钮避让=edit 态钮恒隐。
+   */
+  test('C3 卡面两钮：hover 呈现+同行布局+去文献库（夹过滤+选中）+去阅读器（文本层装载）', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c3-btn-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 根归夹（去文献库=文件夹过滤面）/甲主图（真实 PDF——去阅读器文本层锚）
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1, folderId: 'e2e-lg-folder' },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
+      ],
+      edges: [],
+      folders: [{ id: 'e2e-lg-folder', name: '水处理' }]
+    })
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    // 归夹根节点不在主图（每图只显示自身）——先文献库选夹（folderScope 置夹，
+    // FolderNav 行点击=既有产品路径）再进脉络（挂载缺省图=folderScope 同步）
+    await win.locator('.lib-fn-row').filter({ hasText: '水处理' }).click()
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    const root = nodeG(win, '脉络根文献')
+    // ④编辑态收钮避让（机制=CSS .timeline.editing 恒隐——交互期按钮区不扰）
+    await win.getByTestId('lineage-mode-edit').click()
+    await root.hover()
+    await expect(root.getByTestId('card-goto-library')).toBeHidden()
+    await win.getByTestId('lineage-mode-browse').click()
+    // ①布局回归：hover→按钮行可见+两钮同行+落卡 bbox 内（排列整齐断言）
+    await root.hover()
+    const libBtn = root.getByTestId('card-goto-library')
+    const readBtn = root.getByTestId('card-goto-reader')
+    await expect(libBtn).toBeVisible()
+    await expect(readBtn).toBeVisible()
+    await expect(libBtn).toHaveText('去文献库')
+    await expect(readBtn).toHaveText('去阅读器')
+    const rb = await root.boundingBox()
+    const lb = await libBtn.boundingBox()
+    const pb = await readBtn.boundingBox()
+    if (rb === null || lb === null || pb === null) throw new Error('卡/钮不可见')
+    expect(Math.abs(lb.y - pb.y), '两钮同行排列（y 差≤1）').toBeLessThanOrEqual(1)
+    expect(lb.x, '左库右读序（去文献库在左）').toBeLessThan(pb.x)
+    expect(lb.x, '钮行落卡 bbox 内（左界）').toBeGreaterThanOrEqual(rb.x)
+    expect(pb.x + pb.width, '钮行落卡 bbox 内（右界）').toBeLessThanOrEqual(rb.x + rb.width)
+    // ②去文献库：library 视图+夹过滤（根行在场/甲行不在——甲未归夹）+选中态
+    await libBtn.click()
+    await expect(win.locator('.lib-row', { hasText: '脉络根文献' })).toBeVisible({ timeout: 10_000 })
+    await expect(win.locator('.lib-row', { hasText: '脉络甲文献' })).toHaveCount(0)
+    await expect(win.locator('.lib-row', { hasText: '脉络根文献' })).toHaveAttribute('aria-current', 'true')
+    // ③去阅读器（甲卡——甲归主图）：清夹（「全部文献」导航行=folderScope 清，
+    // 既有产品路径）→返脉络（缺省图回主图——甲在场）→甲卡钮→reader 文本层装载
+    await win.locator('.lib-fn-row').filter({ hasText: '全部文献' }).click()
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const cardA = nodeG(win, '脉络甲文献')
+    await expect(cardA).toBeVisible({ timeout: 10_000 })
+    await cardA.hover()
+    await cardA.getByTestId('card-goto-reader').click()
+    await expect(win.getByTestId('reader-aside')).toBeVisible({ timeout: 20_000 })
+    await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
     await app.close()
   })
 
@@ -1474,10 +1560,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * （card-drag-session onMove 激活段：卡 inline position:absolute+left/top——
    * 无独立 fixed 影元素）。zoom 矩阵 {0.8,1.0,1.5} 经 zoomProbe（超票面扩面
    * 自裁申报）。settle 清场信号（§8.1.5：inline 清空=T9 先例）隔档。
-   * **RR1 实跑态=绝对锚三档全红（预期失败包装承载——激活期恒定错位实锤，
-   * 图四「向右下漂移」正身：包含块=.month-frame 非 .tl-content，frame 原点
-   * 双计；跟随采样自指吸收常数仍绿=跟随不变性真、基准错位）**。C3 修复后
-   * 外层绊线红提醒去包装翻转直陈。
+   * **[C3 修复落地·直陈]**（原 T0 预期失败包装已翻转——甲案=containing-block
+   * 对齐+hostOffset 补偿后绝对锚必绿）；测量口径=transform 中和法（border box
+   * 域——ghost bbox 含 rotate(2deg) scale(1.05) 偏差 ~4px/轴，中和消除，无
+   * CSS 硬编码）。两轴残差对账（DoD D）：修复后两轴并测非单轴。
    */
   test('样板② 拖影偏移恒定+dragstart 偏移绝对锚（图四漂移实锚：C3 修复后去包装翻转直陈）', async () => {
     test.slow()
@@ -1511,45 +1597,47 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         await win.mouse.move(sx, sy)
         await win.mouse.down()
         await win.mouse.move(sx + 9, sy + 7, { steps: 3 }) // 过 5px 阈值激活
-        // dragstart 偏移基准：指针−卡角（激活后首采样——ghost=拖卡自身）
+        // dragstart 偏移基准：指针−卡角（激活后首采样——ghost=拖卡自身）。
+        // [C3 甲案落地·测量口径] ghost bbox 含 .tl-card.dragging 的 transform
+        // （rotate(2deg) scale(1.05)——bbox 左上≠border box 左上，偏差 ~4px/轴）
+        // ——锚定口径=transform 中和法：evaluate 内暂清 transform 读 border box
+        // 角（同帧恢复；拖拽期 transition='none' 在场，无过渡副作用），偏移与
+        // 期望两侧同 border box 域对账（无 CSS 硬编码常量——形态变不须改此断言）
         const g0 = await root.boundingBox()
         if (g0 === null) throw new Error(`拖影不可见（zoom=${z}）`)
-        const offX = sx + 9 - g0.x
-        const offY = sy + 7 - g0.y
+        const unshifted = await root.evaluate((el) => {
+          const prev = el.style.transform
+          el.style.transform = 'none'
+          const ub = el.getBoundingClientRect()
+          el.style.transform = prev
+          return { x: ub.x, y: ub.y }
+        })
+        const offX = sx + 9 - unshifted.x
+        const offY = sy + 7 - unshifted.y
         // [RR1-1] 偏移绝对锚对账（自指防线：offX/offY 从激活后 ghost 反解，实现
         // 若激活即丢抓取偏移[ox=0 形]则反解恒吸收系统偏差→后续采样全绿假绿）。
-        // 绝对锚=pointerdown−down 前卡角（card-drag-session.ts:154
+        // 绝对锚=pointerdown−down 前卡角（card-drag-session 激活帧
         // s.ox=(s.sx−r.left)/z 同源；zoom 不变三档同式成立——k1 席推演）。
         // 容差 1px=亚像素+DPR 残差（设计稿 §2 C3 DoD「|ghost 角−（指针−偏移）|
         // ≤1px」同款口径）。
-        // [预期失败包装·RR1 红证]三档实测全红（T0 批实录）：dOffX=−50.49/
-        // −63.12/−94.68、dOffY=−54.38/−67.98/−101.96（z=0.8/1.0/1.5）——与
-        // 源月框原点屏偏移（52.8/66/99 px）同量级=**激活期恒定错位实锤**：
-        // 拖卡 inline left/top 按内容坐标（.tl-content 基准）数学正确，但包含
-        // 块=position:relative 的 .month-frame（theme-lineage.css:55）——frame
-        // 原点偏移被双计，拖起瞬间卡向右下跳（图四「向右下漂移」正身）。跟随
-        // 采样（下方直陈段）因 offX 自指吸收常数仍绿——绝对锚才是漂移真域
-        // 载体。C3 修复（含 containing-block 对齐）后内层必过→外层红提醒去
-        // 包装翻转直陈。infra 缺位（上方 throw/evaluate 异常）不入包装。
-        let anchorThrew = false
-        try {
-          expect(
-            Math.abs(offX - (sx - rb.x)),
-            `zoom=${z} offX 绝对锚对账：实测 ${offX.toFixed(1)} vs 期望 ${sx - rb.x}（pointerdown−down 前卡角）`
-          ).toBeLessThanOrEqual(1)
-          expect(
-            Math.abs(offY - (sy - rb.y)),
-            `zoom=${z} offY 绝对锚对账：实测 ${offY.toFixed(1)} vs 期望 ${sy - rb.y}（pointerdown−down 前卡角）`
-          ).toBeLessThanOrEqual(1)
-        } catch {
-          anchorThrew = true
-        }
+        // [C3 修复落地·直陈]（原预期失败包装已翻转）历史红实录（T0 批）：dOffX=
+        // −50.49/−63.12/−94.68、dOffY=−54.38/−67.98/−101.96（z=0.8/1.0/1.5）——
+        // 与源月框原点屏偏移同量级=激活期恒定错位实锤：拖卡 inline left/top 按
+        // 内容坐标（.tl-content 基准）数学正确，但包含块=position:relative 的
+        // .month-frame——frame 原点双计，拖起瞬间卡向右下跳（图四「向右下漂移」
+        // 正身）。C3 甲案（containing-block 对齐+hostOffset 补偿）后必绿；再红=
+        // 包含块错位回归。
         expect(
-          anchorThrew,
-          `zoom=${z} 绝对锚对账通过=拖影激活期恒定错位已修复（C3 已落地）——去本包装翻转直陈式断言销项`
-        ).toBe(true)
+          Math.abs(offX - (sx - rb.x)),
+          `zoom=${z} offX 绝对锚对账：实测 ${offX.toFixed(1)} vs 期望 ${sx - rb.x}（pointerdown−down 前卡角；border box 域=transform 中和口径）`
+        ).toBeLessThanOrEqual(1)
+        expect(
+          Math.abs(offY - (sy - rb.y)),
+          `zoom=${z} offY 绝对锚对账：实测 ${offY.toFixed(1)} vs 期望 ${sy - rb.y}（pointerdown−down 前卡角；border box 域=transform 中和口径）`
+        ).toBeLessThanOrEqual(1)
         // ≥2 个不同位置采样：|ghost 角−(指针−偏移)|≤1px（两轴各断；容差 1px=
-        // 设计稿 §2 C3 DoD 字面「|ghost 角−（指针−偏移）|≤1px」）
+        // 设计稿 §2 C3 DoD 字面「|ghost 角−（指针−偏移）|≤1px」；同 border box
+        // 域——bbox 偏移常数在差分中消除，此处直接 bbox 采样等价）
         for (const [dx, dy] of [
           [70, 24],
           [-46, 68]
@@ -1559,13 +1647,21 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
           await win.mouse.move(px, py, { steps: 4 })
           const g = await root.boundingBox()
           if (g === null) throw new Error(`拖影不可见（zoom=${z} 位移 ${dx},${dy}）`)
+          const tOff = await root.evaluate((el) => {
+            const prev = el.style.transform
+            el.style.transform = 'none'
+            const ub = el.getBoundingClientRect()
+            el.style.transform = prev
+            const bb = el.getBoundingClientRect()
+            return { x: ub.x - bb.x, y: ub.y - bb.y }
+          })
           expect(
-            Math.abs(g.x - (px - offX)),
-            `zoom=${z} 位移(${dx},${dy}) 拖影 x：实测 ${g.x} vs 期望 ${px - offX}（漂移容差 1px=设计稿 §2 C3 DoD 字面）`
+            Math.abs(g.x + tOff.x - (px - offX)),
+            `zoom=${z} 位移(${dx},${dy}) 拖影 x：实测 ${(g.x + tOff.x).toFixed(1)} vs 期望 ${px - offX}（border box 域；漂移容差 1px=设计稿 §2 C3 DoD 字面）`
           ).toBeLessThanOrEqual(1)
           expect(
-            Math.abs(g.y - (py - offY)),
-            `zoom=${z} 位移(${dx},${dy}) 拖影 y：实测 ${g.y} vs 期望 ${py - offY}（漂移容差 1px=设计稿 §2 C3 DoD 字面）`
+            Math.abs(g.y + tOff.y - (py - offY)),
+            `zoom=${z} 位移(${dx},${dy}) 拖影 y：实测 ${(g.y + tOff.y).toFixed(1)} vs 期望 ${py - offY}（border box 域；漂移容差 1px=设计稿 §2 C3 DoD 字面）`
           ).toBeLessThanOrEqual(1)
         }
         await win.mouse.up()

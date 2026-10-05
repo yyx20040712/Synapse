@@ -162,8 +162,8 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(host?.textContent).not.toContain(retiredHeading)
     expect(host?.querySelectorAll('.note-card').length).toBe(0)
     expect(q('.insp-foot')?.textContent).toBe(
-      '双击卡片跳转阅读器 · 编辑模式：改月 / 调序 / 画线 / 调线'
-    )
+      '编辑模式：调序 / 画线 / 调线'
+    ) // [F-UIRES-03 C3] 改月子句随改月链退役删（INV-107）；双击子句随卡双击链退役删（v1.7——入口=卡面「去阅读器」钮）
   })
 
   it('既有 testid 面全保活：meta/ai-notes/manual-note（[A3] idea 面退役出集）+[B2] fragments 面；主题节点空态零变+无后置章', async () => {

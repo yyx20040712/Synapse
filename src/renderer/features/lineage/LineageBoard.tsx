@@ -90,8 +90,10 @@ import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBo
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
   selectedNodeId?: string | null
-  /** [F-LGRAPH-01②U4/A6] 卡双击=跳阅读器（Page 编排→OPEN_PAPER_EVENT 总线） */
-  onNodeDblClick?: (nodeId: string) => void
+  /** [F-UIRES-03 C3·v1.7] 卡面两钮编排上抛（Page 承接——library.store 预置+
+   *  总线广播；[F-LGRAPH-01②U4/A6] onNodeDblClick 卡双击链随 v1.7 退役删除） */
+  onCardGotoLibrary?: (paperId: string | null, folderId: string) => void
+  onCardGotoReader?: (paperId: string) => void
 }): JSX.Element {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
@@ -132,13 +134,13 @@ export function LineageBoard(props: {
         selectedNodeId={props.selectedNodeId ?? null}
         contextNodeId={menu?.node.id ?? null}
         onNodeClick={handleNodeClick}
-        onNodeDblClick={props.onNodeDblClick}
         onNodeContextMenu={(id, anchor) => {
           const node = nodes.find((n) => n.id === id)
           if (node !== undefined) setMenu({ node, anchor })
         }}
+        onCardGotoLibrary={props.onCardGotoLibrary}
+        onCardGotoReader={props.onCardGotoReader}
         onReorderMonthSlots={(ids) => store().reorderMonthSlots(ids)}
-        onMoveNodeMonth={(id, year, month) => store().moveNodeMonth(id, year, month)}
       />
 
       {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink

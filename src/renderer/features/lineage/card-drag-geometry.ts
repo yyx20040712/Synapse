@@ -6,7 +6,6 @@
  * 行为零变；纯函数无 DOM 状态——直测面=lineage-card-drag.test 纯函数组）。
  */
 import type { LineageNode } from '@shared/models/lineage'
-import type { TimelineYearGroup } from './lineage-timeline'
 
 /** 卡几何最小面（insertIndexFromRects 输入——纯函数可直测） */
 export interface CardRect {
@@ -35,18 +34,10 @@ export function insertIndexFromRects(rects: readonly CardRect[], px: number, py:
   return idx
 }
 
-/** 源月组全序 id（groups 派生——渲染序单源；组缺省防御=nodes 过滤序） */
-export function srcGroupIdsOf(
-  groups: readonly TimelineYearGroup[],
-  nodes: readonly LineageNode[],
-  srcKey: string
-): string[] {
+/** 源月组全序 id（nodes 过滤序——组内序=nodes 序单源 INV-75；[F-UIRES-03 C3]
+ *  groups 派生路随改月链退役收窄为单路（groups 与 nodes 过滤序等价） */
+export function srcGroupIdsOf(nodes: readonly LineageNode[], srcKey: string): string[] {
   const [ys, ms] = srcKey.split('|')
-  const g = groups.find(
-    (gr) => String(gr.year) === ys && gr.months.some((m) => String(m.month) === ms)
-  )
-  const monthGroup = g?.months.find((m) => String(m.month) === ms)
-  if (monthGroup !== undefined) return monthGroup.nodes.map((n) => n.id)
   const year = ys === 'null' ? null : Number(ys)
   const month = ms === 'null' ? null : Number(ms)
   return nodes.filter((n) => n.year === year && n.month === month).map((n) => n.id)

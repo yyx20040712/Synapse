@@ -47,7 +47,6 @@ const req = (sel: string): Element => {
 const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`) as HTMLElement
 
 const reorder = vi.fn()
-const moveMonth = vi.fn()
 const onNodeClick = vi.fn()
 
 function mount(): void {
@@ -61,7 +60,6 @@ function mount(): void {
         edges={[]}
         onNodeClick={onNodeClick}
         onReorderMonthSlots={reorder}
-        onMoveNodeMonth={moveMonth}
       />
     )
   })
@@ -103,7 +101,6 @@ function stubRect(el: Element, x: number, y: number, w = 128, h = 72): void {
 beforeEach(() => {
   toastStoreSpy.mockClear()
   reorder.mockClear()
-  moveMonth.mockClear()
   onNodeClick.mockClear()
   useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
 })
