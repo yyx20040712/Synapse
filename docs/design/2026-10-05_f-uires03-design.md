@@ -64,14 +64,20 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
 ### B3 阅读器保存按钮（状态机补格=F1 终裁方案）
 - 四态钮（dirty=主色「保存」可点/saving=禁 spinner/clean=灰暗「已保存」
   /error=红描边「重试」可点）；点击=清防抖+立即落盘。
-- **状态机（F1 闭合）**：clean+输入→dirty（启防抖 T）；dirty+T 到或点击
-  →saving（点击先清 T）；**saving+输入→saving∧pending（新输入暂存
-  编辑缓冲，不覆盖在途保存载荷——语义同既有「保存进行中再编辑」防线：
-  旧保存成功不误清新编辑）**；saving+成功→（pending? dirty 启新防抖 T：
-  clean）；saving+失败→error∧pending 保持；error+输入→dirty∧清 pending；
-  error+点击→saving（载荷=pending 合并态）。**切换文献/面板/重载×
-  dirty/saving 跨格序列=沿用 A2 批既有防线语义**（基线七用例在档），
-  本单元只验证不重写〔F11〕。
+- **状态机（F1 闭合+delta-W1/W2 补）**：clean+输入→dirty（启防抖 T）；
+  dirty+T 到或点击→saving（点击先清 T）；**saving+输入→saving∧pending
+  （新输入暂存编辑缓冲，不覆盖在途保存载荷）**；saving+成功→若 pending
+  存在：编辑态=pending 合并态转 dirty（启新防抖 T）**且 pending 清除
+  （消费时点一）**；否则 clean；saving+失败→error∧pending 保持；
+  error+输入→dirty∧清 pending；error+点击→saving（**载荷=pending 合并
+  态且 pending 清除——消费时点二**）。
+  **卸载面机制句（delta-W2b 必闭合）**：切换文献/关闭面板/组件卸载/
+  应用退出时——pending∧saving 在途→等待在途完成后以 pending 合并态
+  立即落盘（复刻既有补存语义）；pending∧error→卸载前以 pending 合并态
+  立即重试落盘一次；两路径均无落盘通道即实现期阻断级缺陷。**新增序列
+  用例**（pending 维×切走切回/关面板/退出三族）进 B3 票面（受锁豁免
+  登记——delta-W2a 构造性覆盖：既有七用例写于 pending 维之前，构造上
+  不含新维序列，不得以「只跑既有例」替代）。
 - StatusBar 全局「已保存」：**主控自裁保留不动**（与阅读器钮语义分层：
   全局指示 vs 主动作钮；如欲退役另立票——审核⑥）。
 
@@ -93,7 +99,10 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
   调序 · 画线＝点两卡连边」）。
 - **保留**：DragCandidates 月内候选槽+月内 slot 调序+reorderMonthSlots
   写链+其 undo；图四「候选槽不显示/只能放第一个」两症随跨月路径消亡
-  （不修而删）。
+  （不修而删）。**DoD 附核对清单（delta-N1）：保留面引用 grep 被删符号
+  全零命中**——onMoveNodeMonth 三链路（useCardDrag 回调/store action/
+  IPC 通道）调用点逐一核对月内提交路径（reorderMonthSlots）确不经被删
+  链；undo 栈=内存会话态（实现时核——若跨会话持久化另立兼容面呈报）。
 - 漂移修复=**甲案（主控自裁）**：dragstart 记录「指针−卡角」偏移，
   ghost 全程画布坐标系定位（根除 fixed/zoom 换算链——INV-96 族）。
   e2e=zoom 0.8/1.0/1.5 三档 |ghost 角−（指针−偏移）|≤1px（测量口径=
@@ -106,22 +115,31 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
   paletteFor∈{null,solid,dashed}（**kind 归属维——F2 补**）；anchor∈
   {none,picked(nodeId)}。
   迁移全表：
-  - select+点 solid/dashed 图标→draw-X（paletteFor 不变）；
-  - **draw-X+点另一 kind 图标→draw-Y（kind 切换——F3 补）**；
+  - select+点 solid/dashed 图标→draw-X（**paletteFor 归 null——切模式即
+    收板，delta-W5：防「虚线模式开实线色板」错位态；色板渲染归属=
+    paletteFor 指向 kind 的锚槽，错位态根除**）；
+  - **draw-X+点另一 kind 图标→draw-Y 且 paletteFor 归 null（delta-W5）**；
   - draw-X+再点同图标=**无操作（用户裁决「两击退出取消」——非双击
     退出，口径注明〔N9〕）**；
-  - 任意 mode+点 kind K 展开钮→paletteFor=K（**toggle：再点同钮/
-    点外部/Esc→paletteFor=null——F4 零副作用关闭三径**）；
+  - 任意 mode+点 kind K 展开钮→paletteFor=K（toggle：再点同钮→null）；
   - paletteFor=K+点色行→paletteFor=null+写 currentLineColor[K]+自动
-    收起；**画线中（anchor≠none）开色板=保持 anchor 不动（色板只预置
-    下一根边色，不改动在途连线——F4 并发语义定稿）**；
+    收起；**在途取色 latch 时点=commit 读（delta-W4 定稿）：建边公式
+    color=currentLineColor[X] 以提交时当前值为准——「预置下一根边色」
+    语义=在途未落连线跟随当前色，已落边（已入库）色不可变；原「不改
+    在途连线」表述废止**；
+  - **点外部→paletteFor=null 且该次点击不吞（事件正常路由——点卡=锚选
+    /点空白=平移，关板为伴随效果；范围=色板 DOM 与展开钮外全域，
+    delta-W3b）**；
+  - **Esc 分层退出（delta-W3a，沿 popover＞picker 优先序先例）：
+    paletteFor≠null 时 Esc 只关板（→null）；paletteFor=null 时 Esc=
+    退画线（→select）**；
   - draw-X+点卡 A→anchor=picked(A)（**禁开详情——裁决 11a**）；
   - picked(A)+点卡 B≠A→建边（type=X，color=currentLineColor[X]）→
     anchor=none，**保持 draw-X 连画（主控自裁=拟稿推荐③，连续画线
     是画布工具常态）**；
   - picked(A)+点 A→anchor=none；
-  - draw-X+小手钮或 Esc→select（**Esc 保留=主控自裁，标准键位与
-    小手钮并存——审核⑧**）。
+  - draw-X+小手钮或 Esc（paletteFor=null 时）→select（**Esc 保留=主控
+    自裁，标准键位与小手钮并存——审核⑧**）。
   - 跨格序列 e2e 全断言：点展开钮→paletteFor=solid（aria）→点色行
     →paletteFor=null+图标描边新色→点图标→draw-solid→点卡1→锚高亮
     **且详情未开**→点卡2→边落新色→**再点卡3/卡4 连画第二边**→Esc→
@@ -143,10 +161,13 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
 - 锚点形态=**四边中点静态锚（主控自裁=甲案——几何可机检）**：armed 或
   hover 卡时四边中点渲染圆点（直径 **8 画布 px**，fill #fff，stroke 1.5
   画布 px 主色——**画布坐标系随 zoom 缩放**）。
-- **单位域定稿（F8）**：±6 **屏幕 px**=吸附判定域（现状判定不动——
-  用户手指/鼠标实际距离）；高亮放大至 12 屏幕px+高亮环；预览线端点=
-  锚心（画布坐标）。zoom 换算单点=吸附判定处（屏幕域 anchor 位置=
-  画布锚心×zoom+pan）。
+- **单位域定稿（F8+delta-N3 三数值一行列全）**：±6 **屏幕 px**=吸附
+  判定域（现状判定不动）；锚点 8 **画布 px** 渲染（随 zoom 缩放）；高亮
+  放大至 12 **屏幕 px**+高亮环；预览线端点=锚心（画布坐标）。zoom 换算
+  单点=吸附判定处（屏幕域 anchor 位置=画布锚心×zoom+pan）。e2e 测量
+  断言原文（DoD 直引，防非确定失败立案线消耗）：`Math.abs(rect.left +
+  rect.width / 2 - expectAnchorCenterX) <= 1`（rect=page.evaluate 取
+  getBoundingClientRect 后按 devicePixelRatio 取整）。
 - e2e 三档 zoom（0.8/1.0/1.5）：①|渲染锚心−几何中点|≤1px；②**高亮
   出现↔落点吸附一致**（高亮态下落边，端点坐标=锚心±0.5px——封「看
   到高亮点不中」复归）；③入域/出域类名切换。
@@ -177,10 +198,13 @@ e2e 同文件与 C 冲突，以 B4 先行冻结字面量、C2 障碍几何在 B4
 - **呈用户裁（实施前需答复）**：①深蓝值（#1e3a8a 推荐/#27408b/
   #0b2a6f——影响迁移不可逆面）；②建边后保持 armed 连画（主控推荐=
   保持连画，若用户偏好画一根即回 select 则改）。
-- 主控自裁留痕（低风险形态项）：per-kind localStorage/色点阵=
-  TAG_COLOR_PRESETS+默认点/侧栏 48px 图标条/StatusBar 保留/锚四边中点
-  静态/Esc 退出保留/色板关闭三径 toggle+画线中开板不改在途线/漂移修复
-  甲案/draw-X 点另一 kind=切换。
+- 主控自裁留痕（低风险形态项，**共 8 条**——delta-N2 计数口径统一；
+  均带「用户可否决」注记，否决即回呈重裁）：①per-kind 色持久化=
+  localStorage 双键；②色点阵=TAG_COLOR_PRESETS 8 色+默认点；③侧栏
+  收起=48px 图标窄条；④StatusBar 全局已保存保留；⑤锚形态=四边中点
+  静态（可见交互模型——用户否决可回呈动态方向锚）；⑥Esc 退出保留+
+  色板关闭三径 toggle+Esc 分层退出；⑦漂移修复=甲案（偏移全程画布
+  坐标系）；⑧draw-X 点另一 kind 图标=切换 draw-Y 且收板。
 
 ## §6 纪律流程（F10 展开——各单元 DoD 固定项）
 - 受锁面（tests/shared/migrations）变更：locks:unlock→改→locks:apply
