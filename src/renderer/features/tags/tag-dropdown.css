@@ -1,0 +1,289 @@
+/**
+ * [F-UIRES-03 B1 2026-10-05] tag-dropdown.css —— 标签下拉（TagDropdown）域
+ * 样式（自 library-explorer.css 分域拆件[CSS 450 上限]；TagDropdown.tsx 消费）。
+ * B1 批形态：头=全选框三态+删除 danger 钮；行常态=[勾选框][椭圆 chip][mono
+ * 计数][「编辑」钮]；行编辑态=input+保存钮+色点阵；脚=清空已选。TagColorPopover
+ * 行内色板族（.lib-dd-pop*）与名称区/色点框（.lib-dd-nm*/.lib-dd-dot）随批退役。
+ */
+/* ── 标签下拉（TagDropdown——F-UIRES-03 B1 批：头=全选+删除/行=chip+编辑钮）── */
+.lib-dd { position: relative; display: inline-flex; flex: none; }
+.lib-dd-btn {
+  font-size: var(--fs-body);
+  padding: 6.5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--panel);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 400;
+}
+.lib-dd-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; }
+.lib-dd-btn-n {
+  font-family: var(--mono);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: var(--fs-micro);
+}
+.lib-dd-btn-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.lib-dd-btn:focus-visible { outline: 1px solid var(--accent); }
+.lib-filter-spacer { flex: 1; min-width: 8px; }
+/* 面板（240px：头=全选框三态+删除钮/列表 max 320px 滚动+渐隐/脚=清空已选） */
+.lib-dd-veil { position: fixed; inset: 0; z-index: var(--z-pop-veil); }
+.lib-dd-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: 240px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-3);
+  z-index: var(--z-pop);
+  overflow: hidden;
+}
+.lib-dd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--fs-body);
+}
+.lib-dd-head-l { display: flex; align-items: center; gap: 7px; }
+.lib-dd-head-t { font-weight: 600; }
+.lib-dd-del {
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.lib-dd-del:not(:disabled):hover { background: var(--danger-a12); }
+.lib-dd-del:disabled { opacity: 0.4; cursor: default; }
+.lib-dd-list {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  position: relative;
+}
+/* [B1] 行常态=[勾选框][椭圆 chip][mono 计数][「编辑」钮]——勾选只归 checkbox */
+.lib-dd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  width: 100%;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+.lib-dd-row:hover { background: var(--panel-2); }
+.lib-dd-cb {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  flex: none;
+  position: relative;
+  background: transparent;
+  cursor: pointer;
+}
+.lib-dd-cb:focus-visible { outline: 1px solid var(--accent); }
+.lib-dd-cb[aria-checked='true'] { background: var(--accent); border-color: var(--accent); }
+.lib-dd-cb[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+/* 半选态（全选框 0<n<N）=accent 横杠 */
+.lib-dd-cb[aria-checked='mixed'] { border-color: var(--accent); }
+.lib-dd-cb[aria-checked='mixed']::after {
+  content: '';
+  position: absolute;
+  left: 2.5px;
+  top: 50%;
+  width: 7px;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--accent);
+}
+.lib-dd-chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 1.5px 9px;
+  font-size: var(--fs-micro);
+}
+.lib-dd-ct { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
+.lib-dd-edit-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 1px 2px;
+  flex: none;
+}
+.lib-dd-edit-btn:hover { color: var(--accent); }
+.lib-dd-edit-btn:focus-visible { outline: 1px solid var(--accent); }
+/* [B1] 行编辑态：名称 input+保存钮一行+色点阵一行（「编辑」钮=唯一入口） */
+.lib-dd-row-edit { align-items: flex-start; }
+.lib-dd-edit-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lib-dd-edit-line { display: flex; align-items: center; gap: 6px; }
+.lib-dd-edit {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--panel);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  padding: 1px 5px;
+}
+.lib-dd-save {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 1px 2px;
+  flex: none;
+}
+.lib-dd-save:disabled { opacity: 0.4; cursor: default; }
+.lib-dd-save:not(:disabled):hover { text-decoration: underline; }
+.lib-dd-save:focus-visible { outline: 1px solid var(--accent); }
+.lib-dd-dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding-left: 1px;
+}
+.lib-dd-sw {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  flex: none;
+  cursor: pointer;
+  position: relative;
+}
+.lib-dd-sw:hover { border-color: var(--accent); }
+.lib-dd-sw:disabled { opacity: 0.5; cursor: default; }
+.lib-dd-sw[aria-pressed='true'] { border-color: var(--ink); box-shadow: 0 0 0 1.5px var(--accent); }
+/* 「默认」点=null（承接 TagColorPopover「恢复默认」）：中性底+斜杠标识无色 */
+.lib-dd-sw-def { background: var(--panel-2); }
+.lib-dd-sw-def::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 50%;
+  height: 1.5px;
+  margin-top: -0.75px;
+  background: var(--dim);
+  transform: rotate(-45deg);
+}
+.lib-dd-fade {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  margin-top: -30px;
+  pointer-events: none;
+  background: linear-gradient(transparent, var(--panel) 70%);
+}
+.lib-dd-empty { padding: 18px 12px; font-size: var(--fs-body); color: var(--dim); }
+.lib-dd-foot {
+  border-top: 1px solid var(--line-soft);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  color: var(--dim);
+  font-size: var(--fs-micro);
+  background: var(--panel);
+}
+.lib-dd-clr {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 0;
+}
+/* [B1] 删除确认窗（Dialog 底座内容区） */
+.lib-dd-del-p { margin: 0 0 6px; color: var(--dim); font-size: var(--fs-micro); }
+.lib-dd-del-list {
+  margin: 0;
+  padding-left: 18px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: var(--fs-body);
+}
+.lib-dd-del-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.lib-dd-del-cancel {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 3px 10px;
+}
+.lib-dd-del-cancel:disabled { opacity: 0.5; cursor: default; }
+.lib-dd-del-ok {
+  border: 1px solid var(--danger);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+  padding: 3px 10px;
+}
+.lib-dd-del-ok:not(:disabled):hover { background: var(--danger-a12); }
+.lib-dd-del-ok:disabled { opacity: 0.5; cursor: default; }

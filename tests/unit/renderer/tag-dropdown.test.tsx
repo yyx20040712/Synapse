@@ -1,17 +1,20 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-01 批 A U3→批 tagrows 2026-10-03] TagDropdown —— 标签筛选下拉
- * （TagFilter chip 形态全件退役的承接件，设计稿 §3.3/R6）。覆盖：钮态（idle 灰/
- * 有选集 accent「×N」）/面板结构（头「标签筛选+已选 N」/三段行=勾选框
- * role=checkbox aria-checked+名称+色点+计数——勾选只归 checkbox，批 tagrows
- * 改版/脚「共 N 标签+清空已选」）/toggle 即时生效/三关闭触发（Esc 层级=行菜单
- * 先关/外点/钮二次点）/TAG_FILTER_MAX 添加向守卫（T8/T9/T10）/死 id 顺序契约
- * （INV-53）/空标签库引导文案/色映射上抛通道/FilterBar 装配收敛（tagIds 空集
- * 收敛 undefined）。行内编辑新行为面=tag-dropdown-row.test.tsx（批 tagrows 新件）。
- * always-active 裸 describe（K3 威胁不经 guardedDescribe）。
+ * [F-UIRES-01 批 A U3→批 tagrows→F-UIRES-03 B1 2026-10-05] TagDropdown ——
+ * 标签筛选下拉（B1 批改版：头=全选框（三态）+删除 danger 钮；脚=仅「清空已选」
+ * ——「已选 N」与「共 N 标签」说明行随批退役）。覆盖：钮态（idle 灰/有选集
+ * accent「×N」）/面板结构（行=勾选框+chip+计数+编辑钮——chip 形态细节在
+ * tag-dropdown-row.test.tsx）/toggle 即时生效/三关闭触发（Esc 层级=行编辑态
+ * 先关）/TAG_FILTER_MAX 添加向守卫（T8/T9/T10）/全选三态与 toggle（含上限
+ * 钳制与钳制态清空路——RR1-W2）/色映射上抛通道/FilterBar 装配收敛（tagIds
+ * 空集收敛 undefined）。删除链+INV-53 契约=tag-dropdown-delete.test.tsx
+ * （[RR1 拆件] max-lines 500——tests tsx 面不在豁免内）。always-active
+ * 裸 describe（K3 威胁不经 guardedDescribe）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub, stubApiEvents, toastSpy } from '../../utils/api-client-mock'
 
@@ -79,20 +82,33 @@ async function openPanel(): Promise<void> {
   })
 }
 
-/** 面板行容器（批 tagrows 三段行 .lib-dd-row——按名格 .lib-dd-nm 精确匹配，防计数粘名误配） */
+/** 面板行容器（B1 行=勾选框+chip+计数+编辑钮——按 chip 名精确匹配防计数粘名误配） */
 function row(name: string): HTMLElement | undefined {
   return [...(host?.querySelectorAll<HTMLElement>('.lib-dd-row') ?? [])].find(
-    (r) => r.querySelector('.lib-dd-nm')?.textContent === name
+    (r) => r.querySelector('.lib-dd-chip')?.textContent === name
   )
 }
 
-/** 勾选只归 checkbox（批 tagrows：点击行其余区域零勾选） */
+/** 勾选只归 checkbox（B1：点击行其余区域零勾选） */
 async function clickRow(name: string): Promise<void> {
   const cb = row(name)?.querySelector<HTMLButtonElement>('[role="checkbox"]')
   expect(cb, `面板行勾选框存在：${name}`).toBeDefined()
   await act(async () => {
     cb!.click()
   })
+}
+
+/** 头部全选框（aria-label=全选——与行勾选框区分） */
+function selectAllBox(): HTMLButtonElement | undefined {
+  return host?.querySelector<HTMLButtonElement>('.lib-dd-head [aria-label="全选"]') ?? undefined
+}
+
+/** 头部删除钮（面板作用域——与确认窗内删除钮区分） */
+function deleteButton(): HTMLButtonElement | undefined {
+  const panel = host?.querySelector('.lib-dd-panel')
+  return [...(panel?.querySelectorAll('button') ?? [])].find(
+    (b) => (b.textContent ?? '').trim() === '删除'
+  )
 }
 
 function buttonByText(text: string, scope?: ParentNode): HTMLButtonElement | undefined {
@@ -113,6 +129,7 @@ async function renderBar(query: LibraryQuery, onChange: (patch: Partial<LibraryQ
 
 beforeEach(() => {
   vi.clearAllMocks()
+  toastSpy.mockClear()
   currentTags = []
 })
 
@@ -125,8 +142,8 @@ afterEach(async () => {
   host = null
 })
 
-describe('F-UIRES-01 U3 TagDropdown 钮与面板结构（§3.3）', () => {
-  it('钮 idle 灰（无选集零计数）；面板 240px 头「标签筛选/已选 N」+行勾选 aria-checked+色点+计数+脚计数与清空', async () => {
+describe('F-UIRES-03 B1 TagDropdown 钮与面板结构', () => {
+  it('面板头=全选框（零选中 false）+「全选」+删除钮（零勾选禁用）；「已选 N」退役负锚；行=勾选框+chip+计数+编辑钮；脚=仅清空已选（说明行退役负锚）', async () => {
     currentTags = [tag('t-a', '水质', 2, '#3a5bd9'), tag('t-b', '机器学习', 1)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
@@ -137,38 +154,60 @@ describe('F-UIRES-01 U3 TagDropdown 钮与面板结构（§3.3）', () => {
     await openPanel()
     const panel = host?.querySelector('.lib-dd-panel')
     expect(panel).not.toBeNull()
-    expect(panel?.textContent).toContain('标签筛选')
-    expect(panel?.textContent).toContain('已选 1')
+    expect(panel?.getAttribute('role'), '面板容器=group').toBe('group')
+    // 头：全选框三态锚（部分选中=mixed——t-a 勾/t-b 未勾）
+    expect(selectAllBox()?.getAttribute('aria-checked'), '部分选中=半选态').toBe('mixed')
+    expect(panel?.textContent).toContain('全选')
+    expect(deleteButton()?.disabled, '删除钮在场（勾选非零可点）').toBe(false)
+    expect(panel?.textContent, '「已选 N」计数随 B1 批退役').not.toMatch(/已选 \d/)
+    // 行：勾选框+chip 名+mono 计数+编辑钮
     const r = row('水质')
-    expect(panel?.getAttribute('role'), '面板容器=group（menu 语义随行改版退役）').toBe('group')
     expect(r?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('true')
     expect(row('机器学习')?.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('false')
-    expect(r?.querySelector('.lib-dd-dot'), '色点在场').not.toBeNull()
+    expect(r?.querySelector('.lib-dd-chip')?.textContent).toBe('水质')
     expect(r?.textContent).toContain('2')
-    expect(panel?.textContent).toContain('共 2 标签')
+    expect(r?.querySelector('.lib-dd-edit-btn'), '编辑钮在场').not.toBeNull()
+    // 脚：清空已选保留；共 N 标签说明行退役
     expect(buttonByText('清空已选')).toBeDefined()
+    expect(panel?.textContent, '「共 N 标签」说明行随 B1 批退役').not.toContain('共 2 标签')
+    // RR1-N4：列表滚动上限 CSS 锚（票面③ max-height:320px——library-cards CSS
+    // 逐值锁同型，源锚防回漂）
+    const cssDd = readFileSync(
+      join(process.cwd(), 'src/renderer/features/tags/tag-dropdown.css'),
+      'utf8'
+    )
+    expect(cssDd, '列表 max-height=320px（B1 票面③）').toMatch(
+      /\.lib-dd-list\s*\{[^}]*max-height:\s*320px/
+    )
+    expect(cssDd, '列表 overflow-y=auto（滚动形态）').toMatch(
+      /\.lib-dd-list\s*\{[^}]*overflow-y:\s*auto/
+    )
   })
 
-  it('idle 钮（零选集）无 ×N 计数、非 accent 态', async () => {
+  it('idle 钮（零选集）无 ×N 计数、非 accent 态；头部删除钮零勾选禁用+全选框 false', async () => {
     currentTags = [tag('t-a', '水质', 2)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
     await renderDropdown([], vi.fn())
     const btn = tagButton()
     expect(btn?.textContent).not.toContain('×')
     expect(btn?.classList.contains('lib-dd-btn-on')).toBe(false)
+    await openPanel()
+    expect(selectAllBox()?.getAttribute('aria-checked'), '零选中=false').toBe('false')
+    expect(deleteButton()?.disabled, '零勾选=删除禁用').toBe(true)
   })
 
-  it('空标签库：面板开=引导文案（先在详情侧栏打标签——语义承接）', async () => {
+  it('空标签库：面板开=引导文案+全选框禁用（先在详情侧栏打标签——语义承接）', async () => {
     useTagsStore.setState({ tags: [], loading: false, error: null })
     await renderDropdown([], vi.fn())
     await openPanel()
     const panel = host?.querySelector('.lib-dd-panel')
     expect(panel).not.toBeNull()
     expect(panel?.textContent).toContain('暂无标签可筛选（在详情侧栏为文献打标签）')
+    expect(selectAllBox()?.disabled, '零标签=全选禁用').toBe(true)
   })
 })
 
-describe('F-UIRES-01 U3 toggle 即时生效（现行 P7E-06 语义零变）', () => {
+describe('F-UIRES-03 B1 toggle 即时生效（现行 P7E-06 语义零变）', () => {
   it('勾选序列：进→并集→退出→全清，载荷=选中集演化且 aria-checked 同步（面板保持开）', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
@@ -205,7 +244,7 @@ describe('F-UIRES-01 U3 toggle 即时生效（现行 P7E-06 语义零变）', ()
     expect(onFilterChange).toHaveBeenLastCalledWith([])
   })
 
-  it('三关闭触发：钮二次点关/外点关/Esc 关（面板离场）', async () => {
+  it('三关闭触发：钮二次点关/外点关/Esc 关（面板离场；无行编辑态时面板即 Esc 目标）', async () => {
     currentTags = [tag('t-a', '水质', 2)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
     await renderDropdown([], vi.fn())
@@ -230,6 +269,27 @@ describe('F-UIRES-01 U3 toggle 即时生效（现行 P7E-06 语义零变）', ()
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
     expect(host?.querySelector('.lib-dd-panel')).toBeNull()
+  })
+
+  it('B1 Esc 分层：行编辑态开→Esc 先退编辑（面板保持）；再 Esc 关面板', async () => {
+    currentTags = [tag('t-a', '水质', 2)]
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    await act(async () => {
+      row('水质')?.querySelector<HTMLButtonElement>('.lib-dd-edit-btn')?.click()
+    })
+    expect(host?.querySelector('.lib-dd-row input'), '行编辑态在场').not.toBeNull()
+    // 焦点在色点上时 Esc（非 input 自有键面——document 层分流）
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(host?.querySelector('.lib-dd-row input'), 'Esc 先退行编辑态').toBeNull()
+    expect(host?.querySelector('.lib-dd-panel'), '面板保持开（最上层先关）').not.toBeNull()
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(host?.querySelector('.lib-dd-panel'), '再 Esc 关面板').toBeNull()
   })
 })
 
@@ -285,39 +345,74 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
   })
 })
 
-describe('INV-53 死 id 顺序契约（生命周期上抛承接）', () => {
-  it('改名（id 稳定）：筛选零动（onFilterChange 不调用），仅 onMutated', async () => {
-    currentTags = [tag('t-x', '甲', 2), tag('t-y', '乙', 1)]
+describe('F-UIRES-03 B1 全选框三态与 toggle', () => {
+  it('三态演化：0 选中=false → 勾 1=mixed → 勾 2=true', async () => {
+    currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
     useTagsStore.setState({ tags: currentTags, loading: false, error: null })
-    stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    expect(selectAllBox()?.getAttribute('aria-checked')).toBe('false')
+    await renderDropdown(['t-a'], vi.fn())
+    await openPanel()
+    expect(selectAllBox()?.getAttribute('aria-checked'), '1/2 勾选=半选态').toBe('mixed')
+    await renderDropdown(['t-a', 't-b'], vi.fn())
+    await openPanel()
+    expect(selectAllBox()?.getAttribute('aria-checked'), '全勾选=true').toBe('true')
+  })
+
+  it('toggle：零选中点全选=全部 id 载荷；全选中点全选=清空', async () => {
+    currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
     const onFilterChange = vi.fn()
-    const onMutated = vi.fn()
-    await renderDropdown(['t-x', 't-y'], onFilterChange, onMutated)
+    await renderDropdown([], onFilterChange)
     await openPanel()
     await act(async () => {
-      row('甲')!.dispatchEvent(
-        new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 8, clientY: 8 })
-      )
+      selectAllBox()!.click()
     })
+    expect(onFilterChange).toHaveBeenLastCalledWith(['t-a', 't-b'])
+    await renderDropdown(['t-a', 't-b'], onFilterChange)
+    await openPanel()
     await act(async () => {
-      buttonByText('重命名')!.click()
+      selectAllBox()!.click()
     })
-    const dialog = host?.querySelector('[role="dialog"]')
-    const input = dialog?.querySelector('input') as HTMLInputElement
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    expect(onFilterChange).toHaveBeenLastCalledWith([])
+  })
+
+  it('上限钳制：21 标签点全选=前 20 id 载荷+info toast（TAG_FILTER_MAX 语义沿全选路径保持）', async () => {
+    currentTags = Array.from({ length: 21 }, (_, i) =>
+      tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
+    )
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    const onFilterChange = vi.fn()
+    await renderDropdown([], onFilterChange)
+    await openPanel()
     await act(async () => {
-      setter?.call(input, '新甲')
-      input.dispatchEvent(new Event('input', { bubbles: true }))
+      selectAllBox()!.click()
     })
-    stubApi.tags.rename.mockResolvedValue({ ok: true as const, data: { id: 't-x', name: '新甲' } })
+    expect(toastSpy).toHaveBeenCalledWith('最多同时筛选 20 个标签', 'info')
+    expect(onFilterChange).toHaveBeenCalledTimes(1)
+    const payload: string[] = onFilterChange.mock.calls[0]?.[0] ?? []
+    expect(payload).toHaveLength(20)
+    expect(payload).not.toContain('t-21')
+  })
+
+  it('RR1-W2 钳制态无死局：21 标签钳 20（mixed）后再点全选=清空载荷 []+零新增 toast（前进路径恒可达）', async () => {
+    currentTags = Array.from({ length: 21 }, (_, i) =>
+      tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
+    )
+    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    const onFilterChange = vi.fn()
+    const selected = currentTags.slice(0, 20).map((t) => t.id)
+    await renderDropdown(selected, onFilterChange)
+    await openPanel()
+    expect(selectAllBox()?.getAttribute('aria-checked'), '钳制态=20/21 半选').toBe('mixed')
+    toastSpy.mockClear()
     await act(async () => {
-      buttonByText('保存', dialog!)!.click()
+      selectAllBox()!.click()
     })
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    expect(onFilterChange).not.toHaveBeenCalled()
-    expect(onMutated).toHaveBeenCalledTimes(1)
+    expect(onFilterChange).toHaveBeenLastCalledWith([])
+    expect(onFilterChange).toHaveBeenCalledTimes(1)
+    expect(toastSpy, '清空路零 toast（上界守卫只属添加向）').not.toHaveBeenCalled()
   })
 })
 

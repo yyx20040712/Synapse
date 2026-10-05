@@ -46,29 +46,24 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   await win.getByLabel('添加标签').click()
   await expect(win.getByLabel('移除标签 水泵')).toBeVisible({ timeout: 10_000 })
 
-  // —— ④ 着色 computed style 锚：[F-UIRES-01] TagDropdown 面板行右键→颜色…→
-  // 预设 swatch→确定（TagFilter chip 面退役——着色呈现=面板行色点 .lib-dd-dot；
-  // 批 tagrows 行容器=.lib-dd-row 三段行，右键通道保留）——
+  // —— ④ 着色 computed style 锚：[F-UIRES-03 B1] TagDropdown 面板行「编辑」钮→
+  // 行编辑态色点阵（TAG_COLOR_PRESETS 8 圆点）→预设圆点→「保存」（右键菜单/
+  // TagColorDialog 通道随 B1 批退役；着色呈现=面板行 chip .lib-dd-chip）——
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
   await win.locator('.lib-dd-btn').click()
   const panel = win.locator('.lib-dd-panel')
   await expect(panel).toBeVisible({ timeout: 10_000 })
-  await panel.locator('.lib-dd-row').filter({ hasText: '水质' }).click({ button: 'right' })
-  const menu = win.getByTestId('tag-menu')
-  await expect(menu).toBeVisible()
-  await menu.getByRole('menuitem', { name: '颜色…' }).click()
-  const dialog = win.getByRole('dialog')
-  await expect(dialog).toBeVisible()
-  await dialog.getByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`).click()
-  await dialog.getByRole('button', { name: '确定' }).click()
-  await expect(dialog).toBeHidden({ timeout: 10_000 })
-  // 真 Chromium 计算样式：色点背景=#e11d48（三元组严格锚）
+  const colorRow = panel.locator('.lib-dd-row').filter({ hasText: '水质' })
+  await colorRow.locator('.lib-dd-edit-btn').click()
+  await panel.getByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`).click()
+  await panel.getByRole('button', { name: '保存' }).click()
+  // 真 Chromium 计算样式：chip 背景=#e11d48+18% alpha（三元组严格锚）
   const preset = TAG_COLOR_PRESETS[0]
   const rgb = [1, 3, 5].map((i) => parseInt(preset.slice(i, i + 2), 16)).join(', ')
-  const dot = panel.locator('.lib-dd-row').filter({ hasText: '水质' }).locator('.lib-dd-dot')
+  const chip = colorRow.locator('.lib-dd-chip')
   await expect
-    .poll(async () => dot.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .poll(async () => chip.evaluate((el) => getComputedStyle(el).backgroundColor))
     .toContain(rgb)
 
   // —— ① 续：同 userData 复 launch 持久断言（reload 持久——DB 落库证明） ——
@@ -80,15 +75,15 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   for (const name of ['水质', '水文', '水泵']) {
     await expect(win2.getByLabel(`移除标签 ${name}`)).toBeVisible({ timeout: 10_000 })
   }
-  // 着色持久：复 launch 后面板行色点计算样式仍携带色值
+  // 着色持久：复 launch 后面板行 chip 计算样式仍携带色值
   await win2.getByRole('button', { name: '脉络', exact: true }).click()
   await win2.getByRole('button', { name: '文献库' }).click()
   await win2.locator('.lib-dd-btn').click()
   const panel2 = win2.locator('.lib-dd-panel')
   await expect(panel2).toBeVisible({ timeout: 10_000 })
-  const dot2 = panel2.locator('.lib-dd-row').filter({ hasText: '水质' }).locator('.lib-dd-dot')
+  const chip2 = panel2.locator('.lib-dd-row').filter({ hasText: '水质' }).locator('.lib-dd-chip')
   await expect
-    .poll(async () => dot2.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .poll(async () => chip2.evaluate((el) => getComputedStyle(el).backgroundColor))
     .toContain(rgb)
 
   await app2.close()

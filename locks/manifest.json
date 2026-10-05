@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-05T04:38:41.3586361Z",
+    "generatedAt":  "2026-10-05T07:30:50.0196528Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "13fec560bb651d91db793daafd460e6676bf9b289a3012aff7af82724a2226e3"
+                      "sha256":  "d65a4150fa113102b7ddd5752aa2a367e0c3bf27804e96550091a4ed9ac4c1c7"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+                      "sha256":  "02c7b6f8ca2e4bbebea41023f3a7832c61e2cb4efd03f50ef94e1c754131ec7a"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -351,15 +351,15 @@
                   },
                   {
                       "path":  "tests/e2e/tag-filter-multi.spec.ts",
-                      "sha256":  "9c48fc710f1e280363878f0540507ef620aa9563fbfafdb2cd44908a1ece8c9c"
+                      "sha256":  "22f5752032f36211203364c79f5ab9db01fb57e4e374a171af455893b06bbd08"
                   },
                   {
                       "path":  "tests/e2e/tag-input-paths.spec.ts",
-                      "sha256":  "a47d3b32ae0731e9de62d614ecc32330a8b16e1164abc5f4ccc4a498a576f945"
+                      "sha256":  "62109f657a26035f8707a5644888b40bc194573ed82c3b5ace005a53d7a9c428"
                   },
                   {
                       "path":  "tests/e2e/tag-lifecycle.spec.ts",
-                      "sha256":  "9f45847db667f90698fcb8cdf93e42b90b033f35b313c47cd2d5daf581232367"
+                      "sha256":  "6d33a4a9d11b3639354ad68f16daa7d8aab89bdd78a0f900fcdcf1b8d44ab316"
                   },
                   {
                       "path":  "tests/e2e/theme-trio.spec.ts",
@@ -671,7 +671,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/library-cards.test.tsx",
-                      "sha256":  "d3d75019020ff8f0e237269582bb6e5fcfab3a1fda6424b43d5b46f2ec807fc7"
+                      "sha256":  "0aec6248f3178672e3f56af9825507fdd287d83ed1887f57ba914e39e764799d"
                   },
                   {
                       "path":  "tests/unit/renderer/library-lineage-display.test.tsx",
@@ -1026,28 +1026,24 @@
                       "sha256":  "1ab18fa322e144d57a0df0d3c1ee2b29b1d9b55b2f5f2ea0edeb819c68d61ab7"
                   },
                   {
-                      "path":  "tests/unit/renderer/tag-color-dialog.test.tsx",
-                      "sha256":  "890686d4f0325acea6ac9f98cd255459cdd7f89dd0e0c65921ca1c3e4e22ef2f"
+                      "path":  "tests/unit/renderer/tag-dropdown.test.tsx",
+                      "sha256":  "0f0c1de24148aa034a9dc344ca1906b76b930c3f8cc2df6faf49a49d5bb6a6aa"
                   },
                   {
-                      "path":  "tests/unit/renderer/tag-dropdown.test.tsx",
-                      "sha256":  "1e2cbde849359e165288b19cbbf2327b739ac71736da749ecf2b39b7c4398c74"
+                      "path":  "tests/unit/renderer/tag-dropdown-delete.test.tsx",
+                      "sha256":  "ce4096f64916c29f0525da4ef53bdb8e99bd79623260e389870175c9f9e570ff"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown-row.test.tsx",
-                      "sha256":  "6938ddf4bd12629c64fbe7190603f0f54a842f91e86c802d94635bafb11a8941"
+                      "sha256":  "7c6cb3b57b1c0e7d4249e601aed9f6b3f892b73872a0e287e7924fd612d657c1"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-editor.test.tsx",
                       "sha256":  "9abe6360f424ca34c76e1b10c58a5b61fc701fed2a3cd0c1cf1ba25114635699"
                   },
                   {
-                      "path":  "tests/unit/renderer/tag-lifecycle-ui.test.tsx",
-                      "sha256":  "7a2cc456e2cb5df84a085174a29df14f776b94f819070fe1c85f7842dc5dd673"
-                  },
-                  {
                       "path":  "tests/unit/renderer/tag-name-maxlength.test.tsx",
-                      "sha256":  "76a11193f053dafec2ba1de1a844a4bc074d3b57a5a318682974d1d51f40c125"
+                      "sha256":  "2f89d3941c449ced6e39c9b8745e978ffaca0bc83eeef37ffb8d049154a2f61c"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",

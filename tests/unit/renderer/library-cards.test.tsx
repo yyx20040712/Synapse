@@ -55,6 +55,11 @@ const cssExplorer = readFileSync(
   join(process.cwd(), 'src/renderer/features/library/library-explorer.css'),
   'utf8'
 )
+// [F-UIRES-03 B1] 标签下拉 dd 族分域拆往 tags 域（CSS 450 上限）——续锚
+const cssTags = readFileSync(
+  join(process.cwd(), 'src/renderer/features/tags/tag-dropdown.css'),
+  'utf8'
+)
 const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-buttons.css'), 'utf8')
 
 /** 列表行夹具：默认带年份/期刊/两标签（venue/year/citedByCount 由用例覆写） */
@@ -332,9 +337,10 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
 
   it('筛选行语汇：search 290px+shadow-card；标签下拉钮 8px 圆角+on 态 accent-soft；sort 8px 圆角（[F-UIRES-01] chip 族→dd 族迁）', () => {
     expect(css).toMatch(/\.lib-search\s*\{[^}]*width:\s*290px;[^}]*var\(--shadow-card\)/)
-    expect(`${css}${cssExplorer}`, 'chip 胶囊族已随 TagFilter 退役删除').not.toContain('.lib-chip')
-    expect(cssExplorer).toMatch(/\.lib-dd-btn\s*\{[^}]*border-radius:\s*8px/)
-    expect(cssExplorer).toMatch(
+    expect(`${css}${cssExplorer}${cssTags}`, 'chip 胶囊族已随 TagFilter 退役删除').not.toContain('.lib-chip')
+    // [F-UIRES-03 B1] dd 族落点迁 tags/tag-dropdown.css（分域拆件）——续锚
+    expect(cssTags).toMatch(/\.lib-dd-btn\s*\{[^}]*border-radius:\s*8px/)
+    expect(cssTags).toMatch(
       /\.lib-dd-btn-on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\);[^}]*color:\s*var\(--accent\);[^}]*font-weight:\s*600/
     )
     expect(css).toMatch(/\.lib-sort\s*\{[^}]*border-radius:\s*8px/)

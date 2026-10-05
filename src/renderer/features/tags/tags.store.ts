@@ -19,7 +19,8 @@
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
- * - 消费方：TagEditor（下拉建议）/ TagDropdown（筛选下拉+行右键改名/颜色）——
+ * - 消费方：TagEditor（下拉建议）/ TagDropdown（筛选下拉+行编辑态改名/取色
+ *   [F-UIRES-03 B1——右键链已随 TagRowMenu 退役]）/TagDeleteConfirm（删除链）——
  *   单一数据源，挂载时 refresh；busy 态局部在发起组件（TagEditor setBusy 同型），
  *   store 不增持久字段
  *

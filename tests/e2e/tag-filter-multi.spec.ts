@@ -5,15 +5,16 @@ import { join } from 'node:path'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * [P7E-06→F-UIRES-01 批 A U3→批 tagrows 2026-10-03] 标签多选过滤 e2e
- * （TagFilter chip 面→TagDropdown 下拉迁移——三段行勾选框 role=checkbox
- * aria-checked，勾选只归 checkbox，toggle 即时生效）。
+ * [P7E-06→F-UIRES-01 批 A U3→批 tagrows→F-UIRES-03 B1 2026-10-05] 标签多选
+ * 过滤 e2e（TagFilter chip 面→TagDropdown 下拉迁移——B1 批头部=全选框（三态
+ * aria-checked）+删除钮，「已选 N」计数退役；行勾选框 role=checkbox，勾选只
+ * 归 checkbox，toggle 即时生效）。
  *
  * 链路：种子三篇（甲挂 A+B/乙挂 A/丙无标签——交集分化+全列表对照锚）→
  * UI 打标签→开面板勾两标签（AND 交集→列表只甲）→取消一个（[A]→甲乙）→
  * 「清空已选」全清（空选集收敛 undefined→甲乙丙全回归）。三态列表用 .lib-row
- * 计数锚。S3 锚（§3.9）：面板「标签筛选/已选 N/清空已选」+行勾选框
- * role=checkbox aria-checked（行容器=.lib-dd-row）。
+ * 计数锚。头部锚（B1）：全选框 aria-checked（false→mixed→true）+「清空已选」
+ * +行勾选框 role=checkbox aria-checked（行容器=.lib-dd-row）。
  */
 test('标签多选过滤：面板勾选两标签交集→取消一个→清空已选回全列表', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e6-'))
@@ -53,12 +54,12 @@ test('标签多选过滤：面板勾选两标签交集→取消一个→清空�
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
 
-  // 开面板（钮=「标签 ▾」；S3 锚：面板头两文本+行勾选 aria）
+  // 开面板（钮=「标签 ▾」；B1 头部锚：全选框三态+行勾选 aria）
   await win.locator('.lib-dd-btn').click()
   const panel = win.locator('.lib-dd-panel')
   await expect(panel).toBeVisible({ timeout: 10_000 })
-  await expect(panel.getByText('标签筛选')).toBeVisible()
-  await expect(panel.getByText('已选 0')).toBeVisible()
+  const selectAll = panel.getByLabel('全选')
+  await expect(selectAll).toHaveAttribute('aria-checked', 'false')
   const rowA = panel.locator('.lib-dd-row').filter({ hasText: '多选A' })
   const rowB = panel.locator('.lib-dd-row').filter({ hasText: '多选B' })
   const cbA = rowA.getByRole('checkbox')
@@ -69,8 +70,9 @@ test('标签多选过滤：面板勾选两标签交集→取消一个→清空�
   // —— 交集 [A,B]：列表只甲（乙=单挂 A 出局、丙=无标签出局）——
   await cbA.click()
   await expect(cbA).toHaveAttribute('aria-checked', 'true')
-  await expect(panel.getByText('已选 1')).toBeVisible()
+  await expect(selectAll).toHaveAttribute('aria-checked', 'mixed') // 1/2=半选态
   await cbB.click()
+  await expect(selectAll).toHaveAttribute('aria-checked', 'true') // 2/2=全选态
   await expect(win.locator('.lib-row')).toHaveCount(1, { timeout: 10_000 })
   await expect(win.getByText('P7E06 甲文献').first()).toBeVisible()
   await expect(win.getByText('P7E06 乙文献')).toHaveCount(0)

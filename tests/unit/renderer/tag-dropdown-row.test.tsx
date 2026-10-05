@@ -1,21 +1,20 @@
 // @vitest-environment jsdom
 /**
- * [批 tagrows 2026-10-03] TagDropdown 行三段结构+行内编辑（always-active）。
- * 票面（用户原话）：「标签展开列表的每一行建议显示为待勾选框、名称框、颜色框，
- * 名称和颜色均可直接编辑，编辑后点保存即可，不慎点到时失焦即可恢复，勾选逻辑
- * 只由待勾选框负责。」
- *
- * 覆盖：勾选独占（checkbox role=checkbox aria-checked——名称/颜色区点击零勾选
- * 负锚）；名称行内编辑（预填全选/Enter=保存/✓ 钮=保存/Esc=取消/失焦=恢复原值
- * 【与批 A 三键范式失焦=提交相反——票面明文，锚注差异防范式误统一】/组词 Enter
- * no-op（INV-85）/空白与同名 no-op/失败 toast 保持开/busy 飞行中失焦不恢复）；
- * 颜色行内色板（预设+恢复默认/点色=保存/Esc 关不改/点外关不改/busy 中 Esc 禁关）。
- * 写路径全走 tags.store renameTag/setTagColor（链式 refresh 单一数据源自愈）。
+ * [批 tagrows→F-UIRES-03 B1 2026-10-05] TagDropdown 行结构+行编辑态
+ * （always-active）。B1 批票面：行常态=[勾选框][椭圆 chip（自身色 18% 底+
+ * 同色深阶字，null=TAG_COLOR_NONE_DISPLAY 默认灰系）][mono 计数][「编辑」钮]；
+ * 编辑态=名称 input（预填全选）+色点阵（TAG_COLOR_PRESETS 8 圆点+「默认」点=
+ * null——承接 TagColorPopover「恢复默认」〔F6+N10〕）+「保存」钮（dirty 启用）
+ * +Esc 取消还原；无 autosave（失焦=恢复——批 tagrows 票面锚）；Enter=保存；
+ * 校验承接 TagRenameDialog 规则（空白/同名拒绝+TAG_NAME_MAX）；busy 飞行守卫
+ * （S8 双发/N1 飞行中失焦不恢复）；isComposing 守卫全域（INV-85——inlineKeyDown
+ * /inline-keys 单源复用）。写路径全走 tags.store renameTag/setTagColor/deleteTag。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TAG_COLOR_PRESETS } from '../../../src/shared/constants'
+import { TAG_COLOR_PRESETS, TAG_COLOR_NONE_DISPLAY } from '../../../src/shared/constants'
+import { TAG_NAME_MAX } from '../../../src/shared/models/tag'
 import { makeApiStub, toastSpy } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
@@ -71,10 +70,10 @@ async function openPanel(): Promise<void> {
   })
 }
 
-/** 面板行容器（.lib-dd-row——按名格 .lib-dd-nm 精确匹配防计数粘名） */
+/** 面板行容器（B1 行=勾选框+chip+计数+编辑钮——按 chip 名精确匹配防计数粘名） */
 function row(name: string): HTMLElement | undefined {
   return [...(host?.querySelectorAll<HTMLElement>('.lib-dd-row') ?? [])].find(
-    (r) => r.querySelector('.lib-dd-nm')?.textContent === name
+    (r) => r.querySelector('.lib-dd-chip')?.textContent === name
   )
 }
 
@@ -90,29 +89,32 @@ async function clickCheckbox(name: string): Promise<void> {
   })
 }
 
-/** 行内编辑 input（编辑态同时刻唯一——.lib-dd-nm 已被替换，无法按行名定位） */
+/** 行内编辑 input（编辑态同时刻唯一——chip 已被替换，无法按行名定位） */
 function editInput(): HTMLInputElement | null {
   return host?.querySelector('.lib-dd-row input') ?? null
 }
 
-async function clickName(name: string): Promise<HTMLInputElement> {
-  const btn = row(name)?.querySelector<HTMLButtonElement>('.lib-dd-nm-btn')
-  expect(btn, `行名称区存在：${name}`).toBeDefined()
+/** 点「编辑」钮进入行编辑态 */
+async function clickEdit(name: string): Promise<HTMLInputElement> {
+  const btn = row(name)?.querySelector<HTMLButtonElement>('.lib-dd-edit-btn')
+  expect(btn, `行编辑钮存在：${name}`).toBeDefined()
   await act(async () => {
     btn!.click()
   })
-  // 编辑态行内 .lib-dd-nm 已被 input 替换——行内编辑同时刻唯一，全局定位
   const input = editInput()
-  expect(input, '行内编辑输入在场').not.toBeNull()
+  expect(input, '行编辑态输入在场').not.toBeNull()
   return input as HTMLInputElement
 }
 
-async function clickDot(name: string): Promise<void> {
-  const dot = row(name)?.querySelector<HTMLButtonElement>('.lib-dd-dot')
-  expect(dot, `行颜色框存在：${name}`).toBeDefined()
-  await act(async () => {
-    dot!.click()
-  })
+function saveButton(): HTMLButtonElement | null {
+  return host?.querySelector<HTMLButtonElement>('.lib-dd-save') ?? null
+}
+
+/** 色点阵钮（编辑态 .lib-dd-dots 内） */
+function dotByLabel(label: string): HTMLButtonElement | undefined {
+  return [...(host?.querySelectorAll<HTMLButtonElement>('.lib-dd-dots button') ?? [])].find(
+    (b) => b.getAttribute('aria-label') === label
+  )
 }
 
 /** 受控 input 打字（原生 setter+input 事件——jsdom 标准法） */
@@ -138,15 +140,10 @@ async function flush(): Promise<void> {
   })
 }
 
-function buttonByLabel(label: string, scope?: ParentNode): HTMLButtonElement | undefined {
-  const base: ParentNode = scope ?? host ?? document
-  return [...base.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === label)
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   toastSpy.mockClear()
-  tagsData = [tag('t-1', '甲', 2), tag('t-2', '乙', 1, '#0ea5e9')]
+  tagsData = [tag('t-1', '甲', 2, '#0ea5e9'), tag('t-2', '乙', 1)]
   stubApi.tags.rename.mockImplementation(async ({ name }: { name: string }) => {
     tagsData = tagsData.map((t) => (t.id === 't-1' ? { ...t, name } : t))
     return { ok: true as const, data: { id: 't-1', name } }
@@ -166,22 +163,40 @@ afterEach(async () => {
   host = null
 })
 
-describe('批 tagrows 行三段结构与勾选独占', () => {
-  it('勾选框=role=checkbox aria-checked：点击切换筛选；点击名称区/颜色框零勾选（负锚）', async () => {
+describe('B1 行常态结构（chip 形态）与勾选独占', () => {
+  it('行四段：勾选框 role=checkbox aria-checked+chip 名称+mono 计数+编辑钮；勾选只归 checkbox（chip/编辑钮/计数区/行空白四路点击零筛选）', async () => {
     const onFilterChange = vi.fn()
     await renderDropdown(['t-1'], onFilterChange)
     await openPanel()
     expect(checkbox('甲')?.getAttribute('role')).toBe('checkbox')
     expect(checkbox('甲')?.getAttribute('aria-checked')).toBe('true')
     expect(checkbox('乙')?.getAttribute('aria-checked')).toBe('false')
-    // 勾选只归 checkbox：名称区点击=进编辑（零筛选）
-    await clickName('甲')
-    expect(onFilterChange).not.toHaveBeenCalled()
+    expect(row('甲')?.querySelector('.lib-dd-chip')?.textContent).toBe('甲')
+    expect(row('甲')?.textContent).toContain('2')
+    expect(row('甲')?.querySelector('.lib-dd-edit-btn')?.textContent).toContain('编辑')
+    // 勾选只归 checkbox：chip（span 非钮）点击零筛选
+    await act(async () => {
+      row('甲')?.querySelector('.lib-dd-chip')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true })
+      )
+    })
+    expect(onFilterChange, 'chip 点击零筛选').not.toHaveBeenCalled()
+    // 计数区（无操作面）
+    await act(async () => {
+      row('甲')?.querySelector('.lib-dd-ct')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true })
+      )
+    })
+    expect(onFilterChange, '计数区点击零筛选').not.toHaveBeenCalled()
+    // 行空白区（容器本体为 target）
+    await act(async () => {
+      row('甲')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onFilterChange, '行空白区点击零筛选').not.toHaveBeenCalled()
+    // 编辑钮点击=进编辑（零筛选）
+    await clickEdit('甲')
+    expect(onFilterChange, '编辑钮点击零筛选').not.toHaveBeenCalled()
     await pressKey(editInput()!, 'Escape')
-    // 颜色框点击=开色板（零筛选）
-    await clickDot('甲')
-    expect(onFilterChange).not.toHaveBeenCalled()
-    expect(host?.querySelector('.lib-dd-pop'), '行内色板在场').not.toBeNull()
   })
 
   it('checkbox 点击切换载荷（添加向）', async () => {
@@ -192,62 +207,82 @@ describe('批 tagrows 行三段结构与勾选独占', () => {
     expect(onFilterChange).toHaveBeenLastCalledWith(['t-1'])
   })
 
-  it('勾选独占负锚补全：计数区/行空白区（容器本体）/颜色框三路点击零筛选（RR1-W1/W6）', async () => {
-    const onFilterChange = vi.fn()
-    await renderDropdown([], onFilterChange)
+  it('chip 着色公式（INV-86 域内单源）：有色行 inline 背景=自身色 18%（hex2e——jsdom 序列化 rgba）；null 行=TAG_COLOR_NONE_DISPLAY 默认灰系', async () => {
+    // jsdom cssstyle 将 8 位 hex（#rrggbbaa）序列化为 rgba(r, g, b, a)——期望值
+    // 由色值常量单源推导（hex→rgb 三元组+0.18 alpha）
+    const rgba18 = (hex: string): string => {
+      const n = hex.replace('#', '')
+      const parts = [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16))
+      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, 0.18)`
+    }
+    await renderDropdown([], vi.fn())
     await openPanel()
-    // ① 计数区（.lib-dd-ct——无操作面）
-    const ct = row('甲')?.querySelector('.lib-dd-ct')
-    expect(ct, '计数区在场').not.toBeNull()
-    await act(async () => {
-      ct!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onFilterChange, '计数区点击零筛选').not.toHaveBeenCalled()
-    // ② 行空白区（容器本体为 target——三段钮之外的留白区）
-    await act(async () => {
-      row('甲')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onFilterChange, '行空白区点击零筛选').not.toHaveBeenCalled()
-    // ③ 颜色框（开色板路径——与首用例 clickDot 负锚双证）
-    await clickDot('甲')
-    expect(onFilterChange, '颜色框点击零筛选').not.toHaveBeenCalled()
-    await act(async () => {
-      host?.querySelector('.lib-dd-pop-veil')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onFilterChange, '色板关闭零筛选').not.toHaveBeenCalled()
+    const colored = row('甲')?.querySelector<HTMLElement>('.lib-dd-chip')
+    expect(colored?.style.background).toBe(rgba18('#0ea5e9'))
+    expect(colored?.style.color).toContain('#0ea5e9')
+    const plain = row('乙')?.querySelector<HTMLElement>('.lib-dd-chip')
+    expect(plain?.style.background).toBe(rgba18(TAG_COLOR_NONE_DISPLAY))
+    expect(plain?.style.color).toContain(TAG_COLOR_NONE_DISPLAY)
   })
 })
 
-describe('批 tagrows 名称行内编辑', () => {
-  it('点击名称区→行内 input 预填现名+聚焦全选；Enter=保存（rename 通道+onMutated+行名更新）', async () => {
-    const onMutated = vi.fn()
-    await renderDropdown([], vi.fn(), onMutated)
+describe('B1 行编辑态（「编辑」钮=唯一编辑入口）', () => {
+  it('进编辑：input 预填现名+聚焦全选+maxLength=TAG_NAME_MAX；保存钮禁用（零 dirty）', async () => {
+    await renderDropdown([], vi.fn())
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
     expect(input.value).toBe('甲')
     expect(input.selectionStart).toBe(0)
     expect(input.selectionEnd).toBe('甲'.length)
+    expect(input.maxLength).toBe(TAG_NAME_MAX)
+    expect(saveButton()?.disabled, '零 dirty=保存禁用').toBe(true)
+  })
+
+  it('dirty 启用矩阵：改名→启用；改回原名→禁用；仅改色→启用；空白名恒禁用（TagRenameDialog 校验承接）', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    let input = await clickEdit('甲')
+    await setType(input, '水质监测')
+    expect(saveButton()?.disabled, '名称变=dirty 启用').toBe(false)
+    await setType(input, '甲')
+    expect(saveButton()?.disabled, '改回原名=零 dirty 禁用').toBe(true)
+    await setType(input, '   ')
+    expect(saveButton()?.disabled, '空白名恒禁用').toBe(true)
+    await pressKey(input, 'Enter')
+    expect(editInput(), '空白名 Enter=退出编辑零调用').toBeNull()
+    // 仅色变路：有色标签改默认点=dirty
+    input = await clickEdit('甲')
+    expect(saveButton()?.disabled).toBe(true)
+    await act(async () => {
+      dotByLabel('默认')!.click()
+    })
+    expect(saveButton()?.disabled, '仅色变=dirty 启用').toBe(false)
+    await pressKey(editInput()!, 'Escape')
+  })
+
+  it('Enter=保存：rename 通道+onMutated+行名更新（链式 refresh 后 chip 名更新）', async () => {
+    const onMutated = vi.fn()
+    await renderDropdown([], vi.fn(), onMutated)
+    await openPanel()
+    const input = await clickEdit('甲')
     await setType(input, '水质监测')
     await pressKey(input, 'Enter')
     await flush()
     expect(stubApi.tags.rename).toHaveBeenCalledWith({ tagId: 't-1', name: '水质监测' })
+    expect(stubApi.tags.setColor).not.toHaveBeenCalled()
     expect(onMutated).toHaveBeenCalledTimes(1)
     expect(editInput(), '保存后编辑态退出').toBeNull()
     expect(row('水质监测'), '链式 refresh 后行名更新').toBeDefined()
   })
 
-  it('编辑态行内确认钮（✓ 图标批 B 范式，title=保存）：点击=保存', async () => {
+  it('「保存」钮点击=保存（同 Enter 路）', async () => {
     const onMutated = vi.fn()
     await renderDropdown([], vi.fn(), onMutated)
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
     await setType(input, '乙二')
-    const ok = host?.querySelector<HTMLButtonElement>('.lib-dd-ok')
-    expect(ok, '确认钮在场').not.toBeNull()
-    expect(ok?.getAttribute('title')).toBe('保存')
-    expect(ok?.textContent).toContain('保存')
     await act(async () => {
-      ok!.click()
+      saveButton()!.click()
     })
     await flush()
     expect(stubApi.tags.rename).toHaveBeenCalledWith({ tagId: 't-1', name: '乙二' })
@@ -255,22 +290,117 @@ describe('批 tagrows 名称行内编辑', () => {
     expect(editInput()).toBeNull()
   })
 
-  it('Esc=取消恢复：改名后 Esc→rename 零调用+行名=原值+面板保持开', async () => {
+  it('仅色变保存：setColor 单通道（rename 零调用）', async () => {
+    const onMutated = vi.fn()
+    await renderDropdown([], vi.fn(), onMutated)
+    await openPanel()
+    await clickEdit('甲')
+    await act(async () => {
+      dotByLabel(`预设颜色 ${TAG_COLOR_PRESETS[1]}`)!.click()
+    })
+    await act(async () => {
+      saveButton()!.click()
+    })
+    await flush()
+    expect(stubApi.tags.setColor).toHaveBeenCalledWith({ tagId: 't-1', color: TAG_COLOR_PRESETS[1] })
+    expect(stubApi.tags.rename).not.toHaveBeenCalled()
+    expect(onMutated).toHaveBeenCalledTimes(1)
+    expect(editInput()).toBeNull()
+  })
+
+  it('名+色双变：rename→setColor 双通道', async () => {
     await renderDropdown([], vi.fn())
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
+    await setType(input, '新甲')
+    await act(async () => {
+      dotByLabel(`预设颜色 ${TAG_COLOR_PRESETS[2]}`)!.click()
+    })
+    await pressKey(input, 'Enter')
+    await flush()
+    expect(stubApi.tags.rename).toHaveBeenCalledWith({ tagId: 't-1', name: '新甲' })
+    expect(stubApi.tags.setColor).toHaveBeenCalledWith({ tagId: 't-1', color: TAG_COLOR_PRESETS[2] })
+  })
+
+  it('色点阵：8 预设+「默认」=9 点；aria-pressed 选中态；默认点=null 语义（保存 setColor(tagId,null)）', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    await clickEdit('甲')
+    const dots = [...(host?.querySelectorAll('.lib-dd-dots button') ?? [])]
+    expect(dots, '9 点计数（8 预设+默认）').toHaveLength(9)
+    for (const c of TAG_COLOR_PRESETS) {
+      expect(dotByLabel(`预设颜色 ${c}`), `预设圆点 ${c} 在场`).toBeDefined()
+    }
+    const def = dotByLabel('默认')
+    expect(def, '「默认」点在场').toBeDefined()
+    expect(
+      dotByLabel(`预设颜色 #0ea5e9`)?.getAttribute('aria-pressed'),
+      '现色预设=选中态'
+    ).toBe('true')
+    expect(def?.getAttribute('aria-pressed'), 'null 非选中').toBe('false')
+    await act(async () => {
+      def!.click()
+    })
+    expect(def?.getAttribute('aria-checked') ?? def?.getAttribute('aria-pressed'), '点默认后=选中').toBe('true')
+    await act(async () => {
+      saveButton()!.click()
+    })
+    await flush()
+    expect(stubApi.tags.setColor).toHaveBeenCalledWith({ tagId: 't-1', color: null })
+  })
+
+  it('Esc=取消还原：改名+改色后 Esc→零通道调用+行回常态+面板保持开', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    const input = await clickEdit('甲')
     await setType(input, '乙二')
+    await act(async () => {
+      dotByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`)!.click()
+    })
     await pressKey(input, 'Escape')
     expect(stubApi.tags.rename).not.toHaveBeenCalled()
+    expect(stubApi.tags.setColor).not.toHaveBeenCalled()
     expect(editInput(), 'Esc 后编辑态退出').toBeNull()
+    expect(row('甲'), '行名=原值恢复（chip 常态）').toBeDefined()
+    expect(host?.querySelector('.lib-dd-panel'), '面板保持开').not.toBeNull()
+  })
+
+  it('RR1-W1 skipBlur 跨编辑会话清零：编辑→Esc→重进编辑→点行外失焦=还原原值+退出编辑态', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    let input = await clickEdit('甲')
+    await setType(input, '乙二')
+    await pressKey(input, 'Escape') // Esc 退编辑（skipBlur 武装→unmount 不触发 blur=滞留缺陷面）
+    expect(editInput(), 'Esc 后编辑态退出').toBeNull()
+    // 重进编辑（新会话）→首次行外失焦须照常还原（标志已随会话重置）
+    input = await clickEdit('甲')
+    await setType(input, '乙二')
+    await act(async () => {
+      input.blur()
+    })
+    expect(stubApi.tags.rename, '重进后首次失焦=恢复不保存').not.toHaveBeenCalled()
+    expect(editInput(), '重进后首次失焦=退出编辑态（Esc 残留标志已清）').toBeNull()
     expect(row('甲'), '行名=原值恢复').toBeDefined()
     expect(host?.querySelector('.lib-dd-panel'), '面板保持开').not.toBeNull()
   })
 
-  it('失焦=恢复原值不保存（票面「不慎点到时失焦即可恢复」——与批 A 失焦=提交相反锚）', async () => {
+  it('同名 Enter=退出编辑零通道调用（批 tagrows 同名预检承接——!dirty 短路〔RR1-W4b〕）', async () => {
     await renderDropdown([], vi.fn())
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
+    await setType(input, '乙二')
+    await setType(input, '甲') // 改回同名（色未动）=零 dirty
+    await pressKey(input, 'Enter')
+    expect(stubApi.tags.rename, '同名=rename 零调用').not.toHaveBeenCalled()
+    expect(stubApi.tags.setColor, '同色=setColor 零调用').not.toHaveBeenCalled()
+    expect(editInput(), '同名=退出编辑').toBeNull()
+    expect(row('甲')).toBeDefined()
+  })
+
+  it('失焦=恢复原值不保存（无 autosave——批 tagrows「不慎点到失焦即恢复」锚承接）', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    const input = await clickEdit('甲')
     await setType(input, '乙二')
     await act(async () => {
       input.blur()
@@ -281,36 +411,35 @@ describe('批 tagrows 名称行内编辑', () => {
     expect(host?.querySelector('.lib-dd-panel'), '面板保持开').not.toBeNull()
   })
 
-  it('IME 组词期 Enter（isComposing=true）→ no-op（INV-85 同类面守卫）', async () => {
+  it('焦点行内转移不还原：input 失焦 relatedTarget 在行内（点色点）→编辑保持（无 autosave 不吞行内操作）', async () => {
     await renderDropdown([], vi.fn())
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
+    await setType(input, '乙二')
+    const dot = dotByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`)!
+    await act(async () => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: dot }))
+    })
+    expect(editInput(), '行内转移焦点=编辑保持').not.toBeNull()
+    expect(stubApi.tags.rename, '行内转移零保存').not.toHaveBeenCalled()
+    await pressKey(editInput()!, 'Escape')
+  })
+
+  it('IME 组词期 Enter（isComposing=true）→ no-op（INV-85——inlineKeyDown 单源守卫）', async () => {
+    await renderDropdown([], vi.fn())
+    await openPanel()
+    const input = await clickEdit('甲')
     await setType(input, '组词中')
     await pressKey(input, 'Enter', true)
     expect(stubApi.tags.rename).not.toHaveBeenCalled()
     expect(editInput(), '组词期 Enter 不退出编辑').not.toBeNull()
   })
 
-  it('空白名/同名→退出编辑零通道调用', async () => {
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    let input = await clickName('甲')
-    await setType(input, '   ')
-    await pressKey(input, 'Enter')
-    expect(stubApi.tags.rename).not.toHaveBeenCalled()
-    expect(editInput()).toBeNull()
-    input = await clickName('甲')
-    await setType(input, '甲')
-    await pressKey(input, 'Enter')
-    expect(stubApi.tags.rename).not.toHaveBeenCalled()
-    expect(editInput()).toBeNull()
-  })
-
   it('保存失败：toast+编辑态保持开（S6 同型）', async () => {
     stubApi.tags.rename.mockRejectedValueOnce(new Error('boom'))
     await renderDropdown([], vi.fn())
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
     await setType(input, '乙二')
     await pressKey(input, 'Enter')
     await flush()
@@ -318,125 +447,36 @@ describe('批 tagrows 名称行内编辑', () => {
     expect(editInput(), '失败后编辑保持开').not.toBeNull()
   })
 
-  it('busy 飞行中失焦不恢复（N1 同型）：resolve 成功后才退出编辑+onMutated', async () => {
+  it('S8 busy 守卫：保存双发仅一次 rename；N1 飞行中失焦不恢复；resolve 成功后退出+onMutated', async () => {
     const onMutated = vi.fn()
     let resolveRename!: (v: unknown) => void
     stubApi.tags.rename.mockImplementation(() => new Promise((r) => { resolveRename = r }))
     await renderDropdown([], vi.fn(), onMutated)
     await openPanel()
-    const input = await clickName('甲')
+    const input = await clickEdit('甲')
     await setType(input, '乙二')
     await pressKey(input, 'Enter')
+    // S8：飞行中再点保存钮=零重复提交
+    await act(async () => {
+      saveButton()?.click()
+    })
+    expect(stubApi.tags.rename).toHaveBeenCalledTimes(1)
+    // N1：飞行中失焦不恢复
     await act(async () => {
       input.blur()
     })
     expect(editInput(), 'busy 失焦不恢复编辑态').not.toBeNull()
+    // RR1-W4a：busy 飞行中 Esc 禁退（requestClose no-op——「busy 飞行中 Esc 禁关」
+    // 声明由本例承载：编辑态保持=input 在场举证）
+    await pressKey(editInput()!, 'Escape')
+    expect(editInput(), 'busy 中 Esc 不得退编辑').not.toBeNull()
     await act(async () => {
-      // 模拟后端落库（deferred mock 不走 beforeEach 改写链）——refresh 取到新名
       tagsData = tagsData.map((t) => (t.id === 't-1' ? { ...t, name: '乙二' } : t))
       resolveRename({ ok: true, data: { id: 't-1', name: '乙二' } })
       await new Promise((r) => setTimeout(r, 0))
     })
     expect(editInput(), 'resolve 成功后退出编辑').toBeNull()
     expect(onMutated).toHaveBeenCalledTimes(1)
-    // RR1-W3 收敛出口断言：busy 成功落定=编辑态退出+值随 store 收敛（链式
-    // refresh 后行名=新名——挂起态不悬空）
     expect(row('乙二'), '值随 store 收敛（行名=新名）').toBeDefined()
-  })
-})
-
-describe('批 tagrows 颜色行内色板', () => {
-  it('点击颜色框→色板在场（8 预设+恢复默认）；Esc 关不改+面板保持开', async () => {
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    await clickDot('甲')
-    const pop = host?.querySelector('.lib-dd-pop')
-    expect(pop, '行内色板在场').not.toBeNull()
-    for (const c of TAG_COLOR_PRESETS) {
-      expect(buttonByLabel(`预设颜色 ${c}`), `预设 swatch ${c} 在场`).toBeDefined()
-    }
-    expect(buttonByLabel('恢复默认')).toBeDefined()
-    await act(async () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    })
-    expect(host?.querySelector('.lib-dd-pop'), 'Esc 关色板').toBeNull()
-    expect(host?.querySelector('.lib-dd-panel'), '面板保持开（Esc 分层级）').not.toBeNull()
-    expect(stubApi.tags.setColor).not.toHaveBeenCalled()
-  })
-
-  it('点色=保存：setColor 逐参+onMutated+色板关+色框着色（链式 refresh）', async () => {
-    const onMutated = vi.fn()
-    await renderDropdown([], vi.fn(), onMutated)
-    await openPanel()
-    await clickDot('甲')
-    await act(async () => {
-      buttonByLabel(`预设颜色 ${TAG_COLOR_PRESETS[0]}`)!.click()
-    })
-    await flush()
-    expect(stubApi.tags.setColor).toHaveBeenCalledWith({ tagId: 't-1', color: TAG_COLOR_PRESETS[0] })
-    expect(onMutated).toHaveBeenCalledTimes(1)
-    expect(host?.querySelector('.lib-dd-pop'), '保存后色板关').toBeNull()
-    expect(row('甲')?.querySelector<HTMLElement>('.lib-dd-dot')?.style.background).not.toBe('')
-  })
-
-  it('恢复默认路：setColor(tagId, null)', async () => {
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    await clickDot('甲')
-    await act(async () => {
-      buttonByLabel('恢复默认')!.click()
-    })
-    await flush()
-    expect(stubApi.tags.setColor).toHaveBeenCalledWith({ tagId: 't-1', color: null })
-  })
-
-  it('点外（色板遮罩）关不改：零 setColor+面板保持开', async () => {
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    await clickDot('甲')
-    await act(async () => {
-      host?.querySelector('.lib-dd-pop-veil')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(host?.querySelector('.lib-dd-pop')).toBeNull()
-    expect(host?.querySelector('.lib-dd-panel'), '面板保持开').not.toBeNull()
-    expect(stubApi.tags.setColor).not.toHaveBeenCalled()
-  })
-
-  it('保存失败面（RR1-W2）：toast 错误可见+busy 解除可关闭（色板保持开 S6 同型）', async () => {
-    stubApi.tags.setColor.mockRejectedValueOnce(new Error('boom'))
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    await clickDot('甲')
-    await act(async () => {
-      buttonByLabel(`预设颜色 ${TAG_COLOR_PRESETS[1]}`)!.click()
-    })
-    await flush()
-    expect(toastSpy).toHaveBeenCalledWith('标签操作失败', 'error')
-    expect(host?.querySelector('.lib-dd-pop'), '失败后色板保持开').not.toBeNull()
-    // busy 解除举证=遮罩可关（若 pending 未解除，requestClose 拦遮罩点击关不掉）
-    await act(async () => {
-      host?.querySelector('.lib-dd-pop-veil')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(host?.querySelector('.lib-dd-pop'), 'busy 解除后可关闭').toBeNull()
-  })
-
-  it('busy 飞行中 Esc 禁关（N1 同型）：resolve 成功后才关', async () => {
-    let resolveSetColor!: (v: unknown) => void
-    stubApi.tags.setColor.mockImplementation(() => new Promise((r) => { resolveSetColor = r }))
-    await renderDropdown([], vi.fn())
-    await openPanel()
-    await clickDot('甲')
-    await act(async () => {
-      buttonByLabel(`预设颜色 ${TAG_COLOR_PRESETS[2]}`)!.click()
-    })
-    await act(async () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    })
-    expect(host?.querySelector('.lib-dd-pop'), 'busy 中 Esc 不得关').not.toBeNull()
-    await act(async () => {
-      resolveSetColor({ ok: true, data: { id: 't-1', name: '甲', color: null } })
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    expect(host?.querySelector('.lib-dd-pop'), 'resolve 后色板关').toBeNull()
   })
 })
