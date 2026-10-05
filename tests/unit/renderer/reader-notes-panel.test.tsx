@@ -120,7 +120,11 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       typeInto(body, '草稿')
     })
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
-    expect(host?.textContent).toContain('未保存')
+    // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点「保存」（原「未保存」状态文字
+    // 随钮面合一退役——语义等价：pending 镜像即 dirty 信号）
+    const btn = host?.querySelector('button') as HTMLButtonElement
+    expect(btn.textContent).toBe('保存')
+    expect(btn.disabled).toBe(false)
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1600)
     })
@@ -187,23 +191,26 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     await act(async () => {
       await Promise.resolve()
     })
-    // A 的保存失败此刻落地（savedAt 未推进+周期终点）——B 面板不得显示保存失败
+    // A 的保存失败此刻落地（[B3] store 镜像 saveFailed 置位；切走时卸载面 flush
+    // 已在等待在途——失败后自动以 pending 合并态重试一次=save#2 挂起）
     await act(async () => {
       rejectSave?.(new Error('A save failed'))
-      await Promise.resolve()
-      await Promise.resolve()
+      for (let i = 0; i < 8; i++) await Promise.resolve()
     })
-    expect(host?.textContent).not.toContain('保存失败')
+    // B 面板不受 A 域影响：自身 clean 态「已保存」；不得显 A 的 error 钮「重试」
+    expect(host?.textContent).not.toContain('重试')
     expect(host?.textContent).toContain('已保存')
-    // W3：切回 A——A 的保存失败必须可见（重试入口不失联；周期判定 per-paper 分键）
+    // W3：切回 A——A 的保存失败必须可见（重试入口不失联；error 态 per-paper 分键）。
+    // [B3] 切回触发 load 合并（flush 重试在途）；重试亦失败→A 呈 error 钮「重试」
     notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: 'A 的编辑', createdAt: 't', updatedAt: 't1' } })
     act(() => {
       useReaderStore.setState({ activeId: 'p-1' })
     })
     await act(async () => {
-      await Promise.resolve()
+      rejectSave?.(new Error('A retry failed'))
+      for (let i = 0; i < 8; i++) await Promise.resolve()
     })
-    expect(host?.textContent).toContain('保存失败')
+    expect(host?.textContent).toContain('重试')
   })
 })
 

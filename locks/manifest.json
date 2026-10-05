@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-05T13:11:37.8909778Z",
+    "generatedAt":  "2026-10-05T15:58:14.6181459Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "cc1d21bcbc7d154e8b2632a69ac441231919cfa8fa520b60a268b6fa4b16eb42"
+                      "sha256":  "f3d4506293ed178b3abd6f9be346b552fd0372c2275e09149131b6f9e24a9e04"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "492a7cdc71600916d8740025ff1724ab6561e3abd8a9539e4ce2df7a40a06358"
+                      "sha256":  "9809e684f3f17ab83c6bcf285417792d55dc7f0357c99286dc8e9acc2fbca361"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -323,7 +323,7 @@
                   },
                   {
                       "path":  "tests/e2e/reader-text.spec.ts",
-                      "sha256":  "d0c6caf80e918d54bcf62bec7f097541f2955834670601550bc8ff11e167758c"
+                      "sha256":  "59067493ba272a115b50f2523f4d1dc441881775f94e1fecf170220566d71f3c"
                   },
                   {
                       "path":  "tests/e2e/reading-time-replay.spec.ts",
@@ -599,7 +599,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/app-quit-dirty.test.tsx",
-                      "sha256":  "2d0391844fcbb70fd82c078bb355d97ef8099ee7d2e97a0dfc5c0098d210400e"
+                      "sha256":  "9941805ef07a26acca61f7f290996c542b946f3c94b488d29ae96445134229f1"
                   },
                   {
                       "path":  "tests/unit/renderer/app-shell.test.tsx",
@@ -851,11 +851,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/notes.store.test.ts",
-                      "sha256":  "eed7280da441d13322703681dbd6d6757caebc37f3b0586eca45837fdec6e380"
+                      "sha256":  "c5cc6950f9232cb76b70afeeeb8374366ae4092206b99595dfd4863671b1e282"
                   },
                   {
                       "path":  "tests/unit/renderer/notes-panel-status.test.tsx",
                       "sha256":  "1af718155225ffb0c2eb39616b562894d5f9394938e288a62d002ccb9aa5a51c"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/notes-store-b3.test.ts",
+                      "sha256":  "1fe6512796524b585d20a9a68aa8a1dfe863bb28e60b478c81780b5c5cbe9582"
                   },
                   {
                       "path":  "tests/unit/renderer/outline-aside.test.tsx",
@@ -927,7 +931,11 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader-notes-panel.test.tsx",
-                      "sha256":  "c8e7d4e79b5c90fe2e2a8aeadba528b4355447a522f99e7568208ed03fb83e93"
+                      "sha256":  "a1b6728294ac95d74a599be3efa41475152e19d24cb920a13b8066cd5c8ebfc9"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/reader-notes-panel-b3.test.tsx",
+                      "sha256":  "ff2fb84e049a570cf81e5c8d27a068b807bf54203582f4a6a2338fa736465e53"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-page-open-race.test.tsx",
@@ -1023,7 +1031,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tab-dirty.test.tsx",
-                      "sha256":  "1ab18fa322e144d57a0df0d3c1ee2b29b1d9b55b2f5f2ea0edeb819c68d61ab7"
+                      "sha256":  "bb3eba73a92f5df2e95c8512276239df288985ea860d1f9b3d87442073ea1b54"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown.test.tsx",

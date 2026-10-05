@@ -52,7 +52,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       })
     )
     const useStore = await loadStore({ notes: { get: vi.fn(), save } })
-    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false } } })
     useStore.getState().saveSoon('p-1')
     await vi.advanceTimersByTimeAsync(1600)
     expect(useStore.getState().noteByPaper['p-1']?.savedAt).toBe('t2')
@@ -283,7 +283,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'E', message: '写盘失败' } }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1') // 首载成功（空草稿）——过首载门控，否则 saveSoon 被吞
-    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false } } })
 
     useStore.getState().edit('p-1', { contentMd: 'x' })
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
@@ -305,7 +305,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     const save = vi.fn().mockImplementationOnce(() => new Promise<{ ok: true; data: { id: string; paperId: string; contentMd: string; createdAt: string; updatedAt: string } }>((r) => { resolveSave = r }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1') // 首载成功——过首载门控，否则 saveSoon 被吞
-    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false } } })
+    useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false } } })
 
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')

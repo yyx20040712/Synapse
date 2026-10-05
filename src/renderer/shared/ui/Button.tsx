@@ -7,8 +7,8 @@
  *
  * ── 接口层 ──
  * - export function Button(props: { variant?: 'primary'|'secondary'|'danger'|'ghost';
- *     size?: 'sm'|'md'; loading?: boolean; disabled?: boolean;
- *     onClick(): void; children: ReactNode }): JSX.Element
+ *     size?: 'sm'|'md'; loading?: boolean; disabled?: boolean; title?: string;
+ *     ariaLabel?: string; onClick(): void; children: ReactNode }): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - 颜色一律 var(--*)，禁止 Tailwind 调色板硬编码
@@ -31,16 +31,27 @@ export function Button(props: {
   size?: 'sm' | 'md'
   loading?: boolean
   disabled?: boolean
+  /** 布局类透传（皮肤类由变体单源——禁经此注入颜色/字号） */
+  className?: string
+  /** 悬停提示（无障碍名不占用——内容文本优先） */
+  title?: string
+  /** 显式无障碍名（态语义补充——须以可见文字开头形：WCAG 2.5.3 label-in-name） */
+  ariaLabel?: string
+  /** 动态区域播报（如保存钮 aria-live=polite——文本变化即 AT 播报，零视觉影响） */
+  ariaLive?: 'polite' | 'assertive' | 'off'
   onClick: () => void
   children: ReactNode
 }): JSX.Element {
-  const { variant = 'secondary', size = 'md', loading = false, disabled = false, onClick, children } = props
+  const { variant = 'secondary', size = 'md', loading = false, disabled = false, className, title, ariaLabel, ariaLive, onClick, children } = props
   const inactive = disabled || loading
   return (
     <button
       type="button"
       disabled={inactive}
-      className={`syn-btn-${variant} inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]} disabled:cursor-not-allowed disabled:opacity-50`}
+      title={title}
+      aria-label={ariaLabel}
+      aria-live={ariaLive}
+      className={`syn-btn-${variant} inline-flex items-center gap-1 rounded border ${SIZE_CLASS[size]}${className !== undefined ? ` ${className}` : ''} disabled:cursor-not-allowed disabled:opacity-50`}
       onClick={() => {
         if (!inactive) onClick()
       }}

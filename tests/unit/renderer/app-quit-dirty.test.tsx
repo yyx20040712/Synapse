@@ -112,7 +112,7 @@ describe('App 组合根 —— hook 链稳定性（P7-C 崩溃回归锁）', () 
         useReaderStore.setState({ order: ['p1'] })
         useNotesStore.setState({
           noteByPaper: {
-            p1: { contentMd: 'e2e 总评内容', saving: false, savedAt: null, pending: true }
+            p1: { contentMd: 'e2e 总评内容', saving: false, savedAt: null, pending: true, saveFailed: false }
           }
         })
       })
