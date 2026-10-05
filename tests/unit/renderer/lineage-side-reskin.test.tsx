@@ -87,7 +87,7 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     await flush()
     const cap = q('.insp-cap')
     expect(cap?.textContent).toContain('节点详情')
-    expect(cap?.textContent).toContain('#004')
+    expect(cap?.textContent).toContain('·004')
     expect(q('.insp-title')?.textContent).toBe('节点A')
     // [②U4/P-11] 星标态禁用呈现（title 行内提示）
     const star = q('[data-testid="panel-star"]')
@@ -171,5 +171,22 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(host?.textContent).toContain('主题节点无笔记')
     expect(q('[data-testid="lineage-side-postpone"]')).toBeNull()
     expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('theme')
+  })
+
+  it('[F-UIRES-03 B4③] 头部收起钮：onCollapse 在场→点击上抛；缺席→零渲染（Page 态归 LineagePage hook 承载）', async () => {
+    const onCollapse = vi.fn()
+    mount(<LineageSidePanel node={node('A')} onJumpToPaper={vi.fn()} onCollapse={onCollapse} />)
+    await flush()
+    const btn = host?.querySelector<HTMLButtonElement>('[data-testid="lineage-sidebar-collapse"]')
+    expect(btn).not.toBeNull()
+    expect(btn?.getAttribute('aria-label')).toBe('收起详情面板')
+    act(() => {
+      btn?.click()
+    })
+    expect(onCollapse).toHaveBeenCalledTimes(1)
+    // 缺席态负锚：无回调=零按钮（既有消费面零污染）
+    mount(<LineageSidePanel node={node('A')} onJumpToPaper={vi.fn()} />)
+    await flush()
+    expect(q('[data-testid="lineage-sidebar-collapse"]')).toBeNull()
   })
 })

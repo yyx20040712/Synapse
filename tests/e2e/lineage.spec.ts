@@ -275,7 +275,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       '未定月 · 1 篇',
       '未定月 · 1 篇'
     ])
-    expect(await win.locator('.c-no').allTextContents()).toEqual(['#001', '#002', '#003'])
+    expect(await win.locator('.c-no').allTextContents()).toEqual(['·001', '·002', '·003'])
 
     await app.close()
   })

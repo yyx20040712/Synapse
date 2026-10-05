@@ -8,7 +8,7 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * [F-FOLDER-02·D/F] meta-year-month e2e —— 元数据编辑全链（MetaEditDialog
  * month/IF 扩字段+onSaved 失效重取=F-LIBUI-01 备案缺口修）：
  * ①改 year+month → 节点排序键更新（脉络时间线年份分组重排）；
- * ②pubNo 库级重派生（INV-92——year 变更后全序重排，详情面板 #N 徽标变值）；
+ * ②pubNo 库级重派生（INV-92——year 变更后全序重排，详情面板 ·N 徽标变值——F-UIRES-03 B4①）；
  * ③改题名 → 库表格即时跟随（onSaved→library.list 失效重取——滞旧缺陷根治）。
  * 断言锚真实渲染文本。
  */
@@ -41,10 +41,10 @@ test('改 year/month→节点排序键更新+pubNo 重派生+表格不滞旧', a
     ).toBe(true)
   }
 
-  // 选中 P1：详情面板 pubNo 徽章=#002（库级全序：乙 2021 在前）
+  // 选中 P1：详情面板 pubNo 徽章=·002（库级全序：乙 2021 在前；F-UIRES-03 B4① #→·）
   await win.getByText(P1.title).first().click()
   const idBadge = win.locator('.lib-dr-id span').first()
-  await expect(idBadge).toHaveText('#002', { timeout: 10_000 })
+  await expect(idBadge).toHaveText('·002', { timeout: 10_000 })
 
   // 编辑元数据：year 2023→2020+month=5+题名改写（月份扩字段+F-LIBUI-01 缺口面）
   await win.getByRole('button', { name: '编辑元数据' }).click()
@@ -55,11 +55,11 @@ test('改 year/month→节点排序键更新+pubNo 重派生+表格不滞旧', a
   await dialog.getByRole('button', { name: '保存' }).click()
   await expect(dialog).toHaveCount(0, { timeout: 10_000 })
 
-  // ②pubNo 库级重派生：P1（2020）跃居 #001（乙 2021 顺延 #002）
-  await expect(idBadge).toHaveText('#001', { timeout: 10_000 })
-  // 节点排序键更新：YEAR-MO 行携带脉络框 2020 年 · 5 月（month 扩字段落节点）
+  // ②pubNo 库级重派生：P1（2020）跃居 ·001（乙 2021 顺延 ·002）
+  await expect(idBadge).toHaveText('·001', { timeout: 10_000 })
+  // 节点排序键更新：YEAR-MO 行携带脉络框 2020-05（month 扩字段落节点；B4② 新格式）
   const yearMo = win.locator('.lib-fld').filter({ hasText: 'YEAR-MO' })
-  await expect(yearMo).toContainText('2020（脉络框：2020 年 · 5 月）')
+  await expect(yearMo).toContainText('2020（脉络框：2020-05）')
 
   // ③表格不滞旧：onSaved→library.list 失效重取——新题名行无需手刷即在场
   // （锚列表行 .lib-r-title——详情面板 h2 同名属正常双现，收敛单元素）

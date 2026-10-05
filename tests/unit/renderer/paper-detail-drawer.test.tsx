@@ -130,17 +130,17 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
     await renderPanel(
       makeDetail({ year: 2023, pubNo: 1, lineage: { year: 2023, month: 6, edgeCount: 3 } })
     )
-    expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023 年 · 6 月）')
+    expect(fldValue('YEAR-MO')).toBe('2023（脉络框：2023-06）')
   })
 
   it('脉络命中 month=null：「未定月框」措辞（未定月=合法态）', async () => {
     await renderPanel(makeDetail({ pubNo: 1, lineage: { year: 2023, month: null, edgeCount: 1 } }))
-    expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023 年 · 未定月）')
+    expect(fldValue('YEAR-MO')).toBe('2026（脉络框：2023）')
   })
 
   it('组合格（门一 k1-N6 回炉补例）：detail.year=null 且脉络命中→YEAR-MO 值位「—」+脉络框括注', async () => {
     await renderPanel(makeDetail({ year: null, pubNo: 1, lineage: { year: 2023, month: null, edgeCount: 2 } }))
-    expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023 年 · 未定月）')
+    expect(fldValue('YEAR-MO')).toBe('—（脉络框：2023）')
   })
 
   it('脉络未命中：YEAR-MO 只年份（关联节退役后无脉络行）', async () => {
@@ -230,6 +230,33 @@ describe('T3-P3 规格表抽屉——头区状态点与动作面', () => {
     }
     expect(buttonByText('去阅读器写笔记')?.classList.contains('lib-dr-btn-primary')).toBe(true)
     expect(buttonByText('编辑元数据')?.classList.contains('lib-dr-btn-ghost')).toBe(true)
+  })
+})
+
+describe('F-UIRES-03 B4② YEAR-MO 新格式三分支（设计稿 N8）', () => {
+  it('有月补零：lineage.month 单数位补零为 MM（2021-05 形——去「年 · 月」措辞）', async () => {
+    await renderPanel(makeDetail({ year: 2021, pubNo: 2, lineage: { year: 2021, month: 5, edgeCount: 1 } }))
+    expect(fldValue('YEAR-MO')).toBe('2021（脉络框：2021-05）')
+  })
+
+  it('month null=脉络框仅年（月段省略——「未定月」措辞退役）', async () => {
+    await renderPanel(makeDetail({ year: 2024, pubNo: 3, lineage: { year: 2019, month: null, edgeCount: 1 } }))
+    expect(fldValue('YEAR-MO')).toBe('2024（脉络框：2019）')
+  })
+
+  it('RR1 补例（d1-W2/k1-N3）：lineage.year null=「未定年」+月段强制省略（month 非 null 亦省——mo 门控双析取）', async () => {
+    await renderPanel(makeDetail({ year: 2023, lineage: { year: null, month: 6, edgeCount: 0 } }))
+    expect(fldValue('YEAR-MO')).toBe('2023（脉络框：未定年）')
+  })
+
+  it('无脉络命中：外层年份单值（year null=「—」现状零动）', async () => {
+    await renderPanel(makeDetail({ year: 2018 }))
+    expect(fldValue('YEAR-MO')).toBe('2018')
+    await act(async () => {
+      root?.unmount()
+    })
+    await renderPanel(makeDetail({ year: null }))
+    expect(fldValue('YEAR-MO')).toBe('—')
   })
 })
 

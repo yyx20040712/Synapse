@@ -57,17 +57,18 @@ function shortId(id: string): string {
   return id.length > 8 ? `${id.slice(0, 8)}…` : id
 }
 
-/** 脉络框月措辞：null=「未定月」（P5 month 列落位前恒缺省） */
-function monthWord(month: number | null): string {
-  return month === null ? '未定月' : `${month} 月`
-}
-
-/** YEAR-MO 值：无脉络=年份单值；命中=「2023（脉络框：2023 年 · 6 月）」式 */
+/** [F-UIRES-03 B4②] YEAR-MO 值四分支：无脉络=年份单值；命中=「2023（脉络框：
+ * 2023-06）」式——month 补零（6→06）/month null=仅年无月段（「未定月」措辞
+ * 退役）/lineage.year null=「未定年」+月段省略（措辞沿用） */
 function yearMoText(detail: PaperDetail): string {
   const y = detail.year === null ? '—' : String(detail.year)
   if (detail.lineage === undefined) return y
-  const ly = detail.lineage.year === null ? '未定年' : `${detail.lineage.year} 年`
-  return `${y}（脉络框：${ly} · ${monthWord(detail.lineage.month)}）`
+  const ly = detail.lineage.year === null ? '未定年' : String(detail.lineage.year)
+  const mo =
+    detail.lineage.year === null || detail.lineage.month === null
+      ? ''
+      : `-${String(detail.lineage.month).padStart(2, '0')}`
+  return `${y}（脉络框：${ly}${mo}）`
 }
 
 export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element {
@@ -125,14 +126,15 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
   }
 
   const status = DR_STATUS[detail.enrichStatus]
-  // [F-FOLDER-01] 短号同源：入脉络→「#」+三位零填充 pubNo（INV-92 库级派生
-  // ——与列表序号列/导出 lineage.json pub_no 同一编号源）；未入脉络→id 前 8
-  // 位短号现状零动（编号呈现面细化=F-FOLDER-02 票面）
+  // [F-FOLDER-01] 短号同源：入脉络→「·」+三位零填充 pubNo（INV-92 库级派生
+  // ——与列表序号列/导出 lineage.json pub_no 同一编号源；[F-UIRES-03 B4①]
+  // # 前缀→· U+00B7）；未入脉络→id 前 8 位短号现状零动（编号呈现面细化=
+  // F-FOLDER-02 票面）
   const idBadge =
     detail.lineage !== undefined
       ? // ?? 0=防御注记（回炉 N5）：pubNo 由 DETAIL_SQL 窗口恒携（detailById
         // 单源装配），lineage 在场蕴含 pubNo 在场——0 兜底为不可达路径防崩
-        `#${String(detail.pubNo ?? 0).padStart(3, '0')}`
+        `·${String(detail.pubNo ?? 0).padStart(3, '0')}`
       : shortId(detail.id)
   return (
     <div className="lib-dr">

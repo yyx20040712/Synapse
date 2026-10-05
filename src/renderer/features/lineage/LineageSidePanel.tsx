@@ -25,6 +25,7 @@ import type { CSSProperties } from 'react'
 import type { AiNote } from '@shared/models/ai-note'
 import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
+import { ICON_CHEVRONS_RIGHT } from '../../shared/icons'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideManualNote } from './LineageSideManualNote'
 
@@ -80,6 +81,8 @@ export function LineageSidePanel(props: {
   /** [T3-P8→②U4 退役] core 徽章消费面已随行 9 退役（prop 删除——数据面留） */
   /** 含金量摘要（[②U4] 扩 venue/impactFactor——卡 L3 同源单路径） */
   metrics?: LineagePaperMetrics | null
+  /** [F-UIRES-03 B4③] 头部收起钮回调（Page 态归 useSidebarPane；缺席=零渲染） */
+  onCollapse?: () => void
 }): JSX.Element {
   const { node } = props
   if (node === null) {
@@ -87,7 +90,7 @@ export function LineageSidePanel(props: {
       <div
         data-testid="lineage-side-panel"
         className="lg-inspector flex h-full items-center justify-center p-4 text-center text-xs"
-        style={{ ...SIDE_GLASS, color: 'var(--text-dim)' }}
+        style={{ ...SIDE_GLASS, width: '100%', color: 'var(--text-dim)' }}
       >
         点击卡片查看详情
       </div>
@@ -119,18 +122,33 @@ export function LineageSidePanel(props: {
     <div
       data-testid="lineage-side-panel"
       className="lg-inspector flex h-full flex-col gap-2 overflow-auto p-3.5 text-xs"
-      style={SIDE_GLASS}
+      style={{ ...SIDE_GLASS, width: '100%' }}
     >
       <section data-testid="lineage-side-meta" data-binding={node.paperId === null ? 'theme' : 'paper'}>
         <div className="insp-cap">
           <span>节点详情</span>
           <span className="flex items-center gap-2">
-            {props.pubNo != null && <span>{`#${String(props.pubNo).padStart(3, '0')}`}</span>}
+            {/* [F-UIRES-03 B4①] 骑缝号前缀 #→·（U+00B7 MIDDLE DOT） */}
+            {props.pubNo != null && <span>{`·${String(props.pubNo).padStart(3, '0')}`}</span>}
             {/* 星标态禁用呈现（P-11——静态样式；F-STAR-01 DB 窗口后启用） */}
             <span className="panel-star" data-testid="panel-star" title="星标功能即将开放">
               <PanelStarGlyph />
               星标
             </span>
+            {/* [F-UIRES-03 B4③] 头部收起钮（回调缺席零渲染——既有消费面零污染；
+                宽度直通 width:100%=aside 行内宽覆盖 CSS 252 回退值） */}
+            {props.onCollapse !== undefined && (
+              <button
+                type="button"
+                className="side-collapse-btn syn-icon-btn"
+                data-testid="lineage-sidebar-collapse"
+                title="收起详情面板"
+                aria-label="收起详情面板"
+                onClick={props.onCollapse}
+              >
+                {ICON_CHEVRONS_RIGHT}
+              </button>
+            )}
           </span>
         </div>
         <div className="insp-title">{node.title}</div>

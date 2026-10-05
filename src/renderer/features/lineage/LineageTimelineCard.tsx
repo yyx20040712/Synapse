@@ -9,7 +9,7 @@
  *   T2×T3 仲裁：focus 点星标=仅星标域 no-op 不触发卡身聚焦 toggle——stopProp
  *   隔离两域）→标签紧随（最多 2+溢出「+N」——[A1a 换源] 数据源=tagNames
  *   伴生 map[文献库标签域，键=paperId]；node.tags 脉络私有域退役接替面[卡
- *   渲染零消费——A1b 退役前账]）→骑缝号 #NNN（INV-92 pubNo——右缘）。
+ *   渲染零消费——A1b 退役前账]）→骑缝号 ·NNN（INV-92 pubNo——右缘；[F-UIRES-03 B4①] #→·）。
  *   **核 chip 删**（退役行 9：core UI 消费面全退役——数据面留 AI 重做域；
  *   isCore 预计算传卡链随拆）。
  * - **L2**：文献名 2 行 9.3px 截断（line-clamp 2——title 属性全文 tooltip）。
@@ -141,7 +141,8 @@ export function LineageTimelineCard(props: {
           </span>
         ))}
         {overflow > 0 && <span className="c-tag-more">+{overflow}</span>}
-        <span className="c-no">#{String(props.no).padStart(3, '0')}</span>
+        {/* [F-UIRES-03 B4①] 骑缝号前缀 #→·（U+00B7 MIDDLE DOT） */}
+        <span className="c-no">·{String(props.no).padStart(3, '0')}</span>
       </div>
       <div className="c-title" title={n.title}>
         {n.title}

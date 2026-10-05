@@ -239,8 +239,8 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
       />
     )
     // 编号=pubNo 值直取（非组内序）；主题节点无键=0 不呈现编号语义
-    expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('#012')
-    expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('#007')
+    expect(cardOf('LATE').querySelector('.c-no')?.textContent).toBe('·012')
+    expect(cardOf('EARLY').querySelector('.c-no')?.textContent).toBe('·007')
   })
 
   it('[②U4 迁移] 卡三层真文本：L2 题名+L3 期刊/IF/被引（可选省略）；旧 c-idea/c-meta 族退役零残留', () => {

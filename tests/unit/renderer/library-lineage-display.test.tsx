@@ -7,8 +7,8 @@
  * （D-I-3：P5 不加额外前缀，与位置序同形态；F-LIBUI-01 ⑧ 起 # 前缀删）；
  * 未入脉络→ordinal 位置序现状零动；年月列级联（D-I-2）：lineage 命中且
  * year/month 齐→YYYY-MM 补零/任一 null→paper.year 单值（null→「—」现状
- * 零动）；PaperDetailPanel .lib-dr-id 短号同源：入脉络→#三位零填充
- * catalogNo（票面 ⑧ 范围=PaperRow，面板短号 # 前缀保留）/未入脉络→id 前
+ * 零动）；PaperDetailPanel .lib-dr-id 短号同源：入脉络→·三位零填充
+ * pubNo（[F-UIRES-03 B4①] 面板短号前缀 #→·）/未入脉络→id 前
  * 8 位现状零动；抽屉文案（YEAR-MO）T3-P3 预渲染零动——脉络行已随「关 联」
  * 节退役（F-LIBUI-01 ⑤）。
  * 真相源=docs/design/2026-09-27_t3p5-lineage-data-layer-design-final.md §6/§7。
@@ -149,7 +149,7 @@ describe('T3-P5 PaperDetailPanel 短号同源（D-I-3）', () => {
     await renderPanel(
       makeDetail({ id: 'paper-1234567890', pubNo: 12, lineage: { year: 2021, month: 3, edgeCount: 2 } })
     )
-    expect(drIdText()).toContain('#012')
+    expect(drIdText()).toContain('·012')
     expect(drIdText()).not.toContain('paper-12')
   })
 
@@ -166,7 +166,7 @@ describe('T3-P5 PaperDetailPanel 短号同源（D-I-3）', () => {
       k: row.querySelector('.lib-fld-k')?.textContent ?? '',
       v: row.querySelector('.lib-fld-v')?.textContent ?? ''
     }))
-    expect(flds.find((f) => f.k === 'YEAR-MO')?.v).toBe('2023（脉络框：2023 年 · 6 月）')
+    expect(flds.find((f) => f.k === 'YEAR-MO')?.v).toBe('2023（脉络框：2023-06）')
     expect(flds.find((f) => f.k === '脉络'), '脉络行已退役').toBeUndefined()
   })
 })

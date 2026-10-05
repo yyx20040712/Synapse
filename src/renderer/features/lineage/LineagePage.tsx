@@ -23,6 +23,7 @@
 import { useEffect, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaperAnchored } from '../../shared/open-paper-bus'
+import { ICON_CHEVRONS_LEFT } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
@@ -32,6 +33,12 @@ import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
 import type { NavFolder } from './nav-graph-picker'
 import { LineageSidePanel } from './LineageSidePanel'
+import {
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_RAIL_WIDTH,
+  useSidebarPane
+} from './use-sidebar-pane'
 
 export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
@@ -53,6 +60,8 @@ export function LineagePage(): JSX.Element {
     selectedNode !== null && selectedNode.paperId !== null
       ? (paperMetrics[selectedNode.paperId] ?? null)
       : null
+  // [F-UIRES-03 B4③] 右侧详情栏宽/收起态（早退 return 前无 dip——hook 恒序）
+  const sidebar = useSidebarPane()
 
   useEffect(() => {
     // [F-LGRAPH-01②A1 兑现] 挂载恒走模式态 reset（P-1「进页缺省」直读——二次
@@ -164,19 +173,54 @@ export function LineagePage(): JSX.Element {
           />
         </div>
         {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
-            尺寸直通（接线零动，纯容器样式归并）；[②U4/P-16] 面板宽 252=
-            .lg-inspector 承载（aside 不再钉死 w-72） */}
-        <aside className="shrink-0 overflow-hidden">
-          <LineageSidePanel
-            node={selectedNode}
-            onJumpToPaper={handleJumpToPaper}
-            pubNo={
-              selectedNode !== null && selectedNode.paperId !== null
-                ? (pubNos[selectedNode.paperId] ?? null)
-                : null
-            }
-            metrics={selMetrics}
-          />
+            尺寸直通；[②U4/P-16] 面板缺省宽 252=.lg-inspector 无 JS 回退；
+            [F-UIRES-03 B4③] JS 态宽/收起=useSidebarPane 行内承载（拖右缘
+            4px 手柄调宽 clamp 200–480+localStorage 持久；收起=48px 窄条
+            点击任意处展开，头部收起钮在 LineageSidePanel） */}
+        <aside
+          data-testid="lineage-sidebar"
+          className="relative shrink-0 overflow-hidden"
+          style={{ width: `${sidebar.collapsed ? SIDEBAR_RAIL_WIDTH : sidebar.width}px` }}
+        >
+          {sidebar.collapsed ? (
+            <button
+              type="button"
+              data-testid="lineage-sidebar-rail"
+              className="lg-side-rail"
+              title="展开详情面板"
+              aria-label="展开详情面板"
+              onClick={sidebar.expand}
+            >
+              {ICON_CHEVRONS_LEFT}
+              <span className="lg-side-rail-label">详情</span>
+            </button>
+          ) : (
+            <>
+              <LineageSidePanel
+                node={selectedNode}
+                onJumpToPaper={handleJumpToPaper}
+                onCollapse={sidebar.collapse}
+                pubNo={
+                  selectedNode !== null && selectedNode.paperId !== null
+                    ? (pubNos[selectedNode.paperId] ?? null)
+                    : null
+                }
+                metrics={selMetrics}
+              />
+              <div
+                data-testid="lineage-sidebar-resizer"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="详情栏宽度"
+                aria-valuemin={SIDEBAR_MIN_WIDTH}
+                aria-valuemax={SIDEBAR_MAX_WIDTH}
+                aria-valuenow={sidebar.width}
+                title="拖拽调宽"
+                className="lg-side-resizer"
+                onPointerDown={sidebar.onResizeStart}
+              />
+            </>
+          )}
         </aside>
       </div>
     </div>

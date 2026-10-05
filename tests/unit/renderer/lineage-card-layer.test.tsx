@@ -104,7 +104,7 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     expect([...a.querySelectorAll('.c-tag')].map((e) => e.textContent)).toEqual(['方法', '流域'])
     expect(a.querySelector('.c-tag-more')?.textContent).toBe('+2')
     // 骑缝号保留（INV-92——L1 右缘）
-    expect(a.querySelector('.c-no')?.textContent).toBe('#012')
+    expect(a.querySelector('.c-no')?.textContent).toBe('·012')
     // 单标签无溢出
     expect([...cardOf('B').querySelectorAll('.c-tag')].map((e) => e.textContent)).toEqual(['单标签'])
     expect(cardOf('B').querySelector('.c-tag-more')).toBeNull()

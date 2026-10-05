@@ -3,8 +3,42 @@
    徽章/底部注记双击跳阅读器） */
 /* 检查面板（mockup .lg-inspector 族 L264-281——重皮肤结构性改造：既有
    testid/数据面/行为面全保活，容器仍驻 LineageSidePanel 玻璃底）；
-   [F-LGRAPH-01②U4/A5] 常驻栏位宽 252（P-16——面板常驻不收） */
+   [F-LGRAPH-01②U4/A5] 常驻栏位宽 252（P-16——面板常驻不收）；
+   [F-UIRES-03 B4③] 252 保留为无 JS 回退——JS 态宽=LineagePage aside 行内
+   style 承载（useSidebarPane 拖拽 200–480+持久），面板根行内 width:100% 直通 */
 .lg-inspector { width: 252px; }
+/* [F-UIRES-03 B4③] aside 右缘 4px 调宽手柄（cursor col-resize——票面钉死；
+   hover accent 提示=nav-resize-handle 先例同族） */
+.lg-side-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+}
+.lg-side-resizer:hover { background: var(--accent); }
+/* [F-UIRES-03 B4③] 收起态 48px 窄条（点击任意处展开——钮承载全条点击面）：
+   竖排「详情」+展开 chevron，底/左描边对齐面板玻璃语汇 */
+.lg-side-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding-top: 10px;
+  font-family: inherit;
+  font-size: var(--fs-tl-hint);
+  color: var(--dim);
+  background: var(--panel);
+  border: 0;
+  border-left: 1px solid var(--line);
+  cursor: pointer;
+}
+.lg-side-rail:hover { color: var(--accent); }
+.lg-side-rail-label { writing-mode: vertical-rl; letter-spacing: 4px; }
 .panel-star {
   display: inline-flex;
   align-items: center;
