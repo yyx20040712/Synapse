@@ -21,10 +21,14 @@ import { useSidebarPane } from '../../../src/renderer/features/lineage/use-sideb
 const W_KEY = 'synapse:sidebar:width'
 const C_KEY = 'synapse:sidebar:collapsed'
 
+/** [F-ESC-01 R3] 活引用捕获（同帧直调判别面——不经 dispatch 边界） */
+let liveSb: ReturnType<typeof useSidebarPane> | null = null
+
 /** 探针：挂 hook 暴露宽/收起态+两动作钮+手柄（断言读真 DOM；[B5②] 手柄补
  *  onKeyDown 接线=Page 手柄同型） */
 function Probe(): JSX.Element {
   const sb = useSidebarPane()
+  liveSb = sb
   return (
     <div>
       <span data-testid="sb-w">{sb.width}</span>
@@ -230,6 +234,23 @@ describe('F-UIRES-03 B4③ useSidebarPane——右侧详情栏调宽/收起', ()
     expect(evOther.defaultPrevented).toBe(false)
     // 步进随持久化单点写
     expect(window.localStorage.getItem(W_KEY)).toBe('480')
+  })
+
+  it('[F-ESC-01 R3] 同帧连击判别：同一 act 内两次直调 onResizeKey ArrowRight→284（函数式=绿；闭包读值=两次同读 252 必红）', () => {
+    mount()
+    type FakeKeyEvent = { key: string; preventDefault: () => void }
+    const keyEvt = (k: string): FakeKeyEvent => ({ key: k, preventDefault: vi.fn() })
+    act(() => {
+      ;(liveSb as unknown as { onResizeKey: (ev: FakeKeyEvent) => void }).onResizeKey(keyEvt('ArrowRight'))
+      ;(liveSb as unknown as { onResizeKey: (ev: FakeKeyEvent) => void }).onResizeKey(keyEvt('ArrowRight'))
+    })
+    expect(text('sb-w')).toBe('284')
+    // [RR2 W3] 回退段判别镜像：284−32=252（闭包形态=两读 284 得 268 必红）
+    act(() => {
+      ;(liveSb as unknown as { onResizeKey: (ev: FakeKeyEvent) => void }).onResizeKey(keyEvt('ArrowLeft'))
+      ;(liveSb as unknown as { onResizeKey: (ev: FakeKeyEvent) => void }).onResizeKey(keyEvt('ArrowLeft'))
+    })
+    expect(text('sb-w')).toBe('252')
   })
 
   it('[B5②] 收起态键盘零操作（沿拖拽先例语义——窄条上调宽无意义）', () => {

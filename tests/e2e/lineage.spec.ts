@@ -1308,6 +1308,45 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await app.close()
   })
 
+
+  /**
+   * [F-ESC-01] T12d=pendingLink 提示条自治 Esc 真链路（件①）：右键「连线
+   * 到…」进目标选取态→Esc 关闭提示条（data-esc-family=menu 同族自治监听）
+   * →再点目标卡=普通选中不建边（pendingLink 已清——edges 计数不变）；
+   * 零写动作不入暂存（无 dirty，close 免保存拦截）。
+   */
+  test('T12d pendingLink 提示条 Esc 退出（F-ESC-01：Esc 后点卡不建边）', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t12d-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    // 右键源卡「连线到…」→目标选取提示条在场（件①真链路入口）
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    await root.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await root.click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '连线到…' }).click()
+    await expect(win.getByTestId('lineage-pending-link')).toBeVisible()
+    // Esc=提示条自治关闭（键盘退出径——原仅「取消」钮）
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('lineage-pending-link')).toHaveCount(0)
+    // 选取态已清：再点目标卡=普通选中不建边（edges 计数不变）
+    await cardA.click()
+    await expect(win.getByTestId('lineage-side-panel')).toContainText('脉络甲文献')
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(0)
+    await app.close()
+  })
   /**
    * [F-LGRAPH-01②U6/U7] T13=聚焦 dim+缩放+拖拽候选槽+退役零残留。
    * [F-UIRES-03 T0] 缩放段经 zoomProbe 冒烟迁移（§8.1.2 绿路径——helper

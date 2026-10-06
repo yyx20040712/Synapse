@@ -22,7 +22,9 @@
  *   四键——ArrowLeft −16/ArrowRight +16 步进（clampSidebarWidth 同源钳）、
  *   Home/End 直达边界（SIDEBAR_MIN/MAX_WIDTH 常量直用）；其余键零操作；
  *   承载键 preventDefault（防 Home/End/箭头滚动页面）；收起态零操作（沿
- *   拖拽先例语义）。
+ *   拖拽先例语义）。[F-ESC-01 R3] ArrowLeft/Right
+ *   步进=函数式更新备查加固——闭包读值经 React 18 discrete flush 推演无
+ *   丢步进，防御同帧连击。
  */
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
@@ -155,10 +157,10 @@ export function useSidebarPane(): SidebarPane {
     if (collapsed) return
     if (ev.key === 'ArrowLeft') {
       ev.preventDefault()
-      setWidth(clampSidebarWidth(width - KEY_STEP_PX))
+      setWidth((w) => clampSidebarWidth(w - KEY_STEP_PX))
     } else if (ev.key === 'ArrowRight') {
       ev.preventDefault()
-      setWidth(clampSidebarWidth(width + KEY_STEP_PX))
+      setWidth((w) => clampSidebarWidth(w + KEY_STEP_PX))
     } else if (ev.key === 'Home') {
       ev.preventDefault()
       setWidth(SIDEBAR_MIN_WIDTH)

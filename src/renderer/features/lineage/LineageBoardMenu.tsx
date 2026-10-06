@@ -12,7 +12,8 @@
  *   动作型 toast 中文 reason（**树守卫宿主=LG-01 service upsertEdge 运行时
  *   守卫**——本件零守卫代码只接 toast 呈现=双保险同 08 按钮禁用语义）
  * - 目标选取模式（源节点菜单发起：「连线到…」/「改父…」）提示条（激活期
- *   ——R2-LG11 浅色板态：白底 accent 描边，行为零变）
+ *   ——R2-LG11 浅色板态：白底 accent 描边，行为零变）；[F-ESC-01①] 提示条
+ *   自治 Esc 键盘退出（INPUT/对话框/菜单让路三守卫——一次 Esc 只关最上层）
  * - 父边/管理入边派生驻本件（edges 经 store 自订阅；[F-LGRAPH-01②U8]
  *   kind 收敛后=首条入边+其余入边拆分）
  * - 状态归属不变：menu/pendingLink 与各对话框开关由宿主 LineageBoard 持有，
@@ -25,6 +26,7 @@
  *   2026-10-04] 核心想法对话框开关 props 随核心想法域全退役删除——对话框组
  *   挂点消亡）
  */
+import { useEffect } from 'react'
 import { useLineageStore } from './lineage.store'
 import { LineageNodeMenu } from './LineageNodeMenu'
 import type { LineageNode } from '@shared/models/lineage'
@@ -59,6 +61,29 @@ export function LineageBoardMenu(props: {
   const menuInEdges = menu === null ? [] : edges.filter((e) => e.toNode === menu.node.id)
   const menuParentEdge = menuInEdges[0] ?? null
 
+  // [F-ESC-01①] pendingLink 目标选取态自治 Esc（LineageNodeMenu 先例同型
+  // ——无 mode 门；提示条挂 data-esc-family=menu 标记=单口让路探测面〔非
+  // role=menu——语义非菜单〕）：守卫三段=①非 Escape/IME 组词早退；②目标
+  // 为 INPUT/TEXTAREA/contentEditable 时原生优先；③对话框层（role=dialog）
+  // 与菜单层（role=menu）在其上→让路（防 dialog/menu+pendingLink 同帧双关
+  // 两层——一次 Esc 只关最上层）。关闭经 props.setPendingLink(null) 回写
+  // （宿主 LineageBoard 持有态，本件勿直改）。
+  useEffect(() => {
+    if (pendingLink === null) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || e.isComposing) return
+      const t = e.target
+      if (t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        return // 输入焦点内=原生 Esc（改名取消等自治优先）
+      }
+      if (document.querySelector('[role="dialog"]') !== null) return
+      if (document.querySelector('[role="menu"]') !== null) return
+      setPendingLink(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [pendingLink, setPendingLink])
+
   return (
     <>
       {/* 目标选取模式提示条（连线到…/改父…激活期——R2-LG11 浅色板态：
@@ -68,6 +93,7 @@ export function LineageBoardMenu(props: {
           className="absolute left-1/2 top-2 z-(--z-float) flex -translate-x-1/2 items-center gap-2 rounded border px-3 py-1 text-xs"
           style={{ borderColor: 'var(--accent)', background: 'var(--panel)', color: 'var(--accent)' }}
           data-testid="lineage-pending-link"
+          data-esc-family="menu"
         >
           <span>{MODE_HINT[pendingLink.mode]}</span>
           <button type="button" className="underline" onClick={() => setPendingLink(null)}>

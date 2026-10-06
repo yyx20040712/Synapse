@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T06:33:49.5683003Z",
+    "generatedAt":  "2026-10-06T08:29:43.9133197Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "1cc399a48529700c610f03577390c7bad506c72f962acb093175f6defb680370"
+                      "sha256":  "8a233c2b676faf0cf833506a20944de3772ad2ee9d3bcb298a7f9f0a58e96bda"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "d926f7bb47877141dea556c7cff583263a5c385c50d1126b93d81b717fffedd6"
+                      "sha256":  "047677f2e2579b8f39811882cab909355b38e95fb6366e614c13a85a1ed175d2"
                   },
                   {
                       "path":  "tests/e2e/lineage-sidebar.spec.ts",
@@ -711,7 +711,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-c2-esc.test.tsx",
-                      "sha256":  "6bbc168cf6971fe59f8033b0adbfbb9d1aedc0bfa4be810c4a4cb5c1448261f5"
+                      "sha256":  "93f3fec9398ef3cf06c0078c6b65b8561608960cab62c4908eeff8e380c8557e"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
@@ -1135,7 +1135,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/use-sidebar-pane.test.tsx",
-                      "sha256":  "c2777c9b2f93c4955ea19e034f8611ada15dcc6a3922cb797eae7e64cf4afe8c"
+                      "sha256":  "d7286659f881fd0eb20efa40751e341046ad328d81b73d1bf37e2859907c9418"
                   },
                   {
                       "path":  "tests/unit/renderer/visual-snap-shortcut.test.tsx",
