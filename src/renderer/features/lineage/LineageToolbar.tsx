@@ -158,7 +158,7 @@ export function LineageToolbar(props: {
           className={tool === 'draw-solid' ? 'lg-btn ghost on' : 'lg-btn ghost'}
           data-testid="lineage-tool-solid"
           disabled={lock}
-          title="画实线（点两卡连边）"
+          title="画实线（从卡边锚点拖至目标卡）"
           onClick={() => view().toggleLineTool('solid')}
         >
           <LineToolIcon kind="solid" color={currentLineColor.solid} />
@@ -172,7 +172,7 @@ export function LineageToolbar(props: {
           className={tool === 'draw-dashed' ? 'lg-btn ghost on' : 'lg-btn ghost'}
           data-testid="lineage-tool-dashed"
           disabled={lock}
-          title="画虚线（点两卡连边）"
+          title="画虚线（从卡边锚点拖至目标卡）"
           onClick={() => view().toggleLineTool('dashed')}
         >
           <LineToolIcon kind="dashed" color={currentLineColor.dashed} />
@@ -208,9 +208,10 @@ export function LineageToolbar(props: {
         <span className="sr-only">重做</span>
       </button>
       <span className="drag-hint" data-testid="drag-hint">
-        {/* [F-UIRES-03 C1] 终态文案（主控裁决 h）：画线=点两卡连边（click-click
-            链落地）；拖动段=C3 月内调序（INV-107 改月单口沿承） */}
-        编辑中：拖动＝月内调序 · 画线＝点两卡连边
+        {/* [F-UIRES-03 C1→C2·P6] 终态文案（v1.11① CAD 正名）：画线=从卡边锚点
+            拖至目标卡（点两卡径=用户确认保留的隐藏等效径）；拖动段=C3 月内
+            调序（INV-107 改月单口沿承） */}
+        编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡
       </span>
       {saveStatus === 'error' && (
         <span

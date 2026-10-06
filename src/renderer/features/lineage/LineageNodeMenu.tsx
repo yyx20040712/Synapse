@@ -8,12 +8,16 @@
  * 退役删除——标签唯一源=文献库域；[A3 F-CONTRACTA-01 2026-10-04]「编辑
  * 核心想法」随核心想法域全退役删除——「核心想法」语义由全文笔记承接）。
  * [②U5] 「连接父文献…/管理人工连线…」双入口随人工父对话框退役删除（画线
- * 工具+线身右键菜单替代）。透明遮罩点击关闭（ESC 关闭归 Dialog 域——菜单
- * 轻量面不挂键盘）。所有动作只上抛回调——写路径收口在 Board→store。
+ * 工具+线身右键菜单替代）。透明遮罩点击关闭；[F-UIRES-03 C2·P5] Esc 全局
+ * 层序定稿=菜单层自治 Esc 补齐（原「ESC 归 Dialog 域——菜单轻量面不挂
+ * 键盘」语义随层序表修订；EdgeMenu 同型 document keydown+IME 守卫——单口
+ * use-lineage-esc 让路探测 [role="menu"] 协同）。所有动作只上抛回调——
+ * 写路径收口在 Board→store。
  * [F-LGRAPH-01②U8] ref 参考连接入口随综述边体系退役删除（mockup §3.8
  * 行 6）；kind 收敛后 tree/manual 入边区分消解——父边=首条入边、管理面对
  * 其余入边（菜单域重设计归轮 2 卡菜单域，本批最小重整）。
  */
+import { useEffect } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 
@@ -31,6 +35,16 @@ export interface LineageNodeMenuProps {
 
 export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
   const { node, parentEdge, anchor } = props
+  // [F-UIRES-03 C2·P5] 自治 Esc（EdgeMenu 同型）：菜单层让路下单口不接管，
+  // 关闭由本监听承载（IME 组词期 Esc=取消候选词非关闭——isComposing 守卫）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.isComposing) return
+      if (e.key === 'Escape') props.onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [props])
   return (
     <>
       {/* 透明遮罩：点击任意处关闭（菜单本体 stopPropagation） */}

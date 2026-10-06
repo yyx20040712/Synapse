@@ -31,6 +31,7 @@
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { MAIN_GRAPH_ID, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
+import { CardAnchorDots } from './CardAnchorDots'
 import type { TimelineCallbacks } from './LineageTimeline'
 
 /** L1 标签呈现上限（溢出「+N」——mockup §3.4 最多 2） */
@@ -160,6 +161,9 @@ export function LineageTimelineCard(props: {
         {impact !== null && <span className="c-if">{`IF ${impact}`}</span>}
         {cited !== null && <span className="c-cited">{`被引 ${cited}`}</span>}
       </div>
+      {/* [F-UIRES-03 C2·P1] 四边中点静态锚（直径 8 画布 px——DOM 常驻，
+          显隐 CSS 通道：.drawing 全卡∪hover 卡；pointer-events:none） */}
+      <CardAnchorDots />
       {/* [F-UIRES-03 C3·v1.7] 卡面两钮（双击链退役的显式入口——hover 呈现/
           编辑态收钮避让=CSS .card-jumps 族；stopPropagation 隔离卡身 click） */}
       <span className="card-jumps">

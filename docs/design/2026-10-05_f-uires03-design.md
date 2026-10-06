@@ -30,6 +30,11 @@
 > 行 B1 化——第二/三轮④系误答，用户以为所问=标签页面）：选线不变=
 > 维持 C1 语义；v1.12 开的色源/值域松动呈裁点随撤关闭（固定 6 色板
 > 不动）；B5=两件（两钮迁详情页+resizer 键盘）。
+> **v1.14（2026-10-06 C2 交付回写）**：§2 C2 落地态注记（三屋全链毕
+> ——锚层/高亮/Esc 层序/文案/避让五单元+INV-109 登记）+**F8 行勘误**
+> （±6 屏幕 px 系拟稿沿 R2 分析档旧值——实代码 lnfix1 已 12 内容坐标
+> 且先于 R2 反馈，按「现状判定不动」意图主句维持 12；主控预裁呈报
+> 可否决）+§4.3 锚定句更新（INV-109）。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -352,9 +357,12 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
 - 锚点形态=**四边中点静态锚（主控自裁=甲案——几何可机检）**：armed 或
   hover 卡时四边中点渲染圆点（直径 **8 画布 px**，fill #fff，stroke 1.5
   画布 px 主色——**画布坐标系随 zoom 缩放**）。
-- **单位域定稿（F8+delta-N3 三数值一行列全）**：±6 **屏幕 px**=吸附
-  判定域（现状判定不动）；锚点 8 **画布 px** 渲染（随 zoom 缩放）；高亮
-  放大至 12 **屏幕 px**+高亮环；预览线端点=锚心（画布坐标）。zoom 换算
+- **单位域定稿（F8+delta-N3 三数值一行列全；〔v1.14 勘误——「±6 屏幕 px」
+  系拟稿沿 R2 分析档旧值：实代码 lnfix1（2026-10-03）已放宽 DRAW_SNAP_R=12
+  内容坐标且先于 R2 反馈（10-04）——按「现状判定不动」括号明文意图主句，
+  **判定域维持 12 内容坐标零改**〕）**：吸附判定域=**12 内容坐标
+  （DRAW_SNAP_R——现状不动）**；锚点 8 **画布 px** 渲染（随 zoom 缩放）；
+  高亮放大至 12 **屏幕 px**+高亮环；预览线端点=锚心（画布坐标）。zoom 换算
   单点=吸附判定处（屏幕域 anchor 位置=画布锚心×zoom+pan）。e2e 测量
   断言原文（DoD 直引，防非确定失败立案线消耗）：`Math.abs(rect.left +
   rect.width / 2 - expectAnchorCenterX) <= 1`（rect=page.evaluate 取
@@ -383,6 +391,30 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
 > 通道设计先行，本单元不承载；本单元毕后其设计与 B4 障碍几何校准
 > N5 同批呈）。
 
+> **〔v1.14 C2 交付回写·2026-10-06——三屋全链毕（runId=20261006-f-uires03-c2）〕**
+> 五单元落地：①**P1 锚点静态层**=CardAnchorDots 新件（四边中点 div 圆点
+> DOM 常驻+显隐 CSS 单源 .drawing∪:hover；fill 经 --accent-ink token；
+> inset:-1px 卡 border 补偿）②**P2 吸附高亮演化**=DrawAnchorHint 改造
+> （dot 直径 12 屏幕 px=r=6/z 补偿+环 r=9/z+.snapped 类；idle=hint 通道/
+> dragging=snap 维经 DrawLayers 拆件分派——DrawPreview 吸附圆点 r3.2 收敛
+> 删除）③**P5 Esc 全局面层序**=anchor 维迁 view.store（C1「驻 hook」设计
+> 修订——escapeStep 单口触达必要通道，呈报可否决）+escapeStep 三层+
+> 菜单层让路探测 [role=menu]+LineageNodeMenu 自治 Esc 补齐（EdgeMenu
+> 同型）④**P6 drag-hint CAD 文案**=「画线＝从卡边锚点拖至目标卡」+两
+> icon title 同改⑤**P7 穿年份头避让**=buildSnapshot yearHeads+allObstacles
+> 三源并集单源（PAD 同源）+manual-override 负锚沿承。门链=executor
+> 基批+RR1 四件→门一 k1 B0W3N7 PWC+d1 B1W4N4 FAIL（B1=toggle-off 清锚
+> 缺口——**主控证伪撤回**：toggleLineTool 同 kind=C1 N9 无操作早退，
+> off 支不存在；小手钮/切图/pendingLink 闸/建边收尾四路全走 resetTool
+> 清锚+armed() 双层门控——d1 复核确认）→双席复核双 PASS（B0W0N3×2）
+> →probe 九项矩阵全绿（verify 258/2636 EXIT=0+e2e 七例+变异 A/B 独立
+> 复现+test-surface 142/142 stale 0+locks 363）→裁决部 GO_WITH_CONDITIONS
+> 七条件（C1-C7 收口全兑现）。**INV-109 已登记**（锚几何一致+吸附⇔判定
+> +Esc 层序+退出清锚守卫句）。挂账八项见交接书 v142（Dialog×Esc 交界面/
+> pendingLink Esc 立票建议/browse+focus hover 显锚呈裁/真实避让 e2e 缺位
+> 挂 F-ROUTE-02/dot 视觉规格+ring strokeWidth 未锁/4px 环带边缘效应/
+> drawline-rr1 夹具未同型补维/豁免双登冗余）。
+
 ## §3 数据面（承 §0 核正）
 - 迁移 015（C1 挂靠）：单值 UPDATE+备库；执行者 DoD=迁移前后 count 对账
   （探针脚本随票）。
@@ -400,7 +432,10 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
    （2026-10-06）——强制面=C1 单测两例+repo 读面钳制（域外色归一首色，
    自裁②）；变异②串格红证在档〕**
 3. **锚几何一致**：连线锚=卡四边中点（画布坐标）；高亮出现⇔落点吸附。
-   强制=C2 e2e 三档 zoom+一致性断言。锚定=C2 落地。
+   强制=C2 e2e 三档 zoom+一致性断言。锚定=C2 落地。**〔v1.14 已登记=
+   INV-109（2026-10-06）——锚几何一致+吸附指示⇔判定一致+Esc 全局面层序
+   +退出画线域清锚守卫句；强制面=e2e 三档（样板③/C2a/C2b）+单测全格
+   （c2-anchors/c2-esc）+变异 A/B 双向红证（probe 独立复现）〕**
 4. **保存按钮协议**：四态+pending 缓冲（saving 中输入不丢）；点击立即
    落盘清防抖。强制=B3 状态机单测全格。锚定=B3 落地。
 5. **AI 显示单面**：AI 笔记显示面唯一=脉络详情「AI 评估与建议」节。

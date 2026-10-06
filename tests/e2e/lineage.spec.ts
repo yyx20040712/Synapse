@@ -1777,18 +1777,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * [F-UIRES-03 T0] 样板③=画线锚点几何（设计稿 §8.1.3/§2 C2——INV-96 锚
-   * 渲染面）。进画线模式（lineage-tool-solid——[F-UIRES-03 C1] 点图标=进
-   * 画线态不开板，原收列表前置步零需求）+armed hover 近右缘中点锚，断言锚点 DOM（DrawAnchorHint
-   * 渲染物=svg.draw-anchor-hint 内 circle）中心 vs 所属卡右缘几何中点
-   * |diff|≤1px（expectRectNear 同口径——circle r=3.2 画布 px→屏 r=3.2×z，
-   * bbox 四维全断）。冻结优先（静态中间态）。zoom 矩阵 {0.8,1.0,1.5}
-   * （§8.1.2——超票面扩面自裁申报）。armed 待机无写链——close 免保存。
-   * **T0 实跑态=绿**（三档全过——hint 锚渲染几何精确；「待连接点离卡远」
-   * 真域=DrawPreview 端点/预览线渲染链[C2 调查域]，不在本断言面——如实申报，
-   * 禁硬造红）。本例驻留为锚渲染几何卫士（C2 重构的回归锚）。
+   * [F-UIRES-03 T0→C2 改写] 样板③=吸附高亮几何卫士（设计稿 §8.1.3/§2 C2
+   * ——INV-96 锚渲染面）。[C2·P2] DrawAnchorHint 演化后形态=dot 直径 **12
+   * 屏幕 px 恒定**（画布 r=6/z zoom 补偿）+ring+.snapped 类——r=3.2 旧断言
+   * 随形态同步改写（T0 头注「形态变即红属预期提醒」语义沿承）。armed hover
+   * 近右缘中点锚→断 circle.snapped bbox：中心=卡右缘几何中点 |diff|≤1px+
+   * 尺寸 12×12（屏幕域三档恒定——zoom 补偿正确性即由此钉死）。冻结优先。
+   * zoom 矩阵 {0.8,1.0,1.5}（§8.1.2）。armed 待机无写链——close 免保存。
    */
-  test('样板③ 画线锚点几何（三档 zoom 卫士——T0 实跑绿：预览端点真域留 C2 调查）', async () => {
+  test('样板③ 吸附高亮几何（三档 zoom 卫士——C2 形态：12 屏幕 px 恒定+中心=锚心）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-s3-'))
     await firstHop(userData)
@@ -1819,19 +1816,173 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
         await expect(hintSvg).toHaveCount(1, { timeout: 5_000 })
         const restore = await freezeAnimations(win)
-        const r = 3.2 * z
+        // dot=12 屏幕 px 恒定（zoom 补偿 r=6/z×z）——中心=卡右缘中点±1px
         await expectRectNear(
-          hintSvg.locator('circle'),
+          hintSvg.locator('circle.snapped'),
           {
-            x: rb.x + rb.width - r,
-            y: rb.y + rb.height / 2 - r,
-            width: 2 * r,
-            height: 2 * r
+            x: rb.x + rb.width - 6,
+            y: rb.y + rb.height / 2 - 6,
+            width: 12,
+            height: 12
           },
           1
         )
         await restore()
       })
+    }
+    await app.close()
+  })
+
+  /**
+   * [F-UIRES-03 C2·P1] 断言①=静态锚点几何（设计稿 §2 C2 单位域定稿）：
+   * armed 态每卡四边中点锚（.card-anchor-dot——DOM 常驻+CSS 显隐）逐一核
+   * |渲染锚心−几何中点|≤1px（DoD 直引测量式：rect.left+rect.width/2 vs
+   * expectAnchorCenterX——gBCR 取盒）；显隐两支=armed 全卡可见+select 态
+   * hover 卡可见/离开隐藏（CSS 通道承载面）。zoom 矩阵 {0.8,1.0,1.5}。
+   * armed 待机无写链——close 免保存。
+   */
+  test('C2a 静态锚点层：四边中点锚心=卡边几何中点（三档 zoom×每卡四锚）+hover 显隐', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c2a-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const root = nodeG(win, '脉络根文献')
+    await expect(root).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    for (const z of [0.8, 1.0, 1.5]) {
+      await zoomProbe(win, z, async () => {
+        // [RR1-1] pointer-events 单源断言（一锚即可——四锚同容器类 .card-anchors
+        // 统一继承，computed 继承链证容器规则在场；dot 若拦交互即红）
+        const pe = await root.locator('.card-anchor-dot[data-anchor-side="top"]').evaluate((el) => getComputedStyle(el).pointerEvents)
+        expect(pe).toBe('none')
+        for (const card of [root, nodeG(win, '脉络甲文献')]) {
+          const rb = await card.boundingBox()
+          if (rb === null) throw new Error(`卡不可见（zoom=${z}）`)
+          const centers: Record<string, { x: number; y: number }> = {
+            top: { x: rb.x + rb.width / 2, y: rb.y },
+            bottom: { x: rb.x + rb.width / 2, y: rb.y + rb.height },
+            left: { x: rb.x, y: rb.y + rb.height / 2 },
+            right: { x: rb.x + rb.width, y: rb.y + rb.height / 2 }
+          }
+          for (const side of ['top', 'bottom', 'left', 'right'] as const) {
+            const dot = card.locator(`.card-anchor-dot[data-anchor-side="${side}"]`)
+            await expect(dot).toBeVisible()
+            const rect = await dot.evaluate((el) => el.getBoundingClientRect())
+            const exp = centers[side]!
+            expect(
+              Math.abs(rect.left + rect.width / 2 - exp.x),
+              `zoom=${z} ${side} 锚心 x：实测 ${rect.left + rect.width / 2} vs 期望 ${exp.x}`
+            ).toBeLessThanOrEqual(1)
+            expect(
+              Math.abs(rect.top + rect.height / 2 - exp.y),
+              `zoom=${z} ${side} 锚心 y：实测 ${rect.top + rect.height / 2} vs 期望 ${exp.y}`
+            ).toBeLessThanOrEqual(1)
+          }
+        }
+      })
+    }
+    // 显隐②分支：select 态 hover 卡=锚点可见（CSS .tl-card:hover 通道）
+    await win.getByTestId('lineage-tool-select').click()
+    const rbSel = await root.boundingBox()
+    if (rbSel === null) throw new Error('select 态卡不可见')
+    await win.mouse.move(rbSel.x + rbSel.width / 2, rbSel.y + rbSel.height / 2)
+    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeVisible()
+    // 移出卡（工具条空白）=隐藏（display:none 通道）
+    await win.mouse.move(640, 20)
+    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeHidden()
+    await app.close()
+  })
+
+  /**
+   * [F-UIRES-03 C2·P2/P4] 断言②③=吸附高亮↔落点吸附一致（设计稿 §2 C2：
+   * 封「看到高亮点不中」复归）。③入域（近锚）→circle.snapped 在场→出域
+   * （卡中心）→卸载（类撤）；②高亮态拖拽：dragging+snap 高亮在最近锚位→
+   * 冻结态读 drop 前末帧预览线端点（draw-preview line x2/y2 内容坐标）=
+   * 目标锚心±0.5px→drop 后边建立（两卡图=卡对正确——边渲染端点由路由器
+   * selectAnchor 自选=F-ROUTE-02 域，不断言 path 端点）。落边入暂存=dirty
+   * →收尾保存后 close。
+   */
+  test('C2b 吸附高亮↔落点一致：入/出域类切换+末帧预览端点=锚心±0.5px+落边建立', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c2b-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    await expect(root).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    const hintSvg = win.getByTestId('draw-anchor-hint')
+    // ③ 入域：hover 近源卡右中锚→高亮在场（snapped 类）
+    const rb = await root.boundingBox()
+    if (rb === null) throw new Error('源卡不可见')
+    const srcAnchor = { x: rb.x + rb.width, y: rb.y + rb.height / 2 }
+    await win.mouse.move(srcAnchor.x - 2, srcAnchor.y)
+    await expect(hintSvg.locator('circle.snapped')).toHaveCount(1, { timeout: 5_000 })
+    // ③ 出域：移到卡中心（距最近锚 64>12）→高亮卸载（类撤）
+    await win.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+    await expect(hintSvg).toHaveCount(0, { timeout: 5_000 })
+    // ② 高亮态拖拽：回源锚近旁 down→move 目标卡左中锚近旁（snap 高亮）
+    await win.mouse.move(srcAnchor.x - 2, srcAnchor.y)
+    await expect(hintSvg.locator('circle.snapped')).toHaveCount(1, { timeout: 5_000 })
+    const aBox = await cardA.boundingBox()
+    if (aBox === null) throw new Error('目标卡不可见')
+    const tgtAnchor = { x: aBox.x, y: aBox.y + aBox.height / 2 }
+    await win.mouse.down()
+    await win.mouse.move(tgtAnchor.x + 3, tgtAnchor.y - 2, { steps: 6 })
+    await expect(hintSvg.locator('circle.snapped')).toHaveCount(1, { timeout: 5_000 })
+    // 末帧预览线端点=目标锚心±0.5px（冻结态——内容坐标属性直读）
+    const restore = await freezeAnimations(win)
+    const contentRect = await win.evaluate(() => {
+      const el = document.querySelector('.tl-content')
+      if (el === null) throw new Error('.tl-content 不在场')
+      const r = el.getBoundingClientRect()
+      return { left: r.left, top: r.top }
+    })
+    // zoom=1（zoomProbe 未用——本例基档）；期望内容坐标=目标锚屏幕位逆变换
+    const expX = tgtAnchor.x - contentRect.left
+    const expY = tgtAnchor.y - contentRect.top
+    const end = await win
+      .getByTestId('draw-preview')
+      .locator('line')
+      .evaluate((el) => ({ x: Number(el.getAttribute('x2')), y: Number(el.getAttribute('y2')) }))
+    expect(Math.abs(end.x - expX), `末帧端点 x：实测 ${end.x} vs 锚心 ${expX}`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(end.y - expY), `末帧端点 y：实测 ${end.y} vs 锚心 ${expY}`).toBeLessThanOrEqual(0.5)
+    await restore()
+    // drop：落点吸附建边（两卡图 count 0→1=卡对正确）
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(0)
+    await win.mouse.up()
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 5_000 })
+    // 落边入暂存=dirty——收尾保存防 quit 拦截
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    if (await saveBtn.isEnabled()) {
+      await saveBtn.click()
+      await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
     }
     await app.close()
   })

@@ -119,8 +119,8 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
       expect(q(`[data-testid="${id}"]`)).not.toBeNull()
     }
     // [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107）；
-    // [C1 裁决 h] 终态文案=点两卡连边
-    expect(req('.lg-toolbar .drag-hint').textContent).toBe('编辑中：拖动＝月内调序 · 画线＝点两卡连边')
+    // [C1 裁决 h]→[C2·P6] 终态文案=CAD 式锚点拖拽正名（v1.11①）
+    expect(req('.lg-toolbar .drag-hint').textContent).toBe('编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡')
   })
 
   it('保存态行内错误 [②U2]（退役行 4：chip 零残留）：error 态=保存钮行内错误+重试钮', async () => {

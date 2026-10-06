@@ -9,9 +9,12 @@
  * （导航窗格 P-17：缺省 208 可调 160–320——U4 消费）× [F-UIRES-03 C1] 编辑
  * 工具态三维正交：tool ∈ {select, draw-solid, draw-dashed} × paletteFor ∈
  * {null, solid, dashed}（kind 归属维——色板挂载面）× currentLineColor:
- * LineTypeColorPair（per-kind 双值——INV-108 线色双值）。anchor 维（picked
- * nodeId）驻 useDrawLine 现域不迁本件（状态表归属注记——单测经组件层可测，
- * lineage-c1-clickchain 先例）。
+ * LineTypeColorPair（per-kind 双值——INV-108 线色双值）× [F-UIRES-03 C2·P5]
+ * anchor ∈ {null, picked(nodeId)}（点两卡连边链第一卡——**迁驻本件**〔C1
+ * 「驻 useDrawLine 现域」设计修订：escapeStep 单口须触达清锚+document 双
+ * 监听注册序=脆弱面禁用〕；高亮消费=TimelineYears .link-src，容器经订阅
+ * 直读；写点收敛=setDrawAnchor 单口+resetTool/setMode/resetForMount 沿承
+ * 清——useDrawLine 下降沿清锚 effect 随迁退役）。
  *
  * ── 迁移（C1 状态机——设计稿 v1.9 §2 C1）──
  * - select+点 kind 图标→draw-X 且 paletteFor 归 null（切模式即收板——
@@ -20,8 +23,11 @@
  * - 任意 tool+点 kind K 展开钮→paletteFor=K（toggle：再点同钮→null）。
  * - paletteFor=K+点色行→paletteFor=null+写 currentLineColor[K]（per-kind
  *   独立互不影响——INV-108；localStorage 双键持久化，读写钳回色板值域）。
- * - Esc 分层退出（delta-W3a）：paletteFor≠null 只关板；paletteFor=null 时
- *   =退画线（→select）——键盘接线=LineagePage（edit 模式+输入焦点外）。
+ * - Esc 分层退出（delta-W3a→[C2·P5] 全局面层序扩）：INPUT/IME（原生优先）
+ *   ＞菜单层（EdgeMenu 两态+LineageNodeMenu 自治 Esc，单口让路）＞paletteFor
+ *   ≠null 只关板＞anchor≠null 只清锚（tool 保持=连画域不退）＞退画线
+ *   （→select）——键盘接线=use-lineage-esc（edit 模式+输入焦点外+菜单让路
+ *   探测）。
  * - P-1 进页缺省=browse（resetForMount：色值不重置——per-kind 色跨挂载驻留）。
  * - P-3 聚焦退出**单出口**=点浏览/编辑按钮（再点聚焦=no-op——T1 三轮裁决）
  *   →focusSet 清空；再进 focus=空集。
@@ -95,6 +101,12 @@ export interface LineageViewStore {
   /** [F-UIRES-03 C1] 色板挂载归属维（null=收起；solid/dashed=挂对应展开钮
    *  锚槽——列表渲染单例随迁） */
   paletteFor: LineTypeKind | null
+  /** [F-UIRES-03 C2·P5] 点两卡连边锚（picked nodeId；null=none——useDrawLine
+   *  写面经 setDrawAnchor 单口；kind 切换不清/resetTool·setMode 清/Esc 层
+   *  序锚层清） */
+  anchor: string | null
+  /** [F-UIRES-03 C2·P5] 锚维单口写（null=清锚） */
+  setDrawAnchor(id: string | null): void
   /** [②U7] 画布缩放系数（P-4：50%–200% 步进 10%——transform scale 作用于
    *  内容层内容坐标不变；缺省 1=无变换） */
   zoom: number
@@ -112,8 +124,9 @@ export interface LineageViewStore {
   /** [F-UIRES-03 C1] 选色行：写 currentLineColor[kind]（per-kind）+paletteFor
    *  归 null+localStorage 持久化 */
   pickLineColor(kind: LineTypeKind, color: string): void
-  /** [F-UIRES-03 C1] Esc 分层退出单口（delta-W3a）：paletteFor≠null 只关板；
-   *  paletteFor=null 时=退画线（→select）——键盘接线=LineagePage */
+  /** [F-UIRES-03 C1→C2·P5] Esc 分层退出单口（全局面层序）：paletteFor≠null
+   *  只关板→anchor≠null 只清锚（tool 保持）→退画线（→select）；菜单层让路
+   *  探测驻接线层（use-lineage-esc——store 零 DOM）。键盘接线=LineagePage */
   escapeStep(): void
   /** [②U2] 工具态中止（切模式/切图/进入 select——画线中止无残留） */
   resetTool(): void
@@ -151,7 +164,12 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
   tool: 'select', // [②U2] 缺省小手选择
   currentLineColor: loadStoredColorPair(), // [F-UIRES-03 C1] per-kind（读面钳制）
   paletteFor: null,
+  anchor: null, // [F-UIRES-03 C2·P5] 点两卡链锚（迁驻）
   zoom: 1, // [②U7] 100%=无变换
+
+  setDrawAnchor(id) {
+    if (get().anchor !== id) set({ anchor: id })
+  },
 
   zoomStep(dir) {
     // [②U7/P-4] 步进 10%（0.1 浮点累加误差→按档位取整：Math.round(z*10)±1；
@@ -170,9 +188,11 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
       mode,
       // P-3：退出聚焦（→browse/edit）即清空；再进=空集
       focusSet: get().mode === 'focus' && mode !== 'focus' ? [] : get().focusSet,
-      // [F-UIRES-03 C1] 模式切换=工具态中止（armed/色板无残留——§2.4 沿承）
+      // [F-UIRES-03 C1] 模式切换=工具态中止（armed/色板无残留——§2.4 沿承）；
+      // [C2·P5] 锚随画线域退出清（写点收敛 store 动作）
       tool: 'select',
-      paletteFor: null
+      paletteFor: null,
+      anchor: null
     })
   },
 
@@ -199,21 +219,27 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
 
   escapeStep() {
     if (get().paletteFor !== null) {
-      set({ paletteFor: null }) // Esc 分层①：只关板（画线态保持）
+      set({ paletteFor: null }) // Esc 分层①：只关板（画线态/锚保持）
       return
     }
-    set({ tool: 'select' }) // Esc 分层②：退画线（→select）
+    // [F-UIRES-03 C2·P5] Esc 分层②：锚层——只清锚（tool 保持=连画域不退）
+    if (get().anchor !== null) {
+      set({ anchor: null })
+      return
+    }
+    set({ tool: 'select' }) // Esc 分层③：退画线（→select）
   },
 
   resetTool() {
-    set({ tool: 'select', paletteFor: null })
+    // [C2·P5] 锚随工具态中止清（useDrawLine 下降沿清锚 effect 随迁退役）
+    set({ tool: 'select', paletteFor: null, anchor: null })
   },
 
   resetForMount() {
     // [②A1] 挂载恒走（不与数据暂存互斥——P-2 脏态跳过面仅数据同步，view 态
     // reset 恒定；navWidth/navCollapsed 个性化记忆不随挂载重置——P-17 语义；
     // [C1] currentLineColor 同驻留——localStorage 单源）
-    set({ mode: 'browse', focusSet: [], tool: 'select', paletteFor: null })
+    set({ mode: 'browse', focusSet: [], tool: 'select', paletteFor: null, anchor: null })
   },
 
   toggleFocus(nodeId) {

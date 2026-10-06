@@ -463,7 +463,9 @@ describe('lnfix1 画线锚点指示+容差 12+落空分层反馈（armed hint/±
       useLineageViewStore.getState().toggleLineTool('solid')
     })
     docMove(226, 136)
-    const circle = req('[data-testid="draw-anchor-hint"] circle')
+    // [RR1-3] 选择器收紧：C2 后 hint svg 内 ring 在 DOM 序前——裸 circle 取序首
+    // 命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容），锚定 dot 本体 circle.snapped
+    const circle = req('[data-testid="draw-anchor-hint"] circle.snapped')
     expect(circle.getAttribute('cx')).toBe('228')
     expect(circle.getAttribute('cy')).toBe('136')
   })

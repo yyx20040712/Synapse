@@ -235,7 +235,7 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     setMode('focus')
     expect(hint()).toBe('◎ 单击卡片＝聚焦标记（再点取消） · 拖动空白＝平移画布')
     setMode('edit')
-    expect(hint()).toBe('编辑中：拖动＝月内调序 · 画线＝点两卡连边') // [②U2] 工具组文案（画线入口提示）；[F-UIRES-03 C3] 改月子句退役删（INV-107）；[C1 裁决 h] 终态=点两卡连边
+    expect(hint()).toBe('编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡') // [②U2] 工具组文案（画线入口提示）；[C1 裁决 h]→[C2·P6] 终态=CAD 式锚点拖拽正名（v1.11①——点两卡径保留为隐藏等效径）
   })
 
   it('.timeline 挂模式类（mode-browse/mode-focus/mode-edit——CSS 光标域承载）', () => {

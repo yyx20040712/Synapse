@@ -29,8 +29,17 @@ export interface LayoutSnapshot {
   cards: ReadonlyMap<string, Rect>
   labels: Rect[]
   frames: MonthFrame[]
+  /** [F-UIRES-03 C2·P7] 年份头障碍集（.tl-year-head rects——buildSnapshot
+   *  采集；避让 PAD 同源 avoid.PAD 不另设） */
+  yearHeads: Rect[]
   contentW: number
   corridor: Corridor
+}
+
+/** [F-UIRES-03 C2·P7] 障碍集组装单源（三源并集=全部卡∪月标注∪年份头——
+ *  manual-override 边不消费本集〔via 在场不避让，现状语义沿承〕） */
+export function allObstacles(snap: LayoutSnapshot): Rect[] {
+  return [...snap.cards.values(), ...snap.labels, ...snap.yearHeads]
 }
 /** [F-LGRAPH-01②U8] kind/subId 随四值体系退役（路由几何不消费线型——纯结构面） */
 export interface EdgeGeomInput {
@@ -105,7 +114,7 @@ function routeOne(
   onWarn: (m: string) => void,
   use: AnchorUse | undefined
 ): SkelResult {
-  const obstacles = [...snap.cards.values(), ...snap.labels]
+  const obstacles = allObstacles(snap) // [C2·P7] 三源并集单源（含 yearHeads）
   const ends = [src, tgt]
   const cards = [...snap.cards.values()]
   const sc = center(src)
@@ -211,7 +220,7 @@ export function routeEdge(
     return { edgeId: e.edgeId, d: '', route: 'fallback', lane: -1, pts: [] }
   }
   const r = routeOne(e, snap, src, tgt, 0, onWarn, undefined)
-  const all = [...snap.cards.values(), ...snap.labels]
+  const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
   return { edgeId: r.edgeId, d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'), route: r.route, lane: r.lane, pts: r.skel }
 }
 
@@ -275,7 +284,7 @@ export function routeAll(
     return routeOne(e, snap, src, tgt, laneIndex(e.edgeId, ids) % snap.corridor.laneCount, onWarn, use)
   })
   applyBandLanes(results)
-  const all = [...snap.cards.values(), ...snap.labels]
+  const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
   return results.map((r) => ({
     edgeId: r.edgeId,
     d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),

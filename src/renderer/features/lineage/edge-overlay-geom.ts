@@ -34,7 +34,9 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
     const raw = el.closest('[data-year]')?.getAttribute('data-year') ?? 'null'
     return { ...toBox(el), year: raw === 'null' ? null : Number(raw) }
   })
-  return { cards, labels, frames, contentW: base.width / z, corridor: defaultCorridor(base.width / z) }
+  // [F-UIRES-03 C2·P7] 年份头障碍采集（避让集扩=卡∪月标注∪年份头——PAD 同源）
+  const yearHeads = Array.from(content.querySelectorAll('.tl-year-head')).map(toBox)
+  return { cards, labels, frames, yearHeads, contentW: base.width / z, corridor: defaultCorridor(base.width / z) }
 }
 
 /** [F-LGRAPH-01②U8] 边视觉样式（dashed/color 内联——A3；虚线纹固定 6 3） */

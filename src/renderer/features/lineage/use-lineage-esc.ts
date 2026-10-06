@@ -1,11 +1,15 @@
 // b3: P7-H
 /**
- * [F-UIRES-03 C1] useLineageEscapeKey —— 脉络页 Esc 分层退出键盘接线
- * （delta-W3a；LineagePage 拆件——组件 250 行红线）。单口=view.store
- * escapeStep：paletteFor≠null 只关板；paletteFor=null 时=退画线（→select）。
- * 输入焦点内不拦=文本框原生 Esc 优先（色板行内改名取消=LineTypeMenu 自治，
- * Ctrl+Z 面同守卫——LineagePage 既有先例）；仅 edit 模式（browse/focus 无
- * 工具态/色板面）。
+ * [F-UIRES-03 C1→C2·P5] useLineageEscapeKey —— 脉络页 Esc 全局层序键盘接线
+ * （delta-W3a 两层→v1.11②全局面层序；LineagePage 拆件——组件 250 行红线）。
+ * 单口=view.store escapeStep（paletteFor→anchor→tool 三层）。
+ *
+ * 层序（设计稿 v1.13 §2 C2）：INPUT/IME 组词（原生优先——文本框 Esc=改名
+ * 取消/对话框关闭等自治）＞菜单层（让路探测 document [role="menu"] 在场
+ * =no-op——EdgeMenu〔edge/vertex 两态〕+LineageNodeMenu 各自自治 Esc 监听
+ * 关闭；探测面覆盖两族〔均挂 role="menu"〕，LineTypeMenu 色板无该 role 不
+ * 误伤）＞色板/锚/工具三层（escapeStep 承载）。一次 Esc 只关最上层；无面
+ * =no-op。仅 edit 模式（browse/focus 无工具态/色板/锚面）。
  */
 import { useEffect } from 'react'
 import { useLineageViewStore } from './lineage-view.store'
@@ -19,8 +23,11 @@ export function useLineageEscapeKey(): void {
       if (t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
         return // 输入焦点内=原生 Esc（改名取消/对话框关闭等优先）
       }
+      // 菜单层让路：菜单 DOM 在场（EdgeMenu/LineageNodeMenu 两族）→单口
+      // no-op，菜单自治 Esc 监听关闭（一次 Esc 只关最上层）
+      if (document.querySelector('[role="menu"]') !== null) return
       const v = useLineageViewStore.getState()
-      if (v.paletteFor === null && v.tool === 'select') return // 无面可退=no-op
+      if (v.paletteFor === null && v.anchor === null && v.tool === 'select') return // 无面可退=no-op
       e.preventDefault()
       v.escapeStep()
     }

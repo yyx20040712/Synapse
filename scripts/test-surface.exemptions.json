@@ -828,6 +828,30 @@
       "caseTitle": "RR4 收尾（空白取消）后：先点空白（旗就地消费）→下一次卡点击不被吞",
       "reason": "F-UIRES-03 C1 裁决 11a：画线域点卡=锚链非选中（禁开详情），RR4 旗不泄漏原意经「退画线后再验放行」承载",
       "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C1（v1.9）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline-rr1.test.tsx",
+      "assertionText": "expect(req('[data-testid=\"draw-anchor-hint\"] circle').getAttribute('cx')).toBe('228')",
+      "reason": "F-UIRES-03 C2 RR1-k1N2 选择器收紧防环序漂移：C2 形态演化后 hint svg 内 ring 在 DOM 序前，裸 circle 取序首命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容）——收紧为 circle.snapped（dot 本体），断言文本随选择器改写",
+      "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline-rr1.test.tsx",
+      "assertionText": "expect(req('[data-testid=\"draw-anchor-hint\"] circle').getAttribute('cx')).toBe('228')",
+      "reason": "F-UIRES-03 C2 RR1-k1N2 选择器收紧防环序漂移：C2 形态演化后 hint svg 内 ring 在 DOM 序前，裸 circle 取序首命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容）——收紧为 circle.snapped（dot 本体），断言文本随选择器改写",
+      "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline-rr1.test.tsx",
+      "assertionText": "expect(req('[data-testid=\"draw-anchor-hint\"] circle').getAttribute('cx')).toBe('100')",
+      "reason": "F-UIRES-03 C2 RR1-k1N2 选择器收紧防环序漂移：C2 形态演化后 hint svg 内 ring 在 DOM 序前，裸 circle 取序首命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容）——收紧为 circle.snapped（dot 本体），断言文本随选择器改写",
+      "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline-rr1.test.tsx",
+      "assertionText": "expect(req('[data-testid=\"draw-anchor-hint\"] circle').getAttribute('cy')).toBe('136')",
+      "reason": "F-UIRES-03 C2 RR1-k1N2 选择器收紧防环序漂移：C2 形态演化后 hint svg 内 ring 在 DOM 序前，裸 circle 取序首命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容）——收紧为 circle.snapped（dot 本体），断言文本随选择器改写",
+      "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C2"
     }
   ]
 }

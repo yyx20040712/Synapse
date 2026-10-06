@@ -109,7 +109,8 @@ beforeEach(() => {
   })
   useLineageViewStore.setState({
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
-    tool: 'select', currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] }, paletteFor: null
+    tool: 'select', currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] }, paletteFor: null,
+    anchor: null // [C2·P5] anchor 迁 view.store——夹具重置补维（防跨用例残留）
   })
   toastStoreSpy.mockClear()
 })

@@ -25,6 +25,7 @@ function makeSnap(partial: Partial<LayoutSnapshot> = {}): LayoutSnapshot {
     cards: partial.cards ?? new Map<string, Rect>(),
     labels: partial.labels ?? [],
     frames: partial.frames ?? [],
+    yearHeads: partial.yearHeads ?? [],
     contentW,
     corridor: partial.corridor ?? defaultCorridor(contentW)
   }
@@ -294,6 +295,53 @@ describe('F-LINEAGE-02 车道（走廊=字典序基道环形探测）', () => {
     // 第 4 边桩端拐=(264,182)（圆角化后=Q 控制点——骨架竖桩端）——外法线
     // 方向锁（横向出桩形态=拐在 (3xx,172) 即红）
     expect(paths[3]!.d).toContain('Q 264 182')
+  })
+})
+
+describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪.tl-year-head——PAD 同源）', () => {
+  /** 同列上下卡基面（① direct 同款）：无 yearHead=direct 单竖段 */
+  const columnSnap = (yearHeads: Rect[]): LayoutSnapshot =>
+    makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)]
+      ]),
+      yearHeads,
+      frames: [{ ...rect(90, 60, 600, 400), year: 2022 }]
+    })
+
+  it('对照基线：无 yearHead→direct（拦路实验的前提锁定）', () => {
+    const r = routeEdge(geom('e1', 'A', 'B'), columnSnap([]))
+    expect(r.route).toBe('direct')
+  })
+
+  it('year-head 拦 direct 中段→降级链触发（route≠direct+有产出）', () => {
+    // yearHead(144,224,40,10) 膨胀 [140,192]×[220,234]——竖段 x=164 穿 y 段
+    // →direct 废；年份头入障碍集（不并入=仍 direct 穿头即缺陷本体）
+    const r = routeEdge(geom('e1', 'A', 'B'), columnSnap([rect(144, 224, 40, 10)]))
+    expect(r.route).not.toBe('direct')
+    expect(r.d).not.toBe('')
+  })
+
+  it('障碍集组装：yearHeads 与卡/月标注同源并入（allObstacles 三源并集）', async () => {
+    const { allObstacles } = await import('../../../src/renderer/features/lineage/routing/chain')
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([['A', rect(0, 0, 10, 10)]]),
+      labels: [rect(20, 20, 5, 5)],
+      yearHeads: [rect(40, 40, 6, 6)]
+    })
+    expect(allObstacles(snap)).toHaveLength(3)
+  })
+
+  it('manual-override 不参与避让（via 在场穿 yearHead 照走——现状语义沿承）', () => {
+    const r = routeEdge(
+      geom('e1', 'A', 'B', [
+        { x: 300, y: 136 },
+        { x: 300, y: 336 }
+      ]),
+      columnSnap([rect(144, 224, 40, 10)])
+    )
+    expect(r.route).toBe('manual-override')
   })
 })
 

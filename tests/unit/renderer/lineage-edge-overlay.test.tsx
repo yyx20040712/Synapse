@@ -456,3 +456,29 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(css).toMatch(/\.pop \.foot-note\s*\{[^}]*color:\s*var\(--faint\)/)
   })
 })
+
+describe('F-UIRES-03 C2·P7 buildSnapshot 采集（yearHeads 障碍源——快照面）', () => {
+  it('.tl-year-head rects 采入 yearHeads（内容坐标 ÷z——与 cards/labels 同源同变换）', async () => {
+    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
+    const content = document.createElement('div')
+    content.className = 'tl-content'
+    const mockRect = (el: Element, x: number, y: number, w: number, h: number): void => {
+      Object.defineProperty(el, 'getBoundingClientRect', {
+        value: () => ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
+        configurable: true
+      })
+    }
+    mockRect(content, 0, 0, 1000, 800)
+    const head = document.createElement('div')
+    head.className = 'tl-year-head'
+    mockRect(head, 28, 60, 400, 20)
+    content.appendChild(head)
+    document.body.appendChild(content)
+    try {
+      const snap = buildSnapshot(content)
+      expect(snap.yearHeads).toEqual([{ x: 28, y: 60, w: 400, h: 20 }])
+    } finally {
+      content.remove()
+    }
+  })
+})

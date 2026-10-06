@@ -4,7 +4,10 @@
  * 守护+hint 节流 trailing 补发+finish 收尾补算。helper 与 lineage-drawline /
  * lineage-rr17 件同型（第 3 份复制——抽共享涉 tests/utils 受锁扩面，留主控
  * 裁决）。always-active 裸 describe（K3）。
- */
+ *
+ * [F-UIRES-03 C2 RR1-3] hint circle 选择器收紧为 circle.snapped（dot 本体）：
+ * C2 形态演化后 svg 内 ring 在 DOM 序前——裸 circle 取序首命中已漂移为 ring
+ * （cx/cy 同值故绿=脆弱兼容）。 */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -139,13 +142,13 @@ describe('lnfix1-RR1 源卡排除守护+hint trailing 补发+finish 收尾补算
         useLineageViewStore.getState().toggleLineTool('solid')
       })
       docMove(226, 136)
-      expect(req('[data-testid="draw-anchor-hint"] circle').getAttribute('cx')).toBe('228')
+      expect(req('[data-testid="draw-anchor-hint"] circle.snapped').getAttribute('cx')).toBe('228')
       docMove(110, 336)
-      expect(req('[data-testid="draw-anchor-hint"] circle').getAttribute('cx')).toBe('228')
+      expect(req('[data-testid="draw-anchor-hint"] circle.snapped').getAttribute('cx')).toBe('228')
       act(() => {
         vi.advanceTimersByTime(50)
       })
-      const c2 = req('[data-testid="draw-anchor-hint"] circle')
+      const c2 = req('[data-testid="draw-anchor-hint"] circle.snapped')
       expect(c2.getAttribute('cx')).toBe('100')
       expect(c2.getAttribute('cy')).toBe('336')
     } finally {
@@ -161,8 +164,8 @@ describe('lnfix1-RR1 源卡排除守护+hint trailing 补发+finish 收尾补算
     const content = req('.tl-content')
     pointer(content, 'pointerdown', 228, 136)
     pointer(content, 'pointerup', 100, 136)
-    expect(req('[data-testid="draw-anchor-hint"] circle').getAttribute('cx')).toBe('100')
-    expect(req('[data-testid="draw-anchor-hint"] circle').getAttribute('cy')).toBe('136')
+    expect(req('[data-testid="draw-anchor-hint"] circle.snapped').getAttribute('cx')).toBe('100')
+    expect(req('[data-testid="draw-anchor-hint"] circle.snapped').getAttribute('cy')).toBe('136')
     pointer(content, 'pointerdown', 228, 136)
     pointer(content, 'pointerup', 100, 336)
     expect(q('[data-testid="draw-anchor-hint"]')).toBeNull()

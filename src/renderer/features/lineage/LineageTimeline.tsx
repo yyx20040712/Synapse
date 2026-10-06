@@ -17,8 +17,7 @@ import { TimelineLegend, TimelineYears } from './TimelineYears'
 import { LineageToolbar } from './LineageToolbar'
 import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
-import { DrawPreview } from './DrawPreview'
-import { DrawAnchorHint } from './DrawAnchorHint'
+import { DrawLayers } from './DrawLayers'
 import { useLineageViewStore } from './lineage-view.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useWaterfallOffsets } from './timeline-waterfall'
@@ -81,6 +80,10 @@ export function LineageTimeline(props: {
   // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
+  // [F-UIRES-03 C2·P2/P5] 缩放系数（高亮 r=6/z zoom 补偿——屏幕域直径恒 12）
+  // +点两卡链锚（迁 view.store——.link-src 消费源；dragging 相位=会话源锚沿承）
+  const zoomScale = useLineageViewStore((s) => s.zoom)
+  const drawAnchor = useLineageViewStore((s) => s.anchor)
 
   // 滚动容器 ref 两面：content=.tl-content（瀑布量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
@@ -204,11 +207,14 @@ export function LineageTimeline(props: {
             focusDim={dimActive}
             editEnabled={viewMode === 'edit' && tool === 'select'}
           />
-          {/* [②U3] 画线拖动预览（dragging 态瞬态——零持久化）；[F-UIRES-03 C1]
-              色源=active draw kind 的 per-kind 当前色（在途跟随当前色——latch） */}
-          <DrawPreview state={draw.state} color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid} />
-          {/* [lnfix1] armed 待机锚点指示（近锚 accent 圆点——所见即可拖） */}
-          <DrawAnchorHint hint={draw.hint} />
+          {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
+              吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch） */}
+          <DrawLayers
+            state={draw.state}
+            hint={draw.hint}
+            zoom={zoomScale}
+            color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid}
+          />
           <TimelineYears
             groups={groups}
             pubNos={pubNoByNode}
@@ -218,7 +224,7 @@ export function LineageTimeline(props: {
             ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}
             offsets={offsets}
-            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : draw.state.anchor}
+            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : drawAnchor}
             dragSlot={drag.slot}
             dimUnfocused={dimActive}
             onCardClick={handleCardClick}
