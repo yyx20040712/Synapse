@@ -107,7 +107,12 @@
 .insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }
 /* ══ [F-LGRAPH-01②U4] 卡三层族（mockup §3.4 二轮定案——L1 高 18 星标+标签+
    骑缝号/L2 题名两行 9.3px/L3 高 12 期刊+IF+被引；旧 .c-head/.c-idea/.c-meta/
-   .mb core 样式族随三层重整退役——退役行 8/9，方案切换=删旧）══ */
+   .mb core 样式族随三层重整退役——退役行 8/9，方案切换=删旧）══
+   [INV-111 耦合声明·用户裁决 2026-10-06] 三层钳制（L1 h18+overflow/L2
+   line-clamp:2/L3 h12+overflow）合围=时间线卡片恒等高 72px 前提（地板=
+   theme-lineage.css .tl-card min-height:72）——任一钳制单独放宽即破坏
+   等高 ⟹ 连带 F-ROUTE-02 槽位几何假设与「侧挂第三卡不可达」结论失效
+   （改此处必同步核 F-ROUTE-02 设计书 §9 勘误注+invariants.md INV-111）══ */
 /* L1：星标命中区 14×14（T2×T3 星标域优先——click stopProp 隔离）+标签 ≤2+
    「+N」+骑缝号右贴（margin-left:auto）；标签=8px 级 pill（--fs-tl-idea 同值
    映射——零新 token 先例） */
