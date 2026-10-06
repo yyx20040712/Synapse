@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T12:22:43.3411333Z",
+    "generatedAt":  "2026-10-06T14:38:55.3143482Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -806,12 +806,20 @@
                       "sha256":  "0fd358e112f1c873bf2c91e5eac1dd4ee3b3fd6f41b7412eddd4d357e5919fa6"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-routing-assign.test.ts",
+                      "sha256":  "72fae7ea54f78550ab1742b543ed2b0cfb6045bbb8518c0abaa79316cab9da88"
+                  },
+                  {
+                      "path":  "tests/unit/renderer/lineage-routing-assign-rr1.test.ts",
+                      "sha256":  "12b81a2f7228b35cd637f0ebea68a88b22eaf132d893e4ed8cbc241370d79aed"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-routing-parts.test.ts",
                       "sha256":  "67a48efcf5f2c49041c7b356bd8227220df4d5e79b097fba711efff1f8611ea1"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-slots.test.ts",
-                      "sha256":  "9addf00b14196d01faaa3a12400107da4b61636d1c803b07942cc64486aa404d"
+                      "sha256":  "d8dc63be3b403662c3275268ae05f80b29dd07944862250556b5d89684873913"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-rr13-noop.test.tsx",

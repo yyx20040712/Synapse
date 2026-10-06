@@ -1,6 +1,11 @@
 # F-ROUTE-02 走线候选位分配·设计书
 
-> **版本 v1.1（2026-10-06 U1 交付回写）**：v1.0=三段通道终稿（拟定=ops-drafter
+> **版本 v1.2（2026-10-06 U2 交付回写）**：v1.1=U1 回写；本版=§8 U2 行
+> 交付回写（分配主循环+Z 形施加+残余子 pass+单测③-⑪+两验收勾——回炉
+> 轮 1 四件：B1 反向段方向无关化/回折事件化/route 白名单/斜段锁定）。
+> runId=20261006-froute02-design（设计批）/20261006-froute02-u1（U1）/
+> 20261006-froute02-u2（U2）。
+> **v1.1 存档（2026-10-06 U1 交付回写）**：v1.0=三段通道终稿（拟定=ops-drafter
 > kimi-third $max 四轮 v1→v4；对抗审核=ops-auditor deepseek $max 四轮
 > B2/W9/N5→B1/W3/N5→B0/W1/N5→B0/W0/N3 有条件放行，唯一条件 N-1 主控亲核
 > 闭合——§12）；终裁=主控（GLM5.3）采纳候选 B。§8 U1 行=交付回写态。
@@ -234,7 +239,18 @@ e2e 抽查；锚定=路由完成后快照。INV-79/109/110 不修订不得破坏
   严格内含）+贴边零测度不消费；侧挂第三卡空白域=未消费段归 U2 残余 pass 域
   （钉死用例在档）。**U2 派发必带**：slotFree 界检/调用侧索引域保证验收勾
   （裁决部挂账 d1-N2）+本设计 §5 N-3 部分穿越段条件；
-- U2 分配主循环+Z 形施加（含四轮 N-3 部分穿越段）+残余子 pass+单测③-⑪；
+- U2 分配主循环+Z 形施加（含四轮 N-3 部分穿越段）+残余子 pass+单测③-⑪ —— **〔交付
+  2026-10-06，runId=20261006-froute02-u2〕**三屋全链毕：executor 基批+回炉轮 1→门一
+  k1/d1 首轮双 FAIL（B1W4N9/B1W4N8：B1=rebuildPts 反向段点链损坏+route 门缺失 a3
+  六态+回折分支 segApps 丢弃+连接卫生）→回炉四件（方向无关化/回折事件化/
+  ROUTE_ELIGIBLE 白名单/斜段锁定）→增量复审双 PASS（B0W1N6/B0W3N6，残余 W 主控
+  亲核不可达证伪全驳回）→probe 10/10 GO→裁决部 GO 无条件。交付=routing/ 拆四件：
+  gap-cells.ts 194（U1 提取层机械迁出）+slots.ts 288（slotAssign 主循环：L1
+  |槽−ideal| 升序→索引升序/L2 同带〔axis+bandId 键〕索引差升序 tie 几何小侧先/
+  L3 两态合一豁免落 ideal；Δ<1 retain 占用保留；ROUTE_ELIGIBLE={band,direct,
+  h-slip}）+zapply.ts 175（zInterior S2+N-3+rebuildPts 方向无关化+回折事件化）+
+  residual.ts 140（旧 applyBandLanes 字面承袭）+测试 26+7 例（262 件/2714 例）。
+  U3 挂账三件：注释 [142,150]→[142,154]+h-slip 正向专例+桥接态组合对照；
 - U3 chain 接入+applyBandLanes 退役迁移+受锁改写（[locked-change]，门审
   重点批——受锁 its 清点先行于落刀）；
 - U4 e2e R1-R4+观测钩子+obstacleAuditProbe（N5）；

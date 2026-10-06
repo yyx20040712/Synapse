@@ -1,44 +1,25 @@
 /**
- * [F-ROUTE-02 U1] slots —— 走线候选位分配·单元提取+可用性谓词（design §5
- * 候选 B 后处理槽位分配的提取/谓词层；分配主循环+Z 形施加=U2、chain 接入=U3，
- * 本件暂无生产消费方=设计 §8 分批授权在册）。单元=卡对间空白：行隙 axis='x'
- * （槽沿 x 分布·竖直段消费）/列缝 axis='y'（对称）。提取管线=卡对候选（开
- * 区间条带第三卡即弃=相邻性）→量化后全等去重（代表对=字典序最小）→带归属
- * （行隙 y 中点/列缝 x 中点落带；无带=−1）→(bandId,槽轴小端,槽轴大端,idA,
- * idB) 升序枚举 id→量化 rect。槽位=a1：L=W−2·PAD、n=min(SLOT_MAX,max(0,
- * ⌊L/SLOT_DIV⌋−1))、内缩区间 k/(n+1) 分点、逐位 0.1 量化（n=0 封闭）。
- * closed 三源=n=0/行进净距<2·PAD+1/非卡障碍横贯；blockedSlots=槽线±PAD
- * 走廊×行进全域 vs 非卡障碍静态预过滤。消费=轴对齐段（|dx|∨|dy|≤ε）∧行进
- * 轴严格正测度重叠∧槽轴严格正宽度（退化=坐标严格内含）重叠（N-2 半开：贴
- * 边/零测度不消费；closed 单元恒不消费）。槽索引=slotsOf 输出 0 起数组序
- * （公式 k=1..n ↔ idx 0..n−1）。确定性红线：无随机/无 Date/无三角函数。
- * 纯函数零 DOM import。
+ * [F-ROUTE-02 U1+U2] slots —— 走线候选位分配·分配决策层（design §5 候选
+ * B；提取层=gap-cells.ts、几何施加层=zapply.ts、残余分离子 pass=residual.ts
+ * ——均 U2 自本件拆出〔300 行设计上限分件〕）。分配主循环（a7 无回溯：
+ * edgeId 字典序×段自起点向终点序×单元沿段序）：L1 本单元（|槽位−ideal|
+ * 升序→槽索引升序）→L2 同带邻单元（同 axis 同 bandId 检索域——行隙/列缝
+ * 带表独立编号必撞号；索引差升序→tie 几何小侧左/上先；bandId=−1 同 axis
+ * 自成域）→L3 全占∨全不可达（a6 两态合一）→overlapExempt 落 ideal。Z 形
+ * 可行条件与施加=zapply.zInterior（S2+N-3）∧ 谓词复检（pre-commit 权威门：
+ * zChainClear(allObstacles)+有桩边每桩 jogClearOfStub；失败=该槽对本段不可
+ * 用续余槽，禁写 cell.blockedSlots——那是静态预过滤全局面）。Δ=|槽位−ideal|
+ * 量化后<1：不偏移、几何=ideal、标 overlapExempt 且槽位占用保留（防后段
+ * 重取——INV-1XX 豁免支承载）。commit 仅于可用确认后落记（AnchorUse 同型：
+ * 失败尝试不占槽无需释放）。确定性红线：无随机/无 Date/无三角函数。纯函数
+ * 零 DOM import。
  */
 import type { Pt, Rect } from './anchors'
-import { PAD, segHitsAny } from './avoid'
-import { bandsOf } from './bands'
-import type { LayoutSnapshot } from './chain'
-
-/** a1：槽距除数（间隙六分语义） */
-export const SLOT_DIV = 6
-/** a1：槽位上限（五候选位） */
-export const SLOT_MAX = 5
-/** a1：最小槽距（pitch=L/(n+1)≥本值恒成立——定理断言面，非运行时钳制） */
-export const SLOT_MIN_PITCH = 6
-/** 相等类判定容差（间距≤ε 不生成/投影覆盖/正相交判定） */
-export const CELL_EPS = 0.05
-/** 提取几何量化步进（rect 端点/槽位坐标——×10 取整再回除） */
-export const QUANT = 0.1
-
-/** 间隙单元（行隙/列缝空白；id=排序枚举序、bandId=带表索引无带=−1） */
-export interface GapCell {
-  id: number
-  bandId: number
-  axis: 'x' | 'y'
-  rect: Rect
-  closed: boolean
-  blockedSlots: ReadonlySet<number>
-}
+import { segHitsAny } from './avoid'
+import { allObstacles, type LayoutSnapshot, type RouteTag } from './chain'
+import { CELL_EPS, extractGapCells, quant, slotPositions, type GapCell } from './gap-cells'
+import { runResidualPass } from './residual'
+import { rebuildPts, zInterior, type Landed } from './zapply'
 
 /** 槽占用注册表（AnchorUse 同型：仅胜出态落记——失败尝试不占槽无需释放） */
 export class SlotUse {
@@ -53,34 +34,6 @@ export class SlotUse {
     if (per !== undefined) per.set(slotIdx, edgeId)
     else this.used.set(cellId, new Map([[slotIdx, edgeId]]))
   }
-}
-
-/** 0.1 步进量化（×10 整数化再回除——避免 0.1 乘法浮点漂移） */
-const quant = (v: number): number => Math.round(v * 10) / 10
-
-/** 第三卡与开区间条带 (x1,x2)×(y1,y2) 严格相交（边界相触不算=相邻性判定） */
-const hitsOpenStrip = (c: Rect, x1: number, x2: number, y1: number, y2: number): boolean =>
-  c.x < x2 && c.x + c.w > x1 && c.y < y2 && c.y + c.h > y1
-
-/** 两矩形正相交（两轴重叠均>ε——ε 容差的正面积判定） */
-const intersects = (a: Rect, b: Rect): boolean => {
-  const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
-  const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
-  return ox > CELL_EPS && oy > CELL_EPS
-}
-
-/** a1 槽数：n=min(SLOT_MAX, max(0, ⌊(W−2·PAD)/SLOT_DIV⌋−1)) */
-const slotCountOf = (w: number): number =>
-  Math.min(SLOT_MAX, Math.max(0, Math.floor((w - 2 * PAD) / SLOT_DIV) - 1))
-
-/** 槽位坐标（pos=槽轴小端+PAD+k·L/(n+1)，逐位量化；n=0→[]） */
-const slotPositions = (axis: 'x' | 'y', r: Rect): number[] => {
-  const w = axis === 'x' ? r.w : r.h
-  const lo = axis === 'x' ? r.x : r.y
-  const n = slotCountOf(w)
-  const out: number[] = []
-  for (let k = 1; k <= n; k++) out.push(quant(lo + PAD + (k * (w - 2 * PAD)) / (n + 1)))
-  return out
 }
 
 /** 单元槽位坐标（closed→[]） */
@@ -112,7 +65,7 @@ export function segConsumesCell(cell: GapCell, p1: Pt, p2: Pt): boolean {
 }
 
 /** 槽可用=①SlotUse 空闲 ∧ ②静态预过滤过（closed/blockedSlots/has 三查；
- *  谓词复检（zChainClear/jogClearOfStub）与失败续扫组装=U2 主循环域） */
+ *  谓词复检（zChainClear/jogClearOfStub）与失败续扫组装=主循环域） */
 export function slotFree(use: SlotUse, cell: GapCell, slotIdx: number): boolean {
   if (cell.closed) return false
   if (cell.blockedSlots.has(slotIdx)) return false
@@ -128,7 +81,7 @@ export function zChainClear(zChain: readonly Pt[], obstacles: readonly Rect[]): 
 }
 
 /** 桩区禁入（pre-commit 权威门②子件）：stub 在场时全顶点不入桩段 AABB 严格
- *  内部（零膨胀；边界=允许）。真实骨架校准=U2 */
+ *  内部（零膨胀；边界=允许） */
 export function jogClearOfStub(zChain: readonly Pt[], stub: { a: Pt; b: Pt } | undefined): boolean {
   if (stub === undefined) return true
   const x1 = Math.min(stub.a.x, stub.b.x)
@@ -138,130 +91,198 @@ export function jogClearOfStub(zChain: readonly Pt[], stub: { a: Pt; b: Pt } | u
   return zChain.every((v) => !(v.x > x1 && v.x < x2 && v.y > y1 && v.y < y2))
 }
 
-/** 提取候选（量化前载体；矩形=投影重叠列×净距空白域） */
-interface Candidate {
-  axis: 'x' | 'y'
-  x1: number
-  x2: number
-  y1: number
-  y2: number
-  idA: string
-  idB: string
+/** 分配输入边（routeOne 骨架投影——U3 接入；pts=未偏移骨架点链；band 族
+ *  字段=旧 SkelResult 投影兼容透传〔xLo/xHi 本层不消费〕） */
+export interface AssignEdge {
+  edgeId: string
+  route: RouteTag
+  pts: Pt[]
+  bandY?: number
+  bandS?: number
+  bandCap?: number
+  xLo?: number
+  xHi?: number
 }
 
-/** 列缝列带（bandsOf 同型对称：卡 x 区间合并→带；0 道=跳过；驻本件） */
-function columnBands(snap: LayoutSnapshot, cards: readonly Rect[]): Array<{ lo: number; hi: number }> {
-  const ivs = cards.map((c) => [c.x, c.x + c.w] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1])
-  const merged: Array<[number, number]> = []
-  for (const [lo, hi] of ivs) {
-    const last = merged[merged.length - 1]
-    if (last !== undefined && lo <= last[1]) last[1] = Math.max(last[1], hi)
-    else merged.push([lo, hi])
+/** 分配记录（一次消费一枚：落位/Δ<1 保留/L3 豁免/残余；cellId=实际落位
+ *  单元、残余=−1；ideal=a6 未偏移骨架位〔段起点槽轴坐标〕） */
+export interface AssignRec {
+  edgeId: string
+  segIdx: number
+  cellId: number
+  axis: 'x' | 'y'
+  ideal: number
+  slotIdx?: number
+  overlapExempt: boolean
+  residual: boolean
+}
+
+export interface AssignOut {
+  pts: Pt[]
+  recs: AssignRec[]
+}
+
+/** 同带检索域（axis+bandId 键——行隙/列缝带表独立编号必撞号必须分轴；含
+ *  bandId=−1 同 axis 自成域；seq=槽轴小端升序序列） */
+interface Domain {
+  seq: GapCell[]
+  indexById: Map<number, number>
+}
+
+const slotLoOf = (c: GapCell): number => (c.axis === 'x' ? c.rect.x : c.rect.y)
+
+function domainsOf(cells: readonly GapCell[]): Map<string, Domain> {
+  const byKey = new Map<string, GapCell[]>()
+  for (const c of cells) {
+    const k = `${c.axis}|${c.bandId}`
+    const list = byKey.get(k) ?? []
+    list.push(c)
+    byKey.set(k, list)
   }
-  const out: Array<{ lo: number; hi: number }> = []
-  for (let i = 1; i < merged.length; i++) {
-    const lo = merged[i - 1]![1]
-    const hi = merged[i]![0]
-    const w = hi - lo
-    if (w <= 2 * PAD) continue
-    const crosses = snap.frames.some((f) => (f.x > lo && f.x < hi) || (f.x + f.w > lo && f.x + f.w < hi))
-    const s = crosses ? 9 : 6
-    if (Math.floor((w - 2 * PAD) / s) < 1) continue // 0 道=跳过（bandsOf 同型）
-    out.push({ lo, hi })
+  const out = new Map<string, Domain>()
+  for (const [k, list] of byKey) {
+    list.sort((a, b) => slotLoOf(a) - slotLoOf(b) || a.id - b.id)
+    out.set(k, { seq: list, indexById: new Map(list.map((c, i) => [c.id, i])) })
   }
   return out
 }
 
-/** 带归属：中点落带区间（ε 容差）→带表索引；无带容纳=−1 */
-function bandIdOf(bands: ReadonlyArray<{ lo: number; hi: number }>, mid: number): number {
-  for (let i = 0; i < bands.length; i++) {
-    if (mid >= bands[i]!.lo - CELL_EPS && mid <= bands[i]!.hi + CELL_EPS) return i
+/** 单元沿段序（行进方向前后序；tie=cell.id——同带重叠单元确定性定序） */
+function alongTravel(p1: Pt, p2: Pt): (a: GapCell, b: GapCell) => number {
+  return (a, b) => {
+    if (a.axis !== b.axis) return a.axis < b.axis ? -1 : 1
+    const fwd = a.axis === 'x' ? p2.y >= p1.y : p2.x >= p1.x
+    const va = a.axis === 'x' ? a.rect.y : a.rect.x
+    const vb = b.axis === 'x' ? b.rect.y : b.rect.x
+    const d = fwd ? va - vb : vb - va
+    return d !== 0 ? d : a.id - b.id
   }
-  return -1
 }
 
-/** 非卡障碍横贯（closed 源三）：正相交 ∧ 障碍槽轴投影覆盖单元槽轴全域（ε 容差） */
-function obstacleCrosses(o: Rect, r: Rect, axis: 'x' | 'y'): boolean {
-  if (!intersects(o, r)) return false
-  if (axis === 'x') return o.x <= r.x + CELL_EPS && o.x + o.w >= r.x + r.w - CELL_EPS
-  return o.y <= r.y + CELL_EPS && o.y + o.h >= r.y + r.h - CELL_EPS
+type Attempt = { kind: 'land'; cell: GapCell; slotIdx: number; landed: Landed } | { kind: 'retain'; cell: GapCell; slotIdx: number }
+
+/** 单元逐槽尝试（L1/L2 共用体）：|槽位−ideal| 升序→槽索引升序；slotFree
+ *  →Δ 量化后<1=豁免保留占用（几何不偏移）→Z 形可行∧谓词复检（zChainClear
+ *  +有桩边每桩 jogClearOfStub）→commit 落位；失败=该槽对本段不可用续余槽
+ *  （段级语义——禁写 cell.blockedSlots 静态全局面） */
+function attemptCell(
+  use: SlotUse,
+  cell: GapCell,
+  edgeId: string,
+  segIdx: number,
+  ideal: number,
+  p1: Pt,
+  p2: Pt,
+  obstacles: readonly Rect[],
+  stubs: ReadonlyArray<{ a: Pt; b: Pt }> | undefined
+): Attempt | null {
+  const positions = slotsOf(cell)
+  const order = positions
+    .map((_, i) => i)
+    .sort((a, b) => Math.abs(positions[a]! - ideal) - Math.abs(positions[b]! - ideal) || a - b)
+  for (const idx of order) {
+    if (!slotFree(use, cell, idx)) continue
+    if (quant(Math.abs(positions[idx]! - ideal)) < 1) {
+      use.commit(cell.id, idx, edgeId) // 占用保留：防后段重取（INV-1XX 豁免支承载）
+      return { kind: 'retain', cell, slotIdx: idx }
+    }
+    const z = zInterior(cell, ideal, positions[idx]!, p1, p2)
+    if (z === null) continue
+    if (!zChainClear(z.chain, obstacles)) continue
+    if (stubs !== undefined && stubs.some((s) => !jogClearOfStub(z.chain, s))) continue
+    use.commit(cell.id, idx, edgeId)
+    return { kind: 'land', cell, slotIdx: idx, landed: { segIdx, axis: cell.axis, slot: positions[idx]!, jogLo: z.jogLo, jogHi: z.jogHi } }
+  }
+  return null
 }
 
-/** 单元提取（管线=卡对候选→量化全等去重→带归属→排序枚举 id→closed/blocked） */
-export function extractGapCells(snap: LayoutSnapshot): GapCell[] {
-  const entries = [...snap.cards.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))
-  const cards = entries.map((e) => e[1])
-  const nonCard = [...snap.labels, ...snap.yearHeads]
-  const candidates: Candidate[] = []
-  for (const [idA, A] of entries) {
-    for (const [idB, B] of entries) {
-      if (idA === idB) continue
-      // 行隙：A 底=B 顶之上（垂直净距>ε）∧ x 投影重叠>ε ∧ 开条带无第三卡
-      if (B.y - (A.y + A.h) > CELL_EPS) {
-        const ovL = Math.max(A.x, B.x)
-        const ovR = Math.min(A.x + A.w, B.x + B.w)
-        if (ovR - ovL > CELL_EPS && !cards.some((c) => c !== A && c !== B && hitsOpenStrip(c, ovL, ovR, A.y + A.h, B.y))) {
-          candidates.push({ axis: 'x', x1: ovL, x2: ovR, y1: A.y + A.h, y2: B.y, idA, idB })
-        }
-      }
-      // 列缝对称：A 左 B 右（水平净距>ε）∧ y 投影重叠>ε ∧ 开条带无第三卡
-      if (B.x - (A.x + A.w) > CELL_EPS) {
-        const ovLo = Math.max(A.y, B.y)
-        const ovHi = Math.min(A.y + A.h, B.y + B.h)
-        if (ovHi - ovLo > CELL_EPS && !cards.some((c) => c !== A && c !== B && hitsOpenStrip(c, A.x + A.w, B.x, ovLo, ovHi))) {
-          candidates.push({ axis: 'y', x1: A.x + A.w, x2: B.x, y1: ovLo, y2: ovHi, idA, idB })
-        }
+function attemptOut(edgeId: string, segIdx: number, ideal: number, at: Attempt): { rec: AssignRec; landed?: Landed } {
+  if (at.kind === 'retain') {
+    return { rec: { edgeId, segIdx, cellId: at.cell.id, axis: at.cell.axis, ideal, slotIdx: at.slotIdx, overlapExempt: true, residual: false } }
+  }
+  return {
+    rec: { edgeId, segIdx, cellId: at.cell.id, axis: at.cell.axis, ideal, slotIdx: at.slotIdx, overlapExempt: false, residual: false },
+    landed: at.landed
+  }
+}
+
+/** 三级泄压（a2/a6）：L1 本单元→L2 同带邻单元（索引差升序→tie 几何小侧
+ *  左/上先；ideal 不变）→L3 全占∨全不可达两态合一→overlapExempt 落 ideal */
+function assignCell(
+  use: SlotUse,
+  dom: Domain | undefined,
+  cell: GapCell,
+  edgeId: string,
+  segIdx: number,
+  ideal: number,
+  p1: Pt,
+  p2: Pt,
+  obstacles: readonly Rect[],
+  stubs: ReadonlyArray<{ a: Pt; b: Pt }> | undefined
+): { rec: AssignRec; landed?: Landed } {
+  const own = attemptCell(use, cell, edgeId, segIdx, ideal, p1, p2, obstacles, stubs)
+  if (own !== null) return attemptOut(edgeId, segIdx, ideal, own)
+  if (dom !== undefined) {
+    const ownIdx = dom.indexById.get(cell.id) ?? -1
+    const cand = dom.seq
+      .map((c, i) => ({ c, i }))
+      .filter((x) => x.i !== ownIdx)
+      .sort((a, b) => Math.abs(a.i - ownIdx) - Math.abs(b.i - ownIdx) || slotLoOf(a.c) - slotLoOf(b.c) || a.c.id - b.c.id)
+    for (const { c } of cand) {
+      const at = attemptCell(use, c, edgeId, segIdx, ideal, p1, p2, obstacles, stubs)
+      if (at !== null) return attemptOut(edgeId, segIdx, ideal, at)
+    }
+  }
+  return { rec: { edgeId, segIdx, cellId: cell.id, axis: cell.axis, ideal, overlapExempt: true, residual: false } }
+}
+
+/** a3 六态消费门：band/direct 轴对齐段与 h-slip 水平段入槽（h-slip 斜段另由
+ *  segConsumesCell 非轴对齐早退排除）；corridor（内容域外+旧域外双重一致）/
+ *  fallback（放弃避让终态——槽位无意义）/manual-override（用户排位主权）
+ *  三态不消费（门一回炉轮 1 件③） */
+const ROUTE_ELIGIBLE: ReadonlySet<RouteTag> = new Set<RouteTag>(['band', 'direct', 'h-slip'])
+
+/** 走线候选位分配主入口（候选 B 单 pass）：消费枚举（a7 序+route 门〔回炉
+ *  轮 1 件③：ROUTE_ELIGIBLE 六态白名单〕）→三级泄压→
+ *  Z 形施加+残余子 pass→按输入边序输出（pts=施加后点链+recs=分配记录） */
+export function slotAssign(
+  edges: readonly AssignEdge[],
+  snap: LayoutSnapshot,
+  stubs?: ReadonlyMap<string, ReadonlyArray<{ a: Pt; b: Pt }>>
+): AssignOut[] {
+  const cells = extractGapCells(snap)
+  const obstacles = allObstacles(snap)
+  const domains = domainsOf(cells)
+  const use = new SlotUse()
+  const recsByEdge: AssignRec[][] = edges.map(() => [])
+  const landedByEdge: Landed[][] = edges.map(() => [])
+  const consumed: Array<Array<Array<[number, number]>>> = edges.map((e) => e.pts.map(() => []))
+  const order = edges
+    .map((e, i) => ({ id: e.edgeId, i }))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : a.i - b.i))
+  for (const { i } of order) {
+    const e = edges[i]!
+    if (!ROUTE_ELIGIBLE.has(e.route)) continue
+    const edgeStubs = stubs?.get(e.edgeId)
+    for (let s = 0; s + 1 < e.pts.length; s++) {
+      const p1 = e.pts[s]!
+      const p2 = e.pts[s + 1]!
+      const hit = cells.filter((c) => segConsumesCell(c, p1, p2)).sort(alongTravel(p1, p2))
+      for (const cell of hit) {
+        const ideal = cell.axis === 'x' ? p1.x : p1.y
+        const r = assignCell(use, domains.get(`${cell.axis}|${cell.bandId}`), cell, e.edgeId, s, ideal, p1, p2, obstacles, edgeStubs)
+        recsByEdge[i]!.push(r.rec)
+        if (r.landed !== undefined) landedByEdge[i]!.push(r.landed)
+        // 消费区间（残余域扣除=单元 x 跨度∩段 x 域；零宽⊥记录被残余域 b>a 过滤）
+        const lo = Math.max(cell.rect.x, Math.min(p1.x, p2.x))
+        const hi = Math.min(cell.rect.x + cell.rect.w, Math.max(p1.x, p2.x))
+        consumed[i]![s]!.push([lo, hi])
       }
     }
   }
-  // 去重：量化后 (axis,x,y) 全等合并；代表对=(idA,idB) 字典序最小生成对
-  const byKey = new Map<string, Candidate>()
-  for (const c of candidates) {
-    const k = `${c.axis}|${quant(c.x1)},${quant(c.x2)},${quant(c.y1)},${quant(c.y2)}`
-    const prev = byKey.get(k)
-    if (prev === undefined || c.idA < prev.idA || (c.idA === prev.idA && c.idB < prev.idB)) byKey.set(k, c)
-  }
-  const rowBands = bandsOf(snap, cards).map((b) => ({ lo: b.top, hi: b.bottom }))
-  const colBands = columnBands(snap, cards)
-  const items = [...byKey.values()].map((c) => {
-    const x1 = quant(c.x1)
-    const x2 = quant(c.x2)
-    const y1 = quant(c.y1)
-    const y2 = quant(c.y2)
-    const mid = c.axis === 'x' ? (y1 + y2) / 2 : (x1 + x2) / 2
-    return {
-      axis: c.axis,
-      rect: { x: x1, y: y1, w: quant(x2 - x1), h: quant(y2 - y1) },
-      bandId: bandIdOf(c.axis === 'x' ? rowBands : colBands, mid),
-      slotLo: c.axis === 'x' ? x1 : y1,
-      slotHi: c.axis === 'x' ? x2 : y2,
-      idA: c.idA,
-      idB: c.idB
-    }
-  })
-  items.sort(
-    (a, b) =>
-      a.bandId - b.bandId ||
-      a.slotLo - b.slotLo ||
-      a.slotHi - b.slotHi ||
-      (a.idA < b.idA ? -1 : a.idA > b.idA ? 1 : 0) ||
-      (a.idB < b.idB ? -1 : a.idB > b.idB ? 1 : 0)
-  )
-  return items.map((it, i) => {
-    const positions = slotPositions(it.axis, it.rect)
-    const travel = it.axis === 'x' ? it.rect.h : it.rect.w
-    const closed = positions.length < 1 || travel < 2 * PAD + 1 || nonCard.some((o) => obstacleCrosses(o, it.rect, it.axis))
-    const blocked = new Set<number>()
-    if (!closed) {
-      // 静态预过滤：槽线±PAD×行进全域走廊 vs 非卡障碍正相交 → 该槽 blocked
-      positions.forEach((pos, idx) => {
-        const corridor =
-          it.axis === 'x'
-            ? { x: pos - PAD, y: it.rect.y, w: 2 * PAD, h: it.rect.h }
-            : { x: it.rect.x, y: pos - PAD, w: it.rect.w, h: 2 * PAD }
-        if (nonCard.some((o) => intersects(o, corridor))) blocked.add(idx)
-      })
-    }
-    return { id: i, bandId: it.bandId, axis: it.axis, rect: it.rect, closed, blockedSlots: blocked }
-  })
+  const resid = runResidualPass(edges, consumed)
+  return edges.map((e, i) => ({
+    pts: rebuildPts(e, landedByEdge[i]!, resid.apps[i]!),
+    recs: [...recsByEdge[i]!, ...resid.recs[i]!]
+  }))
 }

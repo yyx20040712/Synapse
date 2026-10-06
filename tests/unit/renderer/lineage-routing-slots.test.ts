@@ -14,14 +14,16 @@ import {
   SLOT_DIV,
   SLOT_MAX,
   SLOT_MIN_PITCH,
-  SlotUse,
   extractGapCells,
+  type GapCell
+} from '../../../src/renderer/features/lineage/routing/gap-cells'
+import {
+  SlotUse,
   jogClearOfStub,
   segConsumesCell,
   slotFree,
   slotsOf,
-  zChainClear,
-  type GapCell
+  zChainClear
 } from '../../../src/renderer/features/lineage/routing/slots'
 import { defaultCorridor, type LayoutSnapshot, type MonthFrame } from '../../../src/renderer/features/lineage/routing/chain'
 import type { Pt, Rect } from '../../../src/renderer/features/lineage/routing/anchors'
