@@ -670,6 +670,44 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
+   * T6n [F-ROUTE-02 U5 非空卫族普查——R1/R2 同族（裁决部 W 级承接）]：
+   * dataset.nodeId 读点非空卫。T6 期望 Map 按 ids 保序构造——单卡
+   * data-node-id 缺失时 '' 键恰好映射该卡自身期望值（margin-left 判别
+   * 恒过；≥2 卡缺失 Map 才坍缩红）=空读恒过形态（RR1 变异 4b 同族）；
+   * 既有 T6 断言面受 test-surface 精确签名冻结（用例内增长=MISSING_CASE），
+   * 本卫以新用例承载（夹具沿 T6 同型），钉「卡集全携带非空 data-node-id」
+   * 属性契约（LineageTimelineCard 写入面）。
+   */
+  test('T6n [U5 普查] nodeId 非空卫：瀑布卡集 data-node-id 全非空（R1/R2 同族）', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6n-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    for (const p of BRICK_PAPERS) {
+      const sha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
+      const ref = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+      await seedPaperRow(userData, ref, sha, p.title, p.id)
+    }
+    await seedLineageGraph(userData, {
+      nodes: [
+        ...PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5 })),
+        ...BRICK_PAPERS.map((p) => ({ paperId: p.id, title: p.title, year: 2020, month: 5 }))
+      ],
+      edges: []
+    })
+
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 720, height: 800 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    const ids = await win.locator('.month-frame .tl-card').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
+    expect(ids.length, 'T6n 卡集在场（5 卡——同 T6 夹具）').toBe(5)
+    expect(ids.filter((x) => x === '').length, 'T6n nodeId 非空卫（data-node-id 缺席即红）').toBe(0)
+    await app.close()
+  })
+
+  /**
    * T-P1b=[批 3 迁移；T3-P7A 裁决部首日兑现] resize 不错位真机直证：
    * setViewportSize 两档（1280→1000）→ResizeObserver 重算→（a）首条树边
    * （根→甲）route=band（批 3 终落锚散开：月标封堵首选 slot 后同边 slot

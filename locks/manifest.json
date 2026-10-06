@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T21:20:02.2084726Z",
+    "generatedAt":  "2026-10-06T22:39:50.0942102Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "79811b75b3d29833576e567bbb6f573e723933ebdd71996948785e9172763543"
+                      "sha256":  "4bf797a946b99f0e5b4c428b8cc3782644349753c5bfb643c11781a79573b1af"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "047677f2e2579b8f39811882cab909355b38e95fb6366e614c13a85a1ed175d2"
+                      "sha256":  "74bd4d03022113318197f684e124f86b23efce1f888c3a0f5c34af871c8f2e43"
                   },
                   {
                       "path":  "tests/e2e/lineage-obstacle-audit.spec.ts",

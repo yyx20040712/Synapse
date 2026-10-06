@@ -89,6 +89,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0020 | 应用改名与 userData 目录迁移（四分支幂等迁移） |
 | 0021 | 文件夹单归属×脉络图绑定（F-FOLDER-01——图=文件夹投影/paper_collections 退役） |
 | 0022 | 草稿导入链退役（F-BAKRET-01——备份归未来服务端多实体导出/git 历史即资产） |
+| 0023 | 走线候选位分配=后处理槽位分配（F-ROUTE-02——候选 B 路线裁决：routeOne 六态零侵入+slotAssign 单 pass+applyBandLanes 退役迁残余子 pass；INV-112~117；决策正文单源=docs/design/2026-10-06_f-route02-design.md v1.5，不另立 adr 正件防双源） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -354,6 +355,19 @@ AGENTS.md「环境事实」单源，此处不复制。
   F-BAKRET-01 退役 2026-09-30）+`repos/lineage.repo`（+T3-P5 行映射拆件
   `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
   lineTypes 静态校验拆件）。
+- [F-ROUTE-02]（2026-10-06 起，ADR-0023）连线走线候选位分配=routing/ 域族
+  七件面：`routing/gap-cells.ts` 间隙单元提取（卡对投影重叠列+去重排序键+
+  半开区间消费语义+非卡障碍 closed/静态预过滤）→`routing/slots.ts` 分配主循环
+  （用户裁决六分五候选位：L1 本单元可用槽→L2 同带邻缝→L3 整排穷尽豁免落
+  ideal；Δ<1 恰中槽 retain 豁免保留占用）→`routing/zapply.ts` Z 形施加
+  （j 区间+谓词复检 pre-commit 权威门）→`routing/residual.ts` 残余子 pass
+  （旧 applyBandLanes 域全等承袭——开阔域共道分离零丢失）+`routing/chain.ts`
+  编排（routeOne 六态零侵入→slotAssign 单 pass→finish 既有复检；SkelResult
+  中间态+RoutedPath 观测三槽 slotMarks/overlapExempt/slotFallback 投影）
+  +EdgeOverlay.tsx 观测钩子挂线（data-route/data-slot/data-overlap-exempt/
+  data-slot-fallback，后三缺省不挂）+`routing/bands.ts` bandsOf（全卡 y 区间
+  并吞=带派生单源——INV-113/114 结构前提）。`lineage-routing.ts`=消费面
+  re-export 桶文件不变；行为不变量=INV-112~117。
 - [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
   `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题钮 [F-WS-02] 起路由
   workspaces 管理页（弹层 `app/WsRailPopover.tsx` 已退役——方案切换=删除
