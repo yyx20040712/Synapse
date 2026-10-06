@@ -24,14 +24,15 @@ export interface BandRoute {
 }
 
 /** 带模型（卡 y 区间夹缝；框边界在缝内→框间带 s=9，否则行隙 s=6） */
-interface Band {
+export interface Band {
   top: number
   bottom: number
   s: number
   center: number
 }
 
-function bandsOf(snap: LayoutSnapshot, cards: readonly Rect[]): Band[] {
+/** [F-ROUTE-02 U1] 导出=slots.ts 带归属消费（行隙单元 y 中点落带→bandId） */
+export function bandsOf(snap: LayoutSnapshot, cards: readonly Rect[]): Band[] {
   const ivs = cards.map((c) => [c.y, c.y + c.h] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1])
   const merged: Array<[number, number]> = []
   for (const [lo, hi] of ivs) {
