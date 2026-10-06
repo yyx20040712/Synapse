@@ -35,6 +35,10 @@
 > （±6 屏幕 px 系拟稿沿 R2 分析档旧值——实代码 lnfix1 已 12 内容坐标
 > 且先于 R2 反馈，按「现状判定不动」意图主句维持 12；主控预裁呈报
 > 可否决）+§4.3 锚定句更新（INV-109）。
+> **v1.15（2026-10-06 用户裁决第五轮四项——C2 收口呈裁+B5 细化）**：
+> §2 B5 增两件细化（两钮位置=头部下操作行/resizer 键盘=±16+Home/End）
+> +**新增搭车件=锚点显隐收窄仅 edit 模式**（C2 呈裁③用户裁决收窄
+> ——browse/focus hover 不显）；Esc 接缝两项立票 F-ESC-01（B5 后）。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -155,7 +159,7 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   候选甲）**，点窄条任意处展开；折叠态 `synapse.sidebar.collapsed`。
   e2e=clamp 两界+刷新持久恢复。
 
-### B5 UI 归位两件（v1.11 用户裁决第二轮①⑤——C2 后实施）
+### B5 UI 归位两件+搭车（v1.11 用户裁决第二轮①⑤+v1.15 第五轮①搭车——C2 后实施）
 
 > 〔v1.11 2026-10-06 用户裁决〕①卡面两钮归详情页；⑤resizer 键盘可达。
 > **〔v1.13 第四轮〕原件④（LineTypeMenu 行 B1 化）撤**——用户澄清
@@ -170,14 +174,24 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   迁 LineageSidePanel 详情面板（选中卡正身区——选中文献节点时呈现；
   主题节点=「去阅读器」不渲染〔沿 C3 态〕+「去文献库」在场不置选中
   〔沿 C3 态——通道 paperId=null 支持，主控补裁 k1-W3；「详情页」
-  =LineageSidePanel 解读标注可否决 k1-N3〕；通道全复用零改动=
-  goto-library-plan/open-library-bus/requestOpenPaper）。e2e 卡面两钮
-  例改写+详情面新例。
+  =LineageSidePanel 解读标注可否决 k1-N3——**v1.15 第五轮②用户确认**〕；
+  通道全复用零改动=goto-library-plan/open-library-bus/requestOpenPaper）。
+  **〔v1.15 第五轮②细化〕位置=头部下操作行**：标题/编号/徽章行下方
+  加一行两钮并排（文字钮形——醒目+语义=「针对这篇文献的操作」；不随
+  内容滚动消失）。e2e 卡面两钮例改写+详情面新例。
 - **resizer 键盘可达**：use-sidebar-pane 手柄 role=separator 加
-  tabIndex=0+ArrowLeft/ArrowRight 步进（APG separator 模式；步进量
-  与钳制域复用 clamp 单源）。
-- DoD：两件各自单测先红后绿+变异红证；e2e 两钮迁移例；locks 流程
-  （tests 触碰面）+豁免登记（改写例）。
+  tabIndex=0+ArrowLeft/ArrowRight 步进（APG separator 模式；钳制域复用
+  clamp 单源——步进量 v1.15 已定 ±16）。**〔v1.15 第五轮③细化〕步进
+  =左右键 ±16px+Home/End 直达边界（200/480）**；aria-valuenow 随动更新。
+- **〔v1.15 第五轮①搭车件〕锚点显隐收窄仅 edit 模式**：C2 交付的
+  hover 显锚支（.tl-card:hover）从全模式收窄为**仅 edit 模式**（
+  browse/focus hover 卡不显——browse 无画线工具，锚点暗示不可用操作
+  =视觉噪声；armed 全显与 edit hover 显两支不动）。实施=CSS 单
+  选择器收窄（.editing 域作用）+e2e C2a 补 browse 负锚分支（退编辑
+  模式 hover 卡→锚点隐藏）；INV-109 ①子句显隐条件同步更新为
+  「armed∪**edit 态** hover 卡」。
+- DoD：三件各自单测先红后绿+变异红证；e2e 两钮迁移例+C2a browse
+  负锚分支；locks 流程（tests 触碰面）+豁免登记（改写例）。
 
 ### C3 拖拽域重构（v1.3 票面修正——跨月语义考古后重写；F7+三轮澄清）
 - **跨月语义史实（2026-10-05 考古定稿）**：拖拽跨月**从来不是活路径**
