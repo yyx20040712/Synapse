@@ -458,25 +458,76 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
 })
 
 describe('F-UIRES-03 C2·P7 buildSnapshot 采集（yearHeads 障碍源——快照面）', () => {
-  it('.tl-year-head rects 采入 yearHeads（内容坐标 ÷z——与 cards/labels 同源同变换）', async () => {
-    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
+  /** rect 桩（jsdom 零布局——三例共用，Rule of Three 上提） */
+  const mockRect = (el: Element, x: number, y: number, w: number, h: number): void => {
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+  }
+  const mountContent = (): HTMLElement => {
     const content = document.createElement('div')
     content.className = 'tl-content'
-    const mockRect = (el: Element, x: number, y: number, w: number, h: number): void => {
-      Object.defineProperty(el, 'getBoundingClientRect', {
-        value: () => ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
-        configurable: true
-      })
-    }
     mockRect(content, 0, 0, 1000, 800)
-    const head = document.createElement('div')
-    head.className = 'tl-year-head'
-    mockRect(head, 28, 60, 400, 20)
-    content.appendChild(head)
+    return content
+  }
+
+  it('.tl-year-num rects 采入 yearHeads（内容坐标 ÷z——与 cards/labels 同源同变换）', async () => {
+    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
+    const content = mountContent()
+    const num = document.createElement('div')
+    num.className = 'tl-year-num'
+    mockRect(num, 28, 60, 400, 20)
+    content.appendChild(num)
     document.body.appendChild(content)
     try {
       const snap = buildSnapshot(content)
       expect(snap.yearHeads).toEqual([{ x: 28, y: 60, w: 400, h: 20 }])
+    } finally {
+      content.remove()
+    }
+  })
+
+  it('[N5 校准提前落地] .tl-year-num 与 .tl-year-meta 双 rect 分立采入 yearHeads（两 rect 入数组，非并集盒）', async () => {
+    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
+    const content = mountContent()
+    const num = document.createElement('div')
+    num.className = 'tl-year-num'
+    mockRect(num, 20, 60, 58, 35)
+    const meta = document.createElement('div')
+    meta.className = 'tl-year-meta'
+    mockRect(meta, 660, 62, 72, 14)
+    content.appendChild(num)
+    content.appendChild(meta)
+    document.body.appendChild(content)
+    try {
+      const snap = buildSnapshot(content)
+      expect(snap.yearHeads).toEqual([
+        { x: 20, y: 60, w: 58, h: 35 },
+        { x: 660, y: 62, w: 72, h: 14 }
+      ])
+    } finally {
+      content.remove()
+    }
+  })
+
+  it('[N5 校准提前落地·负锚] .tl-year-head 容器自身不再采入（全宽容器 rect 挡死 band 跨年终落=CI 红 T-P1b 根因——防回归）', async () => {
+    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
+    const content = mountContent()
+    const head = document.createElement('div')
+    head.className = 'tl-year-head'
+    mockRect(head, 20, 60, 684, 34)
+    const num = document.createElement('div')
+    num.className = 'tl-year-num'
+    mockRect(num, 20, 60, 58, 34)
+    head.appendChild(num)
+    content.appendChild(head)
+    document.body.appendChild(content)
+    try {
+      const snap = buildSnapshot(content)
+      // 嵌套形态同真实 DOM：仅数字区入集，容器全宽 rect 不在采集集
+      expect(snap.yearHeads).toEqual([{ x: 20, y: 60, w: 58, h: 34 }])
+      expect(snap.yearHeads.some((b) => b.w > 100)).toBe(false)
     } finally {
       content.remove()
     }

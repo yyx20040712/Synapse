@@ -34,8 +34,11 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
     const raw = el.closest('[data-year]')?.getAttribute('data-year') ?? 'null'
     return { ...toBox(el), year: raw === 'null' ? null : Number(raw) }
   })
-  // [F-UIRES-03 C2·P7] 年份头障碍采集（避让集扩=卡∪月标注∪年份头——PAD 同源）
-  const yearHeads = Array.from(content.querySelectorAll('.tl-year-head')).map(toBox)
+  // [F-UIRES-03 C2·P7 / N5 校准提前落地] 年份头障碍采集收窄=数字+「N 篇」meta
+  // 两文本区（.tl-year-num/.tl-year-meta）——原 .tl-year-head 容器为 flex+
+  // ::after{flex:1} 横线横贯内容全宽，全宽 rect 挡死 band 跨年终落=CI 红
+  // T-P1b（设计稿 v1.16 随批回写）；1px 装饰横线为伪元素天然采不到，不视为障碍
+  const yearHeads = Array.from(content.querySelectorAll('.tl-year-num, .tl-year-meta')).map(toBox)
   return { cards, labels, frames, yearHeads, contentW: base.width / z, corridor: defaultCorridor(base.width / z) }
 }
 

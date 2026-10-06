@@ -39,6 +39,12 @@
 > §2 B5 增两件细化（两钮位置=头部下操作行/resizer 键盘=±16+Home/End）
 > +**新增搭车件=锚点显隐收窄仅 edit 模式**（C2 呈裁③用户裁决收窄
 > ——browse/focus hover 不显）；Esc 接缝两项立票 F-ESC-01（B5 后）。
+> **v1.16（2026-10-06 N5 提前最小子集落地——C2·P7 CI 红修复）**：
+> 年份头避让障碍几何校准=采集收窄 `.tl-year-head` 容器→`.tl-year-num
+> / .tl-year-meta` 两文本区（全宽容器 rect 挡死 band 跨年终落=CI 红
+> T-P1b 两跑两红；1px 装饰横线=伪元素不视为障碍）——**可否决呈报**
+> （偏离裁决 13 字面选择器的校准实施，异议即回滚；N5 剩余面仍挂
+> F-ROUTE-02）。详见 §2 C2 回写块。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -385,7 +391,9 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   出现↔落点吸附一致**（高亮态下落边，端点坐标=锚心±0.5px——封「看
   到高亮点不中」复归）；③入域/出域类名切换。
 - 穿年份头避让搭车（裁决 13）：障碍集=卡∪月标注∪.tl-year-head，PAD
-  同源；**B4 字面量冻结后校准障碍几何**（N5）。
+  同源；**B4 字面量冻结后校准障碍几何**（N5）。〔v1.16：N5 最小子集
+  已提前落地——采集选择器校准为 `.tl-year-num/.tl-year-meta`（见下
+  回写块）；N5 剩余面（B4 字面量冻结后全面校准）仍随 F-ROUTE-02 呈〕
 
 > **〔v1.11 用户裁决第二轮②③增补〕**：
 > ①**画线业务语义正名=CAD 式锚点拖拽为正身**（从卡片边缘吸附点出发
@@ -428,6 +436,25 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
 > pendingLink Esc 立票建议/browse+focus hover 显锚呈裁/真实避让 e2e 缺位
 > 挂 F-ROUTE-02/dot 视觉规格+ring strokeWidth 未锁/4px 环带边缘效应/
 > drawline-rr1 夹具未同型补维/豁免双登冗余）。
+
+> **〔v1.16 N5 提前最小子集落地·2026-10-06——C2·P7 CI 红修复批〕**
+> **根因链**：P7 交付把 `.tl-year-head` 容器 rect 并入障碍集——该容器
+> flex+`::after{flex:1}` 横线横贯内容全宽（探针实测 x20→704/内容宽
+> 732）→跨年边 band 终落竖直线（vClear 检测）几何必然穿年份头→三槽
+> 全灭→降级 corridor。受锁 e2e T-P1b（批 3 回归锁：首条树边
+> route=band）确定性红：CI 37413058595 两跑两红（v142 批）+37414689479
+> （v143 批）+本地复现同形。**逃逸路径**：verify 不含 e2e（CI 另含）
+> +C2 批 probe 的 e2e 抽样=C2 相关七例（未含走线直证 T-P1b）——改
+> routing 面 → e2e 抽样必须含走线用例（教训随批入档，后续批 probe
+> 矩阵纪律）。**修复**=edge-overlay-geom.ts 采集选择器收窄
+> `.tl-year-num, .tl-year-meta`（数字+「N 篇」meta 两文本区；1px 装饰
+> 横线=伪元素天然采不到，不视为障碍）——探针几何推演 slot2（¾ 位，
+> x175.6>月标右缘+PAD）恢复 band 与批 3「月标封堵→散开至 top ¾」
+> 语义衔接，T-P1b 回绿实证。**可否决呈报**：本校准偏离裁决 13 字面
+> 选择器（.tl-year-head）——意图调和（避让视觉主体=数字/meta 文本 ∪
+> band 直落批 3 语义）；若异议回滚选择器即回字面形（代价=跨年边全
+> 绕右 corridor）。夹具同步=lineage-edge-overlay.test.tsx C2·P7 例
+> （断言本质不变）+新增正锚/负锚 2 例（负锚防全宽容器回归）。
 
 ## §3 数据面（承 §0 核正）
 - 迁移 015（C1 挂靠）：单值 UPDATE+备库；执行者 DoD=迁移前后 count 对账

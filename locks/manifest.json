@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T04:13:38.6970647Z",
+    "generatedAt":  "2026-10-06T05:25:43.1952869Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "f054f9d5c3e957f6c19b0979a199ec436a6c43b9f5df20745ab9de56d6708c65"
+                      "sha256":  "688651d098a7a4a6204f0177bc198036bb79bdcbf8f810ef4e4abeac4d5cf5ca"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -767,7 +767,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-                      "sha256":  "634c68b9f6ddef601ae23abcfd2ab94f5416b521d2ba3054033abedc9f5b803e"
+                      "sha256":  "8ef0ebc64e371ffba942ffb755291860d93ef54fea241ec2fca586df5240cc59"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-manual-edit.test.tsx",
