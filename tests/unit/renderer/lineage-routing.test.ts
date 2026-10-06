@@ -486,3 +486,216 @@ describe('F-LINEAGE-02 [批3] band 终落锚散开（月标封堵首选 slot—�
   })
 })
 
+describe('F-ROUTE-02 [U3] chain 接入对照（旧/新六组+挂账②）', () => {
+  // 接入事实（手推前提）：routeOne 循环→slotAssign（含残余子 pass）→回写
+  // skel→finish。结构性边界（gap-cells/zInterior N-3 亲核）：band 边竖直段
+  // （出桩/跨带下降/终落）对行隙单元恒部分覆盖（bandY=单元中点>j1）→豁免
+  // 原位零宽消费；band 跑段 y=bandY 不落任何卡行内（bandsOf 并吞）→残余域
+  // 等价旧行为。可行消费面=direct 全跨度竖段×行隙单元+h-slip 等高段×列缝
+  // 单元（端卡自构成单元——第三方入条带即毁单元，故消费边数≤同边三锚）。
+
+  it('① 带内双下降共道→槽位化：同列上下两 direct 边穿同一行隙单元→竖直段 x 电平互异且∈分点集+d 手推', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['direct', 'direct'])
+    // 行隙单元 [100,228]×[172,300]（A/B 对，W=128→L=120→n=5 分点
+    // 104+20k=124/144/164/184/204，j1=177/j2=295）：
+    // e1（首边）：锚散开前 ½/½ 锚 x=164——ideal=164 恰中槽 idx2（Δ=0<1）
+    // →retain 豁免保留占用（几何不动，d=旧形态）
+    expect(paths[0]!.d).toBe('M 164 172 L 164 300')
+    // e2：散开 ¾/¾ 锚 x=196——ideal=196 距槽序 |204−196|=8(idx4)<|184−196|=12
+    // (idx3)→落 idx4=204：Z 链 (196,177)(204,177)(204,295)(196,295)（jog
+    // 距 A 膨胀底 176/顶 B 膨胀 296 各 1px 净空）；拐角 r=min(6,5/2,8/2)=2.5/
+    // min(6,4,118/2)=4/4/2.5——d 手推
+    expect(paths[1]!.pts).toEqual([
+      { x: 196, y: 172 },
+      { x: 196, y: 177 },
+      { x: 204, y: 177 },
+      { x: 204, y: 295 },
+      { x: 196, y: 295 },
+      { x: 196, y: 300 }
+    ])
+    expect(paths[1]!.d).toBe(
+      'M 196 172 L 196 174.5 Q 196 177 198.5 177 L 200 177 Q 204 177 204 181 L 204 291 Q 204 295 200 295 L 198.5 295 Q 196 295 196 297.5 L 196 300'
+    )
+    // INV-1XX 单元内断言：两竖直段 x 电平互异且均∈分点集 {124,144,164,184,204}
+    const lv1 = paths[0]!.pts[0]!.x
+    const lv2 = paths[1]!.pts[2]!.x
+    expect([124, 144, 164, 184, 204]).toContain(lv1)
+    expect([124, 144, 164, 184, 204]).toContain(lv2)
+    expect(lv1).not.toBe(lv2)
+  })
+
+  it('② 开阔域共行→残余=旧行为等价：两 band 边同 bandY 跑段无单元消费→偏移 ∓s/2（s=6→∓3）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['C', rect(240, 100, CARD_W, CARD_H)],
+        ['B', rect(182, 192, CARD_W, CARD_H)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 300), year: 2022 }]
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['band', 'band'])
+    // 两边骨架：e1=[(196,172),(196,182),(196,182),(214,182),(214,192)]（锚 ¾
+    // ¾——A 底 ¾=196、B 顶 ¼=214）；e2 锚散开后=[(132,172),…,(246,182),
+    // (246,192)]（A 底 ¼=132、B 顶 ½=246）。行隙单元 (A,B)/(C,B) 竖直段均
+    // 部分覆盖（豁免零宽）→跑段全量入残余域：同 bandY=182 簇 k=2→旧式
+    // (i−0.5)·6=∓3→179/185（与旧 applyBandLanes 输出全等——等价对照本体）
+    // e1 拐角 r=min(6,7/2,18/2)=3.5 与 min(6,9,13/2)=6；e2 r=6 与
+    // min(6,57,7/2)=3.5——d 手推
+    expect(paths[0]!.d).toBe('M 196 172 L 196 175.5 Q 196 179 199.5 179 L 208 179 Q 214 179 214 185 L 214 192')
+    expect(paths[1]!.d).toBe('M 132 172 L 132 179 Q 132 185 138 185 L 242.5 185 Q 246 185 246 188.5 L 246 192')
+  })
+
+  it('③a 残余域容量钳：窄框间带 cap=1→maxOff=0→两成员电平重合于 bandY（旧语义）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(160, 192, CARD_W, CARD_H)]
+      ]),
+      // frame y=180 落带 [172,192] 内→s=9；h=20→cap=⌊12/9⌋=1
+      frames: [{ ...rect(101, 180, 200, 300), year: 2022 }]
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['band', 'band'])
+    // e1 骨架 [(196,172),(196,182),(196,182),(192,182),(192,192)]、e2
+    // [(132,172),(132,182),(132,182),(224,182),(224,192)]（锚散开 ¼/½ 同
+    // e2=②）：残余簇 k=2 但 maxOff=((1−1)/2)·9=0→off 钳 0 跳过→两边水平
+    // 跑段同留 y=182（重合=旧 applyBandLanes cap 钳语义）。e1 拐角
+    // r=min(6,5,4/2)=2 与 2（末拐 tIn=(194,182)=前拐 tOut→零长 L 略）；
+    // e2 r=min(6,10/2,46)=5 与 min(6,46,10/2)=5——d 手推
+    expect(paths[0]!.d).toBe('M 196 172 L 196 180 Q 196 182 194 182 Q 192 182 192 184 L 192 192')
+    expect(paths[1]!.d).toBe('M 132 172 L 132 177 Q 132 182 137 182 L 219 182 Q 224 182 224 187 L 224 192')
+    // 重合断言：两边跑段电平全等（钳位证据——④ 的 ±4.5 反锚）
+    const lv = (p: { pts: Array<{ x: number; y: number }> }): number => p.pts[2]!.y
+    expect(lv(paths[0]!)).toBe(182)
+    expect(lv(paths[1]!)).toBe(182)
+  })
+
+  it('③b 槽域穷尽豁免：两槽列缝单元×三消费边→第 3 边 L3 豁免落 ideal 未偏移', () => {
+    // 矮卡对（h=26）：列缝单元 [228,400]×[100,126]（W=172/H=26→L=18→n=2
+    // 分点 110/116，jog 区 x[233,395]）；卡等高→h-slip 锚 y=106.5/113/119.5
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, 26)],
+        ['B', rect(400, 100, CARD_W, 26)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B'), geom('e3', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['h-slip', 'h-slip', 'h-slip'])
+    // e1（½/½ 锚 y=113）：|113−110|=3=|113−116| tie→小索引 idx0=110 落位
+    // （Δ=3≥1→Z）；e2（¾/¾ 锚 y=119.5）：|119.5−116|=3.5<9.5→idx1=116 落位；
+    // e3（¼/¼ 锚 y=106.5）：两槽全占→L2 同带无邻单元→L3 豁免→几何不动
+    // （ideal 未偏移）。拐角 r=min(6,5/2,3/2)=1.5<2→全尖角——d 手推
+    expect(paths[0]!.d).toBe('M 228 113 L 233 113 L 233 110 L 395 110 L 395 113 L 400 113')
+    expect(paths[1]!.d).toBe('M 228 119.5 L 233 119.5 L 233 116 L 395 116 L 395 119.5 L 400 119.5')
+    expect(paths[2]!.d).toBe('M 228 106.5 L 400 106.5')
+    expect(paths[2]!.pts).toEqual([
+      { x: 228, y: 106.5 },
+      { x: 400, y: 106.5 }
+    ])
+  })
+
+  it('④ 框间带 s=9 残余沿旧：带内含 frame 边界→k=2 偏移 ±4.5（cap=2 不钳）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(160, 198, CARD_W, CARD_H)]
+      ]),
+      // frame y=180 落带 [172,198] 内→s=9；h=26→cap=⌊18/9⌋=2→maxOff=4.5
+      frames: [{ ...rect(101, 180, 200, 300), year: 2022 }]
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['band', 'band'])
+    // e1 骨架 [(196,172),(196,182),(196,185),(192,185),(192,192)]（带中心
+    // 185）、e2 [(132,172),(132,182),(132,185),(224,185),(224,192)]：残余簇
+    // k=2→(i−0.5)·9=∓4.5（<maxOff=4.5 恰不钳）→180.5/189.5（旧式全等）。
+    // e1 折返微段 1.5px（182→180.5 上行）r=0.75<2 尖角、末拐 r=2；e2 共线
+    // 剔除后 r=6 与 min(6,46,8.5/2)=4.25——d 手推（fmt 0.1 步进：219.75→
+    // 219.8、193.75→193.8）
+    expect(paths[0]!.d).toBe('M 196 172 L 196 182 L 196 180.5 L 194 180.5 Q 192 180.5 192 182.5 L 192 198')
+    expect(paths[1]!.d).toBe('M 132 172 L 132 183.5 Q 132 189.5 138 189.5 L 219.8 189.5 Q 224 189.5 224 193.8 L 224 198')
+  })
+
+  it('⑤ corridor 共道不迁移（负锚）：两 corridor 边同 lane→d 与接入前形态全等（无 Z/无槽迁移）', () => {
+    // V 堵 lane1-3 竖段扫掠（膨胀 [757,785]×[176,204] 盖 x=761/770/779 三道、
+    // lane0 扫掠 [748,756] 净空）→laneIndex 种子 0/1 的两边均探测收敛 lane0
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['X', rect(90, 176, 600, 120)],
+        ['B', rect(100, 300, CARD_W, CARD_H)],
+        ['V', rect(761, 180, 20, 20)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['corridor', 'corridor'])
+    expect(paths.map((p) => p.lane)).toEqual([0, 0])
+    // e1 锚=源右¾ (228,154)/目标右¼ (228,318)；e2 散开=源右¼ (228,118)/
+    // 目标右½ (228,336)——corridor 态不入槽（ROUTE_ELIGIBLE 域外）→水平臂
+    // y 电平=锚 y 原位（无 Z 形中段/无槽位电平迁移）；拐角 r=6——d 手推
+    expect(paths[0]!.d).toBe('M 228 154 L 746 154 Q 752 154 752 160 L 752 312 Q 752 318 746 318 L 228 318')
+    expect(paths[1]!.d).toBe('M 228 118 L 746 118 Q 752 118 752 124 L 752 330 Q 752 336 746 336 L 228 336')
+    // pts=骨架原样（6 顶点、无槽位插入顶点）
+    expect(paths[0]!.pts).toHaveLength(6)
+    expect(paths[1]!.pts).toHaveLength(6)
+  })
+
+  it('⑥ 混合组：同域槽电平（direct Z 落槽）+残余电平（band 簇偏移）并存（一 routeAll 内双机制）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['C', rect(240, 100, CARD_W, CARD_H)],
+        ['B', rect(182, 192, CARD_W, CARD_H)],
+        ['D1', rect(600, 100, CARD_W, CARD_H)],
+        ['D2', rect(600, 300, CARD_W, CARD_H)]
+      ]),
+      frames: [{ ...rect(90, 60, 600, 300), year: 2022 }]
+    })
+    const paths = routeAll(
+      [geom('e1', 'A', 'B'), geom('e2', 'A', 'B'), geom('e3', 'D1', 'D2'), geom('e4', 'D1', 'D2')],
+      snap
+    )
+    expect(paths.map((p) => p.route)).toEqual(['band', 'band', 'direct', 'direct'])
+    // e1/e2=② 同款（残余 ∓3→179/185；D1/D2 卡 y 区间并入 A/C 与 B 同带表
+    // 不改 A→B 带域）；e3=direct x=664 恰中行隙单元 (D1,D2) [600,728]×
+    // [172,300] 分点 idx2（604+20k=624/644/664/684/704）→retain；e4 散开
+    // ¾/¾ x=696→|704−696|=8<|684−696|=12→落 704（=① e2 同形平移 +500）——
+    // 槽电平 704 与残余电平 179/185 并存（双机制一快照内互不侵扰）
+    expect(paths[0]!.d).toBe('M 196 172 L 196 175.5 Q 196 179 199.5 179 L 208 179 Q 214 179 214 185 L 214 192')
+    expect(paths[1]!.d).toBe('M 132 172 L 132 179 Q 132 185 138 185 L 242.5 185 Q 246 185 246 188.5 L 246 192')
+    expect(paths[2]!.d).toBe('M 664 172 L 664 300')
+    expect(paths[3]!.d).toBe(
+      'M 696 172 L 696 174.5 Q 696 177 698.5 177 L 700 177 Q 704 177 704 181 L 704 291 Q 704 295 700 295 L 698.5 295 Q 696 295 696 297.5 L 696 300'
+    )
+  })
+
+  it('⑦ 挂账② h-slip 等高直连段正向入槽：穿列缝单元→Z 形入槽（d 含槽电平+两 jog）', () => {
+    // A/B 同行等高（h=72）→h-slip 锚 y=118/136/154；列缝单元 [228,400]×
+    // [100,172]（W=172/H=72→L=64→n=5 分点 104+64/6·k=114.7/125.3/136/
+    // 146.7/157.3，jog 区 x[233,395]；A 膨胀 x≤232/B 膨胀 x≥396→jog 各
+    // 1px 净空）
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(400, 100, CARD_W, CARD_H)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['h-slip', 'h-slip'])
+    // e1（½/½ 锚 y=136）：ideal=136 恰中槽 idx2（Δ=0<1）→retain 豁免
+    expect(paths[0]!.d).toBe('M 228 136 L 400 136')
+    // e2（散开 ¾/¾ 锚 y=154）：|157.3−154|=3.3<|146.7−154|=7.3→落 157.3：
+    // Z 链 (233,154)(233,157.3)(395,157.3)(395,154)——d 含 y=157.3 槽电平
+    // 长 162px+两 jog（x=233/395 各 3.3px）；拐角 r=min(6,5/2,3.3/2)=1.65<2
+    // →全尖角——d 手推
+    expect(paths[1]!.d).toBe('M 228 154 L 233 154 L 233 157.3 L 395 157.3 L 395 154 L 400 154')
+  })
+})
+

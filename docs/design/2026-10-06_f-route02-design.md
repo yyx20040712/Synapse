@@ -1,5 +1,13 @@
 # F-ROUTE-02 走线候选位分配·设计书
 
+> **版本 v1.4（2026-10-07 U3 交付回写）**：§8 U3 行=交付回写态（chain 接入
+> +applyBandLanes 退役迁移+受锁对照例落地——三结构性替换在案：band 竖直段
+> 对行隙单元恒部分覆盖〔N-3 恒不可行→豁免〕/band 跑段恒无单元消费〔bandsOf
+> 全卡 y 并吞——残余域=旧域全等〕/单单元消费边≤同边三锚）；§6 受锁影响面
+> grep 复核勘误注（parts 与 band-calibration.test.tsx 零触及——后者为 F-A9
+> 阅读器件误引；lineage-routing 实测 26 its 零改写）；桩谓词 vacuity 备案
+> （jogClearOfStub 严格内部判定对轴向桩恒过——真语义挂账 slots 面后续票）。
+> runId=20261007-froute02-u3。
 > **版本 v1.3（2026-10-07 呈报位⑩勘误落档）**：§9 补用户裁决勘误注
 > （卡等高+拖拽阵列两事实纠正——⑩触发形态真实数据不可达降级防御性
 > 备案；INV-111 登记）。
@@ -195,7 +203,12 @@ CELL_EPS=0.05/QUANT=0.1；s/cap 沿旧。
 ——估 band 车道 4-6 例+direct/h-slip 含穿越坐标期望 2-4 例改写；
 lineage-routing-parts.test.ts 12 its——估 3-5 例；band-calibration.test.tsx
 325 行→槽位口径重写；lineage-edge-overlay.test.tsx 不动。改动一律
-[locked-change] 流程。旧/新对照清单六组：带内双下降共道（槽位化）/开阔域
+[locked-change] 流程。〔v1.4 grep 复核勘误（2026-10-07 U3 收口）：实测
+lineage-routing 26 its 非估 27 且**零改写**（单边夹具逐例手推：partial 穿越段
+恒豁免原位/direct 恰中槽 retain/斜段排除/corridor·fallback 不消费/单边一致
+性两路径同型）；parts 12 its 全在 anchors/avoid/rounding=零触及；
+band-calibration.test.tsx 系 F-A9 阅读器标注带件=设计误引零触及；
+edge-overlay 结构锁零触及如估。真实新增面=既有两件扩例（+9 its）非改写。〕旧/新对照清单六组：带内双下降共道（槽位化）/开阔域
 共行（残余=旧行为等价）/容量溢出（旧 cap 钳 vs 新 L3 豁免两域分列）/
 框间带 s=9（残余沿旧）/corridor 共道=不迁移（旧域外）负锚/混合组（部分
 消费段切分+残余组指数重排）。route 标签=胜出态不变（direct 偏移后仍标
@@ -255,7 +268,20 @@ e2e 抽查；锚定=路由完成后快照。INV-79/109/110 不修订不得破坏
   residual.ts 140（旧 applyBandLanes 字面承袭）+测试 26+7 例（262 件/2714 例）。
   U3 挂账三件：注释 [142,150]→[142,154]+h-slip 正向专例+桥接态组合对照；
 - U3 chain 接入+applyBandLanes 退役迁移+受锁改写（[locked-change]，门审
-  重点批——受锁 its 清点先行于落刀）；
+  重点批——受锁 its 清点先行于落刀） —— **〔交付 2026-10-07，runId=
+  20261007-froute02-u3〕**三屋全链毕：主控前置受锁清点（两勘误入 §6）→
+  executor TDD（99 基线→4 红集成例→108 绿+变异 6 处）→门一 k1 B0W2N9/
+  d1 B0W3N5 零 B（W1 回写契约=主控亲核 slots.ts edges.map 输入序同长销项+
+  注记；W2 桩 vacuity 双重空转备案挂账；d1-W3 跨簇两级位移生产不可达 U5
+  共登）→probe 11/11 GO（verify 262/2723+e2e lineage 定向 20〔T-P1b 在绿〕
+  +全量 82+变异复现+确定性双跑）→裁决部 GO_WITH_CONDITIONS（P0=U5 三不
+  变量〔跑段恒无消费/band 骨架形制/每边每 bandY 恰一跑段一区间+触发器〕；
+  P1=jogClearOfStub 真语义票+单边一致性三态扩例）。交付=chain.ts 295→290
+  （stubs 三态派生+assignStages 同型接线+applyBandLanes 退役）+两测试件
+  +9 its（对照六组按结构性替换落地：①双 direct 共道槽位化/②残余等价 ∓3/
+  ③ab 容量两域/④s=9/⑤corridor 负锚/⑥双机制并存+⑦h-slip 正向入槽；挂账
+  ①②③ 全销）。生产消费面=slotAssign 正式承载 routeEdge/routeAll；
+  U2→U3 挂账清零，新挂账见 registry；
 - U4 e2e R1-R4+观测钩子+obstacleAuditProbe（N5）；
 - U5 INV 登记+ADR/architecture 回写+成本账本。
 每批单轮对抗可覆盖、verify 可过。

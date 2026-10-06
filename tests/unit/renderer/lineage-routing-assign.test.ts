@@ -159,7 +159,7 @@ describe('F-ROUTE-02 U2 ⑤L3 双态触发（全占∨全不可达→overlapExem
 
 describe('F-ROUTE-02 U2 ⑥谓词复检失败流（pre-commit 权威门）', () => {
   // 标签 x∈[146,150]：静态走廊全不沾（corridor 隅 [137.3,145.3]/[156,164] 均无正叠）
-  // 但膨胀后 [142,150] 覆盖 ideal=148 的 jog 起点 (148,175) → 全槽谓词失败
+  // 但膨胀后 [142,154] 覆盖 ideal=148 的 jog 起点 (148,175) → 全槽谓词失败
   const snap = snapOf(baseCards, [rect(146, 171, 4, 28)])
 
   it('前置：单元开放、无 blocked、五槽 slotFree 全 true（失败源=谓词非静态）', () => {
@@ -431,5 +431,57 @@ describe('F-ROUTE-02 U2 桩区禁入（有桩段续扫/无桩段直入）', () =
     const out = slotAssign([ed('e1', vseg(155))], snapOf(baseCards))
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 2, overlapExempt: false })
     expect(out[0]!.pts[2]).toEqual(pt(160, 175))
+  })
+})
+
+describe('F-ROUTE-02 U3 挂账③：同边多残余区间入同簇（桥接态）组合对照', () => {
+  // 四卡两缝：P1=[100,160]/Q1=[260,320]/P2=[320,380]/Q2=[480,540]×y[100,190]
+  // （Q1 右缘与 P2 左缘相贴→中间无第三单元）→两列缝单元 CELL_A=[160,260]×
+  // [100,190]（band0）、CELL_B=[380,480]×[100,190]（band1），槽位沿 y
+  // （H=90→L=82→n=5 分点 104+82/6·k=117.7/131.3/145/158.7/172.3）
+  const cards: Array<[string, Rect]> = [
+    ['P1', rect(100, 100, 60, 90)],
+    ['Q1', rect(260, 100, 60, 90)],
+    ['P2', rect(320, 100, 60, 90)],
+    ['Q2', rect(480, 100, 60, 90)]
+  ]
+
+  it('e1 跑段被两单元消费切出两残余区间+e2 区间两侧桥接成双簇→每簇 k=2 偏移 ∓3 手推', () => {
+    // e1 跑段 [120,480]@145：穿 CELL_A（retain idx2=145）+CELL_B（retain
+    // idx2=145）→消费区间 [160,260]/[380,480]→残余 [120,160]+[260,380]；
+    // e2 跑段 [150,430]@145：CELL_A idx2 被占→次近 tie idx1=131.3 Z 落位
+    // （jog x[165,255]——P1 膨胀 x≤164/Q1 膨胀 x≥256 各 1px 净空）；CELL_B
+    // 段止于 430<j2=475→N-3 不可行全槽→L3 豁免+消费区间 [380,430]→残余
+    // [150,160]+[260,380]。同 bandY=145 双簇（e2 两侧区间各与 e1 同侧成簇）：
+    // 每簇 k=2→(i−0.5)·6=∓3→e1 两区间均 142、e2 均 148（消费区间槽电平
+    // 145/131.3 与残余电平 142/148 并存）——pts 逐点手推
+    const e1 = band('e1', [pt(120, 145), pt(480, 145)], 145, 6, 3)
+    const e2 = band('e2', [pt(150, 145), pt(430, 145)], 145, 6, 3)
+    const out = slotAssign([e1, e2], snapOf(cards))
+    // 槽 pass：e1 两 retain（Δ=0 恰中槽）+e2 一落位一豁免
+    expect(out[0]!.recs.filter((r) => !r.residual).map((r) => `${r.cellId}:${r.slotIdx}:${r.overlapExempt}`)).toEqual([
+      '0:2:true',
+      '1:2:true'
+    ])
+    expect(out[1]!.recs.filter((r) => !r.residual)).toEqual([
+      { edgeId: 'e2', segIdx: 0, cellId: 0, axis: 'y', ideal: 145, slotIdx: 1, overlapExempt: false, residual: false },
+      { edgeId: 'e2', segIdx: 0, cellId: 1, axis: 'y', ideal: 145, overlapExempt: true, residual: false }
+    ])
+    // 残余 pass：各 2 rec（cellId=−1/residual）
+    expect(out[0]!.recs.filter((r) => r.residual)).toHaveLength(2)
+    expect(out[1]!.recs.filter((r) => r.residual)).toHaveLength(2)
+    // e1：两残余区间 [120,160]/[260,380]→142；消费区间 [160,260]/[380,480]
+    // retain=145 原位（几何不动）
+    expect(out[0]!.pts).toEqual([
+      pt(120, 142), pt(160, 142), pt(160, 145), pt(260, 145),
+      pt(260, 142), pt(380, 142), pt(380, 145), pt(480, 145)
+    ])
+    // e2：[150,160]→148；CELL_A Z 段 131.3（x[165,255]）；[260,380]→148；
+    // CELL_B 豁免段 145 原位（x[380,430]）
+    expect(out[1]!.pts).toEqual([
+      pt(150, 148), pt(160, 148), pt(160, 145), pt(165, 145),
+      pt(165, 131.3), pt(255, 131.3), pt(255, 145), pt(260, 145),
+      pt(260, 148), pt(380, 148), pt(380, 145), pt(430, 145)
+    ])
   })
 })

@@ -1,17 +1,19 @@
 /**
  * [F-LINEAGE-02 ①a] chain —— 甲链六态编排（options §2-A+design-final §1：
  * direct→h-slip→band→corridor→fallback 单向不回溯+manual-override）。
- * 车道：走廊=字典序基道环形探测（4 道 9px）；带=中心探测+共道分组字典序
- * 偏移 (i−(k−1)/2)·s 钳容量内（s∈{9,6}——框间带 9/行隙 6；车道数=
- * ⌊(带宽−2·PAD)/s⌋，0 道=封闭 D-L2-7）。同锚多边先散锚点（同侧下一空闲→
- * 邻边→对边；12 锚全满=共享原锚）。曲化后采样复检+半径收缩链（D-L2-5/6：
+ * 车道：走廊=字典序基道环形探测（4 道 9px）；同锚多边先散锚点（同侧下一
+ * 空闲→邻边→对边；12 锚全满=共享原锚）。曲化后采样复检+半径收缩链（D-L2-5/6：
  * r=6→3→r<2 尖角）。确定性红线：无随机/无 Date/无三角函数；并列取字典序/
  * 几何序。纯函数零 DOM import（快照采集驻 EdgeOverlay hook 层）。
+ * [F-ROUTE-02 U3] 接入：routeOne 循环→slotAssign（槽位分配+残余子 pass
+ * 承袭旧 applyBandLanes——共道分组字典序偏移域内等价）→回写 skel→finish；
+ * band/corridor/fallback 三态骨架携桩段（stubs）入谓词复检。
  */
-import { AnchorUse, anchorPick, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
+import { AnchorUse, anchorPick, anchorPoint, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
 import { bandSkeleton, corridorSkeleton } from './bands'
 import { PAD, polylineClearStubs } from './avoid'
 import { buildRoundedPath, stripCollinear } from './rounding'
+import { slotAssign, type AssignEdge } from './slots'
 import type { LineageViaPoint } from '@shared/models/lineage'
 
 export type { Pt, Rect } from './anchors'
@@ -53,8 +55,9 @@ export interface RoutedPath {
   d: string
   route: RouteTag
   lane: number
-  /** [F-LGRAPH-01②U5] 骨架点链（圆角化前——锚 A→…→锚 B 内容坐标）：手柄
-   *  几何/自动线物化 via（首 via 落位）消费；渲染不变（d 才是渲染面） */
+  /** [F-LGRAPH-01②U5] 施加后点链（槽位/残余施加毕、圆角化前——锚 A→…→
+   *  锚 B 内容坐标）：手柄几何/自动线物化 via（首 via 落位）消费；渲染不变
+   *  （d 才是渲染面） */
   pts: Pt[]
 }
 
@@ -74,13 +77,17 @@ export function laneIndex(edgeId: string, all: readonly string[]): number {
   return [...all].sort().indexOf(edgeId)
 }
 
-// ── 内部中间态（routeAll 车道 pass 后产 d）──
+// ── 内部中间态（routeOne 循环→slotAssign 施加后产 d）──
 interface SkelResult {
   edgeId: string
   skel: Pt[]
   route: RouteTag
   lane: number
   stubExcluded: Rect[]
+  /** [F-ROUTE-02 U3] 桩段（三态骨架外法线 10px——Z 拐点禁入域；与骨架
+   *  顶点按构造全等：band 出桩/终落、corridor/fallback 出桩；direct/
+   *  h-slip/manual-override 骨架无桩顶点=缺省） */
+  stubs?: ReadonlyArray<{ a: Pt; b: Pt }>
   /** 带车道 pass 输入（非带路由缺省） */
   bandY?: number
   bandS?: number
@@ -90,6 +97,14 @@ interface SkelResult {
 }
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
+
+/** [F-ROUTE-02 U3] 桩段派生：picks 每项 [id,side,slot]→{a: 锚点几何，b:
+ *  外法线 10px 桩端}（与骨架首/末桩顶点全等——jogClearOfStub 消费） */
+const stubsOf = (e: EdgeGeomInput, src: Rect, tgt: Rect, picks: ReadonlyArray<[string, Side, number]>): Array<{ a: Pt; b: Pt }> =>
+  picks.map(([id, side, slot]) => {
+    const a = anchorPoint(id === e.sourceId ? src : tgt, side, slot)
+    return { a, b: stubEnd(a, side) }
+  })
 const isVerticalSide = (side: Side): boolean => side === 'top' || side === 'bottom'
 
 /** 骨架→终态 d（共线剔除+圆角化+采样复检收缩链 r=6→3→尖角）；
@@ -170,6 +185,7 @@ function routeOne(
       route: 'band',
       lane: -1,
       stubExcluded: ends,
+      stubs: stubsOf(e, src, tgt, band.picks),
       bandY: band.laneY,
       bandS: band.s,
       bandCap: Math.max(1, band.cap),
@@ -181,7 +197,7 @@ function routeOne(
   const corr = corridorSkeleton(e.sourceId, e.targetId, src, tgt, snap, obstacles, ends, baseLane, use)
   if (corr !== null) {
     commit(corr.picks)
-    return { edgeId: e.edgeId, skel: corr.skel, route: 'corridor', lane: corr.lane, stubExcluded: ends }
+    return { edgeId: e.edgeId, skel: corr.skel, route: 'corridor', lane: corr.lane, stubExcluded: ends, stubs: stubsOf(e, src, tgt, corr.picks) }
   }
   // ⑤ fallback：贴边（面带探测失败——数值退化不静默，lane=−1）
   const fx = snap.contentW - FALLBACK_INSET
@@ -195,16 +211,18 @@ function routeOne(
   onWarn(`lineage-routing：边 ${e.edgeId} fallback 贴边（laneX=${fx}）`)
   // [回炉 R2 补面] fallback 锚=实际占用同样落记（漏记则后续边重取同锚——
   // 13 边零盒实测 e12 应共享原锚却重取左侧锚落 fallback）
-  commit([
+  const picks: ReadonlyArray<[string, Side, number]> = [
     [e.sourceId, pf.side, pf.slot],
     [e.targetId, pg.side, pg.slot]
-  ])
+  ]
+  commit(picks)
   return {
     edgeId: e.edgeId,
     skel: [pf.pt, faS, { x: fx, y: faS.y }, { x: fx, y: fbS.y }, fbS, pg.pt],
     route: 'fallback',
     lane: -1,
-    stubExcluded: ends
+    stubExcluded: ends,
+    stubs: stubsOf(e, src, tgt, picks)
   }
 }
 
@@ -220,51 +238,28 @@ export function routeEdge(
     return { edgeId: e.edgeId, d: '', route: 'fallback', lane: -1, pts: [] }
   }
   const r = routeOne(e, snap, src, tgt, 0, onWarn, undefined)
+  assignStages([r], snap) // [F-ROUTE-02 U3] 单边数组接线=与 routeAll 同型
   const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
   return { edgeId: r.edgeId, d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'), route: r.route, lane: r.lane, pts: r.skel }
 }
 
-/** 带共道分组（同带同轴+投影重叠链）字典序偏移 (i−(k−1)/2)·s 钳容量内 */
-function applyBandLanes(results: SkelResult[]): void {
-  const byBand = new Map<number, SkelResult[]>()
-  for (const r of results) {
-    if (r.route !== 'band' || r.bandY === undefined) continue
-    const list = byBand.get(r.bandY) ?? []
-    list.push(r)
-    byBand.set(r.bandY, list)
-  }
-  for (const list of byBand.values()) {
-    if (list.length < 2) continue
-    // 投影重叠链（xLo 升序——簇内互达）
-    list.sort((a, b) => (a.xLo ?? 0) - (b.xLo ?? 0) || (a.edgeId < b.edgeId ? -1 : 1))
-    let cluster: SkelResult[] = []
-    let clusterHi = -Infinity
-    const flush = (): void => {
-      if (cluster.length < 2) {
-        cluster = []
-        return
-      }
-      const s = cluster[0]!.bandS ?? 6
-      const cap = cluster[0]!.bandCap ?? 1
-      const maxOff = ((cap - 1) / 2) * s
-      const ordered = [...cluster].sort((a, b) => (a.edgeId < b.edgeId ? -1 : 1))
-      ordered.forEach((r, i) => {
-        const off = Math.max(-maxOff, Math.min(maxOff, (i - (ordered.length - 1) / 2) * s))
-        if (off === 0) return
-        const from = r.bandY
-        const to = (r.bandY ?? 0) + off
-        r.skel = r.skel.map((p) => (p.y === from ? { x: p.x, y: to } : p))
-        r.bandY = to
-      })
-      cluster = []
-    }
-    for (const r of list) {
-      if (cluster.length > 0 && (r.xLo ?? 0) > clusterHi) flush()
-      cluster.push(r)
-      clusterHi = Math.max(clusterHi, r.xHi ?? 0)
-    }
-    flush()
-  }
+/** [F-ROUTE-02 U3] 分配接线（routeEdge/routeAll 同型）：routeOne 产物投影
+ *  AssignEdge[]（band 族字段透传——残余子 pass 域输入）+桩段 Map（仅三态
+ *  边入 Map）→slotAssign（槽位分配+Z 形施加+残余子 pass）→回写 skel；
+ *  corridor/fallback/manual-override 边经 ROUTE_ELIGIBLE 门自动跳过；端点
+ *  缺失边（skel=[]）经 rebuildPts len<2 原样透传；锚端不变性=残余含端迁移
+ *  只动行进电平顶点（锚 y 恒≠bandY 构造性），finish 链零改动。slotAssign
+ *  返回=输入序同长（slots.ts edges.map 契约——a7 字典序仅内部处理序，索引
+ *  经分边数组承载）——回写按位对齐由此成立 */
+function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
+  const stubs = new Map<string, ReadonlyArray<{ a: Pt; b: Pt }>>()
+  const inputs: AssignEdge[] = results.map((r) => {
+    if (r.stubs !== undefined) stubs.set(r.edgeId, r.stubs)
+    return { edgeId: r.edgeId, route: r.route, pts: r.skel, bandY: r.bandY, bandS: r.bandS, bandCap: r.bandCap, xLo: r.xLo, xHi: r.xHi }
+  })
+  slotAssign(inputs, snap, stubs).forEach((a, i) => {
+    results[i]!.skel = a.pts
+  })
 }
 
 export function routeAll(
@@ -283,7 +278,7 @@ export function routeAll(
     }
     return routeOne(e, snap, src, tgt, laneIndex(e.edgeId, ids) % snap.corridor.laneCount, onWarn, use)
   })
-  applyBandLanes(results)
+  assignStages(results, snap) // [F-ROUTE-02 U3] 槽位+残余施加（旧 applyBandLanes 退役迁 residual.ts）
   const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
   return results.map((r) => ({
     edgeId: r.edgeId,
