@@ -30,6 +30,8 @@ import { useLineageViewStore } from '../../../src/renderer/features/lineage/line
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
 const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage-card.css'), 'utf8') // [②U4] 卡三层族拆件
+// [F-UIRES-03 B5①] 卡面两钮族死码删除负锚面（.card-jumps/.c-jump 随迁移退役）
+const themeLineageCss = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8')
 
 function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
   return {
@@ -252,10 +254,7 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     expect(onNodeClick).not.toHaveBeenCalled()
   })
 
-  it('[F-UIRES-03 C3·v1.7] 卡面两钮：载荷上抛（paperId/folderId 透传）+主题节点「去阅读器」零渲染+点击不触发卡身选中', () => {
-    const onGotoLibrary = vi.fn()
-    const onGotoReader = vi.fn()
-    const onNodeClick = vi.fn()
+  it('[F-UIRES-03 B5①] 卡面两钮退役负锚：card-jumps 零渲染+CSS 死码零残留（两钮迁 LineageSidePanel 头部操作行——v1.15 第五轮②；hover-only 键盘不可达挂账随迁移消解）', () => {
     mount(
       <LineageTimeline
         nodes={[
@@ -263,30 +262,17 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
           node('T', { paperId: null, year: 2022, month: 9, title: '主题节点' })
         ]}
         edges={[]}
-        onNodeClick={onNodeClick}
-        onCardGotoLibrary={onGotoLibrary}
-        onCardGotoReader={onGotoReader}
       />
     )
-    // 文献节点：两钮在场（hover 显隐=CSS 承载——jsdom 断言 DOM 在场与载荷）
-    const libBtn = cardOf('A').querySelector('[data-testid="card-goto-library"]') as HTMLElement
-    const readBtn = cardOf('A').querySelector('[data-testid="card-goto-reader"]') as HTMLElement
-    expect(libBtn.textContent).toBe('去文献库')
-    expect(readBtn.textContent).toBe('去阅读器')
-    act(() => {
-      libBtn.click()
-    })
-    expect(onGotoLibrary).toHaveBeenCalledWith('paper-A', '__main__')
-    act(() => {
-      readBtn.click()
-    })
-    expect(onGotoReader).toHaveBeenCalledWith('paper-A')
-    // stopPropagation：钮点击不触发卡身选中（单选态不被跳转动作污染）
-    expect(onNodeClick).not.toHaveBeenCalled()
-    // 主题节点：「去阅读器」零渲染（无阅读器面——自裁申报）；「去文献库」在场
-    const themeCard = cardOf('T')
-    expect(themeCard.querySelector('[data-testid="card-goto-reader"]')).toBeNull()
-    expect(themeCard.querySelector('[data-testid="card-goto-library"]')).not.toBeNull()
+    // 卡面零钮（文献/主题两形态同负锚——迁移后卡交互面=单击/右键/星标/锚点）
+    for (const id of ['A', 'T']) {
+      const c = cardOf(id)
+      expect(c.querySelector('.card-jumps')).toBeNull()
+      expect(c.querySelector('[data-testid="card-goto-library"]')).toBeNull()
+      expect(c.querySelector('[data-testid="card-goto-reader"]')).toBeNull()
+    }
+    // CSS 死码零残留（.card-jumps/.c-jump 族随迁移删除——含注释面）
+    expect(themeLineageCss).not.toMatch(/\.card-jumps|\.c-jump\b/)
   })
 
   it('CSS：L1 高 18/L3 高 12/题名两行截断（line-clamp 2）/星标命中区 14×14', () => {

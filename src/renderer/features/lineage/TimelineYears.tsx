@@ -72,10 +72,7 @@ export function TimelineYears(props: {
   /** [F-LGRAPH-01②U4] 星标区点击（宿主模式分派——edit=选中/browse+focus=no-op） */
   onCardStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
-  /** [F-UIRES-03 C3·v1.7] 卡面两钮（卡双击链退役的显式入口接替——见
-   *  LineageTimelineCard 按钮区） */
-  onCardGotoLibrary?: NonNullable<TimelineCallbacks['onCardGotoLibrary']>
-  onCardGotoReader?: NonNullable<TimelineCallbacks['onCardGotoReader']>
+  /** [F-UIRES-03 B5①] 卡面两钮传 props 随迁移退役删除（消费面=SidePanel 操作行） */
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {
   const { groups, pubNos, paperMetrics } = props
   const tagNames = props.tagNames ?? {}
@@ -98,8 +95,6 @@ export function TimelineYears(props: {
       onNodeContextMenu={props.onNodeContextMenu}
       onStarClick={props.onCardStarClick}
       onCardPointerDown={props.onCardPointerDown}
-      onGotoLibrary={props.onCardGotoLibrary}
-      onGotoReader={props.onCardGotoReader}
     />
   )
   return (

@@ -17,9 +17,15 @@
  *   useEffect 单点）。
  * - 收起态=48px 窄条（渲染归 LineagePage；本 hook 只持态）：收起时拖拽不
  *   启动（窄条上调宽无意义——SplitPane collapsed 先例语义）。
+ * - [F-UIRES-03 B5② v1.15 第五轮③] 键盘调宽（APG separator 模式）：手柄
+ *   role=separator+tabIndex=0（可达性接线归 LineagePage）；onResizeKey 承载
+ *   四键——ArrowLeft −16/ArrowRight +16 步进（clampSidebarWidth 同源钳）、
+ *   Home/End 直达边界（SIDEBAR_MIN/MAX_WIDTH 常量直用）；其余键零操作；
+ *   承载键 preventDefault（防 Home/End/箭头滚动页面）；收起态零操作（沿
+ *   拖拽先例语义）。
  */
 import { useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 
 /** 宽度值域（B4③ 票面：clamp 200–480；默认 252=CSS .lg-inspector 无 JS 回退同值） */
 const SIDEBAR_DEFAULT_WIDTH = 252
@@ -27,6 +33,8 @@ export const SIDEBAR_MIN_WIDTH = 200
 export const SIDEBAR_MAX_WIDTH = 480
 /** 收起窄条宽（px） */
 export const SIDEBAR_RAIL_WIDTH = 48
+/** [B5②] 键盘步进量（v1.15 第五轮③用户裁决：±16px） */
+const KEY_STEP_PX = 16
 
 const WIDTH_KEY = 'synapse:sidebar:width'
 const COLLAPSED_KEY = 'synapse:sidebar:collapsed'
@@ -74,6 +82,9 @@ export interface SidebarPane {
   collapsed: boolean
   /** 手柄 pointerdown（右缘手柄：主键+未收起才开） */
   onResizeStart(ev: ReactPointerEvent): void
+  /** [B5②] 手柄 keydown（APG separator 键盘调宽：ArrowLeft/Right ±16 步进+
+   *  Home/End 直达边界；其余键零操作；收起态零操作） */
+  onResizeKey(ev: ReactKeyboardEvent): void
   collapse(): void
   expand(): void
 }
@@ -139,10 +150,29 @@ export function useSidebarPane(): SidebarPane {
     setDragging(true)
   }
 
+  // [B5②] 键盘调宽（APG separator）：四键承载+clamp/边界常量单源；收起态零操作
+  const onResizeKey = (ev: ReactKeyboardEvent): void => {
+    if (collapsed) return
+    if (ev.key === 'ArrowLeft') {
+      ev.preventDefault()
+      setWidth(clampSidebarWidth(width - KEY_STEP_PX))
+    } else if (ev.key === 'ArrowRight') {
+      ev.preventDefault()
+      setWidth(clampSidebarWidth(width + KEY_STEP_PX))
+    } else if (ev.key === 'Home') {
+      ev.preventDefault()
+      setWidth(SIDEBAR_MIN_WIDTH)
+    } else if (ev.key === 'End') {
+      ev.preventDefault()
+      setWidth(SIDEBAR_MAX_WIDTH)
+    }
+  }
+
   return {
     width,
     collapsed,
     onResizeStart,
+    onResizeKey,
     collapse: () => setCollapsed(true),
     expand: () => setCollapsed(false)
   }

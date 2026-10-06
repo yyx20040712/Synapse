@@ -112,10 +112,12 @@
   pointer-events: none;
   z-index: 5;
 }
-/* 显隐两支并集（P1）：①armed（.tl-content.drawing——idle+dragging 全程）
-   全部卡；②非 armed 时 hover 中的卡 */
+/* 显隐两支并集（P1；[F-UIRES-03 B5①搭车 v1.15 第五轮①] hover 支收窄仅
+   edit 态——browse/focus 无画线工具，hover 显锚=不可用操作暗示的视觉噪声；
+   CSS 单选择器收窄=.timeline.editing 域作用）：①armed（.tl-content.drawing
+   ——idle+dragging 全程）全部卡；②edit 态（.timeline.editing）hover 中的卡 */
 .tl-content.drawing .card-anchors { display: block; }
-.tl-card:hover .card-anchors { display: block; }
+.timeline.editing .tl-card:hover .card-anchors { display: block; }
 /* 中点锚 dot：直径 8 画布 px（随 .tl-content 缩放）；fill 纯白票面语义经
    --accent-ink token（三族恒白）+1.5 画布 px 主色描边（色值字面量禁令
    ——token 承载）；四向定位=锚心落卡边线中点（出界 4px 在 .month-frame

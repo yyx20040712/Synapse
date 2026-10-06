@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T05:25:43.1952869Z",
+    "generatedAt":  "2026-10-06T06:33:49.5683003Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "688651d098a7a4a6204f0177bc198036bb79bdcbf8f810ef4e4abeac4d5cf5ca"
+                      "sha256":  "1cc399a48529700c610f03577390c7bad506c72f962acb093175f6defb680370"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -299,11 +299,11 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "40dbb00cf6e5e30e1b5eba60328ca9d4f9b38214d80fb0430a5bfb94035f6891"
+                      "sha256":  "d926f7bb47877141dea556c7cff583263a5c385c50d1126b93d81b717fffedd6"
                   },
                   {
                       "path":  "tests/e2e/lineage-sidebar.spec.ts",
-                      "sha256":  "9d695156bb521d362fcc709d746d900d54f84d36506cb939eb4ed4106e6cdc5d"
+                      "sha256":  "8372995c3c85baaabcfdfc0324a8d5d3823fd56bd49494084b28d146fcf71dbf"
                   },
                   {
                       "path":  "tests/e2e/lineage-topic-node.spec.ts",
@@ -707,7 +707,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-c2-anchors.test.tsx",
-                      "sha256":  "81cd569243750107c38991da5feb8bcba0c39ff3e5a6bf5fec3bf9db0f3c2c9f"
+                      "sha256":  "4c4b0facd9487c177dcffd29908fe785a729c37d3ef9b4488fa4d70a78d54c1c"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-c2-esc.test.tsx",
@@ -723,7 +723,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-layer.test.tsx",
-                      "sha256":  "6bb399c2f0e449317e1d2bb561b9fd7e861031f539713a7b8f310c418f037351"
+                      "sha256":  "173c037d1e3275ad77849f91b9f4b3d015cb0a65e051ddfb65e1c38eeba8a859"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-stretch.test.tsx",
@@ -799,7 +799,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-page-goto.test.tsx",
-                      "sha256":  "6ddc715c65f0010c4df88b5dbb6f1b4e243d1cab16235b07d3472872df63aee0"
+                      "sha256":  "20e6e4ce789581c40efec46247f6c45469d26dfe200a6e016661dbb1a44eef75"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
@@ -830,8 +830,12 @@
                       "sha256":  "5a9e77be988beb0899765393ccb8925522bc6d01e8df5e299acd38db34dc99ba"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-side-jumps.test.tsx",
+                      "sha256":  "c69456be06352928c6d4e06a068b9086774ebde23c3e8026169cd222f9f58fc8"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "b6cb3605c15794bdd66bd8b2c4b2ee9f5469e30766939a34bd11b17509067e25"
+                      "sha256":  "78f047477bee2dbf47d4252134d2fc6eda54b61069ef8357412e7d2f1b69558e"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-reskin.test.tsx",
@@ -1131,7 +1135,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/use-sidebar-pane.test.tsx",
-                      "sha256":  "127adbda926f25f28ddd7e13c6397cba2014814bc232a436c5d008518ba4a61e"
+                      "sha256":  "c2777c9b2f93c4955ea19e034f8611ada15dcc6a3922cb797eae7e64cf4afe8c"
                   },
                   {
                       "path":  "tests/unit/renderer/visual-snap-shortcut.test.tsx",

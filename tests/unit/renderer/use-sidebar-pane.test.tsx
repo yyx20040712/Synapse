@@ -9,7 +9,9 @@
  * 手柄在右缘：右移变宽）/ 拖拽落定持久化+body 副作用起止 / 收起↔展开切换
  * 与持久化（synapse:sidebar:collapsed '1'/'0'）/ 收起态拖拽不启动 / 拖拽
  * 中途卸载 body 副作用还原（INV-14 同族）/ RR1 d1-W1：启动即
- * setPointerCapture(pointerId)（出窗 up 收尾防御）+收起态不 capture。
+ * setPointerCapture(pointerId)（出窗 up 收尾防御）+收起态不 capture /
+ * [F-UIRES-03 B5②] 键盘调宽（APG separator）：左右键 ±16 步进（clamp 同源
+ * 钳）+Home/End 直达边界+其余键零操作+收起态零操作。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -19,14 +21,15 @@ import { useSidebarPane } from '../../../src/renderer/features/lineage/use-sideb
 const W_KEY = 'synapse:sidebar:width'
 const C_KEY = 'synapse:sidebar:collapsed'
 
-/** 探针：挂 hook 暴露宽/收起态+两动作钮+手柄（断言读真 DOM） */
+/** 探针：挂 hook 暴露宽/收起态+两动作钮+手柄（断言读真 DOM；[B5②] 手柄补
+ *  onKeyDown 接线=Page 手柄同型） */
 function Probe(): JSX.Element {
   const sb = useSidebarPane()
   return (
     <div>
       <span data-testid="sb-w">{sb.width}</span>
       <span data-testid="sb-c">{String(sb.collapsed)}</span>
-      <div data-testid="sb-handle" onPointerDown={sb.onResizeStart} />
+      <div data-testid="sb-handle" onPointerDown={sb.onResizeStart} onKeyDown={sb.onResizeKey} tabIndex={0} />
       <button type="button" data-testid="sb-collapse" onClick={sb.collapse}>
         收起
       </button>
@@ -183,5 +186,60 @@ describe('F-UIRES-03 B4③ useSidebarPane——右侧详情栏调宽/收起', ()
     })
     expect(document.body.style.userSelect).toBe('')
     expect(document.body.style.cursor).toBe('')
+  })
+
+  it('[B5②] 键盘调宽（APG separator）：ArrowRight +16/ArrowLeft −16（clamp 同源钳 200–480）+Home/End 直达边界+其余键零操作+四键吞默认', () => {
+    mount()
+    const h = handle()
+    const key = (k: string): void => {
+      act(() => {
+        h.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+      })
+    }
+    // 缺省 252：右步进 +16 → 268；左步进 −16 → 252
+    key('ArrowRight')
+    expect(text('sb-w')).toBe('268')
+    key('ArrowLeft')
+    expect(text('sb-w')).toBe('252')
+    // 连按钳制：自 252 左步进 4 次 → 188 钳 200 后恒 200（clampSidebarWidth 单源）
+    key('ArrowLeft')
+    key('ArrowLeft')
+    key('ArrowLeft')
+    key('ArrowLeft')
+    expect(text('sb-w')).toBe('200')
+    // Home/End 直达边界（SIDEBAR_MIN/MAX_WIDTH 常量单源——200/480）
+    key('End')
+    expect(text('sb-w')).toBe('480')
+    key('Home')
+    expect(text('sb-w')).toBe('200')
+    // 其余键零操作（字母/Enter/上下箭头——仅左右/Home/End 四键承载）
+    key('a')
+    key('Enter')
+    key('ArrowUp')
+    expect(text('sb-w')).toBe('200')
+    // preventDefault：承载键吞默认（防 Home/End/箭头滚动页面），其余键不吞
+    const evEnd = new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true })
+    act(() => {
+      h.dispatchEvent(evEnd)
+    })
+    expect(evEnd.defaultPrevented).toBe(true)
+    const evOther = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true })
+    act(() => {
+      h.dispatchEvent(evOther)
+    })
+    expect(evOther.defaultPrevented).toBe(false)
+    // 步进随持久化单点写
+    expect(window.localStorage.getItem(W_KEY)).toBe('480')
+  })
+
+  it('[B5②] 收起态键盘零操作（沿拖拽先例语义——窄条上调宽无意义）', () => {
+    mount()
+    act(() => {
+      ;(host?.querySelector('[data-testid="sb-collapse"]') as HTMLElement).click()
+    })
+    act(() => {
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
+    })
+    expect(text('sb-w')).toBe('252') // 收起态宽不被键盘改写
   })
 })

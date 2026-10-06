@@ -31,12 +31,8 @@ export interface TimelineCallbacks {
   onNodeClick?: (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
   /** 右键节点开菜单（03 节点菜单锚点） */
   onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
-  /** [F-UIRES-03 C3·v1.7] 卡面「去文献库」钮（paperId 在场才渲染——主题节点
-   *  恒 folderId 语义；编排=Page 接 library.store 预置+requestOpenLibrary） */
-  onCardGotoLibrary?: (paperId: string | null, folderId: string) => void
-  /** [F-UIRES-03 C3·v1.7] 卡面「去阅读器」钮（paperId 在场才渲染——主题节点
-   *  零渲染；编排=Page 接 requestOpenPaper 单字段开篇语义） */
-  onCardGotoReader?: (paperId: string) => void
+  /** [F-UIRES-03 B5①] 卡面两钮回调（onCardGotoLibrary/Reader）随迁移退役删除
+   *  （消费面=SidePanel 操作行经 Page 直连——Board→Timeline→Years 传链同删） */
   /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
    *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报）。
    *  [F-UIRES-03 C3] 改月回调 prop 随改月链退役删除（INV-107）；
@@ -231,8 +227,6 @@ export function LineageTimeline(props: {
             onCardStarClick={handleStarClick}
             onCardPointerDown={drag.handleCardPointerDown}
             onNodeContextMenu={props.onNodeContextMenu}
-            onCardGotoLibrary={props.onCardGotoLibrary}
-            onCardGotoReader={props.onCardGotoReader}
           />
         </div>
       )}

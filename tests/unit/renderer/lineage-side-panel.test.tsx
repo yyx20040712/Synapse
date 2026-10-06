@@ -544,6 +544,9 @@ it('[B2] 后置占位章退役：lineage-side-postpone 不存在+退役文案零
   expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('AI 评估与建议')
 })
 
+// ── [F-UIRES-03 B5①] 头部操作行渲染族+[B5②] Page 手柄键盘接线=拆出
+//    lineage-side-jumps.test.tsx（主件 500 行红线——B1 tag-dropdown 拆件先例）──
+
 // ── Page 编排级（全链：单击→侧板→片段双击→总线锚载荷） ──────────────────
 
 async function mountPage(): Promise<void> {

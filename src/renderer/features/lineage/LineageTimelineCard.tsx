@@ -19,17 +19,16 @@
  *   venue/impactFactor 透传，缺席键/''/null 同缺）。
  * - 交互：onClick 上抛 onNodeClick /onContextMenu 上抛锚点；星标 onStarClick。
  *   [F-UIRES-03 C3·v1.7] 卡双击链（onNodeDblClick→跳阅读器）随双击退役删除
- *   （全应用唯一保留双击=详情面板片段条目——B2 终态兑现）；接替=卡面两钮
- *   「去文献库」「去阅读器」（排列整齐——按钮行 hover 呈现/编辑态收钮避让：
- *   拖拽画线交互期按钮区隐藏防误触，机制=CSS .card-jumps 显隐族，自裁申报）。
- *   主题节点（paperId null）：「去阅读器」零渲染（无阅读器面——自裁：零渲染
- *   优于禁用态）；「去文献库」在场（folderId 恒有值=所在文件夹语义）。
+ *   （全应用唯一保留双击=详情面板片段条目——B2 终态兑现）。
+ *   [F-UIRES-03 B5① 2026-10-06 v1.15 第五轮②用户裁决] 显式入口两钮「去文献
+ *   库/去阅读器」随迁移退役（卡面零钮——hover-only 键盘不可达挂账随迁移消解；
+ *   承接面=LineageSidePanel 头部操作行，编排与通道零改动）。
  * - 皮肤住 theme-lineage.css .c-l1/.c-l2/.c-l3 族（旧 .c-head/.c-idea/.c-meta
  *   随三层重整退役——退役行 8）。
  * - data-node-id=e2e/测试结构锚；瀑布错位=offset px inline margin-left 承载。
  */
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { MAIN_GRAPH_ID, type LineageNode } from '@shared/models/lineage'
+import { type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { CardAnchorDots } from './CardAnchorDots'
 import type { TimelineCallbacks } from './LineageTimeline'
@@ -80,13 +79,10 @@ export function LineageTimelineCard(props: {
    *  edit=选中卡/browse+focus=no-op[P-11 静态禁用]） */
   onStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
   /** [T3-P8] 卡 pointerdown（useCardDrag 拖拽会话入口——5px 阈值内=选中链）。
-   *  [F-UIRES-03 C3] 月标 .c-ym 点击面（onYmClick）随改月链退役删除（INV-107） */
+   *  [F-UIRES-03 C3] 月标 .c-ym 点击面（onYmClick）随改月链退役删除（INV-107）；
+   *  [F-UIRES-03 B5①] 两钮回调 props（onGotoLibrary/onGotoReader）随卡面两钮
+   *  迁 LineageSidePanel 头部操作行退役删除（回调链 Board→Timeline→Years 同删） */
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
-  /** [F-UIRES-03 C3·v1.7] 「去文献库」钮（编排归 Page——library.store 预置+
-   *  requestOpenLibrary；folderId=node.folderId 所在文件夹单源） */
-  onGotoLibrary?: (paperId: string | null, folderId: string) => void
-  /** [F-UIRES-03 C3·v1.7] 「去阅读器」钮（paperId 在场才渲染——主题节点零渲染） */
-  onGotoReader?: (paperId: string) => void
 } & Pick<TimelineCallbacks, 'onNodeClick' | 'onNodeContextMenu'>): JSX.Element {
   const n = props.node
   // data-kind 两值（[F-LGRAPH-01②U8] survey 值随综述体系退役——theme/paper）
@@ -110,9 +106,6 @@ export function LineageTimelineCard(props: {
   // [F-ALIGN-01·执行修正] 短路保留=DDL 窗口期防御：paper_id 列可空类型镜像，
   // 主题节点应用层已无产生路径〔NOT NULL 收紧归 D 批〕）
   const tags = n.paperId === null ? [] : (props.tagNames?.[n.paperId] ?? [])
-  // [C3·v1.7] 阅读器入口钮的 paperId 捕获（const 局部——条件窄化可跨回调闭包
-  // 传播；JSX 属性访问窄化不跨闭包 TS2345）
-  const readerPid = n.paperId
   const shownTags = tags.slice(0, TAG_LIMIT)
   const overflow = tags.length - shownTags.length
   // L3 三字段可选省略（null/''/缺席=整字段省略——「被引 N」真文本）
@@ -162,40 +155,8 @@ export function LineageTimelineCard(props: {
         {cited !== null && <span className="c-cited">{`被引 ${cited}`}</span>}
       </div>
       {/* [F-UIRES-03 C2·P1] 四边中点静态锚（直径 8 画布 px——DOM 常驻，
-          显隐 CSS 通道：.drawing 全卡∪hover 卡；pointer-events:none） */}
+          显隐 CSS 通道：.drawing 全卡∪edit 态 hover 卡（B5①搭车收窄）；pointer-events:none） */}
       <CardAnchorDots />
-      {/* [F-UIRES-03 C3·v1.7] 卡面两钮（双击链退役的显式入口——hover 呈现/
-          编辑态收钮避让=CSS .card-jumps 族；stopPropagation 隔离卡身 click） */}
-      <span className="card-jumps">
-        {/* [RR1-A] 哨兵单源：title 判用 MAIN_GRAPH_ID 常量（字面量双源消除
-            ——与 LineagePage 编排分支同源） */}
-        <button
-          type="button"
-          className="c-jump"
-          data-testid="card-goto-library"
-          title={n.folderId === MAIN_GRAPH_ID ? '在文献库打开（未归文件夹——全库视图）' : '在文献库打开所在文件夹并定位'}
-          onClick={(e) => {
-            e.stopPropagation()
-            props.onGotoLibrary?.(n.paperId, n.folderId)
-          }}
-        >
-          去文献库
-        </button>
-        {readerPid !== null && (
-          <button
-            type="button"
-            className="c-jump"
-            data-testid="card-goto-reader"
-            title="在阅读器打开（开篇）"
-            onClick={(e) => {
-              e.stopPropagation()
-              props.onGotoReader?.(readerPid)
-            }}
-          >
-            去阅读器
-          </button>
-        )}
-      </span>
     </article>
   )
 }

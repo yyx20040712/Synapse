@@ -45,6 +45,9 @@
 > T-P1b 两跑两红；1px 装饰横线=伪元素不视为障碍）——**可否决呈报**
 > （偏离裁决 13 字面选择器的校准实施，异议即回滚；N5 剩余面仍挂
 > F-ROUTE-02）。详见 §2 C2 回写块。
+> **v1.17（2026-10-06 B5 交付回写·三件毕）**：§2 B5 落地态注记
+> （两钮迁详情页头部操作行+resizer 键盘+锚点显隐收窄——三屋全链毕
+> 细节见 §2 B5 节末回写块）。
 
 > 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
@@ -198,6 +201,32 @@ live-frame.ts（随动模型 helper 化）+lineage.spec.ts 三样板（test-surf
   「armed∪**edit 态** hover 卡」。
 - DoD：三件各自单测先红后绿+变异红证；e2e 两钮迁移例+C2a browse
   负锚分支；locks 流程（tests 触碰面）+豁免登记（改写例）。
+
+> **〔v1.17 B5 交付回写·2026-10-06——三屋全链毕（runId=20261006-
+> fuires03-b5）〕** 三件落地：①**两钮迁详情页**=LineageSidePanel
+> badges 行下 .side-jumps 操作行（两钮并排文字钮形常驻；testid 沿
+> card-goto-library/reader；主题节点=去阅读器零渲染+去文献库在场
+> paperId=null 透传编排不置选中〔沿 C3 态〕；MAIN_GRAPH_ID 哨兵单源）
+> ——「不随内容滚动消失」=头部区 shrink-0+笔记区 .insp-scroll 滚动
+> 分区承载〔executor 自裁①；probe 几何实证：滚至 scrollTop 1036.8
+> 操作行 rect 仍 within aside〕；卡面退役=card-jumps 段+四级回调链
+> props+CSS 28 行全清（死代码即删）+通道三件零改动。②**resizer 键盘**
+> =onResizeKey 四键（±16 KEY_STEP_PX+Home/End 直达 200/480，clamp
+> 同源钳）+tabIndex=0+preventDefault+收起零操作+focus-visible 补
+> （原缺 focus 面）。③**锚点显隐收窄**=hover 支单选择器加 .timeline
+> .editing 域；armed 支不动〔模式域=edit 结构性证明：setMode 恒重置
+> tool='select'——INV-109 ①子句 k1-W2 补注〕。测试面：新增单测 7
+> （side-jumps 拆件 4+sidebar-pane 2+c2-anchors 1——258→259 件/2638
+> →2645 例）+改写 2（卡面退役负锚+哨兵挂面）+e2e C3 原位改写/C2a
+> browse 负锚/T11 消费面改道/sidebar 键盘段；**豁免零新增**（机检证
+> 全部改写例不在 test-surface 基线断言面——T11 例名在基线例级但改道
+> 动作行非 expect 断言面；主控新增豁免实验 stale 1 实证「登记无对象」
+> 后撤销；142/142/0 绿）。门链=executor（TDD 4+2+1 红→绿+变异三证
+> 备份法）→门一 k1 PWC B0W2N8+d1 PWC B0W3N6 零 B 级（五 W 全主控
+> 处置：k1-W1 基线实证链/k1-W2 INV 补注/d1-W1 probe 几何/d1-W2 规则
+> 全集+三态实测/d1-W3 映射）→probe 十项矩阵 GO（verify 259/2645+
+> 定向 57+e2e 20/81+滚动几何+锚点三态+变异还原 diff 空+locks 364+
+> grep 三面零）→裁决部终裁（见账本）。locks 363→364（新测试件）。
 
 ### C3 拖拽域重构（v1.3 票面修正——跨月语义考古后重写；F7+三轮澄清）
 - **跨月语义史实（2026-10-05 考古定稿）**：拖拽跨月**从来不是活路径**

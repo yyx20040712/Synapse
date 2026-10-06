@@ -9,6 +9,9 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
  * [F-UIRES-03 B4③] 脉络右侧详情栏 resizer/收起 e2e —— 断言锚真实几何
  * （boundingBox 实测宽，非 CSS 字符串）：
  * - 拖右缘手柄超上限 → 480 钳；拖超下限 → 200 钳（useSidebarPane clamp）；
+ * - [F-UIRES-03 B5② v1.15 第五轮③] 键盘调宽（APG separator）：手柄聚焦后
+ *   End 直达 480 / ArrowLeft −16 / Home 直达 200+aria-valuenow 随动（四键
+ *   全域=单测族承载，e2e 代表键直证接线）；
  * - reload 后宽保持（synapse:sidebar:width 持久恢复）；
  * - 头部收起钮 → 48px 窄条（点击任意处展开）→ 展开回记忆宽。
  * 手柄在右缘=右移变宽；超上限拖拽目标出视口——CDP 合成坐标可达（真鼠标
@@ -65,6 +68,25 @@ test('详情栏拖拽调宽夹取 200–480+reload 持久+收起窄条往返', a
   expect((await sidebar.boundingBox())!.width).toBeCloseTo(480, 0)
   // 拖超下限 → 200 钳
   await dragBy(-1200)
+  expect((await sidebar.boundingBox())!.width).toBeCloseTo(200, 0)
+
+  // [F-UIRES-03 B5②] 键盘调宽（APG separator——tabIndex=0 聚焦可达）：
+  // End 直达 480 / ArrowLeft −16 → 464 / Home 直达 200；aria-valuenow 随动
+  // （左右键对侧 +16+钳制全域=use-sidebar-pane 单测族承载，e2e 代表键直证接线。
+  // 断言序=先 toHaveAttribute 自动重试锚 React commit 落定、再单读 bbox——
+  // press 后 commit 异步，裸读宽有竞态〔探针实证〕）
+  const rz = win.getByTestId('lineage-sidebar-resizer')
+  await rz.focus()
+  await expect(rz).toBeFocused()
+  expect(await rz.getAttribute('aria-valuenow')).toBe('200')
+  await win.keyboard.press('End')
+  await expect(rz).toHaveAttribute('aria-valuenow', '480')
+  expect((await sidebar.boundingBox())!.width).toBeCloseTo(480, 0)
+  await win.keyboard.press('ArrowLeft')
+  await expect(rz).toHaveAttribute('aria-valuenow', '464')
+  expect((await sidebar.boundingBox())!.width).toBeCloseTo(464, 0)
+  await win.keyboard.press('Home')
+  await expect(rz).toHaveAttribute('aria-valuenow', '200')
   expect((await sidebar.boundingBox())!.width).toBeCloseTo(200, 0)
 
   // 收起→48px 窄条（钮承载全条点击面=点任意处展开）→展开回记忆宽 200

@@ -2,13 +2,16 @@
 /**
  * [F-UIRES-03 C2] P1 静态锚点层+P2 吸附高亮层锁定（设计稿 v1.13 §2 C2；
  * 任务书 P1/P2/P4）：P1=每卡四边中点静态锚（slot ½ 位——直径 8 画布 px；
- * DOM 常驻+显隐 CSS 通道：.drawing 全卡∪hover 卡——显隐可见性断言归 e2e，
- * 本件锁结构面）；P2=吸附高亮演化（dot 直径 12 屏幕 px=画布 r=6/z 随 zoom
+ * DOM 常驻+显隐 CSS 通道：.drawing 全卡∪edit 态 hover 卡（[B5①搭车] v1.15
+ * 第五轮①收窄——显隐可见性断言归 e2e，本件锁结构面+CSS 收窄单源文本断言）；
+ * P2=吸附高亮演化（dot 直径 12 屏幕 px=画布 r=6/z 随 zoom
  * 补偿+高亮环+.snapped 类；idle 待机经 hint 通道/dragging 经 snap 维——
  * 单渲染点=DrawAnchorHint，DrawPreview 吸附圆点收敛删除）；
  * P4=dragging 高亮锚心=预览线端点同源（内容坐标）。always-active 裸
  * describe（K3）。
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,6 +30,10 @@ import { DrawAnchorHint } from '../../../src/renderer/features/lineage/DrawAncho
 import type { DrawAnchor } from '../../../src/renderer/features/lineage/useDrawLine'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+
+// [B5①搭车] hover 显锚支收窄单源（CSS 文本断言——lineage-card-layer CSS 先例
+// 形态：jsdom 不解析 CSS，规则面以文本锁）
+const toolsCss = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage-tools.css'), 'utf8')
 
 function node(id: string): LineageNode {
   return {
@@ -145,6 +152,13 @@ describe('F-UIRES-03 C2 P1 静态锚点层（四边中点锚——DOM 常驻+CSS
     mountTimeline()
     expect(q('.tl-card[data-node-id="A"] .card-anchors')).not.toBeNull()
     expect(q('.tl-card[data-node-id="A"] .card-anchors .card-anchor-dot')).not.toBeNull()
+  })
+
+  it('[B5①搭车] hover 显锚支收窄仅 edit 态：hover 规则须 .timeline.editing 域（CSS 单选择器单源——browse/focus hover 不显，v1.15 第五轮①用户裁决）', () => {
+    // 正锚：收窄后 hover 规则=edit 态域作用（.timeline.editing 前缀）
+    expect(toolsCss).toMatch(/\.timeline\.editing \.tl-card:hover \.card-anchors\s*\{[^}]*display:\s*block/)
+    // 负锚：裸 hover 规则（无 .editing 前缀）零残留——回退选择器即红
+    expect(toolsCss).not.toMatch(/(?<!\.editing )\.tl-card:hover \.card-anchors/)
   })
 })
 

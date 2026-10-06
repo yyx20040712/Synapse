@@ -8,8 +8,9 @@
  *   library.store.setQuery 断言终态=编排语义完整链（RR1-A 挂载面自裁——
  *   LineagePage 整件挂载 jsdom 超时根因未定不阻塞，分支计算+store 写效果
  *   +事件三环全锁）。
- * ②Card title 哨兵分支（双源统一锁）：title 判=MAIN_GRAPH_ID 常量（字面量
- *   双源消除——常量值或判式变异即红）。
+ * ②操作行钮 title 哨兵分支（双源统一锁；[F-UIRES-03 B5①] 两钮自卡面迁
+ *   LineageSidePanel 头部操作行——哨兵判随迁）：title 判=MAIN_GRAPH_ID 常量
+ *   （字面量双源消除——常量值或判式变异即红）。
  * ③事件后发序：requestOpenLibrary=先置数后广播（listener 单次收到）。
  * 变异红证在档（rr1a-mutation-{page,card}.raw）：Page 分支反转/Card title
  * 判错字面量两变异各红→cp 备份还原 diff 空。
@@ -21,7 +22,7 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { MAIN_GRAPH_ID } from '../../../src/shared/models/lineage'
 
-// 模块级桩注入（window.api 面——挂载 Timeline 消费域；变量不直接读）
+// 模块级桩注入（window.api 面——挂载 SidePanel 消费域；变量不直接读）
 const _stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
@@ -31,13 +32,17 @@ const _stubApi = makeApiStub({
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn()
   },
-  library: { list: vi.fn() }
+  library: { list: vi.fn() },
+  // [B5①] 哨兵分支例挂 SidePanel（迁移面）——三节取数通道随挂面补桩
+  ai_sensor: { listByPaper: vi.fn() },
+  notes: { get: vi.fn() },
+  reader: { listAnnotations: vi.fn() }
 })
 
 import { OPEN_LIBRARY_EVENT, requestOpenLibrary } from '../../../src/renderer/shared/open-library-bus'
 import { useLibraryStore } from '../../../src/renderer/features/library/library.store'
 import { gotoLibraryPlan } from '../../../src/renderer/features/lineage/goto-library-plan'
-import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { LineageSidePanel } from '../../../src/renderer/features/lineage/LineageSidePanel'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -100,24 +105,26 @@ describe('F-UIRES-03 C3·RR1-A「去文献库」编排分支（gotoLibraryPlan �
     expect(gotoLibraryPlan(null, 'e2e-folder').paperId).toBeNull()
   })
 
-  it('Card title 哨兵分支两文案（MAIN_GRAPH_ID 常量判——字面量双源消除回归锁）', () => {
+  it('操作行钮 title 哨兵分支两文案（MAIN_GRAPH_ID 常量判——字面量双源消除回归锁；[B5①] 迁移面沿承）', () => {
+    // [B5①] SidePanel 三节取数通道预置（title 面同步渲染——预置防未决拒绝噪声）
+    _stubApi.ai_sensor.listByPaper.mockResolvedValue({ ok: true, data: [] })
+    _stubApi.notes.get.mockResolvedValue({ ok: true, data: null })
+    _stubApi.reader.listAnnotations.mockResolvedValue({ ok: true, data: [] })
     host = document.createElement('div')
     document.body.appendChild(host)
     root = createRoot(host)
-    act(() => {
-      root?.render(
-        <LineageTimeline
-          nodes={[folderNode('A', 'e2e-folder'), folderNode('U', MAIN_GRAPH_ID)]}
-          edges={[]}
-        />
-      )
-    })
-    const btnOf = (nodeId: string): HTMLElement => {
-      const el = host?.querySelector(`.tl-card[data-node-id="${nodeId}"] [data-testid="card-goto-library"]`)
-      if (!(el instanceof HTMLElement)) throw new Error(`去文献库钮未渲染：${nodeId}`)
-      return el
+    const btnTitle = (): string => {
+      const el = host?.querySelector('[data-testid="card-goto-library"]')
+      if (!(el instanceof HTMLElement)) throw new Error('去文献库钮未渲染（操作行）')
+      return el.title
     }
-    expect(btnOf('U').title, '未归夹卡=全库降级文案').toBe('在文献库打开（未归文件夹——全库视图）')
-    expect(btnOf('A').title, '真夹卡=所在夹文案').toBe('在文献库打开所在文件夹并定位')
+    act(() => {
+      root?.render(<LineageSidePanel node={folderNode('A', 'e2e-folder')} onJumpToPaper={() => undefined} />)
+    })
+    expect(btnTitle(), '真夹节点=所在夹文案').toBe('在文献库打开所在文件夹并定位')
+    act(() => {
+      root?.render(<LineageSidePanel node={folderNode('U', MAIN_GRAPH_ID)} onJumpToPaper={() => undefined} />)
+    })
+    expect(btnTitle(), '未归夹节点=全库降级文案').toBe('在文献库打开（未归文件夹——全库视图）')
   })
 })

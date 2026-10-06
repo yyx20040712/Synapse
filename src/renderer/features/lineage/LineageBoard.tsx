@@ -91,10 +91,8 @@ import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBo
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
   selectedNodeId?: string | null
-  /** [F-UIRES-03 C3·v1.7] 卡面两钮编排上抛（Page 承接——library.store 预置+
-   *  总线广播；[F-LGRAPH-01②U4/A6] onNodeDblClick 卡双击链随 v1.7 退役删除） */
-  onCardGotoLibrary?: (paperId: string | null, folderId: string) => void
-  onCardGotoReader?: (paperId: string) => void
+  /** [F-UIRES-03 B5①] 卡面两钮上抛 props 随迁移退役删除（消费面=SidePanel
+   *  操作行经 Page 直连；[F-LGRAPH-01②U4/A6] onNodeDblClick 卡双击链 v1.7 已删） */
 }): JSX.Element {
   const nodes = useLineageStore((s) => s.nodes)
   const edges = useLineageStore((s) => s.edges)
@@ -155,8 +153,6 @@ export function LineageBoard(props: {
           const node = nodes.find((n) => n.id === id)
           if (node !== undefined) setMenu({ node, anchor })
         }}
-        onCardGotoLibrary={props.onCardGotoLibrary}
-        onCardGotoReader={props.onCardGotoReader}
         onReorderMonthSlots={(ids) => store().reorderMonthSlots(ids)}
       />
 

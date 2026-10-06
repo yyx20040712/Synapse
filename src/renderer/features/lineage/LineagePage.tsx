@@ -121,10 +121,11 @@ export function LineagePage(): JSX.Element {
     })
   }
 
-  /** [F-UIRES-03 C3·v1.7] 卡面「去文献库」钮编排（先置数后广播——FolderNav→
-   *  lineage 同序先例）：分支计划=gotoLibraryPlan 单源（[RR1-A] 抽件——分支
-   *  单测面；__main__ 哨兵=MAIN_GRAPH_ID 常量单源）——所在文件夹过滤+选中
-   *  该文（__main__ 未归夹→folderScope 置 undefined 全库降级）→
+  /** [F-UIRES-03 C3·v1.7→B5①] 「去文献库」钮编排（先置数后广播——FolderNav→
+   *  lineage 同序先例；B5① 两钮自卡面迁 SidePanel 头部操作行——回调体零改动）：
+   *  分支计划=gotoLibraryPlan 单源（[RR1-A] 抽件——分支单测面；__main__ 哨兵=
+   *  MAIN_GRAPH_ID 常量单源）——所在文件夹过滤+选中该文（__main__ 未归夹→
+   *  folderScope 置 undefined 全库降级；paperId=null 主题节点不置选中）→
    *  requestOpenLibrary 切视图。跨域写接缝锚=library.store 头注 */
   const handleCardGotoLibrary = (paperId: string | null, folderId: string): void => {
     const plan = gotoLibraryPlan(paperId, folderId)
@@ -134,10 +135,9 @@ export function LineagePage(): JSX.Element {
     requestOpenLibrary()
   }
 
-  /** [F-UIRES-03 C3·v1.7] 卡面「去阅读器」钮编排（requestOpenPaper 单字段
-   *  开篇语义——B2 已分流锚定态 requestOpenPaperAnchored，卡钮不带锚）。
-   *  [F-LGRAPH-01②U4/A6] 卡双击链（handleCardDblClick）随 v1.7 双击退役删除
-   *  （全应用唯一保留双击=详情面板片段条目——B2 终态兑现） */
+  /** [F-UIRES-03 C3·v1.7→B5①] 「去阅读器」钮编排（requestOpenPaper 单字段
+   *  开篇语义——B2 已分流锚定态 requestOpenPaperAnchored，钮不带锚；B5① 自
+   *  卡面迁 SidePanel 头部操作行——回调体零改动） */
   const handleCardGotoReader = (paperId: string): void => {
     requestOpenPaper(paperId)
   }
@@ -184,12 +184,8 @@ export function LineagePage(): JSX.Element {
       <div className="flex min-h-0 flex-1 gap-1 p-1">
         <LineageNavPane onFoldersChange={setFolders} />
         <div className="min-w-0 flex-1">
-          <LineageBoard
-            onSelectNode={setSelectedNodeId}
-            selectedNodeId={selectedNodeId}
-            onCardGotoLibrary={handleCardGotoLibrary}
-            onCardGotoReader={handleCardGotoReader}
-          />
+          {/* [F-UIRES-03 B5①] 两钮编排改道：现有回调零改动复用——消费面自 Board→Timeline 卡链转 SidePanel 操作行 */}
+          <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
         </div>
         {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
             尺寸直通；[②U4/P-16] 面板缺省宽 252=.lg-inspector 无 JS 回退；
@@ -219,6 +215,8 @@ export function LineagePage(): JSX.Element {
                 node={selectedNode}
                 onJumpToPaper={handleJumpToPaper}
                 onCollapse={sidebar.collapse}
+                onGotoLibrary={handleCardGotoLibrary}
+                onGotoReader={handleCardGotoReader}
                 pubNo={
                   selectedNode !== null && selectedNode.paperId !== null
                     ? (pubNos[selectedNode.paperId] ?? null)
@@ -226,6 +224,8 @@ export function LineagePage(): JSX.Element {
                 }
                 metrics={selMetrics}
               />
+              {/* [F-UIRES-03 B5②] 手柄键盘可达（APG separator）：tabIndex+onKeyDown
+                  四键调宽单源=useSidebarPane；title 提示双通道 */}
               <div
                 data-testid="lineage-sidebar-resizer"
                 role="separator"
@@ -234,9 +234,11 @@ export function LineagePage(): JSX.Element {
                 aria-valuemin={SIDEBAR_MIN_WIDTH}
                 aria-valuemax={SIDEBAR_MAX_WIDTH}
                 aria-valuenow={sidebar.width}
-                title="拖拽调宽"
+                tabIndex={0}
+                title="拖拽或左右键调宽"
                 className="lg-side-resizer"
                 onPointerDown={sidebar.onResizeStart}
+                onKeyDown={sidebar.onResizeKey}
               />
             </>
           )}

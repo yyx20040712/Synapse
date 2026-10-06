@@ -19,6 +19,9 @@
   z-index: 5;
 }
 .lg-side-resizer:hover { background: var(--accent); }
+/* [F-UIRES-03 B5②] 键盘焦点可见（APG separator tabIndex=0 补位——原仅 hover
+   提示无 :focus 面；焦点态=hover 同款 accent 提示） */
+.lg-side-resizer:focus-visible { background: var(--accent); outline: none; }
 /* [F-UIRES-03 B4③] 收起态 48px 窄条（点击任意处展开——钮承载全条点击面）：
    竖排「详情」+展开 chevron，底/左描边对齐面板玻璃语汇 */
 .lg-side-rail {
@@ -66,6 +69,27 @@
 /* [回炉 R10] core 徽章类死样式删除（core UI 全退役——消费面恒 plain 变体；
    负锚=lineage-detail-panel.test CSS 断言） */
 .badge.plain { color: var(--dim); border: 1px solid var(--line); }
+/* [F-UIRES-03 B5① v1.15 第五轮②] 头部操作行（两钮自卡面迁移）：徽章行下
+   两钮并排文字钮形——醒目+语义=「针对这篇文献的操作」；常驻非 hover（卡面
+   hover-only 键盘不可达挂账随迁移消解）。皮肤沿卡面版 token 集（accent 描边
+   +hover accent-soft——复用 .badge/按钮 token 风格自洽，零新依赖） */
+.side-jumps { display: flex; gap: 8px; margin-bottom: 12px; }
+.s-jump {
+  flex: 1;
+  font-family: inherit;
+  font-size: var(--fs-tl-hint);
+  line-height: 1.6;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
+}
+.s-jump:hover { background: var(--accent-soft); }
+.s-jump:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* [B5①] 笔记区滚动层（面板=头部固定+内容滚动分区——操作行不随内容滚动消失；
+   承载类名 .insp-scroll） */
 /* [A3 F-CONTRACTA-01 2026-10-04] .idea-cap/.idea 死样式删除（核心 idea 区随
    核心想法域全退役——消费面 LineageSidePanel idea 区已删；死代码即删） */
 .sec-cap {

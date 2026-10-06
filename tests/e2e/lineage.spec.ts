@@ -998,8 +998,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.waitForTimeout(500) // 负向观察窗（错实现下跳转链 ~100ms 内切视图）
     await expect(win.getByTestId('reader-aside')).toHaveCount(0)
     await expect(cardA).toBeVisible() // 仍在脉络视图（双击退役负锚）
-    await cardA.hover()
-    await cardA.getByTestId('card-goto-reader').click()
+    // [F-UIRES-03 B5①] 两钮自卡面迁详情面板头部操作行——选中卡后经面板钮跳转
+    await cardA.click()
+    await win.getByTestId('lineage-side-panel').getByTestId('card-goto-reader').click()
     await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 15_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(cardA).toBeVisible({ timeout: 10_000 })
@@ -1576,13 +1577,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * [F-UIRES-03 C3·v1.7] 卡面两钮（卡双击退役的显式入口——用户裁决）：
-   * ①布局回归=hover 卡→按钮行可见+两钮同行排列（y 差≤1+左库右读序）+落卡
-   * bbox 内；②「去文献库」=library 视图+所在文件夹过滤+该文选中态（aria-
-   * current）；③「去阅读器」=reader 视图（reader-aside 特征）+PDF 文本层
-   * 装载（KNOWN_TEXT 可见——文档装载证明）；④编辑态收钮避让=edit 态钮恒隐。
+   * [F-UIRES-03 C3·v1.7→B5① v1.15 第五轮②] 详情面板两钮（卡双击退役的显式
+   * 入口；B5① 两钮自卡面迁 LineageSidePanel 头部操作行——常驻非 hover）：
+   * ①卡面退役负锚=卡内零钮；②操作行=选中卡后常显（无 hover 前置）+两钮同行
+   * 排列（y 差≤1+左库右读序）+落面板 bbox 内+edit 态仍常显（面板级操作不随
+   * 画布模式避让——卡面期「编辑态收钮」机制随迁移消亡）；③「去文献库」=
+   * library 视图+所在文件夹过滤+该文选中态（aria-current）；④「去阅读器」=
+   * reader 视图（reader-aside 特征）+PDF 文本层装载（KNOWN_TEXT 可见）。
    */
-  test('C3 卡面两钮：hover 呈现+同行布局+去文献库（夹过滤+选中）+去阅读器（文本层装载）', async () => {
+  test('C3 详情面板两钮：操作行常显+同行布局+去文献库（夹过滤+选中）+去阅读器（文本层装载）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c3-btn-'))
     await firstHop(userData)
@@ -1607,40 +1610,45 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     const root = nodeG(win, '脉络根文献')
-    // ④编辑态收钮避让（机制=CSS .timeline.editing 恒隐——交互期按钮区不扰）
-    await win.getByTestId('lineage-mode-edit').click()
-    await root.hover()
-    await expect(root.getByTestId('card-goto-library')).toBeHidden()
-    await win.getByTestId('lineage-mode-browse').click()
-    // ①布局回归：hover→按钮行可见+两钮同行+落卡 bbox 内（排列整齐断言）
-    await root.hover()
-    const libBtn = root.getByTestId('card-goto-library')
-    const readBtn = root.getByTestId('card-goto-reader')
+    // ①卡面退役负锚：卡内零钮（两钮已迁详情面板——B5①；无 hover 前置亦零）
+    await expect(root.getByTestId('card-goto-library')).toHaveCount(0)
+    await expect(root.getByTestId('card-goto-reader')).toHaveCount(0)
+    // ②操作行常显：选中卡（产品路径 P-13）→面板操作行在场（无 hover 前置）
+    await root.click()
+    const panel = win.getByTestId('lineage-side-panel')
+    const libBtn = panel.getByTestId('card-goto-library')
+    const readBtn = panel.getByTestId('card-goto-reader')
     await expect(libBtn).toBeVisible()
     await expect(readBtn).toBeVisible()
     await expect(libBtn).toHaveText('去文献库')
     await expect(readBtn).toHaveText('去阅读器')
-    const rb = await root.boundingBox()
+    // 同行并排（y 差≤1）+左库右读序+落面板 bbox 内
+    const pbx = await panel.boundingBox()
     const lb = await libBtn.boundingBox()
     const pb = await readBtn.boundingBox()
-    if (rb === null || lb === null || pb === null) throw new Error('卡/钮不可见')
+    if (pbx === null || lb === null || pb === null) throw new Error('面板/钮不可见')
     expect(Math.abs(lb.y - pb.y), '两钮同行排列（y 差≤1）').toBeLessThanOrEqual(1)
     expect(lb.x, '左库右读序（去文献库在左）').toBeLessThan(pb.x)
-    expect(lb.x, '钮行落卡 bbox 内（左界）').toBeGreaterThanOrEqual(rb.x)
-    expect(pb.x + pb.width, '钮行落卡 bbox 内（右界）').toBeLessThanOrEqual(rb.x + rb.width)
-    // ②去文献库：library 视图+夹过滤（根行在场/甲行不在——甲未归夹）+选中态
+    expect(lb.x, '操作行落面板 bbox 内（左界）').toBeGreaterThanOrEqual(pbx.x)
+    expect(pb.x + pb.width, '操作行落面板 bbox 内（右界）').toBeLessThanOrEqual(pbx.x + pbx.width)
+    // edit 态仍常显（面板级操作不随画布模式避让——卡面期收钮机制随迁移消亡）
+    await win.getByTestId('lineage-mode-edit').click()
+    await expect(libBtn).toBeVisible()
+    await expect(readBtn).toBeVisible()
+    await win.getByTestId('lineage-mode-browse').click()
+    // ③去文献库：library 视图+夹过滤（根行在场/甲行不在——甲未归夹）+选中态
     await libBtn.click()
     await expect(win.locator('.lib-row', { hasText: '脉络根文献' })).toBeVisible({ timeout: 10_000 })
     await expect(win.locator('.lib-row', { hasText: '脉络甲文献' })).toHaveCount(0)
     await expect(win.locator('.lib-row', { hasText: '脉络根文献' })).toHaveAttribute('aria-current', 'true')
-    // ③去阅读器（甲卡——甲归主图）：清夹（「全部文献」导航行=folderScope 清，
-    // 既有产品路径）→返脉络（缺省图回主图——甲在场）→甲卡钮→reader 文本层装载
+    // ④去阅读器（甲卡——甲归主图）：清夹（「全部文献」导航行=folderScope 清，
+    // 既有产品路径）→返脉络（缺省图回主图——甲在场）→选中甲卡→面板钮→reader
     await win.locator('.lib-fn-row').filter({ hasText: '全部文献' }).click()
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     const cardA = nodeG(win, '脉络甲文献')
     await expect(cardA).toBeVisible({ timeout: 10_000 })
-    await cardA.hover()
-    await cardA.getByTestId('card-goto-reader').click()
+    await cardA.click()
+    await win.getByTestId('lineage-side-panel').getByTestId('card-goto-reader').click()
     await expect(win.getByTestId('reader-aside')).toBeVisible({ timeout: 20_000 })
     await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
     await app.close()
@@ -1894,7 +1902,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         }
       })
     }
-    // 显隐②分支：select 态 hover 卡=锚点可见（CSS .tl-card:hover 通道）
+    // 显隐②分支：select 态 hover 卡=锚点可见（edit 态 hover 通道——.editing 域）
     await win.getByTestId('lineage-tool-select').click()
     const rbSel = await root.boundingBox()
     if (rbSel === null) throw new Error('select 态卡不可见')
@@ -1902,6 +1910,17 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeVisible()
     // 移出卡（工具条空白）=隐藏（display:none 通道）
     await win.mouse.move(640, 20)
+    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeHidden()
+    // [F-UIRES-03 B5①搭车 v1.15 第五轮①] browse 负锚：退编辑模式 hover 卡→
+    // 锚点隐藏（hover 显锚支收窄仅 edit 态——browse 无画线工具，显锚=视觉噪声）。
+    // computed 断言载体=容器 .card-anchors（display 规则承载面——display:none
+    // 子树内子元素 computed display 返回自身值 block 非 none，子元素断言不可用）
+    await win.getByTestId('lineage-mode-browse').click()
+    const rbBrowse = await root.boundingBox()
+    if (rbBrowse === null) throw new Error('browse 态卡不可见')
+    await win.mouse.move(rbBrowse.x + rbBrowse.width / 2, rbBrowse.y + rbBrowse.height / 2)
+    const dispBrowse = await root.locator('.card-anchors').evaluate((el) => getComputedStyle(el).display)
+    expect(dispBrowse, 'browse 态 hover 卡锚层 display:none（收窄负锚）').toBe('none')
     await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeHidden()
     await app.close()
   })
