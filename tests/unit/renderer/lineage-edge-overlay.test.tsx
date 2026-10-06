@@ -280,6 +280,65 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect((manualPath as SVGPathElement).style.opacity).toBe('')
   })
 
+  it('[F-ROUTE-02 U4-RR1 d1-W2a] 观测钩子三属性 DOM 挂线：band 双 retain 边 data-slot/data-overlap-exempt/data-slot-fallback 三挂+缺省 direct 边三不挂', () => {
+    stubRaf()
+    host = document.createElement('div')
+    host.className = 'tl-content'
+    document.body.appendChild(host)
+    // 卡 rect 桩（routeEpoch 例同型）+宿主 rect（contentW=1000——真机向走廊）
+    Object.defineProperty(host, 'getBoundingClientRect', {
+      value: () =>
+        ({ left: 0, top: 0, right: 1000, bottom: 400, width: 1000, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+    root = createRoot(host)
+    act(() => {
+      root?.render(
+        <EdgeOverlay
+          nodes={[node('A'), node('D'), node('B')]}
+          edges={[edge('e1', 'A', 'B'), edge('e2', 'A', 'B'), edge('e3', 'A', 'B')]}
+          shiftedIds={new Set()}
+          groups={[]}
+          routeEpoch={0}
+        />
+      )
+    })
+    // 夹具=lineage-routing ⑪ 手推同款（A-D-B、D 偏移造两独立单元）：e3 band
+    // 双 retain 边（桩段+终落段各 retain idx2，Δ=0.8<1）——buildSnapshot 采
+    // 卡 rect（z=1）→routeAll 同几何
+    const rects: Array<[string, number, number, number, number]> = [
+      ['A', 100, 100, 128, 72],
+      ['D', 108, 194, 40, 72],
+      ['B', 100, 296, 128, 72]
+    ]
+    for (const [id, x, y, w, h] of rects) {
+      const card = document.createElement('div')
+      card.className = 'tl-card'
+      card.dataset.nodeId = id
+      Object.defineProperty(card, 'getBoundingClientRect', {
+        value: () =>
+          ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
+        configurable: true
+      })
+      host.appendChild(card)
+    }
+    flushRafs()
+    const e3 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e3"]')
+    expect(e3).not.toBeNull()
+    // 三属性齐挂（真值 '1'/marks 串——缺省=不挂非空串）
+    expect(e3?.getAttribute('data-slot')).toBe('0:2,1:2')
+    expect(e3?.getAttribute('data-overlap-exempt')).toBe('1')
+    expect(e3?.getAttribute('data-slot-fallback')).toBe('1')
+    // 缺省态（e1/e2 direct 零消费——x=164/196 ∉ 单元 x 窗 (108,148)）：三属性均 null
+    for (const id of ['e1', 'e2']) {
+      const p = host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`)
+      expect(p).not.toBeNull()
+      expect(p?.getAttribute('data-slot')).toBeNull()
+      expect(p?.getAttribute('data-overlap-exempt')).toBeNull()
+      expect(p?.getAttribute('data-slot-fallback')).toBeNull()
+    }
+  })
+
   it('onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩', () => {
     stubRaf()
     host = document.createElement('div')

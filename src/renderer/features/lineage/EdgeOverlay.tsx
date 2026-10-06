@@ -181,6 +181,9 @@ export function EdgeOverlay(props: {
               data-edge-id={p.edgeId}
               data-dashed={e.dashed ? '1' : '0'}
               data-route={p.route}
+              data-slot={p.slotMarks}
+              data-overlap-exempt={p.overlapExempt === true ? '1' : undefined}
+              data-slot-fallback={p.slotFallback === true ? '1' : undefined}
               d={p.d}
               style={selected ? { ...visual, stroke: 'var(--accent)', strokeWidth: 2.2 } : visual}
             />

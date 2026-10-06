@@ -697,5 +697,124 @@ describe('F-ROUTE-02 [U3] chain 接入对照（旧/新六组+挂账②）', () =
     // →全尖角——d 手推
     expect(paths[1]!.d).toBe('M 228 154 L 233 154 L 233 157.3 L 395 157.3 L 395 154 L 400 154')
   })
+
+  it('⑧ [U4] 观测钩子投影：① 夹具双 direct 共道 slotMarks 两值互异+retain 例 overlapExempt 挂而 slotFallback 不挂', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['direct', 'direct'])
+    // 手推：唯一行隙单元 [100,228]×[172,300]（W=128→n=5 分点 104+20k）→id 0
+    //（快照单卡对——单元提取序确定性）；e1 ½/½ ideal=164 恰中槽 idx2（Δ=0<1
+    // →retain 豁免保留占用）；e2 散开 ¾/¾ ideal=196→落 idx4=204（① d 期望同源）
+    // slotMarks=非残余且有 slotIdx 的 rec「cellId:slotIdx」逗号连接（retain 与
+    // land 都占槽——a6 字面）
+    expect(paths[0]!.slotMarks).toBe('0:2')
+    expect(paths[1]!.slotMarks).toBe('0:4')
+    expect(paths[0]!.slotMarks).not.toBe(paths[1]!.slotMarks)
+    // retain 例（Δ<1 退化豁免）：overlapExempt=真；slotFallback 不挂（retain
+    // 有 slotIdx——非「整排满员」L3 穷尽终态，R4 消费位语义分界）
+    expect(paths[0]!.overlapExempt).toBe(true)
+    expect(paths[0]!.slotFallback).toBeUndefined()
+    // 落位例（干净 Z 落槽）：两布尔钩子均不挂
+    expect(paths[1]!.overlapExempt).toBeUndefined()
+    expect(paths[1]!.slotFallback).toBeUndefined()
+  })
+
+  it('⑨ [U4] L3 穷尽终态 slotFallback=1：③b 夹具第 3 边（两槽全占→豁免落 ideal）无 slotMarks', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, 26)],
+        ['B', rect(400, 100, CARD_W, 26)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B'), geom('e3', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['h-slip', 'h-slip', 'h-slip'])
+    // 手推：唯一列缝单元 [228,400]×[100,126]（axis=y→槽轴 H=26→L=18→n=2 分点
+    // 110/116）→id 0；e1 ideal 113 tie 落 idx0、e2 ideal 119.5 落 idx1、e3 两槽
+    // 全占→L1/L2 穷尽→L3 豁免 rec（overlapExempt ∧ !residual ∧ slotIdx===undefined
+    // ——「整排满员」终态，R4 消费位）
+    expect(paths[0]!.slotMarks).toBe('0:0')
+    expect(paths[1]!.slotMarks).toBe('0:1')
+    expect(paths[2]!.slotMarks).toBeUndefined()
+    expect(paths[2]!.overlapExempt).toBe(true)
+    expect(paths[2]!.slotFallback).toBe(true)
+    // 落位两边不挂穷尽终态钩（分界证据：slotFallback=豁免∧无槽位专属）
+    expect(paths[0]!.slotFallback).toBeUndefined()
+    expect(paths[1]!.slotFallback).toBeUndefined()
+  })
+
+  it('⑩ [U4-RR1 k1-W1] 三线同端点对（unit 域无 UNIQUE）三落位：½→¾→¼ 三锚 ideal 164/196/132→槽 164 retain/204 land/124 land，三电平两两互异∈分点集+slotMarks 三值互异', () => {
+    // [RR1 k1-W1 归属注记] 本例三 ideal 映射互不竞争槽位（消费序无关）——
+    // 槽位竞争面（两 ideal 争同槽/占用后次选）由 ③b（L3 穷尽）与 U2 assign
+    // 件（L1 占用预检族）承载；本例承载=三落位两两互异×分点集全属（三线面）
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100, 300, CARD_W, CARD_H)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B'), geom('e3', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['direct', 'direct', 'direct'])
+    // 手推（AnchorUse.pick 散开序 [pref,(pref+1)%3,(pref+2)%3]，bottom ½=slot1
+    // →[1,2,0]=½→¾→¼）：行隙单元 [100,228]×[172,300] 分点 104+20k=124/144/164/
+    // 184/204（j1=177/j2=295）。e1 ½/½ ideal=164 恰中槽 idx2（Δ=0<1）→retain
+    // 几何不动（d=① e1 全等）；e2 ¾/¾ ideal=196→|204−196|=8<|184−196|=12→Z 落
+    // idx4=204；e3 ¼/¼ ideal=132→|124−132|=8<|144−132|=12→Z 落 idx0=124
+    expect(paths[0]!.d).toBe('M 164 172 L 164 300')
+    expect(paths[1]!.pts).toEqual([
+      { x: 196, y: 172 }, { x: 196, y: 177 }, { x: 204, y: 177 },
+      { x: 204, y: 295 }, { x: 196, y: 295 }, { x: 196, y: 300 }
+    ])
+    expect(paths[2]!.pts).toEqual([
+      { x: 132, y: 172 }, { x: 132, y: 177 }, { x: 124, y: 177 },
+      { x: 124, y: 295 }, { x: 132, y: 295 }, { x: 132, y: 300 }
+    ])
+    // INV-1XX 三线面：三竖直段 x 电平两两互异且全∈分点集
+    const lv = [paths[0]!.pts[0]!.x, paths[1]!.pts[2]!.x, paths[2]!.pts[2]!.x]
+    expect(new Set(lv).size).toBe(3)
+    for (const x of lv) expect([124, 144, 164, 184, 204]).toContain(x)
+    // 观测钩子三值互异（retain idx2/land idx4/land idx0 同单元 0）
+    expect(paths.map((p) => p.slotMarks)).toEqual(['0:2', '0:4', '0:0'])
+    expect(new Set(paths.map((p) => p.slotMarks)).size).toBe(3)
+  })
+
+  it('⑪ [U4-RR1 d1-W2b] 跨双单元 slotMarks 逗号两 mark：A-D-B（D 偏移造两独立单元）e3 band 桩段+终落段双 retain →「0:2,1:2」形', () => {
+    // 夹具手推：A(100,100,128,72)/D(108,194,40,72)/B(100,296,128,72)——D 偏移
+    // dx=8（x 窗 [108,148] ⊂ A/B 窗 [100,228]）宽 40：行隙单元 (A,D)=[108,148]×
+    // [172,194]（band0）与 (D,B)=[108,148]×[266,296]（band1）=两独立单元（W=40
+    // →L=32→n=4 分点 112+6.4k=118.4/124.8/131.2/137.6；jog 区 [177,189]/[271,291]）；
+    // (A,B) 大对被 D 条带阻隔。e1/e2 ½/½·¾/¾ x=164/196 直连净空（D 膨胀 x≤152）；
+    // e3 散开 ¼/¼ x=132 被 D 拦（direct 废）→band：骨架 [(132,172) 桩端(132,182)
+    // 带心(132,183) 降 x=164 (164,183)(164,281) 终落 (132,281)(132,296)]——桩段
+    // (132,172)→(132,183) 全跨 cell0、终落段 (132,281)→(132,296) 跨 cell1，两段
+    // ideal=132 距槽 idx2=131.2 均 Δ=0.8<1 →双 retain（几何不动）
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['D', rect(108, 194, 40, CARD_H)],
+        ['B', rect(100, 296, CARD_W, CARD_H)]
+      ])
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B'), geom('e3', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['direct', 'direct', 'band'])
+    // 直连两边零消费（x=164/196 ∉ 单元 x 窗 (108,148)）——缺省态无 marks
+    expect(paths[0]!.slotMarks).toBeUndefined()
+    expect(paths[1]!.slotMarks).toBeUndefined()
+    // e3 双 retain：「cellId:slotIdx」逗号两 mark（跨双单元 0/1 各 retain idx2）
+    expect(paths[2]!.slotMarks).toMatch(/^\d+:\d+,\d+:\d$/)
+    expect(paths[2]!.slotMarks).toBe('0:2,1:2')
+    // 双 retain 几何不动（Δ<1 豁免）+带心微段 (132,182)→(132,183) 消费 cell0
+    // 时 idx2 已被自身桩段 retain 占→L3 豁免 rec →两布尔钩挂
+    expect(paths[2]!.overlapExempt).toBe(true)
+    expect(paths[2]!.slotFallback).toBe(true)
+    expect(paths[2]!.pts).toEqual([
+      { x: 132, y: 172 }, { x: 132, y: 182 }, { x: 132, y: 183 },
+      { x: 164, y: 183 }, { x: 164, y: 281 }, { x: 132, y: 281 }, { x: 132, y: 296 }
+    ])
+  })
 })
 

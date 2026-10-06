@@ -1,5 +1,11 @@
 # F-ROUTE-02 走线候选位分配·设计书
 
+> **版本 v1.5（2026-10-07 U4 交付回写）**：§8 U4 行=交付回写态（观测钩子
+> 三属性+e2e R1-R4+obstacleAuditProbe N5 余量——RR1 十件+主控亲笔非空卫）；
+> §6 两注记：①data-route-state 不新增=既有 data-route 即胜出态观测位
+> 〔T-P1b 已消费——主控申报，防下游按字面检索落空〕；②N5③ 陈旧模型勘误
+> ——.month-tag 实际文本=「M 月 · N 篇」非 YYYY-MM（YYYY-MM 补零冻结面=
+> 侧板徽章，U4 两处均断）。runId=20261007-froute02-u4。
 > **版本 v1.4（2026-10-07 U3 交付回写）**：§8 U3 行=交付回写态（chain 接入
 > +applyBandLanes 退役迁移+受锁对照例落地——三结构性替换在案：band 竖直段
 > 对行隙单元恒部分覆盖〔N-3 恒不可行→豁免〕/band 跑段恒无单元消费〔bandsOf
@@ -282,7 +288,19 @@ e2e 抽查；锚定=路由完成后快照。INV-79/109/110 不修订不得破坏
   ③ab 容量两域/④s=9/⑤corridor 负锚/⑥双机制并存+⑦h-slip 正向入槽；挂账
   ①②③ 全销）。生产消费面=slotAssign 正式承载 routeEdge/routeAll；
   U2→U3 挂账清零，新挂账见 registry；
-- U4 e2e R1-R4+观测钩子+obstacleAuditProbe（N5）；
+- U4 e2e R1-R4+观测钩子+obstacleAuditProbe（N5） —— **〔交付 2026-10-07，
+  runId=20261007-froute02-u4〕**三屋全链毕（基批+回炉轮 1+主控亲笔非空卫）：
+  观测钩子=chain RoutedPath 三槽（slotMarks/overlapExempt/slotFallback——
+  recs 接引转正）+EdgeOverlay data-slot/data-overlap-exempt/data-slot-fallback
+  （data-route-state 不新增=既有 data-route 承载，§6 注记）；e2e 新 spec
+  lineage-route-slots（R1 绕卡 expectPathAvoids/R2 跨年避年份头〔M4b 承重〕/
+  R3 同单元双消费∈分点集 zoom 双跑〔UNIQUE 同端点对=e2e 三线不可达——三线
+  面归单测⑩；L3 饱和同不可达——R4 retain 重合替换，语义区分=单测⑧⑨〕/
+  R4 重合态点击选中）+lineage-obstacle-audit（N5 余量四项+§6 ③陈旧模型
+  勘误）；单测+5（⑧⑨⑩⑪+overlay DOM 挂线）。门一基审 B0W5×2→RR1 十件→
+  增量 B0W3N8/B0W1N9→probe 10/10（verify 2728+e2e 全量 87+变异 V1 恰 5/
+  V2 恰 1/非空卫假属性恰 1 红）→裁决部 GO_WITH_CONDITIONS（C1 计数链
+  +2+3=+5 闭合；U5 承接四项=§4 registry 终版清单）；
 - U5 INV 登记+ADR/architecture 回写+成本账本。
 每批单轮对抗可覆盖、verify 可过。
 

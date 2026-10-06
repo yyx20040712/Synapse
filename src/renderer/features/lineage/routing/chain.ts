@@ -59,6 +59,16 @@ export interface RoutedPath {
    *  锚 B 内容坐标）：手柄几何/自动线物化 via（首 via 落位）消费；渲染不变
    *  （d 才是渲染面） */
   pts: Pt[]
+  /** [F-ROUTE-02 U4] 观测钩子三槽（主控预裁定语义）：slotMarks=recs 中非
+   *  残余且有 slotIdx 者「cellId:slotIdx」逗号连接（retain+landed 都占槽）；
+   *  overlapExempt=任一 rec.overlapExempt（含 retain Δ<1 与 L3 穷尽——a6
+   *  字面）；slotFallback=存在 L3 穷尽豁免 rec（overlapExempt ∧ !residual ∧
+   *  slotIdx===undefined——L3 穷尽终态标记；e2e 层 L3 饱和不可达〔UNIQUE 同
+   *  端点对单边+锚域限〕，重合态命中面由 R4 retain 豁免重合承载——retain/
+   *  穷尽语义区分=单测⑧⑨数据层）。均缺省=无该态 */
+  slotMarks?: string
+  overlapExempt?: boolean
+  slotFallback?: boolean
 }
 
 const CORRIDOR_W = 58
@@ -94,6 +104,10 @@ interface SkelResult {
   bandCap?: number
   xLo?: number
   xHi?: number
+  /** [F-ROUTE-02 U4] 观测钩子三槽（slotAssign recs 投影——assignStages 填） */
+  slotMarks?: string
+  overlapExempt?: boolean
+  slotFallback?: boolean
 }
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
@@ -240,7 +254,16 @@ export function routeEdge(
   const r = routeOne(e, snap, src, tgt, 0, onWarn, undefined)
   assignStages([r], snap) // [F-ROUTE-02 U3] 单边数组接线=与 routeAll 同型
   const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
-  return { edgeId: r.edgeId, d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'), route: r.route, lane: r.lane, pts: r.skel }
+  return {
+    edgeId: r.edgeId,
+    d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
+    route: r.route,
+    lane: r.lane,
+    pts: r.skel,
+    ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
+    ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
+    ...(r.slotFallback === true ? { slotFallback: true } : {})
+  }
 }
 
 /** [F-ROUTE-02 U3] 分配接线（routeEdge/routeAll 同型）：routeOne 产物投影
@@ -250,7 +273,10 @@ export function routeEdge(
  *  缺失边（skel=[]）经 rebuildPts len<2 原样透传；锚端不变性=残余含端迁移
  *  只动行进电平顶点（锚 y 恒≠bandY 构造性），finish 链零改动。slotAssign
  *  返回=输入序同长（slots.ts edges.map 契约——a7 字典序仅内部处理序，索引
- *  经分边数组承载）——回写按位对齐由此成立 */
+ *  经分边数组承载）——回写按位对齐由此成立。
+ *  [F-ROUTE-02 U4] recs 诊断面接引转正（k1-N3 备查弃置→观测钩子承载）：
+ *  recs 三布尔/串投影入 SkelResult（RoutedPath 观测字段单源——语义=设计
+ *  §8 U4 主控预裁定） */
 function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
   const stubs = new Map<string, ReadonlyArray<{ a: Pt; b: Pt }>>()
   const inputs: AssignEdge[] = results.map((r) => {
@@ -258,7 +284,12 @@ function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
     return { edgeId: r.edgeId, route: r.route, pts: r.skel, bandY: r.bandY, bandS: r.bandS, bandCap: r.bandCap, xLo: r.xLo, xHi: r.xHi }
   })
   slotAssign(inputs, snap, stubs).forEach((a, i) => {
-    results[i]!.skel = a.pts
+    const r = results[i]!
+    r.skel = a.pts
+    const marks = a.recs.filter((x) => !x.residual && x.slotIdx !== undefined).map((x) => `${x.cellId}:${x.slotIdx}`)
+    if (marks.length > 0) r.slotMarks = marks.join(',')
+    if (a.recs.some((x) => x.overlapExempt)) r.overlapExempt = true
+    if (a.recs.some((x) => x.overlapExempt && !x.residual && x.slotIdx === undefined)) r.slotFallback = true
   })
 }
 
@@ -285,6 +316,9 @@ export function routeAll(
     d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
     route: r.route,
     lane: r.lane,
-    pts: r.skel
+    pts: r.skel,
+    ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
+    ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
+    ...(r.slotFallback === true ? { slotFallback: true } : {})
   }))
 }
