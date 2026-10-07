@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T15:45:10.7684026Z",
+    "generatedAt":  "2026-10-07T17:35:11.2874490Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "f22d74474a791113e2a10f2d903d4f4179f63f3898390106a13d8d18467c9f2b"
+                      "sha256":  "6cbe00ad9936fb934be3827c398854fc2ade6c9b515394bfb0ed38b8bcbb8bbc"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -827,7 +827,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
-                      "sha256":  "25743c57e49dbc679ae9b1a1fa131a5cc4b5aafe2215cb6c2f474ca3a0f075e4"
+                      "sha256":  "cc5343a9c877d79bada226669c0216b7f34687142f783065667f52475bd234f3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-assign.test.ts",

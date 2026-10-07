@@ -1,29 +1,46 @@
 /**
  * [F-SLOTGRID-01 U2] detour —— 段式近绕专态+网格通道模型（设计 v1.4 §5.3
- * detour 段式七步+§2 纵通道段/边侧通道/候选全序；2026-10-07 用户裁决①③）。
+ * detour 段式七步+§2 纵通道段/边侧通道/候选全序；2026-10-07 用户裁决①③；
+ * [RR1 回炉轮 1] B1/B2/B3/W1/W2 处置：上行 strips 行进序源侧起/B2 行集改
+ * 框几何容量派生/B3 中段夹缝封闭=组合不可行禁中点/W1 贯通省拐全局承载/
+ * W2 DFS 组合访问预算 512）。
  *
  * 网格通道模型（W18 网格基）：纵通道段=行带 r 内列 k−1|k 间竖带 x∈[
- * fx0+12+φ_r+200(k−1)+128, +72)，y 域=该行带——**按网格容量虚拟存在与实卡
- * 分布解耦**（空卡位区=通道域组成部分非障碍——用户裁决「空卡片可以随意穿」；
- * 障碍集恒=实卡∪月标注∪年份头，见 chain.allObstacles）；列间段 k=1..cap_r−1
- * 恒在；边侧通道（左缘宽 12+φ_r/右缘宽 W−128−φ_r−200(cap_r−1)——框内缘
- * 边界 W17 口径）入候选集（就近性优先）。通道槽位=gap-cells slotPositions
- * 单源（域=通道宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/k/(n+1) 分点——INV-SLOTGRID-02
- * 坐标集封闭）。
+ * fx0+12+φ_r+200(k−1)+128, +72)，y 域=该行带——**行集=框几何容量派生**
+ * （rows=⌊(框内容高−顶 pad−卡高)/144⌋+1——[RR1 B2] 实卡反推废弃：空行
+ * （稀疏帧常态）通道缺席=假阴性降级+越界卡产幻影行；空卡位区=通道域组成
+ * 部分非障碍——用户裁决「空卡片可以随意穿」；障碍集恒=实卡∪月标注∪
+ * 年份头，见 chain.allObstacles）；列间段 k=1..cap_r−1 恒在；边侧通道（左缘
+ * 宽 12+φ_r/右缘宽 W−128−φ_r−200(cap_r−1)——框内缘边界 W17 口径）入候选集
+ * （就近性优先）。通道槽位=gap-cells slotPositions 单源（域=通道宽−20/
+ * n=clamp(⌊(域−8)/8⌋,0,5)/k/(n+1) 分点——INV-SLOTGRID-02 坐标集封闭）。
  *
  * detour 段式七步：①分段（阻挡带集=主轴竖线 x₀ 与障碍集求交的 y 区间集，
- * 相邻夹缝<28 合并〔桩 20+L_min 8 横移夹缝判据〕）②仅被阻段换列（未受阻段
- * 沿 x₀ 直降）③候选枚举=槽位级全序（被阻段遍历序〔近源先〕→构线拐弯数
- * 升序→|槽位 x−x₀| 升序→槽位 x 升序——v1.4 用户裁决字典序；门形候选拐弯
- * 数恒同故距离键直接生效）+槽位级空槽判定（ChannelUse——N17）④净空判定
- * （静态预过滤+全链 polylineClearStubs 复检沿承，统一含标注矩形）⑤构线
- * （出桩 10→横带/框间带槽位 y 横移〔带封闭<36 时首/末段=桩端水平线、中段
- * =夹缝中点〕→段内纵降→末段横移回 x₀→入桩；相邻被阻段同槽=单侧移贯通、
- * 异槽=夹缝槽位 y 处回 x₀ 再移出）⑥候选枚举尽→null 降 band ⑦观测
- * （state=detour+detourMarks 各被阻段「槽位 x:Δx」）。
+ * 相邻夹缝<28 合并〔桩 20+L_min 8 横移夹缝判据——严格小于〕）②仅被阻段
+ * 换列（未受阻段沿 x₀ 直降）③候选枚举=槽位级全序：**贯通解（全带同槽=
+ * 最少横移次数）先于一切混合组合**〔RR1 W1——拐弯数主键在组合层的全局
+ * 承载；混合组合 DFS 内 chosen[i−1] 同槽候选优先〕再按（|槽位 x−x₀|
+ * 升序→槽位 x 升序——门形域拐弯数恒同距离键直接生效）+槽位级空槽判定
+ * （ChannelUse——N17）。[RR2 k1-W1′/d1-W1 主控裁定] Phase B 混合 DFS
+ * 贪心（prevX 同槽优先+距离序）=主控裁定的设计全序近似：Phase A 已穷尽
+ * 严格最优类〔贯通=最少横移恒先试〕，残余偏差限同拐弯数类内次序（设计
+ * 全序无比键）；用户裁决原语「形态上尽量少拐弯」=偏好级承载
+ * ④净空判定（静态预过滤+全链 polylineClearStubs 复检
+ * 沿承，统一含标注矩形）⑤构线（出桩 10→夹缝槽位 y 横移→段内纵降→末段
+ * 横移回 x₀→入桩；**[RR1 B3] 中段夹缝封闭〔h<36 无槽〕=该组合不可行——
+ * 设计 §2 横移合法域仅桩端水平线/横带槽位 y/框间带槽位 y 三类，禁中点
+ * 发明；首/末夹缝封闭=桩端水平线〔合法域①〕**；相邻被阻段同槽=单侧移
+ * 贯通（零中段横移）、异槽=中段夹缝槽位 y 处回 x₀ 再移出；**[RR1 B1]
+ * strips 恒按行进序自源侧构造（down=aS 降序/up=aS 升序逆扫——目标侧终推
+ * ，上行多带夹缝配对系统性修正）**⑥候选枚举尽（含组合访问预算
+ * DFS_BUDGET=512 超限〔RR1 W2〕）→null 降 band ⑦观测（state=detour+
+ * detourMarks 各被阻段「槽位 x:Δx」）。
  *
  * 确定性红线：无随机/无 Date/无三角函数——并列一律字典序/数值序。纯函数
- * 零 DOM import（capacity.ts 常量只读消费）。
+ * 零 DOM import（capacity.ts 常量只读消费）。chanCache WeakMap 同一性前提
+ * =buildSnapshot 每次 routeAll 产新快照对象（单次 pass 内 routeOne 共享同
+ * 一引用→pass 级缓存命中；跨 pass 各自入缓存随 GC 回收——edge-overlay-geom
+ * 现状满足）。
  */
 import { capacities, phaseOfRow, CARD_H, CARD_W, FRAME_PAD_LEFT, FRAME_PAD_TOP, PITCH_X, PITCH_Y } from '../capacity'
 import type { PickedAnchor, Pt, Rect, Side } from './anchors'
@@ -34,8 +51,16 @@ import { midSlotOf, quant, slotPositions } from './gap-cells'
 
 /** 月框边框宽（.month-frame border 1.6px——快照 border-box 坐标换算用） */
 const FRAME_BORDER = 1.6
+/** 月框底 padding（.month-frame padding-bottom 12px——capacity.ts 未导出底
+ *  值，本件镜像常量；capacity 属 U1 产出件本票只读） */
+const FRAME_PAD_BOTTOM = 12
 /** 阻挡带合并阈（相邻夹缝<28 合并=桩 20+L_min 8 横移夹缝判据——设计 §2 阻挡带集） */
 export const BLOCK_MERGE_GAP = 28
+/** [RR1 W2·RR2 d1-W2/k1-N2] DFS 组合访问预算（确定性常量）：候选组合理论
+ *  上界≈20³（段×候选），预算 512=**确定性的枚举提前截断**——超限返 null
+ *  降 band（设计 §5.3-⑥「候选枚举尽→降 band」的预算化形态）；病态场景
+ *  放弃 detour 序内解换 band 通用态承接=设计内取舍 */
+export const DFS_BUDGET = 512
 
 /** 网格纵通道段（行带内虚拟竖带；slots=通道槽位 x 序列——单源公式） */
 export interface GridChannel {
@@ -46,7 +71,8 @@ export interface GridChannel {
   slots: number[]
 }
 
-/** 通道槽占用注册表（AnchorUse 同型：仅胜出态落记——失败尝试不占槽无需释放） */
+/** 通道槽占用注册表（AnchorUse 同型：仅胜出态落记——失败尝试不占槽无需释放；
+ *  [RR1 W3] detour/band 两态共用同一实例跨态共享——routeAll 级单源） */
 export class ChannelUse {
   private readonly used = new Map<string, Map<number, string>>()
 
@@ -72,36 +98,34 @@ export function byTotalOrder<T extends { x: number }>(refX: number, curX: number
   }
 }
 
-/** 框内网格行集（卡中心 y→行号聚整；行带=[fy0+18+144r, +72) border-box 坐标） */
-function rowsOfFrame(f: { x: number; y: number; w: number; h: number }, cards: readonly Rect[]): Map<number, { top: number }> {
+/** [RR1 B2] 框内网格行集=框几何容量派生（与实卡分布解耦）：rows=⌊(框内容高
+ *  −顶 pad−卡高)/144⌋+1，钳 ≥0——空行通道恒在（稀疏帧）、越界卡零幻影行
+ *  （行数上界=框高；stretch 拖拽带期 padding-bottom 94 可能多派生末行——
+ *  空域通道经净空门无害，见 gridChannelsOf 头注前提） */
+function rowsFromFrame(f: { x: number; y: number; w: number; h: number }): Array<{ r: number; top: number }> {
   const fy0 = f.y + FRAME_BORDER
-  const rows = new Map<number, { top: number }>()
-  for (const c of cards) {
-    const cx = c.x + c.w / 2
-    const cy = c.y + c.h / 2
-    if (cx < f.x || cx > f.x + f.w || cy < f.y || cy > f.y + f.h) continue
-    const r = Math.round((cy - fy0 - FRAME_PAD_TOP - CARD_H / 2) / PITCH_Y)
-    if (r < 0) continue
-    if (!rows.has(r)) rows.set(r, { top: fy0 + FRAME_PAD_TOP + PITCH_Y * r })
-  }
-  return rows
+  const innerH = f.h - 2 * FRAME_BORDER - FRAME_PAD_TOP - FRAME_PAD_BOTTOM
+  const rows = Math.max(0, Math.floor((innerH - CARD_H) / PITCH_Y) + 1)
+  const out: Array<{ r: number; top: number }> = []
+  for (let r = 0; r < rows; r++) out.push({ r, top: fy0 + FRAME_PAD_TOP + PITCH_Y * r })
+  return out
 }
 
 const chanCache = new WeakMap<LayoutSnapshot, GridChannel[]>()
 
 /** 网格通道全集（逐框逐行：列间段 k=1..cap−1+左右边侧道；快照级 WeakMap 缓存
- *  ——routeAll 逐边复用零重算） */
+ *  ——routeAll 逐边复用零重算。行集=框几何派生〔RR1 B2〕） */
 export function gridChannelsOf(snap: LayoutSnapshot): GridChannel[] {
   const cached = chanCache.get(snap)
   if (cached !== undefined) return cached
-  const cards = [...snap.cards.values()]
   const out: GridChannel[] = []
   for (const f of snap.frames) {
     const fx0 = f.x + FRAME_BORDER
     // W=框内容宽（设计 §2 容量行：内容区=[12,12+W)——border-box 换算=减双边框与双 padding）
     const w = f.w - 2 * FRAME_BORDER - 2 * FRAME_PAD_LEFT
     const caps = capacities(w)
-    for (const [r, row] of rowsOfFrame(f, cards)) {
+    for (const { r, top } of rowsFromFrame(f)) {
+      const row = { top }
       const phi = phaseOfRow(r)
       const cap = r % 2 === 0 ? caps.n : caps.m
       const bands: Array<[number, number]> = []
@@ -149,14 +173,13 @@ export interface DetourRoute {
   detourMarks: string
 }
 
-/** 横移取位（带槽位 y 单源；首/末夹缝封闭<36=桩端水平线〔设计 §2 横移合法域①〕，
- *  中段夹缝封闭=中点——全链复检兜底） */
-function moveYOf(strip: readonly [number, number], stubLine: 'first' | 'last' | 'none'): number {
+/** 横移取位（带槽位 y 单源；[RR1 B3] stubY 在场=夹缝封闭时桩端水平线回退
+ *  〔合法域①——仅首/末夹缝〕；中段夹缝 stubY=null：封闭即 null=组合不可行
+ *  ——禁中点发明，坐标集封闭 INV-SLOTGRID-02） */
+function moveYOf(strip: readonly [number, number], stubY: number | null): number | null {
   const slot = midSlotOf('y', { x: 0, y: strip[0], w: 0, h: strip[1] - strip[0] })
   if (slot !== null) return slot
-  if (stubLine === 'first') return strip[0]
-  if (stubLine === 'last') return strip[1]
-  return (strip[0] + strip[1]) / 2
+  return stubY
 }
 
 /** 段内静态净空预过滤（候选槽 x×被阻段 y 域±2 采样窗 vs 障碍集 PAD 膨胀） */
@@ -170,8 +193,10 @@ interface SlotCand {
 }
 
 /** detour 骨架（前置=pa/pb 竖侧锚 x 全等=x₀ 且阻挡带集非空——chain ③ 态调用；
- *  候选枚举尽→null 降 band。逐被阻段近源先 DFS×段内候选全序，首个全链
- *  polylineClearStubs 过检组合胜出=字典序取优；胜出即 commit 通道槽占用） */
+ *  候选枚举尽/预算超限→null 降 band。**[RR1 W1] 贯通解（全带同槽）先于混合
+ *  组合**（拐弯数主键全局承载——横移次数最少者胜）；混合 DFS 段内迭代
+ *  chosen[i−1] 同槽候选优先（增量 0 拐）再按距离序。胜出即 commit 通道槽
+ *  占用（ChannelUse——detour/band 跨态共享） */
 export function detourSkeleton(
   srcId: string,
   tgtId: string,
@@ -190,8 +215,6 @@ export function detourSkeleton(
   const bands = down ? blockingBands(x0, aS.y, bS.y, obstacles) : blockingBands(x0, bS.y, aS.y, obstacles).reverse()
   if (bands.length < 1) return null
   const channels = gridChannelsOf(snap)
-  // 段内候选（通道 y 域与被阻段正相交；全序=距离|x−x₀|→x——门形拐弯数恒同键退化；
-  // 占用剔除〔N17〕+段内静态净空预过滤）
   const order = byTotalOrder<SlotCand>(x0, x0)
   const candsPerBand: SlotCand[][] = bands.map((band) =>
     channels
@@ -201,31 +224,46 @@ export function detourSkeleton(
       .sort(order)
   )
   if (candsPerBand.some((c) => c.length < 1)) return null
-  // 夹缝（被阻段间/首末桩端——行进序）：横移 y 取位域
+  // [RR1 B1] 夹缝恒按行进序自源侧构造：down=[aS,band0]→…→[bandN,bS]；
+  // up=[band0.hi,aS]→…→[bS,bandN.lo]（源侧起逆扫——目标侧终推）
   const strips: Array<[number, number]> = []
-  let cursor = down ? aS.y : bS.y
+  let cursor = aS.y
   for (const band of bands) {
-    strips.push([cursor, band[0]])
-    cursor = band[1]
+    strips.push(down ? [cursor, band[0]] : [band[1], cursor])
+    cursor = down ? band[1] : band[0]
   }
-  strips.push([cursor, down ? bS.y : aS.y])
+  strips.push(down ? [cursor, bS.y] : [bS.y, cursor])
   const chosen: SlotCand[] = []
+  let budget = DFS_BUDGET
   const tryBuild = (): DetourRoute | null => {
-    // 构线：x₀ 直降→夹缝槽位 y 横移至槽 x→段内纵降；相邻被阻段同槽贯通/异槽回 x₀
+    // 构线（行进序 wps——up/down 同构零反卷）：入移（curX≠xi 时·夹缝槽位 y）
+    // →段内纵降；异槽中段=夹缝槽位 y 回 x₀ 再移出（封闭=null 组合不可行）；
+    // 同槽贯通=零中段横移；末段=目标侧夹缝回 x₀（封闭=桩端水平线）→入桩
     const wps: Pt[] = []
     let curX = x0
     for (let i = 0; i < bands.length; i++) {
       const xi = chosen[i]!.x
-      const yIn = moveYOf(strips[i]!, i === 0 ? 'first' : 'none')
-      wps.push({ x: curX, y: yIn }, { x: xi, y: yIn })
-      const yOut = moveYOf(strips[i + 1]!, i === bands.length - 1 ? 'last' : 'none')
-      wps.push({ x: xi, y: yOut })
+      if (curX !== xi) {
+        const yIn = moveYOf(strips[i]!, i === 0 ? aS.y : null)
+        if (yIn === null) return null
+        wps.push({ x: curX, y: yIn }, { x: xi, y: yIn })
+      }
       const next = chosen[i + 1]
-      if (next === undefined || next.x !== xi) wps.push({ x: x0, y: yOut })
+      if (next === undefined) {
+        const yOut = moveYOf(strips[i + 1]!, bS.y)
+        if (yOut === null) return null
+        if (xi !== x0) wps.push({ x: xi, y: yOut }, { x: x0, y: yOut })
+      } else if (next.x !== xi) {
+        const yOut = moveYOf(strips[i + 1]!, null)
+        if (yOut === null) return null
+        wps.push({ x: xi, y: yOut }, { x: x0, y: yOut }, { x: next.x, y: yOut })
+        curX = next.x
+        continue
+      }
       curX = next !== undefined && next.x === xi ? xi : x0
     }
-    wps.push({ x: x0, y: down ? bS.y : aS.y })
-    const skel: Pt[] = down ? [pa.pt, aS, ...wps, pb.pt] : [pa.pt, aS, ...[...wps].reverse(), pb.pt]
+    wps.push({ x: x0, y: bS.y })
+    const skel: Pt[] = [pa.pt, aS, ...wps, pb.pt]
     if (!polylineClearStubs(skel, ends, obstacles)) return null
     for (const c of chosen) chanUse.commit(c.key, c.idx, edgeId)
     const detourMarks = chosen.map((c) => `${quant(c.x)}:${quant(Math.abs(c.x - x0))}`).join(',')
@@ -238,9 +276,28 @@ export function detourSkeleton(
       detourMarks
     }
   }
+  // Phase A：贯通解（全带同槽 x）——拐弯数主键全局承载（横移 2 次=最少；
+  // 同 x 跨行通道异 key——贯通判定取几何 x 基，占用落记各带自身通道槽）；
+  // 起始槽按带0 候选距离序（次键）
+  for (const c of candsPerBand[0]!) {
+    if (--budget < 0) return null
+    if (!candsPerBand.every((list, i) => i === 0 || list.some((q) => q.x === c.x))) continue
+    for (let i = 1; i < bands.length; i++) chosen[i] = candsPerBand[i]!.find((q) => q.x === c.x)!
+    chosen[0] = c
+    const r = tryBuild()
+    if (r !== null) return r
+  }
+  // Phase B：混合组合 DFS——段内迭代 chosen[i−1] 同槽优先（增量 0 拐）再距离序
   const dfs = (i: number): DetourRoute | null => {
     if (i === bands.length) return tryBuild()
-    for (const c of candsPerBand[i]!) {
+    const prevX = i > 0 ? chosen[i - 1]!.x : undefined
+    const list = candsPerBand[i]!
+    const iter =
+      prevX === undefined || list.some((c) => c.x === prevX)
+        ? [...list].sort((a, b) => (a.x === prevX ? 0 : 1) - (b.x === prevX ? 0 : 1))
+        : list
+    for (const c of iter) {
+      if (--budget < 0) return null
       chosen[i] = c
       const r = dfs(i + 1)
       if (r !== null) return r

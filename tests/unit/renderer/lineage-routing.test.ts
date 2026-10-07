@@ -12,8 +12,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { AnchorUse } from '../../../src/renderer/features/lineage/routing/anchors'
-import { byTotalOrder } from '../../../src/renderer/features/lineage/routing/detour'
+import { AnchorUse, type PickedAnchor } from '../../../src/renderer/features/lineage/routing/anchors'
+import { ChannelUse, byTotalOrder, detourSkeleton, gridChannelsOf } from '../../../src/renderer/features/lineage/routing/detour'
 import { bandSkeleton } from '../../../src/renderer/features/lineage/routing/bands'
 import type { EdgeGeomInput, LayoutSnapshot, Rect } from '../../../src/renderer/features/lineage/routing/chain'
 import { routeAll, routeEdge } from '../../../src/renderer/features/lineage/routing/chain'
@@ -264,6 +264,138 @@ describe('F-SLOTGRID-01 U2 detour 段式（占用/方向/降级）', () => {
   })
 })
 
+
+describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返工处置）', () => {
+  /** 双带夹具（W1/B1 共用几何）：row1 障碍（覆左缘+col0|1 走 col0|1 槽族）+
+   *  row3 宽障碍（右缘仅留 676.7）；row0/row4=同列源/目标（x₀=½=176） */
+  const twoBandCards = (up: boolean): Map<string, Rect> =>
+    new Map<string, Rect>(
+      up
+        ? [
+            ['A', rect(112, 676, CARD_W, CARD_H)],
+            ['W1', rect(100, 244, CARD_W, CARD_H)],
+            ['W2', rect(96, 532, 556, CARD_H)],
+            ['B', rect(112, 100, CARD_W, CARD_H)]
+          ]
+        : [
+            ['A', rect(112, 100, CARD_W, CARD_H)],
+            ['W1', rect(100, 244, CARD_W, CARD_H)],
+            ['W2', rect(96, 532, 556, CARD_H)],
+            ['B', rect(112, 676, CARD_W, CARD_H)]
+          ]
+    )
+
+  it('[B1] 上行×双被阻段：源在下（row4 col0）→目标在上（row0 col0），贯通解门形（行进序 strips=源侧先）', () => {
+    const snap = makeSnap({ cards: twoBandCards(true), frames: [gridFrame()] })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('detour')
+    // 手推：x₀=176；阻挡带（行进序近源先）=[528,608]（W2 膨胀）→[240,320]（W1）；
+    // W2 x 膨胀 [92,656] 灭 row3 左缘/col0|1/右缘≤651.3 → row3 唯一候选 676.7；
+    // row1 候选 col0|1 族+右缘族——贯通解=全程 676.7（见 W1 例）。源侧夹缝
+    // [608,666] h=58→n=3 中位槽 637；目标侧夹缝 [182,240]→211
+    expect(r.pts).toEqual([
+      { x: 176, y: 676 }, { x: 176, y: 666 }, { x: 176, y: 637 }, { x: 676.7, y: 637 },
+      { x: 676.7, y: 211 }, { x: 176, y: 211 }, { x: 176, y: 182 }, { x: 176, y: 172 }
+    ])
+    expect(r.detourMarks).toBe('676.7:500.7,676.7:500.7')
+  })
+
+  it('[W1] 贯通省拐（拐弯数主键全局承载）：带1 就近候选 358.7×带2 唯一候选 676.7 → 贯通解 676.7 优先于就近-远组合', () => {
+    const snap = makeSnap({ cards: twoBandCards(false), frames: [gridFrame()] })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('detour')
+    // 手推：band1（row1）候选={358.7..393.3}∪{575.3..676.7}（就近 358.7）；
+    // band2（row3）候选={676.7} 唯一——贯通解=两带同槽 676.7（横移 2 次；
+    // 就近组合=358.7+676.7 中段夹缝再移=横移 3 次）。拐弯数主键（用户裁决
+    // 「少拐优先」）→贯通解胜出：
+    expect(r.detourMarks).toBe('676.7:500.7,676.7:500.7')
+    // 全程单一外槽电平（无 358.7 就近电平——反锚）
+    expect(r.pts.some((q) => q.x === 358.7)).toBe(false)
+  })
+
+  it('[B2] 空行通道（网格容量派生）：行1 无实卡+label 障碍横贯 x₀ → 空行通道候选承接（实卡反推=假阴性降级）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['B', rect(112, 388, CARD_W, CARD_H)]
+      ]),
+      // label 落 row1 空行带 [244,316]：膨胀 [146,234]×[246,294] 覆 x₀=176
+      labels: [rect(150, 250, 80, 40)],
+      frames: [gridFrame()]
+    })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('detour')
+    // 手推：阻挡带=[246,294]（label）；行1 无实卡（实卡反推=无通道→假阴性
+    // 降级 overlap）——容量派生行集：row1（φ=100）左缘通道 [100,212) 槽
+    // {125.3..186.7}，label 膨胀 [146,234] 灭 {156,171.3,186.7}——就近存
+    // 140.7（Δ=35.3；125.3 次近——col0|1 [340,412) 族 Δ≥182 较远）；上夹缝
+    // [182,246] h=64→n=4 中位 209.6；下夹缝 [294,378] h=84→n=5 中位 336
+    expect(r.detourMarks).toBe('140.7:35.3')
+    expect(r.pts).toEqual([
+      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 209.6 }, { x: 140.7, y: 209.6 },
+      { x: 140.7, y: 336 }, { x: 176, y: 336 }, { x: 176, y: 378 }, { x: 176, y: 388 }
+    ])
+  })
+
+  it('[B2 防御] 行集上界=框高派生：1 行框（h=135.2）+越界卡（中心在框内底缘）→ 零幻影 row1 通道', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['STRAY', rect(112, 174, CARD_W, CARD_H)]
+      ]),
+      // 框内容高=102=顶 pad 18+卡 72+底 pad 12 → 恰 1 行；STRAY 中心 y=210
+      // 落框内（框底 215.6）但越出 1 行容量——实卡反推=幻影 row1 通道（yLo=244）
+      frames: [{ x: 98.4, y: 80.4, w: 627.2, h: 135.2, year: 2022 }]
+    })
+    const channels = gridChannelsOf(snap)
+    expect(channels.length).toBeGreaterThan(0)
+    expect(channels.every((c) => c.yLo === 100), '全部通道驻 row0 带（越界卡零幻影行）').toBe(true)
+  })
+
+  it('[B3] 中段夹缝封闭（h∈[28,36) 无槽）→ 该组合不可行：detourSkeleton 返 null（禁中点发明——坐标集闭包）', () => {
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['W1', rect(100, 244, CARD_W, CARD_H)],
+        ['W1b', rect(536, 244, 140, CARD_H)],
+        ['W2', rect(96, 354, 590, CARD_H)],
+        ['B', rect(112, 532, CARD_W, CARD_H)]
+      ]),
+      frames: [gridFrame()]
+    })
+    // 手推：x₀=176 阻挡带=[240,320]（W1）与 [350,430]（W2 x[92,690]∋176）——
+    // 中夹缝 [320,350] h=30∈[28,36) 不合并不开槽；band1 候选={358.7..393.3}
+    //（W1b [532,680] 灭右缘族）；band2 候选={693.3}（W2 灭其余右缘槽）——
+    // 全组合异槽必经中夹缝横移而夹缝封闭 → 组合不可行 → null（降 band）
+    const pa: PickedAnchor = { pt: { x: 176, y: 172 }, side: 'bottom', slot: 1 }
+    const pb: PickedAnchor = { pt: { x: 176, y: 532 }, side: 'top', slot: 1 }
+    const src = snap.cards.get('A')!
+    const tgt = snap.cards.get('B')!
+    const r = detourSkeleton('A', 'B', pa, pb, snap, [...snap.cards.values()], [src, tgt], new ChannelUse(), 'e1')
+    expect(r).toBeNull()
+  })
+
+  it('[W3] band 态通道槽位占用（下一段顺位首空槽）：两 band 边同 row1 右缘通道 → 次边取次槽 600.7（首边占 575.3）', () => {
+    // A row0 col0→B row2 col1（x_s=208≠x_t=344→band）；row1 宽墙 [92,460]
+    // 灭终落三槽+左缘/col0|1 → 下降候选=右缘族；e2 散开锚 tgtX=376
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['WALL', rect(96, 244, 360, CARD_H)],
+        ['B', rect(312, 388, CARD_W, CARD_H)]
+      ]),
+      frames: [gridFrame()]
+    })
+    const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
+    expect(paths.map((p) => p.route)).toEqual(['band', 'band'])
+    // e1（¾→¼ 锚，tgtX=344）：|575.3−344|=231.3 最近 → 占 row1 右缘 idx0；
+    // e2（散开 ¼→½，tgtX=376）：|575.3−376|=199.3 最近但被占 → 次槽 600.7
+    expect(paths[0]!.pts.some((q) => q.x === 575.3)).toBe(true)
+    expect(paths[1]!.pts.some((q) => q.x === 575.3), '次边不重取同槽（通道槽占用）').toBe(false)
+    expect(paths[1]!.pts.some((q) => q.x === 600.7)).toBe(true)
+  })
+})
+
 describe('F-SLOTGRID-01 U2 候选全序（设计 §2 v1.4 字典序——拐弯数主键/距离次键）', () => {
   it('byTotalOrder：拐弯数主键（x===curX=0 拐先于一切）→|x−refX| 次键→x 末键（等距对判别——拐弯键唯一判别面）', () => {
     // 等距对 {200,100}（|Δ|=50 全等）：拐弯键定序——curX=200 零拐居首（无拐弯
@@ -428,7 +560,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const snap = spreadSnap(rect(113, 236, 77, 8))
     const obstacles = [...snap.cards.values(), ...snap.labels]
     const cards = [...snap.cards.values()]
-    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, 'A', 'B')
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')
     expect(band).not.toBeNull()
     // 终落锚=散开第二候选 slot1：手算 x=160+128×½=224（首选 x=192 被月标
     // 膨胀带 [109,194] 封堵）——骨架末点即生效锚点
@@ -444,7 +576,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const snap = spreadSnap(rect(146, 236, 140, 8))
     const obstacles = [...snap.cards.values(), ...snap.labels]
     const cards = [...snap.cards.values()]
-    expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, 'A', 'B')).toBeNull()
+    expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')).toBeNull()
     // 全候选失败→降级 overlap（x_s=176≠x_t=192→L 形；兜底=最短路线重叠）
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('overlap')
@@ -455,7 +587,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const snap = spreadSnap(rect(113, 236, 77, 8))
     const obstacles = [...snap.cards.values(), ...snap.labels]
     const cards = [...snap.cards.values()]
-    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, new AnchorUse(), 'A', 'B')
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, new AnchorUse(), new ChannelUse(), 'A', 'B', 'e1')
     expect(band).not.toBeNull()
     expect(band!.picks).toEqual([
       ['A', 'bottom', 2],
@@ -469,7 +601,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const cards = [...snap.cards.values()]
     const use = new AnchorUse()
     use.commit('B', 'top', 1)
-    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, use, 'A', 'B')
+    const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, use, new ChannelUse(), 'A', 'B', 'e1')
     expect(band).not.toBeNull()
     expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 256, y: 244 })
     expect(band!.picks).toEqual([
@@ -573,3 +705,54 @@ describe('F-ROUTE-02 [U3] 槽位分配对照（槽位新公式重基线——域
     expect(paths.map((p) => p.slotMarks)).toEqual(['0:2', '0:4', '0:0'])
   })
 })
+
+describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1-W3′ N12 横边防御）', () => {
+  it("[k1-W2′] Phase B 混合解：双带候选族互斥（带1=col0|1 族/带2=右缘族）无贯通类 → 异槽混合组合承接+detourMarks 双异值", () => {
+    // W1a 灭带1 左缘、W1b 灭带1 右缘 → C1={358.7..393.3}；W2 灭带2 左缘+
+    // col0|1 → C2={575.3..676.7}——C1∩C2=∅（贯通类不存在，Phase A 穷尽）
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['W1a', rect(100, 244, CARD_W, CARD_H)],
+        ['W1b', rect(536, 244, 140, CARD_H)],
+        ['W2', rect(96, 532, 460, CARD_H)],
+        ['B', rect(112, 676, CARD_W, CARD_H)]
+      ]),
+      frames: [gridFrame()]
+    })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('detour')
+    // 手推：Phase B 首组合=（带1 就近 358.7，带2 就近 575.3）——中夹缝
+    // [320,528] h=208→n=5 中位槽 424 回 x₀ 再移出；源侧夹缝 211/目标侧 637
+    expect(r.detourMarks).toBe('358.7:182.7,575.3:399.3')
+    expect(r.pts).toEqual([
+      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 211 }, { x: 358.7, y: 211 },
+      { x: 358.7, y: 424 }, { x: 176, y: 424 }, { x: 575.3, y: 424 },
+      { x: 575.3, y: 637 }, { x: 176, y: 637 }, { x: 176, y: 666 }, { x: 176, y: 676 }
+    ])
+    // 混合形态锚：双外槽电平互异（358.7/575.3 各承一带）+中段 x₀ 触点在场
+    expect(r.pts.filter((q) => q.x === 358.7).length).toBeGreaterThanOrEqual(2)
+    expect(r.pts.filter((q) => q.x === 575.3).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场（route=overlap 兜底）", () => {
+    // W 覆 x₀ 全族（[96,304] ∋ 144/176/208/240）：e1-e3 竖边锚各承 detour；
+    // e4 生效锚散开至 right ½（aPt=bPt=(240,·) x 全等）——sa/sb 竖侧+x 等
+    // 但 pa/pb 横边：无防御则横边桩 aS.x=250≠x₀ 生对角线；入口约束=生效锚
+    // 恒竖侧→跳过 detour→band 终落槽满员 null→overlap
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(112, 100, CARD_W, CARD_H)],
+        ['W', rect(100, 244, 200, CARD_H)],
+        ['B', rect(112, 388, CARD_W, CARD_H)]
+      ]),
+      frames: [gridFrame()]
+    })
+    const paths = routeAll(['e1', 'e2', 'e3', 'e4'].map((id) => geom(id, 'A', 'B')), snap)
+    expect(paths.slice(0, 3).map((p) => p.route)).toEqual(['detour', 'detour', 'detour'])
+    expect(paths[3]!.route).toBe('overlap')
+    // 兜底形态锚：x 全等单竖段（横边锚 L 形域外——直连形态=最短路线）
+    expect(paths[3]!.pts).toEqual([{ x: 240, y: 136 }, { x: 240, y: 424 }])
+  })
+})
+

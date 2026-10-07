@@ -156,7 +156,10 @@ function routeOne(
   const pb = anchorPick(e.targetId, tgt, sb.side, sb.slot, use)
   const aPt = pa.pt
   const bPt = pb.pt
-  if (isVerticalSide(sa.side) && isVerticalSide(sb.side) && aPt.x === bPt.x) {
+  // [RR1 N12 防御] 生效锚恒竖侧才入 detour：AnchorUse 散开可迁横边锚（左/
+  //  右）——横边锚桩 aS.x≠x₀（外法线水平伸 10px）生对角线骨架；散开迁横
+  //  边=detour 前置废→band/overlap 承接（12 锚域内零死角）
+  if (isVerticalSide(sa.side) && isVerticalSide(sb.side) && aPt.x === bPt.x && isVerticalSide(pa.side) && isVerticalSide(pb.side)) {
     if (polylineClearStubs([aPt, bPt], ends, obstacles)) {
       const picks: ReadonlyArray<[string, Side, number]> = [
         [e.sourceId, pa.side, pa.slot],
@@ -166,7 +169,7 @@ function routeOne(
       return { edgeId: e.edgeId, skel: [aPt, bPt], route: 'direct', stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
     }
     // ③ detour：同柱（x_s=x_t=x₀）受阻近绕专态（段式七步——detour.ts；门形
-    // 4 拐；候选枚举尽→null 降 ④ band）
+    // 4 拐；候选枚举尽/预算超限→null 降 ④ band）
     const dt = detourSkeleton(e.sourceId, e.targetId, pa, pb, snap, obstacles, ends, chanUse, e.edgeId)
     if (dt !== null) {
       commit(dt.picks)
@@ -190,8 +193,9 @@ function routeOne(
       return { edgeId: e.edgeId, skel: [aH, bH], route: 'h-slip', stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
     }
   }
-  // ④ band：通用态（x 不对齐/多带 zigzag——段全集尽或无槽 return null）
-  const band = bandSkeleton(src, tgt, tc.y >= sc.y, snap, obstacles, cards, use, e.sourceId, e.targetId)
+  // ④ band：通用态（x 不对齐/多带 zigzag——段全集尽或无槽 return null；
+  //  [RR1 W3] 通道槽占用经 chanUse 与 detour 跨态共享）
+  const band = bandSkeleton(src, tgt, tc.y >= sc.y, snap, obstacles, cards, use, chanUse, e.sourceId, e.targetId, e.edgeId)
   if (band !== null && polylineClearStubs(band.skel, ends, obstacles)) {
     commit(band.picks)
     return {

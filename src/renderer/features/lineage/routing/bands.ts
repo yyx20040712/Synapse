@@ -14,7 +14,7 @@
 import { anchorPick, anchorPoint, sideAnchor, stubEnd, type AnchorUse, type Pt, type Rect, type Side } from './anchors'
 import { PAD, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
-import { byTotalOrder, gridChannelsOf } from './detour'
+import { byTotalOrder, gridChannelsOf, type ChannelUse } from './detour'
 import { midSlotOf } from './gap-cells'
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
@@ -67,26 +67,30 @@ const vClear = (x: number, y1: number, y2: number, obstacles: readonly Rect[]): 
   !segHitsAny({ x, y: y1 }, { x, y: y2 }, obstacles)
 
 /** 下降 x 候选（[F-SLOTGRID-01 U2] 重写）：y 夹层〔by, nextY〕正相交的网格通道
- *  槽位全集，按候选全序（拐弯数〔x===curX=0 拐〕→|x−refX|→x）排序去重——
- *  框外空白/列缝中线候选随走廊退役删除（坐标集封闭） */
+ *  槽位全集，按候选全序（拐弯数〔x===curX=0 拐〕→|x−refX|→x）排序——**[RR1
+ *  W3] 槽位级空槽判定**（ChannelUse 占用剔除——「下一段顺位首空槽」，detour
+ *  与共用实例跨态共享）；框外空白/列缝中线候选随走廊退役删除（坐标集封闭） */
 function descendCandidates(
   snap: LayoutSnapshot,
   y1: number,
   y2: number,
   refX: number,
-  curX: number
-): number[] {
+  curX: number,
+  chanUse: ChannelUse
+): Array<{ key: string; idx: number; x: number }> {
   const lo = Math.min(y1, y2)
   const hi = Math.max(y1, y2)
-  const cands = gridChannelsOf(snap)
+  return gridChannelsOf(snap)
     .filter((ch) => ch.yLo < hi && ch.yHi > lo)
-    .flatMap((ch) => ch.slots.map((x) => ({ x })))
+    .flatMap((ch) => ch.slots.map((x, idx) => ({ key: ch.key, idx, x })))
+    .filter((c) => !chanUse.has(c.key, c.idx))
     .sort(byTotalOrder<{ x: number }>(refX, curX))
-  return [...new Set(cands.map((c) => c.x))]
 }
 
-/** 带路由骨架（zigzag：每带先试目标 x 终落；阻塞经通道槽位候选降下一带；
- *  横移 y=带槽位中位——midSlotOf null=带封闭剔除〔高<36 不可横移〕） */
+/** 带路由骨架（zigzag：每带先试目标 x 终落；阻塞经通道槽位候选降下一带
+ *  ——[RR1 W3] 顺位首**空**槽（ChannelUse 剔除，胜出槽随成功态 commit——
+ *  与 detour 共用同一实例）；横移 y=带槽位中位——midSlotOf null=带封闭剔除
+ *  〔高<36 不可横移〕） */
 export function bandSkeleton(
   src: Rect,
   tgt: Rect,
@@ -95,8 +99,10 @@ export function bandSkeleton(
   obstacles: readonly Rect[],
   cards: readonly Rect[],
   use: AnchorUse | undefined,
+  chanUse: ChannelUse,
   srcId: string,
-  tgtId: string
+  tgtId: string,
+  edgeId: string
 ): BandRoute | null {
   const sc = center(src)
   const tc = center(tgt)
@@ -135,6 +141,7 @@ export function bandSkeleton(
   // descend 目标 x=几何首选锚 x（use=undefined 时数值全等，routeAll 语义取
   // 几何首选与占用正交一致——[回炉 W2] 沿承）
   const tgtAnchorX = anchorPoint(tgt, endSide, base).x
+  const pendingSlots: Array<{ key: string; idx: number }> = []
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i]!
     const by = moveYOf(band)
@@ -152,17 +159,19 @@ export function bandSkeleton(
         [srcId, pa.side, pa.slot],
         [tgtId, side, slot]
       ]
+      for (const s of pendingSlots) chanUse.commit(s.key, s.idx, edgeId)
       return { skel, laneY: by, s: band.s, cap, picks }
     }
     if (i === bands.length - 1) return null
     const next = bands[i + 1]!
     const nextY = moveYOf(next)
     let moved = false
-    for (const x of descendCandidates(snap, by, nextY, tgtAnchorX, curX)) {
-      if (vClear(x, by, nextY, obstacles)) {
-        if (x !== curX) skel.push({ x, y: by })
-        skel.push({ x, y: nextY })
-        curX = x
+    for (const c of descendCandidates(snap, by, nextY, tgtAnchorX, curX, chanUse)) {
+      if (vClear(c.x, by, nextY, obstacles)) {
+        if (c.x !== curX) skel.push({ x: c.x, y: by })
+        skel.push({ x: c.x, y: nextY })
+        curX = c.x
+        pendingSlots.push({ key: c.key, idx: c.idx })
         moved = true
         break
       }
