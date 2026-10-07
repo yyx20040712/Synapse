@@ -10,7 +10,8 @@
  *   P7b 开启）。
  * - buildSnapshot/edgeVisualStyle=拆件 edge-overlay-geom.ts（路由层零 DOM import）。
  * - 重算触发 rAF 合并：shiftedIds/groups/RO(.tl-content)/edges/nodes/routeEpoch
- *   （父不动点收敛 bump）；测量冻结期（.tl-measure）不采集。
+ *   （父布局变更 bump——use-capacity-layout W 变/拖拽 settle；[F-SLOTGRID-01
+ *   U1] 瀑布测量冻结期〔.tl-measure〕守卫随瀑布退役删除）。
  * - routeAll 降级 onWarn=console.warn（回炉 1 W2/k1-N5——生产不静默）；
  *   paths 按 edgeId Map 配对渲染（回炉 1 W5——禁下标 zip）。
  */
@@ -31,7 +32,7 @@ export function EdgeOverlay(props: {
   edges: LineageEdge[]
   shiftedIds: ReadonlySet<string>
   groups: TimelineYearGroup[]
-  /** 回炉 1 W1/W6：父组件不动点收敛/守卫分支 bump——子 effect 再触发信号 */
+  /** 回炉 1 W1/W6：父组件布局变更（W 变/拖拽 settle）bump——子 effect 再触发信号 */
   routeEpoch: number
   /** [T3-P8] 拖起态连线层淡化（mockup .dimmed opacity .18——飞行脱节已知
    *  限制的掩盖面：拖起+settle transitionend 单次重算，不帧随动） */
@@ -115,7 +116,6 @@ export function EdgeOverlay(props: {
     let raf = 0
     const run = (): void => {
       raf = 0
-      if (content.classList.contains('tl-measure')) return // 冻结期旧路径由 CSS 隐去
       const next = routeAll(live.inputs, buildSnapshot(content), (msg) => console.warn(msg))
       setPaths(next)
       // [F-ANCHFIX-01 批 1c] 占用态 rAF 单写者 wholesale 发布（setPaths 后

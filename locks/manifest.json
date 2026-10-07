@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T11:00:14.8329131Z",
+    "generatedAt":  "2026-10-07T13:40:22.0035094Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "be832b72e201cb80e540f043759adc6776fa8395a7942cfe016e3c48e2a0fef1"
+                      "sha256":  "36798ff5e2d16ebc5f47f0ded64fddbcbaa7452cd3ed23c09bf577040f7b9fc4"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "90d2ee86986ecd02c2599efa02d2b3301e9004c65668237bf564aa801490cb34"
+                      "sha256":  "c3ba1319057a6c921a1a948cbe638882f932b35930c25445cb70098dc1b7a488"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "7771517392b1a8c4f37a5e23709a0925af8d5e541981b4edb4ebcbe6b3855e29"
+                      "sha256":  "3958e0e3aa9f47b8826fe2c90ab84d051e3c76c2da0d17d7ce0eade9b5c444ff"
                   },
                   {
                       "path":  "tests/e2e/lineage-anchor-consistency.spec.ts",
@@ -307,7 +307,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage-obstacle-audit.spec.ts",
-                      "sha256":  "386493c2e1148e6646594116c7af0d639a8115600f85ea5872e86193a91fb242"
+                      "sha256":  "a253ea16d062d9ac94e43c5391bcf7f3c273cdd0e4bd3dc652b6334b9ee52e94"
                   },
                   {
                       "path":  "tests/e2e/lineage-route-slots.spec.ts",
@@ -734,8 +734,12 @@
                       "sha256":  "93f3fec9398ef3cf06c0078c6b65b8561608960cab62c4908eeff8e380c8557e"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-capacity.test.ts",
+                      "sha256":  "9a5f746ba7b35f2e1bbf9fd55db38433220eb2d9d4444fe0d47b266888c605ec"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
-                      "sha256":  "eeb7eba8a79a5e11865ab0baefe3fcceef4b7d8348363ce2059d02b2efadc7b8"
+                      "sha256":  "109fb4d8324698b592d086d99f1f47fe9fb0148194da72a39f07149cd27463ab"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-flight.test.ts",
@@ -787,7 +791,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-                      "sha256":  "4e1c95f88f3b47f02138c06a9d52564ede283da3bd8998f7178a7245d5042817"
+                      "sha256":  "b11c354df11fb0285344e84bd86a4bca3054d9628dfe6012dcc5b18abb9f0537"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-manual-edit.test.tsx",
@@ -823,7 +827,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
-                      "sha256":  "19177669dd86bd12ae132b764093aae8ca90dc183f18b8c3cfa1b6fd1732dbe1"
+                      "sha256":  "306bd79034217b4bafa68ce70b5fb37019dc622bda65a3174c94dd506714205f"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-assign.test.ts",
@@ -883,7 +887,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline.test.tsx",
-                      "sha256":  "77a7cb61b82b809511b5f9fccc672ff82bb472ba65b732ad8c3bf28d6f8fc42f"
+                      "sha256":  "246aee540036f7a34f13dd55bc876dff5fa6290a9d5aa6bd58a1c021e7358815"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-timeline-edit.test.tsx",

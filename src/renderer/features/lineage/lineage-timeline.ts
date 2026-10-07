@@ -8,10 +8,9 @@
  *   lineageOrder 全序（INV-75 消费方不得重排）；排序面仅分组键。计数
  *   （年头「N 篇」/月标签「M 月 · N 篇」/「未定月 · N 篇」）自分组结果
  *   派生（消费方=LineageTimeline 渲染面直接取 nodes.length——禁第二实现）。
- * - rowsFromOffsetTops(tops)：框内分行——offsetTop 相等=同行，行索引=去重
- *   值升序位次；消费方=waterfallOffsets（[F-LINEAGE-02 裁决 2] 瀑布错位：
- *   年内跨月框接续行号 R→(R×82) mod 148 inline margin-left——.rowshift
- *   62px 交替类已随布局改版退役）。
+ * - [F-SLOTGRID-01 U1] 瀑布族（rowsFromOffsetTops/WATERFALL_STEP/
+ *   WATERFALL_PITCH/collectWaterfallFrameRows/waterfallOffsets）随瀑布布局
+ *   退役删除——分行数学移驻 capacity.ts（partitionRows 数组序贪心单源）。
  */
 import type { LineageNode } from '@shared/models/lineage'
 
@@ -53,68 +52,6 @@ export function groupTimeline(nodes: readonly LineageNode[]): TimelineYearGroup[
       months: [...months.keys()].sort(nullLast).map((month) => ({ month, nodes: months.get(month)! }))
     }
   })
-}
-
-export function rowsFromOffsetTops(tops: readonly number[]): number[] {
-  const distinct = [...new Set(tops)].sort((a, b) => a - b)
-  const rowIndex = new Map(distinct.map((v, i) => [v, i]))
-  return tops.map((v) => rowIndex.get(v)!)
-}
-
-// ── [F-LINEAGE-02 裁决 2/P-15] 瀑布错位（行内等距+行间递增+年内复位） ──
-/** 步长=卡高 72+半隙 10（F-LGRAPH-01 P-15 定案） */
-export const WATERFALL_STEP = 82
-/** 节距=卡宽 128+行内间距 20（mod 域——保缝隙不对齐且不出框） */
-export const WATERFALL_PITCH = 148
-
-/** 月框行采集单元（year=所属年；rows=(nodeId, 框内行索引)——DOM 序） */
-export interface WaterfallFrameRows {
-  year: number | null
-  rows: ReadonlyArray<readonly [string, number]>
-}
-
-/**
- * 瀑布错位纯函数：年内跨月框连续累计行号 R（同年各框行接续计数；新年/
- * 未定年框从 0 起）→ offset(R)=(R×82) mod 148。仅错位量>0 的卡入表
- * （R=0 与 R≡0 mod 74 的对齐行不挂——消费方按表缺失=无 inline）。
- */
-/** DOM 采集：.tl-year(data-year) 逐 .month-frame 收集 (nodeId, 框内行索引)
- *  ——行=rowsFromOffsetTops(offsetTop)；Timeline 不动点迭代 effect 单点消费 */
-export function collectWaterfallFrameRows(content: HTMLElement): WaterfallFrameRows[] {
-  const frameRows: WaterfallFrameRows[] = []
-  for (const section of Array.from(content.querySelectorAll<HTMLElement>('.tl-year'))) {
-    const raw = section.getAttribute('data-year') ?? 'null'
-    const year = raw === 'null' ? null : Number(raw)
-    for (const frame of Array.from(section.querySelectorAll('.month-frame'))) {
-      const cards = Array.from(frame.querySelectorAll<HTMLElement>('[data-node-id]'))
-      const rows = rowsFromOffsetTops(cards.map((c) => c.offsetTop))
-      frameRows.push({
-        year,
-        rows: cards.map((card, i) => [card.dataset.nodeId ?? '', rows[i]!] as const)
-      })
-    }
-  }
-  return frameRows
-}
-
-export function waterfallOffsets(frames: readonly WaterfallFrameRows[]): Map<string, number> {
-  const out = new Map<string, number>()
-  let prevYear: number | null | undefined
-  let base = 0
-  for (const f of frames) {
-    if (f.year !== prevYear) {
-      base = 0
-      prevYear = f.year
-    }
-    let maxRow = 0
-    for (const [id, row] of f.rows) {
-      const offset = ((base + row) * WATERFALL_STEP) % WATERFALL_PITCH
-      if (offset > 0) out.set(id, offset)
-      if (row > maxRow) maxRow = row
-    }
-    base += maxRow + 1
-  }
-  return out
 }
 
 /** [T3-P8] 月组框稳定键（year|month——拖拽源框/占位槽/框查询共用） */

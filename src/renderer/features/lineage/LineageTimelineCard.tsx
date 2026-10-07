@@ -25,7 +25,8 @@
  *   承接面=LineageSidePanel 头部操作行，编排与通道零改动）。
  * - 皮肤住 theme-lineage.css .c-l1/.c-l2/.c-l3 族（旧 .c-head/.c-idea/.c-meta
  *   随三层重整退役——退役行 8）。
- * - data-node-id=e2e/测试结构锚；瀑布错位=offset px inline margin-left 承载。
+ * - data-node-id=e2e/测试结构锚；[F-SLOTGRID-01 U1] 瀑布错位 offset prop
+ *   （inline margin-left 承载）随瀑布退役删除——卡位=行容器网格（.tl-row）。
  */
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { type LineageNode } from '@shared/models/lineage'
@@ -63,8 +64,6 @@ export function LineageTimelineCard(props: {
    *  D 批〕） */
   tagNames?: Record<string, string[]>
   selected: boolean
-  /** [F-LINEAGE-02] 瀑布错位量 px（P-15：步 82/节距 148/年内复位） */
-  offset: number
   /** [T3-P7B] 拾取源高亮（.link-src） */
   linkSrc: boolean
   /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
@@ -99,8 +98,6 @@ export function LineageTimelineCard(props: {
   ]
     .filter((c) => c !== '')
     .join(' ')
-  // 瀑布错位=按卡 inline（.rowshift 类退役先例——inline style 直传）
-  const style = props.offset > 0 ? { marginLeft: `${props.offset}px` } : undefined
   // L1 标签列：最多 2+溢出 +N（无标签=零渲染）——[A1a 换源] 文献库标签域
   // 伴生 map（键=paperId；paperId null 直接短路 []——不造 '' 哨兵键。
   // [F-ALIGN-01·执行修正] 短路保留=DDL 窗口期防御：paper_id 列可空类型镜像，
@@ -115,7 +112,6 @@ export function LineageTimelineCard(props: {
   return (
     <article
       className={cls}
-      style={style}
       data-node-id={n.id}
       data-kind={kind}
       onPointerDown={(e) => props.onCardPointerDown?.(n.id, e)}

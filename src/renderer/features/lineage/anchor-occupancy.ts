@@ -14,8 +14,8 @@
  * undefined；内容全等（逐键相同）重复 publish 不通知订阅者。
  *
  * 边界（已知申报）：EdgeOverlay 卸载不清场——锚层与连线层同树同亡
- * （.tl-content 子树），无悬挂消费面；测量冻结期（.tl-measure）run 早退=
- * 占用集随旧路径保持（CSS 隐去同相）。
+ * （.tl-content 子树），无悬挂消费面；测量冻结期（.tl-measure）run 早退
+ * 条款随 [F-SLOTGRID-01 U1] 瀑布退役删除——run 无冻结分支。
  */
 /** 占用键（t/b/l/r×0/1/2——anchors.ts anchorId 字母表镜像；显示域≡判定域） */
 export type AnchorSlotKey = 't0' | 't1' | 't2' | 'b0' | 'b1' | 'b2' | 'l0' | 'l1' | 'l2' | 'r0' | 'r1' | 'r2'

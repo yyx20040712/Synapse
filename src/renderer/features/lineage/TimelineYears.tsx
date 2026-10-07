@@ -2,13 +2,18 @@
 // b3: T3-P8
 /**
  * [T3-P7B] TimelineYears —— 年/月/卡渲染体（LineageTimeline 拆件——组件
- * 250 行红线；纯展示：分组遍历+编号/选中/瀑布错位/拾取源高亮全经
- * props，交互回调沿 TimelineCallbacks 透传）。
+ * 250 行红线；纯展示：分组遍历+编号/选中/拾取源高亮全经 props，交互回调沿
+ * TimelineCallbacks 透传）。
+ * [F-SLOTGRID-01 U1] 月框行容器化：.month-frame 内由平铺卡改为
+ * .month-frame > .tl-row > .tl-card 网格分行（数组序贪心分行=capacity.ts
+ * partitionRows 单源；W=宿主 frameW prop——unmeasured〔0〕降级全部卡入
+ * 首行单行，DOM 序不变）；瀑布错位 offsets prop 链随瀑布退役删除。
  * [T3-P8] 槽位拖拽渲染：dragSlot 在场时源月组按「其余卡+拖卡@insertIdx」
  * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡尾挂 .dragging
  * **absolute 离流**（定位驻卡链 offsetParent——坐标域见 card-drag-session）
  * +框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
- * FLIP 飞行由 useCardDrag 命令式接管）。
+ * FLIP 飞行由 useCardDrag 命令式接管）。**占位与拖卡仍在 kids 数组原位
+ * 参与分行**（占位=行内槽位；拖卡 .dragging absolute 离流不占位）。
  * [F-UIRES-03 C3] 改月飞行 flash 高亮+月标点击回调随改月链退役删除
  * （INV-107）；[F 项搭车] 头注「fixed 离流」陈旧句按真实机制改写
  * （absolute 非 fixed——含块=.month-frame，见 card-drag-session 头注）。
@@ -20,6 +25,7 @@ import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { TimelineYearGroup } from './lineage-timeline'
 import { frameKeyOf } from './lineage-timeline'
+import { partitionRows } from './capacity'
 import { LineageTimelineCard } from './LineageTimelineCard'
 import { DragCandidates } from './drag-slot-candidates'
 import type { DragSlotPreview } from './useCardDrag'
@@ -58,8 +64,9 @@ export function TimelineYears(props: {
   selectedNodeId: string | null
   /** [②U5] 右键反馈：节点菜单目标卡 accent 描边（.ctx-hlt——菜单关即撤） */
   ctxNodeId?: string | null
-  /** [F-LINEAGE-02] 瀑布错位表（nodeId→margin-left px；缺席=无错位） */
-  offsets: ReadonlyMap<string, number>
+  /** [F-SLOTGRID-01 U1] 月框内容宽（use-capacity-layout 量测；0=unmeasured
+   *  降级=全部卡入首行单行——jsdom/空图同态） */
+  frameW: number
   /** [T3-P7B] 拾取源卡高亮（composer target 相位） */
   linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
@@ -88,7 +95,6 @@ export function TimelineYears(props: {
       ctx={props.ctxNodeId === n.id}
       focused={props.focusIds?.has(n.id) === true}
       dim={props.dimUnfocused === true && props.focusIds?.has(n.id) !== true}
-      offset={props.offsets.get(n.id) ?? 0}
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
@@ -163,7 +169,14 @@ export function TimelineYears(props: {
                         ? `未定月 · ${m.nodes.length} 篇`
                         : `${m.month} 月 · ${m.nodes.length} 篇`}
                     </span>
-                    {kids}
+                    {/* [F-SLOTGRID-01 U1] 行容器逐行渲染（数组序贪心分行——
+                        占位/拖卡按 kids 原位入行；.tl-row 保持 static
+                        position——拖拽 .dragging absolute 包含块链不变） */}
+                    {partitionRows(kids.length, props.frameW).map((row, r) => (
+                      <div className={r % 2 === 1 ? 'tl-row odd' : 'tl-row'} key={r}>
+                        {row.map((i) => kids[i]!)}
+                      </div>
+                    ))}
                     {isSrc && slot !== null && slot.active && (
                       <DragCandidates
                         frameKey={key}

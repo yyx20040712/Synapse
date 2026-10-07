@@ -445,9 +445,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(items.every((e) => e.querySelector('i') !== null)).toBe(true)
   })
 
-  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；测量期 opacity:0（--dur-tint 过渡）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位', () => {
+  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位', () => {
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow:\s*visible;[^}]*z-index:\s*1/)
-    expect(css).toMatch(/\.tl-content\.tl-measure \.tl-edges\s*\{[^}]*opacity:\s*0/)
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*transition:\s*opacity var\(--dur-tint\)/)
     // [F-LGRAPH-01②U8] 四 kind 色 selector 退役负锚（视觉=inline dashed/color）
     expect(css).not.toMatch(/\.tl-edge\[data-kind/)

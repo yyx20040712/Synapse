@@ -54,7 +54,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
     expect(r.d).toBe('M 164 172 L 164 300')
   })
 
-  it('① direct 阻挡降级：中列障碍卡拦竖段 → ③ band 行隙带承接（同框跨行瀑布错位吸收）', () => {
+  it('① direct 阻挡降级：中列障碍卡拦竖段 → ③ band 行隙带承接（同框跨行错位吸收——legacy 夹具几何〔隙 20/行距 92〕，[F-SLOTGRID-01] 走线重基线归 U2）', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(100, 100, CARD_W, CARD_H)],
@@ -67,7 +67,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
     expect(r.route).toBe('band')
     // 手推：tc=(246,228)→A 底锚 ¾ 序 (196,172)；sc=(164,136)→B 顶锚 ¼ 序
     // (214,192)；行隙带 [172,192]（卡 y 区间夹缝，宽 20>s 下限）中心 y=182；
-    // 锚 x≠目标 x（瀑布错位）→带内横移；桩 10px→拐角 r=min(6,5,9)=5
+    // 锚 x≠目标 x（行间错位——legacy 夹具几何，U2 重基线）→带内横移；桩 10px→拐角 r=min(6,5,9)=5
     expect(r.d).toBe('M 196 172 L 196 177 Q 196 182 201 182 L 209 182 Q 214 182 214 187 L 214 192')
     expect(r.lane).toBe(-1)
   })
@@ -165,7 +165,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
     expect(r.route).toBe('fallback')
     expect(r.lane).toBe(-1)
     expect(onWarn).toHaveBeenCalledTimes(1)
-    // CW 并合全部行→零带；瀑布错位（A 锚 ¾ x=196≠B 锚 ½ x=246）→direct 废；
+    // CW 并合全部行→零带；行间错位（A 锚 ¾ x=196≠B 锚 ½ x=246——legacy 夹具几何）→direct 废；
     // 4 道全穿 CW 膨胀 [736,824]→fallback 贴边 x=794；圆角复检恒红→尖角
     expect(r.d).toBe('M 228 154 L 794 154 L 794 214 L 310 214')
   })
@@ -182,7 +182,7 @@ describe('F-LINEAGE-02 甲链六态（direct→h-slip→band→corridor→fallba
 
 describe('F-LINEAGE-02 曲化复检收缩链（骨架过检后曲化再检——D-L2-5 半径逐半减）', () => {
   it('内对角障碍（label）距骨架 >PAD 但距 r=5 弧 <PAD → 收缩 r=2.5 复检过（d 半径降级手推）', () => {
-    // 基面=band 场景（A/C/B 瀑布）：label(201,173,4,4) 膨胀=[197,209]×
+    // 基面=band 场景（A/C/B 错位三角——legacy 夹具几何，U2 重基线）：label(201,173,4,4) 膨胀=[197,209]×
     // [169,181]（含自身高 4——初稿漏算膨胀底缘）；骨架净空：竖桩 x=196<197、
     // 横段 y=182>181 各 1px 整数余量；r=6 钳 5 弧 x=196+5t² 于 x≥197 段
     // （t≥0.447）y≤180.5 落膨胀带→复检红；收缩链 r=6→3（ROUND_R 减半）：

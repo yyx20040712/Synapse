@@ -23,8 +23,9 @@
  * ── 受锁流程（门一 W3 同型）──
  * - 本文件已入 locks manifest——改动必经 locks:unlock→批内改→locks:apply
  *   +[locked-change] 尾注提交。
- * - 夹具=10 卡单月（换行瀑布五行）+他月单卡+跨年单卡（年份头两处+两位数
- *   骑缝号；探针 p5 校准）。期望几何全实测派生零硬编码。
+ * - 夹具=10 卡单月（[F-SLOTGRID-01 U1] 砖砌网格分行——1280 窗 W≈570→
+ *   行容量 3/2 网格四行〔3,2,3,2〕，瀑布五行形态退役）+他月单卡+跨年单卡
+ *   （年份头两处+两位数骑缝号；探针 p5 校准）。期望几何全实测派生零硬编码。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'

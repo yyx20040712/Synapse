@@ -4,8 +4,10 @@
  *
  * - 分组=lineage-timeline.ts groupTimeline 纯函数（INV-75 消费方不得重排）；
  *   年/月/卡渲染体=TimelineYears 拆件（核徽章链随②U4 退役）。
- * - 瀑布错位（P-15）=timeline-waterfall 拆件；工具条 sticky 驻渲染树——本件
- *   触 store 仅限 view.store（数据域纯 props 可直测）。
+ * - [F-SLOTGRID-01 U1] 布局=W 量测（use-capacity-layout 拆件——行容器网格
+ *   分行见 TimelineYears/capacity.ts）；瀑布不动点迭代（timeline-waterfall）
+ *   随本批退役删除。工具条 sticky 驻渲染树——本件触 store 仅限 view.store
+ *   （数据域纯 props 可直测）。
  */
 import { useMemo, useRef } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
@@ -20,7 +22,7 @@ import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
 import { useLineageViewStore } from './lineage-view.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
-import { useWaterfallOffsets } from './timeline-waterfall'
+import { useCapacityLayout } from './use-capacity-layout'
 import { useTimelinePan } from './timeline-pan'
 import { useTimelineZoom } from './timeline-zoom-hook'
 import { ZoomBadge } from './ZoomBadge'
@@ -43,6 +45,11 @@ export interface TimelineCallbacks {
 
 /** [F-ALIGN-01] 工具条 props 面随建点入口退役删除（TimelineToolbarProps
  *  唯一成员=onAddNode 对话框开关——工具组其余控件直连双 store，容器零注入） */
+
+/** [F-SLOTGRID-01 U1] EdgeOverlay shiftedIds 恒空集（瀑布错位卡集随瀑布
+ *  退役绝源——prop 面留驻待 U2 走线重基线处置；模块级常量=引用稳定，
+ *  EdgeOverlay effect deps 消费面零扰动） */
+const EMPTY_SHIFTED: ReadonlySet<string> = new Set()
 
 export function LineageTimeline(props: {
   nodes: LineageNode[]
@@ -81,10 +88,10 @@ export function LineageTimeline(props: {
   const zoomScale = useLineageViewStore((s) => s.zoom)
   const drawAnchor = useLineageViewStore((s) => s.anchor)
 
-  // 滚动容器 ref 两面：content=.tl-content（瀑布量测）/timeline=根（导航+平移）
+  // 滚动容器 ref 两面：content=.tl-content（W 量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
   const timelineRef = useRef<HTMLDivElement | null>(null)
-  // 拖拽清场→瀑布 routeEpoch 前置接线（hook 初始化序约束——ref 晚绑定）
+  // 拖拽清场→routeEpoch 前置接线（hook 初始化序约束——ref 晚绑定）
   const bumpRouteRef = useRef<() => void>(() => undefined)
 
   // [②U3] 画线子态机（armed=工具态；容器 pointer 流——拖拽互斥闸）
@@ -101,15 +108,11 @@ export function LineageTimeline(props: {
     onReorderMonthSlots: props.onReorderMonthSlots,
     onRouteRecalc: () => bumpRouteRef.current()
   })
-  // 瀑布错位不动点迭代（P-15：机制本体=timeline-waterfall.ts 拆件——组件
-  // 250 行红线；冻结跳过/收敛 bump 细节见该件头注）
-  const waterfall = useWaterfallOffsets({
-    contentRef,
-    recomputeKey: groups,
-    dragPhase: drag.phase
-  })
-  const { offsets, routeEpoch } = waterfall
-  bumpRouteRef.current = waterfall.bumpRoute
+  // [F-SLOTGRID-01 U1] W 量测+布局变更信号（机制本体=use-capacity-layout.ts
+  // 拆件——组件 250 行红线；unmeasured 降级/rAF 合并细节见该件头注）
+  const layout = useCapacityLayout({ contentRef, recomputeKey: groups })
+  const { frameW, routeEpoch } = layout
+  bumpRouteRef.current = layout.bumpRoute
   // [F-LGRAPH-01①U4] 导航窗格联动：索引点击定位+当前月上报（重算键=渲染组）
   useTimelineNavSync(timelineRef, groups)
   // [F-LGRAPH-01①U5] 平移小手：browse/focus 拖空白=滚动跟随（edit 不平移）
@@ -123,11 +126,6 @@ export function LineageTimeline(props: {
   const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: groups })
   // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空（非聚焦卡+全部线 0.3）
   const dimActive = viewMode === 'focus' && focusSet.length > 0
-
-  // EdgeOverlay 再触发信号（错位量>0 的卡集——引用稳定；[回炉 R10/d1-N3]
-  // 局部语义名 offsetIds——EdgeOverlay prop 名 shiftedIds 遗留（改名波及
-  // overlay 测试 4+ 处超 3 文件预算，申报）
-  const offsetIds = useMemo(() => new Set(offsets.keys()), [offsets])
 
   // [U5] 模式类：仅 browse/focus 挂（CSS 光标域消费）；edit 态由 .editing 承载
   //（[回炉 R13] mode-edit 零消费类清理——挂类即须有 CSS 消费）
@@ -196,7 +194,7 @@ export function LineageTimeline(props: {
           <EdgeOverlay
             nodes={nodes}
             edges={edges}
-            shiftedIds={offsetIds}
+            shiftedIds={EMPTY_SHIFTED}
             groups={groups}
             routeEpoch={routeEpoch}
             dimmed={drag.phase === 'dragging'}
@@ -219,7 +217,7 @@ export function LineageTimeline(props: {
             selectedNodeId={props.selectedNodeId ?? null}
             ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}
-            offsets={offsets}
+            frameW={frameW}
             linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : drawAnchor}
             dragSlot={drag.slot}
             dimUnfocused={dimActive}

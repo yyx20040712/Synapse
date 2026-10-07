@@ -852,6 +852,102 @@
       "assertionText": "expect(req('[data-testid=\"draw-anchor-hint\"] circle').getAttribute('cy')).toBe('136')",
       "reason": "F-UIRES-03 C2 RR1-k1N2 选择器收紧防环序漂移：C2 形态演化后 hint svg 内 ring 在 DOM 序前，裸 circle 取序首命中已漂移为 ring（cx/cy 同值故绿=脆弱兼容）——收紧为 circle.snapped（dot 本体），断言文本随选择器改写",
       "rulingLink": "docs/design/2026-10-05_f-uires03-design.md §2 C2"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "相等值归同行：[0,0,72,0,72]→[0,0,1,0,1]（行距 92=卡高 72+隙 20——夹具随批迁移）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：rowsFromOffsetTops 瀑布分行基元随瀑布布局整体删除（分行数学移驻 capacity.ts partitionRows——新例承载）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：rowsFromOffsetTops 瀑布分行基元随瀑布布局整体删除",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "三行递进：[0,72,144]→[0,1,2]",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：rowsFromOffsetTops 瀑布分行基元随瀑布布局整体删除",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "同年两框接续计数：框0 两行+框1 一行 → R=0/1/2 → 偏移 0/82/16（mod 148 不对齐缝隙）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：waterfallOffsets 错位纯函数随瀑布布局整体删除（用户裁决①砖砌=本意、瀑布系术语误会勘误退役）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "新年复位：异年框 R 从 0 起（offset 0 不入表——错位量>0 才挂）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：waterfallOffsets 错位纯函数随瀑布布局整体删除",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "深行错位序列：R=1..4 → 82/16/98/32（82·R mod 148 手推）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：waterfallOffsets 错位纯函数随瀑布布局整体删除",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "瀑布错位挂接：注入 offsetTop 分行→次行卡 inline margin-left=82px（R=1；错位量>0 才挂——依赖=分组结果重算）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：inline margin-left 错位挂接链（offsets prop 链）整体删除——行容器网格新例（measured/unmeasured/拖拽占位三例）承载",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "不动点迭代（d1-W1 回炉）：shift 改变 offsetTop 后复测至收敛——两轮量测后稳定",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：不动点迭代收敛环+timeline-waterfall.ts 源完整性断言随瀑布整体删除（U1 核心简化=无迭代环）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "不动点振荡守卫（k1-W2 回炉）：offsetTop 随 shift 翻转的对抗布局→8 轮上限强制停不崩",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：MAX_ITER 振荡守卫随不动点迭代环整体删除（W=0 降级不死循环防御锁由 capacity 单测+unmeasured 新例承载）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 18px 12px 12px（[F-LINEAGE-02 D-L2-2] 顶 15→18 承载框内月标） gap 20px 20px min-height 58px",
+      "reason": "F-SLOTGRID-01 U1 布局网格化：月框右 margin 58→46（呈裁点 4 corridor 走廊遗产回收）+.month-frame 列容器化（gap 20→72 行隙）+.tl-row 行容器新锁——整例断言随新值重写（新例承载）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "caseTitle": "瀑布错位（P-15：.rowshift 类与 62px 整体退役——错位=inline margin-left 按卡传）：margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡保留+测量冻结规则（三过加固）+零 rowshift 残留负锚",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：margin-left 过渡死项+.tl-measure 冻结规则全删——负锚锁改为三重退役负锚（rowshift/62px 历史负锚沿承，新例承载）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "CSS 锁：svg z=1 低于卡 2+inset/overflow；测量期 opacity:0（--dur-tint 过渡）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：EdgeOverlay 冻结守卫+.tl-measure opacity:0 规则删除——断言随删（例保题改，--dur-tint 过渡断言沿承入新例）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "① direct 阻挡降级：中列障碍卡拦竖段 → ③ band 行隙带承接（同框跨行瀑布错位吸收）",
+      "reason": "F-SLOTGRID-01 U1 术语勘误：标题「瀑布错位」措辞随瀑布退役改写（断言零动——legacy 夹具几何注记入新题，走线重基线归 U2）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂瀑布错位即红——主控探针 t=0 实证形态）",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：测量冻结/错位量测机制消亡——例保题改（dragging 压 0 防御写+tl-measure 零在场断言沿承，U3 网格联动重估）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "[回炉 R1] 瀑布错位卡拖拽无双计：dragging 期 marginLeft 压 0（fixed 盒 left=视觉位）+settle 清场恢复 82px",
+      "reason": "F-SLOTGRID-01 U1 瀑布退役：错位无双计回归锁（offsetTop 注入→82px→压 0→settle 恢复链）随错位机制整体消亡删除——settle 清场序由 R1 零位移/R4 兜底例沿承",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T6 瀑布错位：窄窗 5 卡同月→五行+margin-left=(R×82)mod148 实值+零 rowshift",
+      "reason": "F-SLOTGRID-01 U1 布局网格化：T6 整例改写为砖砌网格锚（行容器分行=capacity 同源公式+奇行错位 100+瀑布退役双负锚——期望值公式驱动替代硬编码，设计 §6 策略）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
     }
   ]
 }

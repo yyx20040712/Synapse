@@ -35,9 +35,12 @@
 .tl-year-num { font-family: var(--serif); font-size: var(--fs-tl-year); color: var(--ink); letter-spacing: 1px; }
 .tl-year-meta { font-family: var(--mono); font-size: var(--fs-micro); color: var(--faint); }
 .tl-year-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-/* 月框：margin 右 58px=P7 连线绕行走廊预留（final-design §2.1）+左 46px；框间距纵 26px */
-.tl-month { margin: 0 58px 26px 46px; position: relative; }
-/* D1 月框统一满宽右缘对齐；D2 卡距横纵 20px（2×——逻辑线从空地穿行）；
+/* 月框：margin 左右 46px（[F-SLOTGRID-01 呈裁点 4] 右 58→46=corridor 右缘
+   走廊遗产回收——通道语义改段式+相位，走廊预留退役）；框间距纵 26px */
+.tl-month { margin: 0 46px 26px 46px; position: relative; }
+/* D1 月框统一满宽右缘对齐；[F-SLOTGRID-01 U1] 月框=列容器（行容器 .tl-row
+   逐行承载卡——分行数学=capacity.ts partitionRows 单源）；行间 gap 72=
+   行距（行隙=列隙=72px，2026-10-07 用户裁决②）；
    mockup 过渡 border-color/background .2s→var(--dur-lazy) 同值 token；
    height .38s=P8 框高动画预留。口径注（d1-N5 回炉）：DURATION 负锚=
    theme.test DURATION_COUNTS 特定字面量集（.08~.3s token 对应值）——
@@ -48,14 +51,18 @@
   /* [F-LINEAGE-02 D-L2-2] 顶 15→18：月标自框外悬浮移入框内顶 padding 承载 */
   padding: 18px 12px 12px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px 20px;
-  align-content: flex-start;
+  flex-direction: column;
+  gap: 72px;
   min-height: 58px;
   position: relative;
   overflow: hidden;
   transition: height .38s cubic-bezier(.22,.9,.26,1), border-color var(--dur-lazy), background var(--dur-lazy);
 }
+/* [F-SLOTGRID-01 U1] 行容器：行内卡列隙 72（节距 200=卡 128+72）；奇行
+   padding-left 100=错位相位 o（呈裁点 1 定值）；**不得加 position**——
+   拖拽 .dragging absolute 离流的包含块链（.month-frame）不能变 */
+.tl-row { display: flex; gap: 72px; }
+.tl-row.odd { padding-left: 100px; }
 /* A4 空月框+P8 拖入提示形态预留（分组自 nodes 派生不造空框数据——票面
    备案：样式类在场无 DOM 消费） */
 .month-frame.empty-frame { border-color: var(--line); }
@@ -81,12 +88,11 @@
    框本体不变体随 dashed --month-dash） */
 .tl-month.unknown .month-tag { color: var(--faint); border-color: var(--line); border-style: solid; }
 
-/* 深底小卡（A9→[F-LINEAGE-02 ①a/P-15] 128×72 基准）；行间瀑布式递增错位
-   =inline margin-left（waterfallOffsets：步 82/节距 148/年内复位——
-   .rowshift 62px 类已退役）；[T3-P8] cursor 复位
+/* 深底小卡（A9→[F-LINEAGE-02 ①a/P-15] 128×72 基准）；[F-SLOTGRID-01 U1]
+   行间错位=行容器网格（.tl-row.odd padding-left 100）——瀑布 inline
+   margin-left 与其 .25s 过渡死项随瀑布退役删除；[T3-P8] cursor 复位
    grab+touch-action none（mockup L243 逐值——拖拽重接随需恢复，k1-N7
-   回炉注兑现）；margin-left 过渡=常态 shift 挂摘平滑（源④——测量期
-   .tl-measure 规则恒优先，特异性 (0,3,0)>(0,1,0)） */
+   回炉注兑现） */
 .tl-card {
   /* [F-LINEAGE-02 ①a/P-15] 基准卡 128×72（卡内部三层结构归 F-LGRAPH-01 ②） */
   width: 128px;
@@ -101,7 +107,6 @@
   position: relative;
   z-index: 2;
   user-select: none;
-  transition: margin-left .25s cubic-bezier(.22,.9,.26,1);
 }
 /* [T3-P8] 拖起态（mockup L248 逐值：离流+z99+拖起阴影+微倾放大+grabbing+
    pointer-events none=settle 期重触发忽略的 CSS 同义面）；[②U7] 定位=
@@ -140,8 +145,8 @@
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
-   测量冻结期（.tl-measure 在场）opacity:0+--dur-tint 过渡防闪跳（D-8 一帧
-   语义：收敛后同帧快照+路由+显示） */
+   [F-SLOTGRID-01 U1] 测量冻结期 opacity:0 规则（tl-measure 族）随瀑布退役
+   删除——无冻结语义；--dur-tint 过渡留驻（dimmed 淡化族消费） */
 /* [②U5 勘误] 可见层根 pointer-events:none 恢复（命中交互全移 .tl-edge-hits
    层——.tl-year z-index:2 整段压住 z1 命中层=e2e 探针实证的真实浏览器缺陷，
    单层 svg 的 z 序与命中可达性冲突，拆双层） */
@@ -155,7 +160,6 @@
   pointer-events: none;
   transition: opacity var(--dur-tint);
 }
-.tl-content.tl-measure .tl-edges { opacity: 0; }
 /* 可见层 [F-LGRAPH-01②U8]：色/纹=边内联 dashed/color（组件层 inline——
    A3 视觉字段直渲染）；基线宽 1.6+悬停高亮（mockup §3.3 票面④ v95-6B：
    hover 线=同色淡化放大——宽 1.6→2.6+opacity 0.65）。
@@ -206,12 +210,8 @@
 .lc.i2 i { border-top-style: dashed; }
 .lc.i3 i { border-top: 2px dotted var(--faint); border-color: var(--faint); }
 .lc.i4 i { border-top-style: dashed; border-color: var(--signal); }
-/* [T3-P6 三过 d1-W1 加固] 测量冻结：瀑布错位迭代期间冻结 margin-left 过渡
-   （[F-LINEAGE-02 ①a] 砖砌→瀑布沿革）——过渡在场时同步量测读到的是起点
-   布局，迭代退化为单轮+空确认且错位引起的行容量变化永不复测（>8 卡同月
-   场景行号偏差真实面）；收敛后类移除，transition 恢复（服务 P8 拖拽位移
-   动画——错位变化本身无平滑=备案） */
-.tl-content.tl-measure .tl-card { transition: none; }
+/* [F-SLOTGRID-01 U1] 测量冻结规则（tl-measure 族 transition:none——瀑布
+   错位迭代冻结面）随瀑布退役删除；错位=行容器网格常态渲染无过渡语义 */
 .tl-card:hover { border-color: var(--accent); }
 /* sel=inset 1.6px accent 环+外辉（mockup 裸色值→--shadow-tl-sel token
    承载——check-quality 色值字面量禁令，注释面同禁 ⑤ 裁决） */

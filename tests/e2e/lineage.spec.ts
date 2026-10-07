@@ -62,6 +62,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
+import { partitionRows } from '../../src/renderer/features/lineage/capacity'
 import { createMultiPagePdf, createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 import { expectRectNear, freezeAnimations, zoomProbe } from './geo-probes'
 import {
@@ -600,14 +601,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * T6=[F-LINEAGE-02 ①a/P-15] 瀑布错位真机锚（.rowshift 62px 交替退役）：
-   * 默认视口一行容多卡不换行（T1-T5 单卡每框=零判别力）——窄窗 720px
-   * （侧板 288px 挤压月框内容区≈244px→每行 1 卡）+5 卡同月 fixture→5 行；
-   * 断言各卡 inline margin-left 实值=(R×82) mod 148（R=行号 0..4→
-   * [无,82,16,98,32]——手推独立期望）+跨行 y 递增+零 rowshift 残留
-   * （不动点迭代收敛后的稳定态证据；非收敛/乱序即红）。
+   * T6=[F-SLOTGRID-01 U1] 砖砌卡槽网格真机锚（瀑布错位退役——inline
+   * margin-left 断言随机制删除）：默认视口一行容多卡不换行（T1-T5 单卡
+   * 每框=零判别力）——窄窗 720px（月框内容区窄→每行 1 卡确证换行）+5 卡
+   * 同月 fixture；**期望值=capacity.ts 同源计算**（W=首月框 computed width
+   * 实测〔布局盒读数 zoom 正交——设计 §5.2〕→partitionRows 派生行数/每行
+   * 卡数——公式驱动断言替代硬编码坐标，设计 §6 策略）；奇行错位=o=100
+   * 实测（行 1 首卡 x−行 0 首卡 x=100）；跨行 y 递增；卡零 inline
+   * margin-left+零 rowshift 残留（瀑布退役双负锚）。
    */
-  test('T6 瀑布错位：窄窗 5 卡同月→五行+margin-left=(R×82)mod148 实值+零 rowshift', async () => {
+  test('T6 [F-SLOTGRID-01] 砖砌网格：窄窗 5 卡同月→行容器分行=capacity 同源公式+奇行错位 100+零 margin-left 残留', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -629,62 +632,80 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-    await win.setViewportSize({ width: 720, height: 800 })
+    await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+
+    // [回炉 r1 d1-N8] 硬编码锚：默认宽档（1280）首行卡数===3（裸数字——
+    // 非公式派生；W≈570→N=3 实测锚。全链公式断言的同源自引用恒真防线）
+    await expect
+      .poll(async () => await win.locator('.month-frame').first().locator('.tl-row').first().locator('.tl-card').count(), { timeout: 5000 })
+      .toBe(3)
+
+    // 窄档换行面：720（每行 1 卡确证换行）
+    await win.setViewportSize({ width: 720, height: 800 })
 
     // 单月框 5 卡+月标签计数
     const frame = win.locator('.month-frame').first()
     expect(await frame.locator('.tl-card').count()).toBe(5)
     await expect(win.getByText('5 月 · 5 篇')).toBeVisible()
 
-    // 瀑布：按实测分行断言（窄窗下侧板 288px 挤压月框内容区≈244px→每行
-    // 1 卡、5 行；行容量不钉死——以「unique offsetTop 升序=行号」推导期望
-    // 错位集，与组件 rowsFromOffsetTops+waterfallOffsets 同型）。[三过
-    // d1-W2 加固] 几何量测置于 margin 稳定态之后（过渡中期读几何=非确定红面）
-    const cards = frame.locator('.tl-card')
-    const ids = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.nodeId ?? ''))
-    const ys = await cards.evaluateAll((els) => els.map((e) => (e as HTMLElement).offsetTop))
-    const rowTops = [...new Set(ys)].sort((a, b) => a - b)
-    expect(rowTops.length).toBeGreaterThan(1) // 确证换行（≥2 行）——一行放得下则此锚红
-    // 期望=offset(R)=(R×82) mod 148 手推（R=年内连续行号：0/1/2/3/4→
-    // 0/82/16/98/32；R=0 无 inline）
-    const expected = new Map(ids.map((id, i) => [id, `${(rowTops.indexOf(ys[i]!) * 82) % 148}px`]))
-    // margin-left：过渡动画 .25s 中读值为中间态——poll 至稳定态（同时锁
-    // 「transition 后真到位」的时间维度语义；几何断言随之稳定）
+    // [F-SLOTGRID-01 U1] W 实测（首月框 computed width=布局盒读数——
+    // transform 正交）→capacity.ts 同源期望（行数/每行卡数——公式驱动）
+    const w = await frame.evaluate((el) => parseFloat(getComputedStyle(el).width))
+    const rowsExpected = partitionRows(5, w)
+    expect(
+      rowsExpected.length,
+      `T6 换行确证（W=${w.toFixed(1)}→行数 ${rowsExpected.length}>1——一行放得下则此锚红）`
+    ).toBeGreaterThan(1)
+    // poll 至 W 量测落地（RO→rAF→重渲染分行——unmeasured 单行降级态先渲染一帧）
     await expect
-      .poll(
-        async () =>
-          await cards.evaluateAll(
-            (els, pairs) => {
-              const want = new Map(pairs)
-              return els.filter((e) => getComputedStyle(e).marginLeft === (want.get((e as HTMLElement).dataset.nodeId ?? '') ?? '0px')).length
-            },
-            [...expected.entries()]
-          ),
-        { timeout: 3000 }
+      .poll(async () => await frame.locator('.tl-row').count(), { timeout: 5000 })
+      .toBe(rowsExpected.length)
+    const rowCards = []
+    for (let r = 0; r < rowsExpected.length; r++) {
+      rowCards.push(await frame.locator('.tl-row').nth(r).locator('.tl-card').count())
+    }
+    expect(rowCards, `T6 每行卡数=partitionRows 同源（W=${w.toFixed(1)}）`).toEqual(
+      rowsExpected.map((row) => row.length)
+    )
+    // 奇行 .odd 挂类（错位相位 o=100 承载——行号奇偶与类一致）
+    const oddFlags = await frame.locator('.tl-row').evaluateAll((els) =>
+      els.map((e) => e.classList.contains('odd'))
+    )
+    expect(oddFlags).toEqual(rowsExpected.map((_, r) => r % 2 === 1))
+    // 奇行错位实值：行 1 首卡 x−行 0 首卡 x=o=100（呈裁点 1 定值——zoom=1 档）
+    const x0 = (await frame.locator('.tl-row').nth(0).locator('.tl-card').first().boundingBox())!.x
+    const x1 = (await frame.locator('.tl-row').nth(1).locator('.tl-card').first().boundingBox())!.x
+    expect(Math.abs(x1 - x0 - 100), `T6 奇行错位=o=100 实测（x1−x0=${(x1 - x0).toFixed(1)}±0.5px）`).toBeLessThanOrEqual(0.5)
+    // 瀑布退役双负锚：卡零 inline margin-left+零 rowshift 残留（在场即红）
+    expect(
+      await frame.locator('.tl-card').evaluateAll((els) =>
+        els.every((e) => (e as HTMLElement).style.marginLeft === '')
       )
-      .toBe(5)
-    // 零 rowshift 残留负锚（类退役——在场即红）
+    ).toBe(true)
     expect(await frame.locator('.tl-card.rowshift').count()).toBe(0)
-    // 跨行实证：末行卡 y 严格大于首行卡（换行真发生——非同行右移）
-    const lastRowY = (await cards.nth(ids.length - 1).boundingBox())!.y
-    const firstRowY = (await cards.first().boundingBox())!.y
-    expect(lastRowY).toBeGreaterThan(firstRowY)
+    // 跨行实证：末行首卡 y 严格大于首行首卡（换行真发生——非同行右移）
+    const yFirst = (await frame.locator('.tl-row').nth(0).locator('.tl-card').first().boundingBox())!.y
+    const yLast = (
+      await frame.locator('.tl-row').nth(rowsExpected.length - 1).locator('.tl-card').first().boundingBox()
+    )!.y
+    expect(yLast).toBeGreaterThan(yFirst)
 
     await app.close()
   })
 
   /**
    * T6n [F-ROUTE-02 U5 非空卫族普查——R1/R2 同族（裁决部 W 级承接）]：
-   * dataset.nodeId 读点非空卫。T6 期望 Map 按 ids 保序构造——单卡
-   * data-node-id 缺失时 '' 键恰好映射该卡自身期望值（margin-left 判别
-   * 恒过；≥2 卡缺失 Map 才坍缩红）=空读恒过形态（RR1 变异 4b 同族）；
-   * 既有 T6 断言面受 test-surface 精确签名冻结（用例内增长=MISSING_CASE），
-   * 本卫以新用例承载（夹具沿 T6 同型），钉「卡集全携带非空 data-node-id」
-   * 属性契约（LineageTimelineCard 写入面）。
+   * dataset.nodeId 读点非空卫。[F-SLOTGRID-01 U1 勘正] 历史「T6 期望 Map
+   * 按 ids 保序构造——'' 键恰好映射自身期望值」的 margin-left 判别盲区
+   * 论证随瀑布断言退役改述：T6 现为行容器结构断言（dataset.nodeId 仍为
+   * e2e/路由结构锚——空读卫独立承载）；既有 T6 断言面受 test-surface
+   * 精确签名冻结（用例内增长=MISSING_CASE），本卫以独立用例承载（夹具
+   * 沿 T6 同型），钉「卡集全携带非空 data-node-id」属性契约
+   * （LineageTimelineCard 写入面）。
    */
-  test('T6n [U5 普查] nodeId 非空卫：瀑布卡集 data-node-id 全非空（R1/R2 同族）', async () => {
+  test('T6n [U5 普查] nodeId 非空卫：卡集 data-node-id 全非空（R1/R2 同族）', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t6n-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -728,7 +749,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * ≥14px）。
    * [回炉 W3 守卫边界] band 由卡位派生，两档 d 全等为批 3 探针实证——
    * stale 路径区分=contentW poll+route 复核弱守卫；强守卫（收窄触发卡
-   * 换行重排）由 T6 瀑布错位用例承载（主控挂账知悉）。
+   * 换行重排）由 T6 网格分行用例承载（[F-SLOTGRID-01 U1] 网格布局下
+   * 本例夹具单卡每框=卡零迁移，换行重排面归 T6；主控挂账知悉）。
    */
   test('T-P1b resize 直证：两档视口→route=band+路径卡锚定几何两档全等+线-卡 y 相对关系恒定', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
@@ -832,15 +854,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         }
         return true
       })
-    // (a) 首条树边（根→甲）route=band（批 3 散开承接——corridor 参数族
-    // 谓词随绕右形态退役）
+    // (a) 首条树边（根→甲）route=band（批 3 散开承接——右缘走廊形态已退役
+    // 〔F-SLOTGRID-01 走线正统化归 U2〕）
     await expect.poll(async () => (await measure()).route).toBe('band')
     const m1 = await measure()
     // (c) 首档不穿月标
     expect(await pathClearOfTags()).toBe(true)
     // 第二档：收窄 280px——ResizeObserver+rAF 重算后 poll（CSS 宽同步先变、
     // rAF 重算晚帧——只 poll contentW 会取到陈旧路径坐标，[回炉 R4] 沿承；
-    // route 面随 poll 复核=窄档重算不退 corridor/fallback）
+    // route 面随 poll 复核=窄档重算不退降级态）
     await win.setViewportSize({ width: 1000, height: 860 })
     await expect
       .poll(async () => {
@@ -1606,6 +1628,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * 即红。insertIdx 更新链核验=pointermove 逐帧重算（card-drag-session
    * onMove→insertIndexFromRects——其余卡实时 rect 派生）+占位槽腾位后的
    * 推挤反馈循环；本例以行为断言封「几何失效恒 0」面。
+   * [F-SLOTGRID-01 U1] 视口 1000→1280：网格布局下 1000 窗 W≈293→行容量
+   * 1/1（三卡纵排）——实态槽独占行使 previousElementSibling 恒 null；1280
+   * 窗 W≈570→单行三槽，DOM 邻位语义（prev/next 卡）恢复成立（断言零动）。
    */
   test('插入位多样性：拖中≥2 个不同插入区各断言实态槽位置/序变化（图四症二联动验证）', async () => {
     test.slow()
@@ -1624,7 +1649,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const app = await launch(userData)
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-    await win.setViewportSize({ width: 1000, height: 800 })
+    await win.setViewportSize({ width: 1280, height: 860 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     await win.getByTestId('lineage-mode-edit').click()
@@ -1650,10 +1675,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(slot).toHaveText('置 入', { timeout: 5_000 })
     const n1 = await slotNeighbors()
     expect(n1.prev, '插入区一（乙右半）实态槽应在乙之后（插位=组末）').toContain('脉络乙文献')
-    // 插入区二：甲左半（指针 x<甲中心）→插位=甲前（实态槽 next=甲——序变化断言）
-    await win.mouse.move(ab.x + ab.width * 0.25, ab.y + ab.height / 2, { steps: 6 })
+    // 插入区二：行首带（甲原位左一卡宽外——[F-SLOTGRID-01 U1] 网格横排下
+    // 插入位指示存在推挤滞回：指针带随 ph 插入后卡位右移漂移，甲左半
+    // 〔x<甲捕获位中心〕落入 (甲终位中心, 乙中心) 双稳态带=恒稳插位 1；
+    // 瞄准行首带（<甲任意布局态中心）恒稳插位 0——序变化断言恢复判别力）
+    await win.mouse.move(ab.x - ab.width - 22, ab.y + ab.height / 2, { steps: 6 })
     const n2 = await slotNeighbors()
-    expect(n2.next, '插入区二（甲左半）实态槽应在甲之前（插位=首位——与插入区一序不同）').toContain('脉络甲文献')
+    expect(n2.next, '插入区二（行首带）实态槽应在甲之前（插位=首位——与插入区一序不同）').toContain('脉络甲文献')
     await win.mouse.up()
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
     await app.close()

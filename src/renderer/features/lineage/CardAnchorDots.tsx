@@ -15,7 +15,8 @@
  *
  * 边界沿承：①pointer-events:none（容器单源——不拦卡点击/画线 pointer 流）；
  * ②判定面不动=anchors.ts 12 锚（本层显示域与可吸附域自洽——裁决 C）；
- * ③与测量冻结期（.tl-measure）无交集——锚层无过渡动画不参与冻结语义。
+ * ③测量冻结期（.tl-measure）条款随 [F-SLOTGRID-01 U1] 瀑布退役删除——
+ * 锚层无过渡动画的历史冻结注记同步勘正。
  */
 import { useSyncExternalStore } from 'react'
 import { getOcc, subscribe, type AnchorSlotKey } from './anchor-occupancy'

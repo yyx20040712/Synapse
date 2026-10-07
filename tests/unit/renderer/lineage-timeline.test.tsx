@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * [T3-P6] 脉络时间线 —— 分组/分行纯函数 + Timeline/Card 结构 + CSS 逐值文本锁。
+ * [T3-P6] 脉络时间线 —— 分组纯函数 + Timeline/Card 结构 + CSS 逐值文本锁。
  * 值源=docs/design/mockups/2026-09-26_v2_theme-light.html L203-262（时间线段逐值
  * 誊录——字号经 --fs-tl-* token 承载）；设计真相源=
  * docs/design/2026-09-26_theme-trio-final-design.md §2 脉络段 1-3+§6 票 6。
@@ -8,8 +8,10 @@
  * 分组契约 INV-75：graph.nodes=lineageOrder 全序，消费方不得重排——组内序=
  * 传入序（分组器仅排分组键 year/month）。骑缝编号 INV-76 第四消费面：
  * lineageCatalogNos 单源（Timeline useMemo 全图一次计算传卡，编号随全序
- * 漂移=特性）。rowshift 砖砌行错位=0 起奇数索引行（简报 §一.7 预裁——
- * mockup 注「行2 右移」1 起口径）。always-active 裸 describe（K3）。
+ * 漂移=特性）。[F-SLOTGRID-01 U1] 瀑布族（rowsFromOffsetTops/
+ * waterfallOffsets/不动点迭代三例）随瀑布布局退役删除——分行=capacity.ts
+ * partitionRows 行容器网格（INV-SLOTGRID-01；遗留 rowshift 注记同步勘正）。
+ * always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,8 +19,10 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
-import { groupTimeline, rowsFromOffsetTops, waterfallOffsets } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { groupTimeline } from '../../../src/renderer/features/lineage/lineage-timeline'
+import { FRAME_PAD_LEFT, FRAME_PAD_TOP, GAP, OFFSET_O, partitionRows } from '../../../src/renderer/features/lineage/capacity'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { TimelineYears } from '../../../src/renderer/features/lineage/TimelineYears'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
 // act() 环境声明（library-cards.test 同口径——免 React 警告刷屏）
@@ -110,51 +114,6 @@ describe('T3-P6 groupTimeline 纯函数（年月分组——INV-75 组内序=传
 
   it('空输入→空分组', () => {
     expect(groupTimeline([])).toEqual([])
-  })
-})
-
-describe('T3-P6 rowsFromOffsetTops 纯函数（瀑布分行基元——同行=offsetTop 相等；[F-LINEAGE-02] 消费方=waterfallOffsets）', () => {
-  it('相等值归同行：[0,0,72,0,72]→[0,0,1,0,1]（行距 92=卡高 72+隙 20——夹具随批迁移）', () => {
-    expect(rowsFromOffsetTops([0, 0, 72, 0, 72])).toEqual([0, 0, 1, 0, 1])
-  })
-
-  it('单行全偶不 shift：单一 offsetTop→全 0（行 0=首行）', () => {
-    expect(rowsFromOffsetTops([0, 0, 0])).toEqual([0, 0, 0])
-  })
-
-  it('三行递进：[0,72,144]→[0,1,2]', () => {
-    expect(rowsFromOffsetTops([0, 72, 144])).toEqual([0, 1, 2])
-  })
-})
-
-
-describe('F-LINEAGE-02 waterfallOffsets 纯函数（P-15：步 82=卡高 72+半隙 10；节距 148=卡宽 128+隙 20；年内跨月框接续、新年复位）', () => {
-  it('同年两框接续计数：框0 两行+框1 一行 → R=0/1/2 → 偏移 0/82/16（mod 148 不对齐缝隙）', () => {
-    const off = waterfallOffsets([
-      { year: 2022, rows: [['A', 0], ['B', 1]] },
-      { year: 2022, rows: [['C', 0]] }
-    ])
-    expect(off.get('A')).toBeUndefined()
-    expect(off.get('B')).toBe(82)
-    expect(off.get('C')).toBe(16)
-  })
-
-  it('新年复位：异年框 R 从 0 起（offset 0 不入表——错位量>0 才挂）', () => {
-    const off = waterfallOffsets([
-      { year: 2022, rows: [['A', 0], ['B', 1]] },
-      { year: 2023, rows: [['C', 0], ['D', 1]] }
-    ])
-    expect(off.get('C')).toBeUndefined()
-    expect(off.get('D')).toBe(82)
-  })
-
-  it('深行错位序列：R=1..4 → 82/16/98/32（82·R mod 148 手推）', () => {
-    const off = waterfallOffsets([{ year: 2022, rows: [['a', 0], ['b', 1], ['c', 2], ['d', 3], ['e', 4]] }])
-    expect(off.get('a')).toBeUndefined()
-    expect(off.get('b')).toBe(82)
-    expect(off.get('c')).toBe(16)
-    expect(off.get('d')).toBe(98)
-    expect(off.get('e')).toBe(32)
   })
 })
 
@@ -342,85 +301,87 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(onMenu).toHaveBeenCalledWith('A', { x: 200, y: 150 })
   })
 
-  it('瀑布错位挂接：注入 offsetTop 分行→次行卡 inline margin-left=82px（R=1；错位量>0 才挂——依赖=分组结果重算）', async () => {
-    const nodes = [
-      node('A', { year: 2022, month: 5 }),
-      node('B', { year: 2022, month: 5 }),
-      node('C', { year: 2022, month: 5 })
-    ]
-    mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // jsdom 无布局（offsetTop 恒 0）——defineProperty 定行（前三卡两行 0/0/72）
-    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 72]]
-    for (const [id, top] of tops) {
-      Object.defineProperty(cardOf(id), 'offsetTop', { get: () => top, configurable: true })
-    }
-    // 分组结果引用变化（同数据新引用——导入替换/写回填同型）→useLayoutEffect 重算
-    await act(async () => {
-      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
-    })
-    expect(cardOf('C').style.marginLeft).toBe('82px')
-    expect(cardOf('A').style.marginLeft).toBe('')
-    expect(cardOf('B').style.marginLeft).toBe('')
-    expect(cardOf('C').classList.contains('rowshift')).toBe(false)
-  })
-
-  it('不动点迭代（d1-W1 回炉）：shift 改变 offsetTop 后复测至收敛——两轮量测后稳定', async () => {
-    const nodes = [
-      node('A', { year: 2022, month: 5 }),
-      node('B', { year: 2022, month: 5 })
-    ]
-    mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // 错位敏感布局模拟：B 无错位时量得第二行（72）→挂错位 82px；挂后
-    // 仍 72（错位保持行位——真实布局单调性同型）→集合稳定收敛
-    let bCalls = 0
-    Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
-    Object.defineProperty(cardOf('B'), 'offsetTop', {
-      get() {
-        bCalls++
-        return 72
-      },
-      configurable: true
-    })
-    await act(async () => {
-      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
-    })
-    expect(cardOf('B').style.marginLeft).toBe('82px')
-    // 迭代真实发生：首轮量测（判定 shift）+次轮复测（确认稳定）≥2 次
-    expect(bCalls).toBeGreaterThanOrEqual(2)
-    // [三过加固] 测量冻结类收敛后移除（防泄漏=后续 shift 挂摘动画不被永冻）
-    const content = host?.querySelector('.tl-content')
-    expect(content?.classList.contains('tl-measure')).toBe(false)
-    // [裁决部 P1-3 source-text 锁] 冻结机制生效面：TSX 必须真挂/摘 .tl-measure
-    // （断言收敛后不残留锁不住 add/remove 本身——源码文本锁补位，删实现两行即红）
-    const waterfallSrc = readFileSync(
-      join(process.cwd(), 'src/renderer/features/lineage/timeline-waterfall.ts'),
-      'utf8'
+  it('[F-SLOTGRID-01 U1] measured 行容器网格：TimelineYears frameW=570.4 五卡→两行 [3,2]（.month-frame>.tl-row>.tl-card）+奇行 .odd+卡序=数组序+零 inline margin-left（瀑布退役负锚）', () => {
+    mount(
+      <TimelineYears
+        groups={groupTimeline([
+          node('A', { year: 2022, month: 5 }),
+          node('B', { year: 2022, month: 5 }),
+          node('C', { year: 2022, month: 5 }),
+          node('D', { year: 2022, month: 5 }),
+          node('E', { year: 2022, month: 5 })
+        ])}
+        pubNos={new Map()}
+        paperMetrics={{}}
+        selectedNodeId={null}
+        frameW={570.4}
+        linkSourceId={null}
+        onCardClick={() => undefined}
+      />
     )
-    expect(waterfallSrc).toContain("content.classList.add('tl-measure')")
-    expect(waterfallSrc).toContain("content.classList.remove('tl-measure')")
+    const frame = host?.querySelector('.month-frame')
+    expect(frame).not.toBeNull()
+    const rows = Array.from(frame?.children ?? []).filter((el) => el.classList.contains('tl-row'))
+    // 分行=partitionRows 同源期望（capacity 单源——非手抄数组）
+    expect(partitionRows(5, 570.4).map((r) => r.length)).toEqual([3, 2])
+    expect(rows.map((r) => r.classList.contains('odd'))).toEqual([false, true])
+    expect(
+      rows.map((r) => Array.from(r.querySelectorAll('.tl-card')).map((c) => c.getAttribute('data-node-id')))
+    ).toEqual([
+      ['A', 'B', 'C'],
+      ['D', 'E']
+    ])
+    // 卡零 inline margin-left（瀑布 inline 错位退役——在场即红）
+    expect(
+      Array.from(frame?.querySelectorAll('.tl-card') ?? []).map((c) => (c as HTMLElement).style.marginLeft)
+    ).toEqual(['', '', '', '', ''])
   })
 
-  it('不动点振荡守卫（k1-W2 回炉）：offsetTop 随 shift 翻转的对抗布局→8 轮上限强制停不崩', async () => {
-    const nodes = [
-      node('A', { year: 2022, month: 5 }),
-      node('B', { year: 2022, month: 5 })
-    ]
-    mount(<LineageTimeline nodes={nodes} edges={[]} />)
-    // 对抗布局（真实 CSS 不会出现——错位增宽行数只增）：B 的行位随自身
-    // 错位翻转→每轮集合都变→无守卫则 React max-update 崩溃；守卫 8 轮停
-    Object.defineProperty(cardOf('A'), 'offsetTop', { get: () => 0, configurable: true })
-    Object.defineProperty(cardOf('B'), 'offsetTop', {
-      get() {
-        const el = cardOf('B')
-        return el.style.marginLeft === '' ? 72 : 0
-      },
-      configurable: true
-    })
-    // 到此未抛 Maximum update depth = 守卫生效（摘除守卫→此处红）
-    await act(async () => {
-      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
-    })
-    expect(cardOf('A')).not.toBeNull()
+  it('[F-SLOTGRID-01 U1] 拖拽占位参与分行：dragSlot active→「置 入」占位与拖卡按 kids 原位入行（.dragging 尾挂）', () => {
+    mount(
+      <TimelineYears
+        groups={groupTimeline([node('A', { year: 2022, month: 5 }), node('B', { year: 2022, month: 5 })])}
+        pubNos={new Map()}
+        paperMetrics={{}}
+        selectedNodeId={null}
+        frameW={570.4}
+        linkSourceId={null}
+        dragSlot={{ srcKey: '2022|5', nodeId: 'B', insertIdx: 0, active: true, overFrame: true }}
+        onCardClick={() => undefined}
+      />
+    )
+    // kids=[占位,A,拖卡 B(.dragging)]→partition(3,570.4) 单行三槽（数组序）
+    const rows = Array.from(host?.querySelectorAll('.month-frame > .tl-row') ?? [])
+    expect(rows.length).toBe(1)
+    expect(
+      Array.from(rows[0]!.children).map((el) => [el.className.split(' ')[0], el.getAttribute('data-node-id') ?? ''])
+    ).toEqual([
+      ['drag-slot', ''],
+      ['tl-card', 'A'],
+      ['tl-card', 'B']
+    ])
+    expect(cardOf('B').classList.contains('dragging')).toBe(true)
+  })
+
+  it('[F-SLOTGRID-01 U1] unmeasured 降级（jsdom 无 RO→frameW=0）：全部卡入首行单行+DOM 序不变+不崩（W=0 防御死循环锁）', () => {
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 5 }),
+          node('B', { year: 2022, month: 5 }),
+          node('C', { year: 2022, month: 5 })
+        ]}
+        edges={[]}
+      />
+    )
+    // jsdom 无 ResizeObserver=宿主 W 量测降级（use-capacity-layout 头注态机）
+    const frame = host?.querySelector('.month-frame')
+    expect(frame).not.toBeNull()
+    const rows = Array.from(frame?.children ?? []).filter((el) => el.classList.contains('tl-row'))
+    expect(rows.length).toBe(1)
+    expect(
+      Array.from(rows[0]!.querySelectorAll('.tl-card')).map((c) => c.getAttribute('data-node-id'))
+    ).toEqual(['A', 'B', 'C'])
   })
 })
 
@@ -443,14 +404,27 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 
-  it('月框：.tl-month margin 0 58px 26px 46px（58px=P7 绕行走廊）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 18px 12px 12px（[F-LINEAGE-02 D-L2-2] 顶 15→18 承载框内月标） gap 20px 20px min-height 58px', () => {
-    expect(css).toMatch(/\.tl-month\s*\{[^}]*margin:\s*0 58px 26px 46px;[^}]*position:\s*relative/)
+  it('月框：.tl-month margin 0 46px 26px 46px（[F-SLOTGRID-01 呈裁点 4] 右 58→46=corridor 走廊遗产回收）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 18px 12px 12px 列容器（flex-direction column+gap 72px）min-height 58px；.tl-row 行容器 gap 72px+奇行 padding-left 100px（o=100 呈裁点 1）', () => {
+    expect(css).toMatch(/\.tl-month\s*\{[^}]*margin:\s*0 46px 26px 46px;[^}]*position:\s*relative/)
     expect(css).toMatch(
       /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*18px 12px 12px/
     )
     expect(css).toMatch(
-      /\.month-frame\s*\{[^}]*gap:\s*20px 20px;[^}]*align-content:\s*flex-start;[^}]*min-height:\s*58px/
+      /\.month-frame\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*gap:\s*72px;[^}]*min-height:\s*58px/
     )
+    expect(css).toMatch(/\.tl-row\s*\{[^}]*display:\s*flex;[^}]*gap:\s*72px/)
+    expect(css).toMatch(/\.tl-row\.odd\s*\{[^}]*padding-left:\s*100px/)
+    // [回炉 r1 d1-N5] 交叉锁：capacity 常量拼字面断言 CSS 含对应值——双源
+    // （capacity.ts ↔ theme-lineage.css）漂移机检化（任一侧改值即红）
+    expect(css).toContain(`gap: ${GAP}px`)
+    expect(css).toContain(`padding-left: ${OFFSET_O}px`)
+    expect(css).toContain(`padding: ${FRAME_PAD_TOP}px ${FRAME_PAD_LEFT}px`)
+    // [回炉 r1 k1-N5] column 无 wrap 下 align-content=惰性死代码——负锚
+    expect(css).not.toMatch(/align-content:\s*flex-start/)
+    // [F-SLOTGRID-01 U1] .tl-row 不得挂 position（拖拽 .dragging absolute
+    // 离流的包含块链=.month-frame 不能变——在场即红；规则形锚防注释误命中）
+    expect(css).not.toMatch(/\.tl-row\s*\{[^}]*position:/)
+    expect(css).not.toMatch(/\.tl-row\.odd\s*\{[^}]*position:/)
   })
 
   it('月标签（[F-LINEAGE-02 裁决 7] 注入框内首位）：.month-tag absolute top 0.5px left 12px 胶囊（框内顶 padding 18 承载——框间 26px 带全宽净空 D-L2-2）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
@@ -477,12 +451,13 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 
-  it('瀑布错位（P-15：.rowshift 类与 62px 整体退役——错位=inline margin-left 按卡传）：margin-left .25s cubic-bezier(.22,.9,.26,1) 过渡保留+测量冻结规则（三过加固）+零 rowshift 残留负锚', () => {
+  it('行容器网格（[F-SLOTGRID-01 U1] 瀑布错位退役）：inline margin-left 机制/margin-left 过渡死项/测量冻结规则（tl-measure 族）全删零残留负锚+rowshift 62px 历史负锚沿承', () => {
     expect(css).not.toMatch(/\.tl-card\.rowshift/)
     expect(css).not.toMatch(/margin-left:\s*62px/)
-    expect(css).toMatch(/\.tl-card\s*\{[^}]*transition:\s*margin-left \.25s cubic-bezier\(\.22,\.9,\.26,1\)/)
-    // 测量冻结：迭代期间 .tl-measure 冻结过渡（量测恒为终态布局——d1-W1 三过）
-    expect(css).toMatch(/\.tl-content\.tl-measure \.tl-card\s*\{[^}]*transition:\s*none/)
+    // [F-SLOTGRID-01 U1] 瀑布族三重退役负锚：冻结类/inline 过渡/类选择器
+    expect(css).not.toMatch(/\.tl-measure/)
+    expect(css).not.toMatch(/transition:\s*margin-left/)
+    expect(css).not.toMatch(/margin-left:\s*82px/)
   })
 
   it('[②U4] c-* 微族迁移：c-no mono faint；c-title --fs-tl-title 两行 clamp；c-l1 高 18/c-l3 高 12；c-if mono accent/c-cited mono dim/c-venue faint；旧 .mb.core/.c-idea/.c-meta 零残留', () => {

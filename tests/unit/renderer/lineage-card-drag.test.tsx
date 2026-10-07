@@ -361,19 +361,20 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(onNodeClick).not.toHaveBeenCalled()
   })
 
-  it('R2 dragging 期测量冻结跳过：fixed 拖卡视口系 offsetTop 不入量测（误挂瀑布错位即红——主控探针 t=0 实证形态）', () => {
+  it('R2 dragging 期无测量态：拖卡不入布局量测（[F-SLOTGRID-01 U1] 瀑布错位/冻结量测退役——dragging 压 0 防御锁沿承）', () => {
     mount([node('A'), node('B'), node('C')])
     stubRect(req('.month-frame'), 0, 0, 600, 200)
     stubRect(cardOf('A'), 12, 18)
     stubRect(cardOf('B'), 160, 18)
     stubRect(cardOf('C'), 308, 18)
     pDown(cardOf('A'), 60, 40)
-    // 拖卡 fixed 后视口系 offsetTop=999（异行）——dragging 帧若量测必挂错位 inline
+    // 拖卡 fixed 后视口系 offsetTop=999（异行）——历史瀑布量测帧若在场必挂
+    // 错位 inline；[F-SLOTGRID-01 U1] 量测机制退役=防御性断言沿承
     const spyTop = vi.spyOn(cardOf('A'), 'offsetTop', 'get')
     spyTop.mockReturnValue(999)
     pMove(66, 44)
     expect(cardOf('A').classList.contains('dragging')).toBe(true)
-    expect(cardOf('A').style.marginLeft).toBe('0px') // 误挂即红（错位=inline margin-left；[回炉 R1] dragging 期恒压 0px）
+    expect(cardOf('A').style.marginLeft).toBe('0px') // dragging 期恒压 0px（会话防御写沿承——U3 网格联动重估）
     expect(req('.tl-content').classList.contains('tl-measure')).toBe(false)
     spyTop.mockRestore()
     pMove(460, 40) // 组末（>308+128=436）
@@ -441,63 +442,53 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(onNodeClick).toHaveBeenCalledWith('B', expect.anything())
   })
 
-  it('[回炉 R1] 瀑布错位卡拖拽无双计：dragging 期 marginLeft 压 0（fixed 盒 left=视觉位）+settle 清场恢复 82px', async () => {
-    const nodes = [node('A'), node('B'), node('C')]
+  // ── [回炉 r1 d1-W3/k1-W3] 奇行卡起拖→settle 幂等无双计（网格布局承接面）──
+  it('奇行（.tl-row.odd）卡起拖→插入异行位→settle 幂等：reorder 单次+清场无 inline 残留+奇行卡回位（无双计）', async () => {
+    const nodes = [node('A'), node('B'), node('C'), node('D')]
     mount(nodes)
-    // 注入分行（C=次行 72）→瀑布错位 C=82px（inline margin-left）
-    const tops: Array<[string, number]> = [['A', 0], ['B', 0], ['C', 72]]
-    for (const [id, top] of tops) {
-      Object.defineProperty(cardOf(id), 'offsetTop', { get: () => top, configurable: true })
-    }
+    // jsdom 无 RO=unmeasured 单行——注入 W（frame inline width→useCapacityLayout
+    // 挂载帧同步首读链）：nodes 新引用重渲染→effect 重跑→computed width 570.4
+    // →partition(4)=行0 [A,B,C]/行1 odd [D]（跨行布防 ≥2 行）
+    req('.month-frame').setAttribute('style', 'width: 570.4px')
     await act(async () => {
-      root?.render(<LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} />)
+      // 全 props 重渲染（回调链齐——onUp finish 闭包经最新 args 读回调）
+      root?.render(
+        <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
+      )
     })
-    expect(cardOf('C').style.marginLeft).toBe('82px')
-    stubRect(req('.month-frame'), 0, 0, 600, 200)
+    const rows = Array.from(req('.month-frame').querySelectorAll('.tl-row'))
+    expect(rows.length, '布防卫：两行网格在场').toBe(2)
+    expect(rows[1]!.classList.contains('odd'), '布防卫：行 1=奇行（o=100 相位）').toBe(true)
+    expect(rows[1]!.contains(cardOf('D')), '布防卫：D=奇行卡').toBe(true)
+    // 几何定值=网格算术位（行0 x=12+200k/奇行 D x=112,y=162——capacity 同系）
+    stubRect(req('.month-frame'), 0, 0, 600, 400)
     stubRect(cardOf('A'), 12, 18)
-    stubRect(cardOf('B'), 160, 18)
-    stubRect(cardOf('C'), 94, 110)
-    // [回炉 R9-W1+d1-r2-W2] 测量恢复记录仪：C 卡 gBCR 调用时刻的 inline
-    // marginLeft 采样。判别面=pUp 后切片——激活读 rect 样本（'82px'，压 0
-    // 前自然序列）不锁测量恢复；settle 测量 gBCR 时刻采样才是锁点：
-    // 测量前恢复被撤回则 pUp 后切片恒 '0px' 即红
-    const marginAtRect: string[] = []
-    const cRect = cardOf('C').getBoundingClientRect
-    vi.spyOn(cardOf('C'), 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      marginAtRect.push(this.style.marginLeft)
-      return cRect.call(this)
-    })
-    pDown(cardOf('C'), 140, 140)
-    pMove(146, 144)
-    // 切片起点取激活块 gBCR 之后（激活读 rect 在 pointerMove 阈值判定内
-    // ——pDown 时零采样；起点取早则激活样本 '82px' 混入切片恒真）
-    const settleSamplesStart = marginAtRect.length
-    // dragging：[②U7+C3 甲案] absolute+内容坐标 ghost、渲染定位域=frame
-    // padding box（inline left=ghost−frameOrigin；border box=left——marginLeft
-    // 压 0px 无双计）。jsdom 推导链：ghost=指针派生（ox=140−94=46 →
-    // 146−46=100）；frameOrigin=ghostContent−offsetLeft/Top=(94−0, 110−72)
-    // （offsetLeft jsdom 零布局=0/offsetTop=瀑布 stub 72）→ left=100−94=6。
-    // 双计形态（旧缺陷）=left 直写 ghost 100 而渲染视觉再偏 frame 原点
-    expect(cardOf('C').style.position).toBe('absolute')
-    expect(cardOf('C').style.marginLeft).toBe('0px')
-    expect(cardOf('C').style.left).toBe('6px')
-    // [回炉 R8/d1-B1] 激活同步禁断：基类 margin-left .25s 过渡在场则压 0
-    // 即启 +82px 滑移——inline transition='none' 先于类过渡接管（settle 段
-    // SETTLE_TRANSITION 只含 left/top）
-    expect(cardOf('C').style.transition).toBe('none')
-    pUp(146, 144)
-    // settle 期：re-fix 压 0（R9-W1~321 面）+飞行过渡=SETTLE_TRANSITION
-    //（不含 margin-left——margin 恢复/压 0 天然无过渡）
-    expect(cardOf('C').style.marginLeft).toBe('0px')
-    expect(cardOf('C').style.transition).toBe('left .32s cubic-bezier(.22,.9,.26,1), top .32s cubic-bezier(.22,.9,.26,1)')
-    // settle 测量前恢复被记录仪捕获（R9-W1 面）——pUp 后切片判别（d1-r2-W2）
-    expect(marginAtRect.slice(settleSamplesStart)).toContain('82px')
-    fireEnd(cardOf('C'))
-    // settle 清场：React inline offset 恢复（82px）——错位终态不丢；inline
-    // transition 清空回类值（错位变化重排平滑动画不永冻——第六键面）
-    expect(cardOf('C').style.marginLeft).toBe('82px')
-    expect(cardOf('C').style.position).toBe('')
-    expect(cardOf('C').style.transition).toBe('')
+    stubRect(cardOf('B'), 212, 18)
+    stubRect(cardOf('C'), 412, 18)
+    stubRect(cardOf('D'), 112, 162)
+    // 奇行卡 D 起拖（指针=卡中心）→激活→移至 B 左半（插入区=异行位 idx1）
+    pDown(cardOf('D'), 176, 198)
+    pMove(182, 202)
+    expect(cardOf('D').classList.contains('dragging')).toBe(true)
+    expect(cardOf('D').style.position).toBe('absolute') // 离流单源（.dragging——无双计载体确认）
+    pMove(244, 54)
+    await expect.poll(async () => q('.drag-slot:not(.cand)') !== null).toBe(true)
+    pUp(244, 54)
+    expect(reorder).not.toHaveBeenCalled() // settle 落定（transitionend/兜底）后才写
+    fireEnd(cardOf('D'))
+    // 幂等无双计：reorder 恰一次+参数序=D 插 idx1（others=[A,B,C]）
+    expect(reorder).toHaveBeenCalledTimes(1)
+    expect(reorder).toHaveBeenCalledWith(['A', 'D', 'B', 'C'])
+    fireEnd(cardOf('D')) // 二次 transitionend=幂等面（事件/兜底不双写）
+    expect(reorder).toHaveBeenCalledTimes(1)
+    // settle 清场：inline 四键零残留（无双计残留——R1 零位移/R4 断言面同款）
+    expect(cardOf('D').getAttribute('style') === null || cardOf('D').getAttribute('style') === '').toBe(true)
+    // 奇行卡回位：D 落回 .tl-row.odd（网格相位由行容器承载——无 per-card 恢复态）
+    expect(cardOf('D').closest('.tl-row')?.classList.contains('odd')).toBe(true)
   })
 
+  // [F-SLOTGRID-01 U1] 「[回炉 R1] 瀑布错位卡拖拽无双计」用例随瀑布布局退役
+  // 删除——错位 inline margin-left 机制（offsetTop 注入→82px→dragging 压 0→
+  // settle 恢复）整体消亡；settle 清场序（inline 四键清空）由 R1 零位移/R4
+  // 兜底例沿承锁定，dragging 压 0 防御写由 R2 例沿承（豁免登记在案）。
 })
