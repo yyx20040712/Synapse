@@ -90,6 +90,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0021 | 文件夹单归属×脉络图绑定（F-FOLDER-01——图=文件夹投影/paper_collections 退役） |
 | 0022 | 草稿导入链退役（F-BAKRET-01——备份归未来服务端多实体导出/git 历史即资产） |
 | 0023 | 走线候选位分配=后处理槽位分配（F-ROUTE-02——候选 B 路线裁决：routeOne 六态零侵入+slotAssign 单 pass+applyBandLanes 退役迁残余子 pass；INV-112~117；决策正文单源=docs/design/2026-10-06_f-route02-design.md v1.5，不另立 adr 正件防双源） |
+| 0024 | 脉络砖砌网格布局+五态走线正统化（F-SLOTGRID-01——用户 2026-10-07 方向级四裁决+2026-10-08 呈裁落定 v1.4：砖砌交错/横纵等距 72 通道/全自动 gutter 选路 corridor 退役/F-ROUTEDET-01 并入；布局=capacity.ts 容量公式纯函数族+行容器渲染瀑布退役，走线=direct→h-slip→detour→band→overlap 五态链+坐标集封闭，拖拽=INV-111 算术落点；INV-SLOTGRID-01/02+INV-110/111/117/119 修订族；决策正文单源=docs/design/2026-10-07_f-slotgrid01-design.md v1.4，不另立 adr 正件防双源） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -333,7 +334,7 @@ AGENTS.md「环境事实」单源，此处不复制。
 ### 8.1 lineage（发展脉络图）
 
 - 渲染域 `src/renderer/features/lineage/`（第四视图：[T3-P6 起纵向「年+月」
-  时间线 DOM 布局=LineageTimeline 滚动容器+104×52 小卡——RT 树布局/SVG 画布
+  时间线 DOM 布局=LineageTimeline 滚动容器+128×72 小卡——RT 树布局/SVG 画布
   pan/zoom 整族退役，INV-78；T3-P7A 连线层重建=EdgeOverlay[svg.tl-edges
   子组件]+lineage-routing.ts 纯函数路由三式/四检避让降级链，INV-79；
   T3-P7B 编辑交互=useEdgeComposer 状态机（mode 单源驻 Timeline，INV-80）
@@ -362,12 +363,29 @@ AGENTS.md「环境事实」单源，此处不复制。
   ideal；Δ<1 恰中槽 retain 豁免保留占用）→`routing/zapply.ts` Z 形施加
   （j 区间+谓词复检 pre-commit 权威门）→`routing/residual.ts` 残余子 pass
   （旧 applyBandLanes 域全等承袭——开阔域共道分离零丢失）+`routing/chain.ts`
-  编排（routeOne 六态零侵入→slotAssign 单 pass→finish 既有复检；SkelResult
-  中间态+RoutedPath 观测三槽 slotMarks/overlapExempt/slotFallback 投影）
-  +EdgeOverlay.tsx 观测钩子挂线（data-route/data-slot/data-overlap-exempt/
-  data-slot-fallback，后三缺省不挂）+`routing/bands.ts` bandsOf（全卡 y 区间
+  编排（routeOne 五态链〔F-SLOTGRID-01 U2 起六态→五态：corridor/fallback
+  随右缘走廊退役，2026-10-07 用户裁决③〕→slotAssign 单 pass→finish 既有
+  复检；SkelResult 中间态+RoutedPath 观测三槽 slotMarks/overlapExempt/
+  slotFallback 投影）+EdgeOverlay.tsx 观测钩子挂线（data-route/data-slot/
+  data-anchors/data-overlap-exempt/data-slot-fallback/data-detour 六属性，
+  后五缺省不挂——INV-117）+`routing/bands.ts` bandsOf（全卡 y 区间
   并吞=带派生单源——INV-113/114 结构前提）。`lineage-routing.ts`=消费面
   re-export 桶文件不变；行为不变量=INV-112~117。
+- [F-SLOTGRID-01]（2026-10-08 实施批 U1-U4 终态，ADR-0024）砖砌网格布局+
+  走线正统化：`capacity.ts` 容量公式纯函数族（N=⌊(W+72)/200⌋/M=⌊(W+72−100)/
+  200⌋/相位 o=100/数组序贪心分行/index↔(row,col) 双射/hitTest——INV-
+  SLOTGRID-01）+`use-capacity-layout.ts`（W=getComputedStyle transform 正交
+  /RO→rAF 合并/routeEpoch 三源 bump=布局变更即重算走线）+TimelineYears
+  `.month-frame>.tl-row>.tl-card` 行容器渲染（奇行 padding-left 100）——瀑布
+  测度迭代族（timeline-waterfall/WATERFALL_*/tl-measure/冻结守卫）整体退役
+  （方案切换=删旧）；走线=routing 八件面（+`routing/detour.ts` 网格通道模型
+  W18+段式近绕七步+两相枚举+DFS_BUDGET=512）五态链 direct→h-slip→detour→
+  band→overlap（坐标集封闭=横/纵段坐标∈锚/桩∪槽位集，框外走廊结构性禁绝
+  ——INV-SLOTGRID-02；兜底=最短路线重叠+overlapExempt 透出）；拖拽=
+  `card-drag-grid.ts`（insertIndexFromGrid 含源算术+candidateSlotAt 阵列——
+  INV-111 算术落点，旧 rect 逐帧实测判定 insertIndexFromRects 退役删除）
+  +`card-drag-session.ts` framePointer=padding-box÷z−border 换算+
+  `drag-slot-candidates.tsx` 候选阵列=算术网格（F-DRAGVIS-01）。
 - [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
   `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题钮 [F-WS-02] 起路由
   workspaces 管理页（弹层 `app/WsRailPopover.tsx` 已退役——方案切换=删除
