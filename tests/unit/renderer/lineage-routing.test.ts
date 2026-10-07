@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { AnchorUse } from '../../../src/renderer/features/lineage/routing/anchors'
+import { byTotalOrder } from '../../../src/renderer/features/lineage/routing/detour'
 import { bandSkeleton } from '../../../src/renderer/features/lineage/routing/bands'
 import type { EdgeGeomInput, LayoutSnapshot, Rect } from '../../../src/renderer/features/lineage/routing/chain'
 import { routeAll, routeEdge } from '../../../src/renderer/features/lineage/routing/chain'
@@ -260,6 +261,18 @@ describe('F-SLOTGRID-01 U2 detour 段式（占用/方向/降级）', () => {
     // 右缘末槽 676.7>704−560=…：wall 膨胀 [96,664]→676.7 净空 → detour 承接
     expect(r.route).toBe('detour')
     expect(r.detourMarks).toBe('676.7:500.7')
+  })
+})
+
+describe('F-SLOTGRID-01 U2 候选全序（设计 §2 v1.4 字典序——拐弯数主键/距离次键）', () => {
+  it('byTotalOrder：拐弯数主键（x===curX=0 拐先于一切）→|x−refX| 次键→x 末键（等距对判别——拐弯键唯一判别面）', () => {
+    // 等距对 {200,100}（|Δ|=50 全等）：拐弯键定序——curX=200 零拐居首（无拐弯
+    // 键时距离并列退化为 x 升序=100 居首即红）
+    const cands = [{ x: 100 }, { x: 200 }, { x: 300 }]
+    expect([...cands].sort(byTotalOrder(150, 200)).map((c) => c.x)).toEqual([200, 100, 300])
+    // 距离次键生效（拐弯数同=2）：|100−150|=|200−150|=50 并列→x 末键升序；
+    // 300（Δ=150）居末——手推字面值
+    expect([...cands].sort(byTotalOrder(150, 0)).map((c) => c.x)).toEqual([100, 200, 300])
   })
 })
 
