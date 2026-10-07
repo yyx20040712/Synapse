@@ -1548,11 +1548,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const cands = win.locator('.drag-slot.cand')
     await expect(cands).toHaveCount(2, { timeout: 5_000 })
     // 几何断言（冻结优先——§8.1.3）：每槽宽高>0+落源月框 boundingBox 内
-    // **∪ 末位换行延伸域**（[C3 修复落地·口径补注] DragCandidates 末位候选
-    // 超框宽右界=换行首位（y=尾卡 bottom+20）——候选槽 absolute 不占流，
-    // 框不为其腾高=合法落在框下方一行延伸域；T0 时该候选捕获自过渡中期
-    // rect 位置恰在框内故未触发，症一修复后槽位=真值即显此口径缺口——下界
-    // 断言容许至「尾卡下+20+槽高」的换行延伸一行）
+    // **∪ 末位换行延伸域**（[F-SLOTGRID-01 U3 起] 候选槽=算术网格 cell——
+    // candidateSlotAt：x=12+φ_r+200k/y=18+144r〔月框 padding-box〕，随容量
+    // 公式实时重排；本例 1000 视口容量 1/1 纵排→候选逐卡 cell 与其余卡同位。
+    // 下方「尾卡下+20+槽高」延伸域下界=**rect 时代宽容口径沿承**（+20=旧
+    // 20px 行隙遗产，网格语义行距=144 节距——算术 cell 恒落框内，延伸域为
+    // 惰性超集不参与判别；U3 门一 d1 注记本例对 rect↔算术零判别力，U4 注释
+    // 修正如实申报，断言面零改）
     const restore = await freezeAnimations(win)
     const frameBox = await win.locator('.month-frame[data-frame-key="2020|5"]').boundingBox()
     if (frameBox === null) throw new Error('源月框不可见：2020|5')
@@ -1563,7 +1565,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       })
     )
     expect(boxes.length).toBe(2)
-    // 末卡下界（换行延伸域锚——expected 同源式：尾卡 bottom+20）
+    // 末卡下界（rect 时代延伸域锚沿承——+20=旧 20px 行隙遗产；网格语义下
+    // 候选恒落 cell 集，本容差仅放宽下界不参与 rect↔算术判别）
     const lastBottom = await win.evaluate((frameKey) => {
       const frame = document.querySelector(`.month-frame[data-frame-key="${frameKey}"]`)
       if (!(frame instanceof HTMLElement)) return null
@@ -1586,13 +1589,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         `候选槽 ${i} 下界落源框内∪末位换行延伸域（框底 ${(frameBox.y + frameBox.height).toFixed(1)} / 延伸底 ${(lastBottom + 20 + b.h).toFixed(1)}+边框 2px 容差）`
       ).toBeLessThanOrEqual(Math.max(frameBox.y + frameBox.height, lastBottom + 20 + b.h) + 2)
     }
-    // 槽位语义断言（自裁扩展——用户三轮澄清语义「月份框内部显示候选阵列
-    // **位置**」+DragCandidates 契约「候选 k=插入 others[k] 前→槽位=该卡
-    // 左上；末位=尾卡右侧 +20 隙/超宽换行」）：每个候选槽左上角须命中
-    // 「其余卡**当前稳定**槽位 ∪ 末位派生位」之一（≤2px——命中类断言容差：
-    // 依据=亚像素+DPR 残差同 helper 口径[geo-probes 头注]，单射匹配窗）。
-    // 超出=陈旧几何实锤——候选位捕获自布局过渡中期 rect 且不随稳定重算
-    // （探针实录与卡实位差 64.4px——用户「阵列位置不显示」观察的正身）
+    // 槽位语义断言（[F-SLOTGRID-01 U3 起] 候选=算术网格 cell：候选 k=含源
+    // 网格 cell k〔candidateSlotAt——含 φ_r 奇偶相位〕，其余卡同位 cell 恒
+    // 命中）：每个候选槽左上角须命中「其余卡**当前稳定**槽位 ∪ 末位派生位」
+    // 之一（≤2px——命中类断言容差：依据=亚像素+DPR 残差同 helper 口径
+    // [geo-probes 头注]，单射匹配窗）。超出=陈旧几何实锤（rect 时代病灶：
+    // 候选位捕获自布局过渡中期 rect 且不随稳定重算——探针实录与卡实位差
+    // 64.4px；U3 算术直读后该面零漂移）。末位派生位两式=**rect 时代惰性
+    // 超集沿承**（+20 旧隙/超宽换行首位——网格语义末位候选=下一 cell 算术
+    // 位〔满行则换行 cell：x=12+φ_r、y=+144 节距〕，恒落卡位 cell 集；U4
+    // 注释修正如实申报，派生式代码零改=断言面零改）
     const expected = await win.evaluate((frameKey) => {
       const frame = document.querySelector(`.month-frame[data-frame-key="${frameKey}"]`)
       if (!(frame instanceof HTMLElement)) return null
@@ -1603,8 +1609,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         last === undefined
           ? []
           : [
-              { x: last.right + 20, y: last.y }, // 尾卡右侧 +20 隙（同墙换行判定前的直排位）
-              { x: frame.getBoundingClientRect().x + 12, y: last.bottom + 20 } // 超宽换行首 padding 位
+              { x: last.right + 20, y: last.y }, // rect 时代惰性超集沿承（旧 20px 隙——网格=72px 节距 200）
+              { x: frame.getBoundingClientRect().x + 12, y: last.bottom + 20 } // 同上（超宽换行首 padding 位旧式）
             ]
       return [...ob.map((b) => ({ x: b.x, y: b.y })), ...tail]
     }, '2020|5')
@@ -2217,6 +2223,140 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     if (gb === null) throw new Error('落位卡不可见')
     expect(Math.abs(gb.x - (fb.x + bl + FRAME_PAD_LEFT + (cell.row % 2 === 1 ? OFFSET_O : 0) + PITCH_X * cell.col)), 'γ3 落位 x=positionOf 同源（≤1px）').toBeLessThanOrEqual(1)
     expect(Math.abs(gb.y - (fb.y + bt + FRAME_PAD_TOP + PITCH_Y * cell.row)), 'γ3 落位 y=positionOf 同源（≤1px）').toBeLessThanOrEqual(1)
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    if (await saveBtn.isEnabled()) {
+      await saveBtn.click()
+      await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    }
+    await app.close()
+  })
+
+  /**
+   * [F-SLOTGRID-01 U4 γ4·U3 门一 d1-N4] 奇行候选/落点几何补例：γ1 落位断言
+   * 只走偶行支（finalIdx=1）/γ2 候选阵列=单行 cell——奇行 φ=100 相位无专属
+   * 断言面。四卡 [3,1]（1280→W=558.4，γ1 同构夹具——「三卡 [2,1]」在 1280
+   * 几何不可达：N=3 恒吞三卡单行，奇行在场最低配置=四卡）拖首卡（偶行源）：
+   * ①候选阵列含奇行 cell3（x=12+φ=112——直锚 FRAME_PAD_LEFT+OFFSET_O 常量式，
+   * phaseOfRow 变异即红）；②实态槽随插位入奇行（cell3 在流占位）；③settle
+   * 落位=positionOf 奇行支（OFFSET_O 分支——γ1/γ3 未走支）。zoom=1 前提。
+   */
+  test('γ4 [F-SLOTGRID-01 U4] 奇行候选/落点几何：候选含奇行 cell φ=100+实态槽入奇行+settle 落位=positionOf 奇行支', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-g4-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    // 第 4 篇幽灵行（月组种子载荷直写——γ1 同型）
+    const sha4 = createHash('sha256').update('lg-ghost-e2e-lg-brick-b').digest('hex')
+    const ref4 = `${sha4.slice(0, 2)}/${sha4.slice(2, 4)}/${sha4}.pdf`
+    await seedPaperRow(userData, ref4, sha4, '砖砌文献乙（e2e）', 'e2e-lg-brick-b')
+    await seedLineageGraph(userData, {
+      nodes: [
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 5, slot: 3 },
+        { paperId: 'e2e-lg-brick-b', title: '砖砌文献乙（e2e）', year: 2020, month: 5, slot: 4 }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize({ width: 1280, height: 860 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+
+    const frame = win.locator('.month-frame[data-frame-key="2020|5"]')
+    const titles = ['脉络根文献', '脉络甲文献', '脉络乙文献', '砖砌文献乙（e2e）']
+    const frameTitles = async (): Promise<string[]> =>
+      await frame.locator('.tl-card').evaluateAll(
+        (els, ts) => els.map((e) => ts.find((t) => (e.textContent ?? '').includes(t)) ?? ''),
+        titles
+      )
+    const w = await frame.evaluate((el) => parseFloat(getComputedStyle(el).width))
+    expect(partitionRows(4, w).map((r) => r.length), `γ4 布防卫：W=${w.toFixed(1)}→[3,1]（奇行第 4 卡）`).toEqual([3, 1])
+    await expect.poll(async () => await frame.locator('.tl-row').count(), { timeout: 5_000 }).toBe(2)
+
+    // 拖首卡根（偶行 cell0 源）→指针=甲左 1/4（cell1 中心左→直入插位 0——
+    // 含源 [根,甲,乙,砖乙] 源=根 srcIdx=0）
+    const root = nodeG(win, '脉络根文献')
+    const cardA = nodeG(win, '脉络甲文献')
+    const brickB = nodeG(win, '砖砌文献乙（e2e）')
+    const rb = await root.boundingBox()
+    const ab = await cardA.boundingBox()
+    const kb = await brickB.boundingBox()
+    if (rb === null || ab === null || kb === null) throw new Error('卡不可见')
+    await win.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+    await win.mouse.down()
+    await win.mouse.move(ab.x + ab.width * 0.25, ab.y + ab.height / 2, { steps: 6 })
+    const ph = win.locator('.drag-slot:not(.cand)')
+    await expect(ph).toHaveText('置 入', { timeout: 5_000 })
+
+    // ①候选阵列含奇行 cell（d1-N4 核心）：insertIdx=0→候选=cell {1,2,3}，
+    // cell3=奇行（row1 col0）——逐槽 bbox=candidateSlotAt 同源 ±1px
+    const cands = win.locator('.drag-slot.cand')
+    await expect(cands).toHaveCount(3)
+    const fb = await frame.boundingBox()
+    const bl = await frame.evaluate((el) => parseFloat(getComputedStyle(el).borderLeftWidth) || 0)
+    const bt = await frame.evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth) || 0)
+    if (fb === null) throw new Error('月框不可见：2020|5')
+    const boxes = await cands.evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect()
+        return { x: r.x, y: r.y }
+      })
+    )
+    const expectedCells = [1, 2, 3].map((k) => ({ k, pos: candidateSlotAt(k, w) }))
+    for (const b of boxes) {
+      const hit = expectedCells.find(
+        (c) => Math.abs(fb.x + bl + c.pos.x - b.x) <= 1 && Math.abs(fb.y + bt + c.pos.y - b.y) <= 1
+      )
+      expect(
+        hit,
+        `γ4 候选槽 (${b.x.toFixed(1)},${b.y.toFixed(1)}) 未命中算术 cell 集（含奇行 cell3）${JSON.stringify(expectedCells.map((c) => [c.k, c.pos]))}（±1px）`
+      ).toBeDefined()
+      if (hit !== undefined) expectedCells.splice(expectedCells.indexOf(hit), 1) // 单射
+    }
+    // φ=100 相位直锚（常量式非同源自引用）：渲染奇行候选（max-y 槽）x=
+    // 框 border 内缘+12+OFFSET_O、y=+18+PITCH_Y——phaseOfRow 变异即 100px 红
+    const oddCand = boxes.reduce((a, b) => (b.y > a.y ? b : a))
+    expect(
+      Math.abs(oddCand.x - (fb.x + bl + FRAME_PAD_LEFT + OFFSET_O)),
+      `γ4 奇行候选 x 相位=φ（OFFSET_O=${OFFSET_O}）——实测 ${oddCand.x.toFixed(1)} vs ${(fb.x + bl + FRAME_PAD_LEFT + OFFSET_O).toFixed(1)}（≤1px）`
+    ).toBeLessThanOrEqual(1)
+    expect(Math.abs(oddCand.y - (fb.y + bt + FRAME_PAD_TOP + PITCH_Y)), 'γ4 奇行候选 y=行 1 节距（≤1px）').toBeLessThanOrEqual(1)
+
+    // ②实态槽随指针入奇行：指针=砖乙（cell3 奇行卡）右 1/4→p=4→插位 3（组末）
+    await win.mouse.move(kb.x + kb.width * 0.75, kb.y + kb.height / 2, { steps: 6 })
+    await expect(ph).toHaveText('置 入', { timeout: 5_000 })
+    const liveRowOdd = await ph.evaluate((el) => el.closest('.tl-row')?.classList.contains('odd') ?? false)
+    expect(liveRowOdd, 'γ4 实态槽随插位入奇行（cell3 在流占位）').toBe(true)
+    await win.mouse.up()
+
+    // ③settle：DOM 序=新序（插位 3=组末）+落位=positionOf 奇行支（φ=100 分支）
+    await expect.poll(async () => await frameTitles(), { timeout: 10_000 }).toEqual([
+      '脉络甲文献',
+      '脉络乙文献',
+      '砖砌文献乙（e2e）',
+      '脉络根文献'
+    ])
+    await expect
+      .poll(async () => await root.evaluate((el) => (el.getAttribute('style') ?? '') === ''), { timeout: 10_000 })
+      .toBe(true)
+    const cell = positionOf(3, w)
+    expect(cell.row, 'γ4 落位行=奇行（positionOf 奇行支）').toBe(1)
+    const gb = await root.boundingBox()
+    if (gb === null) throw new Error('落位卡不可见')
+    expect(
+      Math.abs(gb.x - (fb.x + bl + FRAME_PAD_LEFT + OFFSET_O + PITCH_X * cell.col)),
+      `γ4 落位 x=positionOf 奇行支（φ=100——实测 ${gb.x.toFixed(1)} vs 算术 ${(fb.x + bl + FRAME_PAD_LEFT + OFFSET_O + PITCH_X * cell.col).toFixed(1)}，≤1px）`
+    ).toBeLessThanOrEqual(1)
+    expect(Math.abs(gb.y - (fb.y + bt + FRAME_PAD_TOP + PITCH_Y * cell.row)), 'γ4 落位 y=positionOf 奇行支（≤1px）').toBeLessThanOrEqual(1)
+    const rowCounts = []
+    for (let r = 0; r < 2; r++) {
+      rowCounts.push(await frame.locator('.tl-row').nth(r).locator('.tl-card').count())
+    }
+    expect(rowCounts, `γ4 settle 行分布=partitionRows 同源（W=${w.toFixed(1)}）`).toEqual(partitionRows(4, w).map((r) => r.length))
     const saveBtn = win.getByTestId('lineage-save-btn')
     if (await saveBtn.isEnabled()) {
       await saveBtn.click()

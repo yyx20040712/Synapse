@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T19:43:41.7010300Z",
+    "generatedAt":  "2026-10-07T20:59:45.3017655Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "9688efc635b6cc230c1fb9c9ffc6d3a1ea1027681e518f93f8b475670fe7ef8f"
+                      "sha256":  "c94321c3fb0349bdac6934b80f0b34604bdfc1c98abad84647dfd41130628a56"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -83,11 +83,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "5df0e8c9175eb0febdc9ee4b0ea122b13dd2eded71b3193021ff5f8823d87bee"
+                      "sha256":  "498eb7f760bc960709baecfc70825bd708557ef751551b4ef26250567bdb8363"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "addc9357ca67385c7cc18808d35dd449016bf42eab58a64f13f9ecf535dedfaa"
+                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "684bcbfefc077a51d71c9c069bd30a17156d79de7a006c59a9c199a481b09cf2"
+                      "sha256":  "3104530503cee1b79004b080e7b28c6be13d20007e66de13913ff9fd51bf0142"
                   },
                   {
                       "path":  "tests/e2e/lineage-anchor-consistency.spec.ts",
@@ -739,7 +739,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-drag.test.tsx",
-                      "sha256":  "105623259e9efe7e2eeddf33c7d924e186fc0fd8d1526d6fc73b3b2fc41fecb4"
+                      "sha256":  "8b44127001f8491aa860ff406e27fb338ce190ec433ec6e14e8fded268ce5230"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-card-flight.test.ts",

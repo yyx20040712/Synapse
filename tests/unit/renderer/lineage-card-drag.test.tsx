@@ -140,11 +140,11 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）', () => {
-  // [F-UIRES-03 C3] describe 名保留历史原文（test-surface 按例签名比对——
-  // 内嵌保留例 frameKeyOf 签名稳定）；applyMovePreview 两例随改月链退役删除
-  // （INV-107）；[F-SLOTGRID-01 U3] insertIndexFromRects 直测例随函数退役删除
-  // （豁免条目在案 scripts/test-surface.exemptions.json——2026-10-08 主控落）
+describe('[T3-P8] 纯函数直测（frameKeyOf）', () => {
+  // [F-SLOTGRID-01 U4] describe 退役名改（旧名含 applyMovePreview/
+  // insertIndexFromRects 两已删函数——名实不符）：改月链（INV-107）与 rect
+  // 直测（U3 方案切换删旧）退役后仅余 frameKeyOf 一例；case 键含 describe
+  // 路径——改名随 U4 基线再生成吸收（豁免条目临时登案、再生成后 stale 即清）
   it('frameKeyOf：year|month 序列化含 null 形', () => {
     expect(frameKeyOf(2022, 9)).toBe('2022|9')
     expect(frameKeyOf(null, null)).toBe('null|null')
@@ -476,6 +476,65 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(cardOf('D').getAttribute('style') === null || cardOf('D').getAttribute('style') === '').toBe(true)
     // 奇行卡回位：D 落回 .tl-row.odd（网格相位由行容器承载——无 per-card 恢复态）
     expect(cardOf('D').closest('.tl-row')?.classList.contains('odd')).toBe(true)
+  })
+
+  // ── [F-SLOTGRID-01 U4·BLOCKED 裁定 B=现状锁定例] 跨行尾挂形态锁（U3 门一
+  // d1 复审 N1 补例面）：四卡 W=570.4 拖首卡（row0 源）→激活帧尾挂末行=
+  // **跨父调和 remount**（React 逐父 children 对账——同数组 keyed 调和不跨
+  // 父保育）。两段真实形态：①激活帧=新节点（激活前后引用比对）无 left/top
+  // inline+驻末行 .odd+.dragging 类在场（离流定位由 CSS 类承载）；②后续
+  // pointermove=findCard 重查新节点补写 left/top（会话对 remount 健在）+
+  // settle 清场照常（reorder 单次+inline 清空）。
+  // 〔U4 BLOCKED 裁定 B——理想断言（跨父节点保育+inline 全键存续=R2 敏感面
+  // style.marginLeft '0px' 跨行存续）红证=仓外 12 号档；修复候选=A 案 keyed
+  // 跨父保育/dragTail 恒驻独立层，晨报呈裁；本例锁现状非锁理想——修复落地
+  // 时本例①三断言（not.toBe/left/top 空）须同步翻转〕──
+  it('跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常', async () => {
+    const nodes = [node('A'), node('B'), node('C'), node('D')]
+    mount(nodes)
+    // W 注入（奇行 settle 例同型）：570.4→N=3/M=2→[A,B,C] 行0+[D] 行1 奇行
+    req('.month-frame').setAttribute('style', 'width: 570.4px')
+    await act(async () => {
+      root?.render(
+        <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
+      )
+    })
+    const rows = Array.from(req('.month-frame').querySelectorAll('.tl-row'))
+    expect(rows.length, '布防卫：两行网格在场').toBe(2)
+    expect(rows[1]!.classList.contains('odd'), '布防卫：行 1=奇行').toBe(true)
+    // 几何定值=网格算术位（行0 x=12+200k/奇行 D x=112,y=162——capacity 同系）
+    stubRect(req('.month-frame'), 0, 0, 600, 400)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 212, 18)
+    stubRect(cardOf('C'), 412, 18)
+    stubRect(cardOf('D'), 112, 162)
+    // ① 激活帧（pMove 过阈首个）：尾挂末行=跨父 remount 形态三断言
+    const pre = cardOf('A')
+    pDown(pre, 76, 54)
+    pMove(82, 58)
+    const post = cardOf('A')
+    expect(post).not.toBe(pre) // 激活帧跨父调和=新 DOM 节点（React 逐父对账）
+    expect(post.style.left, '激活帧 inline 未及新节点（left）').toBe('')
+    expect(post.style.top, '激活帧 inline 未及新节点（top）').toBe('')
+    expect(post.classList.contains('dragging'), '离流定位由 .dragging CSS 类承载').toBe(true)
+    const tailRow = post.closest('.tl-row')
+    expect(tailRow).toBe(rows[1]) // 尾挂行=末行
+    expect(tailRow!.classList.contains('odd'), '尾挂行=末行奇行（激活帧行为）').toBe(true)
+    // ② 后续 pointermove：findCard 重查新节点补写 left/top（节点此后恒稳）
+    pMove(86, 60)
+    const post2 = cardOf('A')
+    expect(post2).toBe(post) // move 期不再换节点（remount 仅激活提交帧）
+    expect(post2.style.left, '后续 move 补写 left（会话对 remount 健在）').not.toBe('')
+    expect(post2.style.top, '后续 move 补写 top').not.toBe('')
+    // settle 照常：行0 插位（350>B cell1 中心 276→插位 1）→松手→清场+重排单次
+    pMove(350, 40)
+    await expect.poll(async () => q('.drag-slot:not(.cand)') !== null).toBe(true)
+    pUp(350, 40)
+    expect(reorder).not.toHaveBeenCalled() // settle 落定后才写
+    fireEnd(cardOf('A'))
+    expect(reorder).toHaveBeenCalledTimes(1)
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C', 'D'])
+    expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)
   })
 
   // [F-SLOTGRID-01 U1] 「[回炉 R1] 瀑布错位卡拖拽无双计」用例随瀑布布局退役
