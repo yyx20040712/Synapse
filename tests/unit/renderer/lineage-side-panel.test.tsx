@@ -377,7 +377,7 @@ it('片段双击→onJumpToPaper 载荷钉形（anchorPage=Annotation.page 0 基
   expect(JUMP).toHaveBeenCalledTimes(1)
   expect(JUMP).toHaveBeenCalledWith({
     paperId: 'paper-A',
-    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' }
   })
 })
 
@@ -400,7 +400,7 @@ it('[RR1-C] 片段条目 Enter=键盘等价路径→同一上抛单点（载荷�
   expect(JUMP).toHaveBeenCalledTimes(1)
   expect(JUMP).toHaveBeenCalledWith({
     paperId: 'paper-A',
-    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' }
   })
   act(() => {
     btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
@@ -579,6 +579,6 @@ it('Page 全链：片段条目双击→requestOpenPaperAnchored 锚载荷（anch
   dblClick(q('[data-fragment-id="f1"] button') as Element)
   expect(requestAnchoredStub).toHaveBeenCalledWith({
     paperId: 'paper-A',
-    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2 }
+    anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' }
   })
 })

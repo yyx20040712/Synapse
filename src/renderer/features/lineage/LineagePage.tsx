@@ -106,11 +106,11 @@ export function LineagePage(): JSX.Element {
   // [F-UIRES-03 C1] Esc 分层退出键盘接线（delta-W3a——拆件 use-lineage-esc）
   useLineageEscapeKey()
 
-  /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一；
-   *  [F-UIRES-03 B2] AI 条目标识载荷字段随 AI 双击链退役删除——片段双击=唯一链） */
+  /** 侧板跳转上抛→总线发送（payload 构造在 SidePanel，本页只转发归一；B2 AI 载荷
+   *  字段退役——片段双击=唯一链；[F-LOCATE-01] anchor.annotationId 随 spread 透传） */
   const handleJumpToPaper = (payload: {
     paperId: string
-    anchor?: { quoteText: string; prefixText: string; suffixText: string; anchorPage: number | null }
+    anchor?: { quoteText: string; prefixText: string; suffixText: string; anchorPage: number | null; annotationId?: string }
   }): void => {
     requestOpenPaperAnchored({
       paperId: payload.paperId,

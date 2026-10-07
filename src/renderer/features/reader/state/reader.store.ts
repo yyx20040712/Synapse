@@ -349,7 +349,12 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     setPage(page, opts) {
-      // 0 基页码夹取到 [0, totalPages-1]；totalPages 未知（0）时由渲染链侧兜底。
+      // 0 基页码夹取到 [0, totalPages-1]；[F-LOCATE-01] totalPages 未知（0）=
+      // doc 未就绪窗口——不夹上界（负值仍拦 0），页码原值驻留+scrollRequest
+      // 原值驱动段⑤就绪补滚（usePageColumnScroll deps 含 pageSizes/totalPages，
+      // 就绪重触发）；渲染链 clampPageToColumn 兜底滚动侧——页码/滚动两侧
+      // 分工（INV-118 早到页码不吞：locateAnchor 的 setPage(anchorPage) 常撞
+      // 此窗口，吞 0=跨视图跳转停开篇页缺陷的病根）。
       // F-01 双源机制（INV-29）：第三参缺省/'to'=程序跳页→bump scrollRequest
       // （信号驱动 PageColumn.scrollToPage，页列就绪后滚到盒顶）；
       // 'none'=页码来自滚动位置回写→只落账不 bump，不触发程序滚动（防回弹）
@@ -357,7 +362,10 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       if (activeId === null) return
       const tab = get().tabs[activeId]
       if (tab === undefined) return
-      const clamped = Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
+      const clamped =
+        tab.totalPages > 0
+          ? Math.max(0, Math.min(Math.floor(page), tab.totalPages - 1))
+          : Math.max(0, Math.floor(page))
       set((s) => ({
         tabs: { ...s.tabs, [activeId]: { ...tab, page: clamped } },
         ...(opts?.scroll !== 'none'
@@ -373,7 +381,18 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     setTotalPages(total) {
-      updateActiveTab((tab) => ({ ...tab, totalPages: Math.max(0, Math.floor(total)) }))
+      // totalPages 落定=页码侧收敛点（INV-118 收敛条款）：totalPages=0 窗口驻留的
+      // 超界页码在此夹回（落定值 landed>0 时 page=Math.max(0,Math.min(page,landed-1))；
+      // landed=0 时 page 不动——守卫窗口语义：未就绪窗口 0 与真 0 页/加载失败终态 0
+      // 代码不可区分，page 不动=保住件①驻留值，写成夹取即病根以本函数吞驻留形态
+      // 复活〔格 e 守卫〕）；scrollRequest 不 bump（滚动侧由段⑤消费时
+      // clampPageToColumn 自夹，两侧终态一致——格 d 断言固化）
+      const landed = Math.max(0, Math.floor(total))
+      updateActiveTab((tab) => ({
+        ...tab,
+        totalPages: landed,
+        page: landed > 0 ? Math.max(0, Math.min(tab.page, landed - 1)) : tab.page
+      }))
     },
 
     setColor(color) {

@@ -506,3 +506,76 @@ describe('F-SL addAnnotation per-paper 寻址（幽灵标注守卫）', () => {
     expect(s.tabs['p-2']?.annotations).toEqual([])
   })
 })
+
+// ── F-LOCATE-01（2026-10-07 跨视图跳转页级停驻竞争修票，always-active）──
+//    病根：setPage 的 clamp 含上界 min(page, totalPages-1)——totalPages=0
+//    （doc 未就绪窗口）时 min(N,-1)=-1→max(0,-1)=0，早到页码（locateAnchor
+//    setPage(anchorPage) 撞 doc 就绪前）被吞成 0+scrollRequest 也带 0，
+//    段⑤补滚/恢复链全部停开篇页（e2e 探针指纹=「当前第 1 页」）。修复=
+//    totalPages 未知（0）窗口不夹上界，页码原值驻留驱动就绪补滚（INV-118：
+//    早到页码不吞——页码/滚动两侧分工：渲染链 clampPageToColumn 兜底滚动侧）。──
+describe('F-LOCATE-01 早到页码不吞（totalPages=0 未就绪窗口守卫）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('格a：totalPages=0（未就绪）时 setPage(3)——tab.page 原值驻留 3+scrollRequest 同携 3（驱动段⑤就绪补滚）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    // 前置防恒真：tab 确处未就绪窗口（totalPages=0——setTotalPages 未达）
+    expect(useStore.getState().tabs['p-1']?.totalPages).toBe(0)
+    useStore.getState().setPage(3)
+    const s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(3)
+    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 3, seq: 1 })
+    // 恢复链自愈推演：doc 就绪后 totalPages 落定→后到 setPage 照常全夹（终态不漂移）
+    useStore.getState().setTotalPages(5)
+    useStore.getState().setPage(3)
+    expect(useStore.getState().tabs['p-1']?.page).toBe(3)
+  })
+
+  it('格b：totalPages=5 时 setPage(9)——上界夹取照旧（既有行为回归，totalPages>0 域零语义变迁）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setTotalPages(5)
+    useStore.getState().setPage(9)
+    const s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(4)
+    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 4, seq: 1 })
+  })
+
+  it('格c：totalPages=0 时 setPage(-1)——负值下界仍拦 0（不夹上界≠放行负页）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setPage(-1)
+    const s = useStore.getState()
+    expect(s.tabs['p-1']?.page).toBe(0)
+    expect(s.scrollRequest).toEqual({ paperId: 'p-1', page: 0, seq: 1 })
+  })
+
+  it('格d（RR1-1 收敛条款）：setTotalPages 落定时 re-clamp 驻留页——totalPages=0 窗口驻留 5 后 setTotalPages(3)→page 夹回 2；正常流页码在界内无感；scrollRequest 原值驻留不 bump（两侧终态一致契约——d1-W2\' 固化）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setPage(5) // 未就绪窗口驻留 5（格a 语义）——bump seq=1
+    useStore.getState().setTotalPages(3)
+    expect(useStore.getState().tabs['p-1']?.page).toBe(2) // 落定即夹回 [0, total-1]
+    // [RR2] 收敛不 bump：scrollRequest 原值驻留（page=5 超界原值——滚动侧由段⑤
+    // 消费时 clampPageToColumn 自夹到末页，与页码侧终态 2 一致）
+    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-1', page: 5, seq: 1 })
+    // 正常流无感：页码在界内→落定不动
+    useStore.getState().setPage(2) // totalPages=3 域内（0..2）
+    useStore.getState().setTotalPages(5)
+    expect(useStore.getState().tabs['p-1']?.page).toBe(2)
+    expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-1', page: 2, seq: 2 })
+  })
+
+  it('格e（RR2 守卫格·k1-W1\'/d1-W1\'）：setTotalPages(0) 落定——page 驻留不动（landed=0=守卫窗口语义；未就绪窗口 0 与真 0 页/加载失败终态 0 代码不可区分，page 不动=守卫语义，写成夹取即病根以 setTotalPages(0) 吞驻留形态复活）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setPage(3) // 未就绪窗口驻留 3
+    useStore.getState().setTotalPages(0) // landed=0（doc 未就绪/失败终态同形）
+    expect(useStore.getState().tabs['p-1']?.page).toBe(3) // 驻留不动——夹取化变异（M4）下=max(0,min(3,-1))=0 必红
+    expect(useStore.getState().tabs['p-1']?.totalPages).toBe(0)
+  })
+})

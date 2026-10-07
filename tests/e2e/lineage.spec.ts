@@ -450,10 +450,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * 双击退役负锚（不跳）→片段条目双击→阅读器打开+目标页文本层可见（甲=多页
    * fixture〔createMultiPagePdf(3)——每页单行 P<n> 文本〕+annotation page=1。
    * 判别面=总线跳转链（视图切换）+文档加载+多页文本层渲染（P2 行在场=文档
-   * 装载证明）；**页级停驻维无判别力**（toBeVisible=CSS 可见非视口相交，跳转
-   * 空操作与停驻被覆盖终态同形）——停驻竞争缺陷在案=F-LOCATE-01（registry
-   * open），页级判别断言随该票修复回补；seedLineagePapers 固定单页形态束缚
-   * 故 T4 自种甲文献）。
+   * 装载证明）+页级停驻判别（sr-only 页码指示「当前第 2 页」——[F-LOCATE-01]
+   * 修复后回补：setPage 早到页码不再被 totalPages=0 窗口吞 0，页码/滚动两侧
+   * 分工见 INV-118）；seedLineagePapers 固定单页形态束缚故 T4 自种甲文献）。
    */
   test('T4 侧板三节新序+AI 评估分色→AI 双击退役负锚→片段双击跳阅读器目标页', async () => {
     // F-02 批 2：跳页兼容（exact 层经目标页盒文本层验证）——逐测守卫（describe
@@ -576,12 +575,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
 
     // ⑥片段条目（片段笔记节——真实引文+1 基页码显示：page=1 0 基→「p.2」）
     //   双击→总线→App 切阅读器→PDF 加载→目标页文本层渲染（P2 行在场）。
-    //   [RR2-k1-W-RR1-1/d1-W1 如实口径] 判别面=总线跳转链（视图切换）+文档
-    //   加载+多页文本层渲染（P2 行在场=文档装载证明）；**页级停驻维无判别
-    //   力**（toBeVisible=CSS 可见非视口相交，跳转空操作与停驻被覆盖终态
-    //   同形）——停驻竞争缺陷在案=F-LOCATE-01（registry open，RR1 探针指纹
-    //   =TabState.page 回写 0+scrollTop 恒 12 为立案证据），页级判别断言随
-    //   该票修复回补。
+    //   [F-LOCATE-01 已修复·页级停驻判别回补] 判别面=总线跳转链（视图切换）+
+    //   文档加载+多页文本层渲染（P2 行在场=文档装载证明）+sr-only 页码指示
+    //   （TabState.page 单源镜像——缺陷在案时的探针指纹即「当前第 1 页」终态，
+    //   现断言「当前第 2 页」：setPage 早到页码不被 totalPages=0 吞 0+段⑤就绪
+    //   补滚停驻目标页——页码/滚动两侧分工见 INV-118）。
     const fragments = win.getByTestId('lineage-side-fragments')
     const fragEntry = fragments.locator('[data-fragment-id="e2e-lg-ann-1"]').first()
     await expect(fragEntry).toBeVisible({ timeout: 10_000 })
@@ -589,6 +587,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(fragEntry).toContainText(PDF_KNOWN_TEXT)
     await fragEntry.locator('button').dblclick()
     await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
+    // [F-LOCATE-01] 页级停驻判别（annotation page=1 0 基→1 基显示 2）：p.sr-only
+    // 页码指示全仓唯一（ReaderPageView），文本「共 N 页，当前第 X 页，标注 Y 条」
+    // ——旧实现（setPage 撞 totalPages=0 被吞）终态=「当前第 1 页」必红。
+    // **双通道耦合（RR1-3）**：T4 绿存在双通道（件① setPage 直供页码/件②
+    // flashAnnotation 滚动补偿经滚动位置回写）——M1 实证①缺位时 T4 仍绿（②
+    // 补偿链在）、M2 实证②缺位时 T4 仍绿（①段⑤就绪补滚独立承载）；触及
+    // flashAnnotation→滚动→回写链的改动须重估本判别矩阵
+    await expect(win.locator('p.sr-only')).toContainText('当前第 2 页', { timeout: 10_000 })
 
     await app.close()
   })

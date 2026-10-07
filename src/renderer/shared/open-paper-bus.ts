@@ -14,15 +14,20 @@
  * 退役）；消费侧定路由=open-paper-anchor.ts（接缝双向锚定：本行+该文件头注）。
  * requestOpenPaper 保持单字段语义（既有调用方
  * library/anchor-locate 零改动——locateAnchor 内部重发不带锚，防事件环）。
+ * [F-LOCATE-01] anchor 增可选 annotationId——片段跳转元素级停驻恢复（exact 层
+ * flashAnnotation 滚动目标锚，构造单点=LineageSidePanel.handleFragmentDblClick）。
  */
 export const OPEN_PAPER_EVENT = 'synapse:open-paper'
 
-/** 锚载荷（quote 三元组+0 基页码——与 anchor-locate 的 LocateAnchor 形状一致，消费侧零转换） */
+/** 锚载荷（quote 三元组+0 基页码——与 anchor-locate 的 LocateAnchor 形状一致，消费侧零转换；
+ *  annotationId=exact 层滚动目标锚（Annotation.id——缺席则 exact 只完成页级停驻）） */
 export interface OpenPaperAnchor {
   quoteText: string
   prefixText: string
   suffixText: string
   anchorPage?: number
+  /** [F-LOCATE-01] 片段跳转视觉停驻恢复（消费侧 openFromBus 透传至 locateAnchor target 顶层） */
+  annotationId?: string
 }
 
 /** 打开请求（闩锁/事件 detail 单一形状；anchor 缺省=仅开篇） */

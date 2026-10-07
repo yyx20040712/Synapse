@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-06T22:39:50.0942102Z",
+    "generatedAt":  "2026-10-07T00:14:50.6594592Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "4bf797a946b99f0e5b4c428b8cc3782644349753c5bfb643c11781a79573b1af"
+                      "sha256":  "c6c8843fe15e97648aeff4ddc8277fe95ae0f91bbb7e4bac54d0f304fc6d8e3c"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -299,7 +299,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
-                      "sha256":  "74bd4d03022113318197f684e124f86b23efce1f888c3a0f5c34af871c8f2e43"
+                      "sha256":  "2e2eb009061f70125285f7e2fcce1cb62594d02558dd1a6e02395250a021f26d"
                   },
                   {
                       "path":  "tests/e2e/lineage-obstacle-audit.spec.ts",
@@ -803,7 +803,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-open-bus.test.tsx",
-                      "sha256":  "4ea2abe76cfce81060584ccb05e13bc6aadd9af6140e8df877e807c3573ccb74"
+                      "sha256":  "03db37776eae69b19898c6bded7ebf41426f242afaf15420dda8b07c06dff80d"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-page-goto.test.tsx",
@@ -855,7 +855,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-panel.test.tsx",
-                      "sha256":  "78f047477bee2dbf47d4252134d2fc6eda54b61069ef8357412e7d2f1b69558e"
+                      "sha256":  "3df5762dbc4eb17a29a6300443bc38e6b23353dbfde822ebe9df4559b28cb829"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-side-reskin.test.tsx",
@@ -979,7 +979,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/reader.store.test.ts",
-                      "sha256":  "bb1a71e1748941c0bcb874521896519f6ce4e72d46e463630b20184d78c42151"
+                      "sha256":  "98537281f168043ca97029b509589f1b2790bfde37cd70e108cfa9393242b4ab"
                   },
                   {
                       "path":  "tests/unit/renderer/reader-double-page.test.tsx",

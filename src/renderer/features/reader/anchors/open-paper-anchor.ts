@@ -17,6 +17,11 @@
  * 无面板信号副作用）。无锚/annotationId 路径零触碰（标注高亮走 noteHighlight
  * 信号，其生产者链不动——notify 是呈现信号非定位降级，不违 INV-20
  * 「禁各写降级」）。
+ * **[F-LOCATE-01] anchor.annotationId 透传**：片段锚载荷在场时透传至
+ * locateAnchor 的 target 顶层字段（exact 层 flashAnnotation 滚动目标锚——
+ * 元素级停驻恢复；缺席则 exact 只完成页级停驻，路径零变迁）。顶层
+ * annotationId=唯一消费口径（anchor 内同值字段=载荷形状非消费位——
+ * locateAnchor 只读 target.annotationId）。
  */
 import { locateAnchor } from './anchor-locate'
 import { useReaderStore } from '../state/reader.store'
@@ -25,7 +30,7 @@ import type { OpenPaperRequest } from '../../../shared/open-paper-bus'
 
 export function openFromBus(req: OpenPaperRequest): void {
   if (req.anchor !== undefined) {
-    void locateAnchor({ paperId: req.paperId, anchor: req.anchor })
+    void locateAnchor({ paperId: req.paperId, anchor: req.anchor, annotationId: req.anchor.annotationId })
     return
   }
   useReaderStore

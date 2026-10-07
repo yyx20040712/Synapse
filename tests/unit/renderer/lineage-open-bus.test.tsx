@@ -59,6 +59,23 @@ it('消费方级：带锚请求→locateAnchor 单入口（锚三元组透传；
   expect(openPaperStub).not.toHaveBeenCalled()
 })
 
+// [F-LOCATE-01] 视觉停驻恢复：片段锚载荷携带 annotationId（构造单点=
+// LineageSidePanel.handleFragmentDblClick——Annotation.id 直传）时，
+// openFromBus 必须将其透传至 locateAnchor 的 target 顶层字段（exact 层
+// flashAnnotation 滚动+闪烁的滚动目标锚——缺省则 exact 只完成页级停驻）
+it('消费方级：[F-LOCATE-01] 带锚载荷含 annotationId→locateAnchor 收到 target.annotationId（exact 层滚动目标锚透传）', async () => {
+  openFromBus({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 1, annotationId: 'a-1' }
+  })
+  await flush()
+  expect(locateAnchorStub).toHaveBeenCalledWith({
+    paperId: 'p-1',
+    anchor: { quoteText: 'q', prefixText: 'p', suffixText: 's', anchorPage: 1, annotationId: 'a-1' },
+    annotationId: 'a-1'
+  })
+})
+
 it('消费方级：无锚请求→openPaper 既有链路（locateAnchor 不介入）', async () => {
   openFromBus({ paperId: 'p-1' })
   await flush()

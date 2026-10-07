@@ -29,7 +29,8 @@
  *   AI 条目双击链退役）。跳转载荷构造单点=本组件 handleFragmentDblClick
  *   （anchorPage=Annotation.page 0 基直传——OutlineAside.locateFragment
  *   同口径，禁 ±1 换算；锚三元组与 open-paper-bus/open-paper-anchor 三方
- *   头注锚定不变）。
+ *   头注锚定不变）。[F-LOCATE-01] anchor 增 annotationId=Annotation.id——
+ *   元素级停驻恢复（exact 层滚动目标锚）。
  * - 数据单源：AI 评估/片段两分节直连 window.api（quality 跨域互引红线
  *   ——reader 域组件/store 不可引；接缝声明见各分节头注）。
  */
@@ -81,6 +82,8 @@ export function LineageSidePanel(props: {
       prefixText: string
       suffixText: string
       anchorPage: number | null
+      /** [F-LOCATE-01] 元素级停驻恢复锚（Annotation.id——exact 层滚动目标） */
+      annotationId?: string
     }
   } | null): void
   /** [F-FOLDER-01] 骑缝编号（INV-92 pubNo——Page 自 store pubNos 分发） */
@@ -124,7 +127,8 @@ export function LineageSidePanel(props: {
         quoteText: a.quoteText,
         prefixText: a.prefixText,
         suffixText: a.suffixText,
-        anchorPage: a.page
+        anchorPage: a.page,
+        annotationId: a.id
       }
     })
   }
