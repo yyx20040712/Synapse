@@ -19,10 +19,11 @@
  * 斜跨〔竖向主向〕）：direct 锚=selectAnchor 同函数同参；h-slip 近侧
  * sideAnchor≡横向主向 selectAnchor；band 竖向定边 sideAnchor(bottom/top)
  * ≡竖向主向 selectAnchor（P5 探针 S1 实测 route=band 末锚 top¼=投影结果
- * 同参印证）——三态首末锚均与预览规则锚同源故零跳动可断。corridor/fallback
- * 恒右缘（sideAnchor right）与主向 selectAnchor 不保证同锚=场景构造漂移
- * 信号（实测 route 入诊断消息；落入即零跳动断言红——红消息携带 route 供
- * 场景调参，非修复失效误读）。
+ * 同参印证）——三态首末锚均与预览规则锚同源故零跳动可断。[F-SLOTGRID-01
+ * U2 修订] corridor/fallback 恒右缘条款随走廊退役（INV-119 承诺域重述=
+ * 坐标集封闭+overlap 确定性）：兜底态=overlap（锚=direct 判别锚——同柱对
+ * x 相等时首段仍竖向=外法线，零跳动承诺维持）；散开态（多边同锚）=域外
+ * 沿承。
  *
  * ── R-锚级一致（C2 挂账销项——六态矩阵以实测 route 断言〔设计 v1.2 勘正③〕）──
  * 播种 direct 意图/h-slip/band/corridor/manual-override（via 直写两相——
@@ -243,7 +244,10 @@ async function expectAnchorConsistency(
     expect(e.route, `${tag} 边${i} data-route 非空卫（缺席即红）`).not.toBe('')
     const from = await cardContentRect(win, edges[i]!.fromTitle)
     const to = await cardContentRect(win, edges[i]!.toTitle)
-    const stubFamily = e.route === 'band' || e.route === 'corridor' || e.route === 'fallback'
+    // [F-SLOTGRID-01 U2] 带桩族=band/detour（出桩外法线形态）；overlap=L 形
+  // 直角接入（x 相等时竖向=外法线成立，H 先形态首段横向=非外法线——域外
+  // 申报：INV-119 承诺域=坐标集封闭+overlap 确定性）
+  const stubFamily = e.route === 'band' || e.route === 'detour'
     for (const [end, rect, label] of [
       [e.first, from, '首点↔from 卡'],
       [e.last, to, '末点↔to 卡']
@@ -276,24 +280,37 @@ async function expectAnchorConsistency(
 
 test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）', () => {
   /**
-   * R-零跳动①竖向跨月：上→下月画线，预览末帧端点=规则锚，up 后新边首末点
-   * 与预览两端 ≤0.5px（场景自检 route=direct——竖向主向族）。
+   * R-零跳动①竖向同列跨行（[F-SLOTGRID-01 U2] 夹具迁移——原「竖向跨月」
+   * 同柱跨框对在网格时代 ½ 入桩锚恒被月标注膨胀带封堵〔标签宽 65.1>卡 ½
+   * 偏移 64+PAD——实测锚定〕→band 散开 ¾=INV-119 域外〔预览无法模拟全图
+   * 路由〕；直连族零跳动承诺面迁至同列跨行对：row0 col0→row2 col0〔奇行
+   * φ=100 错位不拦 col0 竖线〕，route=direct 预览锚≡路由锚）。
    */
-  test('R-零跳动①竖向跨月：预览端点=落边端点（两端 ≤0.5px）', async () => {
+  test('R-零跳动①竖向同列跨行（网格直连族）：预览端点=落边端点（两端 ≤0.5px）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r0a-'))
-    await seedFixture(userData, ['af-v-src', 'af-v-tgt'], ['竖向源卡', '竖向目标卡'], {
-      nodes: [
-        { paperId: 'af-v-src', title: '竖向源卡', year: 2020, month: 5, slot: 1 },
-        { paperId: 'af-v-tgt', title: '竖向目标卡', year: 2020, month: 7, slot: 1 }
-      ],
-      edges: []
-    })
+    await seedFixture(
+      userData,
+      ['af-v-src', 'af-v-f1', 'af-v-f2', 'af-v-f3', 'af-v-f4', 'af-v-tgt'],
+      ['竖向源卡', '竖向占位一', '竖向占位二', '竖向占位三', '竖向占位四', '竖向目标卡'],
+      {
+        nodes: [
+          { paperId: 'af-v-src', title: '竖向源卡', year: 2020, month: 5, slot: 1 },
+          { paperId: 'af-v-f1', title: '竖向占位一', year: 2020, month: 5, slot: 2 },
+          { paperId: 'af-v-f2', title: '竖向占位二', year: 2020, month: 5, slot: 3 },
+          { paperId: 'af-v-f3', title: '竖向占位三', year: 2020, month: 5, slot: 4 },
+          { paperId: 'af-v-f4', title: '竖向占位四', year: 2020, month: 5, slot: 5 },
+          { paperId: 'af-v-tgt', title: '竖向目标卡', year: 2020, month: 5, slot: 6 }
+        ],
+        edges: []
+      }
+    )
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '竖向源卡')
     const ends = await dragPreviewEnds(win, '竖向源卡', '竖向目标卡')
-    // 预览末帧=规则锚（金标镜像——预览所见即路由所得）
+    // 预览末帧=规则锚（金标镜像——预览所见即路由所得；直连族：源卡
+    // 须滚动可见——6 卡跨三行占位链）
     expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚（fromEff）').toBeLessThanOrEqual(0.5)
     expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚（fromEff）').toBeLessThanOrEqual(0.5)
     expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚（snap）').toBeLessThanOrEqual(0.5)
@@ -352,18 +369,30 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
   })
 
   /**
-   * R-零跳动③斜跨（跨月+slot 错位——右下斜向）。
+   * R-零跳动③斜跨（[F-SLOTGRID-01 U2] 夹具迁移——原跨月+slot 错位对在网格
+   * 时代 x 带分离恒触发 h-slip〔侧锚〕而预览=竖向主向 selectAnchor〔顶/底
+   * 锚〕——两锚族互斥=INV-119 等价性前提〔主向与态族一致〕破坏；斜跨零跳动
+   * 承诺面迁至同框跨行错列对：row0 col0→row1 col0〔φ=100 错位 100px——
+   * dx<dy 竖向主向，x_s≠x_t→band 竖向定边 sideAnchor≡竖向主向
+   * selectAnchor，无月标注封堵〔row1 无标注带〕→无散开〕）。
    */
-  test('R-零跳动③斜跨：预览端点=落边端点（两端 ≤0.5px）', async () => {
+  test('R-零跳动③斜跨（同框跨行错列——竖向主向 band 族）：预览端点=落边端点（两端 ≤0.5px）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r0c-'))
-    await seedFixture(userData, ['af-d-src', 'af-d-tgt'], ['斜跨源卡', '斜跨目标卡'], {
-      nodes: [
-        { paperId: 'af-d-src', title: '斜跨源卡', year: 2020, month: 5, slot: 1 },
-        { paperId: 'af-d-tgt', title: '斜跨目标卡', year: 2020, month: 8, slot: 2 }
-      ],
-      edges: []
-    })
+    await seedFixture(
+      userData,
+      ['af-d-src', 'af-d-f1', 'af-d-f2', 'af-d-tgt'],
+      ['斜跨源卡', '斜跨占位一', '斜跨占位二', '斜跨目标卡'],
+      {
+        nodes: [
+          { paperId: 'af-d-src', title: '斜跨源卡', year: 2020, month: 5, slot: 1 },
+          { paperId: 'af-d-f1', title: '斜跨占位一', year: 2020, month: 5, slot: 2 },
+          { paperId: 'af-d-f2', title: '斜跨占位二', year: 2020, month: 5, slot: 3 },
+          { paperId: 'af-d-tgt', title: '斜跨目标卡', year: 2020, month: 5, slot: 4 }
+        ],
+        edges: []
+      }
+    )
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '斜跨源卡')
@@ -471,7 +500,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '带桩甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R3 实测 route=band（障碍拦直连——route-slots R1 型）').toBe('band')
+    expect(route0, 'R3 实测 route=band（障碍拦直连散开承接——route-slots R1 型；[F-SLOTGRID-01 U2] 网格通道横移）').toBe('band')
     await zoomProbe(win, 1.0, async () => {
       await expectAnchorConsistency(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙' }], 'R3 z=1.0')
     })
@@ -485,9 +514,11 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
   })
 
   /**
-   * R-锚级一致④corridor（带桩族）：跨年中隔障碍（route-slots R2 型）。
+   * R-锚级一致④跨年绕行（[F-SLOTGRID-01 U2] corridor 退役→绕行族 band/
+   * detour 承接——route-slots R2 型；兜底 overlap 亦可态〔端点锚=direct
+   * 判别锚恒落 12 锚〕）。
    */
-  test('R-锚级一致④corridor：端点恒落 12 锚体系+首段外法线（zoom 三档）', async () => {
+  test('R-锚级一致④跨年绕行：端点恒落 12 锚体系（U2 绕行族 band/detour——zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r4-'))
     await seedFixture(userData, ['af-c4-a', 'af-c4-o', 'af-c4-b'], ['跨年甲', '跨年障', '跨年乙'], {
@@ -503,7 +534,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '跨年甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R4 实测 route=corridor（跨年绕行——route-slots R2 型）').toBe('corridor')
+    expect(['band', 'detour'], `R4 实测 route=${route0}（跨年绕行族——route-slots R2 型，U2 五态域）`).toContain(route0)
     await zoomProbe(win, 1.0, async () => {
       await expectAnchorConsistency(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙' }], 'R4 z=1.0')
     })

@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T15:20:06.8146632Z",
+    "generatedAt":  "2026-10-07T15:36:19.7655007Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -303,7 +303,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage-anchor-consistency.spec.ts",
-                      "sha256":  "bb07cf5663802433e50ae0cc034ff99caab9ad6da84abeddd2b21509cdba7794"
+                      "sha256":  "966dbbb77a5967b69a55fa31274c9b2ca1bf6f08df02d2131cc3a18f19b5bf3c"
                   },
                   {
                       "path":  "tests/e2e/lineage-obstacle-audit.spec.ts",
@@ -311,7 +311,7 @@
                   },
                   {
                       "path":  "tests/e2e/lineage-route-slots.spec.ts",
-                      "sha256":  "a72fdce0d6767a5b814a945c19ec57d4680f80d99725dab72a772d2a9b1a5096"
+                      "sha256":  "9c303bd46a52924c67f3d957e1165af5e7abf0c6ad35885047d1f928633301fb"
                   },
                   {
                       "path":  "tests/e2e/lineage-sidebar.spec.ts",
@@ -827,7 +827,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
-                      "sha256":  "b63bef7c6eeb74cd182b43dbd32cc0c6e52911c7ef4707c80a03682e1ae1af83"
+                      "sha256":  "25743c57e49dbc679ae9b1a1fa131a5cc4b5aafe2215cb6c2f474ca3a0f075e4"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-assign.test.ts",

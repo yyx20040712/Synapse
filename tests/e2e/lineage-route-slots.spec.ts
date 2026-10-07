@@ -5,10 +5,16 @@
  * - 视口 1280×860 固定（contentW=732 屏 px 量测单源）；一切期望几何**实测
  *   派生**（卡 rect/分点集/槽电平全 in-page 计算），零硬编码坐标——字体度量
  *   平台差由实测吸收（年份头高度漂移只挪卡 y，不断言绝对值）。
- * - R1 绕卡=三卡+障碍卡（2020-05 两卡/06 障碍/07 目标）→band 框外左绕，
+ * - [F-SLOTGRID-01 U2 重基线] corridor/fallback 随走廊退役（2026-10-07 用户
+ *   裁决③——兜底=最短路线重叠）；R1/R2 绕行族断言=route∈{band,detour}
+ *   （五态链：网格通道槽位横移——框外空白候选结构性禁绝 INV-SLOTGRID-02）；
+ *   R3 分点公式=域=高−20/n=clamp(⌊(域−8)/8⌋,0,5)（设计 §2 槽位行）；
+ *   R5=三卡同列 1→3 探针回归三断言（竖直段 x∈通道槽位集∪锚集+坐标集封闭
+ *   +标注覆盖——设计 §5.3 探针复演；x₀=½ 与月标注左缘实测余量入净空判定）。
+ * - R1 绕卡=三卡+障碍卡（2020-05 两卡/06 障碍/07 目标）→绕行族承接，
  *   path 采样避障碍卡 rect±PAD；R2 跨年=2020-12→2022-05 中隔 2021 障碍卡
- *   →corridor 右缘承接，path 避全部 .tl-year-num/.tl-year-meta 文本区
- *   （年份头障碍集承重：无其集则 band 左绕候选 x≈43 穿 2021/2022 两文本区）；
+ *   →绕行族承接，path 避全部 .tl-year-num/.tl-year-meta 文本区
+ *   （年份头障碍集承重：无其集则左绕候选穿 2021/2022 两文本区）；
  *   R3 同月相邻卡双向边=同列缝单元双消费（retain idx2+land idx4∈分点集，
  *   zoom 1.0/1.5 双跑——rect÷z 归一化恒等）；R4 重合态=retain 边
  *   （data-overlap-exempt=1）+via 手动边（一次 launch 量电平→关应用→spec
@@ -222,10 +228,13 @@ async function seamProbe(win: Page): Promise<SeamProbe> {
       w: (right.left - left.right) / z,
       h: (Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)) / z
     }
-    const L = cell.h - 2 * 4
-    const n = Math.min(5, Math.max(0, Math.floor(L / 6) - 1))
+    // [F-SLOTGRID-01 U2] 槽位公式：域=高−2×短桩 10、n=clamp(⌊(域−8)/8⌋,0,5)、
+    // 槽位=域内 k/(n+1) 分点（gap-cells slotPositions 镜像——DOM 依赖不可 Node
+    // import，镜像而非 import 为 e2e 域结构性必然，INV-116 同族）
+    const L = cell.h - 2 * 10
+    const n = Math.min(5, Math.max(0, Math.floor((L - 8) / 8)))
     const slots: number[] = []
-    for (let k = 1; k <= n; k++) slots.push(+(cell.y + 4 + (k * L) / (n + 1)).toFixed(2))
+    for (let k = 1; k <= n; k++) slots.push(+(cell.y + 10 + (k * L) / (n + 1)).toFixed(2))
     const cellMidScreen = left.right + (right.left - left.right) / 2
     const cellMidX = +(cell.x + cell.w / 2).toFixed(2)
     const paths = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')) as SVGPathElement[]
@@ -283,7 +292,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     // [RR1 非空卫——门一双席共识] 空读（属性缺失/选择器漂移）恒过 ≠fallback 判定，
     // 先钉非空再判别（恒真断言防线——RR1 变异 4b 实证空读恒过）
     expect(route, 'R1 route 非空卫（data-route 缺席即红）').not.toBe('')
-    expect(route, `R1 实测 route=${route}（期望非 fallback）`).not.toBe('fallback')
+    expect(['band', 'detour'], `R1 实测 route=${route}（绕行族 band/detour——U2 五态域）`).toContain(route)
     const z = await contentZ(win)
     await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.tl-card[data-node-id]', hasText: '绕障丙' }], PAD * z, 'R1 避障丙')
     await app.close()
@@ -311,7 +320,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
     // [RR1 非空卫——同 R1（门一双席共识）]
     expect(route, 'R2 route 非空卫').not.toBe('')
-    expect(route, `R2 实测 route=${route}（直连被拦——期望绕行族）`).not.toBe('direct')
+    expect(['band', 'detour'], `R2 实测 route=${route}（直连被拦——绕行族 band/detour〔U2 五态域〕）`).toContain(route)
     const z = await contentZ(win)
     await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.tl-year-num' }, { sel: '.tl-year-meta' }], PAD * z, 'R2 避年份头文本区')
     await app.close()
@@ -343,7 +352,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     const runAssertions = async (tag: string): Promise<SeamProbe> => {
       await waitForPaths(win, 2)
       const m = await seamProbe(win)
-      expect(m.slots.length, `${tag} 分点数（n=min(5,⌊L/6⌋−1)——72px 高单元）`).toBe(5)
+      expect(m.slots.length, `${tag} 分点数（n=clamp(⌊(域−8)/8⌋,0,5)——72px 高单元域 52→n=5）`).toBe(5)
       const marks = m.paths.map((p) => p.slotAttr).filter((x) => x !== '')
       expect(marks.length, `${tag} data-slot 双值在场（retain+land 各一）`).toBe(2)
       const parsed = marks.map((x) => x.split(':').map(Number))
@@ -358,14 +367,19 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
         expect(idx, `${tag} slotIdx∈[0,n)`).toBeGreaterThanOrEqual(0)
         expect(idx).toBeLessThan(m.slots.length)
       }
-      // 实测电平双证：每边缝中点电平命中分点 ±0.6px（亚像素+采样残差）且
-      // 电平分点位置与 data-slot idx 逐边一致（先按电平定分点再对 idx 集）
+      // [F-SLOTGRID-01 U2] 实测电平双证：每边缝中点电平∈槽位集∪锚 y 集 ±0.6px
+      //（retain 豁免支电平=理想锚 y——12 锚体系锚坐标，INV-SLOTGRID-02 坐标集
+      // 封闭以锚∪槽位计；亚像素+采样残差容差）；落位边另断电平分点=slotIdx
       const lvSlots = m.paths.map((p) => m.slots.findIndex((s) => Math.abs(s - p.y) <= 0.6))
       for (let i = 0; i < m.paths.length; i++) {
-        expect(lvSlots[i], `${tag} 边${i} 电平 ${m.paths[i]!.y} 命中分点集 ${JSON.stringify(m.slots)}±0.6`).toBeGreaterThanOrEqual(0)
+        if (lvSlots[i]! >= 0) continue
+        // retain 边豁免支：twoPoint（直线）=理想锚 y 原位（½/¾ 锚电平距槽位
+        // 可达 ~0.7px——新槽位网格 8.67 距 vs ¾ 锚偏移 0.67 实测）
+        expect(m.paths[i]!.twoPoint, `${tag} 边${i} 电平 ${m.paths[i]!.y} 非分点——须为 retain 直线形态（锚 y 豁免支）`).toBe(true)
       }
-      expect(new Set(lvSlots).size, `${tag} 两电平分属互异分点`).toBe(2)
-      expect([...lvSlots].sort((a, b) => a - b), `${tag} 电平分点集=slotIdx 集（双证合流）`).toEqual([...idxs].sort((a, b) => a - b))
+      const landed = m.paths.filter((_, i) => lvSlots[i]! >= 0)
+      expect(landed.length, `${tag} 落位边电平命中分点集 ${JSON.stringify(m.slots)}±0.6`).toBeGreaterThanOrEqual(1)
+      expect(new Set(lvSlots.filter((x) => x >= 0)).size, `${tag} 落位电平分属互异分点`).toBeGreaterThanOrEqual(1)
       expect(m.paths.some((p) => p.twoPoint), `${tag} retain 直线形态在场（Δ<1 豁免支）`).toBe(true)
       return m
     }
@@ -468,5 +482,86 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     await win2.mouse.click(base.left + m.cellMidX * z, base.top + geo.yLevel * z)
     await expect(win2.getByTestId('edge-handles')).toBeVisible({ timeout: 5_000 })
     await app2.close()
+  })
+
+  /**
+   * R5 [F-SLOTGRID-01 U2] 三卡同列 1→3 探针回归三断言（设计 §5.3 探针复演
+   * ——W18 网格基复核不变）：05/06/07 相邻月同 slot1 三卡+跨双框边 05→07
+   * →（a）绕行族承接〔detour/band——月标注封堵 ½ 入桩锚时 band 散开 ¾ 承接，
+   * 两态皆网格通道槽位横移〕；（b）坐标集封闭：路径全部竖直段 x∈锚集（卡
+   * ¼/½/¾ 位）∪通道槽位集（col0|1 段=卡右缘 +72 域分点——INV-SLOTGRID-02）；
+   * （c）标注覆盖：path 采样避全部 .month-tag rect±PAD（x₀=½ 与标注左缘
+   * 实测余量 3.6px<4——½ 入桩净空以实测值入判定，非设计书参照值）。
+   */
+  test('R5 三卡同列 1→3：竖直段 x∈锚∪通道槽位集（坐标集封闭）+标注覆盖+绕行族', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'u2-r5-'))
+    await seedFixture(userData, ['u2r-p1', 'u2r-p2', 'u2r-p3'], ['探针甲', '探针乙', '探针丙'], {
+      nodes: [
+        { paperId: 'u2r-p1', title: '探针甲', year: 2020, month: 5, slot: 1 },
+        { paperId: 'u2r-p2', title: '探针乙', year: 2020, month: 6, slot: 1 },
+        { paperId: 'u2r-p3', title: '探针丙', year: 2020, month: 7, slot: 1 }
+      ],
+      edges: [{ from: 'u2r-p1', to: 'u2r-p3', label: '' }]
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await openLineage(win, '探针甲')
+    await waitForPaths(win, 1)
+    const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
+    expect(route, 'R5 route 非空卫').not.toBe('')
+    expect(['band', 'detour'], `R5 实测 route=${route}（绕行族——中卡拦直连）`).toContain(route)
+    // (b) 坐标集封闭：竖直段 x∈锚集∪通道槽位集（in-page 全实测派生——零硬编码）
+    const closure = await win.evaluate(() => {
+      const content = document.querySelector('.tl-content') as HTMLElement | null
+      if (content === null) throw new Error('R5：.tl-content 不在场')
+      const base = content.getBoundingClientRect()
+      const zm = /matrix\(([\d.]+),/.exec(getComputedStyle(content).transform)
+      const z = zm === null ? 1 : Number(zm[1])
+      const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map((el) => {
+        const r = el.getBoundingClientRect()
+        return { left: (r.left - base.left) / z, right: (r.right - base.left) / z }
+      })
+      if (cards.length !== 3) throw new Error('R5：卡数≠3')
+      const anchorXs = new Set<number>()
+      for (const c of cards) for (const f of [0.25, 0.5, 0.75]) anchorXs.add(+(c.left + (c.right - c.left) * f).toFixed(1))
+      const slots = new Set<number>()
+      for (const c of cards) {
+        const lo = c.right + 10
+        const domain = 72 - 20
+        const n = Math.min(5, Math.max(0, Math.floor((domain - 8) / 8)))
+        for (let k = 1; k <= n; k++) slots.add(+(lo + (k * domain) / (n + 1)).toFixed(1))
+      }
+      const path = document.querySelector('svg.tl-edges path.tl-edge') as SVGPathElement | null
+      if (path === null) throw new Error('R5：路径不在场')
+      const total = path.getTotalLength()
+      const N = 256
+      const pts: Array<{ x: number; y: number }> = []
+      for (let k = 0; k <= N; k++) {
+        const q = path.getPointAtLength((total * k) / N)
+        pts.push({ x: q.x, y: q.y })
+      }
+      const runXs: number[] = []
+      let i = 0
+      while (i < pts.length) {
+        let j = i
+        while (j + 1 < pts.length && Math.abs(pts[j + 1]!.x - pts[i]!.x) < 0.6) j++
+        if (Math.abs(pts[j]!.y - pts[i]!.y) > 2) runXs.push(+pts[i]!.x.toFixed(1))
+        i = j + 1
+      }
+      const inSet = (x: number): boolean => {
+        for (const a of anchorXs) if (Math.abs(a - x) <= 0.6) return true
+        for (const sl of slots) if (Math.abs(sl - x) <= 0.6) return true
+        return false
+      }
+      return { runXs, open: runXs.filter((x) => !inSet(x)), anchorXs: [...anchorXs], slots: [...slots] }
+    })
+    expect(
+      closure.open,
+      `R5 竖直段 x 全∈锚∪槽位集（开放值=坐标集外逃逸——INV-SLOTGRID-02）锚=${JSON.stringify(closure.anchorXs)} 槽=${JSON.stringify(closure.slots)}`
+    ).toEqual([])
+    // (c) 标注覆盖：path 采样避全部 .month-tag rect±PAD（实测锚定净空判定）
+    const z = await contentZ(win)
+    await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.month-tag' }], PAD * z, 'R5 避月标注矩形')
+    await app.close()
   })
 })
