@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T03:35:29.2813386Z",
+    "generatedAt":  "2026-10-07T05:14:05.2716884Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "c6c8843fe15e97648aeff4ddc8277fe95ae0f91bbb7e4bac54d0f304fc6d8e3c"
+                      "sha256":  "8d7d8802e868e71ad889ec030190e2366a02e09956b29cab9b9f3c063ef0ff3e"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -300,6 +300,10 @@
                   {
                       "path":  "tests/e2e/lineage.spec.ts",
                       "sha256":  "2e2eb009061f70125285f7e2fcce1cb62594d02558dd1a6e02395250a021f26d"
+                  },
+                  {
+                      "path":  "tests/e2e/lineage-anchor-consistency.spec.ts",
+                      "sha256":  "d1742f3eead84c70c6f53c8e975498f2ee43f3fd2716974f940ffdc2439b604e"
                   },
                   {
                       "path":  "tests/e2e/lineage-obstacle-audit.spec.ts",
@@ -698,6 +702,10 @@
                       "sha256":  "97f381cbe2857a821f6760c9e03ae755ec4b023f12af9e977522c44faa4049f3"
                   },
                   {
+                      "path":  "tests/unit/renderer/lineage-anchfix01.test.tsx",
+                      "sha256":  "9d3b9cadbf4dc65141aba88839d713cb64f642fa299d9477f784386fa66724bc"
+                  },
+                  {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
                       "sha256":  "b7f8e056ccf7aece7e01e4fa2d299370c0a5382903cc6900a3735c47bb9703a4"
                   },
@@ -715,7 +723,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-c2-anchors.test.tsx",
-                      "sha256":  "4c4b0facd9487c177dcffd29908fe785a729c37d3ef9b4488fa4d70a78d54c1c"
+                      "sha256":  "8d10cd6b48c8697483f6a070480691b4fcc7c538df441fb1f3f47c4c760863f4"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-c2-esc.test.tsx",

@@ -207,17 +207,19 @@ describe('F-UIRES-03 C2 P2 吸附高亮层（DrawAnchorHint 演化——12 屏�
     expect(dot.getAttribute('cy')).toBe('136')
   })
 
-  it('dragging 近目标锚（snap 维）：circle.snapped=目标锚（B 左中 100,336）——预览端点同源（P4）', () => {
+  it('dragging 近目标锚（snap 维）：circle.snapped=目标卡规则锚（[F-ANCHFIX-01 批 1b] 选锚统一=B top ½ 164,300——selectAnchor(B, A 中心)）——预览端点同源（P4）', () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid')
     })
     pointer(req('.tl-content'), 'pointerdown', 228, 136) // A 右中锚起拖
-    docPointer('pointermove', 102, 336) // B 左中锚近旁→snap
+    docPointer('pointermove', 102, 336) // B 左中锚近旁→目标识别（nearestAnchor 识别面沿承）
     const dot = req('[data-testid="draw-anchor-hint"] circle.snapped')
-    expect(dot.getAttribute('cx')).toBe('100')
-    expect(dot.getAttribute('cy')).toBe('336')
-    docPointer('pointerup', 100, 336)
+    // snap=selectAnchor(B_rect, A 中心) 规则锚：dx=0/dy<0 竖向 top+投影 pos=64→½
+    // 位（旧期望=最近锚 100,336——随 D 裁决「统一为路由规则」更新）
+    expect(dot.getAttribute('cx')).toBe('164')
+    expect(dot.getAttribute('cy')).toBe('300')
+    docPointer('pointerup', 164, 300)
   })
 
   it('DrawPreview 吸附圆点收敛删除（单渲染点=DrawAnchorHint）：dragging+snap 态 draw-preview 内 circle 零', () => {

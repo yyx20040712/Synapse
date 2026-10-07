@@ -1,8 +1,7 @@
-# 交接书 v156 —— F-ANCHFIX-01 批 1a 探针收官·C/D 二轮裁决落定·批 1b/1c 全解闸（2026-10-07 晚）
+# 交接书 v156 —— F-ANCHFIX-01 批 1a 探针收官·C/D 二轮裁决落定·批 1b 三屋毕（2026-10-07 晚）
 
-> 前承 v155（R3 设计批）。本档=批 1a 收口档；**实施单源=设计书 v1.2**
-> （docs/design/2026-10-07_f-uires04-anchfix01-design.md——v1.2 批 1a
-> 探针终裁+C/D 二轮裁决回填）。
+> 前承 v155（R3 设计批）。本档=批 1a 收口+**批 1b 收官**（同日续场）；
+> **实施单源=设计书 v1.2**（docs/design/2026-10-07_f-uires04-anchfix01-design.md）。
 
 ## §0 本批战报（runId=20261007-anchfix01-b1a）
 
@@ -45,13 +44,21 @@
 
 ## §3 实施开工序（设计书 v1.1 §6 沿承+闸门态更新）
 
-1. **批 1b（D 已裁，可即开——三屋）**：useDrawLine 选锚统一（nearestAnchor
-   →selectAnchor 族：armed hint+拖拽 snap+finish 目标三消费点）+防御性
-   单测（store zoom vs computed matrix 一致性）+销项 e2e 常设化
-   （[locked-change]：unlock→新增 spec→generate→apply→全量 verify）
-   +INV-A 登记（invariants.md 受锁）；**§2 修正三项全数入 1b 票面**
-   （桩 d 级断言改「首段方向沿外法线 ±2°」形态+Oracle 分路由镜像+
-   六态矩阵实测 route 断言）。
+**§3′ 批 1b 已毕（2026-10-07 深夜，runId=20261007-anchfix01-b1b，三屋完链）**：
+useDrawLine 选锚统一落地（snap/fromEff=selectAnchor 同函数同参+三处复位+
+DrawPreview 起点消费）；防御单测 6 用例+锚级一致 e2e 常设 8 用例（R-零跳动
+两端 ≤0.5px+R-锚级一致五态实测 route——C2 挂账销项落地）；INV-119 登记
+（代号 INV-A 改号+等价性精化：corridor/fallback+AnchorUse 散开=零跳动承诺
+域外）。门一 k1+d1 双 PASS（B0/B0）+门二实证 7/7（独立探针复跑分叉 5/6→
+0/6、跳锚 32-66.48px→全 0——散开域三场景亦收敛，优于承诺域口径）。证据档=
+仓外 `20261007-anchfix01-b1b/`。**下一场首动作=批 1c**（CardAnchorDots 12
+锚 armed 小型化全显+占用槽高亮——消费 slotMarks/占用态与 1b e2e 面协同）；
+毕后 F-ANCHFIX-01 翻 done+用户视检（R3 轮模式）。原开工序沿承：
+
+1. **批 1b（已毕——见 §3′）**：useDrawLine 选锚统一+防御性
+   单测+销项 e2e 常设化（[locked-change]）+INV-A 登记；**§2 修正三项全数
+   入 1b 票面**（桩 d 级断言改「首段方向沿外法线 ±2°」形态+Oracle 分路由
+   镜像+六态矩阵实测 route 断言）。
 2. 批 1c（C 已裁）：CardAnchorDots 12 锚 armed 全显+占用槽高亮——批 1b
    毕后接续（显示层消费 slotMarks/占用态与 1b e2e 面协同）。
 3. 批 2（F-DRAGVIS-01 票）/批 3a（F-UIRES-04 票，G2 白名单批）无闸门

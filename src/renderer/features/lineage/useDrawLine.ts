@@ -6,11 +6,20 @@
  * ── 态空间（宪法状态纪律）──
  * armed=工具态（view.tool ∈ {draw-solid, draw-dashed}——驻 view.store，页面
  * 内持久：切 select/切模式/切图中止=resetTool 承载）× drag ∈ {idle, dragging} ×
- * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚} × [C2·P5] anchor ∈
+ * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚, [F-ANCHFIX-01 批 1b]
+ * fromEff: 有效源锚（规则锚——目标识别后预览起点 morph 至 selectAnchor
+ * 规则锚；未命中目标=null 回落 from.pt。会话身份仍=from）} × [C2·P5] anchor ∈
  * {none, picked(nodeId)}（点两卡连边链第一卡——**迁驻 view.store**〔C1 驻本
  * hook 现域设计修订：escapeStep 单口须触达清锚+document 双监听注册序脆弱
  * 面禁用〕：读写经 setDrawAnchor 单口，清锚写点收敛 store 动作〔resetTool/
  * setMode/resetForMount〕——本 hook 下降沿清锚 effect 随迁退役）。
+ * [F-ANCHFIX-01 批 1b] 选锚统一（用户裁决 D=统一为路由规则）：拖拽吸附锚
+ * snap.pt=selectAnchor(命中卡 rect, 源卡 rect 中心).pt——同函数同参于
+ * routeOne direct 态选锚（chain.ts:161-162），所见即所得（松手零跳动；
+ * 探针 20261007-anchfix01-b1a 分叉率 5/6 实锤——设计书 v1.2）。目标卡识别
+ * 面沿承 nearestAnchor（12 锚域识别目标卡不变）。零跳动承诺域=无先占边
+ * （多边同锚 AnchorUse 散开+corridor/fallback 恒右缘=域外——预览无法模拟
+ * 全图路由；INV-119 等价性精化条款+批 1c 占用槽高亮补散开可见性）。
  *
  * ── 迁移表（§2.4 逐条+C1 增补）──
  * - armed+pointerdown 近锚（12 锚/卡±12 内容坐标——[lnfix1] 6→12 容差放宽）
@@ -58,7 +67,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { RefObject } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
-import { anchorPoint, type Pt, type Rect, type Side } from './routing/anchors'
+import { anchorPoint, selectAnchor, type Pt, type Rect, type Side } from './routing/anchors'
 import { contentScale, toContentPt as zoomToContentPt, toContentRect } from './timeline-zoom'
 import { showToast } from '../../shared/ui/toast-store'
 import { useLineageStore } from './lineage.store'
@@ -81,6 +90,11 @@ export interface DrawLineState {
   from: DrawAnchor | null
   cursor: Pt | null
   snap: DrawAnchor | null
+  /** [F-ANCHFIX-01 批 1b] 有效源锚（规则锚）：目标识别后预览起点 morph 至
+   *  selectAnchor(源卡 rect, 目标卡 rect 中心)——与 snap 端同为路由规则锚；
+   *  未命中目标=null（DrawPreview 回落 from.pt）。会话身份仍=from（建边收尾
+   *  恒读 from.nodeId） */
+  fromEff: DrawAnchor | null
 }
 
 /** 卡 rect 采集（.tl-card[data-node-id] getBoundingClientRect→内容坐标；
@@ -148,7 +162,7 @@ export function useDrawLine(args: {
   /** dragging 收尾后的 click 抑制（一次性——防建边触发卡选中） */
   consumeClickSuppress(): boolean
 } {
-  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null })
+  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
   const [hint, setHint] = useState<DrawAnchor | null>(null)
   const suppressClickRef = useRef(false)
   const stateRef = useRef(state)
@@ -165,7 +179,7 @@ export function useDrawLine(args: {
     // [RR1 k1-N2] 保锚死码删除沿承：dragging 期锚恒 null（起拖即清锚——
     // handlePointerDown 经 setDrawAnchor 置 null），取消复位无锚维
     // （[C2·P5] anchor 迁 view.store，非本 state 域）
-    setState({ phase: 'idle', from: null, cursor: null, snap: null })
+    setState({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
   }, [])
 
   // [回炉 R1②] 下降沿清理：切模式/切 select/切图（tool/mode/folderId 任一变化）
@@ -259,7 +273,7 @@ export function useDrawLine(args: {
     (clientX: number, clientY: number): void => {
       const from = stateRef.current.from
       suppressClickRef.current = true // click 抑制（一次性）
-      setState({ phase: 'idle', from: null, cursor: null, snap: null })
+      setState({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
       if (!armed()) return // [回炉 R1③] armed 闸：收尾时工具已非画线=不建边
       if (from === null) return
       const content = args.contentRef.current
@@ -358,7 +372,7 @@ export function useDrawLine(args: {
       // [F-UIRES-03 C1·C2·P5] 起拖=新手势，click 链锚让位（拖拽会话自持源锚；
       // 混手势可预期性：拖拽起=锚清，点链不复活旧锚）——store 单口写
       useLineageViewStore.getState().setDrawAnchor(null)
-      setState({ phase: 'dragging', from: hit, cursor: p, snap: null })
+      setState({ phase: 'dragging', from: hit, cursor: p, snap: null, fromEff: null })
       // [RR 补批 RR17] 会话指针绑定：他指事件（pointerId 异于会话主指）不
       // 驱动不收尾不取消；pid 缺省（鼠标/jsdom MouseEvent 型）放行
       const pid = ev.pointerId
@@ -375,8 +389,25 @@ export function useDrawLine(args: {
         const c = args.contentRef.current
         if (c === null) return
         const pt = toContentPt(c, e.clientX, e.clientY)
-        const snap = nearestAnchor(cardRects(c), pt, s.from?.nodeId)
-        setState({ ...s, cursor: pt, snap })
+        const cards = cardRects(c)
+        // [F-ANCHFIX-01 批 1b] 目标卡识别沿承 nearestAnchor（12 锚域识别面
+        // 不变——仅取 nodeId）；吸附锚=路由规则锚 selectAnchor 同函数同参于
+        // routeOne direct 态（所见即所得——松手零跳动）；未命中=snap/fromEff
+        // 双 null（cursor 跟随沿承，预览起点回落 from.pt）
+        const hit = nearestAnchor(cards, pt, s.from?.nodeId)
+        let snap: DrawAnchor | null = null
+        let fromEff: DrawAnchor | null = null
+        if (hit !== null && s.from !== null) {
+          const srcRect = cards.find((cd) => cd.nodeId === s.from!.nodeId)?.rect
+          const tgtRect = cards.find((cd) => cd.nodeId === hit.nodeId)?.rect
+          if (srcRect !== undefined && tgtRect !== undefined) {
+            const sc: Pt = { x: srcRect.x + srcRect.w / 2, y: srcRect.y + srcRect.h / 2 }
+            const tc: Pt = { x: tgtRect.x + tgtRect.w / 2, y: tgtRect.y + tgtRect.h / 2 }
+            snap = { nodeId: hit.nodeId, pt: selectAnchor(tgtRect, sc).pt }
+            fromEff = { nodeId: s.from.nodeId, pt: selectAnchor(srcRect, tc).pt }
+          }
+        }
+        setState({ ...s, cursor: pt, snap, fromEff })
       }
       const up = (e: PointerEvent | MouseEvent): void => {
         if (!sameSession(e)) return // [RR17] 他指 up 不收尾本会话
