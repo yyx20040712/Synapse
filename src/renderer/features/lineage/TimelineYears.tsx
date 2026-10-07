@@ -18,7 +18,8 @@
  * （INV-107）；[F 项搭车] 头注「fixed 离流」陈旧句按真实机制改写
  * （absolute 非 fixed——含块=.month-frame，见 card-drag-session 头注）。
  * [lnfix2] 月组框 ref 注册链退役（跨月联动死码）；data-frame-key 属性保留
- * （DragCandidates 查询源——drag-slot-candidates.tsx）。
+ * （e2e 断言锚——[F-SLOTGRID-01 U3] DragCandidates 的框查询消费随候选阵列
+ * 算术化退役，属性承载断言定位面沿承）。
  */
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
@@ -171,18 +172,36 @@ export function TimelineYears(props: {
                     </span>
                     {/* [F-SLOTGRID-01 U1] 行容器逐行渲染（数组序贪心分行——
                         占位/拖卡按 kids 原位入行；.tl-row 保持 static
-                        position——拖拽 .dragging absolute 包含块链不变） */}
-                    {partitionRows(kids.length, props.frameW).map((row, r) => (
-                      <div className={r % 2 === 1 ? 'tl-row odd' : 'tl-row'} key={r}>
-                        {row.map((i) => kids[i]!)}
-                      </div>
-                    ))}
+                        position——拖拽 .dragging absolute 包含块链不变）。
+                        [U3 RR1-1] 拖起（active）尾挂时分区计数=在流数
+                        （kids.length−1——拖卡恒数组末位不占行槽）：满末行拖起
+                        不再溢出仅含 absolute 拖卡的空 .tl-row（.month-frame
+                        flex gap 72 撑高框 72px=拖起瞬间跳动）；拖卡 appended
+                        末行渲染——**并入同一 children 数组**（独立 JSX 槽位会
+                        跨槽 unmount/remount=ghost inline 全灭，R1/R2 红实锤；
+                        同列表 keyed 调和=节点保育移动）——absolute 定位与所在
+                        行无关（.tl-row static，包含块恒=.month-frame）。
+                        !active（settle 回流）路径零改（拖卡在流占位=kids 原位）。 */}
+                    {(() => {
+                      const dragTail =
+                        isSrc && slot !== null && slot.active ? kids[kids.length - 1] ?? null : null
+                      const rows = partitionRows(dragTail !== null ? kids.length - 1 : kids.length, props.frameW)
+                      return rows.map((row, r) => {
+                        const children = row.map((i) => kids[i]!)
+                        if (dragTail !== null && r === rows.length - 1) children.push(dragTail)
+                        return (
+                          <div className={r % 2 === 1 ? 'tl-row odd' : 'tl-row'} key={r}>
+                            {children}
+                          </div>
+                        )
+                      })
+                    })()}
                     {isSrc && slot !== null && slot.active && (
                       <DragCandidates
-                        frameKey={key}
-                        nodeId={slot.nodeId}
                         insertIdx={slot.insertIdx}
                         active={slot.active}
+                        frameW={props.frameW}
+                        total={m.nodes.length}
                       />
                     )}
                   </div>

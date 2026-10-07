@@ -4,6 +4,9 @@
 /**
  * [F-LGRAPH-01①U2] card-drag-session —— pointer 拖拽会话域（自 useCardDrag
  * 拆出；几何判定=card-drag-geometry，飞行机制=card-drag-flight）。
+ * [F-SLOTGRID-01 U3] 落点=算术网格（insertIndexFromGrid——INV-111 消费面，
+ * 含源语义/推挤滞回消除/padding-box 换算语义=card-drag-grid.ts 头注；旧
+ * rect 逐帧实测插入位判定随本批退役）。
  * [F-UIRES-03 C3] 改月弹层互斥闸随改月链退役删除
  * （INV-107）；源框物理域判定（overSourceFrame/PULL_BAND_PX）收窄语义=
  * 纯回弹护栏+同框下拉带（stretch 保留面）——非改月判定面（呈报主控处置）。
@@ -25,7 +28,8 @@ import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import { frameKeyOf } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
-import { insertIndexFromRects, srcGroupIdsOf } from './card-drag-geometry'
+import { srcGroupIdsOf } from './card-drag-geometry'
+import { insertIndexFromGrid } from './card-drag-grid'
 import { contentScale } from './timeline-zoom'
 
 export type DragPhase = 'idle' | 'pending' | 'dragging' | 'settle'
@@ -104,6 +108,22 @@ const toContent = (content: HTMLElement, clientX: number, clientY: number): { x:
   const base = content.getBoundingClientRect()
   const z = contentScale()
   return { x: (clientX - base.left) / z, y: (clientY - base.top) / z }
+}
+
+/**
+ * [F-SLOTGRID-01 U3] 指针→月框 padding-box 坐标（INV-111 命中系——预裁决 D2）：
+ * frame gBCR 相对差÷z（zoom 正交——内容坐标同系）后减 computed border 布局宽
+ * （border 内缘起算=padding-box 原点；border 客户域宽=bl·z 故除后再减）。
+ * 框原点拖拽全程不动（框只向下生长）——逐 move 实读无缓存需求；jsdom
+ * computed border 缺省空串→parseFloat NaN→0（零边框约定与单测桩同系）。
+ */
+const framePointer = (frameEl: HTMLDivElement, clientX: number, clientY: number): { x: number; y: number } => {
+  const fr = frameEl.getBoundingClientRect()
+  const z = contentScale()
+  const cs = getComputedStyle(frameEl)
+  const bl = Number.parseFloat(cs.borderLeftWidth) || 0
+  const bt = Number.parseFloat(cs.borderTopWidth) || 0
+  return { x: (clientX - fr.left) / z - bl, y: (clientY - fr.top) / z - bt }
 }
 
 export function useDragSession(args: {
@@ -211,15 +231,16 @@ export function useDragSession(args: {
       const over = overSourceFrame(s.frameEl, e.clientX, e.clientY)
       let nextIdx = s.insertIdx
       if (over && s.frameEl !== null) {
-        const othersCount = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]')).filter(
-          (c) => c.dataset.nodeId !== s.nodeId
-        ).length
-        if (extend) nextIdx = othersCount // 新行空位=组末
+        // [F-SLOTGRID-01 U3] 落点=含源网格算术（INV-111 消费面——设计 §5.5/
+        //  预裁决 D1/D3）：rowCounts 含源卡（srcIds 全长），判定面不随占位槽
+        //  腾位漂移（推挤滞回结构性消除——旧 rect 逐帧实测法随本批退役）；
+        //  W=frame computed width 实时读（use-capacity-layout 同一 CSS 单源），
+        //  读取失败（NaN/unmeasured）经 capacities 状态机降级单行语义。
+        if (extend) nextIdx = s.srcIds.length - 1 // 新行空位=组末
         else {
-          const rects = Array.from(s.frameEl.querySelectorAll<HTMLElement>('.tl-card[data-node-id]'))
-            .filter((c) => c.dataset.nodeId !== s.nodeId)
-            .map((c) => c.getBoundingClientRect())
-          nextIdx = insertIndexFromRects(rects, e.clientX, e.clientY)
+          const p = framePointer(s.frameEl, e.clientX, e.clientY)
+          const w = Number.parseFloat(getComputedStyle(s.frameEl).width)
+          nextIdx = insertIndexFromGrid(p.x, p.y, w, s.srcIds.length, s.srcIdx)
         }
       }
       if (over !== s.overFrame || nextIdx !== s.insertIdx || extend !== s.extend) {

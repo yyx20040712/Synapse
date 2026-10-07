@@ -363,6 +363,47 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     expect(cardOf('B').classList.contains('dragging')).toBe(true)
   })
 
+  it('[F-SLOTGRID-01 U3 RR1-1] 拖起幻影空行不生：满末行拖起（active 尾挂）→行数=在流数分区（kids−1）恒稳+拖卡驻末行', () => {
+    // 3 卡组 W=570.4：稳定 partition(3)=[3] 单行满员；拖起（insertIdx=0）在流
+    // =占位+B+C=3 → 行数恒 1。旧法 kids=4（含尾挂拖卡）→partition(4)=[3,1]
+    // 溢出仅含 absolute 拖卡的空 .tl-row=.month-frame flex gap 72px 撑高框
+    // 72px（拖起瞬间跳动、settle 收回）——门一 k1-W3 实锤，红证 54 号日志
+    mount(
+      <TimelineYears
+        groups={groupTimeline([
+          node('A', { year: 2022, month: 5 }),
+          node('B', { year: 2022, month: 5 }),
+          node('C', { year: 2022, month: 5 })
+        ])}
+        pubNos={new Map()}
+        paperMetrics={{}}
+        selectedNodeId={null}
+        frameW={570.4}
+        linkSourceId={null}
+        dragSlot={{ srcKey: '2022|5', nodeId: 'A', insertIdx: 0, active: true, overFrame: true }}
+        onCardClick={() => undefined}
+      />
+    )
+    const frame = host?.querySelector('.month-frame')
+    expect(frame).not.toBeNull()
+    const rows = Array.from(frame?.querySelectorAll(':scope > .tl-row') ?? [])
+    // 行数=在流数分区（拖起前后恒 1——旧法 2=幻影空行红点）
+    expect(rows.length, '满末行拖起行数恒稳（kids−1 分区——空 .tl-row 在场即红）').toBe(1)
+    // 拖卡仍在树：驻末行（.dragging absolute 定位与所在行无关——.tl-row static）
+    const dragging = cardOf('A')
+    expect(dragging.classList.contains('dragging')).toBe(true)
+    expect(rows[rows.length - 1]!.contains(dragging)).toBe(true)
+    // 末行 children 序=在流序（占位+B+C）+尾挂拖卡
+    expect(
+      Array.from(rows[0]!.children).map((el) => [el.className.split(' ')[0], (el as HTMLElement).dataset.nodeId ?? ''])
+    ).toEqual([
+      ['drag-slot', ''],
+      ['tl-card', 'B'],
+      ['tl-card', 'C'],
+      ['tl-card', 'A']
+    ])
+  })
+
   it('[F-SLOTGRID-01 U1] unmeasured 降级（jsdom 无 RO→frameW=0）：全部卡入首行单行+DOM 序不变+不崩（W=0 防御死循环锁）', () => {
     mount(
       <LineageTimeline

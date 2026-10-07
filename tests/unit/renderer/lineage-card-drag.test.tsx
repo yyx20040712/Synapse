@@ -6,13 +6,19 @@
  * 即拒，闸面=lineage-mode-canvas.test）/picker≠idle 禁拖（拾取优先）/popover
  * 开禁拖/拖拽无 Esc 取消（松手恒落当前槽）/settle 期再 pointerdown
  * =忽略/阈值未过=单击选中既有链。跨格序列与几何槽位（同行左半/跨行上半/
- * 框外淡化）+纯函数 insertIndexFromRects/frameKeyOf 直测。
+ * 框外淡化）+纯函数 frameKeyOf 直测。
  * [F-UIRES-03 C3] 改月域用例（预演纯函数直测/改月弹层链）随改月链退役删除
  * （INV-107——MonthPop 链测试=lineage-month-pop.test 整件退役）。
  * （几何经 getBoundingClientRect spy 定值——jsdom 零布局；transitionend 以
  * Object.assign(new Event) 附 propertyName 派发。）
  * [lnfix2] 下拉扩展（冻结基准）组拆驻 lineage-card-stretch.test.tsx（本件
  * 500 行红线——lnfix1 拆新件先例同族）。
+ * [F-SLOTGRID-01 U3] γ 重基线（setup 级）：落点接线=insertIndexFromGrid 算术
+ * （断言文本零改——test-surface 契约面保全）；本件指针坐标改网格算术位
+ * （B cell1 中心 276/C cell2 中心 476——capacity 常量系），算术面新用例驻
+ * lineage-drag-grid.test.ts（纯函数）+lineage-drag-session-grid.test.tsx
+ * （会话级）；insertIndexFromRects 纯函数直测组随函数退役删除（豁免条目
+ * 2026-10-08 主控落案=方案切换删旧）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -21,7 +27,6 @@ import { toastStoreSpy } from '../../utils/api-client-mock'
 import { stubRowFollowFlow } from '../../utils/live-frame'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
-import { insertIndexFromRects } from '../../../src/renderer/features/lineage/useCardDrag'
 import { frameKeyOf } from '../../../src/renderer/features/lineage/lineage-timeline'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
@@ -137,29 +142,12 @@ afterEach(() => {
 
 describe('[T3-P8] 纯函数直测（frameKeyOf/applyMovePreview/insertIndexFromRects）', () => {
   // [F-UIRES-03 C3] describe 名保留历史原文（test-surface 按例签名比对——
-  // 内嵌保留例 frameKeyOf/insertIndexFromRects 签名稳定）；applyMovePreview
-  // 两例随改月链退役删除（INV-107）
+  // 内嵌保留例 frameKeyOf 签名稳定）；applyMovePreview 两例随改月链退役删除
+  // （INV-107）；[F-SLOTGRID-01 U3] insertIndexFromRects 直测例随函数退役删除
+  // （豁免条目在案 scripts/test-surface.exemptions.json——2026-10-08 主控落）
   it('frameKeyOf：year|month 序列化含 null 形', () => {
     expect(frameKeyOf(2022, 9)).toBe('2022|9')
     expect(frameKeyOf(null, null)).toBe('null|null')
-  })
-
-  it('insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位', () => {
-    const rects = [
-      { left: 0, top: 0, width: 128, height: 72 },
-      { left: 148, top: 0, width: 128, height: 72 },
-      { left: 296, top: 92, width: 128, height: 72 }
-    ]
-    // 第二卡右半（x=230 > 148+64=212 中心）→ 其后（含跨入行 2 上半带的卡前）
-    expect(insertIndexFromRects(rects, 230, 20)).toBe(2)
-    // 首卡左半（x=10 < 0+64）→ 首位
-    expect(insertIndexFromRects(rects, 10, 20)).toBe(0)
-    // 跨行带（y=140 脱行 0 带 [−57.6,129.6]）：第三卡左半（x=330 < 296+64）→ 其前
-    expect(insertIndexFromRects(rects, 330, 140)).toBe(2)
-    // 跨行带第三卡右半 → 末位
-    expect(insertIndexFromRects(rects, 380, 140)).toBe(3)
-    // 空列表 → 0
-    expect(insertIndexFromRects([], 140, 140)).toBe(0)
   })
 })
 
@@ -189,7 +177,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     // [F-UIRES-03 T0] 随动模型示范应用（§8.1.6）：静态定值 mock 改 DOM 流序
     // 派生（stubRowFollowFlow——占位槽插入/移位=真机腾位语义；起步/步进与
     // 原静态定值同值 12/18/148）。判别语义升级：插位后其余卡 rect 随流移位
-    // 参与后续 pointermove 的 insertIndexFromRects 派生（静态 mock 下恒不移）
+    // 参与后续 pointermove 的插入位派生（静态 mock 下恒不移）
     mount([node('A'), node('B'), node('C')])
     const f = req('.month-frame') as HTMLElement
     stubRowFollowFlow(f)
@@ -197,8 +185,9 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     pMove(66, 44)
     let ph = req('.drag-slot')
     expect(ph.classList.contains('faded')).toBe(false) // 框内不淡化
-    // 指针落 B 右半（x=240 > 160+64=224 中心）→ 插位=B 后 C 前
-    pMove(240, 40)
+    // [F-SLOTGRID-01 U3] 指针落 B（cell1）中心 276 右侧（x=350——unmeasured
+    // 单行算术：col=round((350-76)/200)=1→after B）→ 插位=B 后 C 前
+    pMove(350, 40)
     ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     expect(ph.previousElementSibling?.isEqualNode(cardOf('B'))).toBe(true)
@@ -211,10 +200,10 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     pUp(999, 40)
     fireEnd(cardOf('A'))
     expect(reorder).not.toHaveBeenCalled()
-    // 回框内松手=落当前候选槽（B 右半→[B,A,C]）
+    // 回框内松手=落当前候选槽（B 中心右侧→[B,A,C]）
     pDown(cardOf('A'), 60, 40)
-    pMove(240, 40)
-    pUp(240, 40)
+    pMove(350, 40)
+    pUp(350, 40)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
   })
@@ -227,10 +216,12 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     stubRect(cardOf('B'), 12, 110)
     stubRect(cardOf('C'), 160, 110)
     pDown(cardOf('A'), 60, 40)
-    pMove(150, 130) // 跨行带（y=130 脱行 0 带 [−39.6,147.6]）：C 左半（150 < 160+64）→ 插 C 前
+    // [F-SLOTGRID-01 U3] unmeasured 单行算术：py=130 脱行带行钳回 row0；x=300
+    // 落 B（cell1）中心 276 右侧→after B→插 C 前（跨带指针恒按 px 中心序）
+    pMove(300, 130)
     const ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
-    pUp(150, 100)
+    pUp(300, 100)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
   })
@@ -243,8 +234,8 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     stubRect(cardOf('C'), 308, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(460, 40) // 末位（460 > 308+128=436 → C 后=组末）
-    pUp(460, 40)
+    pMove(500, 40) // 末位（500 > C（cell2）中心 476 → after C=组末）
+    pUp(500, 40)
     expect(q('.drag-slot')).toBeNull()
     const order = [...req('.month-frame').querySelectorAll('.tl-card')].map((c) => (c as HTMLElement).dataset.nodeId)
     expect(order).toEqual(['B', 'C', 'A'])
@@ -266,8 +257,8 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(240, 40) // B 右半 → 末位
-    pUp(240, 40)
+    pMove(300, 40) // B（cell1）中心 276 右侧 → 末位
+    pUp(300, 40)
     // settle 飞行中（transitionend 未派发）：新 pointerdown+move 零动作
     pDown(cardOf('B'), 150, 200)
     pMove(170, 220)
@@ -333,8 +324,8 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(240, 40)
-    pUp(240, 40)
+    pMove(300, 40) // B（cell1）中心右侧 → 末位
+    pUp(300, 40)
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
@@ -377,8 +368,8 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(cardOf('A').style.marginLeft).toBe('0px') // dragging 期恒压 0px（会话防御写沿承——U3 网格联动重估）
     expect(req('.tl-content').classList.contains('tl-measure')).toBe(false)
     spyTop.mockRestore()
-    pMove(460, 40) // 组末（>308+128=436）
-    pUp(460, 40)
+    pMove(500, 40) // 组末（> C（cell2）中心 476）
+    pUp(500, 40)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
   })
@@ -392,8 +383,8 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
       stubRect(cardOf('B'), 160, 18)
       pDown(cardOf('A'), 60, 40)
       pMove(66, 44)
-      pMove(240, 40)
-      pUp(240, 40)
+      pMove(300, 40) // B（cell1）中心右侧 → 末位
+      pUp(300, 40)
       expect(reorder).not.toHaveBeenCalled() // settle 落定（事件/兜底）后才写
       act(() => {
         vi.advanceTimersByTime(650)
@@ -413,7 +404,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     stubRect(cardOf('B'), 160, 18)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
-    pMove(240, 40)
+    pMove(300, 40) // B（cell1）中心右侧 → 末位（cancel 事件坐标在框内=落当前候选槽）
     act(() => {
       document.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true, clientX: 200, clientY: 40 }))
     })

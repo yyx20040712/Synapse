@@ -1092,6 +1092,12 @@
       "caseTitle": "[回炉 B2] 散开候选避开已 commit 槽（占用预检）：slot1 被占+slot0 月标挡→散至 slot2",
       "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
       "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "insertIndexFromRects：同行判卡左半/跨行判上半；无前置=末位",
+      "reason": "F-SLOTGRID-01 U3 方案切换=删旧：rect 逐帧实测插入位判定随算术网格化（insertIndexFromGrid）整体退役，函数与直测用例同步删除（断言级行为面由 lineage-drag-grid.test 12 例+lineage-drag-session-grid.test 7 例 NEW 承载）",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §5.5/§8-U3（U3 简报预裁 D1——审计档=仓外 scripts-audits/20261008-slotgrid-u3/60-implementation-report.md §八）"
     }
   ]
 }

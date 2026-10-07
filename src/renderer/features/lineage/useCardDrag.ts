@@ -3,8 +3,8 @@
  * [T3-P8] useCardDrag —— 槽位拖拽重排状态机编排 hook（mockup L893-1010
  * 语义）。[F-LGRAPH-01①U2] 拆件四域：pointer 会话=card-drag-session.ts
  * （useDragSession）/FLIP 飞行=card-drag-flight.ts（startFlight）/几何判定=
- * card-drag-geometry.ts——本件=编排薄壳（既有导出面：insertIndexFromRects/
- * DragPhase/DragSlotPreview 经 re-export 保活）。
+ * card-drag-geometry.ts——本件=编排薄壳（既有导出面：DragPhase/DragSlotPreview
+ * 经 re-export 保活）。
  * [F-UIRES-03 C3] 改月链（改月弹层/改月预演/改月写路径）随改月单口裁决
  * 退役删除（INV-107——改月唯一入口=MetaEditDialog 月份字段）；本件收窄为
  * 纯拖拽编排，改月注释典故随符号族清零。
@@ -29,7 +29,6 @@ import { useDragSession } from './card-drag-session'
 import type { DragPhase, DragSlotPreview } from './card-drag-session'
 
 export type { DragPhase, DragSlotPreview } from './card-drag-session'
-export { insertIndexFromRects } from './card-drag-geometry'
 
 export function useCardDrag(args: {
   nodes: LineageNode[]
