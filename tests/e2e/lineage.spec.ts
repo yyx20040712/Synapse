@@ -1925,14 +1925,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * [F-UIRES-03 C2·P1] 断言①=静态锚点几何（设计稿 §2 C2 单位域定稿）：
-   * armed 态每卡四边中点锚（.card-anchor-dot——DOM 常驻+CSS 显隐）逐一核
-   * |渲染锚心−几何中点|≤1px（DoD 直引测量式：rect.left+rect.width/2 vs
-   * expectAnchorCenterX——gBCR 取盒）；显隐两支=armed 全卡可见+select 态
-   * hover 卡可见/离开隐藏（CSS 通道承载面）。zoom 矩阵 {0.8,1.0,1.5}。
-   * armed 待机无写链——close 免保存。
+   * [F-UIRES-03 C2·P1 / F-ANCHFIX-01 批 1c] 断言①=静态锚点几何（12 锚全显）：
+   * armed 态每卡 4 side×3 slot=12 锚（.card-anchor-dot——DOM 常驻+CSS 显隐）
+   * 逐一核 |渲染锚心−卡边 ¼/½/¾ 位|≤1px（DoD 直引测量式：rect.left+
+   * rect.width/2 vs 期望槽位——gBCR 取盒）；armed 通道 dot 直径 5px
+   * （--r:2.5px 小型化——裁决 C/R4 视觉初值，computed 断言）；显隐两支=
+   * armed 全卡 12 dot 可见+select 态 hover 卡仅 ½ 位（slot1）可见/离开隐藏
+   * （CSS 通道承载面）；hover 通道 dot 直径 8px 沿承（computed 断言）。
+   * zoom 矩阵 {0.8,1.0,1.5}。armed 待机无写链——close 免保存。
    */
-  test('C2a 静态锚点层：四边中点锚心=卡边几何中点（三档 zoom×每卡四锚）+hover 显隐', async () => {
+  test('C2a 静态锚点层：armed 12 锚锚心=卡边 ¼/½/¾ 位（三档 zoom×每卡 12 锚）+hover ½ 位显隐', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-c2a-'))
     await firstHop(userData)
@@ -1955,45 +1957,68 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-tool-solid').click()
     for (const z of [0.8, 1.0, 1.5]) {
       await zoomProbe(win, z, async () => {
-        // [RR1-1] pointer-events 单源断言（一锚即可——四锚同容器类 .card-anchors
+        // [RR1-1] pointer-events 单源断言（一锚即可——12 锚同容器类 .card-anchors
         // 统一继承，computed 继承链证容器规则在场；dot 若拦交互即红）
-        const pe = await root.locator('.card-anchor-dot[data-anchor-side="top"]').evaluate((el) => getComputedStyle(el).pointerEvents)
+        const pe = await root
+          .locator('.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="1"]')
+          .evaluate((el) => getComputedStyle(el).pointerEvents)
         expect(pe).toBe('none')
+        // [批 1c⑤f 改值] armed 通道 dot 尺寸 computed 断言（--r:2.5px→直径 5px）
+        const sizes = await root
+          .locator('.card-anchor-dot')
+          .evaluateAll((els) => els.map((el) => `${getComputedStyle(el).width}×${getComputedStyle(el).height}`))
+        expect(sizes).toHaveLength(12)
+        for (const s of sizes) expect(s, `zoom=${z} armed dot 直径`).toBe('5px×5px')
         for (const card of [root, nodeG(win, '脉络甲文献')]) {
           const rb = await card.boundingBox()
           if (rb === null) throw new Error(`卡不可见（zoom=${z}）`)
-          const centers: Record<string, { x: number; y: number }> = {
-            top: { x: rb.x + rb.width / 2, y: rb.y },
-            bottom: { x: rb.x + rb.width / 2, y: rb.y + rb.height },
-            left: { x: rb.x, y: rb.y + rb.height / 2 },
-            right: { x: rb.x + rb.width, y: rb.y + rb.height / 2 }
-          }
+          const fr = [0.25, 0.5, 0.75]
           for (const side of ['top', 'bottom', 'left', 'right'] as const) {
-            const dot = card.locator(`.card-anchor-dot[data-anchor-side="${side}"]`)
-            await expect(dot).toBeVisible()
-            const rect = await dot.evaluate((el) => el.getBoundingClientRect())
-            const exp = centers[side]!
-            expect(
-              Math.abs(rect.left + rect.width / 2 - exp.x),
-              `zoom=${z} ${side} 锚心 x：实测 ${rect.left + rect.width / 2} vs 期望 ${exp.x}`
-            ).toBeLessThanOrEqual(1)
-            expect(
-              Math.abs(rect.top + rect.height / 2 - exp.y),
-              `zoom=${z} ${side} 锚心 y：实测 ${rect.top + rect.height / 2} vs 期望 ${exp.y}`
-            ).toBeLessThanOrEqual(1)
+            for (let slot = 0; slot <= 2; slot++) {
+              const f = fr[slot]!
+              const exp =
+                side === 'top'
+                  ? { x: rb.x + rb.width * f, y: rb.y }
+                  : side === 'bottom'
+                    ? { x: rb.x + rb.width * f, y: rb.y + rb.height }
+                    : side === 'left'
+                      ? { x: rb.x, y: rb.y + rb.height * f }
+                      : { x: rb.x + rb.width, y: rb.y + rb.height * f }
+              const dot = card.locator(`.card-anchor-dot[data-anchor-side="${side}"][data-anchor-slot="${slot}"]`)
+              await expect(dot).toBeVisible()
+              const rect = await dot.evaluate((el) => el.getBoundingClientRect())
+              expect(
+                Math.abs(rect.left + rect.width / 2 - exp.x),
+                `zoom=${z} ${side}${slot} 锚心 x：实测 ${rect.left + rect.width / 2} vs 期望 ${exp.x}`
+              ).toBeLessThanOrEqual(1)
+              expect(
+                Math.abs(rect.top + rect.height / 2 - exp.y),
+                `zoom=${z} ${side}${slot} 锚心 y：实测 ${rect.top + rect.height / 2} vs 期望 ${exp.y}`
+              ).toBeLessThanOrEqual(1)
+            }
           }
         }
       })
     }
-    // 显隐②分支：select 态 hover 卡=锚点可见（edit 态 hover 通道——.editing 域）
+    // 显隐②分支：select 态 hover 卡=仅 ½ 位（slot1）锚点可见（edit 态 hover
+    // 通道——.editing 域；其余 slot dot display:none——批 1c 收窄语义沿承）
     await win.getByTestId('lineage-tool-select').click()
     const rbSel = await root.boundingBox()
     if (rbSel === null) throw new Error('select 态卡不可见')
     await win.mouse.move(rbSel.x + rbSel.width / 2, rbSel.y + rbSel.height / 2)
-    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeVisible()
+    const hoverTopMid = root.locator('.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="1"]')
+    await expect(hoverTopMid).toBeVisible()
+    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="0"]')).toBeHidden()
+    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="2"]')).toBeHidden()
+    // [批 1c⑤f 改值] hover 通道 dot 尺寸 computed 断言（--r 基值 4px→直径 8px 沿承）
+    const hoverSz = await hoverTopMid.evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return `${cs.width}×${cs.height}`
+    })
+    expect(hoverSz, 'hover 通道 slot1 dot 直径 8px 沿承').toBe('8px×8px')
     // 移出卡（工具条空白）=隐藏（display:none 通道）
     await win.mouse.move(640, 20)
-    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeHidden()
+    await expect(hoverTopMid).toBeHidden()
     // [F-UIRES-03 B5①搭车 v1.15 第五轮①] browse 负锚：退编辑模式 hover 卡→
     // 锚点隐藏（hover 显锚支收窄仅 edit 态——browse 无画线工具，显锚=视觉噪声）。
     // computed 断言载体=容器 .card-anchors（display 规则承载面——display:none
@@ -2004,7 +2029,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.mouse.move(rbBrowse.x + rbBrowse.width / 2, rbBrowse.y + rbBrowse.height / 2)
     const dispBrowse = await root.locator('.card-anchors').evaluate((el) => getComputedStyle(el).display)
     expect(dispBrowse, 'browse 态 hover 卡锚层 display:none（收窄负锚）').toBe('none')
-    await expect(root.locator('.card-anchor-dot[data-anchor-side="top"]')).toBeHidden()
+    await expect(hoverTopMid).toBeHidden()
     await app.close()
   })
 

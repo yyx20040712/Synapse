@@ -102,6 +102,9 @@
   --fs-tl-meta: 7.5px;  /* 小卡骑缝号/徽章/年月引用行（.c-no/.mb/.c-meta） */
   --fs-tl-hint: 10.5px; /* 空月框拖入提示（.frame-hint——P8 预留样式类） */
   --shadow-tl-sel: 0 3px 10px rgba(58, 91, 217, 0.18); /* 时间线小卡选中外辉（三族恒定——mockup .tl-card.sel） */
+  --anchor-dot-r: 4px; /* 画线锚 dot 半径基值（直径 8 画布 px——theme-lineage-tools
+     .card-anchor-dot var() 消费/12 锚定位同源；armed 通道局部覆写 2.5px=直径 5
+     〔F-ANCHFIX-01 批 1c 裁决 C——通道覆写驻彼件〕C-4c 语义锚：基值定义单源本表） */
   /* [T3-P7B] 脉络工具条/弹层族（值源=mockups/2026-09-26_v2_theme-{light,dark,sepia}
      .html 三稿同值实证 L206-219/L302——主题恒定硬编码注记；shadow 命名独立沿
      --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；--signal-a08=mockup 直值

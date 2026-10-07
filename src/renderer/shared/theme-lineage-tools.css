@@ -101,7 +101,8 @@
    menu 态驱动 .ctx-hlt） */
 .tl-card.ctx-hlt { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* ══ [F-UIRES-03 C2·P1] 画线锚点静态层（四边中点——DOM 常驻+CSS 显隐单源）══ */
+/* ══ [F-UIRES-03 C2·P1 / F-ANCHFIX-01 批 1c] 画线锚点静态层（12 锚全 DOM
+   常驻+CSS 显隐单源——显示域=可吸附判定域自洽 INV-120）══ */
 /* 锚层：absolute 铺卡面、默认隐藏、不拦交互；z 5=卡面按钮区同级浮层。
    inset:-1px=对齐卡 border box（absolute 包含块=padding box，.tl-card
    border 1px 内移补偿——单源锚定：卡 border 值变须同步） */
@@ -112,26 +113,48 @@
   pointer-events: none;
   z-index: 5;
 }
-/* 显隐两支并集（P1；[F-UIRES-03 B5①搭车 v1.15 第五轮①] hover 支收窄仅
+/* 容器显隐两支并集（P1；[F-UIRES-03 B5①搭车 v1.15 第五轮①] hover 支收窄仅
    edit 态——browse/focus 无画线工具，hover 显锚=不可用操作暗示的视觉噪声；
    CSS 单选择器收窄=.timeline.editing 域作用）：①armed（.tl-content.drawing
    ——idle+dragging 全程）全部卡；②edit 态（.timeline.editing）hover 中的卡 */
 .tl-content.drawing .card-anchors { display: block; }
 .timeline.editing .tl-card:hover .card-anchors { display: block; }
-/* 中点锚 dot：直径 8 画布 px（随 .tl-content 缩放）；fill 纯白票面语义经
-   --accent-ink token（三族恒白）+1.5 画布 px 主色描边（色值字面量禁令
-   ——token 承载）；四向定位=锚心落卡边线中点（出界 4px 在 .month-frame
-   padding 内、overflow:hidden 不裁） */
+/* 12 锚 dot（4 side×3 slot ¼/½/¾）：直径单源 var(--anchor-dot-r)（基值
+   4px=直径 8 画布 px 沿承——token 定义单源 theme.css 脉络小卡族表）；fill
+   纯白票面语义经 --accent-ink token（三族恒白）+1.5 画布 px 主色描边
+   （色值字面量禁令——token 承载）；dot 默认隐藏（两通道规则显启——armed
+   全 12/hover 仅 ½） */
 .card-anchor-dot {
+  display: none;
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: calc(var(--anchor-dot-r) * 2);
+  height: calc(var(--anchor-dot-r) * 2);
   border-radius: 50%;
   background: var(--accent-ink);
   border: 1.5px solid var(--accent);
   box-sizing: border-box;
 }
-.card-anchor-dot[data-anchor-side="top"] { left: calc(50% - 4px); top: -4px; }
-.card-anchor-dot[data-anchor-side="bottom"] { left: calc(50% - 4px); bottom: -4px; }
-.card-anchor-dot[data-anchor-side="left"] { left: -4px; top: calc(50% - 4px); }
-.card-anchor-dot[data-anchor-side="right"] { right: -4px; top: calc(50% - 4px); }
+/* armed 通道：全 12 dot 显示+半径小型化（局部覆写 2.5px=直径 5 画布 px
+   ——批 1c 裁决 C/R4 视觉初值，最终验收=用户视检） */
+.tl-content.drawing .card-anchor-dot { display: block; --anchor-dot-r: 2.5px; }
+/* edit-hover 通道（B5① 收窄语义沿承）：仅 ½ 位（slot1）显示，其余 slot
+   dot 保持基值 display:none（直径沿承 8px 不小型化） */
+.timeline.editing .tl-card:hover .card-anchor-dot[data-anchor-slot="1"] { display: block; }
+/* 占用槽高亮（双通道同规则——占用标记单源=routeAll anchorMarks/
+   data-anchors，INV-120）：占用 dot 主色填充 */
+.card-anchor-dot[data-occupied="1"] { background: var(--accent); }
+/* 12 锚定位（四向×三序）：沿边=calc(¼/½/¾ 位−var(--anchor-dot-r))、边向外=−var(--anchor-dot-r)
+   （锚心落卡边线槽位——出界 --r 在 .month-frame padding 内、overflow:hidden
+   不裁；沿承既有四向定位模式） */
+.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="0"] { left: calc(25% - var(--anchor-dot-r)); top: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="1"] { left: calc(50% - var(--anchor-dot-r)); top: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="2"] { left: calc(75% - var(--anchor-dot-r)); top: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="bottom"][data-anchor-slot="0"] { left: calc(25% - var(--anchor-dot-r)); bottom: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="bottom"][data-anchor-slot="1"] { left: calc(50% - var(--anchor-dot-r)); bottom: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="bottom"][data-anchor-slot="2"] { left: calc(75% - var(--anchor-dot-r)); bottom: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="left"][data-anchor-slot="0"] { top: calc(25% - var(--anchor-dot-r)); left: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="left"][data-anchor-slot="1"] { top: calc(50% - var(--anchor-dot-r)); left: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="left"][data-anchor-slot="2"] { top: calc(75% - var(--anchor-dot-r)); left: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="right"][data-anchor-slot="0"] { top: calc(25% - var(--anchor-dot-r)); right: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="right"][data-anchor-slot="1"] { top: calc(50% - var(--anchor-dot-r)); right: calc(var(--anchor-dot-r) * -1); }
+.card-anchor-dot[data-anchor-side="right"][data-anchor-slot="2"] { top: calc(75% - var(--anchor-dot-r)); right: calc(var(--anchor-dot-r) * -1); }

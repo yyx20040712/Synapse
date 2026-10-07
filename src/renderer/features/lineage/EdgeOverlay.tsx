@@ -20,6 +20,7 @@ import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
 import { routeAll } from './lineage-routing'
 import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle } from './edge-overlay-geom'
+import { publish } from './anchor-occupancy'
 import { useEdgeEdit } from './use-edge-edit'
 import { EdgeHitLayer } from './EdgeHitLayer'
 import { EdgeMenuHost } from './EdgeMenuHost'
@@ -115,7 +116,11 @@ export function EdgeOverlay(props: {
     const run = (): void => {
       raf = 0
       if (content.classList.contains('tl-measure')) return // 冻结期旧路径由 CSS 隐去
-      setPaths(routeAll(live.inputs, buildSnapshot(content), (msg) => console.warn(msg)))
+      const next = routeAll(live.inputs, buildSnapshot(content), (msg) => console.warn(msg))
+      setPaths(next)
+      // [F-ANCHFIX-01 批 1c] 占用态 rAF 单写者 wholesale 发布（setPaths 后
+      // 同步——CardAnchorDots getOcc 消费；卸载不清场=同树同亡，头注申报）
+      publish(next)
     }
     raf = requestAnimationFrame(run)
     const ro =
@@ -182,6 +187,7 @@ export function EdgeOverlay(props: {
               data-dashed={e.dashed ? '1' : '0'}
               data-route={p.route}
               data-slot={p.slotMarks}
+              data-anchors={p.anchorMarks}
               data-overlap-exempt={p.overlapExempt === true ? '1' : undefined}
               data-slot-fallback={p.slotFallback === true ? '1' : undefined}
               d={p.d}

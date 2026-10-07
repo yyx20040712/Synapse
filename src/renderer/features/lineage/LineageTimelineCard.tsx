@@ -154,9 +154,10 @@ export function LineageTimelineCard(props: {
         {impact !== null && <span className="c-if">{`IF ${impact}`}</span>}
         {cited !== null && <span className="c-cited">{`被引 ${cited}`}</span>}
       </div>
-      {/* [F-UIRES-03 C2·P1] 四边中点静态锚（直径 8 画布 px——DOM 常驻，
-          显隐 CSS 通道：.drawing 全卡∪edit 态 hover 卡（B5①搭车收窄）；pointer-events:none） */}
-      <CardAnchorDots />
+      {/* [F-UIRES-03 C2·P1/批 1c] 12 静态锚（DOM 常驻，nodeId 透传占用订阅；
+          显隐 CSS 通道：.drawing 全卡 12 dot∪edit 态 hover 卡仅 slot1（B5①
+          收窄沿承）；pointer-events:none） */}
+      <CardAnchorDots nodeId={props.node.id} />
     </article>
   )
 }

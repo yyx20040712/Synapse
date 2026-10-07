@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
  * [F-UIRES-03 C2] P1 静态锚点层+P2 吸附高亮层锁定（设计稿 v1.13 §2 C2；
- * 任务书 P1/P2/P4）：P1=每卡四边中点静态锚（slot ½ 位——直径 8 画布 px；
- * DOM 常驻+显隐 CSS 通道：.drawing 全卡∪edit 态 hover 卡（[B5①搭车] v1.15
- * 第五轮①收窄——显隐可见性断言归 e2e，本件锁结构面+CSS 收窄单源文本断言）；
+ * 任务书 P1/P2/P4）：P1=每卡 12 静态锚（4 side×3 slot ¼/½/¾——[F-ANCHFIX-01
+ * 批 1c] armed 全显小型化+占用高亮，直径 var(--r) 单源：armed 5px/hover 8px；
+ * DOM 常驻+显隐 CSS 通道：.drawing 全卡 12 dot∪edit 态 hover 卡仅 slot1（B5①
+ * 收窄沿承——显隐可见性断言归 e2e，本件锁结构面+CSS 收窄单源文本断言）；
  * P2=吸附高亮演化（dot 直径 12 屏幕 px=画布 r=6/z 随 zoom
  * 补偿+高亮环+.snapped 类；idle 待机经 hint 通道/dragging 经 snap 维——
  * 单渲染点=DrawAnchorHint，DrawPreview 吸附圆点收敛删除）；
@@ -119,8 +120,8 @@ afterEach(() => {
   host = null
 })
 
-describe('F-UIRES-03 C2 P1 静态锚点层（四边中点锚——DOM 常驻+CSS 显隐通道）', () => {
-  it('armed 态：每卡 .card-anchors 在场+恰 4 锚点+data-anchor-side 四值齐（top/bottom/left/right）', () => {
+describe('F-UIRES-03 C2 P1 静态锚点层（12 锚全显——DOM 常驻+CSS 显隐通道）', () => {
+  it('armed 态：每卡 .card-anchors 在场+恰 12 锚点+data-anchor-side×data-anchor-slot 笛卡尔积齐值', () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid')
@@ -128,22 +129,37 @@ describe('F-UIRES-03 C2 P1 静态锚点层（四边中点锚——DOM 常驻+CSS
     for (const id of ['A', 'B']) {
       const layer = req(`.tl-card[data-node-id="${id}"] .card-anchors`)
       const dots = Array.from(layer.querySelectorAll('.card-anchor-dot'))
-      expect(dots).toHaveLength(4)
-      const sides = dots.map((d) => d.getAttribute('data-anchor-side')).sort()
-      expect(sides).toEqual(['bottom', 'left', 'right', 'top'])
+      expect(dots).toHaveLength(12)
+      const pairs = dots
+        .map((d) => `${d.getAttribute('data-anchor-side')}:${d.getAttribute('data-anchor-slot')}`)
+        .sort()
+      expect(pairs).toEqual([
+        'bottom:0', 'bottom:1', 'bottom:2',
+        'left:0', 'left:1', 'left:2',
+        'right:0', 'right:1', 'right:2',
+        'top:0', 'top:1', 'top:2'
+      ])
     }
   })
 
-  it('[RR1-1] 结构面：.card-anchors 直接子元素恰 4 个 .card-anchor-dot+四值齐（嵌套层级判定——多子/包层即红）', () => {
+  it('[RR1-1] 结构面：.card-anchors 直接子元素恰 12 个 .card-anchor-dot+side×slot 笛卡尔积齐值（嵌套层级判定——多子/包层即红）', () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid')
     })
     const layer = req('.tl-card[data-node-id="A"] .card-anchors')
     const kids = Array.from(layer.children)
-    expect(kids).toHaveLength(4) // 直接子恰 4（querySelectorAll 后代查询盖不住包层漂移）
+    // 直接子恰 12（querySelectorAll 后代查询盖不住包层漂移）
+    expect(kids).toHaveLength(12)
     for (const kid of kids) expect(kid.classList.contains('card-anchor-dot')).toBe(true)
-    expect(kids.map((k) => k.getAttribute('data-anchor-side')).sort()).toEqual(['bottom', 'left', 'right', 'top'])
+    expect(
+      kids.map((k) => `${k.getAttribute('data-anchor-side')}:${k.getAttribute('data-anchor-slot')}`).sort()
+    ).toEqual([
+      'bottom:0', 'bottom:1', 'bottom:2',
+      'left:0', 'left:1', 'left:2',
+      'right:0', 'right:1', 'right:2',
+      'top:0', 'top:1', 'top:2'
+    ])
     // pointer-events:none 契约面=CSS 单源（.card-anchors 规则）——有效断言驻
     // e2e C2a computed-style（jsdom 不解析 CSS，本件锁结构）
   })

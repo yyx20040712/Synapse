@@ -33,6 +33,12 @@
  * =±2°——设计 v1.2 随裁修正①：stripCollinear+圆角切点截短使「次点=stubEnd」
  * 结构性不成立，改断首段方向）。zoom 三档 {1.0, 0.8, 1.5}（0.75 不可达——
  * badge 步进 0.1，探针 P2 实测）。
+ *
+ * ── R-占用协同（批 1c——呈裁 C 落点：armed 12 锚小型化全显+占用槽高亮）──
+ * armed 态每卡 .card-anchor-dot 恰 12；解析全 path data-anchors→逐锚断言
+ * 对应卡 dot[data-anchor-side][data-anchor-slot] 挂 data-occupied="1"、无锚
+ * 不挂（占用集精确相等——INV-120 强制方式承载面）。SYNAPSE_SHOT_DIR 环境
+ * 变量在场时顺带落两态视觉存证截图（仓外档案区通道——CI 未设即跳过）。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -571,5 +577,92 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       await expectAnchorConsistency(win2, [{ fromTitle: '手动甲', toTitle: '手动乙' }], 'R5 z=1.5')
     })
     await app2.close()
+  })
+})
+
+test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽高亮）', () => {
+  /**
+   * R-占用协同：armed 态每卡 .card-anchor-dot 恰 12（INV-120 显示域=可吸附
+   * 判定域）；解析全 path data-anchors→逐锚断言对应卡 dot[data-anchor-side]
+   * [data-anchor-slot] 挂 data-occupied="1"；无锚 dot 不挂（占用集精确相等
+   * ——多标/漏标即红）。占用标记单源=routeAll anchorMarks（EdgeOverlay
+   * data-anchors 透出）。SYNAPSE_SHOT_DIR 在场时落 armed/edit-hover 两态
+   * 视觉存证截图（⑤b——CI 未设即跳过）。
+   */
+  test('1c 占用协同：armed 每卡 12 dot+data-anchors 逐锚占用标记+无锚不挂', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'anchfix-1c-'))
+    await seedFixture(userData, ['af-o1-a', 'af-o1-b'], ['占协甲', '占协乙'], {
+      nodes: [
+        { paperId: 'af-o1-a', title: '占协甲', year: 2020, month: 5, slot: 1 },
+        { paperId: 'af-o1-b', title: '占协乙', year: 2020, month: 7, slot: 1 }
+      ],
+      edges: [{ from: 'af-o1-a', to: 'af-o1-b', label: '' }]
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await openLineage(win, '占协甲')
+    await waitForPaths(win, 1)
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    // armed：每卡恰 12 dot 且可见（显示域=判定域）
+    for (const title of ['占协甲', '占协乙']) {
+      const card = win.locator('.tl-card', { hasText: title }).first()
+      await expect(card.locator('.card-anchor-dot')).toHaveCount(12)
+      await expect(card.locator('.card-anchor-dot[data-anchor-side="top"][data-anchor-slot="0"]')).toBeVisible()
+      await expect(card.locator('.card-anchor-dot[data-anchor-side="right"][data-anchor-slot="2"]')).toBeVisible()
+    }
+    // 占用发布 settle（rAF 单写者→订阅重渲一拍余量）
+    await expect
+      .poll(async () => await win.evaluate(() => document.querySelectorAll('.card-anchor-dot[data-occupied="1"]').length), { timeout: 10_000 })
+      .toBeGreaterThan(0)
+    // in-page 取数：每卡占用标记清单（side 名→字母映射=data-anchors token 形）
+    // +全 path data-anchors
+    const data = await win.evaluate(() => {
+      const LETTER: Record<string, string> = { top: 't', bottom: 'b', left: 'l', right: 'r' }
+      const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]')) as HTMLElement[]
+      const occ: Record<string, string[]> = {}
+      for (const c of cards) {
+        occ[c.dataset.nodeId ?? ''] = Array.from(c.querySelectorAll('.card-anchor-dot[data-occupied="1"]')).map(
+          (d) => `${LETTER[(d as HTMLElement).dataset.anchorSide ?? ''] ?? '?'}${(d as HTMLElement).dataset.anchorSlot}`
+        )
+      }
+      const anchors = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')).map((p) => (p as SVGPathElement).dataset.anchors ?? '')
+      return { occ, anchors }
+    })
+    // 期望占用集=解析 data-anchors（token=cardId:side字母+slot——末冒号切分）
+    const expected: Record<string, string[]> = {}
+    for (const marks of data.anchors) {
+      expect(marks, '1c data-anchors 非空卫（占用单源在场）').not.toBe('')
+      for (const tok of marks.split(',')) {
+        const i = tok.lastIndexOf(':')
+        expect(i, `1c token 形卫（cardId:side+slot）：${tok}`).toBeGreaterThan(0)
+        const nodeId = tok.slice(0, i)
+        const mark = tok.slice(i + 1)
+        ;(expected[nodeId] ??= []).push(mark)
+      }
+    }
+    expect(Object.keys(expected).length, '1c 占用卡数=2（边两端卡）').toBe(2)
+    for (const [nodeId, marks] of Object.entries(expected)) {
+      const got = [...data.occ[nodeId] ?? []].sort()
+      // 逐锚协同（data-anchors 每锚↔dot 占用标记）+无锚不挂（集精确相等）
+      expect(got, `1c 卡 ${nodeId} 占用标记集=期望（逐锚协同+无锚不挂）`).toEqual([...marks].sort())
+    }
+    // ⑤b 视觉存证（env 门控——CI 未设即跳过）
+    const shotDir = process.env.SYNAPSE_SHOT_DIR
+    if (shotDir !== undefined && shotDir !== '') {
+      await win.screenshot({ path: join(shotDir, 'b1c-shot-armed.png') })
+    }
+    // edit-hover 态存证：中点 4 锚（slot1——hover 通道 ½ 子集沿承）
+    await win.getByTestId('lineage-tool-select').click()
+    const cardA = win.locator('.tl-card', { hasText: '占协甲' }).first()
+    const rb = await cardA.boundingBox()
+    if (rb === null) throw new Error('1c hover 态卡不可见')
+    await win.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+    await expect(cardA.locator('.card-anchor-dot[data-anchor-slot="1"]').first()).toBeVisible()
+    if (shotDir !== undefined && shotDir !== '') {
+      await win.screenshot({ path: join(shotDir, 'b1c-shot-hover.png') })
+    }
+    await app.close()
   })
 })

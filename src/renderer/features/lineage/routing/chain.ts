@@ -9,7 +9,7 @@
  * 承袭旧 applyBandLanes——共道分组字典序偏移域内等价）→回写 skel→finish；
  * band/corridor/fallback 三态骨架携桩段（stubs）入谓词复检。
  */
-import { AnchorUse, anchorPick, anchorPoint, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
+import { AnchorUse, anchorId, anchorPick, anchorPoint, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
 import { bandSkeleton, corridorSkeleton } from './bands'
 import { PAD, polylineClearStubs } from './avoid'
 import { buildRoundedPath, stripCollinear } from './rounding'
@@ -69,6 +69,8 @@ export interface RoutedPath {
   slotMarks?: string
   overlapExempt?: boolean
   slotFallback?: boolean
+  /** [F-ANCHFIX-01 批 1c] 锚占用观测串（生效 picks→anchorId 逗号连接——纯观测零行为变，INV-120）。均缺省=无透出 */
+  anchorMarks?: string
 }
 
 const CORRIDOR_W = 58
@@ -108,9 +110,15 @@ interface SkelResult {
   slotMarks?: string
   overlapExempt?: boolean
   slotFallback?: boolean
+  /** [F-ANCHFIX-01 批 1c] 锚占用观测串（SkelResult 中转——routeOne 填） */
+  anchorMarks?: string
 }
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
+
+/** [F-ANCHFIX-01 批 1c] picks→anchorMarks 观测串（显示真值=线视觉落点） */
+const anchorMarksOf = (picks: ReadonlyArray<[string, Side, number]>): string =>
+  picks.map(([id, side, slot]) => anchorId(id, side, slot)).join(',')
 
 /** [F-ROUTE-02 U3] 桩段派生：picks 每项 [id,side,slot]→{a: 锚点几何，b:
  *  外法线 10px 桩端}（与骨架首/末桩顶点全等——jogClearOfStub 消费） */
@@ -152,7 +160,9 @@ function routeOne(
   if (e.via !== undefined && e.via.length > 0) {
     const a = selectAnchor(src, e.via[0]!)
     const b = selectAnchor(tgt, e.via[e.via.length - 1]!)
-    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', lane: -1, stubExcluded: [] }
+    // [F-ANCHFIX-01 批 1c] 不 commit（散开语义零变）——anchorMarks 从
+    // selectAnchor 结果派生计入（显示真值：线视觉落在该锚）
+    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', lane: -1, stubExcluded: [], anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
   }
   const commit = (picks: ReadonlyArray<[string, Side, number]>): void => {
     for (const [id, side, slot] of picks) use?.commit(id, side, slot)
@@ -166,11 +176,12 @@ function routeOne(
   const bPt = pb.pt
   if (isVerticalSide(sa.side) && isVerticalSide(sb.side) && aPt.x === bPt.x) {
     if (polylineClearStubs([aPt, bPt], ends, obstacles)) {
-      commit([
+      const picks: ReadonlyArray<[string, Side, number]> = [
         [e.sourceId, pa.side, pa.slot],
         [e.targetId, pb.side, pb.slot]
-      ])
-      return { edgeId: e.edgeId, skel: [aPt, bPt], route: 'direct', lane: -1, stubExcluded: ends }
+      ]
+      commit(picks)
+      return { edgeId: e.edgeId, skel: [aPt, bPt], route: 'direct', lane: -1, stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
     }
   }
   // ② h-slip：近侧水平直连（x 带分离——单段直线，y 异高斜向允许）
@@ -182,11 +193,12 @@ function routeOne(
     const aH = ph.pt
     const bH = qh.pt
     if (polylineClearStubs([aH, bH], ends, obstacles)) {
-      commit([
+      const picks: ReadonlyArray<[string, Side, number]> = [
         [e.sourceId, ph.side, ph.slot],
         [e.targetId, qh.side, qh.slot]
-      ])
-      return { edgeId: e.edgeId, skel: [aH, bH], route: 'h-slip', lane: -1, stubExcluded: ends }
+      ]
+      commit(picks)
+      return { edgeId: e.edgeId, skel: [aH, bH], route: 'h-slip', lane: -1, stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
     }
   }
   // ③ band：行隙/框间带路由（zigzag 下降候选吸收瀑布错位）
@@ -204,14 +216,15 @@ function routeOne(
       bandS: band.s,
       bandCap: Math.max(1, band.cap),
       xLo: Math.min(...band.skel.map((p) => p.x)),
-      xHi: Math.max(...band.skel.map((p) => p.x))
+      xHi: Math.max(...band.skel.map((p) => p.x)),
+      anchorMarks: anchorMarksOf(band.picks)
     }
   }
   // ④ corridor：右缘面带 4 道环形探测（lane≥0=corridor/fallback 划界）
   const corr = corridorSkeleton(e.sourceId, e.targetId, src, tgt, snap, obstacles, ends, baseLane, use)
   if (corr !== null) {
     commit(corr.picks)
-    return { edgeId: e.edgeId, skel: corr.skel, route: 'corridor', lane: corr.lane, stubExcluded: ends, stubs: stubsOf(e, src, tgt, corr.picks) }
+    return { edgeId: e.edgeId, skel: corr.skel, route: 'corridor', lane: corr.lane, stubExcluded: ends, stubs: stubsOf(e, src, tgt, corr.picks), anchorMarks: anchorMarksOf(corr.picks) }
   }
   // ⑤ fallback：贴边（面带探测失败——数值退化不静默，lane=−1）
   const fx = snap.contentW - FALLBACK_INSET
@@ -236,7 +249,8 @@ function routeOne(
     route: 'fallback',
     lane: -1,
     stubExcluded: ends,
-    stubs: stubsOf(e, src, tgt, picks)
+    stubs: stubsOf(e, src, tgt, picks),
+    anchorMarks: anchorMarksOf(picks)
   }
 }
 
@@ -262,7 +276,8 @@ export function routeEdge(
     pts: r.skel,
     ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
     ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
-    ...(r.slotFallback === true ? { slotFallback: true } : {})
+    ...(r.slotFallback === true ? { slotFallback: true } : {}),
+    ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {})
   }
 }
 
@@ -319,6 +334,7 @@ export function routeAll(
     pts: r.skel,
     ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
     ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
-    ...(r.slotFallback === true ? { slotFallback: true } : {})
+    ...(r.slotFallback === true ? { slotFallback: true } : {}),
+    ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {})
   }))
 }
