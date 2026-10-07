@@ -5,23 +5,26 @@
  * 消费）/列缝 axis='y'（对称）。提取管线=卡对候选（开区间条带第三卡即弃=
  * 相邻性）→量化后全等去重（代表对=字典序最小）→带归属（行隙 y 中点/列缝
  * x 中点落带；无带=−1）→(bandId,槽轴小端,槽轴大端,idA,idB) 升序枚举 id→
- * 量化 rect。槽位=a1：L=W−2·PAD、n=min(SLOT_MAX,max(0,⌊L/SLOT_DIV⌋−1))、
- * 内缩区间 k/(n+1) 分点、逐位 0.1 量化（n=0 封闭）。closed 三源=n=0/行进
- * 净距<2·PAD+1/非卡障碍横贯；blockedSlots=槽线±PAD 走廊×行进全域 vs 非卡
- * 障碍静态预过滤。确定性红线：无随机/无 Date/无三角函数。纯函数零 DOM
- * import。
+ * 量化 rect。槽位=[F-SLOTGRID-01 U2 设计 §2 槽位行]：域=通道宽−2×短桩 10、
+ * n=clamp(⌊(域宽−8)/8⌋,0,5)、L_min=8、封闭判据=通道宽<36⇔n=0、槽位=域内
+ * k/(n+1) 分点、逐位 0.1 量化（72px 通道：域 52/n=5/槽距≈8.67）。
+ * closed 三源=n=0/行进净距<2·PAD+1/非卡障碍横贯；blockedSlots=槽线±PAD
+ * 走廊×行进全域 vs 非卡障碍静态预过滤。确定性红线：无随机/无 Date/无三角
+ * 函数。纯函数零 DOM import。
  */
 import type { Rect } from './anchors'
 import { PAD } from './avoid'
 import { bandsOf } from './bands'
 import type { LayoutSnapshot } from './chain'
 
-/** a1：槽距除数（间隙六分语义） */
-export const SLOT_DIV = 6
-/** a1：槽位上限（五候选位） */
+/** [F-SLOTGRID-01 U2 设计 §2] 槽位域双侧短桩（10px——通道域内缩量） */
+export const SLOT_STUB = 10
+/** [F-SLOTGRID-01 U2 设计 §2] 最小槽距 L_min=8（n 公式分母/封闭阈组成） */
+export const SLOT_L_MIN = 8
+/** 槽位上限（五候选位——72px 通道 n=5 恰满） */
 export const SLOT_MAX = 5
-/** a1：最小槽距（pitch=L/(n+1)≥本值恒成立——定理断言面，非运行时钳制） */
-export const SLOT_MIN_PITCH = 6
+/** 最小槽距（pitch=域宽/(n+1)≥L_min 恒成立——定理断言面，非运行时钳制） */
+export const SLOT_MIN_PITCH = SLOT_L_MIN
 /** 相等类判定容差（间距≤ε 不生成/投影覆盖/正相交判定） */
 export const CELL_EPS = 0.05
 /** 提取几何量化步进（rect 端点/槽位坐标——×10 取整再回除） */
@@ -51,18 +54,30 @@ const intersects = (a: Rect, b: Rect): boolean => {
   return ox > CELL_EPS && oy > CELL_EPS
 }
 
-/** a1 槽数：n=min(SLOT_MAX, max(0, ⌊(W−2·PAD)/SLOT_DIV⌋−1)) */
+/** [F-SLOTGRID-01 U2 设计 §2] 槽数：n=clamp(⌊(域宽−L_min)/L_min⌋,0,SLOT_MAX)，
+ *  域宽=通道宽−2×短桩——封闭判据=通道宽<2×短桩+2×L_min=36 ⇔ n=0（等价阈） */
 const slotCountOf = (w: number): number =>
-  Math.min(SLOT_MAX, Math.max(0, Math.floor((w - 2 * PAD) / SLOT_DIV) - 1))
+  Math.min(SLOT_MAX, Math.max(0, Math.floor((w - 2 * SLOT_STUB - SLOT_L_MIN) / SLOT_L_MIN)))
 
-/** 槽位坐标（pos=槽轴小端+PAD+k·L/(n+1)，逐位量化；n=0→[]） */
+/** 槽位坐标（pos=槽轴小端+短桩+k·域宽/(n+1)，逐位量化；n=0→[]）——
+ *  detour/bands 网格通道槽位同源消费（INV-SLOTGRID-02 坐标集封闭单源） */
 export const slotPositions = (axis: 'x' | 'y', r: Rect): number[] => {
   const w = axis === 'x' ? r.w : r.h
   const lo = axis === 'x' ? r.x : r.y
   const n = slotCountOf(w)
   const out: number[] = []
-  for (let k = 1; k <= n; k++) out.push(quant(lo + PAD + (k * (w - 2 * PAD)) / (n + 1)))
+  for (let k = 1; k <= n; k++) out.push(quant(lo + SLOT_STUB + (k * (w - 2 * SLOT_STUB)) / (n + 1)))
   return out
+}
+
+/** [F-SLOTGRID-01 U2] 通道中位槽（横带/框间带横移 y 单源取位）：取居中
+ *  分点（n 奇=正中；n 偶=居左——floor 序确定性）；n=0（宽<36）=
+ *  null=带封闭不可横移（band 门/横移段调用方判空）。72px 横带中位槽=带中心
+ *  （k=3 位=top+36——与旧 band.center 数值重合） */
+export const midSlotOf = (axis: 'x' | 'y', r: Rect): number | null => {
+  const positions = slotPositions(axis, r)
+  if (positions.length < 1) return null
+  return positions[Math.floor((positions.length - 1) / 2)]!
 }
 
 /** 提取候选（量化前载体；矩形=投影重叠列×净距空白域） */

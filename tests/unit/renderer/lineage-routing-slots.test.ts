@@ -11,9 +11,10 @@ import { describe, expect, it } from 'vitest'
 import {
   CELL_EPS,
   QUANT,
-  SLOT_DIV,
+  SLOT_L_MIN,
   SLOT_MAX,
   SLOT_MIN_PITCH,
+  SLOT_STUB,
   extractGapCells,
   type GapCell
 } from '../../../src/renderer/features/lineage/routing/gap-cells'
@@ -25,7 +26,7 @@ import {
   slotsOf,
   zChainClear
 } from '../../../src/renderer/features/lineage/routing/slots'
-import { defaultCorridor, type LayoutSnapshot, type MonthFrame } from '../../../src/renderer/features/lineage/routing/chain'
+import { type LayoutSnapshot, type MonthFrame } from '../../../src/renderer/features/lineage/routing/chain'
 import type { Pt, Rect } from '../../../src/renderer/features/lineage/routing/anchors'
 
 const rect = (x: number, y: number, w: number, h: number): Rect => ({ x, y, w, h })
@@ -38,19 +39,20 @@ function snapOf(
   yearHeads: Rect[] = [],
   frames: MonthFrame[] = []
 ): LayoutSnapshot {
-  return { cards: new Map(cards), labels, frames, yearHeads, contentW: 1000, corridor: defaultCorridor(1000) }
+  return { cards: new Map(cards), labels, frames, yearHeads, contentW: 1000 }
 }
 
-describe('F-ROUTE-02 U1 slots：a1 槽位公式（n=min(5,max(0,⌊L/6⌋−1))，L=W−2·PAD）', () => {
-  it('常量冻结：SLOT_DIV=6/SLOT_MAX=5/SLOT_MIN_PITCH=6/CELL_EPS=0.05/QUANT=0.1', () => {
-    expect(SLOT_DIV).toBe(6)
+describe('F-SLOTGRID-01 U2 slots：槽位公式（域=通道宽−2×短桩 10，n=clamp(⌊(域−8)/8⌋,0,5)，L_min=8——设计 §2 槽位行）', () => {
+  it('常量冻结：SLOT_STUB=10/SLOT_L_MIN=8/SLOT_MAX=5/SLOT_MIN_PITCH=8/CELL_EPS=0.05/QUANT=0.1', () => {
+    expect(SLOT_STUB).toBe(10)
+    expect(SLOT_L_MIN).toBe(8)
     expect(SLOT_MAX).toBe(5)
-    expect(SLOT_MIN_PITCH).toBe(6)
+    expect(SLOT_MIN_PITCH).toBe(8)
     expect(CELL_EPS).toBe(0.05)
     expect(QUANT).toBe(0.1)
   })
 
-  it('①分点+PAD 内缩：x∈[100,200] 单元（W=100，L=92，n=5）→ 槽位 119.3/134.7/150/165.3/180.7（逐位 0.1 量化）', () => {
+  it('①分点+短桩内缩：x∈[100,200] 单元（W=100，域=80，n=5）→ 槽位 123.3/136.7/150/163.3/176.7（逐位 0.1 量化）', () => {
     // 卡对 t1(100,100,100,70)/t2(100,200,100,70)：gap=30、x 重叠 [100,200]
     const cells = extractGapCells(snapOf([['t1', rect(100, 100, 100, 70)], ['t2', rect(100, 200, 100, 70)]]))
     expect(cells.length).toBe(1)
@@ -62,20 +64,20 @@ describe('F-ROUTE-02 U1 slots：a1 槽位公式（n=min(5,max(0,⌊L/6⌋−1))�
       closed: false,
       blockedSlots: new Set<number>()
     })
-    // pos_k=100+4+k·92/6：119.33/134.67/150/165.33/180.67 → 量化 119.3/134.7/150/165.3/180.7
-    expect(slotsOf(cells[0]!)).toEqual([119.3, 134.7, 150, 165.3, 180.7])
+    // pos_k=100+10+k·80/6：123.33/136.67/150/163.33/176.67 → 量化 123.3/136.7/150/163.3/176.7
+    expect(slotsOf(cells[0]!)).toEqual([123.3, 136.7, 150, 163.3, 176.7])
   })
 
-  it('②边界八点：L=11.9→0 封闭/12→1/23.9→2/24→3/29.9→3/30→4/35.9→4/36→5（W=L+8 卡对 x 重叠构造）', () => {
+  it('②边界点族：w=19.9/35.9→0 封闭/36→1（封闭阈 2×桩+2×L_min=36）/43.9→1/44→2/59.9→3/60→4/68→5（卡对 x 重叠构造）', () => {
     const points: Array<[number, number]> = [
       [19.9, 0],
-      [20, 1],
-      [31.9, 2],
-      [32, 3],
-      [37.9, 3],
-      [38, 4],
-      [43.9, 4],
-      [44, 5]
+      [35.9, 0],
+      [36, 1],
+      [43.9, 1],
+      [44, 2],
+      [59.9, 3],
+      [60, 4],
+      [68, 5]
     ]
     for (const [w, nExp] of points) {
       const cells = extractGapCells(
@@ -84,10 +86,11 @@ describe('F-ROUTE-02 U1 slots：a1 槽位公式（n=min(5,max(0,⌊L/6⌋−1))�
       expect(cells.length).toBe(1)
       const n = slotsOf(cells[0]!).length
       expect(n).toBe(nExp)
+      // 封闭判据=通道宽<36 ⇔ n=0（设计 §2——与槽位公式 n≥1 阈等价）
       expect(cells[0]!.closed).toBe(nExp === 0)
       if (n >= 1) {
-        // pitch 定理：pitch=L/(n+1)≥SLOT_MIN_PITCH（测试断言非运行时钳制）
-        const pitch = (w - 8) / (n + 1)
+        // pitch 定理：pitch=域宽/(n+1)≥SLOT_MIN_PITCH（测试断言非运行时钳制）
+        const pitch = (w - 2 * SLOT_STUB) / (n + 1)
         expect(pitch).toBeGreaterThanOrEqual(SLOT_MIN_PITCH)
       }
     }
@@ -96,9 +99,9 @@ describe('F-ROUTE-02 U1 slots：a1 槽位公式（n=min(5,max(0,⌊L/6⌋−1))�
 
 describe('F-ROUTE-02 U1 slots：⑧非卡障碍（月标注∪年份头）closed/静态预过滤', () => {
   // 基准：卡对 a(100,100,120,70)/b(100,200,120,70) → 单元 [100,220]×[170,200]
-  // W=120、L=112、n=5、槽位 122.7/141.3/160/178.7/197.3（pos=104+k·112/6）
+  // W=120、域=100、n=5、槽位 126.7/143.3/160/176.7/193.3（pos=110+k·100/6）
   const baseCards: Array<[string, Rect]> = [['a', rect(100, 100, 120, 70)], ['b', rect(100, 200, 120, 70)]]
-  const baseSlots = [122.7, 141.3, 160, 178.7, 197.3]
+  const baseSlots = [126.7, 143.3, 160, 176.7, 193.3]
 
   it('障碍横贯（x 投影覆盖槽轴全域+正面积相交）→ closed；closed 单元无消费（a3）', () => {
     const label = rect(80, 180, 160, 10) // x∈[80,240]⊇[100,220]，y∈[180,190]⊂(170,200)
@@ -112,7 +115,7 @@ describe('F-ROUTE-02 U1 slots：⑧非卡障碍（月标注∪年份头）closed
     expect(segConsumesCell(cells[0]!, pt(150, 160), pt(150, 190))).toBe(false)
   })
 
-  it('障碍仅盖槽 idx1 走廊（x∈[137,146] 盖 [137.3,145.3]）→ 该槽 blocked、余槽 free', () => {
+  it('障碍仅盖槽 idx1 走廊（x∈[137,146] 盖新槽位 [139.3,147.3]）→ 该槽 blocked、余槽 free', () => {
     const label = rect(137, 180, 9, 10)
     const cells = extractGapCells(snapOf(baseCards, [label]))
     expect(cells.length).toBe(1)
@@ -223,12 +226,12 @@ describe('F-ROUTE-02 U1 slots：带归属（行隙/列缝正例+列带合并=−
     expect(cells[0]!.rect).toEqual(rect(100, 172, 120, 32))
   })
 
-  it('列缝正例：L/R 卡 x 缝 [160,300] → 列带 0 归属（x 中点 230 落带）；槽沿 y（W=200→n=5）', () => {
+  it('列缝正例：L/R 卡 x 缝 [160,300] → 列带 0 归属（x 中点 230 落带）；槽沿 y（H=200→域 180→n=5）', () => {
     const cells = extractGapCells(snapOf([['L', rect(100, 100, 60, 200)], ['R', rect(300, 100, 60, 200)]]))
     expect(cells.length).toBe(1)
     expect(cells[0]).toMatchObject({ id: 0, bandId: 0, axis: 'y', rect: rect(160, 100, 140, 200), closed: false })
-    // pos=104+32k（L=192、n=5）→ 136/168/200/232/264
-    expect(slotsOf(cells[0]!)).toEqual([136, 168, 200, 232, 264])
+    // pos=110+30k（域=180、n=5）→ 140/170/200/230/260
+    expect(slotsOf(cells[0]!)).toEqual([140, 170, 200, 230, 260])
   })
 
   it('混合三单元：列缝并入合并列簇 → bandId=−1 排最前；同行隙双单元槽轴坐标定序', () => {
@@ -244,7 +247,7 @@ describe('F-ROUTE-02 U1 slots：带归属（行隙/列缝正例+列带合并=−
     expect(cells.length).toBe(3)
     // 排序：(−1,100,170) 列缝 → (0,100,200) 行隙 → (0,210,310) 行隙
     expect(cells[0]).toMatchObject({ id: 0, bandId: -1, axis: 'y', rect: rect(200, 100, 10, 70), closed: false })
-    expect(slotsOf(cells[0]!)).toEqual([114.3, 124.7, 135, 145.3, 155.7]) // pos=104+k·62/6
+    expect(slotsOf(cells[0]!)).toEqual([118.3, 126.7, 135, 143.3, 151.7]) // pos=110+k·50/6（域=50）
     expect(cells[1]).toMatchObject({ id: 1, bandId: 0, axis: 'x', rect: rect(100, 170, 100, 30) })
     expect(cells[2]).toMatchObject({ id: 2, bandId: 0, axis: 'x', rect: rect(210, 170, 100, 30) })
   })
@@ -382,8 +385,8 @@ describe('F-ROUTE-02 U1 回炉轮1：列缝判定面+排序判别+侧挂第三�
     // tie (−1,200,300) 由 idA 破：'N'<'W' → axis='x' 单元先
     expect(cells[0]).toMatchObject({ axis: 'x', rect: rect(200, 200, 100, 100), closed: false })
     expect(cells[1]).toMatchObject({ axis: 'y', rect: rect(200, 200, 100, 100), closed: false })
-    expect(slotsOf(cells[0]!)).toEqual([219.3, 234.7, 250, 265.3, 280.7]) // 槽沿 x：pos=204+k·92/6（W=100,L=92,n=5）
-    expect(slotsOf(cells[1]!)).toEqual([219.3, 234.7, 250, 265.3, 280.7]) // 槽沿 y：同式（对称夹具 W=100）
+    expect(slotsOf(cells[0]!)).toEqual([223.3, 236.7, 250, 263.3, 276.7]) // 槽沿 x：pos=210+k·80/6（W=100,域=80,n=5）
+    expect(slotsOf(cells[1]!)).toEqual([223.3, 236.7, 250, 263.3, 276.7]) // 槽沿 y：同式（对称夹具 W=100）
   })
 
   it('[d1-N4②] slotFree 占用分支端到端：commit 后该槽 false、他槽仍 true', () => {

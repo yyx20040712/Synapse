@@ -12,6 +12,9 @@
  * - 重算触发 rAF 合并：shiftedIds/groups/RO(.tl-content)/edges/nodes/routeEpoch
  *   （父布局变更 bump——use-capacity-layout W 变/拖拽 settle；[F-SLOTGRID-01
  *   U1] 瀑布测量冻结期〔.tl-measure〕守卫随瀑布退役删除）。
+ *   [F-SLOTGRID-01 U2] shiftedIds=瀑布错位卡集遗留 prop 面：瀑布语义退役后
+ *   调用方恒传模块级空集（引用稳定=deps 零扰动）——行为面恒空占位沿承，
+ *   删除 prop 须动 LineageTimeline（U1 产出件非本票文件面）故本票保守留驻。
  * - routeAll 降级 onWarn=console.warn（回炉 1 W2/k1-N5——生产不静默）；
  *   paths 按 edgeId Map 配对渲染（回炉 1 W5——禁下标 zip）。
  */
@@ -92,23 +95,9 @@ export function EdgeOverlay(props: {
     for (const p of paths) (p.route === 'manual-override' ? manual : auto).push(p)
     return [...auto, ...manual]
   }, [paths])
-  // [T3-P7B] 同道错峰（D-P7B-8）：lane≥0 路径按车道内 edgeId 字典序排名
-  // i≥1 → opacity=max(0.6,1−0.15×i)（同道重叠边视觉可分——纯渲染确定性微差；
-  // lane=-1[direct/h-slip/band/fallback/manual-override——甲链非走廊态] 不参与）
-  const laneRank = useMemo(() => {
-    const byLane = new Map<number, string[]>()
-    for (const p of paths) {
-      if (p.lane < 0) continue
-      const list = byLane.get(p.lane) ?? []
-      list.push(p.edgeId)
-      byLane.set(p.lane, list)
-    }
-    const rank = new Map<string, number>()
-    for (const ids of byLane.values()) {
-      ids.sort().forEach((id, i) => rank.set(id, i))
-    }
-    return rank
-  }, [paths])
+  // [F-SLOTGRID-01 U2] 同道错峰 laneRank（走廊 lane≥0 字典序 opacity 递减）
+  // 随走廊车道族退役删除——五态链 lane 全退役，重叠分离=槽位级空槽分配
+  // （ChannelUse/slotAssign）承载
 
   useLayoutEffect(() => {
     const content = svgRef.current?.parentElement
@@ -159,16 +148,12 @@ export function EdgeOverlay(props: {
       {orderedPaths.map((p) => {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null
-        const i = laneRank.get(p.edgeId)
-        // [RR5] focus dim 态错峰 inline 让位（P-18 全部线 dim 单值——inline
-        // fade 会压 CSS .dim 类；非 focus 错峰沿承）
-        const fade = !focused && i !== undefined && i >= 1 ? Math.max(0.6, 1 - 0.15 * i) : undefined
         const selected = edit.state.phase !== 'idle' && edit.state.edgeId === p.edgeId
         // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）
         const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focused)
-        // [RR10] hovered 回升 0.65 并入 inline（错峰边 fade 压 CSS 类=死样式
-        // 根治——单源 edge-overlay-geom edgeVisualOpacity；focus dim 态恒类承载）
-        const opacity = edgeVisualOpacity({ fade, hovered, focusDim: focused })
+        // [RR10] hovered 回升 0.65 并入 inline（单源 edge-overlay-geom
+        //  edgeVisualOpacity；focus dim 态恒类承载；错峰 fade 源随 lane 退役空缺）
+        const opacity = edgeVisualOpacity({ hovered, focusDim: focused })
         const visual = opacity === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity }
         const cls = selected
           ? 'tl-edge selected'
@@ -190,6 +175,7 @@ export function EdgeOverlay(props: {
               data-anchors={p.anchorMarks}
               data-overlap-exempt={p.overlapExempt === true ? '1' : undefined}
               data-slot-fallback={p.slotFallback === true ? '1' : undefined}
+              data-detour={p.detourMarks}
               d={p.d}
               style={selected ? { ...visual, stroke: 'var(--accent)', strokeWidth: 2.2 } : visual}
             />

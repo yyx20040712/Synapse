@@ -948,6 +948,150 @@
       "caseTitle": "T6 瀑布错位：窄窗 5 卡同月→五行+margin-left=(R×82)mod148 实值+零 rowshift",
       "reason": "F-SLOTGRID-01 U1 布局网格化：T6 整例改写为砖砌网格锚（行容器分行=capacity 同源公式+奇行错位 100+瀑布退役双负锚——期望值公式驱动替代硬编码，设计 §6 策略）",
       "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "降级 onWarn=console.warn 直通（回炉 1 W2/k1-N5——生产不静默）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 opacity 覆盖；13 边第 4 条触 0.6 下钳",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "错峰与视觉 inline 并存：同道 i≥1 opacity 与 inline stroke 同挂",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "[F-LINEAGE-02] manual-override：via 在场→path 在场+DOM 末位（自动边保序在前——W-4 命中优先级）；via 边不参与同道错峰",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "① direct：同列上下卡（主向竖+锚 x 相等）→ 单竖直段；d=底锚(164,172)→顶锚(164,300) 手推",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "① direct 中段穿障碍（D-L2-4 中段含全卡）→ ③ band zigzag：下降 x 候选=目标 x→列缝→框外空白（67=框左 90−23）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "② h-slip：x 带分离（右向）→ 近侧锚单段直线；d=源右 ¾ (228,154)→目标左 ½ (400,176) 手推",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "② h-slip 左向（anchor 左分支行为锁）：目标在源左侧 → 源左锚→目标右锚",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "④ corridor：带封闭（行距 ≤2·PAD）+直连阻挡 → 右缘面带 4 道 lane0；d 手推（r=6 全拐）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "④ corridor 车道升级：V0 只挡 lane0 竖段扫掠（膨胀 [745,760]×[176,204]）→ lane1；r=6 圆角终态",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "⑤ fallback：带封闭+全道阻挡（CW 横跨 4 道）→ 贴边 contentW−6+onWarn（lane=−1 划界）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "端点卡缺失：d 空+route fallback+onWarn（防御面沿承）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "内对角障碍（label）距骨架 >PAD 但距 r=5 弧 <PAD → 收缩 r=2.5 复检过（d 半径降级手推）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "laneIndex：乱序输入 → 字典序位次（确定性沿承）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "routeAll 3 边同端点（带封闭几何）→ 基道=rank%4 各占道 0/1/2（同锚散开：同侧 3 序内吸收）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "[回炉 R2] 3 平行边锚位互异（锁死 commit 原锚 aliasing：生效锚漏记→后边重取同槽相撞）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "[回炉 R9-W2] fallback 锚 commit 回归锁：容量外边落 fallback 后生效锚仍落记（后边不重取同锚相撞）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "[回炉 R3] 4 平行边：第 4 边散开至底锚→出桩沿生效边外法线（竖桩）——不横穿源卡落 corridor",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "via 折线构造：锚=端点卡主向定边（右 ½ 序）；route=manual-override+lane=−1；r=6 圆角 pass",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "同输入 routeEdge 100 次输出全等+routeAll 单边一致",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "月标挡首选 slot→散开第二槽终落 band（骨架末段=slot1 锚+d 手推）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null+routeEdge 降级 corridor",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "散开锚 picks 落记=生效锚（tgt 项=散开 side/slot 非首选——R2 仅胜出态）",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-routing.test.ts",
+      "caseTitle": "[回炉 B2] 散开候选避开已 commit 槽（占用预检）：slot1 被占+slot0 月标挡→散至 slot2",
+      "reason": "F-SLOTGRID-01 U2 走线正统化：corridor/fallback/车道族随走廊彻底退役（方案切换=删旧）+槽位新公式（域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/封闭阈 36）重基线——本用例随旧态/旧期望值退役删除，同语义新用例（detour/overlap/五态域/新公式期望）已入面",
+      "rulingLink": "docs/design/2026-10-07_f-slotgrid01-design.md §6（2026-10-07 用户裁决③）"
     }
   ]
 }

@@ -58,7 +58,8 @@ function mountOverlay(
   nodes: LineageNode[],
   edges: LineageEdge[],
   routeEpoch = 0,
-  contentW = 0
+  contentW = 0,
+  rects: Array<[string, number, number, number, number]> = []
 ): void {
   stubRaf()
   host = document.createElement('div')
@@ -90,6 +91,16 @@ function mountOverlay(
     card.dataset.nodeId = n.id
     host.appendChild(card)
   }
+  // [F-SLOTGRID-01 U2] 可选卡 rect 桩（首帧 flush 前注入——真机非零 rect 口径）
+  for (const [id, x, y, w, h] of rects) {
+    const card = host.querySelector(`.tl-card[data-node-id="${id}"]`)
+    if (card === null) continue
+    Object.defineProperty(card, 'getBoundingClientRect', {
+      value: () =>
+        ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+  }
   flushRafs()
 }
 
@@ -112,9 +123,19 @@ afterEach(() => {
 
 describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', () => {
   it('svg.tl-edges 挂载；每边两 path（tl-edge 可见+tl-edge-hit 命中）+data-edge-id/data-dashed；d 非空', () => {
+    // [F-SLOTGRID-01 U2] 卡 rect 桩（零 rect 退化几何下 overlap 零长路径=d 空，
+    // 与「d 非空」形态锁冲突——真机卡恒非零 rect）：A/B 同列竖叠+S 远侧
+    // （e1=direct/e2=h-slip——结构断言与态无关）
     mountOverlay(
       [node('A'), node('B'), node('S')],
-      [edge('e1', 'A', 'B'), edge('e2', 'S', 'A', true, '#c07a2a')]
+      [edge('e1', 'A', 'B'), edge('e2', 'S', 'A', true, '#c07a2a')],
+      0,
+      0,
+      [
+        ['A', 0, 0, 10, 10],
+        ['B', 0, 100, 10, 10],
+        ['S', 200, 0, 10, 10]
+      ]
     )
     const svg = host?.querySelector('svg.tl-edges')
     expect(svg).not.toBeNull()
@@ -200,66 +221,27 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(dOf()).toBe(d2)
   })
 
-  it('降级 onWarn=console.warn 直通（回炉 1 W2/k1-N5——生产不静默）', () => {
+  it('[F-SLOTGRID-01 U2] data-route 五态域负锚：退化几何全边 overlap 兜底（corridor/fallback DOM 零出现）+零 console.warn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    // 两卡同位（零 rect）+第三卡 S 挡走廊→某边落 fallback 触发 warn
+    // 两卡同位（零 rect）+第三卡 S 拦直连→全边落 overlap 兜底（忽略占用终态
+    // ——走廊族退役后无 warn 面：路由降级观测=data-overlap-exempt 属性）
     mountOverlay(
       [node('A'), node('B'), node('S')],
       [edge('e1', 'A', 'B'), edge('e2', 'A', 'S')]
     )
-    expect(warn).toHaveBeenCalled()
-    expect(warn.mock.calls.some(([m]) => String(m).includes('lineage-routing'))).toBe(true)
+    const routes = Array.from(host?.querySelectorAll('path.tl-edge') ?? []).map(
+      (el) => (el as SVGPathElement).dataset.route ?? ''
+    )
+    expect(routes.every((r) => r !== ''), 'route 非空卫').toBe(true)
+    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'overlap', 'manual-override'])
+    for (const r of routes) {
+      expect(allowed.has(r), `route=${r} ∈ 五态域（corridor/fallback 零出现）`).toBe(true)
+    }
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 
-  // ── [T3-P7B] 同道错峰（D-P7B-8：lane≥0 路径按车道内 edgeId 字典序 i≥1
-  //    挂 opacity=max(0.6,1−0.15×i)——视觉 inline 色不动）──
-  it('同道错峰：5 边同道复用（e0/e4 同 lane0）→字典序 i≥1 挂递减 opacity、i=0 无 opacity 覆盖；13 边第 4 条触 0.6 下钳', () => {
-    // 5 条同端点边：jsdom 零 rect 下 routeAll 干净几何 → lanes=[0,1,2,3,0]
-    //（routing it 9 相位一同型）；e0/e4 同 lane0 → 字典序 [e0,e4] → e4 i=1
-    mountOverlay(
-      [node('A'), node('B')],
-      ['e0', 'e1', 'e2', 'e3', 'e4'].map((id) => edge(id, 'A', 'B')),
-      0,
-      800
-    )
-    const of = (id: string): SVGPathElement | null =>
-      host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`) ?? null
-    expect(of('e0')?.style.opacity).toBe('') // i=0 无覆盖
-    expect(of('e4')?.style.opacity).toBe('0.85') // 1−0.15×1
-    expect(of('e1')?.style.opacity).toBe('') // 他道唯一边
-    // 13 边：lane0=[e00,e04,e08,e12] → i=3 → max(0.6,0.55)=0.6 下钳
-    const ids13 = Array.from({ length: 13 }, (_, i) => `e${String(i).padStart(2, '0')}`)
-    mountOverlay([node('A'), node('B')], ids13.map((id) => edge(id, 'A', 'B')), 0, 800)
-    expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e12"]')?.style.opacity).toBe('0.6')
-    expect(host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e08"]')?.style.opacity).toBe('0.7')
-  })
-
-  it('错峰与视觉 inline 并存：同道 i≥1 opacity 与 inline stroke 同挂', () => {
-    // 5 边字典序 [e0,e1,e4,e5,e9]→lanes [0,1,2,3,0]：e0/e9 同 lane0 →
-    // e9 i=1（opacity+色同挂）；e4 独占 lane2（色无 opacity）
-    mountOverlay(
-      [node('A'), node('B')],
-      [
-        edge('e0', 'A', 'B', true, '#c07a2a'),
-        edge('e1', 'A', 'B'),
-        edge('e4', 'A', 'B', true, '#c07a2a'),
-        edge('e5', 'A', 'B'),
-        edge('e9', 'A', 'B', true, '#c07a2a')
-      ],
-      0,
-      800
-    )
-    const both = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e9"]')
-    expect(both?.style.opacity).toBe('0.85')
-    expect(both?.style.stroke).toBe('#c07a2a') // inline 色不因错峰失挂
-    expect(both?.style.strokeDasharray).toBe('6 3')
-    const solo = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e4"]')
-    expect(solo?.style.opacity).toBe('')
-    expect(solo?.style.stroke).toBe('#c07a2a')
-  })
-
-  it('[F-LINEAGE-02] manual-override：via 在场→path 在场+DOM 末位（自动边保序在前——W-4 命中优先级）；via 边不参与同道错峰', () => {
+  it('[F-LINEAGE-02] manual-override：via 在场→path 在场+DOM 末位（自动边保序在前——W-4 命中优先级）', () => {
     mountOverlay(
       [node('A'), node('B')],
       [
@@ -276,40 +258,37 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     // 命中层同序（manual 的 hit 层亦末位——命中恒最上）
     const hits = [...(host?.querySelectorAll('path.tl-edge-hit') ?? [])]
     expect(hits.map((p) => p.getAttribute('data-edge-id'))).toEqual(['e0', 'e2', 'e1'])
-    // via 边 lane=−1：同道错峰零参与（e0/e2 jsdom 零 rect 下各占道，manual 无 opacity）
+    // [F-SLOTGRID-01 U2] 错峰 inline opacity 源随 lane 退役删除——manual 边无 opacity 覆盖
     expect((manualPath as SVGPathElement).style.opacity).toBe('')
   })
 
-  it('[F-ROUTE-02 U4-RR1 d1-W2a] 观测钩子三属性 DOM 挂线：band 双 retain 边 data-slot/data-overlap-exempt/data-slot-fallback 三挂+缺省 direct 边三不挂', () => {
+  it('[F-SLOTGRID-01 U2] 观测钩子 DOM 挂线（retain/land 双 direct 边）：retain 边 data-slot+data-overlap-exempt 挂+data-detour 缺省；land 边仅 data-slot', () => {
     stubRaf()
     host = document.createElement('div')
     host.className = 'tl-content'
     document.body.appendChild(host)
-    // 卡 rect 桩（routeEpoch 例同型）+宿主 rect（contentW=1000——真机向走廊）
+    // 卡 rect 桩（routeEpoch 例同型）：A/B 同列 128×72 真几何（z=1）——行隙
+    // 单元 [100,228]×[172,300] 槽位 128/146/164/182/200（域=宽−20 公式）
     Object.defineProperty(host, 'getBoundingClientRect', {
       value: () =>
-        ({ left: 0, top: 0, right: 1000, bottom: 400, width: 1000, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+        ({ left: 0, top: 0, right: 1000, bottom: 500, width: 1000, height: 500, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
       configurable: true
     })
     root = createRoot(host)
     act(() => {
       root?.render(
         <EdgeOverlay
-          nodes={[node('A'), node('D'), node('B')]}
-          edges={[edge('e1', 'A', 'B'), edge('e2', 'A', 'B'), edge('e3', 'A', 'B')]}
+          nodes={[node('A'), node('B')]}
+          edges={[edge('e1', 'A', 'B'), edge('e2', 'A', 'B')]}
           shiftedIds={new Set()}
           groups={[]}
           routeEpoch={0}
         />
       )
     })
-    // 夹具=lineage-routing ⑪ 手推同款（A-D-B、D 偏移造两独立单元）：e3 band
-    // 双 retain 边（桩段+终落段各 retain idx2，Δ=0.8<1）——buildSnapshot 采
-    // 卡 rect（z=1）→routeAll 同几何
     const rects: Array<[string, number, number, number, number]> = [
       ['A', 100, 100, 128, 72],
-      ['D', 108, 194, 40, 72],
-      ['B', 100, 296, 128, 72]
+      ['B', 100, 300, 128, 72]
     ]
     for (const [id, x, y, w, h] of rects) {
       const card = document.createElement('div')
@@ -323,20 +302,21 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       host.appendChild(card)
     }
     flushRafs()
-    const e3 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e3"]')
-    expect(e3).not.toBeNull()
-    // 三属性齐挂（真值 '1'/marks 串——缺省=不挂非空串）
-    expect(e3?.getAttribute('data-slot')).toBe('0:2,1:2')
-    expect(e3?.getAttribute('data-overlap-exempt')).toBe('1')
-    expect(e3?.getAttribute('data-slot-fallback')).toBe('1')
-    // 缺省态（e1/e2 direct 零消费——x=164/196 ∉ 单元 x 窗 (108,148)）：三属性均 null
-    for (const id of ['e1', 'e2']) {
-      const p = host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`)
-      expect(p).not.toBeNull()
-      expect(p?.getAttribute('data-slot')).toBeNull()
-      expect(p?.getAttribute('data-overlap-exempt')).toBeNull()
-      expect(p?.getAttribute('data-slot-fallback')).toBeNull()
-    }
+    // e1（½/½ x=164）retain idx2（Δ=0<1 恰中槽）；e2（散开 ¾/¾ x=196）land
+    // idx4=200——buildSnapshot 采卡 rect（z=1）→routeAll 同几何（routing ① 同款）
+    const e1 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e1"]')
+    const e2 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e2"]')
+    expect(e1).not.toBeNull()
+    expect(e2).not.toBeNull()
+    expect(e1?.getAttribute('data-route')).toBe('direct')
+    expect(e2?.getAttribute('data-route')).toBe('direct')
+    expect(e1?.getAttribute('data-slot')).toBe('0:2')
+    expect(e1?.getAttribute('data-overlap-exempt')).toBe('1')
+    expect(e1?.getAttribute('data-slot-fallback')).toBeNull()
+    expect(e1?.getAttribute('data-detour')).toBeNull()
+    expect(e2?.getAttribute('data-slot')).toBe('0:4')
+    expect(e2?.getAttribute('data-overlap-exempt')).toBeNull()
+    expect(e2?.getAttribute('data-slot-fallback')).toBeNull()
   })
 
   it('onEdgeHitClick 接线：命中层点击→(edgeId, 事件) 上抛；缺省不挂不崩', () => {

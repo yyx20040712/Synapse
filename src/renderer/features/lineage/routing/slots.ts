@@ -236,14 +236,15 @@ function assignCell(
   return { rec: { edgeId, segIdx, cellId: cell.id, axis: cell.axis, ideal, overlapExempt: true, residual: false } }
 }
 
-/** a3 六态消费门：band/direct 轴对齐段与 h-slip 水平段入槽（h-slip 斜段另由
- *  segConsumesCell 非轴对齐早退排除）；corridor（内容域外+旧域外双重一致）/
- *  fallback（放弃避让终态——槽位无意义）/manual-override（用户排位主权）
- *  三态不消费（门一回炉轮 1 件③） */
-const ROUTE_ELIGIBLE: ReadonlySet<RouteTag> = new Set<RouteTag>(['band', 'direct', 'h-slip'])
+/** a3 消费门（[F-SLOTGRID-01 U2] 五态制）：band/direct/detour 轴对齐段与
+ *  h-slip 水平段入槽（h-slip 斜段另由 segConsumesCell 非轴对齐早退排除；
+ *  detour 段=槽位域路线——槽消费与 INV-112 共线不变量同治）；overlap
+ *  （兜底终态=忽略占用——槽位无意义）/manual-override（用户排位主权）
+ *  两态不消费 */
+const ROUTE_ELIGIBLE: ReadonlySet<RouteTag> = new Set<RouteTag>(['band', 'direct', 'detour', 'h-slip'])
 
-/** 走线候选位分配主入口（候选 B 单 pass）：消费枚举（a7 序+route 门〔回炉
- *  轮 1 件③：ROUTE_ELIGIBLE 六态白名单〕）→三级泄压→
+/** 走线候选位分配主入口（候选 B 单 pass）：消费枚举（a7 序+route 门——
+ *  ROUTE_ELIGIBLE 白名单）→三级泄压→
  *  Z 形施加+残余子 pass→按输入边序输出（pts=施加后点链+recs=分配记录） */
 export function slotAssign(
   edges: readonly AssignEdge[],

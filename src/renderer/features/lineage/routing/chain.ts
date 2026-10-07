@@ -1,45 +1,44 @@
 /**
- * [F-LINEAGE-02 ①a] chain —— 甲链六态编排（options §2-A+design-final §1：
- * direct→h-slip→band→corridor→fallback 单向不回溯+manual-override）。
- * 车道：走廊=字典序基道环形探测（4 道 9px）；同锚多边先散锚点（同侧下一
- * 空闲→邻边→对边；12 锚全满=共享原锚）。曲化后采样复检+半径收缩链（D-L2-5/6：
- * r=6→3→r<2 尖角）。确定性红线：无随机/无 Date/无三角函数；并列取字典序/
+ * [F-SLOTGRID-01 U2] chain —— 甲链五态编排（设计 v1.4 §5.3 链序：
+ * direct→h-slip→detour→band→overlap 单向不回溯+manual-override；右缘走廊
+ * 两态+走廊常量族+车道基道序号随走廊彻底退役删除——2026-10-07 用户裁决③
+ * 「corridor 右缘车道彻底退役、兜底=最短路线重叠」）。**链序本身=拐弯数
+ * 升序（direct/h-slip 0 拐→detour 门形
+ * →band 阶梯→overlap 不避让）——用户裁决「形态上尽量少拐弯」由链序+候选
+ * 全序拐弯数键双层承载**。同锚多边先散锚点（12 锚全满=共享原锚）；detour
+ * 通道槽占用经 ChannelUse 槽位级空槽判定。曲化后采样复检+半径收缩链
+ * （r=6→3→尖角）。确定性红线：无随机/无 Date/无三角函数；并列取字典序/
  * 几何序。纯函数零 DOM import（快照采集驻 EdgeOverlay hook 层）。
- * [F-ROUTE-02 U3] 接入：routeOne 循环→slotAssign（槽位分配+残余子 pass
- * 承袭旧 applyBandLanes——共道分组字典序偏移域内等价）→回写 skel→finish；
- * band/corridor/fallback 三态骨架携桩段（stubs）入谓词复检。
+ * [F-ROUTE-02 U3] 接线沿承：routeOne 循环→slotAssign（槽位分配+残余子
+ * pass）→回写 skel→finish；detour/band 骨架携桩段（stubs）入谓词复检。
  */
 import { AnchorUse, anchorId, anchorPick, anchorPoint, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
-import { bandSkeleton, corridorSkeleton } from './bands'
+import { bandSkeleton } from './bands'
 import { PAD, polylineClearStubs } from './avoid'
+import { ChannelUse, detourSkeleton } from './detour'
 import { buildRoundedPath, stripCollinear } from './rounding'
 import { slotAssign, type AssignEdge } from './slots'
 import type { LineageViaPoint } from '@shared/models/lineage'
 
 export type { Pt, Rect } from './anchors'
 
-export type RouteTag = 'direct' | 'h-slip' | 'band' | 'corridor' | 'fallback' | 'manual-override'
+export type RouteTag = 'direct' | 'h-slip' | 'detour' | 'band' | 'overlap' | 'manual-override'
 export interface MonthFrame extends Rect {
   year: number | null
-}
-export interface Corridor {
-  left: number
-  laneW: number
-  laneCount: number
 }
 export interface LayoutSnapshot {
   cards: ReadonlyMap<string, Rect>
   labels: Rect[]
   frames: MonthFrame[]
-  /** [F-UIRES-03 C2·P7] 年份头障碍集（.tl-year-head rects——buildSnapshot
+  /** [F-UIRES-03 C2·P7] 年份头障碍集（.tl-year-num/.tl-year-meta rects——buildSnapshot
    *  采集；避让 PAD 同源 avoid.PAD 不另设） */
   yearHeads: Rect[]
   contentW: number
-  corridor: Corridor
 }
 
 /** [F-UIRES-03 C2·P7] 障碍集组装单源（三源并集=全部卡∪月标注∪年份头——
- *  manual-override 边不消费本集〔via 在场不避让，现状语义沿承〕） */
+ *  [F-SLOTGRID-01 U2 用户裁决①] 空卡位区非障碍（空卡片可以随意穿）；manual-
+ *  override 边不消费本集〔via 在场不避让，现状语义沿承〕） */
 export function allObstacles(snap: LayoutSnapshot): Rect[] {
   return [...snap.cards.values(), ...snap.labels, ...snap.yearHeads]
 }
@@ -54,51 +53,32 @@ export interface RoutedPath {
   edgeId: string
   d: string
   route: RouteTag
-  lane: number
-  /** [F-LGRAPH-01②U5] 施加后点链（槽位/残余施加毕、圆角化前——锚 A→…→
-   *  锚 B 内容坐标）：手柄几何/自动线物化 via（首 via 落位）消费；渲染不变
-   *  （d 才是渲染面） */
-  pts: Pt[]
   /** [F-ROUTE-02 U4] 观测钩子三槽（主控预裁定语义）：slotMarks=recs 中非
    *  残余且有 slotIdx 者「cellId:slotIdx」逗号连接（retain+landed 都占槽）；
-   *  overlapExempt=任一 rec.overlapExempt（含 retain Δ<1 与 L3 穷尽——a6
-   *  字面）；slotFallback=存在 L3 穷尽豁免 rec（overlapExempt ∧ !residual ∧
-   *  slotIdx===undefined——L3 穷尽终态标记；e2e 层 L3 饱和不可达〔UNIQUE 同
-   *  端点对单边+锚域限〕，重合态命中面由 R4 retain 豁免重合承载——retain/
-   *  穷尽语义区分=单测⑧⑨数据层）。均缺省=无该态 */
+   *  overlapExempt=任一 rec.overlapExempt∨overlap 兜底态；slotFallback=存在
+   *  L3 穷尽豁免 rec。均缺省=无该态 */
+  pts: Pt[]
   slotMarks?: string
   overlapExempt?: boolean
   slotFallback?: boolean
   /** [F-ANCHFIX-01 批 1c] 锚占用观测串（生效 picks→anchorId 逗号连接——纯观测零行为变，INV-120）。均缺省=无透出 */
   anchorMarks?: string
+  /** [F-SLOTGRID-01 U2] detour 被阻段观测串（「槽位 x:Δx」逗号连接——设计
+   *  §5.3-⑦ 观测步；INV-120 面沿用）。缺省=非 detour 态 */
+  detourMarks?: string
 }
 
-const CORRIDOR_W = 58
-const CORRIDOR_INSET = 10
-const LANE_W = 9
-const LANE_COUNT = 4
-const FALLBACK_INSET = 6
 const ROUND_R = 6
-
-/** D-5 车道参数单源（buildSnapshot/测试夹具共用——laneX(i)=contentW−58+10+i×9） */
-export function defaultCorridor(contentW: number): Corridor {
-  return { left: contentW - CORRIDOR_W + CORRIDOR_INSET, laneW: LANE_W, laneCount: LANE_COUNT }
-}
-
-export function laneIndex(edgeId: string, all: readonly string[]): number {
-  return [...all].sort().indexOf(edgeId)
-}
 
 // ── 内部中间态（routeOne 循环→slotAssign 施加后产 d）──
 interface SkelResult {
   edgeId: string
   skel: Pt[]
   route: RouteTag
-  lane: number
   stubExcluded: Rect[]
-  /** [F-ROUTE-02 U3] 桩段（三态骨架外法线 10px——Z 拐点禁入域；与骨架
-   *  顶点按构造全等：band 出桩/终落、corridor/fallback 出桩；direct/
-   *  h-slip/manual-override 骨架无桩顶点=缺省） */
+  /** [F-ROUTE-02 U3] 桩段（骨架外法线 10px——Z 拐点禁入域；与骨架顶点按构造
+   *  全等：detour/band 出桩/终落；direct/h-slip/manual-override/overlap 骨架
+   *  无桩顶点=缺省） */
   stubs?: ReadonlyArray<{ a: Pt; b: Pt }>
   /** 带车道 pass 输入（非带路由缺省） */
   bandY?: number
@@ -112,6 +92,8 @@ interface SkelResult {
   slotFallback?: boolean
   /** [F-ANCHFIX-01 批 1c] 锚占用观测串（SkelResult 中转——routeOne 填） */
   anchorMarks?: string
+  /** [F-SLOTGRID-01 U2] detour 被阻段观测串（routeOne 填） */
+  detourMarks?: string
 }
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
@@ -147,9 +129,9 @@ function routeOne(
   snap: LayoutSnapshot,
   src: Rect,
   tgt: Rect,
-  baseLane: number,
   onWarn: (m: string) => void,
-  use: AnchorUse | undefined
+  use: AnchorUse | undefined,
+  chanUse: ChannelUse
 ): SkelResult {
   const obstacles = allObstacles(snap) // [C2·P7] 三源并集单源（含 yearHeads）
   const ends = [src, tgt]
@@ -162,7 +144,7 @@ function routeOne(
     const b = selectAnchor(tgt, e.via[e.via.length - 1]!)
     // [F-ANCHFIX-01 批 1c] 不 commit（散开语义零变）——anchorMarks 从
     // selectAnchor 结果派生计入（显示真值：线视觉落在该锚）
-    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', lane: -1, stubExcluded: [], anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
+    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', stubExcluded: [], anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
   }
   const commit = (picks: ReadonlyArray<[string, Side, number]>): void => {
     for (const [id, side, slot] of picks) use?.commit(id, side, slot)
@@ -181,7 +163,14 @@ function routeOne(
         [e.targetId, pb.side, pb.slot]
       ]
       commit(picks)
-      return { edgeId: e.edgeId, skel: [aPt, bPt], route: 'direct', lane: -1, stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
+      return { edgeId: e.edgeId, skel: [aPt, bPt], route: 'direct', stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
+    }
+    // ③ detour：同柱（x_s=x_t=x₀）受阻近绕专态（段式七步——detour.ts；门形
+    // 4 拐；候选枚举尽→null 降 ④ band）
+    const dt = detourSkeleton(e.sourceId, e.targetId, pa, pb, snap, obstacles, ends, chanUse, e.edgeId)
+    if (dt !== null) {
+      commit(dt.picks)
+      return { edgeId: e.edgeId, skel: dt.skel, route: 'detour', stubExcluded: ends, stubs: stubsOf(e, src, tgt, dt.picks), anchorMarks: anchorMarksOf(dt.picks), detourMarks: dt.detourMarks }
     }
   }
   // ② h-slip：近侧水平直连（x 带分离——单段直线，y 异高斜向允许）
@@ -198,10 +187,10 @@ function routeOne(
         [e.targetId, qh.side, qh.slot]
       ]
       commit(picks)
-      return { edgeId: e.edgeId, skel: [aH, bH], route: 'h-slip', lane: -1, stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
+      return { edgeId: e.edgeId, skel: [aH, bH], route: 'h-slip', stubExcluded: ends, anchorMarks: anchorMarksOf(picks) }
     }
   }
-  // ③ band：行隙/框间带路由（zigzag 下降候选吸收瀑布错位）
+  // ④ band：通用态（x 不对齐/多带 zigzag——段全集尽或无槽 return null）
   const band = bandSkeleton(src, tgt, tc.y >= sc.y, snap, obstacles, cards, use, e.sourceId, e.targetId)
   if (band !== null && polylineClearStubs(band.skel, ends, obstacles)) {
     commit(band.picks)
@@ -209,7 +198,6 @@ function routeOne(
       edgeId: e.edgeId,
       skel: band.skel,
       route: 'band',
-      lane: -1,
       stubExcluded: ends,
       stubs: stubsOf(e, src, tgt, band.picks),
       bandY: band.laneY,
@@ -220,38 +208,16 @@ function routeOne(
       anchorMarks: anchorMarksOf(band.picks)
     }
   }
-  // ④ corridor：右缘面带 4 道环形探测（lane≥0=corridor/fallback 划界）
-  const corr = corridorSkeleton(e.sourceId, e.targetId, src, tgt, snap, obstacles, ends, baseLane, use)
-  if (corr !== null) {
-    commit(corr.picks)
-    return { edgeId: e.edgeId, skel: corr.skel, route: 'corridor', lane: corr.lane, stubExcluded: ends, stubs: stubsOf(e, src, tgt, corr.picks), anchorMarks: anchorMarksOf(corr.picks) }
-  }
-  // ⑤ fallback：贴边（面带探测失败——数值退化不静默，lane=−1）
-  const fx = snap.contentW - FALLBACK_INSET
-  const fa = sideAnchor(src, 'right', tc)
-  const fb = sideAnchor(tgt, 'right', sc)
-  const pf = anchorPick(e.sourceId, src, fa.side, fa.slot, use)
-  const pg = anchorPick(e.targetId, tgt, fb.side, fb.slot, use)
-  // [回炉 R3] 贴边骨架同经生效锚外法线桩（退化态锚向语义一致）
-  const faS = stubEnd(pf.pt, pf.side)
-  const fbS = stubEnd(pg.pt, pg.side)
-  onWarn(`lineage-routing：边 ${e.edgeId} fallback 贴边（laneX=${fx}）`)
-  // [回炉 R2 补面] fallback 锚=实际占用同样落记（漏记则后续边重取同锚——
-  // 13 边零盒实测 e12 应共享原锚却重取左侧锚落 fallback）
+  // ⑤ overlap 兜底：最短路线+忽略占用+overlapExempt 透出（设计 §2 overlap
+  //  行——x_s≠x_t 时 L 形先横后竖〔H<V 字典序 tie-break〕；确定性红线=形态
+  //  唯一，无随机；C 桥触发器观测面=overlapExempt 占比）
   const picks: ReadonlyArray<[string, Side, number]> = [
-    [e.sourceId, pf.side, pf.slot],
-    [e.targetId, pg.side, pg.slot]
+    [e.sourceId, pa.side, pa.slot],
+    [e.targetId, pb.side, pb.slot]
   ]
   commit(picks)
-  return {
-    edgeId: e.edgeId,
-    skel: [pf.pt, faS, { x: fx, y: faS.y }, { x: fx, y: fbS.y }, fbS, pg.pt],
-    route: 'fallback',
-    lane: -1,
-    stubExcluded: ends,
-    stubs: stubsOf(e, src, tgt, picks),
-    anchorMarks: anchorMarksOf(picks)
-  }
+  const skel: Pt[] = aPt.x === bPt.x ? [aPt, bPt] : [aPt, { x: bPt.x, y: aPt.y }, bPt]
+  return { edgeId: e.edgeId, skel, route: 'overlap', stubExcluded: ends, anchorMarks: anchorMarksOf(picks), overlapExempt: true }
 }
 
 export function routeEdge(
@@ -263,35 +229,22 @@ export function routeEdge(
   const tgt = snap.cards.get(e.targetId)
   if (src === undefined || tgt === undefined) {
     onWarn(`lineage-routing：边 ${e.edgeId} 端点卡缺失（${e.sourceId}/${e.targetId}），跳过路由`)
-    return { edgeId: e.edgeId, d: '', route: 'fallback', lane: -1, pts: [] }
+    return { edgeId: e.edgeId, d: '', route: 'overlap', pts: [], overlapExempt: true }
   }
-  const r = routeOne(e, snap, src, tgt, 0, onWarn, undefined)
+  const r = routeOne(e, snap, src, tgt, onWarn, undefined, new ChannelUse())
   assignStages([r], snap) // [F-ROUTE-02 U3] 单边数组接线=与 routeAll 同型
   const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
-  return {
-    edgeId: r.edgeId,
-    d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
-    route: r.route,
-    lane: r.lane,
-    pts: r.skel,
-    ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
-    ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
-    ...(r.slotFallback === true ? { slotFallback: true } : {}),
-    ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {})
-  }
+  return toPath(r, all)
 }
 
 /** [F-ROUTE-02 U3] 分配接线（routeEdge/routeAll 同型）：routeOne 产物投影
- *  AssignEdge[]（band 族字段透传——残余子 pass 域输入）+桩段 Map（仅三态
- *  边入 Map）→slotAssign（槽位分配+Z 形施加+残余子 pass）→回写 skel；
- *  corridor/fallback/manual-override 边经 ROUTE_ELIGIBLE 门自动跳过；端点
- *  缺失边（skel=[]）经 rebuildPts len<2 原样透传；锚端不变性=残余含端迁移
- *  只动行进电平顶点（锚 y 恒≠bandY 构造性），finish 链零改动。slotAssign
- *  返回=输入序同长（slots.ts edges.map 契约——a7 字典序仅内部处理序，索引
- *  经分边数组承载）——回写按位对齐由此成立。
- *  [F-ROUTE-02 U4] recs 诊断面接引转正（k1-N3 备查弃置→观测钩子承载）：
- *  recs 三布尔/串投影入 SkelResult（RoutedPath 观测字段单源——语义=设计
- *  §8 U4 主控预裁定） */
+ *  AssignEdge[]（band 族字段透传——残余子 pass 域输入）+桩段 Map（detour/
+ *  band 边入 Map）→slotAssign（槽位分配+Z 形施加+残余子 pass）→回写 skel；
+ *  overlap（忽略占用终态——槽位无意义）/manual-override（用户排位主权）
+ *  边经 ROUTE_ELIGIBLE 门自动跳过；端点缺失边（skel=[]）经 rebuildPts
+ *  len<2 原样透传；锚端不变性=残余含端迁移只动行进电平顶点，finish 链
+ *  零改动。slotAssign 返回=输入序同长——回写按位对齐由此成立。
+ *  [F-ROUTE-02 U4] recs 诊断面投影入 SkelResult（观测字段单源） */
 function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
   const stubs = new Map<string, ReadonlyArray<{ a: Pt; b: Pt }>>()
   const inputs: AssignEdge[] = results.map((r) => {
@@ -308,33 +261,35 @@ function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
   })
 }
 
+const toPath = (r: SkelResult, all: readonly Rect[]): RoutedPath => ({
+  edgeId: r.edgeId,
+  d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
+  route: r.route,
+  pts: r.skel,
+  ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
+  ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
+  ...(r.slotFallback === true ? { slotFallback: true } : {}),
+  ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {}),
+  ...(r.detourMarks !== undefined ? { detourMarks: r.detourMarks } : {})
+})
+
 export function routeAll(
   edges: readonly EdgeGeomInput[],
   snap: LayoutSnapshot,
   onWarn: (m: string) => void = () => undefined
 ): RoutedPath[] {
-  const ids = edges.map((e) => e.edgeId)
   const use = new AnchorUse()
+  const chanUse = new ChannelUse()
   const results = edges.map((e) => {
     const src = snap.cards.get(e.sourceId)
     const tgt = snap.cards.get(e.targetId)
     if (src === undefined || tgt === undefined) {
       onWarn(`lineage-routing：边 ${e.edgeId} 端点卡缺失（${e.sourceId}/${e.targetId}），跳过路由`)
-      return { edgeId: e.edgeId, skel: [] as Pt[], route: 'fallback' as RouteTag, lane: -1, stubExcluded: [] as Rect[] }
+      return { edgeId: e.edgeId, skel: [] as Pt[], route: 'overlap' as RouteTag, stubExcluded: [] as Rect[], overlapExempt: true }
     }
-    return routeOne(e, snap, src, tgt, laneIndex(e.edgeId, ids) % snap.corridor.laneCount, onWarn, use)
+    return routeOne(e, snap, src, tgt, onWarn, use, chanUse)
   })
   assignStages(results, snap) // [F-ROUTE-02 U3] 槽位+残余施加（旧 applyBandLanes 退役迁 residual.ts）
   const all = allObstacles(snap) // [C2·P7] 曲化复检障碍集同源（含 yearHeads）
-  return results.map((r) => ({
-    edgeId: r.edgeId,
-    d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
-    route: r.route,
-    lane: r.lane,
-    pts: r.skel,
-    ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
-    ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
-    ...(r.slotFallback === true ? { slotFallback: true } : {}),
-    ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {})
-  }))
+  return results.map((r) => toPath(r, all))
 }

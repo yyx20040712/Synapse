@@ -20,7 +20,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { publish, getOcc, subscribe } from '../../../src/renderer/features/lineage/anchor-occupancy'
 import { CardAnchorDots } from '../../../src/renderer/features/lineage/CardAnchorDots'
-import { defaultCorridor, routeAll } from '../../../src/renderer/features/lineage/routing/chain'
+import { routeAll } from '../../../src/renderer/features/lineage/routing/chain'
 import type { LayoutSnapshot, MonthFrame, Rect } from '../../../src/renderer/features/lineage/routing/chain'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -31,7 +31,7 @@ function rect(x: number, y: number, w: number, h: number): Rect {
 
 function makeSnap(cards: Map<string, Rect>, frames: MonthFrame[] = []): LayoutSnapshot {
   const contentW = 800
-  return { cards, labels: [], frames, yearHeads: [], contentW, corridor: defaultCorridor(contentW) }
+  return { cards, labels: [], frames, yearHeads: [], contentW }
 }
 
 describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出——纯观测零行为变）', () => {
@@ -70,9 +70,9 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
     expect(paths[0]!.anchorMarks).toBe('A:l1,B:r1')
   })
 
-  // [回炉 R-3] h-slip/band/corridor 三态补面（fallback 态=全部探测失败态，
-  // 夹具不可稳定构造——沿承 1b 在案申报豁免：lineage-anchor-consistency.spec
-  // 头注「fallback=全部探测失败态夹具不可稳定构造，申报在案」同源依据）
+  // [回炉 R-3] h-slip/band/overlap 三态补面（[F-SLOTGRID-01 U2] corridor 态
+  // 随走廊退役→兜底态=overlap 最短路线；夹具=带封闭几何〔X 并合卡行距
+  // ≤2·PAD→无带可横移+通道候选全灭〕——U2 重基线）
   it('h-slip 态：x 带分离+竖偏斜段 A(100,100)/B(700,710) → anchorMarks=A:r2,B:l0（近侧 sideAnchor 锚——与 selectAnchor 直连锚判别位）', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
@@ -92,24 +92,24 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
     expect(paths[0]!.anchorMarks).toBe('A:r2,B:l0')
   })
 
-  it('band 态：跨行行隙+错列障碍（A 上/C 障/B 下错列）→ anchorMarks=A:b2,B:t0（band 骨架生效锚——lineage-routing.test ① 夹具同几何）', () => {
+  it('band 态：跨行行隙+错列（72px 网格重基线——[F-SLOTGRID-01 U2]）→ anchorMarks=A:b2,B:t0（band 骨架生效锚——lineage-routing.test ④ 夹具同几何）', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
-        ['A', rect(100, 100, 128, 72)],
-        ['C', rect(240, 100, 128, 72)],
-        ['B', rect(182, 192, 128, 72)]
+        ['A', rect(112, 100, 128, 72)],
+        ['B', rect(212, 244, 128, 72)]
       ]),
-      [{ ...rect(90, 60, 600, 300), year: 2022 }]
+      [{ ...rect(98.4, 80.4, 627.2, 400), year: 2022 }]
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
     expect(paths[0]!.route).toBe('band')
-    // 手算：A 底锚=sideAnchor(A,'bottom',tc=(246,228))：投影 x=146→¾ 序
-    // b2（196,172）；B 顶锚=sideAnchor(B,'top',sc=(164,136))：投影 x=−18
-    // 越左界取最近 ¼ 序 t0（214,192）；行隙带 [172,192] 供 zigzag
+    // 手算：A 底锚=sideAnchor(A,'bottom',tc=(276,280))：投影 x=276−112=164→
+    // ¾ 序 b2（208,172）；B 顶锚=sideAnchor(B,'top',sc=(176,136))：投影
+    // x=176−212=−36 越左界取最近 ¼ 序 t0（244,244）；行隙带 [172,244] h=72
+    // 槽位中位 208 供横移
     expect(paths[0]!.anchorMarks).toBe('A:b2,B:t0')
   })
 
-  it('corridor 态：带封闭+直连阻挡（X 并合卡行距 ≤2·PAD）→ anchorMarks=A:r2,B:r0（右缘 sideAnchor 锚）', () => {
+  it('overlap 态：带封闭+通道候选全灭（X 并合卡行距 ≤2·PAD 无框无通道）→ anchorMarks=A:b1,B:t1（direct 判别锚沿承）+overlapExempt', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
@@ -118,11 +118,12 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
       ])
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
-    expect(paths[0]!.route).toBe('corridor')
-    // 手算：源右锚=sideAnchor(A,'right',tc=(164,336))：投影 y=236→¾ 序 r2
-    // （228,154）；目标右锚=sideAnchor(B,'right',sc=(164,136))：投影 y=−164
-    // 越上界取最近 ¼ 序 r0（228,318）；lane0 x=752（contentW=800）
-    expect(paths[0]!.anchorMarks).toBe('A:r2,B:r0')
+    expect(paths[0]!.route).toBe('overlap')
+    // 手算：overlap 锚=direct 判别锚（selectAnchor 同函数同参——INV-119 ② 域内
+    // 承诺沿承）：sa=A 底 ½ (164,172)=A:b1；sb=B 顶 ½ (164,300)=B:t1；x 相等
+    // →最短路线=单竖段（穿 X——忽略避让兜底）
+    expect(paths[0]!.anchorMarks).toBe('A:b1,B:t1')
+    expect(paths[0]!.overlapExempt).toBe(true)
   })
 })
 

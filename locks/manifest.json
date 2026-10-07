@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-07T13:40:22.0035094Z",
+    "generatedAt":  "2026-10-07T15:20:06.8146632Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "36798ff5e2d16ebc5f47f0ded64fddbcbaa7452cd3ed23c09bf577040f7b9fc4"
+                      "sha256":  "f22d74474a791113e2a10f2d903d4f4179f63f3898390106a13d8d18467c9f2b"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -87,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "c3ba1319057a6c921a1a948cbe638882f932b35930c25445cb70098dc1b7a488"
+                      "sha256":  "62fb1b6942dd66c935642e7b26c865066a02a15fdabe92d7b7462cf767434b83"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -707,7 +707,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-anchfix01-b1c.test.tsx",
-                      "sha256":  "c9afa248d8aba2049400811768960241141699ed6579d6ddf1f58a695eb07fb7"
+                      "sha256":  "925b4f061ae905223ef23f55bccc6f8376dce90e802e27153a1f46745dd189d9"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-board.test.tsx",
@@ -791,7 +791,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-                      "sha256":  "b11c354df11fb0285344e84bd86a4bca3054d9628dfe6012dcc5b18abb9f0537"
+                      "sha256":  "833313604a8c609428c2cf43461e2bfdc4bef74457e32e8a154cc2b94434b37b"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-manual-edit.test.tsx",
@@ -827,15 +827,15 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing.test.ts",
-                      "sha256":  "306bd79034217b4bafa68ce70b5fb37019dc622bda65a3174c94dd506714205f"
+                      "sha256":  "b63bef7c6eeb74cd182b43dbd32cc0c6e52911c7ef4707c80a03682e1ae1af83"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-assign.test.ts",
-                      "sha256":  "7ffab5119de48aed5fed51c137095afd303b2e043ff24a66aaab52aa2b8c5b23"
+                      "sha256":  "e446d2581ffdfe4d26694945bb60143d7bb2574c5a0fca0f0d1d1dd6bd9796e3"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-assign-rr1.test.ts",
-                      "sha256":  "12b81a2f7228b35cd637f0ebea68a88b22eaf132d893e4ed8cbc241370d79aed"
+                      "sha256":  "b8658cb3bcd1f4eb9a6df4eafb1a75324f41ef7223573cdfaab508857302199c"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-parts.test.ts",
@@ -843,7 +843,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-routing-slots.test.ts",
-                      "sha256":  "d8dc63be3b403662c3275268ae05f80b29dd07944862250556b5d89684873913"
+                      "sha256":  "e0530511ad11f6bec7ae6a89cdc88c61960c43e9f0e9d7cb4ef14e818a5d934f"
                   },
                   {
                       "path":  "tests/unit/renderer/lineage-rr13-noop.test.tsx",

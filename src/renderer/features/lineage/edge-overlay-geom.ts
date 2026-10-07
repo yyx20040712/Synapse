@@ -6,7 +6,6 @@
 import type { CSSProperties } from 'react'
 import type { LineageEdge } from '@shared/models/lineage'
 import type { LayoutSnapshot } from './lineage-routing'
-import { defaultCorridor } from './lineage-routing'
 import { contentScale } from './timeline-zoom'
 
 interface Box {
@@ -39,7 +38,9 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
   // ::after{flex:1} 横线横贯内容全宽，全宽 rect 挡死 band 跨年终落=CI 红
   // T-P1b（设计稿 v1.16 随批回写）；1px 装饰横线为伪元素天然采不到，不视为障碍
   const yearHeads = Array.from(content.querySelectorAll('.tl-year-num, .tl-year-meta')).map(toBox)
-  return { cards, labels, frames, yearHeads, contentW: base.width / z, corridor: defaultCorridor(base.width / z) }
+  // [F-SLOTGRID-01 U2] contentW 沿承透出（边侧通道右缘界=框内缘非内容缘——
+  // 通道派生驻 routing/detour.ts gridChannelsOf；corridor 字段随走廊退役删除）
+  return { cards, labels, frames, yearHeads, contentW: base.width / z }
 }
 
 /** [F-LGRAPH-01②U8] 边视觉样式（dashed/color 内联——A3；虚线纹固定 6 3） */
