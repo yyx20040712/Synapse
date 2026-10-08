@@ -45,7 +45,7 @@
       "fingerprint": "toast 3s 超时未现（2026-10-08 第 2 现：全套 #82 序列位/失败行 spec:1090 toBeVisible toast 缺席/定向复跑绿——复跑绿不销项）",
       "status": "filed",
       "first_seen": "2026-08-30",
-      "resolution": "立案（2026-10-08 门二裁决部终裁 C1——第 2 现达「同用例 2 次」立案线；史料=首轮 docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md+第 2 现 E:/zcode_md/synapse-archive/scripts-audits/20261008-dbcamp-db1/gate2-probe-report.md A2 节+u1-r2-e2e-full.raw.txt:124/147-174+u1-r2-e2e-readertext-rerun:7；排查票待立——F-DBCAMP-01 DB-1 后续批承载或独立票）"
+      "resolution": "立案（2026-10-08 门二裁决部终裁 C1——第 2 现达「同用例 2 次」立案线；史料=首轮 docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md+第 2 现 u1-r2-e2e-full.raw.txt:124/147-174+定向复跑 u1-r2-e2e-readertext-rerun:7〔台账指针勘误 2026-10-09：原引 gate2-probe-report.md A2 节系种子面确定性红非本用例〕；排查票待立——F-DBCAMP-01 DB-1 后续批承载或独立票）；2026-10-09 穿插窗排查（runId=20261009-0100-db2open）：**未复现**——3 轮 7 执行全绿（单 spec 18/18→repeat-each=5 90/90→全量 102/102 本例 #82 绿位），count 维持 2；在档第 2 现失败轮 5.1s 反比绿轮 7.2-7.4s 快 ~2s（:1090 fail-fast）——非全局饥饿形态；候选根因排序（证据制非定论）：H1 mouseup 时选区非跨页有效态（文本层重建/F-A12 affinity；F-FLAKE-02 同族嫌疑——settle 门未覆盖本段滚动懒渲染）＞H2 负载型 toast 渲染延迟＞H3 3500ms 自动退场 vs 3s 观察窗（余量 500ms）＞H4 坐标漂移；**再现时首取 test-results/ 该用例 error-context.md 快照**（DOM 快照可直判工具条在场与否=H1/H4 与 H2/H3 分岔，历史两现均未留）；证据=仓外 20261009-0100-db2open/flake1030-{report.md,r1-spec.log,r2-repeat5.log,r3-full.log}"
     },
     {
       "spec": null,
