@@ -41,11 +41,11 @@
     {
       "spec": "tests/e2e/reader-text.spec.ts",
       "case": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
-      "count": 1,
-      "fingerprint": "toast 3s 超时未现",
-      "status": "observing",
+      "count": 2,
+      "fingerprint": "toast 3s 超时未现（2026-10-08 第 2 现：全套 #82 序列位/失败行 spec:1090 toBeVisible toast 缺席/定向复跑绿——复跑绿不销项）",
+      "status": "filed",
       "first_seen": "2026-08-30",
-      "resolution": "观察中（再 1 现立案；史料=docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md）"
+      "resolution": "立案（2026-10-08 门二裁决部终裁 C1——第 2 现达「同用例 2 次」立案线；史料=首轮 docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md+第 2 现 E:/zcode_md/synapse-archive/scripts-audits/20261008-dbcamp-db1/gate2-probe-report.md A2 节+u1-r2-e2e-full.raw.txt:124/147-174+u1-r2-e2e-readertext-rerun:7；排查票待立——F-DBCAMP-01 DB-1 后续批承载或独立票）"
     },
     {
       "spec": null,

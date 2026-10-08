@@ -32,7 +32,7 @@ const detail: PaperDetail = {
   venue: 'Water Research',
   doi: '10.1/x',
   tagNames: [],
-  folderId: null,
+  folderId: '__main__',
   impactFactor: null,
   annotationCount: 2,
   noteCount: 1,

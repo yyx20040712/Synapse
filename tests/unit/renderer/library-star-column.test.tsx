@@ -28,7 +28,7 @@ function makeSummary(id: string): PaperSummary {
     noteCount: 0,
     lastReadPage: 0,
     addedAt: 't',
-    folderId: null,
+    folderId: '__main__',
     impactFactor: null
   }
 }

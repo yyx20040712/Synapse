@@ -41,8 +41,11 @@ const paperSummary = {
   venue: 'Nature Water',
   doi: '10.1/x',
   tagNames: [],
-  // [F-FOLDER-01] collectionNames 退役——folderId/impactFactor 必携（可空）
-  folderId: null,
+  // [F-FOLDER-01] collectionNames 退役——folderId/impactFactor 必携。
+  // [F-DBCAMP-01 U1] 016 列级 NOT NULL（v122 裁决②）：folderId 可空退役——
+  // 夹具基线值随收紧改非空（null 拒收断言面=tests/unit/db/repos/
+  // papers.folder-contract.test.ts 新增件承接）
+  folderId: '__main__',
   impactFactor: null,
   annotationCount: 0,
   noteCount: 0,

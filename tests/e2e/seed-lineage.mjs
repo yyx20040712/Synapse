@@ -12,8 +12,9 @@
  * paper_id 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * [A1a] libraryTags=文献库标签种子（tags+paper_tags 两行挂接该节点 paperId
  * ——卡 L1 标签断言面换源；[A1b] 后=唯一标签种子面）。
- * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 则写为节点 folder
- * （镜像 ensurePaperFolder 入图即归档语义）。幽灵边种子（edges 两端 paper 分属
+ * INV-88 诚实面：node 落库后其 paper 若 folder_id 为 NULL 或 __main__（016
+ * DEFAULT 承续映射——未显式落夹的缺省家）则写为节点 folder（镜像
+ * ensurePaperFolder 入图即归档语义）。幽灵边种子（edges 两端 paper 分属
  * 不同文件夹——存量数据模拟）的跨图过滤单测覆盖=tests/unit/services/
  * lineage-assemble.test.ts；本脚本当前无 e2e 幽灵边用例（d1-N6 勘正：头注
  * 原「导出面 INV-77 兜底测试用」高报了本脚本的覆盖面）。
@@ -57,8 +58,14 @@ try {
     `INSERT INTO lineage_nodes (id, paper_id, title, year, x, y, month, slot, folder_id, created_at, updated_at)
      VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)`
   )
+  // [F-DBCAMP-01 U1·回炉轮2] 016 列级 NOT NULL DEFAULT '__main__' 后种子文献
+  // （seed-paper.mjs 列单无 folder_id）生于 __main__ 而非 NULL——原 IS NULL 条件
+  // 恒假=种子文献永留主图不落种子夹（门二 P02 三红之②③面）。承接映射=
+  // __main__ 承续 012 时代「未归档 NULL」语义（未显式落夹的缺省家）：
+  // NULL 或 __main__ 均可被节点归属覆写；显式落非 __main__ 夹的文献维持旧
+  // no-op（pre-016 与 post-016 两态下该分支行为逐位相同=99 绿零扰动）
   const assignFolder = db.prepare(
-    'UPDATE papers SET folder_id = ? WHERE id = ? AND folder_id IS NULL'
+    "UPDATE papers SET folder_id = ? WHERE id = ? AND (folder_id IS NULL OR folder_id = '__main__')"
   )
   // [A1a] 文献库标签种子（同名幂等：DO NOTHING+按名回读——tags.repo
   // upsertByName 同型；挂接 OR IGNORE 同型）

@@ -80,7 +80,9 @@ export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, 
   FROM ${WINDOW_SUBQUERY} p WHERE p.id = ?`
 
 /** 聚合查询内部行形状（蛇形列 + 聚合别名；[T3-P3] cited_by_count 可空缓存列；
- *  [F-FOLDER-01] folder 双列+pub_no 窗口列+lineage 三标记列，coll_names 退役） */
+ *  [F-FOLDER-01] folder 双列+pub_no 窗口列+lineage 三标记列，coll_names 退役。
+ *  [F-DBCAMP-01 U1] folder_id 随 016 NOT NULL DEFAULT 收紧=string（原可空=012
+ *  窗口期形态） */
 export interface SummaryRow {
   id: string; title: string; authors_json: string
   year: number | null; venue: string; doi: string | null
@@ -88,7 +90,7 @@ export interface SummaryRow {
   tag_names: string | null
   annotation_count: number; note_count: number
   cited_by_count: number | null
-  folder_id: string | null
+  folder_id: string
   impact_factor: number | null
   pub_no: number
   lineage_node_id: string | null
@@ -211,11 +213,11 @@ export function patchFragments(patch: PaperMetaPatch): { columns: string[]; valu
   return { columns, values }
 }
 /** [F-FOLDER-01] 归属纯读（INV-88 统一规则判别源——显式 folderId≠归属拒的
- *  前置读，无副作用）；未命中/无归属历史行=null（[F-ALIGN-01 D5] 应用层不再
- *  产出 null 归属——DDL NOT NULL 归 D 批） */
+ *  前置读，无副作用）；null=未命中（[F-DBCAMP-01 U1] 016 列级 NOT NULL 后
+ *  归属值恒非空——null 仅余「行不存在」语义，无归属历史行形态已消亡） */
 export function folderIdOfQuery(id: string, stmt: StmtGetter): string | null {
   const r = stmt('SELECT folder_id FROM papers WHERE id = ?').get(id) as
-    | { folder_id: string | null }
+    | { folder_id: string }
     | undefined
   return r === undefined ? null : r.folder_id
 }

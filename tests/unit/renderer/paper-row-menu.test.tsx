@@ -36,7 +36,7 @@ import { OPEN_PAPER_EVENT } from '../../../src/renderer/shared/open-paper-bus'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-function summary(id: string, folderId: string | null): PaperSummary {
+function summary(id: string, folderId: string): PaperSummary {
   return {
     id,
     title: `论文${id}`,
@@ -138,7 +138,7 @@ afterEach(async () => {
 // 先例=api-surface-closure「55 通道 pin」）；活锚=本组首用例三项版断言
 describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
   it('右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await rightClickRow('p1')
     expect(menu()).not.toBeNull()
@@ -149,7 +149,7 @@ describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
   })
 
   it('命中行=按下即高亮（.hit 类挂右键行）；他行不挂', async () => {
-    setPapers([summary('p1', null), summary('p2', null)])
+    setPapers([summary('p1', '__main__'), summary('p2', '__main__')])
     await render()
     await rightClickRow('p2')
     expect(row('p2')?.classList.contains('hit')).toBe(true)
@@ -157,7 +157,7 @@ describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
   })
 
   it('「在阅读器中打开」→openPaper 通道（open-paper 事件广播）+菜单收起', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     const seen: string[] = []
     const listener = (): void => {
       seen.push('fired')
@@ -176,7 +176,7 @@ describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
   })
 
   it('移动子面：folders.list 自取+子项=文件夹清单（[F-ALIGN-01 D5]「未归档（移出）」零残留负锚）', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await rightClickRow('p1')
     await act(async () => {
@@ -211,7 +211,7 @@ describe('F-UIRES-01 U4 菜单移动链（moveFolder+收尾两分支）', () => 
   }
 
   it('移入文件夹：moveFolder({paperId,toFolderId})+列表重载+行仍在视图→选中保持', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await act(async () => {
       useLibraryStore.setState({ selectedId: 'p1' })
@@ -250,7 +250,7 @@ describe('F-UIRES-01 U4 菜单移动链（moveFolder+收尾两分支）', () => 
   })
 
   it('失败→拒因中文 toast（ApiClientError.message 透传）+列表保持', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await openMoveSub()
     stubApi.papers.moveFolder.mockResolvedValue({

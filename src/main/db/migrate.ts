@@ -28,11 +28,21 @@ import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
 import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
 import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
 import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolor.sql?raw'
+import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?raw'
 
 export interface Migration {
   version: number
   name: string
   sql: string
+  /** [F-DBCAMP-01 DB-1] FK-OFF 迁移模式（016 重建父表舞步配套）：置真时执行器
+   * 在事务外围 PRAGMA foreign_keys=OFF（事务内该 pragma 无操作=012 头注 F1），
+   * 事务内 exec 后先跑 foreign_key_check 断言（可读未提交态，违约即抛=整体
+   * 回滚+user_version 不前进），finally 复位 ON。机制边界（U1 探针 2×2 真值表）：
+   * 子表 FK 子句改写由 RENAME 父表触发——fk=ON 恒改写；fk=OFF∧legacy=ON
+   * 不改写；fk=OFF∧legacy=OFF 仍改写（本仓连接从不置 legacy）。官方序（旧表
+   * 只 DROP 不 RENAME、新表 RENAME 无引用者）=不进 RENAME 改写面，FK OFF
+   * 只承担关断 DROP 父表的隐式 DELETE 级联〔d1-新N2 精化〕 */
+  fkOff?: boolean
 }
 
 /** 迁移清单：新增迁移在此追加（文件放 migrations/ 并 import ?raw） */
@@ -69,7 +79,11 @@ export const MIGRATIONS: readonly Migration[] = [
   // [F-UIRES-03 C1] 存量边旧蓝换深蓝：色板首色 '#3a5bd9'→'#1e3a8a'（呈裁①
   // ——shared 单源换值随批；014 DEFAULT 不动=repo 写面恒显式色死路径；
   // 新库 user_version 终值 15）
-  { version: 15, name: 'lineage_edge_blue_recolor', sql: lineageEdgeBlueRecolorSql }
+  { version: 15, name: 'lineage_edge_blue_recolor', sql: lineageEdgeBlueRecolorSql },
+  // [F-DBCAMP-01 DB-1] papers.folder_id NOT NULL 真重建（v122 裁决② DDL 终态；
+  // 官方 12 步序=旧表只 DROP 不 RENAME+FTS 双扫——候选 A legacy 换名舞步经
+  // 探针证不可行；FK-OFF 模式首例=fkOff 标志；新库 user_version 终值 16）
+  { version: 16, name: 'papers_folder_not_null', sql: papersFolderNotNullSql, fkOff: true }
 ]
 
 export interface MigrateResult {
@@ -96,9 +110,38 @@ export function migrate(
     }
     const runMigration = db.transaction(() => {
       db.exec(migration.sql)
+      // FK-OFF 迁移守卫：关断期间写面不受 DDL 级联/约束保护——事务内
+      // foreign_key_check 可读未提交态（U1 探针 B5），违约即抛=整体回滚。
+      // 无表参数=全库扫描（有意设计）：覆盖 FK OFF 窗口内一切写面+顺带暴露
+      // 存量库任何既存违例——fail-closed 方向=违例中止升级链+user_version
+      // 不前进+重启重试再失败（宁拒升不吞错）
+      if (migration.fkOff === true) {
+        const violations = db.prepare('PRAGMA foreign_key_check').all() as Array<{
+          table: string
+          rowid: number
+        }>
+        if (violations.length > 0) {
+          // 违例明细随报（前 3 行 table#rowid——定位修复对象〔d1-新N4〕）
+          const detail = violations
+            .slice(0, 3)
+            .map((v) => `${v.table}#${v.rowid}`)
+            .join('、')
+          throw new Error(
+            `迁移 ${migration.version}（${migration.name}）foreign_key_check 违约 ${violations.length} 行：${detail}`
+          )
+        }
+      }
       db.pragma(`user_version = ${migration.version}`)
     })
-    runMigration()
+    // FK-OFF 模式：DROP 父表需关断其隐式 DELETE 级联（FK ON 下 DROP 父表=
+    // 级联灭子表——012 头注 F3）——必须在事务外关断（事务内该 pragma 无操作）；
+    // finally 复位，失败路径不留半关断连接
+    if (migration.fkOff === true) db.pragma('foreign_keys = OFF')
+    try {
+      runMigration()
+    } finally {
+      if (migration.fkOff === true) db.pragma('foreign_keys = ON')
+    }
     applied.push(migration.version)
   }
 

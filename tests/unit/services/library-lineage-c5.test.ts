@@ -74,7 +74,9 @@ describe('F-FOLDER-01 pubNo 库级派生（INV-92——LIST_SQL 窗口；catalog
     expect(byId.get('p-2021m3')!.lineage).toEqual({ year: 2021, month: 3 })
     expect(byId.get('p-2019')!.lineage).toEqual({ year: 2019, month: null })
     expect('lineage' in byId.get('p-nograph')!).toBe(false)
-    expect(byId.get('p-nograph')!.folderId).toBeNull()
+    // [F-DBCAMP-01 U1] 016 NOT NULL DEFAULT '__main__'：裸夹具归属=__main__
+    // （原 null=012 可空期形态——本断言面=无脉络文献的 summary 透传，非归属语义）
+    expect(byId.get('p-nograph')!.folderId).toBe('__main__')
     expect(byId.get('p-nograph')!.impactFactor).toBeNull()
   })
 
@@ -130,7 +132,7 @@ describe('T3-P5 detail() 真值透传（month 真值——摘恒 null 注释；[
   function makeDetail(): PaperDetail {
     return {
       id: 'p-1', title: 't', authors: [], year: 2024, venue: '', doi: null,
-      tagNames: [], folderId: null, impactFactor: null, annotationCount: 0, noteCount: 0,
+      tagNames: [], folderId: '__main__', impactFactor: null, annotationCount: 0, noteCount: 0,
       lastReadPage: 0, addedAt: 't', abstract: '', arxivId: null, source: 'local' as const,
       enrichStatus: 'pending' as const, fileUrl: 'app-file://p-1', fileName: 'a.pdf',
       updatedAt: 't', tags: []

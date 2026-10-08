@@ -32,7 +32,7 @@ const detail: PaperDetail = {
   venue: '',
   doi: null,
   tagNames: [],
-  folderId: null,
+  folderId: '__main__',
   impactFactor: null,
   annotationCount: 0,
   noteCount: 0,

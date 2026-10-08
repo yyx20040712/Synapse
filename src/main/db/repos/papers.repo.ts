@@ -32,7 +32,6 @@
  * - 时间戳 UTC ISO；id 由上层生成后整行传入；updateMeta/applyEnrichment 同步 updated_at
  */
 import { appFileUrl } from '../../../shared/app-file-url'
-import { MAIN_GRAPH_ID } from '../../../shared/models/lineage'
 import type Database from 'better-sqlite3'
 import type { SqliteDb } from '../connection'
 import {
@@ -109,15 +108,12 @@ export interface PapersRepo {
   detailById(id: string): PaperDetail | null
   /** F-LG14 含金量批量查证（+[②U4] impact_factor——graph join 单源） */
   listMetricsByIds(ids: string[]): Array<{ paperId: string; venue: string; citedByCount: number | null; impactFactor: number | null }>
-  /** [F-FOLDER-01] 文件夹归属直写（单归属；null=DB 列 DDL 收紧归 D 批的窗口期
-   *  防御值——[F-ALIGN-01 D5] 应用层两写路恒非空 INV-NEW-2）。未命中返回 null */
-  setFolderId(id: string, folderId: string | null): PaperRow | null
-  /** [F-FOLDER-01] 归属纯读（INV-88 判别源；null=历史遗留无归属行/未命中——
-   *  [F-ALIGN-01 D5] 应用层不再产出 null 归属，DDL NOT NULL 归 D 批） */
+  /** [F-FOLDER-01] 文件夹归属直写（单归属；[F-DBCAMP-01 U1] 016 列级 NOT NULL
+   *  后 null 分支退役——应用写路恒非空 INV-NEW-2）。未命中返回 null */
+  setFolderId(id: string, folderId: string): PaperRow | null
+  /** [F-FOLDER-01] 归属纯读（INV-88 判别源；[F-DBCAMP-01 U1] 016 后 null=
+   *  仅「行未命中」——无归属历史行形态已随 NOT NULL 消亡） */
   folderIdOf(id: string): string | null
-  /** [F-FOLDER-01] 归属确保（INV-88 落笔）：无归属历史行→写主图（防御兜底）
-   *  回读；已有归属→现值（[F-ALIGN-01] 角色注明归单元四） */
-  ensureFolderAssigned(id: string): string
   /** [F-FOLDER-01] pubNo 批查（库级窗口——graph 通道 pubNos 装配源；空 ids=空数组） */
   pubNoByIds(ids: string[]): Array<{ paperId: string; pubNo: number }>
   /** [F-ALIGN-01 D4] 夹内文献 id 清单（folders.service delete 域删级联遍历源） */
@@ -234,14 +230,6 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     },
     folderIdOf(id) {
       return folderIdOfQuery(id, stmt) // queries 件单源（回炉 R1 拆件）
-    },
-    // INV-88 统一规则落笔（回炉码 1）：无归属历史行→主图（MAIN_GRAPH_ID 单源锚
-    // ——[F-ALIGN-01 D5] 应用层两写路恒非空，本面=DDL 收紧前的防御兜底）
-    ensureFolderAssigned(id) {
-      const current = folderIdOfQuery(id, stmt)
-      if (current !== null) return current
-      updateColumns(id, ['folder_id'], [MAIN_GRAPH_ID])
-      return MAIN_GRAPH_ID
     },
     // [F-FOLDER-01] pubNo 批查=queries 件单源（B3 不改编号；N7 结构注记在件）
     pubNoByIds(ids) {

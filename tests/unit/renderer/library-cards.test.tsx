@@ -72,7 +72,7 @@ function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummar
     venue: 'Journal of Testing',
     doi: null,
     tagNames: ['水锤史', '雷诺数'],
-    folderId: null,
+    folderId: '__main__',
     impactFactor: null,
     annotationCount: 6,
     noteCount: 22,

@@ -7,9 +7,9 @@
  *   节点；lineage.edgeCount=连线数。静默判据（F-DELCONF C5 承接）：无节点 ∨
  *   edgeCount=0 →静默直删；有边→上抛 onProtect 由宿主挂 PaperDeleteDialog
  *   （弹窗计数=预检提示值——落定瞬态规避，不再二次查询）
- * - 图名派生：detail.folderId→folders.list 找 name；folderId=null（无归属
- *   历史行——[F-ALIGN-01 D5] 应用层不再产出，DDL 收紧前读面兼容）
- *   →「主图」（§2.1 缺省图映射）；夹行消失竞态同落「主图」（事务内级联按
+ * - 图名派生：detail.folderId→folders.list 找 name（[F-DBCAMP-01 U1] 016 列级
+ *   NOT NULL 后归属恒非空——folderId=null 读面兼容子句随 DDL 收紧退役）
+ *   ；夹行消失竞态落「主图」（§2.1 缺省图映射；事务内级联按
  *   实际状态为权威——弹窗值=提示值）
  * - fail-closed：预检失败（detail/保护分支 folders.list）→不删不弹，error
  *   toast（ApiClientError.message 透传+意外异常中文兜底）
@@ -54,9 +54,11 @@ const PAPER_DELETE_IN_FLIGHT = '上一次删除仍在进行，请稍候'
  *  失败」误报；PaperDeleteDialog 同语义单源 import（tags 域 TAG_OP_FAILED
  *  先例——组件→域件 import） */
 export const PAPER_RELOAD_FAILED = '列表刷新失败'
-/** §2.1 缺省图名（folderId=null 无归属历史行映射——[F-ALIGN-01 D5] 兼容面）
- *  +竞态兜底；与 folders.list 主图行名互锚（__main__ 行恒在场——folders.list
- *  真实载荷，RR1-5） */
+/** §2.1 缺省图名。兜底存在理由=夹行消失竞态防御（folders.list 载荷不含
+ *  detail.folderId 对应行的窗口——find 落空；[F-DBCAMP-01 U1] 016 列级 NOT NULL
+ *  后 folderId=null 无归属历史行形态已消亡，null 映射理由退役——代码分支
+ *  保留=防御性读面）；与 folders.list 主图行名互锚（__main__ 行恒在场——
+ *  folders.list 真实载荷，RR1-5） */
 const MAIN_GRAPH_NAME = '主图'
 
 /** 保护弹窗载荷（预检提示值——宿主挂 PaperDeleteDialog 经 props 传入） */
@@ -113,6 +115,8 @@ export function usePaperDeleteFlow(props: {
         deletingIdRef.current = null
         return
       }
+      // ?? 兜底=夹行消失竞态防御（folders.list 不含该 folderId 行的窗口；
+      // 016 后 folderId 恒非空=非 null 映射面——防御性读面保留）
       const graphName = folders.find((f) => f.id === detail.folderId)?.name ?? MAIN_GRAPH_NAME
       // [RR1-1a] ref 释放点=onProtect 前一行——folders.list 悬置窗全程受守卫
       //（prechecking 相位连续）；confirming 期不设流级 ref=主控裁定（Dialog

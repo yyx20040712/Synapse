@@ -24,12 +24,11 @@ export const paperSummarySchema = z
     noteCount: z.number().int(),
     lastReadPage: z.number().int(),
     addedAt: z.string(), // ISO 8601
-    // [F-FOLDER-01] 文件夹单归属（迁移 012 papers.folder_id）。[F-ALIGN-01 D5
-    // 2026-10-04] 「移出」路径全域退役：应用层两写路（导入 D3 落夹/
-    // 移动 moveFolder）恒非空（INV-NEW-2）——类型保持 nullable=DB 列 DDL 收紧
-    // 归 D 批的窗口期防御面（历史行/null 读面兼容）。collectionNames 已随
-    // paper_collections 退役删除（方案切换=删除旧方案）
-    folderId: z.string().nullable(),
+    // [F-FOLDER-01] 文件夹单归属（迁移 012 papers.folder_id）。[F-DBCAMP-01
+    // DB-1 2026-10-08] 迁移 016 列级 NOT NULL DEFAULT '__main__' 收紧（v122
+    // 裁决②「未归档域取消」DDL 终态）——.nullable() 随 DDL 收紧退役：归属值
+    // 恒非空，null 载荷拒收。collectionNames 已随 paper_collections 退役删除
+    folderId: z.string(),
     // [F-FOLDER-01] D1 影响因子（手动填写——papers.impact_factor REAL 可空）
     impactFactor: z.number().nullable(),
     // [F-FOLDER-01] pubNo=库级全序派生编号（ROW_NUMBER OVER ORDER BY

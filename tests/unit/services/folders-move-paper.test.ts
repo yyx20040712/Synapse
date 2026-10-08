@@ -203,7 +203,10 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     await expect(papers.moveFolder({ paperId: 'p-a', toFolderId: f1.id })).rejects.toMatchObject({
       code: 'CONFLICT'
     })
-    expect(folderIdOf('p-a')).toBeNull() // 拒时零库副作用
+    // [F-DBCAMP-01 U1] 016 NOT NULL DEFAULT '__main__'：裸夹具初始归属=
+    // __main__（原 null 为 012 可空期形态）；断言语义不变=拒时零库副作用
+    // （归属维持插入时值未被拒分支改写）
+    expect(folderIdOf('p-a')).toBe('__main__')
     expect(foldersChanged).not.toHaveBeenCalled()
     expect(lineageChanged).not.toHaveBeenCalled()
   })

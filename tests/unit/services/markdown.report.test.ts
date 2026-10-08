@@ -12,7 +12,7 @@ const paper: PaperDetail = {
   venue: '水利学报',
   doi: '10.1000/demo',
   tagNames: [],
-  folderId: null,
+  folderId: '__main__',
   impactFactor: null,
   annotationCount: 2,
   noteCount: 1,

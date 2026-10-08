@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 
 /**
  * [F-FOLDER-02·D/F] meta-year-month e2e —— 元数据编辑全链（MetaEditDialog
@@ -24,22 +24,21 @@ test('改 year/month→节点排序键更新+pubNo 重派生+表格不滞旧', a
   await bootstrapMigrations(userData)
   await seedPaperRow(userData, 'a.pdf', `sha-${P1.id}`, P1.title, P1.id, { year: P1.year })
   await seedPaperRow(userData, 'a.pdf', `sha-${P2.id}`, P2.title, P2.id, { year: P2.year })
+  // 两篇入图（[F-DBCAMP-01 U1·回炉轮2] 原 moveFolder('__main__') 产品路径随 016
+  // DEFAULT 收敛为同值幂等 no-op——种子文献生于 __main__（缺省家）触发 R2 早退
+  // 分支，自动建节点不再执行；改 seedLineageGraph 直建节点。产物同构论证：
+  // 节点排序键初值=文献 year 2021/2023、month 无源=null（与原移动路逐位一致）；
+  // folderId 缺省 __main__=INV-88 归档镜像自指（回炉轮2 assignFolder 承续映射
+  // 下值不变）；节点唯一来源=入库/移动两路 INV-NEW-1（种子直写=测试基建面）
+  await seedLineageGraph(userData, {
+    nodes: [
+      { paperId: P1.id, title: P1.title, year: P1.year },
+      { paperId: P2.id, title: P2.title, year: P2.year }
+    ]
+  })
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-
-  // 两篇入图（[F-ALIGN-01] upsert-node 通道退役→moveFolder 产品路径：移入
-  // 主图=无节点分支自动建节点〔节点排序键初值=文献 year 2021/2023——INV-88
-  // 移动路〕；节点唯一来源=入库/移动两路 INV-NEW-1）
-  for (const p of [P1, P2]) {
-    expect(
-      await win.evaluate(
-        async (arg: { id: string }) =>
-          (await window.api.papers.moveFolder({ paperId: arg.id, toFolderId: '__main__' })).ok,
-        p
-      )
-    ).toBe(true)
-  }
 
   // 选中 P1：详情面板 pubNo 徽章=·002（库级全序：乙 2021 在前；F-UIRES-03 B4① #→·）
   await win.getByText(P1.title).first().click()

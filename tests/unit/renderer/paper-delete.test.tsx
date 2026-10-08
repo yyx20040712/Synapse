@@ -35,7 +35,7 @@ import { useLibraryStore } from '../../../src/renderer/features/library/library.
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-function summary(id: string, folderId: string | null): PaperSummary {
+function summary(id: string, folderId: string): PaperSummary {
   return {
     id,
     title: `论文${id}`,
@@ -55,7 +55,7 @@ function summary(id: string, folderId: string | null): PaperSummary {
 
 /** detail 载荷（lineage 省略=无节点——预检判据面）。summary 的 lineage 键
  * （summary 面无 edgeCount）先剥除再摊入——类型面防串型 */
-function detailBody(id: string, folderId: string | null, lineage?: { edgeCount: number }): PaperDetail {
+function detailBody(id: string, folderId: string, lineage?: { edgeCount: number }): PaperDetail {
   const { lineage: _summaryLineage, ...rest } = summary(id, folderId)
   const d: PaperDetail = {
     ...rest,
@@ -184,7 +184,7 @@ afterEach(async () => {
 
 describe('F-UIRES-01 批 B 菜单三项版（删除项点亮）', () => {
   it('右键行→菜单三项：在阅读器中打开/移动到文件夹/删除文献（danger）；星标项零渲染（DB 窗口）', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await rightClickRow('p1')
     expect(menu()).not.toBeNull()
@@ -202,8 +202,8 @@ describe('F-UIRES-01 批 B 菜单三项版（删除项点亮）', () => {
 
 describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   it('静默判据①：无节点（detail.lineage 省略）→直删+无 Dialog+收尾重载', async () => {
-    setPapers([summary('p1', null)])
-    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', null) })
+    setPapers([summary('p1', '__main__')])
+    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', '__main__') })
     await render()
     const listCallsBefore = stubApi.library.list.mock.calls.length
     await clickDeleteMenu('p1')
@@ -237,8 +237,11 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('图名派生：folderId=null（未归档）→「主图」（§2.1 缺省图映射）', async () => {
-    setPapers([summary('p1', null)])
-    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', null, { edgeCount: 2 }) })
+    // [F-DBCAMP-01 U1] 016 列级 NOT NULL 后类型面不可达态——窄化转型保运行时
+    // 防御分支读面覆盖（?? 主图兜底；类型面 null 已由 schema 拒收锚定）
+    const legacyNull = null as unknown as string
+    setPapers([summary('p1', legacyNull)])
+    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', legacyNull, { edgeCount: 2 }) })
     await render()
     await clickDeleteMenu('p1')
     expect(dialog()).not.toBeNull()
@@ -259,10 +262,10 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('确认→delete 调用+收尾：被删行=当前选中→selectPaper(null)（抽屉随清）', async () => {
-    setPapers([summary('p1', 'f-1'), summary('p2', null)])
+    setPapers([summary('p1', 'f-1'), summary('p2', '__main__')])
     stubApi.library.detail.mockImplementation(async (q: { paperId: string }) => ({
       ok: true,
-      data: detailBody(q.paperId, q.paperId === 'p1' ? 'f-1' : null, q.paperId === 'p1' ? { edgeCount: 3 } : undefined)
+      data: detailBody(q.paperId, q.paperId === 'p1' ? 'f-1' : '__main__', q.paperId === 'p1' ? { edgeCount: 3 } : undefined)
     }))
     await render()
     await act(async () => {
@@ -270,7 +273,7 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
     })
     await clickDeleteMenu('p1')
     // 重载后列表无 p1（被删必离开）
-    listNow = [summary('p2', null)]
+    listNow = [summary('p2', '__main__')]
     await act(async () => {
       dialogButton('删除文献')!.click()
     })
@@ -280,17 +283,17 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('确认→收尾：他行选中→保持（selectPaper 不动）', async () => {
-    setPapers([summary('p1', 'f-1'), summary('p2', null)])
+    setPapers([summary('p1', 'f-1'), summary('p2', '__main__')])
     stubApi.library.detail.mockImplementation(async (q: { paperId: string }) => ({
       ok: true,
-      data: detailBody(q.paperId, q.paperId === 'p1' ? 'f-1' : null, q.paperId === 'p1' ? { edgeCount: 3 } : undefined)
+      data: detailBody(q.paperId, q.paperId === 'p1' ? 'f-1' : '__main__', q.paperId === 'p1' ? { edgeCount: 3 } : undefined)
     }))
     await render()
     await act(async () => {
       useLibraryStore.setState({ selectedId: 'p2' })
     })
     await clickDeleteMenu('p1')
-    listNow = [summary('p2', null)]
+    listNow = [summary('p2', '__main__')]
     await act(async () => {
       dialogButton('删除文献')!.click()
     })
@@ -300,8 +303,8 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('删除失败→ApiClientError.message 透传 toast+选中不动+列表零动作', async () => {
-    setPapers([summary('p1', null)])
-    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', null) })
+    setPapers([summary('p1', '__main__')])
+    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', '__main__') })
     stubApi.papers.delete.mockResolvedValue({
       ok: false,
       error: { code: 'CONFLICT', message: '脉络图编辑保存中，请先完成保存再操作文献归属' }
@@ -344,7 +347,7 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('预检失败→fail-closed：error toast+零 delete 零 Dialog（useFolderDelete 同判据先例）', async () => {
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     stubApi.library.detail.mockResolvedValue({
       ok: false,
       error: { code: 'NOT_FOUND', message: '文献不存在：p1' }
@@ -367,7 +370,7 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
 
   it('在途守卫：异 id 再点→info toast「上一次删除仍在进行」+不执行（预检都不发）', async () => {
     const resolveDetail = hangDetail()
-    setPapers([summary('p1', null), summary('p2', null)])
+    setPapers([summary('p1', '__main__'), summary('p2', '__main__')])
     await render()
     await clickDeleteMenu('p1')
     // 在途窗内右键删除另一文献
@@ -382,7 +385,7 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
     expect(toastSpy).toHaveBeenCalledWith('上一次删除仍在进行，请稍候', 'info')
     expect(stubApi.library.detail).toHaveBeenCalledTimes(1) // 第二请求预检都不发
     // 第一目标照常落定
-    resolveDetail({ ok: true, data: detailBody('p1', null) })
+    resolveDetail({ ok: true, data: detailBody('p1', '__main__') })
     await settle()
     expect(stubApi.papers.delete).toHaveBeenCalledTimes(1)
     expect(stubApi.papers.delete).toHaveBeenCalledWith({ paperId: 'p1' })
@@ -390,13 +393,13 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
 
   it('在途守卫：同 id 再点→静默早退（无 toast+仅一次预检/删除）', async () => {
     const resolveDetail = hangDetail()
-    setPapers([summary('p1', null)])
+    setPapers([summary('p1', '__main__')])
     await render()
     await clickDeleteMenu('p1')
     await clickDeleteMenu('p1') // 同 id 重复点（菜单已收起→重开再点）
     expect(stubApi.library.detail).toHaveBeenCalledTimes(1)
     expect(toastSpy).not.toHaveBeenCalled()
-    resolveDetail({ ok: true, data: detailBody('p1', null) })
+    resolveDetail({ ok: true, data: detailBody('p1', '__main__') })
     await settle()
     expect(stubApi.papers.delete).toHaveBeenCalledTimes(1)
   })
@@ -415,8 +418,8 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
 
   it('[RR1-1/W1] folders.list 悬置窗同 id 再点→静默早退（detail 仅一次——守卫窗连续覆盖 prechecking 全程）', async () => {
     const resolveFolders = hangFolders()
-    setPapers([summary('p1', null)])
-    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', null, { edgeCount: 2 }) })
+    setPapers([summary('p1', '__main__')])
+    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', '__main__', { edgeCount: 2 }) })
     await render()
     await clickDeleteMenu('p1') // detail 已落→folders.list 悬置（保护分支后半段）
     await clickDeleteMenu('p1') // 同 id 再点——ref 未释放应早退
@@ -428,8 +431,8 @@ describe('F-UIRES-01 批 B 删除流态空间（§2.4）', () => {
   })
 
   it('[RR1-2/W4] folders.list 失败→fail-closed：error toast+零 delete+零 Dialog（图名派生数据源同判据）', async () => {
-    setPapers([summary('p1', null)])
-    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', null, { edgeCount: 2 }) })
+    setPapers([summary('p1', '__main__')])
+    stubApi.library.detail.mockResolvedValue({ ok: true, data: detailBody('p1', '__main__', { edgeCount: 2 }) })
     stubApi.folders.list.mockResolvedValue({
       ok: false,
       error: { code: 'NOT_FOUND', message: '文件夹列表暂不可用' }

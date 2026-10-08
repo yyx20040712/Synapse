@@ -46,7 +46,7 @@ import { useImportBusyStore } from '../../../src/renderer/shared/import-busy.sto
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-function summary(id: string, folderId: string | null, title: string): PaperSummary {
+function summary(id: string, folderId: string, title: string): PaperSummary {
   return {
     id,
     title,
@@ -136,7 +136,7 @@ beforeEach(() => {
   useImportBusyStore.getState().setBusy(false)
   useLibraryDnd.getState().end()
   useLibraryStore.setState({
-    papers: [summary('p1', null, '移动甲文献')],
+    papers: [summary('p1', '__main__', '移动甲文献')],
     total: 1,
     query: { sort: 'added_desc', offset: 0, limit: 50 },
     selectedId: null,
@@ -189,7 +189,7 @@ describe('F-UIRES-01 U4 行拖拽源（dragstart/faded/ghost）', () => {
   })
 
   it('题名截断：长题名 ghost 截断（≤12 字符+省略号——TITLE_LIMIT 单源）', async () => {
-    useLibraryStore.setState({ papers: [summary('p9', null, '很长的论文标题需要被截断处理的情况甲乙丙丁')], total: 1 })
+    useLibraryStore.setState({ papers: [summary('p9', '__main__', '很长的论文标题需要被截断处理的情况甲乙丙丁')], total: 1 })
     await render()
     act(() => {
       row('很长的论文标题需要被截断处理的情况甲乙丙丁')!.dispatchEvent(dragEvent('dragstart', []))
