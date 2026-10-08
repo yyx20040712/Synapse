@@ -30,6 +30,7 @@ import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
 import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolor.sql?raw'
 import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?raw'
 import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
+import appMetaSql from './migrations/018_app_meta.sql?raw'
 
 export interface Migration {
   version: number
@@ -88,7 +89,12 @@ export const MIGRATIONS: readonly Migration[] = [
   // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] papers.is_starred 星标列+partial index
   // （ADD COLUMN 静态 DEFAULT 0——与 016 重建本质不同：FK 面零牵动，无 fkOff；
   // 新库 user_version 终值 17）
-  { version: 17, name: 'papers_is_starred', sql: papersIsStarredSql }
+  { version: 17, name: 'papers_is_starred', sql: papersIsStarredSql },
+  // [F-DBCAMP-01 DB-1 U3] app_meta 键值表（owner uuid+设备 token 本地侧载体
+  // ——010 lineage_graph_meta 同形态三列 KV 无 seed：身份值=运行期
+  // ensureIdentity 缺席才生成，snapshot_seq=DB-3 面不初始化；纯新增表零 FK
+  // 面，无 fkOff；新库 user_version 终值 18）
+  { version: 18, name: 'app_meta', sql: appMetaSql }
 ]
 
 export interface MigrateResult {

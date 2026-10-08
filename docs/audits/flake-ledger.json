@@ -109,6 +109,15 @@
       "status": "observing",
       "first_seen": "2026-10-03",
       "resolution": "观察中（再 1 现立案；史料=CI run 37144795869 日志〔t1race RR2 终证场——T1 同 run 首次转绿〕+2026-10-04 v119 §5 增补承载）"
+    },
+    {
+      "spec": "tests/e2e/reader-text.spec.ts",
+      "case": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久（:581）",
+      "count": 1,
+      "fingerprint": "重启后笔记 textarea 混入拼音残片 jian'li（期望 e2e 总评内容实得 e2e 总评内容jian'li——他处键入泄漏进 autosave 面；全套 #102 序列位/失败行 spec:627 toHaveValue；定向复跑 18/18 绿——复跑绿不销项）",
+      "status": "observing",
+      "first_seen": "2026-10-08",
+      "resolution": "观察（首现未达 2 次立案线——第 2 现即立案；U3 面无关性=renderer/notes 零 diff+复跑绿；史料=E:/zcode_md/synapse-archive/scripts-audits/20261008-dbcamp-db1/u3-e2e-close.raw.txt+u3-e2e-rerun1.raw.txt）"
     }
   ]
 }

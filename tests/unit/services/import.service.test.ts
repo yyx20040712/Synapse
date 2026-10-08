@@ -12,6 +12,7 @@ import { createTestDb } from '../../utils/fixtures'
 import { createCollectionsRepo } from '../../../src/main/db/repos/collections.repo'
 import { createFoldersRepo } from '../../../src/main/db/repos/folders.repo'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
+import { createAppMetaRepo } from '../../../src/main/db/repos/app-meta.repo'
 
 /**
  * [F-ALIGN-01 D3 单元二] 导入三通道必携 targetFolderId（INV-NEW-2：null 不达
@@ -58,6 +59,7 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
     papers: papers as unknown as Repos['papers'],
     collections: createCollectionsRepo(db),
     folders: createFoldersRepo(db), // [F-FOLDER-01]
+    appMeta: createAppMetaRepo(db), // [F-DBCAMP-01 DB-1 U3]
     annotations: {} as Repos['annotations'],
     aiNotes: {} as Repos['aiNotes'],
     // [回炉码 2] 挂接建节点走真 lineage repo（listGraph/upsertNode——真库）

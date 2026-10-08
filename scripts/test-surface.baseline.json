@@ -4887,23 +4887,91 @@
         }
       ]
     },
+    "tests/unit/db/migrate-app-meta.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）\",\"新库全链：user_version=18+应用清单 [1..18]+幂等重入（再跑 applied=[]）\"]",
+          "describePath": [
+            "db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）"
+          ],
+          "title": "新库全链：user_version=18+应用清单 [1..18]+幂等重入（再跑 applied=[]）",
+          "markers": [],
+          "line": 36,
+          "assertions": [
+            "expect(result.currentVersion).toBe(18)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ])",
+            "expect(readUserVersion(db)).toBe(18)",
+            "expect(again.appliedVersions).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）\",\"v17→18 升级链：applied=[18]+既有行保全+app_meta 表在档且空表无 seed\"]",
+          "describePath": [
+            "db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）"
+          ],
+          "title": "v17→18 升级链：applied=[18]+既有行保全+app_meta 表在档且空表无 seed",
+          "markers": [],
+          "line": 49,
+          "assertions": [
+            "expect(result.appliedVersions).toEqual([18])",
+            "expect(readUserVersion(db)).toBe(18)",
+            "expect(db.prepare(\"SELECT title FROM papers WHERE id = 'p-1'\").get()).toEqual({ title: '文献p-1' })",
+            "expect(db.prepare('SELECT COUNT(*) c FROM app_meta').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）\",\"表形态=010 lineage_graph_meta 同构：恰三列+全列 NOT NULL+key 列 PK+全列无 DDL DEFAULT\"]",
+          "describePath": [
+            "db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）"
+          ],
+          "title": "表形态=010 lineage_graph_meta 同构：恰三列+全列 NOT NULL+key 列 PK+全列无 DDL DEFAULT",
+          "markers": [],
+          "line": 65,
+          "assertions": [
+            "expect(cols.map((c) => c.name)).toEqual(['key', 'value', 'updated_at'])",
+            "expect(c.dflt_value, `${c.name} 应无 DDL DEFAULT（应用层写 ISO——010 先例）`).toBeNull()",
+            "expect(cols.find((c) => c.name === 'key')).toMatchObject({ notnull: 1, pk: 1 })",
+            "expect(cols.find((c) => c.name === 'value')).toMatchObject({ notnull: 1, pk: 0 })",
+            "expect(cols.find((c) => c.name === 'updated_at')).toMatchObject({ notnull: 1, pk: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）\",\"KV 契约：同 key 二次 INSERT 拒（UNIQUE）+key/value/updated_at 显式 NULL 三面拒\"]",
+          "describePath": [
+            "db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK 牵动）"
+          ],
+          "title": "KV 契约：同 key 二次 INSERT 拒（UNIQUE）+key/value/updated_at 显式 NULL 三面拒",
+          "markers": [],
+          "line": 87,
+          "assertions": [
+            "expect(() => db.prepare(`INSERT INTO app_meta (key, value, updated_at) VALUES ('probe-k', 'v2', 't2')`).run() ).toThrow(/UNIQUE constraint failed/)",
+            "expect(() => db.prepare(`INSERT INTO app_meta (key, value, updated_at) VALUES (NULL, 'v', 't')`).run() ).toThrow(/NOT NULL constraint failed/)",
+            "expect(() => db.prepare(`INSERT INTO app_meta (key, value, updated_at) VALUES ('k-null-v', NULL, 't')`).run() ).toThrow(/NOT NULL constraint failed/)",
+            "expect(() => db.prepare(`INSERT INTO app_meta (key, value, updated_at) VALUES ('k-null-u', 'v', NULL)`).run() ).toThrow(/NOT NULL constraint failed/)"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/migrate-edge-blue-recolor.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）\",\"新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17）\"]",
+          "key": "[\"db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）\",\"新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）\"]",
           "describePath": [
             "db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）"
           ],
-          "title": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17）",
+          "title": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）",
           "markers": [],
           "line": 54,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(result.currentVersion).toBe(17)",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])",
+            "expect(result.currentVersion).toBe(18)",
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -4930,7 +4998,7 @@
           "assertions": [
             "expect(before).toEqual({ '#3a5bd9': 2, '#3A5BD9': 1, '#c07a2a': 1, '#1e3a8a': 1 })",
             "expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -4943,7 +5011,7 @@
           "line": 86,
           "assertions": [
             "expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -4967,16 +5035,16 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）\"]",
+          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）\"]",
           "describePath": [
             "db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）"
           ],
-          "title": "新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）",
+          "title": "新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）",
           "markers": [],
           "line": 68,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(result.currentVersion).toBe(17)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])",
+            "expect(result.currentVersion).toBe(18)",
             "expect(paperCols).toContain('folder_id')",
             "expect(paperCols).toContain('impact_factor')",
             "expect(nodeCols).toContain('folder_id')",
@@ -5062,7 +5130,7 @@
           "markers": [],
           "line": 193,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(tag.color).toBe('#112233')",
             "expect(paper.folder_id).toBe('__main__')",
             "expect(node.folder_id).toBe('__main__')",
@@ -5096,7 +5164,7 @@
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(squatter.name).toBe('主图 (主图)')",
             "expect(mainRow.name).toBe('主图')",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -5111,7 +5179,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 3')",
             "expect(row.name).toBe(sname)",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -5126,7 +5194,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(residue.name).toBe('主图 (主图)')",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -5179,7 +5247,7 @@
           "line": 372,
           "assertions": [
             "expect(row.name).toBe('既有主图行')",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         }
       ]
@@ -5190,31 +5258,31 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列\"]",
+          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列\"]",
           "describePath": [
             "db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）"
           ],
-          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列",
+          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列",
           "markers": [],
           "line": 30,
           "assertions": [
-            "expect(result.currentVersion).toBe(17)",
+            "expect(result.currentVersion).toBe(18)",
             "expect(nodeCols).toContain('month')",
             "expect(nodeCols).toContain('slot')",
             "expect(edgeCols).toContain('sub')"
           ]
         },
         {
-          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）；存量行 month NULL 合法（不回溯校验）\"]",
+          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 随链）；存量行 month NULL 合法（不回溯校验）\"]",
           "describePath": [
             "db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）"
           ],
-          "title": "存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）；存量行 month NULL 合法（不回溯校验）",
+          "title": "存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 随链）；存量行 month NULL 合法（不回溯校验）",
           "markers": [],
           "line": 46,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(row.month).toBeNull()",
             "expect(row.slot).toBe(1)"
           ]
@@ -5275,7 +5343,7 @@
           ],
           "title": "v15→16：NULL 归属存量清理=手工级联（直系五子表+二级两处：边随节点灭/锚定标注降级置 NULL——FK OFF 下 DDL 动作失效面全复刻），孤儿与其子行全灭、他行零损失",
           "markers": [],
-          "line": 114,
+          "line": 116,
           "assertions": [
             "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE folder_id IS NULL').get()).toEqual({ c: 0 })",
             "expect(db.prepare(\"SELECT COUNT(*) c FROM papers WHERE id='p-orphan'\").get()).toEqual({ c: 0 })",
@@ -5302,7 +5370,7 @@
           ],
           "title": "v15→16：重建数据保全——20 列逐列相等（含 cited_by 三列/folder_id/impact_factor）+rowid 相对序保全+空洞闭合（重建发生的硬证据）",
           "markers": [],
-          "line": 162,
+          "line": 164,
           "assertions": [
             "expect(row['file_ref']).toBe('f/p-b.pdf')",
             "expect(row['sha256']).toBe('sha-p-b')",
@@ -5325,17 +5393,17 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）\"]",
+          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变；[F-DBCAMP-01 U3] 018 随链=对象增量恰两件+表集增量恰一件 app_meta——多重集面增纳 table）\"]",
           "describePath": [
             "db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）"
           ],
-          "title": "v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）",
+          "title": "v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变；[F-DBCAMP-01 U3] 018 随链=对象增量恰两件+表集增量恰一件 app_meta——多重集面增纳 table）",
           "markers": [],
-          "line": 203,
+          "line": 205,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17])",
-            "expect(objectMultiset(db)).toEqual([...objectsBefore, 'index:idx_papers_starred'].sort())",
-            "expect(tableSet(db)).toEqual(tablesBefore)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18])",
+            "expect(objectMultiset(db)).toEqual( [...objectsBefore, 'index:idx_papers_starred', 'table:app_meta'].sort() )",
+            "expect(tableSet(db)).toEqual([...tablesBefore, 'app_meta'].sort())",
             "expect(residue).toEqual([])"
           ]
         },
@@ -5346,7 +5414,7 @@
           ],
           "title": "v15→16：FTS 双扫重建后 MATCH 恢复+已清孤儿不残留+三触发器在新表 I/U/D 三路活性",
           "markers": [],
-          "line": 223,
+          "line": 229,
           "assertions": [
             "expect(hit).toBeTruthy()",
             "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"未归档遗孤\"'`).get() ).toBeUndefined()",
@@ -5363,9 +5431,9 @@
           ],
           "title": "v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上；[F-DBCAMP-01 U2] 017 随链=终值 17）",
           "markers": [],
-          "line": 257,
+          "line": 263,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)",
             "expect(db.prepare('SELECT COUNT(*) c FROM annotations').get()).toEqual({ c: 0 })",
@@ -5379,7 +5447,7 @@
           ],
           "title": "投影再对齐保险丝：错位节点（folder≠文献归属）与 NULL 归属节点回正为文献归属；主题节点不碰（folder↔graph 一一对应——2026-10-08 裁决①）",
           "markers": [],
-          "line": 273,
+          "line": 280,
           "assertions": [
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-mis'\").get() ).toEqual({ folder_id: '__main__' })",
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-null'\").get() ).toEqual({ folder_id: 'c-other' })",
@@ -5387,17 +5455,17 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）\"]",
+          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）\"]",
           "describePath": [
             "db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）"
           ],
-          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）",
+          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）",
           "markers": [],
-          "line": 295,
+          "line": 302,
           "assertions": [
-            "expect(result.currentVersion).toBe(17)",
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.currentVersion).toBe(18)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5408,7 +5476,7 @@
           ],
           "title": "[回炉轮1 R1] FTS 清旧扫判别锚：rowid 空洞形态（幸存者 rowid=1,3）——逐文献 MATCH 恰一行且 rowid=新表实读值（排他：残留/错位即多行或错号）",
           "markers": [],
-          "line": 306,
+          "line": 315,
           "assertions": [
             "expect(preRowids).toEqual([1, 3])",
             "expect(ma).toEqual([{ rowid: ra.rowid }])",
@@ -5422,7 +5490,7 @@
           ],
           "title": "NOT NULL 契约：folder_id=NULL 写拒（UPDATE/显式 NULL INSERT 双面）+列级非空标记在档",
           "markers": [],
-          "line": 334,
+          "line": 343,
           "assertions": [
             "expect(() => db.prepare(`UPDATE papers SET folder_id=NULL WHERE id='p-1'`).run()).toThrow( /NOT NULL constraint failed/ )",
             "expect(() => db.prepare( `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at, folder_id) VALUES ('p-2', 'f/2.pdf', 'sha-2', 't', 't', 't', NULL)` ).run() ).toThrow(/NOT NULL constraint failed/)",
@@ -5437,7 +5505,7 @@
           ],
           "title": "fkOff 迁移违约：事务内 foreign_key_check 拦截→抛+整体回滚（半成品表不残留）+FK 复位 ON",
           "markers": [],
-          "line": 364,
+          "line": 373,
           "assertions": [
             "expect(() => migrate(db, bad)).toThrow(/foreign_key_check/)",
             "expect(readUserVersion(db)).toBe(0)",
@@ -5452,7 +5520,7 @@
           ],
           "title": "fkOff 迁移正常应用：user_version 前进+FK 复位 ON+FK OFF 期可观察（NO ACTION 子行在场 DROP 父表——FK ON 下必炸）+后续常规迁移不受染",
           "markers": [],
-          "line": 386,
+          "line": 395,
           "assertions": [
             "expect(result.appliedVersions).toEqual([1, 2])",
             "expect(readUserVersion(db)).toBe(2)",
@@ -5477,7 +5545,7 @@
           "markers": [],
           "line": 34,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-old-1'\").get()).toEqual({ is_starred: 0 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-new'\").get()).toEqual({ is_starred: 0 })",
@@ -5492,7 +5560,7 @@
           ],
           "title": "CHECK 值域契约：0/1 双向写过；2（INSERT）与 99（UPDATE）双面拒+拒后行值不动",
           "markers": [],
-          "line": 63,
+          "line": 64,
           "assertions": [
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-1'\").get()).toEqual({ is_starred: 1 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-1'\").get()).toEqual({ is_starred: 0 })",
@@ -5508,7 +5576,7 @@
           ],
           "title": "partial index 存在性与选择性：idx_papers_starred 在档（sql 含 WHERE is_starred = 1 且无 folder 维度）；=1 查询走该索引、=0 不走（部分索引只覆盖星标集）",
           "markers": [],
-          "line": 85,
+          "line": 86,
           "assertions": [
             "expect(idx?.name).toBe('idx_papers_starred')",
             "expect(idx?.sql).toContain('WHERE is_starred = 1')",
@@ -5518,31 +5586,31 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0\"]",
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0（[F-DBCAMP-01 U3] 018 随链=applied 增 18）\"]",
           "describePath": [
             "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
           ],
-          "title": "v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0",
+          "title": "v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0（[F-DBCAMP-01 U3] 018 随链=applied 增 18）",
           "markers": [],
-          "line": 105,
+          "line": 106,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(db.prepare(\"SELECT title, is_starred FROM papers WHERE id = 'p-a'\").get()).toEqual({ title: '文献甲', is_starred: 0 })"
           ]
         },
         {
-          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）\"]",
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U3] 018 随链=18/[1..18]）\"]",
           "describePath": [
             "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
           ],
-          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）",
+          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U3] 018 随链=18/[1..18]）",
           "markers": [],
-          "line": 123,
+          "line": 124,
           "assertions": [
-            "expect(result.currentVersion).toBe(17)",
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.currentVersion).toBe(18)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         }
@@ -5554,32 +5622,32 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，009 删列终态断言面不变），papers.reading_seconds 列已不存在\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18，009 删列终态断言面不变），papers.reading_seconds 列已不存在\"]",
           "describePath": [
             "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，009 删列终态断言面不变），papers.reading_seconds 列已不存在",
+          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18，009 删列终态断言面不变），papers.reading_seconds 列已不存在",
           "markers": [],
           "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(17)",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.currentVersion).toBe(18)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
         },
         {
-          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 随链）\"]",
           "describePath": [
             "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）",
+          "title": "存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18 随链）",
           "markers": [],
           "line": 32,
           "assertions": [
             "expect(papersColumns(db)).toContain('reading_seconds')",
-            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')"
           ]
         },
@@ -5592,8 +5660,8 @@
           "markers": [],
           "line": 44,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(row).toBeUndefined()",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers').get()).toEqual({ c: 0 })"
@@ -5615,7 +5683,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -5949,6 +6017,82 @@
           "line": 92,
           "assertions": [
             "expect(a.rects).toEqual(rects)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/db/repos/app-meta.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保\",\"ensureIdentity 新库双键生成：ownerId=uuid v4 小写+deviceToken=64-hex（32 字节）+两键落库\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保"
+          ],
+          "title": "ensureIdentity 新库双键生成：ownerId=uuid v4 小写+deviceToken=64-hex（32 字节）+两键落库",
+          "markers": [],
+          "line": 31,
+          "assertions": [
+            "expect(id.ownerId).toMatch(OWNER_ID_PATTERN)",
+            "expect(id.deviceToken).toMatch(DEVICE_TOKEN_PATTERN)",
+            "expect(readRow(db, APP_META_KEYS.ownerId)?.value).toBe(id.ownerId)",
+            "expect(readRow(db, APP_META_KEYS.deviceToken)?.value).toBe(id.deviceToken)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保\",\"再 ensure 幂等：两键值不变（在场键永不覆写——身份延续）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保"
+          ],
+          "title": "再 ensure 幂等：两键值不变（在场键永不覆写——身份延续）",
+          "markers": [],
+          "line": 44,
+          "assertions": [
+            "expect(second.ownerId).toBe(first.ownerId)",
+            "expect(second.deviceToken).toBe(first.deviceToken)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保\",\"预置值保留不覆写：库中已有 owner_id/device_token（恢复己备份形态）→ensure 返回预置原值\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保"
+          ],
+          "title": "预置值保留不覆写：库中已有 owner_id/device_token（恢复己备份形态）→ensure 返回预置原值",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect(id.ownerId).toBe(presetOwner)",
+            "expect(id.deviceToken).toBe(presetToken)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保\",\"get+set 往返：缺席键 get=null+新键写入回读+同键再写覆写（upsert DO UPDATE 语义）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保"
+          ],
+          "title": "get+set 往返：缺席键 get=null+新键写入回读+同键再写覆写（upsert DO UPDATE 语义）",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(repo.get('no-such-key')).toBeNull()",
+            "expect(repo.get('probe-k')).toBe('v1')",
+            "expect(repo.get('probe-k')).toBe('v2')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保\",\"set updated_at=应用层 ISO 随写：1970 哨兵预置行→set 后刷新为近今 ISO（弃 DDL DEFAULT）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-1 U3 app-meta.repo —— KV 载体+身份确保"
+          ],
+          "title": "set updated_at=应用层 ISO 随写：1970 哨兵预置行→set 后刷新为近今 ISO（弃 DDL DEFAULT）",
+          "markers": [],
+          "line": 83,
+          "assertions": [
+            "expect(row?.value).toBe('new')",
+            "expect(row?.updated_at).toMatch(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/)",
+            "expect(new Date(row!.updated_at).getTime()).toBeGreaterThanOrEqual(t0)"
           ]
         }
       ]
@@ -37631,7 +37775,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 102,
+          "line": 103,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -37644,7 +37788,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 119,
+          "line": 120,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -37656,7 +37800,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 139,
+          "line": 140,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -37669,7 +37813,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 157,
+          "line": 158,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -37682,7 +37826,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 180,
+          "line": 181,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -37694,7 +37838,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 192,
+          "line": 193,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -37706,7 +37850,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 216,
+          "line": 217,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -37720,7 +37864,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 243,
+          "line": 244,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -38342,7 +38486,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 72,
+          "line": 74,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -38366,7 +38510,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 116,
+          "line": 118,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -38383,7 +38527,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 146,
+          "line": 148,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -38397,7 +38541,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 169,
+          "line": 171,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -38412,7 +38556,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 192,
+          "line": 194,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -38428,7 +38572,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 220,
+          "line": 222,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -38448,7 +38592,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 264,
+          "line": 266,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -38462,7 +38606,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 314,
+          "line": 316,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -38478,7 +38622,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 345,
+          "line": 347,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -38492,7 +38636,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 369,
+          "line": 371,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -39035,7 +39179,7 @@
           "markers": [],
           "line": 167,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(repo.listGraph().edges[0]!.via).toBeUndefined()"
           ]
         }
@@ -39264,7 +39408,7 @@
           "line": 68,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(17)"
+            "expect(readUserVersion(db)).toBe(18)"
           ]
         },
         {
@@ -39525,7 +39669,7 @@
           "markers": [],
           "line": 194,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(17)",
+            "expect(readUserVersion(db)).toBe(18)",
             "expect(edge!.dashed).toBe(false)",
             "expect(edge!.color).toBe(LINE_TYPE_COLORS[0])"
           ]
@@ -43484,9 +43628,9 @@
     }
   },
   "stats": {
-    "fileCount": 299,
-    "caseCount": 2910,
-    "assertionCount": 9494,
+    "fileCount": 301,
+    "caseCount": 2919,
+    "assertionCount": 9525,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,

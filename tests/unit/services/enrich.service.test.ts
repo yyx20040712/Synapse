@@ -77,6 +77,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     tags: {} as Repos['tags'],
     collections: {} as Repos['collections'],
     folders: {} as Repos['folders'], // [F-FOLDER-01] 文件夹域（面外桩）
+    appMeta: {} as Repos['appMeta'], // [F-DBCAMP-01 DB-1 U3] app_meta 域（面外桩）
     // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
     withTransaction: <T>(fn: () => T): T => fn()
   }

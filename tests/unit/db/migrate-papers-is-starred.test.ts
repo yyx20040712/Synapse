@@ -37,7 +37,8 @@ describe('db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN—�
     seedPaper(db, 'p-old-2')
     migrate(db)
     // 判别器：17 确已应用（否则列不存在→下方查询 SQL 报错红）
-    expect(readUserVersion(db)).toBe(17)
+    // [F-DBCAMP-01 U3] 018 随链：链尾延 18（v16 库经全链 migrate 至 18）
+    expect(readUserVersion(db)).toBe(18)
     expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })
     expect(db.prepare("SELECT is_starred FROM papers WHERE id = 'p-old-1'").get()).toEqual({
       is_starred: 0
@@ -102,7 +103,7 @@ describe('db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN—�
     db.close()
   })
 
-  it('v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0', () => {
+  it('v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0（[F-DBCAMP-01 U3] 018 随链=applied 增 18）', () => {
     const db = openDatabase(':memory:')
     migrate(db, MIGRATIONS.filter((m) => m.version <= 15))
     // v15 期显式归档（folder_id 可空列——016 的 A6 清理只灭 NULL 行）
@@ -111,8 +112,8 @@ describe('db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN—�
        VALUES ('p-a', 'f/a.pdf', 'sha-a', '文献甲', 't', 't', '__main__')`
     ).run()
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([16, 17])
-    expect(readUserVersion(db)).toBe(17)
+    expect(result.appliedVersions).toEqual([16, 17, 18])
+    expect(readUserVersion(db)).toBe(18)
     expect(db.prepare("SELECT title, is_starred FROM papers WHERE id = 'p-a'").get()).toEqual({
       title: '文献甲',
       is_starred: 0
@@ -120,12 +121,14 @@ describe('db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN—�
     db.close()
   })
 
-  it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）', () => {
+  it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U3] 018 随链=18/[1..18]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(17)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])
-    expect(readUserVersion(db)).toBe(17)
+    expect(result.currentVersion).toBe(18)
+    expect(result.appliedVersions).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+    ])
+    expect(readUserVersion(db)).toBe(18)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()

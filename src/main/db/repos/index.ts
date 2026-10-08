@@ -11,6 +11,7 @@ import { createLineageRepo, type LineageRepo } from './lineage.repo'
 import { createTagsRepo, type TagsRepo } from './tags.repo'
 import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
 import { createFoldersRepo, type FoldersRepo } from './folders.repo'
+import { createAppMetaRepo, type AppMetaRepo } from './app-meta.repo'
 
 export interface Repos {
   papers: PapersRepo
@@ -23,6 +24,9 @@ export interface Repos {
   /** [F-FOLDER-01] 文件夹域 CRUD（collections 表新面——与 collections.repo
    *  同表分置，方法零交叠） */
   folders: FoldersRepo
+  /** [F-DBCAMP-01 DB-1 U3] app_meta 键值载体+身份确保（owner uuid+设备
+   *  token 本地侧；消费=DB-3 envelope+DB-2 设置页——本批零 IPC） */
+  appMeta: AppMetaRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */
@@ -39,8 +43,20 @@ export function createRepos(db: SqliteDb): Repos {
     tags: createTagsRepo(db),
     collections: createCollectionsRepo(db),
     folders: createFoldersRepo(db),
+    appMeta: createAppMetaRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
 
-export type { PaperRow, PapersRepo, AnnotationsRepo, NotesRepo, AiNotesRepo, LineageRepo, TagsRepo, CollectionsRepo, FoldersRepo }
+export type {
+  PaperRow,
+  PapersRepo,
+  AnnotationsRepo,
+  NotesRepo,
+  AiNotesRepo,
+  LineageRepo,
+  TagsRepo,
+  CollectionsRepo,
+  FoldersRepo,
+  AppMetaRepo
+}

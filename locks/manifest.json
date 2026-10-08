@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-08T11:27:38.7598510Z",
+    "generatedAt":  "2026-10-08T13:57:00.5056835Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "f09d5326204cfd449f2be74cecfb35578fa11cecd302b1b1bc67f91d3fd86ae8"
+                      "sha256":  "abe2ba19a7e47133623092efca0b6b1812d31fb870dc55c9e95f1636e295e92a"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -83,7 +83,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "a415345abe61b55b1a39b1a71ad5a763f55a9ce6b99ecb2bcc13c22fd86c6f46"
+                      "sha256":  "6ba9ec796e491695a5e2af37d37be52950677954162b7f5de00501634c3edd8f"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
@@ -170,6 +170,10 @@
                       "sha256":  "c0a5a8dbdcb81846fc70938790ceaf56cf6254c686d145612d56b00d3eafc613"
                   },
                   {
+                      "path":  "src/main/db/migrations/018_app_meta.sql",
+                      "sha256":  "ecb4f7063e681c399f7329ed7053525101e271070be9098918a966f52321cfe3"
+                  },
+                  {
                       "path":  "src/renderer/app/StatusBar.tsx",
                       "sha256":  "62eee1a39321518866ffdf728abff29aeb1290a117bc98da4a3c9759ba2e29a5"
                   },
@@ -212,6 +216,10 @@
                   {
                       "path":  "src/shared/models/annotation.ts",
                       "sha256":  "4e7f918482aa44a7a0b3590a316b4d8615cc873f2047c18f987b547eb960e034"
+                  },
+                  {
+                      "path":  "src/shared/models/app-meta.ts",
+                      "sha256":  "28c1f16d04a0f74551f2c7898b50e88d3760dc7c76cc8b98fe54c35b2a292041"
                   },
                   {
                       "path":  "src/shared/models/collection.ts",
@@ -439,31 +447,35 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "97dd091fdacf37db322e4dd64d6d190c67791de5cc5a87b4fa24c81ac010d856"
+                      "sha256":  "582820ba2e9ad681d6c1131cb58fe9d9e2f101c7382a7f775c31078cb840630b"
+                  },
+                  {
+                      "path":  "tests/unit/db/migrate-app-meta.test.ts",
+                      "sha256":  "fe7d604c1223cd99a5c2701eaf9e2e0f411e1f8776026f9484961b98e5019bc0"
                   },
                   {
                       "path":  "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-                      "sha256":  "c3f905a8a482285bd6afa1b4812ed8de9777182d7a94f1e896d3f5a63a637e6e"
+                      "sha256":  "49e586402bec249486bbcfa1992dada18dfbd43665f516462bdb1c901c3aeff4"
                   },
                   {
                       "path":  "tests/unit/db/migrate-folders-graphs.test.ts",
-                      "sha256":  "dcafcadd18142c1619fe9a692dc0888a2465de84c2e8255b3f2bb2470db5ba17"
+                      "sha256":  "40ce2342e7d189ce407ce6f6d850f04c1031bc9a19e1dc3c5219889ad8e7f3db"
                   },
                   {
                       "path":  "tests/unit/db/migrate-lineage-v2.test.ts",
-                      "sha256":  "e1ef236f66d3e2f414aaabce0c75001e12931be322f925c0a4d109f8684f09f4"
+                      "sha256":  "f1ed5b253c7580681abda35ee652c992c9d68a228ff5fd696aee2cdc982f7df5"
                   },
                   {
                       "path":  "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-                      "sha256":  "1ea04dc43b41c81390ba922d8464c7484ac994cdd2dc82ab22a393ccd4d85c15"
+                      "sha256":  "31f6d41b9dce7bb5484f1d72c5fdf9bc27bacf3b27716b2f20735427b6f65885"
                   },
                   {
                       "path":  "tests/unit/db/migrate-papers-is-starred.test.ts",
-                      "sha256":  "5159baff70600dd6fc0de78bf3732e7468e2ecfb81bf9fef77ca44904399afb6"
+                      "sha256":  "48f1d6d23629ea208c78102cbbe63c571f54fee9bad3709e05dd37b03161579f"
                   },
                   {
                       "path":  "tests/unit/db/migrate-reading-time.test.ts",
-                      "sha256":  "a827e0f35133e2f3a6837be1d2755007317ad252e6b50f15a1419f75ded0ff64"
+                      "sha256":  "7ed43955023516aed8dd7e71f987121f7b5233f7a0a1c45c7feb6aa39e71e051"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -476,6 +488,10 @@
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",
                       "sha256":  "71f012ffea4ebb95f2feebf05b10b92b889efe264981f4f33d9885a093da72a6"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/app-meta.repo.test.ts",
+                      "sha256":  "26e7a30eae5f081a58d54a62d2123df641feaeb37e9e29fbd015fdac58801b6c"
                   },
                   {
                       "path":  "tests/unit/db/repos/collections.repo.test.ts",
@@ -1263,7 +1279,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "ccb01988703dabdb4e4b42e585bf5d655815c4bef8899e9337c285d336e4fbd2"
+                      "sha256":  "8f963acf94392bcef94deb72b3c397d92d6b9705a15bea520c2e04d9c535a34a"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -1287,7 +1303,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "d3c28b0a9a4f132864828c50623808edf0d2cec6134f5cb7441dc34d4a955d2d"
+                      "sha256":  "a939da701d30751474f0432b8cba2a155f51480e9d6c4f1e87ad262ff1c7eee4"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -1307,7 +1323,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-edge-via.test.ts",
-                      "sha256":  "e9fa9bdd8b40567edc3fd6f8e9f76d8e7539dbd4580ad4ab3bdb214058a8a534"
+                      "sha256":  "5766561f4aaaabbbbd25b445d0f4e6e84763b75dc07a9ec4dcc2a1743e8b1c6f"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
@@ -1319,11 +1335,11 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "c05e875dd71dfe898dc1f3ab697763d969a70e01b41687f9ac3e700a9019187a"
+                      "sha256":  "865a13c9c813c0fc6fdd76553ccb527ae8eceb1696cb80e3b6f5961f3dfc95a5"
                   },
                   {
                       "path":  "tests/unit/services/lineage-u8-linetype.test.ts",
-                      "sha256":  "86de20b610bee66dcf77a3e80b5322563dfa8277e846edddb7e0e9ded82716e2"
+                      "sha256":  "3c4a3b8990aa3b087922604b2003b0db1b7e10a21ffc1ce0e9d3afc874dbf7ec"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-model.test.ts",

@@ -125,6 +125,11 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       const db = openDatabase(join(dataDir, DB_FILE_NAME))
       migrate(db)
       const repos = createRepos(db)
+      // [F-DBCAMP-01 DB-1 U3] 身份确保（owner uuid+设备 token 缺席才生成——
+      // app_meta 载体）。ensure 落点=createRepos 后一行单路径：默认库首装+
+      // 课题切换 assembleInto 同闭包全覆盖；workspace-layout initWorkspaceDb
+      // 空建库不 ensure（空库身份=首次 assemble 补——两路径不双写）
+      repos.appMeta.ensureIdentity()
       const fileStore = createFileStore(filesDir)
       const services = createServices({
         repos,

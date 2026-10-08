@@ -92,11 +92,13 @@ function openV15(): Db {
   return db
 }
 
-/** sqlite_master 对象多重集（W1：索引/触发器/视图——016 前后须相等） */
+/** sqlite_master 对象多重集（W1：索引/触发器/视图——016 前后须相等；
+ * [F-DBCAMP-01 U3] 增纳 table 面——018 app_meta 随链增量判据用
+ * （对象名形态=type:name，如 table:app_meta） */
 function objectMultiset(db: Db): string[] {
   return (
     db.prepare(
-      "SELECT type || ':' || name AS o FROM sqlite_master WHERE type IN ('index','trigger','view') AND name NOT LIKE 'sqlite_%' ORDER BY o"
+      "SELECT type || ':' || name AS o FROM sqlite_master WHERE type IN ('index','trigger','view','table') AND name NOT LIKE 'sqlite_%' ORDER BY o"
     ).all() as Array<{ o: string }>
   ).map((r) => r.o)
 }
@@ -200,19 +202,23 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）', () => {
+  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变；[F-DBCAMP-01 U3] 018 随链=对象增量恰两件+表集增量恰一件 app_meta——多重集面增纳 table）', () => {
     const db = openV15()
     seedPaper(db, 'p-1', { folderId: '__main__' })
     const objectsBefore = objectMultiset(db)
     const tablesBefore = tableSet(db)
     const result = migrate(db)
-    // 判别器：16/17 确已应用（否则下方多重集断言=无迁移恒真）
-    expect(result.appliedVersions).toEqual([16, 17])
-    // [F-DBCAMP-01 U2] 链尾延至 17：对象增量恰一件=017 partial index
-    // （多增/丢失即红——零丢失判据收紧为「差集恰等于预期单件」；
-    // sort=与 objectMultiset 的 SQL ORDER BY 同步保序）
-    expect(objectMultiset(db)).toEqual([...objectsBefore, 'index:idx_papers_starred'].sort())
-    expect(tableSet(db)).toEqual(tablesBefore)
+    // 判别器：16/17/18 确已应用（否则下方多重集断言=无迁移恒真）
+    expect(result.appliedVersions).toEqual([16, 17, 18])
+    // [F-DBCAMP-01 U3] 链尾延至 18：对象增量恰两件=017 partial index+018 新表
+    // （对象名形态 table:app_meta——objectMultiset 纳 table 面后实报；多增/
+    // 丢失即红——零丢失判据收紧为「差集恰等于预期两件」；sort=与
+    // objectMultiset 的 SQL ORDER BY 同步保序）
+    expect(objectMultiset(db)).toEqual(
+      [...objectsBefore, 'index:idx_papers_starred', 'table:app_meta'].sort()
+    )
+    // 表集增量恰一件=app_meta（018 纯新增表）
+    expect(tableSet(db)).toEqual([...tablesBefore, 'app_meta'].sort())
     const residue = db
       .prepare("SELECT name FROM sqlite_master WHERE name LIKE 'papers_old%' OR name='papers_new' OR sql LIKE '%papers_old%'")
       .all()
@@ -261,7 +267,8 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     seedNote(db, 'nt-1', 'p-1')
     migrate(db)
     // 判别器：16/17 确已应用（否则 FK 从未被关断=复位断言恒真）
-    expect(readUserVersion(db)).toBe(17)
+    // [F-DBCAMP-01 U3] 018 随链：终值 18
+    expect(readUserVersion(db)).toBe(18)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.prepare(`DELETE FROM papers WHERE id='p-1'`).run()
@@ -292,12 +299,14 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）', () => {
+  it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(17)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])
-    expect(readUserVersion(db)).toBe(17)
+    expect(result.currentVersion).toBe(18)
+    expect(result.appliedVersions).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+    ])
+    expect(readUserVersion(db)).toBe(18)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
