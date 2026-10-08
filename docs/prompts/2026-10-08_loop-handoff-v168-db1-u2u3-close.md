@@ -15,7 +15,7 @@
 | U3 实现 | 018 app_meta+ensureIdentity 单路径+INV-125（Δf=2/Δc=9；W 处置=key NOT NULL 收紧+m9 红证） | 提交 5e4ffac2bef；6.96M tokens |
 | U3 门一 | k1 首审 B0W2N6 PWC+复核 B0W2N3 PWC（两条件=主控处置物微瑕已修）；d1 首审 B0W1N4 PWC+复核 **PASS** | ≈0.19M tokens |
 | U3 门二 | probe 10/10 PASS+裁决部 **GO_WITH_CONDITIONS**（C1-C4 全兑现） | 1.92M+37.6k tokens |
-| 治理面 | INV-124/125 落册+INV-91 U2 注记+豁免台账 U2/U3 两册（含迷你轮补叙）+flake 台账 :581 首现 observing | 仓外 u2/u3-exemptions-registry.md |
+| 治理面 | INV-124/125 落册+INV-91 U2 注记+豁免台账 U2/U3 两册（含迷你轮补叙）+flake 台账 :581 首现登记→同日用户裁决销案（resolved） | 仓外 u2/u3-exemptions-registry.md |
 
 ## §1 下场开工序（单源——用户令 U4 及后续移下一批新会话）
 
@@ -55,9 +55,9 @@
   probe 变异抽现 2/8 配额。
 - **flake 台账双线**：:1030「跨页真鼠标=toast 拒绝」count=2 **filed**（排查票
   待立——DB-1 后续批间隙或独立票）；**:581 P7-C 侧栏笔记面** count=1
-  **observing**（2026-10-08 U3 收口首现：重启后 textarea 混入拼音残片
-  jian'li——他处键入泄漏进 autosave 面；定向复跑绿+全量复跑 102/102——
-  第 2 现即立案）。
+  **resolved·已销案**（2026-10-08 用户裁决：首现红点=用户本人当时连续打字，
+  真实键入经前台焦点混入被测 app 笔记 textarea——外部输入污染族（P7-A 剪贴板
+  同族），非代码/测试缺陷不设观察；史料=u3-e2e-close/rerun1/close2 三档）。
 - e2e 规模口径：**28 spec/102 用例**（不变）。
 - 会话技术事实（下场直取）：指纹门两轮对齐协议三轮连用成熟（U1 25 处/U2
   23+1/U3 25+2——豁免终态恒 0）；S2 多重集断言已纳 table 面（后续新表迁移=
@@ -86,7 +86,8 @@
 - 成本：U2≈18.7M+U3≈9.2M subagent tokens（模型×席位分列在账本各行）+主控
   host-tier。
 - 治理新增：INV-124（星标数据面）/INV-125（app_meta 身份载体）/INV-91 U2
-  域外注记；flake 台账 :581 条目；计数失实两现记档（三现升格红线注记）。
+  域外注记；flake 台账 :581 条目（首现登记 observing→同日用户裁决销案翻态
+  resolved）；计数失实两现记档（三现升格红线注记）。
 
 ## §5 证据档指针（仓外 scripts-audits/20261008-dbcamp-db1/）
 
