@@ -91,23 +91,35 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0022 | 草稿导入链退役（F-BAKRET-01——备份归未来服务端多实体导出/git 历史即资产） |
 | 0023 | 走线候选位分配=后处理槽位分配（F-ROUTE-02——候选 B 路线裁决：routeOne 六态零侵入+slotAssign 单 pass+applyBandLanes 退役迁残余子 pass；INV-112~117；决策正文单源=docs/design/2026-10-06_f-route02-design.md v1.5，不另立 adr 正件防双源） |
 | 0024 | 脉络砖砌网格布局+五态走线正统化（F-SLOTGRID-01——用户 2026-10-07 方向级四裁决+2026-10-08 呈裁落定 v1.4：砖砌交错/横纵等距 72 通道/全自动 gutter 选路 corridor 退役/F-ROUTEDET-01 并入；布局=capacity.ts 容量公式纯函数族+行容器渲染瀑布退役，走线=direct→h-slip→detour→band→overlap 五态链+坐标集封闭，拖拽=INV-111 算术落点；INV-SLOTGRID-01/02+INV-110/111/117/119 修订族；决策正文单源=docs/design/2026-10-07_f-slotgrid01-design.md v1.4，不另立 adr 正件防双源） |
+| 0025 | DB 契约战役批 DB-1 数据契约冻结（F-DBCAMP-01——016-019 四迁移+INV-121~126：folder_id NOT NULL 真重建〔fkOff 模式〕/is_starred 星标/app_meta 身份载体〔owner uuid+设备 token〕/tags 多域化〔UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6〕；**folder↔graph 契约=结构性投影不建表**〔用户 2026-10-08 裁决①「一个文件夹不允许多张脉络图，必须一一对应」——图身份≡lineage_nodes.folder_id，无独立 graphs 表；v165 探针差异④「folder↔graph 落法」就此勘正关闭〕；〔甲乙丙〕三裁决=存量归主图/移夹标签留原域/筛选上限不动；决策正文单源=docs/design/2026-10-08_f-dbcamp01-design.md v1.2+§11 终裁记录+§12 用户呈裁落定，不另立 adr 正件防双源） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
 ## 6. 数据模型
 
-10 张表 + 3 个 FTS5（external content+触发器——[回炉码 11] paper_collections
-DROP 后 10 张）：papers/collections/tags/
+11 张表 + 3 个 FTS5（external content+触发器——[回炉码 11] paper_collections
+DROP 后 10 张，[F-DBCAMP-01] 018 app_meta 落地后 11 张）：papers/collections/tags/
 paper_tags/annotations/notes（001 基座——**paper_collections 已随 [F-FOLDER-01]
 012 迁移退役 DROP**：collections 语义升级=文献单归属文件夹，M2M 挂接面退役）
 +ai_notes（003）+lineage_nodes/lineage_edges（004）+lineage_graph_meta（010
-——图级 KV 配置：lineTypes 线型组 JSON 串，updated_at 应用层写 ISO）；演进列
+——图级 KV 配置：lineTypes 线型组 JSON 串，updated_at 应用层写 ISO）+app_meta
+（018——库级 KV：owner uuid+设备 token 身份载体，ensureIdentity 单路径=
+bootstrap assemble 闭包；INV-125）；演进列
 005~012（cited_by 缓存/lineage kind 列——UNIQUE(from,to)=004 既有/lineage
 tags/reading_seconds 加→删反转 F-TIME-02/lineage month+slot+sub——month CHECK
 1..12、slot 窗口函数存量回填=T3-P5 脉络数据层 v2/tags.color TEXT 可空——011=
 F-TAGS-01 标签颜色身份/papers.folder_id+impact_factor+lineage_nodes.folder_id
 +idx_lineage_paper 部分唯一索引+回填+paper_collections DROP——012=F-FOLDER-01
-文件夹×图绑定，INV-88~93+ADR-0021）。标注定位器=W3C Web Annotation 思路
+文件夹×图绑定，INV-88~93+ADR-0021）。[F-DBCAMP-01]（2026-10-08 DB-1 契约
+冻结批 U1-U4）演进列 016~019：016=papers.folder_id **NOT NULL**（v122 裁决②
+未归档域取消——真 CREATE TABLE 级重建+fkOff 迁移模式首例〔INV-123〕+投影
+再对齐保险丝〔INV-121 folder↔graph 一一对应=结构性投影**不建 graphs 表**——
+图身份≡lineage_nodes.folder_id〕）；017=papers.is_starred 星标（partial index
+单列+值域 CHECK〔INV-124〕——F-STAR-01 数据面）；018=app_meta（上文）；019=
+tags.folder_id 多域化（**UNIQUE(folder_id,name) 替换全局 UNIQUE(name)**+存量
+归主图〔甲裁决〕+挂接域守卫触发器 paper_tags_domain_guard+域内 20 满禁建/
+每篇 6 硬禁服务层限额〔INV-126 表级挂接域一致三机制〕——F-TAGS-02 数据面；
+〔乙裁决〕移夹标签留原域=moveFolder 摘挂接步）。papers 现态 20 列。标注定位器=W3C Web Annotation 思路
 （quote/prefix/suffix+startOffset/endOffset+rects/sortKey）。迁移只追加（受锁）。
 契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
 （ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）。
