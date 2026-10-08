@@ -111,6 +111,9 @@ export interface PapersRepo {
   /** [F-FOLDER-01] 文件夹归属直写（单归属；[F-DBCAMP-01 U1] 016 列级 NOT NULL
    *  后 null 分支退役——应用写路恒非空 INV-NEW-2）。未命中返回 null */
   setFolderId(id: string, folderId: string): PaperRow | null
+  /** [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标直写（017 is_starred 0/1——DB 层
+   *  数值存取收口在此：boolean→0/1 绑定；返回形态沿 setFolderId Row|null） */
+  setStarred(id: string, starred: boolean): PaperRow | null
   /** [F-FOLDER-01] 归属纯读（INV-88 判别源；[F-DBCAMP-01 U1] 016 后 null=
    *  仅「行未命中」——无归属历史行形态已随 NOT NULL 消亡） */
   folderIdOf(id: string): string | null
@@ -227,6 +230,11 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     // [F-FOLDER-01] 单归属直写（moveFolder 第 1 步；updated_at 语义同 meta 写）
     setFolderId(id, folderId) {
       return updateColumns(id, ['folder_id'], [folderId])
+    },
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标直写（boolean→0/1 数值绑定；
+    // updated_at 随写=setFolderId 同型「元数据写」语义）
+    setStarred(id, starred) {
+      return updateColumns(id, ['is_starred'], [starred ? 1 : 0])
     },
     folderIdOf(id) {
       return folderIdOfQuery(id, stmt) // queries 件单源（回炉 R1 拆件）

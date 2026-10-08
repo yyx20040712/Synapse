@@ -47,6 +47,9 @@ const paperSummary = {
   // papers.folder-contract.test.ts 新增件承接）
   folderId: '__main__',
   impactFactor: null,
+  // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标必携（017——paperSummarySchema
+  // 增必填字段随链）
+  isStarred: false,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,
@@ -98,8 +101,13 @@ const VALID: Record<string, unknown[]> = {
   folderDeleteReqSchema: [{ id: 'f1' }],
   // [F-ALIGN-01 D5] toFolderId 收紧 string（null=移出→未归档路径退役）
   paperMoveReqSchema: [{ paperId: 'p1', toFolderId: 'f1' }],
-  // [F-UIRES-01 批 B] papers/delete 载荷（文献域单源——models/paper）
+  // [F-UIRES-01 批 B] papers/delete 载荷（文献域单源——models/paper）；
+  // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] papers/set-starred 载荷（同位先例）
   paperDeleteReqSchema: [{ paperId: 'p1' }],
+  paperSetStarredReqSchema: [
+    { paperId: 'p1', starred: true },
+    { paperId: 'p1', starred: false }
+  ],
   foldersChangedEventSchema: [{}],
   lineageChangedEventSchema: [{}],
   lineageGraphReqSchema: [{}, { folderId: 'f1' }],
@@ -276,6 +284,7 @@ const SCHEMA_NAMES = [
   'paperIdReqSchema',
   'paperDeleteReqSchema',
   'paperMoveReqSchema',
+  'paperSetStarredReqSchema',
   'readerOpenResSchema',
   'renameTagReqSchema',
   'reportReqSchema',

@@ -29,6 +29,7 @@ import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
 import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
 import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolor.sql?raw'
 import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?raw'
+import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
 
 export interface Migration {
   version: number
@@ -83,7 +84,11 @@ export const MIGRATIONS: readonly Migration[] = [
   // [F-DBCAMP-01 DB-1] papers.folder_id NOT NULL 真重建（v122 裁决② DDL 终态；
   // 官方 12 步序=旧表只 DROP 不 RENAME+FTS 双扫——候选 A legacy 换名舞步经
   // 探针证不可行；FK-OFF 模式首例=fkOff 标志；新库 user_version 终值 16）
-  { version: 16, name: 'papers_folder_not_null', sql: papersFolderNotNullSql, fkOff: true }
+  { version: 16, name: 'papers_folder_not_null', sql: papersFolderNotNullSql, fkOff: true },
+  // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] papers.is_starred 星标列+partial index
+  // （ADD COLUMN 静态 DEFAULT 0——与 016 重建本质不同：FK 面零牵动，无 fkOff；
+  // 新库 user_version 终值 17）
+  { version: 17, name: 'papers_is_starred', sql: papersIsStarredSql }
 ]
 
 export interface MigrateResult {

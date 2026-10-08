@@ -21,6 +21,8 @@ const baseSummary = {
   doi: '10.1/x',
   tagNames: [],
   impactFactor: null,
+  // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标必携（paperSummarySchema 随链）
+  isStarred: false,
   annotationCount: 0,
   noteCount: 0,
   lastReadPage: 0,

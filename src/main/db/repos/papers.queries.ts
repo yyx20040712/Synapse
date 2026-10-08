@@ -66,16 +66,17 @@ const WINDOW_SUBQUERY = `(
 )`
 
 /** 列表页 SELECT：一次往返带回全部聚合字段（[T3-P3] +cited_by_count——密度
- *  列表引用列，toSummary null→整键省略；[F-FOLDER-01] 窗口包覆+folder 双列） */
+ *  列表引用列，toSummary null→整键省略；[F-FOLDER-01] 窗口包覆+folder 双列；
+ *  [F-DBCAMP-01 DB-1 U2 / F-STAR-01] +is_starred（017 列——布尔映射见 toSummary） */
 export const LIST_SQL = `SELECT p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page, p.cited_by_count,
-  p.folder_id, p.impact_factor, p.pub_no, p.lineage_node_id, p.lineage_year, p.lineage_month,
+  p.folder_id, p.impact_factor, p.is_starred, p.pub_no, p.lineage_node_id, p.lineage_year, p.lineage_month,
   ${AGG_COLS.trim()}
   FROM ${WINDOW_SUBQUERY} p`
 
 export const DETAIL_SQL = `SELECT p.file_ref, p.abstract, p.arxiv_id, p.source, p.enrich_status, p.updated_at,
   p.id, p.title, p.authors_json, p.year, p.venue, p.doi, p.added_at, p.last_read_page,
   p.cited_by_count, p.cited_by_fetched_at, p.cited_by_count_source,
-  p.folder_id, p.impact_factor, p.pub_no, p.lineage_node_id, p.lineage_year, p.lineage_month,
+  p.folder_id, p.impact_factor, p.is_starred, p.pub_no, p.lineage_node_id, p.lineage_year, p.lineage_month,
   ${AGG_COLS.trim()}
   FROM ${WINDOW_SUBQUERY} p WHERE p.id = ?`
 
@@ -92,6 +93,9 @@ export interface SummaryRow {
   cited_by_count: number | null
   folder_id: string
   impact_factor: number | null
+  /** [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标原始列（017——DB 层存 0/1 数值，
+   *  CHECK 值域收紧；布尔映射单源=toSummary） */
+  is_starred: number
   pub_no: number
   lineage_node_id: string | null
   lineage_year: number | null
@@ -128,6 +132,10 @@ export function toSummary(r: SummaryRow): Omit<PaperSummary, 'lineage'> {
     lastReadPage: r.last_read_page, addedAt: r.added_at,
     folderId: r.folder_id,
     impactFactor: r.impact_factor,
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 0/1→true/false 映射单源（SUMMARY/
+    // DETAIL 两面共用；import 面另有常量构造 isStarred:false——017 DEFAULT 0
+    // 新建恒未星标的语义面，非映射复制，import.service 头注锚〔d1-W1〕）
+    isStarred: r.is_starred === 1,
     pubNo: r.pub_no,
     ...(r.cited_by_count !== null ? { citedByCount: r.cited_by_count } : {}),
     ...(r.lineage_node_id !== null

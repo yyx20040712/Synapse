@@ -350,7 +350,9 @@ function titleOf(extracted: string, fileName: string): string {
 
 /** 刚插入的行 → 列表页摘要（新文献无标签/标注/笔记；[F-FOLDER-01] 归属=
  * folderId（单归属——[F-ALIGN-01 D3] 导入落点恒非空=collection 或 targetFolderId，
- * INV-NEW-2），impactFactor 新建恒 null，pubNo 无窗口语境省略——可选增量字段） */
+ * INV-NEW-2），impactFactor 新建恒 null，pubNo 无窗口语境省略——可选增量字段；
+ * [F-DBCAMP-01 DB-1 U2 / F-STAR-01] isStarred 新建恒 false——017 DEFAULT 0，
+ * 刚插入的文献必未星标） */
 function toSummary(row: PaperRow, authors: string[], folderId: string): PaperSummary {
   return {
     id: row.id,
@@ -365,6 +367,7 @@ function toSummary(row: PaperRow, authors: string[], folderId: string): PaperSum
     lastReadPage: row.last_read_page,
     addedAt: row.added_at,
     folderId,
-    impactFactor: null
+    impactFactor: null,
+    isStarred: false
   }
 }

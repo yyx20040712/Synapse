@@ -74,6 +74,7 @@ function makeSummary(id: string, patch: Partial<PaperSummary> = {}): PaperSummar
     tagNames: ['水锤史', '雷诺数'],
     folderId: '__main__',
     impactFactor: null,
+    isStarred: false, // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] paperSummarySchema 必填随链
     annotationCount: 6,
     noteCount: 22,
     lastReadPage: 0,

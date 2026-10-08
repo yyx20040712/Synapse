@@ -18,7 +18,8 @@ import * as S from '../../src/shared/ipc/schemas'
 /** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道；
  *  [F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法；
  *  [F-ALIGN-01 D1] lineage 域 upsertNode→patchNode（通道拆分——2026-10-04）；
- *  [F-UIRES-01 批 B] papers 域 +delete——1→2 方法） */
+ *  [F-UIRES-01 批 B] papers 域 +delete——1→2 方法；[F-DBCAMP-01 DB-1 U2 /
+ *  F-STAR-01] papers 域 +setStarred——2→3 方法） */
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
   ['enrich', ['fetch']],
@@ -28,7 +29,7 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['library', ['collections', 'detail', 'list', 'updateMeta']],
   ['lineage', ['graph', 'patchNode', 'removeEdge', 'removeNode', 'upsertEdge', 'upsertLineTypes']],
   ['notes', ['get', 'remove', 'save']],
-  ['papers', ['delete', 'moveFolder']],
+  ['papers', ['delete', 'moveFolder', 'setStarred']],
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
   ['settings', ['diagNetwork', 'get', 'set']],
   ['system', ['openExternal', 'setQuitDirty', 'windowControl']],
@@ -43,8 +44,8 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 // 61→60：lineage/import 退役——用户裁决 2026-09-30；[F-FOLDER-01]
 // 56→61：+folders 四通道+papers/move-folder 单通道）
 describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=61（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
-    expect(allChannels().length).toBe(61)
+  it('通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
+    expect(allChannels().length).toBe(62)
   })
 
   it('域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）', () => {

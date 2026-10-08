@@ -29,7 +29,8 @@ function makeSummary(id: string): PaperSummary {
     lastReadPage: 0,
     addedAt: 't',
     folderId: '__main__',
-    impactFactor: null
+    impactFactor: null,
+    isStarred: false // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] paperSummarySchema 必填随链
   }
 }
 

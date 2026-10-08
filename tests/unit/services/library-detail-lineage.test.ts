@@ -29,6 +29,8 @@ function makeDetail(): PaperDetail {
     tagNames: [],
     folderId: '__main__',
     impactFactor: null,
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标必携（paperDetailSchema 随链）
+    isStarred: false,
     annotationCount: 0,
     noteCount: 0,
     lastReadPage: 0,
@@ -153,6 +155,8 @@ describe('T3-P3 zod 契约面向后兼容（可选增量——旧夹具解析通
       tagNames: [],
       folderId: '__main__',
       impactFactor: null,
+      // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标必携（paperSummarySchema 随链）
+      isStarred: false,
       annotationCount: 0,
       noteCount: 0,
       lastReadPage: 0,

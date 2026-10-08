@@ -49,7 +49,8 @@ function summary(id: string, folderId: string): PaperSummary {
     lastReadPage: 0,
     addedAt: 't',
     folderId,
-    impactFactor: null
+    impactFactor: null,
+    isStarred: false // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] paperSummarySchema 必填随链
   }
 }
 

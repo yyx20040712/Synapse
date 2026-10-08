@@ -34,6 +34,7 @@ const detail: PaperDetail = {
   tagNames: [],
   folderId: '__main__',
   impactFactor: null,
+  isStarred: false, // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] paperSummarySchema 必填随链
   annotationCount: 2,
   noteCount: 1,
   lastReadPage: 0,

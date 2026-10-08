@@ -7,15 +7,15 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"通道总数=61（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
           "describePath": [
             "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
           ],
-          "title": "通道总数=61（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-UIRES-01 批 B] 60→61：+papers/delete）",
+          "title": "通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）",
           "markers": [],
-          "line": 46,
+          "line": 47,
           "assertions": [
-            "expect(allChannels().length).toBe(61)"
+            "expect(allChannels().length).toBe(62)"
           ]
         },
         {
@@ -25,7 +25,7 @@
           ],
           "title": "域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）",
           "markers": [],
-          "line": 50,
+          "line": 51,
           "assertions": [
             "expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())",
             "expect(DOMAIN_PINS).toHaveLength(14)"
@@ -38,7 +38,7 @@
           ],
           "title": "域 ai_sensor 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -50,7 +50,7 @@
           ],
           "title": "域 enrich 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -62,7 +62,7 @@
           ],
           "title": "域 export_ 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -74,7 +74,7 @@
           ],
           "title": "域 folders 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -86,7 +86,7 @@
           ],
           "title": "域 import_ 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -98,7 +98,7 @@
           ],
           "title": "域 library 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -110,7 +110,7 @@
           ],
           "title": "域 lineage 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -122,7 +122,7 @@
           ],
           "title": "域 notes 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -134,7 +134,7 @@
           ],
           "title": "域 papers 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -146,7 +146,7 @@
           ],
           "title": "域 reader 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -158,7 +158,7 @@
           ],
           "title": "域 settings 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -170,7 +170,7 @@
           ],
           "title": "域 system 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -182,7 +182,7 @@
           ],
           "title": "域 tags 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -194,7 +194,7 @@
           ],
           "title": "域 workspaces 方法集 pin",
           "markers": [],
-          "line": 55,
+          "line": 56,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
@@ -206,7 +206,7 @@
           ],
           "title": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
           "markers": [],
-          "line": 59,
+          "line": 60,
           "assertions": [
             "expect(prefixes).toEqual([ 'ai-notes', 'ai-sensor', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])"
           ]
@@ -218,7 +218,7 @@
           ],
           "title": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
           "markers": [],
-          "line": 81,
+          "line": 82,
           "assertions": [
             "expect(domains, `PRELOAD_HIDDEN_METHODS 引用了不存在的域 ${domain}`).toContain(domain)",
             "expect(inTable, `PRELOAD_HIDDEN_METHODS 引用了 ${domain}.${m} 但表内无此方法`).toContain(m)",
@@ -232,7 +232,7 @@
           ],
           "title": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
           "markers": [],
-          "line": 99,
+          "line": 100,
           "assertions": [
             "expect(Object.keys(EVENT_CHANNELS).sort()).toEqual([ 'exportCorpus', 'foldersChanged', 'importProgress', 'lineageChanged', 'windowState' ])",
             "expect(ch.endsWith('/event'), `事件通道 ${ch} 应带 /event 后缀（单向推送命名约定）`).toBe(true)",
@@ -247,7 +247,7 @@
           ],
           "title": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
           "markers": [],
-          "line": 116,
+          "line": 117,
           "assertions": [
             "expect(Object.entries(PRELOAD_HIDDEN_METHODS).map(([d, ms]) => `${d}:[${[...ms].sort().join(',')}]`)).toEqual([ 'import_:[fromPaths]' ])"
           ]
@@ -259,7 +259,7 @@
           ],
           "title": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
           "markers": [],
-          "line": 122,
+          "line": 123,
           "assertions": [
             "expect({ ...EVENT_CHANNELS }).toEqual({ importProgress: 'import/progress/event', exportCorpus: 'export/corpus/event', windowState: 'system/window-state/event', foldersChanged: 'folders/changed/event', lineageChanged: 'lineage/changed/event' })"
           ]
@@ -271,7 +271,7 @@
           ],
           "title": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
           "markers": [],
-          "line": 132,
+          "line": 133,
           "assertions": [
             "expect(typeof S.importProgressEventSchema.safeParse).toBe('function')",
             "expect(typeof S.exportProgressEventSchema.safeParse).toBe('function')",
@@ -287,7 +287,7 @@
           ],
           "title": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
           "markers": [],
-          "line": 140,
+          "line": 141,
           "assertions": [
             "expect( allChannels() .filter((c) => c.domain === 'workspaces') .map((c) => c.channel) .sort() ).toEqual(['workspaces/create', 'workspaces/list', 'workspaces/rename', 'workspaces/switch'])"
           ]
@@ -880,7 +880,7 @@
           ],
           "title": "导出闭合：schemas.ts 全部 zod 导出 ⟷ 夹具表键 ⟷ 用例清单三方一致",
           "markers": [],
-          "line": 335,
+          "line": 344,
           "assertions": [
             "expect(Object.keys(VALID).sort(), '夹具表漏配或多配（新增 schema 须同步 VALID+SCHEMA_NAMES）').toEqual(runtimeZodExports)",
             "expect([...SCHEMA_NAMES].sort(), 'it.each 清单与夹具表漂移').toEqual(runtimeZodExports)"
@@ -893,7 +893,7 @@
           ],
           "title": "aiNotesImportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -907,7 +907,7 @@
           ],
           "title": "aiReadJobResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -921,7 +921,7 @@
           ],
           "title": "aiSensorStatusResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -935,7 +935,7 @@
           ],
           "title": "annotationIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -949,7 +949,7 @@
           ],
           "title": "annotationListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -963,7 +963,7 @@
           ],
           "title": "appSettingsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -977,7 +977,7 @@
           ],
           "title": "attachTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -991,7 +991,7 @@
           ],
           "title": "clipboardReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1005,7 +1005,7 @@
           ],
           "title": "collectionListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1019,7 +1019,7 @@
           ],
           "title": "corpusItemReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1033,7 +1033,7 @@
           ],
           "title": "corpusReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1047,7 +1047,7 @@
           ],
           "title": "corpusSessionReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1061,7 +1061,7 @@
           ],
           "title": "corpusSessionResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1075,7 +1075,7 @@
           ],
           "title": "detachTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1089,7 +1089,7 @@
           ],
           "title": "enrichReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1103,7 +1103,7 @@
           ],
           "title": "exportProgressEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1117,7 +1117,7 @@
           ],
           "title": "folderCreateReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1131,7 +1131,7 @@
           ],
           "title": "folderDeleteReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1145,7 +1145,7 @@
           ],
           "title": "folderRenameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1159,7 +1159,7 @@
           ],
           "title": "folderSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1173,7 +1173,7 @@
           ],
           "title": "foldersChangedEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1187,7 +1187,7 @@
           ],
           "title": "exportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1201,7 +1201,7 @@
           ],
           "title": "exportSelectionReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1215,7 +1215,7 @@
           ],
           "title": "extractRequestEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1229,7 +1229,7 @@
           ],
           "title": "importPathsReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1243,7 +1243,7 @@
           ],
           "title": "importProgressEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1257,7 +1257,7 @@
           ],
           "title": "importResultSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1271,7 +1271,7 @@
           ],
           "title": "importTargetReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1285,7 +1285,7 @@
           ],
           "title": "libraryListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1299,7 +1299,7 @@
           ],
           "title": "lineageChangedEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1313,7 +1313,7 @@
           ],
           "title": "lineageGraphReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1327,7 +1327,7 @@
           ],
           "title": "lineageGraphResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1341,7 +1341,7 @@
           ],
           "title": "lineageIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1355,7 +1355,7 @@
           ],
           "title": "lineagePaperMetricsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1369,7 +1369,7 @@
           ],
           "title": "lineagePatchNodeReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1383,7 +1383,7 @@
           ],
           "title": "lineageUpsertEdgeReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1397,7 +1397,7 @@
           ],
           "title": "lineageUpsertLineTypesReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1411,7 +1411,7 @@
           ],
           "title": "mergeTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1425,7 +1425,7 @@
           ],
           "title": "netDiagItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1439,7 +1439,7 @@
           ],
           "title": "netDiagResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1453,7 +1453,7 @@
           ],
           "title": "noteGetResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1467,7 +1467,7 @@
           ],
           "title": "noteIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1481,7 +1481,7 @@
           ],
           "title": "noteSaveReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1495,7 +1495,7 @@
           ],
           "title": "observeResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1509,7 +1509,7 @@
           ],
           "title": "openExternalReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1523,7 +1523,7 @@
           ],
           "title": "paperIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1537,7 +1537,7 @@
           ],
           "title": "paperDeleteReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1551,7 +1551,21 @@
           ],
           "title": "paperMoveReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"paperSetStarredReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "paperSetStarredReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1565,7 +1579,7 @@
           ],
           "title": "readerOpenResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1579,7 +1593,7 @@
           ],
           "title": "renameTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1593,7 +1607,7 @@
           ],
           "title": "reportReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1607,7 +1621,7 @@
           ],
           "title": "saveAnnotationReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1621,7 +1635,7 @@
           ],
           "title": "saveProgressReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1635,7 +1649,7 @@
           ],
           "title": "sensorStatusSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1649,7 +1663,7 @@
           ],
           "title": "setQuitDirtyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1663,7 +1677,7 @@
           ],
           "title": "tagIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1677,7 +1691,7 @@
           ],
           "title": "tagNameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1691,7 +1705,7 @@
           ],
           "title": "tagSetColorReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1705,7 +1719,7 @@
           ],
           "title": "tagWithCountSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1719,7 +1733,7 @@
           ],
           "title": "trueAckSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1733,7 +1747,7 @@
           ],
           "title": "uiScaleSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1747,7 +1761,7 @@
           ],
           "title": "updateAnnotationReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1761,7 +1775,7 @@
           ],
           "title": "updateMetaReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1775,7 +1789,7 @@
           ],
           "title": "voidReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1789,7 +1803,7 @@
           ],
           "title": "windowControlActionSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1803,7 +1817,7 @@
           ],
           "title": "windowControlReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1817,7 +1831,7 @@
           ],
           "title": "windowControlResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1831,7 +1845,7 @@
           ],
           "title": "windowStateEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1845,7 +1859,7 @@
           ],
           "title": "workspaceCreateReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1859,7 +1873,7 @@
           ],
           "title": "workspaceCreateResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1873,7 +1887,7 @@
           ],
           "title": "workspaceItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1887,7 +1901,7 @@
           ],
           "title": "workspaceListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1901,7 +1915,7 @@
           ],
           "title": "workspaceRenameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1915,7 +1929,7 @@
           ],
           "title": "workspaceSwitchReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1929,7 +1943,7 @@
           ],
           "title": "zcodeLinkDetectResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1943,7 +1957,7 @@
           ],
           "title": "zcodeLinkInstallResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 344,
+          "line": 353,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1957,7 +1971,7 @@
           ],
           "title": "saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段",
           "markers": [],
-          "line": 357,
+          "line": 366,
           "assertions": [
             "expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)",
             "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)",
@@ -1971,7 +1985,7 @@
           ],
           "title": "importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）",
           "markers": [],
-          "line": 366,
+          "line": 375,
           "assertions": [
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(1), targetFolderId: 'f1' }).success).toBe(true)",
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(100), targetFolderId: 'f1' }).success).toBe(true)",
@@ -1987,7 +2001,7 @@
           ],
           "title": "[F-ALIGN-01] 导入三通道 targetFolderId 必填（INV-NEW-2 主锚契约面——缺省/null/空串全拒）+paperMoveReq null 拒（D5 未归档域退役）",
           "markers": [],
-          "line": 375,
+          "line": 384,
           "assertions": [
             "expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'] }).success).toBe(false)",
             "expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'], targetFolderId: null }).success).toBe(false)",
@@ -2005,7 +2019,7 @@
           ],
           "title": "exportSelection：paperIds 1/1000 过、0/1001 拒",
           "markers": [],
-          "line": 390,
+          "line": 399,
           "assertions": [
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1) }).success).toBe(true)",
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1000) }).success).toBe(true)",
@@ -2020,7 +2034,7 @@
           ],
           "title": "corpusSession：paperIds 缺省过（全库）、0 条/1001 条拒",
           "markers": [],
-          "line": 398,
+          "line": 407,
           "assertions": [
             "expect(S.corpusSessionReqSchema.safeParse({}).success).toBe(true)",
             "expect(S.corpusSessionReqSchema.safeParse({ paperIds: ['p1'] }).success).toBe(true)",
@@ -2035,7 +2049,7 @@
           ],
           "title": "标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界",
           "markers": [],
-          "line": 407,
+          "line": 416,
           "assertions": [
             "expect(S.tagNameReqSchema.safeParse({ name: '课' }).success).toBe(true)",
             "expect(S.tagNameReqSchema.safeParse({ name: '课'.repeat(50) }).success).toBe(true)",
@@ -2053,7 +2067,7 @@
           ],
           "title": "extractRequestEvent：annotations 上界 5000 过、5001 拒",
           "markers": [],
-          "line": 417,
+          "line": 426,
           "assertions": [
             "expect(S.extractRequestEventSchema.safeParse(payload(5000)).success).toBe(true)",
             "expect(S.extractRequestEventSchema.safeParse(payload(5001)).success).toBe(false)"
@@ -2066,7 +2080,7 @@
           ],
           "title": "openExternal：url 长度界 2048 过、2049/空串拒",
           "markers": [],
-          "line": 430,
+          "line": 439,
           "assertions": [
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2048) }).success).toBe(true)",
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2049) }).success).toBe(false)",
@@ -2080,7 +2094,7 @@
           ],
           "title": "corpusItem 判别联合：四 kind 各过；anno 缺 annotationId 拒、page 带 annotationId 拒（refine）；未知 kind 拒",
           "markers": [],
-          "line": 436,
+          "line": 445,
           "assertions": [
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'fulltext' }).success).toBe(true)",
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'figure', figure: 'page' }).success).toBe(true)",
@@ -2099,7 +2113,7 @@
           ],
           "title": "lineagePaperMetrics null 语义：citedByCount null/0 均过（0=值非缺）；venueTier 三档过、T9 拒",
           "markers": [],
-          "line": 452,
+          "line": 461,
           "assertions": [
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: 0, venueTier: null }).success).toBe(true)",
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T1' }).success).toBe(true)",
@@ -2114,7 +2128,7 @@
           ],
           "title": "[F-ALIGN-01] lineagePatchNodeReq：id 必填拒缺/空串；白名单外字段 strict 拒；paperId/folderId 不可 patch 拒；month null=清除语义合法",
           "markers": [],
-          "line": 459,
+          "line": 468,
           "assertions": [
             "expect(S.lineagePatchNodeReqSchema.safeParse({ x: 1 }).success).toBe(false)",
             "expect(S.lineagePatchNodeReqSchema.safeParse({ id: '' }).success).toBe(false)",
@@ -2134,7 +2148,7 @@
           ],
           "title": "嵌套模型层 strict 探针：rects/patch/failed/skipped/errors/annotations 元素与 paperMetrics 值去 strict 即红（首层探针覆盖不到的第二层）",
           "markers": [],
-          "line": 484,
+          "line": 493,
           "assertions": [
             "expect(S.saveAnnotationReqSchema.safeParse({ paperId: 'p1', annotation: { ...annotationInput, rects: [badRect] } }).success).toBe(false)",
             "expect(S.annotationListResSchema.safeParse([{ ...annotation, rects: [badRect] }]).success).toBe(false)",
@@ -2152,7 +2166,7 @@
           ],
           "title": "appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）",
           "markers": [],
-          "line": 499,
+          "line": 508,
           "assertions": [
             "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'light', uiScale: 'small' })",
             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)",
@@ -2167,7 +2181,7 @@
           ],
           "title": "UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）",
           "markers": [],
-          "line": 510,
+          "line": 519,
           "assertions": [
             "expect(Object.keys(S.UI_SCALE).sort()).toEqual([...S.uiScaleSchema.options].sort())",
             "expect(S.UI_SCALE).toEqual({ small: 1, medium: 1.1, large: 1.25 })"
@@ -2180,7 +2194,7 @@
           ],
           "title": "windowControlAction 四动作枚举 pin（action 枚举只住此处——renderer 复用禁手写第二份）",
           "markers": [],
-          "line": 515,
+          "line": 524,
           "assertions": [
             "expect([...S.windowControlActionSchema.options]).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])",
             "expect(S.windowControlReqSchema.safeParse({ action: 'bogus' }).success).toBe(false)"
@@ -2193,7 +2207,7 @@
           ],
           "title": "trueAck/windowControlRes 拒 ok:false（literal(true) 单值域）",
           "markers": [],
-          "line": 520,
+          "line": 529,
           "assertions": [
             "expect(S.trueAckSchema.safeParse({ ok: false }).success).toBe(false)",
             "expect(S.windowControlResSchema.safeParse({ ok: false, maximized: true }).success).toBe(false)"
@@ -2206,7 +2220,7 @@
           ],
           "title": "netDiagItem latencyMs：-1（超时哨兵）过、-2 拒",
           "markers": [],
-          "line": 525,
+          "line": 534,
           "assertions": [
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -1 }).success).toBe(true)",
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -2 }).success).toBe(false)"
@@ -2219,7 +2233,7 @@
           ],
           "title": "内联枚举基数 pin：clipboard format 两值/zcodeLinkDetect state 五值/导入导出事件 phase 四与三值（新增枚举值须意识化更新）",
           "markers": [],
-          "line": 530,
+          "line": 539,
           "assertions": [
             "expect([...(S.clipboardReqSchema.shape.format.options)]).toEqual(['bibtex', 'csv'])",
             "expect([...(S.zcodeLinkDetectResSchema.shape.state.options)]).toEqual([ 'zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error' ])",
@@ -2234,7 +2248,7 @@
           ],
           "title": "zcodeLinkDetect 五态枚举探针：各态过、bogus 拒（四呈现态+error）",
           "markers": [],
-          "line": 543,
+          "line": 552,
           "assertions": [
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state, status: null, overwrite: false }).success, `态 ${state} 应合法`).toBe(true)",
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state: 'bogus', status: null, overwrite: false }).success).toBe(false)"
@@ -2247,7 +2261,7 @@
           ],
           "title": "id 类字段空串拒（paperId/annotationId/tagId/noteId/lineage id——min(1) 全位探针）",
           "markers": [],
-          "line": 550,
+          "line": 559,
           "assertions": [
             "expect(S.paperIdReqSchema.safeParse({ paperId: '' }).success).toBe(false)",
             "expect(S.annotationIdReqSchema.safeParse({ annotationId: '' }).success).toBe(false)",
@@ -2263,7 +2277,7 @@
           ],
           "title": "aiSensorStatusRes/noteGetRes 可空两形：null 与对象均过（null=status.json 不存在/无笔记的合法态）",
           "markers": [],
-          "line": 558,
+          "line": 567,
           "assertions": [
             "expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)",
             "expect(S.noteGetResSchema.safeParse(null).success).toBe(true)",
@@ -2277,7 +2291,7 @@
           ],
           "title": "tagSetColorReqSchema color 负例：大写/短位/缺 # 拒，null=恢复默认合法（d1-N5——hex 契约负向锁）",
           "markers": [],
-          "line": 564,
+          "line": 573,
           "assertions": [
             "expect( S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: bad }).success, `非法 color ${JSON.stringify(bad)} 应拒` ).toBe(false)",
             "expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1' }).success, '缺 color 键应拒（required 非 optional——宽松化正则防）').toBe(false)",
@@ -4879,17 +4893,17 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）\",\"新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1] 016 起=16）\"]",
+          "key": "[\"db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）\",\"新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17）\"]",
           "describePath": [
             "db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）"
           ],
-          "title": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1] 016 起=16）",
+          "title": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17）",
           "markers": [],
           "line": 54,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])",
-            "expect(result.currentVersion).toBe(16)",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(result.currentVersion).toBe(17)",
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -4916,7 +4930,7 @@
           "assertions": [
             "expect(before).toEqual({ '#3a5bd9': 2, '#3A5BD9': 1, '#c07a2a': 1, '#1e3a8a': 1 })",
             "expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -4929,7 +4943,7 @@
           "line": 86,
           "assertions": [
             "expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -4953,16 +4967,16 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1] 016 起=16 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）\"]",
+          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）\"]",
           "describePath": [
             "db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）"
           ],
-          "title": "新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1] 016 起=16 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）",
+          "title": "新库：全量应用到 12（[F-UIRES-03 C1] 015 起=15 终值；[F-DBCAMP-01 U1/U2] 016/017 起=17 终值随链）；三列+部分唯一索引在场；paper_collections 不存在；sqlite_master 零 paper_collections 残留（N3）",
           "markers": [],
           "line": 68,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])",
-            "expect(result.currentVersion).toBe(16)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(result.currentVersion).toBe(17)",
             "expect(paperCols).toContain('folder_id')",
             "expect(paperCols).toContain('impact_factor')",
             "expect(nodeCols).toContain('folder_id')",
@@ -5048,7 +5062,7 @@
           "markers": [],
           "line": 193,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(tag.color).toBe('#112233')",
             "expect(paper.folder_id).toBe('__main__')",
             "expect(node.folder_id).toBe('__main__')",
@@ -5070,11 +5084,11 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 15（[F-UIRES-03 C1] 015 起；[F-DBCAMP-01 U1] 016 起=16）\"]",
+          "key": "[\"db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）\",\"[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 15（[F-UIRES-03 C1] 015 起；[F-DBCAMP-01 U1/U2] 016/017 起=17）\"]",
           "describePath": [
             "db/migrate —— 012 folders×graphs（folder 归属+图绑定+M2M 退役）"
           ],
-          "title": "[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 15（[F-UIRES-03 C1] 015 起；[F-DBCAMP-01 U1] 016 起=16）",
+          "title": "[F-MIGR-01 A·双冲突形态] 预置 主图+主图 (主图) 双行 → 迁移不炸；退让名=主图 (主图) 2；__main__ 名=主图；版本 15（[F-UIRES-03 C1] 015 起；[F-DBCAMP-01 U1/U2] 016/017 起=17）",
           "markers": [],
           "line": 235,
           "assertions": [
@@ -5082,7 +5096,7 @@
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(squatter.name).toBe('主图 (主图)')",
             "expect(mainRow.name).toBe('主图')",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -5097,7 +5111,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 3')",
             "expect(row.name).toBe(sname)",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -5112,7 +5126,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(residue.name).toBe('主图 (主图)')",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -5165,7 +5179,7 @@
           "line": 372,
           "assertions": [
             "expect(row.name).toBe('既有主图行')",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         }
       ]
@@ -5176,31 +5190,31 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1] 016 起=16，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列\"]",
+          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列\"]",
           "describePath": [
             "db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）"
           ],
-          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1] 016 起=16，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列",
+          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列",
           "markers": [],
           "line": 30,
           "assertions": [
-            "expect(result.currentVersion).toBe(16)",
+            "expect(result.currentVersion).toBe(17)",
             "expect(nodeCols).toContain('month')",
             "expect(nodeCols).toContain('slot')",
             "expect(edgeCols).toContain('sub')"
           ]
         },
         {
-          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1] 016 起=16 随链）；存量行 month NULL 合法（不回溯校验）\"]",
+          "key": "[\"db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）\",\"存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）；存量行 month NULL 合法（不回溯校验）\"]",
           "describePath": [
             "db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填）"
           ],
-          "title": "存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1] 016 起=16 随链）；存量行 month NULL 合法（不回溯校验）",
+          "title": "存量 v9 库升级：应用 010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）；存量行 month NULL 合法（不回溯校验）",
           "markers": [],
           "line": 46,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16])",
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(row.month).toBeNull()",
             "expect(row.slot).toBe(1)"
           ]
@@ -5311,16 +5325,16 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3）\"]",
+          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）\"]",
           "describePath": [
             "db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）"
           ],
-          "title": "v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3）",
+          "title": "v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）",
           "markers": [],
           "line": 203,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16])",
-            "expect(objectMultiset(db)).toEqual(objectsBefore)",
+            "expect(result.appliedVersions).toEqual([16, 17])",
+            "expect(objectMultiset(db)).toEqual([...objectsBefore, 'index:idx_papers_starred'].sort())",
             "expect(tableSet(db)).toEqual(tablesBefore)",
             "expect(residue).toEqual([])"
           ]
@@ -5332,7 +5346,7 @@
           ],
           "title": "v15→16：FTS 双扫重建后 MATCH 恢复+已清孤儿不残留+三触发器在新表 I/U/D 三路活性",
           "markers": [],
-          "line": 220,
+          "line": 223,
           "assertions": [
             "expect(hit).toBeTruthy()",
             "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"未归档遗孤\"'`).get() ).toBeUndefined()",
@@ -5343,15 +5357,15 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上）\"]",
+          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上；[F-DBCAMP-01 U2] 017 随链=终值 17）\"]",
           "describePath": [
             "db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）"
           ],
-          "title": "v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上）",
+          "title": "v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上；[F-DBCAMP-01 U2] 017 随链=终值 17）",
           "markers": [],
-          "line": 254,
+          "line": 257,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)",
             "expect(db.prepare('SELECT COUNT(*) c FROM annotations').get()).toEqual({ c: 0 })",
@@ -5365,7 +5379,7 @@
           ],
           "title": "投影再对齐保险丝：错位节点（folder≠文献归属）与 NULL 归属节点回正为文献归属；主题节点不碰（folder↔graph 一一对应——2026-10-08 裁决①）",
           "markers": [],
-          "line": 270,
+          "line": 273,
           "assertions": [
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-mis'\").get() ).toEqual({ folder_id: '__main__' })",
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-null'\").get() ).toEqual({ folder_id: 'c-other' })",
@@ -5373,17 +5387,17 @@
           ]
         },
         {
-          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"新库全链：user_version=16+应用清单 [1..16]+幂等重入（再跑 applied=[]）\"]",
+          "key": "[\"db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）\"]",
           "describePath": [
             "db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方 12 步序）"
           ],
-          "title": "新库全链：user_version=16+应用清单 [1..16]+幂等重入（再跑 applied=[]）",
+          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）",
           "markers": [],
-          "line": 292,
+          "line": 295,
           "assertions": [
-            "expect(result.currentVersion).toBe(16)",
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])",
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(result.currentVersion).toBe(17)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5394,7 +5408,7 @@
           ],
           "title": "[回炉轮1 R1] FTS 清旧扫判别锚：rowid 空洞形态（幸存者 rowid=1,3）——逐文献 MATCH 恰一行且 rowid=新表实读值（排他：残留/错位即多行或错号）",
           "markers": [],
-          "line": 303,
+          "line": 306,
           "assertions": [
             "expect(preRowids).toEqual([1, 3])",
             "expect(ma).toEqual([{ rowid: ra.rowid }])",
@@ -5408,7 +5422,7 @@
           ],
           "title": "NOT NULL 契约：folder_id=NULL 写拒（UPDATE/显式 NULL INSERT 双面）+列级非空标记在档",
           "markers": [],
-          "line": 331,
+          "line": 334,
           "assertions": [
             "expect(() => db.prepare(`UPDATE papers SET folder_id=NULL WHERE id='p-1'`).run()).toThrow( /NOT NULL constraint failed/ )",
             "expect(() => db.prepare( `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at, folder_id) VALUES ('p-2', 'f/2.pdf', 'sha-2', 't', 't', 't', NULL)` ).run() ).toThrow(/NOT NULL constraint failed/)",
@@ -5423,7 +5437,7 @@
           ],
           "title": "fkOff 迁移违约：事务内 foreign_key_check 拦截→抛+整体回滚（半成品表不残留）+FK 复位 ON",
           "markers": [],
-          "line": 361,
+          "line": 364,
           "assertions": [
             "expect(() => migrate(db, bad)).toThrow(/foreign_key_check/)",
             "expect(readUserVersion(db)).toBe(0)",
@@ -5438,7 +5452,7 @@
           ],
           "title": "fkOff 迁移正常应用：user_version 前进+FK 复位 ON+FK OFF 期可观察（NO ACTION 子行在场 DROP 父表——FK ON 下必炸）+后续常规迁移不受染",
           "markers": [],
-          "line": 383,
+          "line": 386,
           "assertions": [
             "expect(result.appliedVersions).toEqual([1, 2])",
             "expect(readUserVersion(db)).toBe(2)",
@@ -5449,38 +5463,123 @@
         }
       ]
     },
+    "tests/unit/db/migrate-papers-is-starred.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"v16→17 加列：存量行静态 DEFAULT 0 一次到位（零回填）+缺省插入也 0+列级非空/默认标记在档\"]",
+          "describePath": [
+            "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
+          ],
+          "title": "v16→17 加列：存量行静态 DEFAULT 0 一次到位（零回填）+缺省插入也 0+列级非空/默认标记在档",
+          "markers": [],
+          "line": 34,
+          "assertions": [
+            "expect(readUserVersion(db)).toBe(17)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-old-1'\").get()).toEqual({ is_starred: 0 })",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-new'\").get()).toEqual({ is_starred: 0 })",
+            "expect(col?.notnull).toBe(1)",
+            "expect(col?.dflt_value).toBe('0')"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"CHECK 值域契约：0/1 双向写过；2（INSERT）与 99（UPDATE）双面拒+拒后行值不动\"]",
+          "describePath": [
+            "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
+          ],
+          "title": "CHECK 值域契约：0/1 双向写过；2（INSERT）与 99（UPDATE）双面拒+拒后行值不动",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-1'\").get()).toEqual({ is_starred: 1 })",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-1'\").get()).toEqual({ is_starred: 0 })",
+            "expect(() => db.prepare( `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at, is_starred) VALUES ('p-bad', 'f/b.pdf', 'sha-b', 't', 't', 't', 2)` ).run() ).toThrow(/CHECK constraint failed/)",
+            "expect(() => db.prepare(\"UPDATE papers SET is_starred = 99 WHERE id = 'p-1'\").run()).toThrow( /CHECK constraint failed/ )",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-1'\").get()).toEqual({ is_starred: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"partial index 存在性与选择性：idx_papers_starred 在档（sql 含 WHERE is_starred = 1 且无 folder 维度）；=1 查询走该索引、=0 不走（部分索引只覆盖星标集）\"]",
+          "describePath": [
+            "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
+          ],
+          "title": "partial index 存在性与选择性：idx_papers_starred 在档（sql 含 WHERE is_starred = 1 且无 folder 维度）；=1 查询走该索引、=0 不走（部分索引只覆盖星标集）",
+          "markers": [],
+          "line": 85,
+          "assertions": [
+            "expect(idx?.name).toBe('idx_papers_starred')",
+            "expect(idx?.sql).toContain('WHERE is_starred = 1')",
+            "expect(idx?.sql).not.toContain('folder_id')",
+            "expect(planStarred.map((r) => r.detail).join(' | ')).toContain('idx_papers_starred')",
+            "expect(planUnstarred.map((r) => r.detail).join(' | ')).not.toContain('idx_papers_starred')"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0\"]",
+          "describePath": [
+            "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
+          ],
+          "title": "v15→17 跨链一次到位：016 重建后表形态上执行 017（applied=[16,17]）+行数据保全+is_starred=0",
+          "markers": [],
+          "line": 105,
+          "assertions": [
+            "expect(result.appliedVersions).toEqual([16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
+            "expect(db.prepare(\"SELECT title, is_starred FROM papers WHERE id = 'p-a'\").get()).toEqual({ title: '文献甲', is_starred: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）\",\"新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）\"]",
+          "describePath": [
+            "db/migrate —— 017 papers.is_starred+partial index（ADD COLUMN——零 FK 牵动）"
+          ],
+          "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）",
+          "markers": [],
+          "line": 123,
+          "assertions": [
+            "expect(result.currentVersion).toBe(17)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
+            "expect(again.appliedVersions).toEqual([])"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/migrate-reading-time.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1] 016 起=16，009 删列终态断言面不变），papers.reading_seconds 列已不存在\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，009 删列终态断言面不变），papers.reading_seconds 列已不存在\"]",
           "describePath": [
             "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1] 016 起=16，009 删列终态断言面不变），papers.reading_seconds 列已不存在",
+          "title": "新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2] 016/017 起=17，009 删列终态断言面不变），papers.reading_seconds 列已不存在",
           "markers": [],
           "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(16)",
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(result.currentVersion).toBe(17)",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
         },
         {
-          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1] 016 起=16 随链）\"]",
+          "key": "[\"db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）\",\"存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）\"]",
           "describePath": [
             "db/migrate —— 008→009 reading_time 双跳链（P7E-05→F-TIME-02）"
           ],
-          "title": "存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1] 016 起=16 随链）",
+          "title": "存量 v8 库（008 已加列）升级：应用 009+010+011+012+013+014+015（[F-FOLDER-01]/[F-LINEAGE-02]/[F-LGRAPH-01②U8]/[F-UIRES-03 C1] 起），列被删除，user_version=15（[F-DBCAMP-01 U1/U2] 016/017 起=17 随链）",
           "markers": [],
           "line": 32,
           "assertions": [
             "expect(papersColumns(db)).toContain('reading_seconds')",
-            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16])",
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')"
           ]
         },
@@ -5493,8 +5592,8 @@
           "markers": [],
           "line": 44,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16])",
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(row).toBeUndefined()",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers').get()).toEqual({ c: 0 })"
@@ -5516,7 +5615,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -6142,7 +6241,7 @@
           ],
           "title": "shared schema：folderId 缺失/null 双拒（strict 收紧——016 前 null 合法态退役）",
           "markers": [],
-          "line": 31,
+          "line": 33,
           "assertions": [
             "expect(paperSummarySchema.parse({ ...baseSummary, folderId: '__main__' }).folderId).toBe( '__main__' )",
             "expect(() => paperSummarySchema.parse({ ...baseSummary, folderId: null })).toThrow()",
@@ -6156,7 +6255,7 @@
           ],
           "title": "repo：裸插入（缺 folder_id）→ DEFAULT __main__；setFolderId 写/回读非空；幽灵 id 读=null（未命中语义）",
           "markers": [],
-          "line": 40,
+          "line": 42,
           "assertions": [
             "expect(papers.folderIdOf('p-1')).toBe('__main__')",
             "expect(papers.folderIdOf('p-1')).toBe('c-move')",
@@ -12294,7 +12393,7 @@
           ],
           "title": "folder 态（f-1）：目标徽标恒显「导入到：调研计划」（文件夹名解析）",
           "markers": [],
-          "line": 123,
+          "line": 124,
           "assertions": [
             "expect(pill, '目标徽标在场').not.toBeNull()",
             "expect(pill?.textContent).toContain('导入到：')",
@@ -12309,7 +12408,7 @@
           ],
           "title": "无筛选态投影（__main__）：目标徽标显「导入到：主图」（R2 主图落点口径）",
           "markers": [],
-          "line": 132,
+          "line": 133,
           "assertions": [
             "expect(pill).not.toBeNull()",
             "expect(pill?.textContent).toContain('主图')"
@@ -12322,7 +12421,7 @@
           ],
           "title": "folder 目标导入：fromDialog({targetFolderId}) 单跳+onImported——后挂接 moveFolder 链零调用（负锚）",
           "markers": [],
-          "line": 139,
+          "line": 140,
           "assertions": [
             "expect(stubApi.import_.fromDialog).toHaveBeenCalledWith({ targetFolderId: 'f-1' })",
             "expect(stubApi.papers.moveFolder).not.toHaveBeenCalled()",
@@ -12336,7 +12435,7 @@
           ],
           "title": "主图目标导入：fromDialog({targetFolderId:\"__main__\"})（无筛选态=主图落点）+零 moveFolder",
           "markers": [],
-          "line": 153,
+          "line": 154,
           "assertions": [
             "expect(stubApi.import_.fromDialog).toHaveBeenCalledWith({ targetFolderId: '__main__' })",
             "expect(stubApi.papers.moveFolder).not.toHaveBeenCalled()",
@@ -12350,7 +12449,7 @@
           ],
           "title": "导入文件夹按钮：fromFolder({targetFolderId}) 单跳（三通道同口径）",
           "markers": [],
-          "line": 166,
+          "line": 167,
           "assertions": [
             "expect(btn).toBeDefined()",
             "expect(stubApi.import_.fromFolder).toHaveBeenCalledWith({ targetFolderId: 'f-1' })",
@@ -12364,7 +12463,7 @@
           ],
           "title": "busy 全局信号：导入进行中置位、终局复位（S2 消费源）",
           "markers": [],
-          "line": 184,
+          "line": 185,
           "assertions": [
             "expect(useImportBusyStore.getState().busy, 'busy 置位').toBe(true)",
             "expect(useImportBusyStore.getState().busy, '终局复位').toBe(false)"
@@ -12377,7 +12476,7 @@
           ],
           "title": "按钮文案 R4：「导入 PDF」「导入文件夹」（hint=或将 PDF 拖到此处导入）",
           "markers": [],
-          "line": 203,
+          "line": 204,
           "assertions": [
             "expect(labels).toContain('导入 PDF')",
             "expect(labels).toContain('导入文件夹')",
@@ -12737,7 +12836,7 @@
           ],
           "title": "六格表头在场：.lib-cols=★占位/编号/题名 · 期刊/年月/引用/标签（★=P-9 星标列；档次列 F-LIBUI-01 退役）",
           "markers": [],
-          "line": 124,
+          "line": 125,
           "assertions": [
             "expect(cols).not.toBeNull()",
             "expect(cells.map((c) => c.textContent)).toEqual([ '★', '编号', '题名 · 期刊', '年月', '引用', '标签' ])",
@@ -12752,7 +12851,7 @@
           ],
           "title": "行五路信息列：001 序号（offset 起算，# 前缀已删 F-LIBUI-01）/题名/期刊斜体副行/年份/引用/标签前 3+折叠 +N",
           "markers": [],
-          "line": 146,
+          "line": 147,
           "assertions": [
             "expect(row1.querySelector('.lib-r-id')?.textContent).toBe('011')",
             "expect(rowAt(1).querySelector('.lib-r-id')?.textContent).toBe('012')",
@@ -12770,7 +12869,7 @@
           ],
           "title": "F-TAGS-01 徽标着色（INV-86 三面之三）：tagColorByName 命中=背景 hex22/边框 1px solid hex66；未命中=现状无 inline",
           "markers": [],
-          "line": 169,
+          "line": 170,
           "assertions": [
             "expect(badges[0]!.textContent).toBe('水锤史')",
             "expect(badges[0]!.style.background, '命中名→着色').toContain('225, 29, 72')",
@@ -12788,7 +12887,7 @@
           ],
           "title": "空 venue：期刊副行不渲染（空隐藏契约沿旧卡语义）；空题名回退「（无标题）」",
           "markers": [],
-          "line": 190,
+          "line": 191,
           "assertions": [
             "expect(rowAt(0).querySelector('.lib-r-j')).toBeNull()",
             "expect(rowAt(1).querySelector('.lib-r-title')?.textContent).toBe('（无标题）')"
@@ -12801,7 +12900,7 @@
           ],
           "title": "缺值列：年份 null→「—」；引用 citedByCount 缺→「—」/有值→数字",
           "markers": [],
-          "line": 202,
+          "line": 203,
           "assertions": [
             "expect(rowAt(0).querySelector('.lib-r-year')?.textContent).toBe('—')",
             "expect(rowAt(0).querySelector('.lib-r-cite')?.textContent).toBe('—')",
@@ -12815,7 +12914,7 @@
           ],
           "title": "F-LIBUI-01 ④ 档次列退役负锚：行内无 .lib-r-tier/.lib-tier 元素（venueToTier 库保留——lineage join 与 corpus manifest 两消费点不触）",
           "markers": [],
-          "line": 215,
+          "line": 216,
           "assertions": [
             "expect(rowAt(0).querySelector('.lib-r-tier'), '档次单元格已退役').toBeNull()",
             "expect(rowAt(0).querySelector('.lib-tier'), '档次徽章已退役（T1 命中 venue 也不渲染）').toBeNull()",
@@ -12829,7 +12928,7 @@
           ],
           "title": "交互零变：单击→onSelect(id)；双击→onOpen(id)；选中行挂 sel 类",
           "markers": [],
-          "line": 228,
+          "line": 229,
           "assertions": [
             "expect(rowAt(1).classList.contains('sel')).toBe(true)",
             "expect(rowAt(0).classList.contains('sel')).toBe(false)",
@@ -12844,7 +12943,7 @@
           ],
           "title": "listbox 键盘导航保活：容器 listbox+行 option/aria-selected；↓ 无选中落首行/Home/End",
           "markers": [],
-          "line": 251,
+          "line": 252,
           "assertions": [
             "expect(listbox).not.toBeNull()",
             "expect(listbox?.getAttribute('aria-label')).toBe('文献列表')",
@@ -12861,7 +12960,7 @@
           ],
           "title": "空态文案保活：papers 空→「暂无文献」引导",
           "markers": [],
-          "line": 271,
+          "line": 272,
           "assertions": [
             "expect(host?.textContent).toContain('暂无文献')",
             "expect(host?.textContent).toContain('可拖入 PDF 导入，或调整筛选条件')"
@@ -12874,7 +12973,7 @@
           ],
           "title": "表头列宽：46/flex1/74/52/180+gap 14px+10px letter-spacing 1.5px faint（档次 42px 列 F-LIBUI-01 退役）",
           "markers": [],
-          "line": 279,
+          "line": 280,
           "assertions": [
             "expect(css, 'c-id 46px').toMatch(/\\.lib-c-id\\s*\\{[^}]*width:\\s*46px/)",
             "expect(css, 'c-title flex:1').toMatch(/\\.lib-c-title\\s*\\{[^}]*flex:\\s*1/)",
@@ -12891,7 +12990,7 @@
           ],
           "title": "hover 皮肤：panel 底+shadow-card+信号橙游标线（2.5px left 18px top/bottom 12px 圆角 2px）",
           "markers": [],
-          "line": 290,
+          "line": 291,
           "assertions": [
             "expect(css).toMatch(/\\.lib-row:hover\\s*\\{[^}]*background:\\s*var\\(--panel\\);[^}]*var\\(--shadow-card\\)/)",
             "expect(css, '游标线（mockup .row:hover::before 逐值）').toMatch( /\\.lib-row:hover::before\\s*\\{[^}]*left:\\s*18px;[^}]*top:\\s*12px;[^}]*bottom:\\s*12px;[^}]*width:\\s*2\\.5px;[^}]*border-radius:\\s*2px;[^}]*background:\\s*var\\(--signal\\)/ )"
@@ -12904,7 +13003,7 @@
           ],
           "title": "选中皮肤：sel=inset 1.5px accent 描边+左缘条 3.5px left0+外辉 token 单源",
           "markers": [],
-          "line": 297,
+          "line": 298,
           "assertions": [
             "expect(css).toMatch( /\\.lib-row\\.sel\\s*\\{[^}]*background:\\s*var\\(--panel\\);[^}]*inset 0 0 0 1\\.5px var\\(--accent\\), var\\(--shadow-sel-glow\\)/ )",
             "expect(css, '左缘条（mockup .row.sel::before 逐值）').toMatch( /\\.lib-row\\.sel::before\\s*\\{[^}]*left:\\s*0;[^}]*top:\\s*10px;[^}]*bottom:\\s*10px;[^}]*width:\\s*3\\.5px;[^}]*background:\\s*var\\(--accent\\)/ )",
@@ -12918,7 +13017,7 @@
           ],
           "title": "列值排印：r-id mono caption/r-title strong nowrap ellipsis/r-year·cite mono body tabular-nums",
           "markers": [],
-          "line": 308,
+          "line": 309,
           "assertions": [
             "expect(css).toMatch(/\\.lib-r-id\\s*\\{[^}]*font-family:\\s*var\\(--mono\\);[^}]*font-size:\\s*var\\(--fs-caption\\)/)",
             "expect(css).toMatch(/\\.lib-r-title\\s*\\{[^}]*font-size:\\s*var\\(--fs-strong\\);[^}]*text-overflow:\\s*ellipsis/)",
@@ -12932,7 +13031,7 @@
           ],
           "title": "F-LIBUI-01 ④⑤⑨ 退役负锚（方案切换=删除旧方案）：tier 列族/后置徽章/集合导出钮 CSS 零残留",
           "markers": [],
-          "line": 316,
+          "line": 317,
           "assertions": [
             "expect(css, '表头档次列宽类已删').not.toContain('.lib-c-tier')",
             "expect(css, '行内档次单元格类已删').not.toContain('.lib-r-tier')",
@@ -12948,7 +13047,7 @@
           ],
           "title": "F-LIBUI-01 ⑥ 动作区两列 grid：.lib-dr-actions repeat(2,1fr)+gap 8px；primary 首行跨两列",
           "markers": [],
-          "line": 324,
+          "line": 325,
           "assertions": [
             "expect(css, 'actions 容器 grid 化（flex-wrap 退役）').toMatch(/\\.lib-dr-actions\\s*\\{[^}]*display:\\s*grid/)",
             "expect(css, '两列等宽轨道').toMatch(/\\.lib-dr-actions\\s*\\{[^}]*grid-template-columns:\\s*repeat\\(2,\\s*1fr\\)/)",
@@ -12963,7 +13062,7 @@
           ],
           "title": "旧卡片族退役负锚（方案切换=删除旧方案）：网格/卡片/角饰/宝石位零残留",
           "markers": [],
-          "line": 331,
+          "line": 332,
           "assertions": [
             "expect(css).not.toContain('.lib-grid')",
             "expect(css).not.toContain('.lib-card')",
@@ -12978,7 +13077,7 @@
           ],
           "title": "筛选行语汇：search 290px+shadow-card；标签下拉钮 8px 圆角+on 态 accent-soft；sort 8px 圆角（[F-UIRES-01] chip 族→dd 族迁）",
           "markers": [],
-          "line": 338,
+          "line": 339,
           "assertions": [
             "expect(css).toMatch(/\\.lib-search\\s*\\{[^}]*width:\\s*290px;[^}]*var\\(--shadow-card\\)/)",
             "expect(`${css}${cssExplorer}${cssTags}`, 'chip 胶囊族已随 TagFilter 退役删除').not.toContain('.lib-chip')",
@@ -12994,7 +13093,7 @@
           ],
           "title": "门一回炉批锁：sort-on 筛选生效态+搜索焦点环+表头 sticky 共容器+定宽列 flex:none+抽屉空态居中",
           "markers": [],
-          "line": 352,
+          "line": 353,
           "assertions": [
             "expect(css).toMatch(/\\.lib-sort-on\\s*\\{[^}]*border-color:\\s*var\\(--accent\\);[^}]*color:\\s*var\\(--accent\\)/)",
             "expect(css).toMatch(/\\.lib-search:focus-within\\s*\\{[^}]*border-color:\\s*var\\(--accent\\)/)",
@@ -13014,7 +13113,7 @@
           ],
           "title": ".lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）",
           "markers": [],
-          "line": 373,
+          "line": 374,
           "assertions": [
             "expect(host?.querySelector('.lib-page')).not.toBeNull()",
             "expect(host?.querySelector('.lib-body')).not.toBeNull()",
@@ -13036,7 +13135,7 @@
           ],
           "title": "d1 复审 N1 回炉：空列表态表头随之隐去（空态=整区引导，无残表头）",
           "markers": [],
-          "line": 393,
+          "line": 394,
           "assertions": [
             "expect(host?.querySelector('.lib-cols')).toBeNull()",
             "expect(host?.textContent).toContain('暂无文献')"
@@ -13049,7 +13148,7 @@
           ],
           "title": "F-LIBUI-01 ⑨ corpusSet 退役负锚：「导出语料集合」按钮不在场（D4 裁决——设置页 corpusSession 五件套零触碰）",
           "markers": [],
-          "line": 402,
+          "line": 403,
           "assertions": [
             "expect(btn, '导出语料集合按钮已退役（通道三方收窄）').toBeUndefined()"
           ]
@@ -13061,7 +13160,7 @@
           ],
           "title": "门一回炉批（d1-W1）：集合/年份下拉筛选生效挂 .lib-sort-on；清除即摘",
           "markers": [],
-          "line": 410,
+          "line": 411,
           "assertions": [
             "expect(byCollection, '旧「按文件夹筛选」下拉已退役').toBeNull()",
             "expect(byYear?.classList.contains('lib-sort-on')).toBe(true)",
@@ -13077,7 +13176,7 @@
           ],
           "title": "DiamondRule 渲染：渐隐线×2+◆菱形+装饰 aria-hidden（渲染级存在性）",
           "markers": [],
-          "line": 443,
+          "line": 444,
           "assertions": [
             "expect(rule).not.toBeNull()",
             "expect(rule?.getAttribute('aria-hidden')).toBe('true')",
@@ -13092,7 +13191,7 @@
           ],
           "title": "菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）",
           "markers": [],
-          "line": 454,
+          "line": 455,
           "assertions": [
             "expect(cssTheme).toMatch(/\\.lib-rule-line\\s*\\{[^}]*min-width: 24px/)",
             "expect(cssTheme).toMatch(/\\.lib-rule-line\\s*\\{[^}]*flex: 1/)",
@@ -13106,7 +13205,7 @@
           ],
           "title": "W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）",
           "markers": [],
-          "line": 464,
+          "line": 465,
           "assertions": [
             "expect(cssTheme).toMatch(/\\.lib-rule-line-l\\s*\\{[^}]*linear-gradient\\(90deg, transparent, var\\(--border-gold\\)\\)/)",
             "expect(cssTheme).toMatch(/\\.lib-rule-line-r\\s*\\{[^}]*linear-gradient\\(90deg, var\\(--border-gold\\), transparent\\)/)",
@@ -13127,7 +13226,7 @@
           ],
           "title": "入脉络：三位零填充 pubNo（ordinal 被忽略；# 前缀已删 F-LIBUI-01 ⑧）+lib-r-id.cat 类挂载；未入脉络：ordinal 位置序兜底且无 cat 类",
           "markers": [],
-          "line": 79,
+          "line": 80,
           "assertions": [
             "expect(row.querySelector('.lib-r-id')?.textContent).toBe('007')",
             "expect(row.querySelector('.lib-r-id')?.classList.contains('cat')).toBe(true)",
@@ -13142,7 +13241,7 @@
           ],
           "title": "lineage 命中且 year/month 齐→YYYY-MM 补零（lineage.year 为准）",
           "markers": [],
-          "line": 94,
+          "line": 95,
           "assertions": [
             "expect(row.querySelector('.lib-r-year')?.textContent).toBe('2021-03')"
           ]
@@ -13154,7 +13253,7 @@
           ],
           "title": "lineage 命中但 month=null→paper.year 单值；lineage.year=null 同（任一 null 单值）",
           "markers": [],
-          "line": 99,
+          "line": 100,
           "assertions": [
             "expect(r1.querySelector('.lib-r-year')?.textContent).toBe('2024')",
             "expect(r2.querySelector('.lib-r-year')?.textContent).toBe('1999')"
@@ -13167,7 +13266,7 @@
           ],
           "title": "未入脉络：paper.year 单值（null→「—」现状零动）",
           "markers": [],
-          "line": 109,
+          "line": 110,
           "assertions": [
             "expect(r1.querySelector('.lib-r-year')?.textContent).toBe('2024')",
             "expect(r2.querySelector('.lib-r-year')?.textContent).toBe('—')"
@@ -13180,7 +13279,7 @@
           ],
           "title": "入脉络：短号=#三位零填充 pubNo（id 短号被替换——[F-FOLDER-01] 编号源=summary.pubNo）",
           "markers": [],
-          "line": 148,
+          "line": 149,
           "assertions": [
             "expect(drIdText()).toContain('·012')",
             "expect(drIdText()).not.toContain('paper-12')"
@@ -13193,7 +13292,7 @@
           ],
           "title": "未入脉络：id 前 8 位+…现状零动",
           "markers": [],
-          "line": 156,
+          "line": 157,
           "assertions": [
             "expect(drIdText()).toContain('paper-12…')"
           ]
@@ -13205,7 +13304,7 @@
           ],
           "title": "抽屉文案 T3-P3 预渲染零动：lineage 命中 month 真值到达即正确（年月行；脉络行已随关联节退役 F-LIBUI-01 ⑤）",
           "markers": [],
-          "line": 161,
+          "line": 162,
           "assertions": [
             "expect(flds.find((f) => f.k === 'YEAR-MO')?.v).toBe('2023（脉络框：2023-06）')",
             "expect(flds.find((f) => f.k === '脉络'), '脉络行已退役').toBeUndefined()"
@@ -13225,7 +13324,7 @@
           ],
           "title": "dragstart：设自定义 MIME（载荷=paperId）+源行挂 faded 态（.dragging）",
           "markers": [],
-          "line": 159,
+          "line": 160,
           "assertions": [
             "expect(r).toBeDefined()",
             "expect(dtOf(ev).setData).toHaveBeenCalledWith(PAPER_DRAG_MIME, 'p1')",
@@ -13240,7 +13339,7 @@
           ],
           "title": "ghost 跟随：dragover 更新坐标+目标名（题名截断→目标）",
           "markers": [],
-          "line": 172,
+          "line": 173,
           "assertions": [
             "expect(ghost).not.toBeNull()",
             "expect(ghost?.textContent).toContain('移动甲文献')",
@@ -13254,7 +13353,7 @@
           ],
           "title": "题名截断：长题名 ghost 截断（≤12 字符+省略号——TITLE_LIMIT 单源）",
           "markers": [],
-          "line": 191,
+          "line": 192,
           "assertions": [
             "expect(ghost?.textContent).toContain('…')",
             "expect((ghost?.textContent ?? '').length).toBeLessThan(30)"
@@ -13267,7 +13366,7 @@
           ],
           "title": "dragend：拖拽态全清（faded/ghost/候选高亮离场）",
           "markers": [],
-          "line": 207,
+          "line": 208,
           "assertions": [
             "expect(r.classList.contains('dragging')).toBe(false)",
             "expect(host?.querySelector('.lib-drag-ghost')).toBeNull()"
@@ -13280,7 +13379,7 @@
           ],
           "title": "文件夹行 dragover：候选高亮（.drop）+「移入 ↩」徽标；「全部文献」行=非目标",
           "markers": [],
-          "line": 222,
+          "line": 223,
           "assertions": [
             "expect(navRow('方法工具箱')?.classList.contains('drop')).toBe(true)",
             "expect(navRow('方法工具箱')?.textContent).toContain('移入')",
@@ -13294,7 +13393,7 @@
           ],
           "title": "[F-ALIGN-01 D5] 未归档行零残留：左栏无未归档行（域退役负锚——在场即红）",
           "markers": [],
-          "line": 238,
+          "line": 239,
           "assertions": [
             "expect(navRow('未归档')).toBeUndefined()"
           ]
@@ -13306,7 +13405,7 @@
           ],
           "title": "两域判别：OS 文件拖入（types 含 Files 无内部 MIME）左栏行不响应（无高亮零 dropEffect）",
           "markers": [],
-          "line": 243,
+          "line": 244,
           "assertions": [
             "expect(navRow('方法工具箱')?.classList.contains('drop'), '文件悬停左栏行不响应').toBe(false)"
           ]
@@ -13318,7 +13417,7 @@
           ],
           "title": "drop→moveFolder+成功收尾：行离开当前视图→选中清空（folder 视图移至他夹）",
           "markers": [],
-          "line": 251,
+          "line": 252,
           "assertions": [
             "expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: '__main__' })",
             "expect(useLibraryStore.getState().selectedId, '行离开视图→选中清空+抽屉清空').toBeNull()",
@@ -13332,7 +13431,7 @@
           ],
           "title": "drop→成功收尾：行仍在视图→选中保持",
           "markers": [],
-          "line": 271,
+          "line": 272,
           "assertions": [
             "expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: 'f-1' })",
             "expect(useLibraryStore.getState().selectedId, '仍在视图→保持').toBe('p1')"
@@ -13345,7 +13444,7 @@
           ],
           "title": "drag 期目标行消失（folders.changed 后 folderId 不在列表）→no-op+toast「目标文件夹已不存在」",
           "markers": [],
-          "line": 292,
+          "line": 293,
           "assertions": [
             "expect(navRow('方法工具箱'), '目标行已消失').toBeUndefined()",
             "expect(stubApi.papers.moveFolder).not.toHaveBeenCalled()",
@@ -13359,7 +13458,7 @@
           ],
           "title": "RR1-3 空白释放=取消：dragover 行后 dragleave/移至空白 drop→零 IPC 零 toast",
           "markers": [],
-          "line": 317,
+          "line": 318,
           "assertions": [
             "expect(target.classList.contains('drop')).toBe(true)",
             "expect(target.classList.contains('drop'), 'dragleave 后候选高亮即清').toBe(false)",
@@ -13375,7 +13474,7 @@
           ],
           "title": "RR1-3 原处释放=取消：dragover 行后原地 drop 于行自身 stopPropagation 路径外无残留 over 执行（容器 drop 通道=零 IPC）",
           "markers": [],
-          "line": 342,
+          "line": 343,
           "assertions": [
             "expect(stubApi.papers.moveFolder).not.toHaveBeenCalled()"
           ]
@@ -13387,7 +13486,7 @@
           ],
           "title": "失败→拒因中文 toast（非静默 no-op）",
           "markers": [],
-          "line": 361,
+          "line": 362,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('脉络图编辑保存中，请先完成保存再操作文献归属', 'error')"
           ]
@@ -13399,7 +13498,7 @@
           ],
           "title": "busy 期 dragstart 拒启（dnd 零置位+无 faded）",
           "markers": [],
-          "line": 379,
+          "line": 380,
           "assertions": [
             "expect(r.classList.contains('dragging')).toBe(false)",
             "expect(useLibraryDnd.getState().drag).toBeNull()"
@@ -13412,7 +13511,7 @@
           ],
           "title": "busy 上升沿取消进行中拖拽（高亮/ghost 即清）",
           "markers": [],
-          "line": 393,
+          "line": 394,
           "assertions": [
             "expect(host?.querySelector('.lib-drag-ghost')).not.toBeNull()",
             "expect(useLibraryDnd.getState().drag, '拖拽态被取消').toBeNull()",
@@ -13427,7 +13526,7 @@
           ],
           "title": "busy 期 drop 双重校验：零 moveFolder+短路提示",
           "markers": [],
-          "line": 411,
+          "line": 412,
           "assertions": [
             "expect(stubApi.papers.moveFolder).not.toHaveBeenCalled()"
           ]
@@ -13439,7 +13538,7 @@
           ],
           "title": "两域判别（导入条侧）：内部 MIME dragover 导入条不亮（仅 Files 亮）",
           "markers": [],
-          "line": 427,
+          "line": 428,
           "assertions": [
             "expect(bar?.classList.contains('lib-dropzone-dragging'), '内部拖拽不触发导入辉光').toBe(false)",
             "expect(bar?.classList.contains('lib-dropzone-dragging'), '文件拖入触发导入辉光').toBe(true)"
@@ -13459,7 +13558,7 @@
           ],
           "title": "行首星标 span（.lib-r-star ★ aria-hidden）+表头 ★ 首列（.lib-c-star）——批 A 恒淡色零交互",
           "markers": [],
-          "line": 62,
+          "line": 63,
           "assertions": [
             "expect(head?.querySelector('.lib-c-star'), '表头 ★ 列在场').not.toBeNull()",
             "expect(head?.querySelector('.lib-c-star')?.getAttribute('aria-hidden')).toBe('true')",
@@ -13475,7 +13574,7 @@
           ],
           "title": "五列既有语义零变（INV-73）：编号/题名 · 期刊/年月/引用/标签列表头俱在",
           "markers": [],
-          "line": 74,
+          "line": 75,
           "assertions": [
             "expect(cells).toEqual(['★', '编号', '题名 · 期刊', '年月', '引用', '标签'])"
           ]
@@ -13487,7 +13586,7 @@
           ],
           "title": "星标零交互：无 onClick 独立钮形态（span 非按钮——P-10 菜单星标项不渲染的行内对应面）",
           "markers": [],
-          "line": 80,
+          "line": 81,
           "assertions": [
             "expect(star instanceof HTMLSpanElement, '星标=纯 span（无按钮交互面）').toBe(true)"
           ]
@@ -13508,7 +13607,7 @@
           ],
           "title": "load：调用 api.library.list 并写入 papers/total；loading 正确翻转",
           "markers": [],
-          "line": 34,
+          "line": 35,
           "assertions": [
             "expect(loadingFlip).toEqual([true])",
             "expect(s.loading).toBe(false)",
@@ -13523,7 +13622,7 @@
           ],
           "title": "load 失败：error 写入中文消息且不抛",
           "markers": [],
-          "line": 48,
+          "line": 49,
           "assertions": [
             "expect(useStore.getState().error).toBe('数据库错误')",
             "expect(useStore.getState().papers).toEqual([])"
@@ -13536,7 +13635,7 @@
           ],
           "title": "setQuery 合并查询并重载（offset 归零）",
           "markers": [],
-          "line": 56,
+          "line": 57,
           "assertions": [
             "expect(q).toMatchObject({ search: '水务', sort: 'year_desc', offset: 0 })",
             "expect(list).toHaveBeenCalledTimes(1)"
@@ -13549,7 +13648,7 @@
           ],
           "title": "setQuery 清空选中态——旧选中可能已被新查询过滤掉（防详情与列表脱钩）",
           "markers": [],
-          "line": 66,
+          "line": 67,
           "assertions": [
             "expect(useStore.getState().selectedId).toBe(null)"
           ]
@@ -13561,7 +13660,7 @@
           ],
           "title": "load 竞态：先发后至的旧响应不得覆盖新响应，也不得提前熄灭 loading",
           "markers": [],
-          "line": 74,
+          "line": 75,
           "assertions": [
             "expect(useStore.getState().papers).toEqual([summary])",
             "expect(useStore.getState().papers).toEqual([summary])",
@@ -13575,7 +13674,7 @@
           ],
           "title": "selectPaper 更新选中",
           "markers": [],
-          "line": 95,
+          "line": 96,
           "assertions": [
             "expect(useStore.getState().selectedId).toBe('p-9')"
           ]
@@ -23892,7 +23991,7 @@
           ],
           "title": "右键行→菜单三项：在阅读器中打开/移动到文件夹/删除文献（danger）；星标项零渲染（DB 窗口）",
           "markers": [],
-          "line": 186,
+          "line": 187,
           "assertions": [
             "expect(menu()).not.toBeNull()",
             "expect(menu()?.textContent).toContain('在阅读器中打开')",
@@ -23909,7 +24008,7 @@
           ],
           "title": "静默判据①：无节点（detail.lineage 省略）→直删+无 Dialog+收尾重载",
           "markers": [],
-          "line": 204,
+          "line": 205,
           "assertions": [
             "expect(stubApi.library.detail).toHaveBeenCalledWith({ paperId: 'p1' })",
             "expect(stubApi.papers.delete).toHaveBeenCalledWith({ paperId: 'p1' })",
@@ -23924,7 +24023,7 @@
           ],
           "title": "静默判据②：节点无边（edgeCount=0）→直删+无 Dialog",
           "markers": [],
-          "line": 216,
+          "line": 217,
           "assertions": [
             "expect(stubApi.papers.delete).toHaveBeenCalledTimes(1)",
             "expect(stubApi.papers.delete).toHaveBeenCalledWith({ paperId: 'p1' })",
@@ -23938,7 +24037,7 @@
           ],
           "title": "保护分支：节点有边（edgeCount>0）→Dialog 三要素（标题+连带句+图名+连线数）+零直删",
           "markers": [],
-          "line": 226,
+          "line": 227,
           "assertions": [
             "expect(dialog()).not.toBeNull()",
             "expect(dialog()?.textContent).toContain('删除文献？')",
@@ -23955,7 +24054,7 @@
           ],
           "title": "图名派生：folderId=null（未归档）→「主图」（§2.1 缺省图映射）",
           "markers": [],
-          "line": 239,
+          "line": 240,
           "assertions": [
             "expect(dialog()).not.toBeNull()",
             "expect(dialog()?.textContent).toContain('主图')"
@@ -23968,7 +24067,7 @@
           ],
           "title": "取消→零 delete 调用+弹窗关闭",
           "markers": [],
-          "line": 251,
+          "line": 252,
           "assertions": [
             "expect(stubApi.papers.delete).not.toHaveBeenCalled()",
             "expect(dialog()).toBeNull()"
@@ -23981,7 +24080,7 @@
           ],
           "title": "确认→delete 调用+收尾：被删行=当前选中→selectPaper(null)（抽屉随清）",
           "markers": [],
-          "line": 264,
+          "line": 265,
           "assertions": [
             "expect(stubApi.papers.delete).toHaveBeenCalledWith({ paperId: 'p1' })",
             "expect(useLibraryStore.getState().selectedId).toBeNull()"
@@ -23994,7 +24093,7 @@
           ],
           "title": "确认→收尾：他行选中→保持（selectPaper 不动）",
           "markers": [],
-          "line": 285,
+          "line": 286,
           "assertions": [
             "expect(stubApi.papers.delete).toHaveBeenCalledTimes(1)",
             "expect(useLibraryStore.getState().selectedId, '他行选中→保持').toBe('p2')"
@@ -24007,7 +24106,7 @@
           ],
           "title": "删除失败→ApiClientError.message 透传 toast+选中不动+列表零动作",
           "markers": [],
-          "line": 305,
+          "line": 306,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('脉络图编辑保存中，请先完成保存再操作文献归属', 'error')",
             "expect(useLibraryStore.getState().selectedId).toBe('p1')",
@@ -24021,7 +24120,7 @@
           ],
           "title": "[裁决部 C1] 弹窗路径删除失败→Dialog 仍开（toast+可重试）——RR1-2b 失败态先例（FolderDeleteDialog 同型）",
           "markers": [],
-          "line": 323,
+          "line": 324,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('脉络图编辑保存中，请先完成保存再操作文献归属', 'error')",
             "expect(dialog()).not.toBeNull()",
@@ -24036,7 +24135,7 @@
           ],
           "title": "预检失败→fail-closed：error toast+零 delete 零 Dialog（useFolderDelete 同判据先例）",
           "markers": [],
-          "line": 349,
+          "line": 350,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('文献不存在：p1', 'error')",
             "expect(stubApi.papers.delete).not.toHaveBeenCalled()",
@@ -24050,7 +24149,7 @@
           ],
           "title": "在途守卫：异 id 再点→info toast「上一次删除仍在进行」+不执行（预检都不发）",
           "markers": [],
-          "line": 371,
+          "line": 372,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('上一次删除仍在进行，请稍候', 'info')",
             "expect(stubApi.library.detail).toHaveBeenCalledTimes(1)",
@@ -24065,7 +24164,7 @@
           ],
           "title": "在途守卫：同 id 再点→静默早退（无 toast+仅一次预检/删除）",
           "markers": [],
-          "line": 394,
+          "line": 395,
           "assertions": [
             "expect(stubApi.library.detail).toHaveBeenCalledTimes(1)",
             "expect(toastSpy).not.toHaveBeenCalled()",
@@ -24079,7 +24178,7 @@
           ],
           "title": "[RR1-1/W1] folders.list 悬置窗同 id 再点→静默早退（detail 仅一次——守卫窗连续覆盖 prechecking 全程）",
           "markers": [],
-          "line": 419,
+          "line": 420,
           "assertions": [
             "expect(stubApi.library.detail).toHaveBeenCalledTimes(1)",
             "expect(toastSpy).not.toHaveBeenCalled()",
@@ -24093,7 +24192,7 @@
           ],
           "title": "[RR1-2/W4] folders.list 失败→fail-closed：error toast+零 delete+零 Dialog（图名派生数据源同判据）",
           "markers": [],
-          "line": 433,
+          "line": 434,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('文件夹列表暂不可用', 'error')",
             "expect(stubApi.papers.delete).not.toHaveBeenCalled()",
@@ -24107,7 +24206,7 @@
           ],
           "title": "[W4·自报⑤补测] 图名派生竞态：folderId 不在 folders.list→Dialog 含「主图」（事务内级联权威——提示值兜底）",
           "markers": [],
-          "line": 447,
+          "line": 448,
           "assertions": [
             "expect(dialog()).not.toBeNull()",
             "expect(dialog()?.textContent).toContain('主图')"
@@ -24589,7 +24688,7 @@
           ],
           "title": "右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染",
           "markers": [],
-          "line": 140,
+          "line": 141,
           "assertions": [
             "expect(menu()).not.toBeNull()",
             "expect(menu()?.textContent).toContain('在阅读器中打开')",
@@ -24605,7 +24704,7 @@
           ],
           "title": "命中行=按下即高亮（.hit 类挂右键行）；他行不挂",
           "markers": [],
-          "line": 151,
+          "line": 152,
           "assertions": [
             "expect(row('p2')?.classList.contains('hit')).toBe(true)",
             "expect(row('p1')?.classList.contains('hit')).toBe(false)"
@@ -24618,7 +24717,7 @@
           ],
           "title": "「在阅读器中打开」→openPaper 通道（open-paper 事件广播）+菜单收起",
           "markers": [],
-          "line": 159,
+          "line": 160,
           "assertions": [
             "expect(seen.length).toBe(1)",
             "expect(menu()).toBeNull()"
@@ -24631,7 +24730,7 @@
           ],
           "title": "移动子面：folders.list 自取+子项=文件夹清单（[F-ALIGN-01 D5]「未归档（移出）」零残留负锚）",
           "markers": [],
-          "line": 178,
+          "line": 179,
           "assertions": [
             "expect(sub).not.toBeNull()",
             "expect(sub?.textContent).toContain('主图')",
@@ -24646,7 +24745,7 @@
           ],
           "title": "移入文件夹：moveFolder({paperId,toFolderId})+列表重载+行仍在视图→选中保持",
           "markers": [],
-          "line": 213,
+          "line": 214,
           "assertions": [
             "expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: 'f-1' })",
             "expect(useLibraryStore.getState().selectedId, '仍在视图→选中保持').toBe('p1')",
@@ -24660,7 +24759,7 @@
           ],
           "title": "移出收尾（folder 视图）：移动至他夹行离开当前视图→选中清空+抽屉清空（[F-ALIGN-01 D5] null 移出消亡——收尾分支沿移动语义保持）",
           "markers": [],
-          "line": 231,
+          "line": 232,
           "assertions": [
             "expect(stubApi.papers.moveFolder).toHaveBeenCalledWith({ paperId: 'p1', toFolderId: '__main__' })",
             "expect(useLibraryStore.getState().selectedId, '行离开视图→选中清空（抽屉随清）').toBeNull()"
@@ -24673,7 +24772,7 @@
           ],
           "title": "失败→拒因中文 toast（ApiClientError.message 透传）+列表保持",
           "markers": [],
-          "line": 252,
+          "line": 253,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('脉络图编辑保存中，请先完成保存再操作文献归属', 'error')"
           ]
@@ -37075,7 +37174,7 @@
           ],
           "title": "golden 全量：固定夹具逐字节比对（front-matter+总评+片段+ai 段）",
           "markers": [],
-          "line": 89,
+          "line": 90,
           "assertions": [
             "expect(md).toBe( [ '---', 'schemaVersion: 1', \"paperId: 'p-1'\", \"title: 'Water Quality Model'\", \"authors: ['Wang', 'Li']\", 'year: 2024', \"venue: 'Water Research'\", \"doi: '10.1/x'\", \"source: 'local'\", \"citationKey: 'wang2024water'\", 'annotationCount: 2', 'noteCount: 1', '---', '# Water Quality Model', '', '## 总评', '', '这篇论文提出……', '', '## 片段', '', '> quote-a-a（p.1）', '', '> quote-a-b（p.2）', '', ` ${CORPUS_USER_PREFIX} 第二条批注`, '', ` ${corpusAiPrefix('deepseek')} 一阶读法摘要（p.1）`, '', '' ].join('\\n') )"
           ]
@@ -37087,7 +37186,7 @@
           ],
           "title": "ENR-02 有值形：citedByCount+venueTier 进 front-matter（noteCount 后逐行序）",
           "markers": [],
-          "line": 127,
+          "line": 128,
           "assertions": [
             "expect(i).toBeGreaterThan(-1)",
             "expect(fm[i + 1]).toBe('citedByCount: 12')",
@@ -37102,7 +37201,7 @@
           ],
           "title": "ENR-02 0 值边界：citedByCount=0 是合法缓存值照常装配（禁 falsy 判空）",
           "markers": [],
-          "line": 147,
+          "line": 148,
           "assertions": [
             "expect(md).toContain('citedByCount: 0')",
             "expect(md).not.toContain('venueTier')"
@@ -37115,7 +37214,7 @@
           ],
           "title": "ENR-02 缺省形：无缓存指标夹具 → 两字段整键省略（两形成对口径）",
           "markers": [],
-          "line": 163,
+          "line": 164,
           "assertions": [
             "expect(md).not.toContain('citedByCount')",
             "expect(md).not.toContain('venueTier')"
@@ -37128,7 +37227,7 @@
           ],
           "title": "幂等：同输入两次装配逐字节全等（INV-17 基线——无时间戳无随机）",
           "markers": [],
-          "line": 169,
+          "line": 170,
           "assertions": [
             "expect(assembleCorpusMd(fixture())).toBe(assembleCorpusMd(fixture()))"
           ]
@@ -37140,7 +37239,7 @@
           ],
           "title": "front-matter 无 exportedAt（ADR-0011 v1.1 修订 2——时间戳只进 manifest）",
           "markers": [],
-          "line": 173,
+          "line": 174,
           "assertions": [
             "expect(assembleCorpusMd(fixture())).not.toMatch(/exportedAt/)"
           ]
@@ -37152,7 +37251,7 @@
           ],
           "title": "结构断言：引文块数=DB 标注数；输出序=文档序（乱序入参按页重排）",
           "markers": [],
-          "line": 177,
+          "line": 178,
           "assertions": [
             "expect(quotes).toHaveLength(2)",
             "expect(md.indexOf('quote-a-a')).toBeLessThan(md.indexOf('quote-a-b'))"
@@ -37165,7 +37264,7 @@
           ],
           "title": "[user] 批注行：comment 空省略、非空缩进前缀行",
           "markers": [],
-          "line": 184,
+          "line": 185,
           "assertions": [
             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 第二条批注`)",
             "expect(md).not.toMatch(new RegExp(`quote-a-a（p\\\\.1）\\\\n\\\\n\\\\s*\\\\[user\\\\]`))"
@@ -37178,7 +37277,7 @@
           ],
           "title": "空集：无 note 无标注=仅 front-matter+标题（无总评/片段节）",
           "markers": [],
-          "line": 191,
+          "line": 192,
           "assertions": [
             "expect(md).toContain('---')",
             "expect(md).not.toContain('## 总评')",
@@ -37193,7 +37292,7 @@
           ],
           "title": "YAML 对抗面：换行归一空格（单行标量）+单引号翻倍+流指示符在引号内原样（deepseek B1 采纳/B2 证伪锚）",
           "markers": [],
-          "line": 199,
+          "line": 200,
           "assertions": [
             "expect(md).toContain(\"title: 'Ti''tle Second: #line'\")",
             "expect(md.split('\\n').filter((l) => l.startsWith('title:'))).toHaveLength(1)",
@@ -37207,7 +37306,7 @@
           ],
           "title": "正文多行续行：引文逐行 > 前缀+页码附末行；批注/AI 段逐行缩进（r2 W1 锚）",
           "markers": [],
-          "line": 216,
+          "line": 217,
           "assertions": [
             "expect(md).toContain('> 引文首行\\n> 引文次行（p.3）')",
             "expect(md).toContain(` ${CORPUS_USER_PREFIX} 批注一\\n 批注二`)",
@@ -37221,7 +37320,7 @@
           ],
           "title": "buildCorpus：装配产物含 front-matter 与片段；NOT_FOUND 抛域错误",
           "markers": [],
-          "line": 248,
+          "line": 249,
           "assertions": [
             "expect(md).toContain('schemaVersion: 1')",
             "expect(missing.buildCorpus('p-x')).rejects.toThrow('文献不存在')"
@@ -37234,7 +37333,7 @@
           ],
           "title": "corpus：构建→saveFile→writeToFile→{filePath,count:1}",
           "markers": [],
-          "line": 279,
+          "line": 280,
           "assertions": [
             "expect(r).toEqual({ filePath: 'C:/out/x.md', count: 1 })",
             "expect(wrote).toEqual(['C:/out/x.md'])"
@@ -37247,7 +37346,7 @@
           ],
           "title": "corpus 取消（saveFile null）→CANCELLED 错误",
           "markers": [],
-          "line": 286,
+          "line": 287,
           "assertions": [
             "expect(createExportIpc(deps as never).corpus({ paperId: 'p-1' })).rejects.toThrow('已取消')"
           ]
@@ -37259,7 +37358,7 @@
           ],
           "title": "三键全平：保持输入序（稳定排序），非 id 字典序",
           "markers": [],
-          "line": 314,
+          "line": 315,
           "assertions": [
             "expect(out.map((e) => e.content)).toEqual(['Q1: 第一条', 'Q1: 第二条'])"
           ]
@@ -37271,7 +37370,7 @@
           ],
           "title": "主键序：role→question→createdAt 逐级决胜（乱序入参重排）",
           "markers": [],
-          "line": 319,
+          "line": 320,
           "assertions": [
             "expect(out.map((e) => e.content)).toEqual([ 'Q1: 早戳', 'Q1: 晚戳', 'Q2: 一读Q2', 'Q3: 二读', 'divergence: 裁决' ])"
           ]
@@ -37532,7 +37631,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 101,
+          "line": 102,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -37545,7 +37644,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 118,
+          "line": 119,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -37557,7 +37656,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 138,
+          "line": 139,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -37570,7 +37669,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 156,
+          "line": 157,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -37583,7 +37682,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 179,
+          "line": 180,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -37595,7 +37694,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 191,
+          "line": 192,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -37607,7 +37706,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 215,
+          "line": 216,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -37621,7 +37720,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 242,
+          "line": 243,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -37645,7 +37744,7 @@
           ],
           "title": "buildBibtex：含 @article 头与 citation key",
           "markers": [],
-          "line": 45,
+          "line": 46,
           "assertions": [
             "expect(bib).toContain('@article{wang2024water')",
             "expect(bib).toContain('title = {Water Quality}')"
@@ -37658,7 +37757,7 @@
           ],
           "title": "buildCsv：BOM + 表头 + 字段引号转义",
           "markers": [],
-          "line": 52,
+          "line": 53,
           "assertions": [
             "expect(csv.charCodeAt(0)).toBe(0xfeff)",
             "expect(csv).toContain('Title,Authors,Year,Venue,DOI,AddedAt')",
@@ -37672,7 +37771,7 @@
           ],
           "title": "buildReport：不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 60,
+          "line": 61,
           "assertions": [
             "expect(svc.buildReport('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -37684,7 +37783,7 @@
           ],
           "title": "writeToFile：内容落盘 UTF-8；失败抛 IO_ERROR",
           "markers": [],
-          "line": 67,
+          "line": 68,
           "assertions": [
             "expect(await readFile(target, 'utf-8')).toBe('中文内容')",
             "expect(svc.writeToFile('Z:/不存在/盘符/x', 'x')).rejects.toMatchObject({ code: 'IO_ERROR' })"
@@ -38249,6 +38348,7 @@
             "expect(result.imported[0]?.title).toBe('论文一')",
             "expect(result.imported[0]?.doi).toBe('10.1/x')",
             "expect(result.imported[0]?.folderId).toBe(TARGET_FOLDER)",
+            "expect(result.imported[0]?.isStarred).toBe(false)",
             "expect(result.duplicates).toEqual([])",
             "expect(progress.at(-1)?.phase).toBe('done')",
             "expect(row.folder_id).toBe(TARGET_FOLDER)",
@@ -38266,7 +38366,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 113,
+          "line": 116,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -38283,7 +38383,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 143,
+          "line": 146,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -38297,7 +38397,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 166,
+          "line": 169,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -38312,7 +38412,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 189,
+          "line": 192,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -38328,7 +38428,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 217,
+          "line": 220,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -38348,7 +38448,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 261,
+          "line": 264,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -38362,7 +38462,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 311,
+          "line": 314,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -38378,7 +38478,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 342,
+          "line": 345,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -38392,7 +38492,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 366,
+          "line": 369,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -38413,7 +38513,7 @@
           ],
           "title": "命中：paper_id 节点透出 lineage={year, month 真值, edgeCount=双端计数}（[F-FOLDER-01] catalogNo 移交 summary.pubNo）",
           "markers": [],
-          "line": 64,
+          "line": 66,
           "assertions": [
             "expect(d.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })",
             "expect(nodeByPaperId).toHaveBeenCalledWith('p-1')",
@@ -38427,7 +38527,7 @@
           ],
           "title": "未命中：无 paper_id 节点 → lineage 整键省略（\"lineage\" 不在对象上）",
           "markers": [],
-          "line": 91,
+          "line": 93,
           "assertions": [
             "expect('lineage' in d).toBe(false)"
           ]
@@ -38439,7 +38539,7 @@
           ],
           "title": "month/year 真值透传（T3-P5 摘「恒 null」注释——节点数据直达；[F-FOLDER-01] 编号非 detail 装配面）",
           "markers": [],
-          "line": 103,
+          "line": 105,
           "assertions": [
             "expect(d.lineage?.month).toBe(6)",
             "expect(d.lineage?.year).toBeNull()"
@@ -38452,7 +38552,7 @@
           ],
           "title": "旧 summary 夹具（无 citedByCount）strict 解析通过；带值/非整数值分流",
           "markers": [],
-          "line": 144,
+          "line": 146,
           "assertions": [
             "expect(() => paperSummarySchema.parse(legacySummary)).not.toThrow()",
             "expect(withCount.citedByCount).toBe(17)",
@@ -38466,7 +38566,7 @@
           ],
           "title": "旧 detail 夹具（无 lineage）strict 解析通过；lineage 形状严格（缺子键/未知子键均拒——[F-FOLDER-01] catalogNo 退役后形={year,month,edgeCount}）",
           "markers": [],
-          "line": 167,
+          "line": 171,
           "assertions": [
             "expect(() => paperDetailSchema.parse(legacy)).not.toThrow()",
             "expect(withLineage.lineage).toEqual({ year: 2023, month: null, edgeCount: 3 })",
@@ -38482,7 +38582,7 @@
           ],
           "title": "nodeByPaperId：命中回节点行；未命中回 null；paper_id 空值行不计",
           "markers": [],
-          "line": 211,
+          "line": 215,
           "assertions": [
             "expect(repo.nodeByPaperId('p-1')?.id).toBe(hit.id)",
             "expect(repo.nodeByPaperId('ghost')).toBeNull()"
@@ -38495,7 +38595,7 @@
           ],
           "title": "edgeCountByNode：双端计数——from 命中与 to 命中各计一条，无关边不计",
           "markers": [],
-          "line": 224,
+          "line": 228,
           "assertions": [
             "expect(repo.edgeCountByNode(a.id)).toBe(2)",
             "expect(repo.edgeCountByNode(b.id)).toBe(2)",
@@ -38617,7 +38717,7 @@
           ],
           "title": "list 透传查询参数",
           "markers": [],
-          "line": 52,
+          "line": 53,
           "assertions": [
             "expect(seen).toMatchObject({ sort: 'year_desc', limit: 10 })"
           ]
@@ -38629,7 +38729,7 @@
           ],
           "title": "detail：不存在时抛带 code=NOT_FOUND 的错误",
           "markers": [],
-          "line": 73,
+          "line": 74,
           "assertions": [
             "expect(svc.detail({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -38641,7 +38741,7 @@
           ],
           "title": "detail：存在时透传",
           "markers": [],
-          "line": 78,
+          "line": 79,
           "assertions": [
             "expect(svc.detail({ paperId: 'p-1' })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -38653,7 +38753,7 @@
           ],
           "title": "updateMeta：repo 返回 null 视为 NOT_FOUND；空 patch 直接返回现状",
           "markers": [],
-          "line": 85,
+          "line": 86,
           "assertions": [
             "expect(svc.updateMeta({ paperId: 'p-1', patch: {} })).resolves.toMatchObject({ id: 'p-1' })"
           ]
@@ -38665,7 +38765,7 @@
           ],
           "title": "collections 透传",
           "markers": [],
-          "line": 92,
+          "line": 93,
           "assertions": [
             "expect(svc.collections({})).resolves.toHaveLength(1)"
           ]
@@ -38935,7 +39035,7 @@
           "markers": [],
           "line": 167,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(repo.listGraph().edges[0]!.via).toBeUndefined()"
           ]
         }
@@ -39164,7 +39264,7 @@
           "line": 68,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(16)"
+            "expect(readUserVersion(db)).toBe(17)"
           ]
         },
         {
@@ -39425,7 +39525,7 @@
           "markers": [],
           "line": 194,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(16)",
+            "expect(readUserVersion(db)).toBe(17)",
             "expect(edge!.dashed).toBe(false)",
             "expect(edge!.color).toBe(LINE_TYPE_COLORS[0])"
           ]
@@ -39685,7 +39785,7 @@
           ],
           "title": "结构：标题/元信息/分页高亮/评论缩进/笔记节",
           "markers": [],
-          "line": 51,
+          "line": 52,
           "assertions": [
             "expect(md).toContain('# 智慧水务综述')",
             "expect(md).toContain('张三')",
@@ -39704,7 +39804,7 @@
           ],
           "title": "无笔记省略笔记节；超长高亮截断加 …",
           "markers": [],
-          "line": 69,
+          "line": 70,
           "assertions": [
             "expect(md).not.toContain('## 笔记')",
             "expect(md).toContain('…')",
@@ -39718,7 +39818,7 @@
           ],
           "title": "空标注也产出合法骨架",
           "markers": [],
-          "line": 77,
+          "line": 78,
           "assertions": [
             "expect(md).toContain('# 智慧水务综述')"
           ]
@@ -39887,6 +39987,90 @@
             "expect(ep.Req.safeParse({ paperId: 'p-1', extra: 1 }).success).toBe(false)",
             "expect(ep.Req.safeParse({ paperId: '' }).success).toBe(false)",
             "expect(ep.Req.safeParse({ paperId: 'p-1' }).success).toBe(true)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/papers-set-starred.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-STAR-01 papers/set-starred 数据面（service+repo）\",\"repo setStarred：true→1/false→0 往返+返回受影响行；未命中返回 null（setFolderId 形态——UPDATE 受影响行→Row|null）\"]",
+          "describePath": [
+            "F-STAR-01 papers/set-starred 数据面（service+repo）"
+          ],
+          "title": "repo setStarred：true→1/false→0 往返+返回受影响行；未命中返回 null（setFolderId 形态——UPDATE 受影响行→Row|null）",
+          "markers": [],
+          "line": 47,
+          "assertions": [
+            "expect(row?.id).toBe('p-1')",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id='p-1'\").get()).toEqual({ is_starred: 1 })",
+            "expect(back?.id).toBe('p-1')",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id='p-1'\").get()).toEqual({ is_starred: 0 })",
+            "expect(repos.papers.setStarred('ghost', true)).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 papers/set-starred 数据面（service+repo）\",\"查询面布尔映射：is_starred 0/1→isStarred false/true（searchSummaries+detailById——SUMMARY/DETAIL_SQL 增列+toSummary 映射）\"]",
+          "describePath": [
+            "F-STAR-01 papers/set-starred 数据面（service+repo）"
+          ],
+          "title": "查询面布尔映射：is_starred 0/1→isStarred false/true（searchSummaries+detailById——SUMMARY/DETAIL_SQL 增列+toSummary 映射）",
+          "markers": [],
+          "line": 59,
+          "assertions": [
+            "expect(byId.get('p-plain')?.isStarred).toBe(false)",
+            "expect(byId.get('p-star')?.isStarred).toBe(true)",
+            "expect(repos.papers.detailById('p-star')?.isStarred).toBe(true)",
+            "expect(repos.papers.detailById('p-plain')?.isStarred).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 papers/set-starred 数据面（service+repo）\",\"service setStarred：成功 {ok:true}+落库+零广播（裁决⑧——星标非图/夹结构面）+pending 期不拒（星标写零结构耦合=INV-91 互斥面外）\"]",
+          "describePath": [
+            "F-STAR-01 papers/set-starred 数据面（service+repo）"
+          ],
+          "title": "service setStarred：成功 {ok:true}+落库+零广播（裁决⑧——星标非图/夹结构面）+pending 期不拒（星标写零结构耦合=INV-91 互斥面外）",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(papers.setStarred({ paperId: 'p-1', starred: true })).resolves.toEqual({ ok: true })",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id='p-1'\").get()).toEqual({ is_starred: 1 })",
+            "expect(foldersChanged).not.toHaveBeenCalled()",
+            "expect(lineageChanged).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 papers/set-starred 数据面（service+repo）\",\"service setStarred 未命中：DomainError NOT_FOUND（paperNotFound 单源语义沿 papers/delete 先例）+拒时零库副作用\"]",
+          "describePath": [
+            "F-STAR-01 papers/set-starred 数据面（service+repo）"
+          ],
+          "title": "service setStarred 未命中：DomainError NOT_FOUND（paperNotFound 单源语义沿 papers/delete 先例）+拒时零库副作用",
+          "markers": [],
+          "line": 82,
+          "assertions": [
+            "expect(papers.setStarred({ paperId: 'ghost', starred: true })).rejects.toMatchObject({ code: 'NOT_FOUND' })",
+            "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id='p-1'\").get()).toEqual({ is_starred: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 paperSetStarredReqSchema strict 契约（models/paper 单源）\",\"双 boolean 值过；缺 starred/非 boolean（字符串/数值）/未知字段/空 paperId 全拒\"]",
+          "describePath": [
+            "F-STAR-01 paperSetStarredReqSchema strict 契约（models/paper 单源）"
+          ],
+          "title": "双 boolean 值过；缺 starred/非 boolean（字符串/数值）/未知字段/空 paperId 全拒",
+          "markers": [],
+          "line": 93,
+          "assertions": [
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1', starred: true }).success).toBe(true)",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1', starred: false }).success).toBe(true)",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1' }).success).toBe(false)",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1', starred: 'yes' }).success).toBe(false)",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1', starred: 1 }).success).toBe(false)",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: 'p1', starred: true, extra: 1 }).success).toBe( false )",
+            "expect(paperSetStarredReqSchema.safeParse({ paperId: '', starred: true }).success).toBe(false)"
           ]
         }
       ]
@@ -40193,7 +40377,7 @@
           ],
           "title": "open：fileUrl 组装 app-file://<id>，fileName 取 fileRef 末段，页码带回",
           "markers": [],
-          "line": 65,
+          "line": 66,
           "assertions": [
             "expect(r.fileUrl).toBe('app-file://p-1')",
             "expect(r.fileName).toBe('论文 v2 final.pdf')",
@@ -40207,7 +40391,7 @@
           ],
           "title": "open：不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 73,
+          "line": 74,
           "assertions": [
             "expect(svc.open({ paperId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -40219,7 +40403,7 @@
           ],
           "title": "saveAnnotation 转调 insert；update/delete/list 透传",
           "markers": [],
-          "line": 78,
+          "line": 79,
           "assertions": [
             "expect(svc.saveAnnotation({ paperId: 'p-1', annotation: input })).resolves.toMatchObject({ id: 'a-1' })",
             "expect(svc.listAnnotations({ paperId: 'p-1' })).resolves.toHaveLength(1)",
@@ -40232,7 +40416,7 @@
           "describePath": [],
           "title": "缺陷②：open 透传 title（detailById 的文献名直达 renderer）",
           "markers": [],
-          "line": 102,
+          "line": 103,
           "assertions": [
             "expect(r.title).toBe('t')"
           ]
@@ -43300,14 +43484,14 @@
     }
   },
   "stats": {
-    "fileCount": 297,
-    "caseCount": 2899,
-    "assertionCount": 9445,
+    "fileCount": 299,
+    "caseCount": 2910,
+    "assertionCount": 9494,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
-    "eachExpandedRows": 346,
+    "eachExpandedRows": 347,
     "unresolvableCount": 0
   },
   "exemptionsSnapshot": []

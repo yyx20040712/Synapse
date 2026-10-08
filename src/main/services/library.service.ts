@@ -15,7 +15,9 @@
  *   （PATCH_COLS）；S1 队列闸（INV-91）——lineagePending 拒绝
  * - 集合列表：collections.list()（导入面历史只读形状）
  * - [F-FOLDER-01] papers 域：moveFolder（§3.4+W2 终裁事务序——见下方注释）；
- *   [F-UIRES-01 批 B] +delete（§2.4 统一级联契约+事务内重验=零比对直删）
+ *   [F-UIRES-01 批 B] +delete（§2.4 统一级联契约+事务内重验=零比对直删）；
+ *   [F-DBCAMP-01 DB-1 U2 / F-STAR-01] +setStarred（017 is_starred 数据面——
+ *   UI 点亮=DB-4；事件面不广播+无 S1 队列闸，见 createPapersService 注）
  *
  * ── 接口层 ──
  * - export function createLibraryService(deps): ApiHandlers['library']
@@ -260,6 +262,19 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
       if (!removed) throw paperNotFound(req.paperId)
       sendFoldersChanged()
       sendLineageChanged()
+      return { ok: true as const }
+    },
+
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标切换（数据面——UI 点亮=DB-4）：
+    // 1. findById===null → NOT_FOUND（paperNotFound 单源——papers/delete 先例）
+    // 2. 单语句 UPDATE 原子（无跨表编排=不开事务）；防御面 removed===null=
+    //    并发窗口已被删→如实 NOT_FOUND 非假成功（delete RR1-3 同型）
+    // 3. 无 S1 队列闸（INV-91 互斥域=图/夹结构写；星标零结构耦合）+
+    //    无事件广播（U2 简报裁决⑧：星标非图/夹结构面，列表行本地状态即可）
+    async setStarred(req) {
+      if (papers.findById(req.paperId) === null) throw paperNotFound(req.paperId)
+      const updated = papers.setStarred(req.paperId, req.starred)
+      if (updated === null) throw paperNotFound(req.paperId)
       return { ok: true as const }
     }
   }

@@ -132,7 +132,7 @@ describe('T3-P5 detail() 真值透传（month 真值——摘恒 null 注释；[
   function makeDetail(): PaperDetail {
     return {
       id: 'p-1', title: 't', authors: [], year: 2024, venue: '', doi: null,
-      tagNames: [], folderId: '__main__', impactFactor: null, annotationCount: 0, noteCount: 0,
+      tagNames: [], folderId: '__main__', impactFactor: null, isStarred: false, annotationCount: 0, noteCount: 0,
       lastReadPage: 0, addedAt: 't', abstract: '', arxivId: null, source: 'local' as const,
       enrichStatus: 'pending' as const, fileUrl: 'app-file://p-1', fileName: 'a.pdf',
       updatedAt: 't', tags: []

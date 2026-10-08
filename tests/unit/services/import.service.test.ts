@@ -96,6 +96,9 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     expect(result.imported[0]?.title).toBe('论文一') // 抽取标题空 → 文件名去扩展
     expect(result.imported[0]?.doi).toBe('10.1/x')
     expect(result.imported[0]?.folderId).toBe(TARGET_FOLDER) // D3：落点=targetFolderId
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 新建恒未星标（017 DEFAULT 0——import
+    // 面常量构造的变异杀手〔d1-W1 m8：false→true 此处红〕）
+    expect(result.imported[0]?.isStarred).toBe(false)
     expect(result.duplicates).toEqual([])
     expect(progress.at(-1)?.phase).toBe('done')
     // [F-ALIGN-01 D3/K1①] 单跳落夹+建节点：year 取抽取元数据、month=null 缺省

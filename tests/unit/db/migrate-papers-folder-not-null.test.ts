@@ -200,15 +200,18 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3）', () => {
+  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变）', () => {
     const db = openV15()
     seedPaper(db, 'p-1', { folderId: '__main__' })
     const objectsBefore = objectMultiset(db)
     const tablesBefore = tableSet(db)
     const result = migrate(db)
-    // 判别器：16 确已应用（否则下方多重集断言=无迁移恒真）
-    expect(result.appliedVersions).toEqual([16])
-    expect(objectMultiset(db)).toEqual(objectsBefore)
+    // 判别器：16/17 确已应用（否则下方多重集断言=无迁移恒真）
+    expect(result.appliedVersions).toEqual([16, 17])
+    // [F-DBCAMP-01 U2] 链尾延至 17：对象增量恰一件=017 partial index
+    // （多增/丢失即红——零丢失判据收紧为「差集恰等于预期单件」；
+    // sort=与 objectMultiset 的 SQL ORDER BY 同步保序）
+    expect(objectMultiset(db)).toEqual([...objectsBefore, 'index:idx_papers_starred'].sort())
     expect(tableSet(db)).toEqual(tablesBefore)
     const residue = db
       .prepare("SELECT name FROM sqlite_master WHERE name LIKE 'papers_old%' OR name='papers_new' OR sql LIKE '%papers_old%'")
@@ -251,14 +254,14 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上）', () => {
+  it('v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上；[F-DBCAMP-01 U2] 017 随链=终值 17）', () => {
     const db = openV15()
     seedPaper(db, 'p-1', { folderId: '__main__' })
     seedAnnotation(db, 'an-1', 'p-1')
     seedNote(db, 'nt-1', 'p-1')
     migrate(db)
-    // 判别器：16 确已应用（否则 FK 从未被关断=复位断言恒真）
-    expect(readUserVersion(db)).toBe(16)
+    // 判别器：16/17 确已应用（否则 FK 从未被关断=复位断言恒真）
+    expect(readUserVersion(db)).toBe(17)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.prepare(`DELETE FROM papers WHERE id='p-1'`).run()
@@ -289,12 +292,12 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('新库全链：user_version=16+应用清单 [1..16]+幂等重入（再跑 applied=[]）', () => {
+  it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(16)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-    expect(readUserVersion(db)).toBe(16)
+    expect(result.currentVersion).toBe(17)
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])
+    expect(readUserVersion(db)).toBe(17)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()

@@ -31,6 +31,10 @@ export const paperSummarySchema = z
     folderId: z.string(),
     // [F-FOLDER-01] D1 影响因子（手动填写——papers.impact_factor REAL 可空）
     impactFactor: z.number().nullable(),
+    // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] 星标（迁移 017 papers.is_starred
+    // INTEGER NOT NULL DEFAULT 0——0/1→true/false 映射单源=papers.queries
+    // toSummary；切换通道 papers/set-starred；UI 点亮=DB-4）
+    isStarred: z.boolean(),
     // [F-FOLDER-01] pubNo=库级全序派生编号（ROW_NUMBER OVER ORDER BY
     // year/month/added_at——LIST_SQL 窗口列，INV-92 不落库；catalogNo 退役
     // 单一真相源=本字段。可选增量=导入结果行等无窗口语境可省略）
@@ -154,3 +158,10 @@ export type Paged<T> = { items: T[]; total: number }
  * （区别于 paperMoveReq 驻 folder.ts 的移动域就近先例——本通道纯文献语义） */
 export const paperDeleteReqSchema = z.object({ paperId: z.string().min(1) }).strict()
 export type PaperDeleteReq = z.infer<typeof paperDeleteReqSchema>
+
+/** [F-DBCAMP-01 DB-1 U2 / F-STAR-01] papers/set-starred 载荷（列名单源=设计书
+ *  §5.c is_starred；驻本件=文献域单源——paperDeleteReqSchema 同位先例） */
+export const paperSetStarredReqSchema = z
+  .object({ paperId: z.string().min(1), starred: z.boolean() })
+  .strict()
+export type PaperSetStarredReq = z.infer<typeof paperSetStarredReqSchema>
