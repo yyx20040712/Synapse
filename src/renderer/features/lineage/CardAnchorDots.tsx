@@ -2,7 +2,7 @@
  * [F-UIRES-03 C2·P1 / F-ANCHFIX-01 批 1c] CardAnchorDots —— 画线锚点静态
  * 渲染层：每卡 4 side×3 slot=12 dot 全 DOM 常驻（¼/½/¾ 槽位——anchors.ts
  * 判定面同构，INV-120：armed 态锚显示域=可吸附判定域，吸 ¼/¾ 不再落无
- * 可见锚处）；直径=var(--r) CSS 单源（基值 8 画布 px 沿承；armed 通道
+ * 可见锚处）；直径=2×var(--anchor-dot-r) CSS 单源（基值 8 画布 px 沿承；armed 通道
  * 5px 小型化——随 .tl-content transform scale 随 zoom 缩放）；fill=恒白
  * （--accent-ink token）+stroke 1.5 画布 px 主色；占用 dot（anchor-occupancy
  * getOcc 订阅）挂 data-occupied="1"（background accent——占用槽高亮单源=
