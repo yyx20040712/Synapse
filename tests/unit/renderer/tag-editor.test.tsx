@@ -49,7 +49,7 @@ async function renderEditor(
   document.body.appendChild(host)
   root = createRoot(host)
   await act(async () => {
-    root?.render(<TagEditor paperId="p-1" tags={attached} onChanged={() => undefined} />)
+    root?.render(<TagEditor paperId="p-1" folderId="__main__" tags={attached} onChanged={() => undefined} />)
   })
 }
 
@@ -158,7 +158,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       await setType('水质')
       await pressEnter()
       expect(stubApi.tags.upsert).toHaveBeenCalledTimes(1)
-      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ name: '水质' })
+      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ folderId: '__main__', name: '水质' })
       expect(stubApi.tags.attach).toHaveBeenCalledWith({ paperId: 'p-1', tagId: 't-new' })
       expect(inputEl().value).toBe('')
     })
@@ -198,7 +198,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       await setType('水文')
       await blurInput()
       expect(stubApi.tags.upsert).toHaveBeenCalledTimes(1)
-      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ name: '水文' })
+      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ folderId: '__main__', name: '水文' })
     })
 
     it('IME 组词期 blur（compositionstart 已发、end 未发）→ no-op', async () => {
@@ -246,7 +246,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       expect(stubApi.tags.upsert, '组词中 blur 被守卫拒绝').not.toHaveBeenCalled()
       await composeEnd()
       expect(stubApi.tags.upsert, '失焦后 compositionend 到达=定案文本补提交').toHaveBeenCalledTimes(1)
-      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ name: '水锤效应' })
+      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ folderId: '__main__', name: '水锤效应' })
     })
 
     it('序 B 补提交名取 DOM 当前值（state 滞后于定案文本——R2 d1-W1：引擎事件到达序不定，DOM 恒最新）', async () => {
@@ -266,7 +266,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       })
       expect(stubApi.tags.upsert).not.toHaveBeenCalled()
       await composeEnd()
-      expect(stubApi.tags.upsert, '补提交取 DOM 值非滞后 state').toHaveBeenCalledWith({ name: '定案新文本' })
+      expect(stubApi.tags.upsert, '补提交取 DOM 值非滞后 state').toHaveBeenCalledWith({ folderId: '__main__', name: '定案新文本' })
     })
 
     it('compositionend 漏发自愈：组词 blur 被拒（ref 复位）后再输入→blur 正常提交（R2 k1-N2）', async () => {
@@ -280,7 +280,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       })
       await setType('新文本') // 无 composition 事件的后续输入（漏发场景续态）
       await blurInput()
-      expect(stubApi.tags.upsert, 'ref 未悬空——blur 路恢复可用').toHaveBeenCalledWith({ name: '新文本' })
+      expect(stubApi.tags.upsert, 'ref 未悬空——blur 路恢复可用').toHaveBeenCalledWith({ folderId: '__main__', name: '新文本' })
     })
 
     it('空白 input 失焦 → no-op', async () => {
@@ -310,7 +310,7 @@ describe('F-TAGS-01 TagEditor —— 三路提交矩阵', () => {
       await setType('水泵')
       await mouseClick(addBtn())
       expect(stubApi.tags.upsert).toHaveBeenCalledTimes(1)
-      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ name: '水泵' })
+      expect(stubApi.tags.upsert).toHaveBeenCalledWith({ folderId: '__main__', name: '水泵' })
     })
 
     it('busy 飞行中「添加」按钮禁用（busy 互斥格）', async () => {

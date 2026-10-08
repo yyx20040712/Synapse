@@ -20,9 +20,12 @@
  *   稳定引用）；空标签库=面板内引导文案
  *
  * ── 接口层 ──
- * - export function TagDropdown(props: { selectedTagIds: string[];
+ * - export function TagDropdown(props: { folderId: string;
+ *     selectedTagIds: string[];
  *     onFilterChange(ids: string[]): void; onMutated?: () => void;
  *     onColorMapChange?: (map: ReadonlyMap<string, string | null>) => void })
+ *   [F-TAGS-02/DB-1 U4] +folderId：标签域=当前文件夹（FilterBar 按 folderScope
+ *   解析透传——LibraryPage 导入目标同式；019 起标签按文件夹完全隔离）
  *
  * ── 测试 ──
  * - tests/unit/renderer/tag-dropdown（面板/全选/编辑钮链）/ tag-dropdown-delete
@@ -38,13 +41,14 @@ import { type MutatedPayload } from './TagLifecycle'
 import './tag-dropdown.css'
 
 export function TagDropdown(props: {
+  folderId: string
   selectedTagIds: string[]
   onFilterChange: (ids: string[]) => void
   onMutated?: () => void
   /** name→color 映射上抛（PaperRow 徽标着色数据通道——回调须稳定引用） */
   onColorMapChange?: (map: ReadonlyMap<string, string | null>) => void
 }): JSX.Element {
-  const { selectedTagIds, onFilterChange, onMutated, onColorMapChange } = props
+  const { folderId, selectedTagIds, onFilterChange, onMutated, onColorMapChange } = props
   const tags = useTagsStore((s) => s.tags)
   const refresh = useTagsStore((s) => s.refresh)
   const listError = useTagsStore((s) => s.error)
@@ -54,9 +58,10 @@ export function TagDropdown(props: {
   // 删除确认窗：待删 id 清单（null=关；窗体清单随 store 链式 refresh 自愈）
   const [confirming, setConfirming] = useState<string[] | null>(null)
 
+  // [F-TAGS-02/DB-1 U4] 域参化：folderId 变化（切文件夹）即重拉该域标签
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    void refresh(folderId)
+  }, [refresh, folderId])
   // 列表型失败 toast（挂载期间 null→失败转变才播——TagFilter 同口径承接）
   const seenError = useRef(listError)
   useEffect(() => {

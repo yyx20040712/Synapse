@@ -14,11 +14,12 @@ function stubRepos(): Repos {
   return {
     tags: {
       listWithCounts: vi.fn(() => []),
-      upsertByName: vi.fn((name: string) => ({ id: 't-1', name })),
+      upsertByName: vi.fn((folderId: string, name: string) => ({ id: 't-1', name })),
       attach: vi.fn(),
       detach: vi.fn(),
       namesByPaper: vi.fn(() => []),
       findByName: vi.fn((): undefined => undefined),
+      findById: vi.fn((): undefined => undefined),
       renameTag: vi.fn(() => true),
       mergeTags: vi.fn(),
       deleteTag: vi.fn()
@@ -30,24 +31,24 @@ describe('B7 tags.service upsert —— 纯空格名空判守卫', () => {
   it('纯空格名 → INVALID_REQUEST「标签名不能为空」（repo 零调用）', async () => {
     const repos = stubRepos()
     const svc = createTagsService({ repos })
-    await expect(svc.upsert({ name: '   ' })).rejects.toMatchObject({
+    await expect(svc.upsert({ folderId: '__main__', name: '   ' })).rejects.toMatchObject({
       code: 'INVALID_REQUEST',
       message: '标签名不能为空'
     })
     expect(repos.tags.upsertByName).not.toHaveBeenCalled()
   })
 
-  it('正常名透传 upsertByName（trim 后）', async () => {
+  it('正常名透传 upsertByName（trim 后——[F-TAGS-02/DB-1 U4] 域参逐参）', async () => {
     const repos = stubRepos()
     const svc = createTagsService({ repos })
-    await expect(svc.upsert({ name: ' 必读 ' })).resolves.toEqual({ id: 't-1', name: '必读' })
-    expect(repos.tags.upsertByName).toHaveBeenCalledWith('必读')
+    await expect(svc.upsert({ folderId: '__main__', name: ' 必读 ' })).resolves.toEqual({ id: 't-1', name: '必读' })
+    expect(repos.tags.upsertByName).toHaveBeenCalledWith('__main__', '必读')
   })
 
   it('制表符混空白名同样拒绝（trim 覆盖 \t\n）', async () => {
     const repos = stubRepos()
     const svc = createTagsService({ repos })
-    await expect(svc.upsert({ name: '\t\n ' })).rejects.toMatchObject({
+    await expect(svc.upsert({ folderId: '__main__', name: '\t\n ' })).rejects.toMatchObject({
       code: 'INVALID_REQUEST'
     })
     expect(repos.tags.upsertByName).not.toHaveBeenCalled()

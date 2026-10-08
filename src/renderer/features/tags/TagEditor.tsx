@@ -22,8 +22,7 @@
  * - 下拉建议：tags.store 里已有标签（前缀匹配前 5 个，排除已挂接）
  *
  * ── 接口层 ──
- * - export function TagEditor(props: { paperId: string;
- *     tags: Array<{ id: string; name: string }>; onChanged: () => void }): JSX.Element
+ * - export function TagEditor(props: { paperId; folderId; tags; onChanged }): JSX.Element
  *
  * ── 架构层 ──
  * - 挂接/移除成功后经 onChanged() 让父组件（PaperDetailPanel）重读详情；
@@ -44,10 +43,11 @@ import { useTagsStore, TAG_OP_FAILED } from './tags.store'
 
 export function TagEditor(props: {
   paperId: string
+  folderId: string
   tags: Array<{ id: string; name: string }>
   onChanged: () => void
 }): JSX.Element {
-  const { paperId, tags, onChanged } = props
+  const { paperId, folderId, tags, onChanged } = props
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   // busy/composing 的同步镜像（ref）：blur 与 Enter 可能落在同一批事件窗，
@@ -64,8 +64,8 @@ export function TagEditor(props: {
   // 迁移守卫：挂载时已残留的旧失败不重播（本次挂载已触发新 refresh，结果以新为准），
   // 仅"挂载期间 null→失败"的转变才 toast
   useEffect(() => {
-    void refreshTags()
-  }, [refreshTags])
+    void refreshTags(folderId)
+  }, [refreshTags, folderId])
   const seenError = useRef(listError)
   useEffect(() => {
     if (listError !== seenError.current) {
@@ -107,7 +107,7 @@ export function TagEditor(props: {
     busyRef.current = true
     setBusy(true)
     try {
-      const tag = await unwrap(api.tags.upsert({ name }))
+      const tag = await unwrap(api.tags.upsert({ folderId, name }))
       await unwrap(api.tags.attach({ paperId, tagId: tag.id }))
       setInput('')
       onChanged()

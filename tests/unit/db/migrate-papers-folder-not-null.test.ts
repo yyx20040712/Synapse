@@ -202,20 +202,20 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     db.close()
   })
 
-  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变；[F-DBCAMP-01 U3] 018 随链=对象增量恰两件+表集增量恰一件 app_meta——多重集面增纳 table）', () => {
+  it('v15→16：前后对象多重集相等（索引/触发器/视图）+表集一致+papers_old/papers_new 零残留（W1/N3；[F-DBCAMP-01 U2] 017 随链=增量恰一件 idx_papers_starred——016 重建零丢失判据不变；[F-DBCAMP-01 U3] 018 随链=对象增量恰两件+表集增量恰一件 app_meta——多重集面增纳 table；[F-DBCAMP-01 DB-1 U4] 019 随链=对象增量恰三件+表集增量不变——tags 重建零新表，增量=域守卫触发器）', () => {
     const db = openV15()
     seedPaper(db, 'p-1', { folderId: '__main__' })
     const objectsBefore = objectMultiset(db)
     const tablesBefore = tableSet(db)
     const result = migrate(db)
-    // 判别器：16/17/18 确已应用（否则下方多重集断言=无迁移恒真）
-    expect(result.appliedVersions).toEqual([16, 17, 18])
-    // [F-DBCAMP-01 U3] 链尾延至 18：对象增量恰两件=017 partial index+018 新表
-    // （对象名形态 table:app_meta——objectMultiset 纳 table 面后实报；多增/
-    // 丢失即红——零丢失判据收紧为「差集恰等于预期两件」；sort=与
+    // 判别器：16/17/18/19 确已应用（否则下方多重集断言=无迁移恒真）
+    expect(result.appliedVersions).toEqual([16, 17, 18, 19])
+    // [F-DBCAMP-01 U4] 链尾延至 19：对象增量恰三件=017 partial index+018 新表
+    // +019 域守卫触发器（tags 重建 autoindex 两枚重建前后同名同数=净零；
+    // 多增/丢失即红——零丢失判据收紧为「差集恰等于预期三件」；sort=与
     // objectMultiset 的 SQL ORDER BY 同步保序）
     expect(objectMultiset(db)).toEqual(
-      [...objectsBefore, 'index:idx_papers_starred', 'table:app_meta'].sort()
+      [...objectsBefore, 'index:idx_papers_starred', 'table:app_meta', 'trigger:paper_tags_domain_guard'].sort()
     )
     // 表集增量恰一件=app_meta（018 纯新增表）
     expect(tableSet(db)).toEqual([...tablesBefore, 'app_meta'].sort())
@@ -268,7 +268,7 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     migrate(db)
     // 判别器：16/17 确已应用（否则 FK 从未被关断=复位断言恒真）
     // [F-DBCAMP-01 U3] 018 随链：终值 18
-    expect(readUserVersion(db)).toBe(18)
+    expect(readUserVersion(db)).toBe(19)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.prepare(`DELETE FROM papers WHERE id='p-1'`).run()
@@ -302,11 +302,11 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
   it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(18)
+    expect(result.currentVersion).toBe(19)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
     ])
-    expect(readUserVersion(db)).toBe(18)
+    expect(readUserVersion(db)).toBe(19)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()

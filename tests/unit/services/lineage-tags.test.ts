@@ -67,7 +67,7 @@ beforeEach(() => {
 describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () => {
   it('版本接续：MIGRATIONS 含 version 7 且 user_version=15（新库全量，[F-UIRES-03 C1] 015 落地后）', () => {
     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
-    expect(readUserVersion(db)).toBe(18)
+    expect(readUserVersion(db)).toBe(19)
   })
 
   it('tags 列在场（TEXT 可空——死置保留清列归 D 批）；存量行零迁移可读且 DTO 无 tags 键（[A1b] 读面不映射）', () => {
@@ -126,8 +126,9 @@ describe('A1a graph tagNames（文献库标签域伴生 map——Record<paperId,
     repo.upsertNode({ paperId: 'p-1', title: '甲', year: 2018, x: null, y: null })
     repo.upsertNode({ paperId: 'p-2', title: '乙', year: 2021, x: null, y: null })
     // 挂接序乱序（调度→方法→流域）：断言按名序回收（ORDER BY t.name ASC 单源）
+    // [F-TAGS-02/DB-1 U4] upsertByName 域参——种子文献缺省 __main__（016 DEFAULT）
     for (const name of ['调度', '方法', '流域']) {
-      tagsRepo.attach('p-1', tagsRepo.upsertByName(name).id)
+      tagsRepo.attach('p-1', tagsRepo.upsertByName('__main__', name).id)
     }
     tagNamesSpy.mockClear()
     const g = svc.graph()
@@ -138,7 +139,7 @@ describe('A1a graph tagNames（文献库标签域伴生 map——Record<paperId,
 
   it('[F-ALIGN-01 改写] 无标签文献不在 map（无键非空数组）；孤儿标签面不入 map；空图=空 map（原主题节点断言随退役删）', () => {
     repo.upsertNode({ paperId: 'p-2', title: '乙（无库标签）', year: 2021, x: null, y: null })
-    tagsRepo.attach('p-3', tagsRepo.upsertByName('孤儿标签面').id) // p-3 无节点行——不入 map
+    tagsRepo.attach('p-3', tagsRepo.upsertByName('__main__', '孤儿标签面').id) // p-3 无节点行——不入 map
     const g = svc.graph()
     expect(g.tagNames).toEqual({})
     expect('p-2' in g.tagNames).toBe(false) // 无标签=无键（非空数组）

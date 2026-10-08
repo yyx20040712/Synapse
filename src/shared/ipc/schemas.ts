@@ -399,8 +399,15 @@ export const corpusReqSchema = z.object({ paperId: z.string().min(1) }).strict()
 
 // ── tags ────────────────────────────────────────────────────────
 export const tagWithCountSchema = tagSchema.extend({ paperCount: z.number().int().min(0) })
-// [T4 小挂账] 标签名上限=TAG_NAME_MAX 单源（models/tag——渲染层四输入点 maxLength 同源）
-export const tagNameReqSchema = z.object({ name: z.string().min(1).max(TAG_NAME_MAX) }).strict()
+/** [F-TAGS-02 / F-DBCAMP-01 DB-1 U4] tags/list 请求：folderId 必填（无「全域
+ *  并集」消费面——lineageGraphReqSchema :306 形态参考但必填非 optional；
+ *  通道数不变 Req 形状变——api-surface pin 62 恒定） */
+export const tagListReqSchema = z.object({ folderId: z.string().min(1) }).strict()
+// [T4 小挂账] 标签名上限=TAG_NAME_MAX 单源（models/tag——渲染层四输入点 maxLength 同源）；
+// [F-TAGS-02 / DB-1 U4] +folderId 域参（tags 按文件夹完全隔离——2026-10-08 晨裁决）
+export const tagNameReqSchema = z
+  .object({ folderId: z.string().min(1), name: z.string().min(1).max(TAG_NAME_MAX) })
+  .strict()
 export const attachTagReqSchema = z
   .object({ paperId: z.string().min(1), tagId: z.string().min(1) })
   .strict()

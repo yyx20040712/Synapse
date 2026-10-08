@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-08T14:08:04.4675572Z",
+    "generatedAt":  "2026-10-08T15:53:34.8164028Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "abe2ba19a7e47133623092efca0b6b1812d31fb870dc55c9e95f1636e295e92a"
+                      "sha256":  "3c5c68744e40c9bcba1d3a8524fa459c603c425f8a3150b9d58a71760afaf362"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -83,7 +83,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "6ba9ec796e491695a5e2af37d37be52950677954162b7f5de00501634c3edd8f"
+                      "sha256":  "6c7cfd2e3089a8ebada2da75700dec2afd46b35dbcc667608071d9539a453f51"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
@@ -174,6 +174,10 @@
                       "sha256":  "ecb4f7063e681c399f7329ed7053525101e271070be9098918a966f52321cfe3"
                   },
                   {
+                      "path":  "src/main/db/migrations/019_tags_folder_domain.sql",
+                      "sha256":  "15af477c77db728002d00b6344e4bed17955f8566474d030b2021203bbf372ed"
+                  },
+                  {
                       "path":  "src/renderer/app/StatusBar.tsx",
                       "sha256":  "62eee1a39321518866ffdf728abff29aeb1290a117bc98da4a3c9759ba2e29a5"
                   },
@@ -199,7 +203,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "5d8beb962b78a5e3fb5eccb20790da9253b2c916ee6c55abcbda326034cf7796"
+                      "sha256":  "a0b25fba444d80c7fffa915ce4877743b68dc9c53d5366de50a443c608463475"
                   },
                   {
                       "path":  "src/shared/ipc/events.schemas.ts",
@@ -207,7 +211,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "fedea357762399be63c121cb06b8f76897e4aa612f66d6742efc6e17deb8893c"
+                      "sha256":  "81322ba1720b9862a4401e6a4f513525031d523928caf4abe54f018bfff18308"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -243,7 +247,7 @@
                   },
                   {
                       "path":  "src/shared/models/tag.ts",
-                      "sha256":  "02065ecbb7fe21f092ed0883fda0a47b3d65044f00355615912e003e7b11bf25"
+                      "sha256":  "6e21f556cde3ad6a0f75ea123a9502a56661ad3a85760b0f44b6aba7b5ea87fb"
                   },
                   {
                       "path":  "src/shared/venue-tier.ts",
@@ -275,7 +279,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "04c053cea90b7ed6f88b5d8b5fc95a7d5524c598aa2be349ac5f1e869b78526c"
+                      "sha256":  "3e16a3a4f89485da85c469d85f1559d912dc8c5e114b5ce33e686190bce97c6d"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -371,7 +375,7 @@
                   },
                   {
                       "path":  "tests/e2e/seed-lineage.mjs",
-                      "sha256":  "e8a4737876a759b9cc5d0b3da9af9af604fa033959ee2806e60e741d5a11b261"
+                      "sha256":  "0964f73b1bdcd58632b390909242799cf66e8d330a9f6677f62ac9b3ece270a3"
                   },
                   {
                       "path":  "tests/e2e/seed-paper.mjs",
@@ -447,35 +451,39 @@
                   },
                   {
                       "path":  "tests/unit/db/migrate.test.ts",
-                      "sha256":  "582820ba2e9ad681d6c1131cb58fe9d9e2f101c7382a7f775c31078cb840630b"
+                      "sha256":  "8ad737bcb893a31a40d90354bfc9e8c5eec4bd61edb9e083e1d913d4375ee3d5"
                   },
                   {
                       "path":  "tests/unit/db/migrate-app-meta.test.ts",
-                      "sha256":  "fe7d604c1223cd99a5c2701eaf9e2e0f411e1f8776026f9484961b98e5019bc0"
+                      "sha256":  "53cde145a1b6d16c5170c18852fa883d98ab2aa2e279e86931b36a1a7a0d92d8"
                   },
                   {
                       "path":  "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-                      "sha256":  "49e586402bec249486bbcfa1992dada18dfbd43665f516462bdb1c901c3aeff4"
+                      "sha256":  "fd017cc1da75ea162731c30b746087e395d9f36baa69f1965263d519096489ab"
                   },
                   {
                       "path":  "tests/unit/db/migrate-folders-graphs.test.ts",
-                      "sha256":  "40ce2342e7d189ce407ce6f6d850f04c1031bc9a19e1dc3c5219889ad8e7f3db"
+                      "sha256":  "cb01a9901bbab2afd28aa674a6f063a9214dc87c2ba9aa07b2eec5ab0b87cc32"
                   },
                   {
                       "path":  "tests/unit/db/migrate-lineage-v2.test.ts",
-                      "sha256":  "f1ed5b253c7580681abda35ee652c992c9d68a228ff5fd696aee2cdc982f7df5"
+                      "sha256":  "ea916f177a896bf6c6fc09de2a2540a86f3676c88f0231a10f72e120900c8024"
                   },
                   {
                       "path":  "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-                      "sha256":  "31f6d41b9dce7bb5484f1d72c5fdf9bc27bacf3b27716b2f20735427b6f65885"
+                      "sha256":  "a1c56c2400a9b2fdb5bce2d1927e8f8021e9dbcc7c2b116a9760005179b7d1dd"
                   },
                   {
                       "path":  "tests/unit/db/migrate-papers-is-starred.test.ts",
-                      "sha256":  "48f1d6d23629ea208c78102cbbe63c571f54fee9bad3709e05dd37b03161579f"
+                      "sha256":  "feff76fbbbc34b0166cc93043bf2dce39d7fe9d0c01ab6e319534bffcd5cecf4"
                   },
                   {
                       "path":  "tests/unit/db/migrate-reading-time.test.ts",
-                      "sha256":  "7ed43955023516aed8dd7e71f987121f7b5233f7a0a1c45c7feb6aa39e71e051"
+                      "sha256":  "3f52b16e7e9f9bb5606552c1121fb3e73602f411378ac0e55561eadd2e283f02"
+                  },
+                  {
+                      "path":  "tests/unit/db/migrate-tags-folder-domain.test.ts",
+                      "sha256":  "008d741ca3595f5bc3580e227070f9f3526f7deea878327a8434a30ce3853cd4"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -523,15 +531,15 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/tags.repo.test.ts",
-                      "sha256":  "a6cff2d4b021d9b1c742805a121fba50c6b77b0a6b5d5c56aa410b01bb446799"
+                      "sha256":  "c034a2ef388f0cf9b412cba5b0a1cc6a4441fda695ce772a6888dc49d761fc4b"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags-color.repo.test.ts",
-                      "sha256":  "e4138f73a1389b997ddf0fdf482b87b93487d48d2a4ba2889a4a756724e4f921"
+                      "sha256":  "8826b636aab58035fc818ed9b8d9f6d1b0d1067aa0a8e419a374dfeae2f6f98d"
                   },
                   {
                       "path":  "tests/unit/db/repos/tags-lifecycle.repo.test.ts",
-                      "sha256":  "36e03c3123f00fc879c80565bcaad49cd6bce1575b6c13809f194532aac9b1ed"
+                      "sha256":  "041c566ad44633d8a4cf11de974b55882eadc4566fd5bd3caa76d9ea5155af03"
                   },
                   {
                       "path":  "tests/unit/events-schemas.test.ts",
@@ -587,7 +595,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/tags.test.ts",
-                      "sha256":  "7855dbf78c9f66015e16ca0546b28cef9a72f3b669b8282f98e303ff3ebf200b"
+                      "sha256":  "52582b8bb5bdc44860c4cdbc4c20219e71f80b317f8c96609937b853ebb31df7"
                   },
                   {
                       "path":  "tests/unit/main/import-gate.test.ts",
@@ -1151,31 +1159,31 @@
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown.test.tsx",
-                      "sha256":  "0f0c1de24148aa034a9dc344ca1906b76b930c3f8cc2df6faf49a49d5bb6a6aa"
+                      "sha256":  "504f6ce2f21816fa602c00480120fc182e2588cbaad0560e5876067cfa91b47b"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown-delete.test.tsx",
-                      "sha256":  "ce4096f64916c29f0525da4ef53bdb8e99bd79623260e389870175c9f9e570ff"
+                      "sha256":  "60a9ebe91939fef578cb9a3618177605c2dfd6d2b479eaceb26a5ed9f4ff8df0"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-dropdown-row.test.tsx",
-                      "sha256":  "7c6cb3b57b1c0e7d4249e601aed9f6b3f892b73872a0e287e7924fd612d657c1"
+                      "sha256":  "5c3f5cd67574866e281a720550ddfa36a92acdeba54332f09d2fc6d66c107032"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-editor.test.tsx",
-                      "sha256":  "9abe6360f424ca34c76e1b10c58a5b61fc701fed2a3cd0c1cf1ba25114635699"
+                      "sha256":  "6ffea8a115871c22e7a68f4b11c3ed59bdc84f2f9963eb5fe782d89abbaf0b88"
                   },
                   {
                       "path":  "tests/unit/renderer/tag-name-maxlength.test.tsx",
-                      "sha256":  "2f89d3941c449ced6e39c9b8745e978ffaca0bc83eeef37ffb8d049154a2f61c"
+                      "sha256":  "f5f140aa03e1b57676ebd0bb54cead0a6d23cc8614a6c492a17c903fc0b4d0d3"
                   },
                   {
                       "path":  "tests/unit/renderer/tags.store.test.ts",
-                      "sha256":  "3d970456f40717ec5829a0fdcee9a267e765c85465e4111d5c221451a1d2535f"
+                      "sha256":  "39fcb8fa873b13fd5b465f53118825710faa8ec3d3a9ea0bf3101475fb6630fe"
                   },
                   {
                       "path":  "tests/unit/renderer/tags-lifecycle.store.test.ts",
-                      "sha256":  "89ba2f204bc9d9962dbf09b041309d97bc10e4526f642781e34d7b8b63bc152a"
+                      "sha256":  "7a3f66dd9329594c1c277831082d68f644ba9c1a0bfdba1d0a6656dd234deeab"
                   },
                   {
                       "path":  "tests/unit/renderer/text-layer.test.tsx",
@@ -1199,7 +1207,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/ui-iconify-buttons.test.tsx",
-                      "sha256":  "eff765c3f5121274af9e8c8a1d34caebad0a687bc8e342dff9fb98c7e908a4d4"
+                      "sha256":  "d8e6001feeeacc81df848a0f821e49845ab2571eac954bd85faea3c5e85f5c7d"
                   },
                   {
                       "path":  "tests/unit/renderer/ui-icons-shared.test.tsx",
@@ -1295,11 +1303,11 @@
                   },
                   {
                       "path":  "tests/unit/services/folders-delete-domain.test.ts",
-                      "sha256":  "37d69a6e19ab1730c75a36e6cc8f8aa2918470526ba6e6a9ac20fc343098f724"
+                      "sha256":  "a08cbd742799761119ea170c2fa70d661bde4becabeb7de0d97d2d82dc60b901"
                   },
                   {
                       "path":  "tests/unit/services/folders-move-paper.test.ts",
-                      "sha256":  "0558ff3a1bc41a3468745f000d846c8d63ac9058f1430960a8aa5d29bd21c607"
+                      "sha256":  "0f3ff25ded610d34f9fc26cda9c34da9217b6a6663d9be7b35a2a03cca061f75"
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
@@ -1323,7 +1331,7 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-edge-via.test.ts",
-                      "sha256":  "5766561f4aaaabbbbd25b445d0f4e6e84763b75dc07a9ec4dcc2a1743e8b1c6f"
+                      "sha256":  "b9d8c7bf76924b1a59e3eeaf89644adf0af8314d59c2e709fbb39ff00e20ea21"
                   },
                   {
                       "path":  "tests/unit/services/lineage-import.test.ts",
@@ -1335,11 +1343,11 @@
                   },
                   {
                       "path":  "tests/unit/services/lineage-tags.test.ts",
-                      "sha256":  "865a13c9c813c0fc6fdd76553ccb527ae8eceb1696cb80e3b6f5961f3dfc95a5"
+                      "sha256":  "ec74cd65cde2b5ee247a151bce9cf5610b6cf4ba8958114f8d67fc68f619e17d"
                   },
                   {
                       "path":  "tests/unit/services/lineage-u8-linetype.test.ts",
-                      "sha256":  "3c4a3b8990aa3b087922604b2003b0db1b7e10a21ffc1ce0e9d3afc874dbf7ec"
+                      "sha256":  "c50793326a265d982b1e20a98743aa3778edd81cd8bdf332c3d098bf6a766f4d"
                   },
                   {
                       "path":  "tests/unit/services/lineage-v2-model.test.ts",
@@ -1403,19 +1411,23 @@
                   },
                   {
                       "path":  "tests/unit/services/tags.service.test.ts",
-                      "sha256":  "6de6ca4a106714a725833215b9ebe78947913359e51cd6de00fb46c194df4681"
+                      "sha256":  "a96b32eecf67583d23d573e83b997e958245ac4ce0e9e73eb00da1cf512813a9"
                   },
                   {
                       "path":  "tests/unit/services/tags-color.service.test.ts",
-                      "sha256":  "a882d1788da54efb5917f954fd61f699d1f851c99c305cd986f281b49efa042b"
+                      "sha256":  "89af9f492dfac5abbbc22bd77310fd1c7fdd298f5fdbde974ed0ab546f42d356"
+                  },
+                  {
+                      "path":  "tests/unit/services/tags-domain-limits.service.test.ts",
+                      "sha256":  "54214bf66314749bcf2820c84d5e009383bfd7b2e914b70587eb999e42dc5ebb"
                   },
                   {
                       "path":  "tests/unit/services/tags-lifecycle.service.test.ts",
-                      "sha256":  "f6bd634b9f426062c9dc08a60ddba7ed6b04b3aafe876069fa7ced1dd91b08d9"
+                      "sha256":  "be646b97be8a07b2e65c7914e866dc40bc4411a2c2ba613aeb090ba554e7dd76"
                   },
                   {
                       "path":  "tests/unit/services/tags-upsert-guard.test.ts",
-                      "sha256":  "0ed0c0b71afc525693ac2e35e53ca49ae0d497e4f143f98af94a8a69a4c09894"
+                      "sha256":  "9f2d2e4ef68c0b5610101dd35cbcf8b7a776b3e097becc42b4792fbe1e283bd5"
                   },
                   {
                       "path":  "tests/unit/services/workspace.test.ts",

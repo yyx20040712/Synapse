@@ -50,7 +50,7 @@ async function renderDropdown(
   }
   await act(async () => {
     root?.render(
-      <TagDropdown selectedTagIds={selectedTagIds} onFilterChange={onFilterChange} onMutated={onMutated} />
+      <TagDropdown folderId="__main__" selectedTagIds={selectedTagIds} onFilterChange={onFilterChange} onMutated={onMutated} />
     )
   })
 }

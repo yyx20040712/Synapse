@@ -190,6 +190,40 @@ describe('F-FOLDER-01 papers/move-folder 移动事务序（§3.4+W2/W3——真�
     expect(moved.slot).toBe(3) // max(1,2)+1——透写旧值 1 即重复（变异 M14 锚）
   })
 
+  it('[F-TAGS-02 乙 / F-DBCAMP-01 DB-1 U4] 移动 F1→F2 摘挂接：A 夹文献带挂接移 B → 挂接清零+标签行留原域（INV-126 机制面②）', async () => {
+    const f1 = repos.folders.create('图一')
+    const f2 = repos.folders.create('图二')
+    seedPaper('p-tagged', 2024)
+    repos.papers.setFolderId('p-tagged', f1.id)
+    const tag = repos.tags.upsertByName(f1.id, '域标签')
+    repos.tags.attach('p-tagged', tag.id)
+    expect(repos.tags.namesByPaper('p-tagged')).toEqual(['域标签'])
+    await papers.moveFolder({ paperId: 'p-tagged', toFolderId: f2.id })
+    // [乙] 表级域一致：移夹后其挂接全为原域（跨域行永不存在）→ 摘除
+    expect(repos.tags.namesByPaper('p-tagged')).toEqual([])
+    expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 0 })
+    // 标签=工作区资产不随文献走——定义行留原域（文献在新夹白手起家）
+    expect(repos.tags.findById(tag.id)?.folderId).toBe(f1.id)
+    expect(repos.tags.listWithCounts(f1.id)).toHaveLength(1)
+  })
+
+  it('[R4/回炉轮1] 同值移动保挂接：A 夹文献带挂接→moveFolder(to=同夹)→挂接保留（:205-207 幂等早退证据锚——防未来重排早退位次时静默清挂接回归）', async () => {
+    const f1 = repos.folders.create('图一')
+    seedPaper('p-stay', 2024)
+    repos.papers.setFolderId('p-stay', f1.id)
+    const tag = repos.tags.upsertByName(f1.id, '留域标签')
+    repos.tags.attach('p-stay', tag.id)
+    expect(repos.tags.namesByPaper('p-stay')).toEqual(['留域标签'])
+    // 同值移动（folderId===toFolderId）→ :205-207 幂等早退在事务前=零库写——
+    // 挂接原样保留（摘挂接步在事务内，早退即不达）
+    await expect(papers.moveFolder({ paperId: 'p-stay', toFolderId: f1.id })).resolves.toEqual({ ok: true })
+    expect(repos.tags.namesByPaper('p-stay')).toEqual(['留域标签'])
+    expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })
+    expect(repos.tags.findById(tag.id)?.folderId).toBe(f1.id)
+    expect(foldersChanged).not.toHaveBeenCalled()
+    expect(lineageChanged).not.toHaveBeenCalled()
+  })
+
   it('非法 toFolderId 拒（NOT_FOUND 中文）；幽灵 paperId 拒；S1 pending 拒（CONFLICT+零库副作用）', async () => {
     const f1 = repos.folders.create('图一')
     seedPaper('p-a', 2024)

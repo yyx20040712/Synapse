@@ -3,25 +3,37 @@
  * [SR-DB-04] tags.repo —— tags / paper_tags 仓储（工单：已实现）
  *
  * ── 行为层 ──
- * - 按名 upsert（同名直接返回既有行，幂等）
- * - 带计数列表 / 挂接 / 摘除
- * - 标签生命周期（P7E-01）：findByName（rename 冲突预检）/ renameTag /
+ * - 按名 upsert（域内同名直接返回既有行，幂等——[F-TAGS-02/DB-1 U4] 域化：
+ *   冲突键=(folder_id, name)，UNIQUE(folder_id,name)〔019〕）
+ * - 带计数列表（域内）/ 挂接 / 摘除
+ * - 标签生命周期（P7E-01）：findByName（域内 rename 冲突预检）/ renameTag /
  *   mergeTags（三步事务：迁挂接→清源挂接→删源标签行）/ deleteTag（两步事务）
+ * - [F-TAGS-02/DB-1 U4] findById（id→行+域读取单源——service 对 id 类操作的
+ *   存在性与域来源；域化后无全量面，原「存在性预检经 listWithCounts 全量 id」
+ *   注记作废）/ detachAllByPaper（moveFolder 摘挂接专用——INV-126 机制面②）
  *
  * ── 接口层 ──
  * - export interface TagsRepo：
- *     upsertByName(name: string): Tag                       // 同名幂等
- *     listWithCounts(): Array<Tag & { paperCount: number }> // paperCount 降序，再按名字典序
- *     attach(paperId: string, tagId: string): void          // INSERT OR IGNORE
+ *     upsertByName(folderId: string, name: string): Tag      // 域内同名幂等
+ *     listWithCounts(folderId: string): Array<Tag & { paperCount: number }>
+ *                                                            // paperCount 降序，再按名字典序（域内）
+ *     attach(paperId: string, tagId: string): void          // INSERT OR IGNORE（域不一致由 019 触发器 ABORT）
  *     detach(paperId: string, tagId: string): void
- *     namesByPaper(paperId: string): string[]               // 名字典序
- *     findByName(name: string): Tag | undefined             // P7E-01 rename 冲突预检
+ *     namesByPaper(paperId: string): string[]               // 名字典序（表级域一致=免域过滤）
+ *     findByName(folderId: string, name: string): Tag | undefined  // 域内按名查
+ *     findById(tagId: string): (Tag & { folderId: string }) | undefined // id+域读取单源
+ *     detachAllByPaper(paperId: string): void               // moveFolder 摘挂接
  *     renameTag(id: string, name: string): boolean          // P7E-01 UPDATE，changes>0
  *     mergeTags(sourceId: string, targetId: string): void   // P7E-01 三步事务
  *     deleteTag(id: string): void                           // P7E-01 两步事务
  *
  * ── 架构层 ──
  * - 依赖：db/connection、shared/models/tag
+ * - [F-TAGS-02/DB-1 U4] 表级不变量承载域语义（INV-126：∀paper_tags 行
+ *   tags.folder_id=papers.folder_id——019 触发器+moveFolder 摘挂接步守卫）：
+ *   id/挂接键类操作（namesByPaper/tagNamesByIds/attach/detach/renameTag/
+ *   setColor/mergeTags/deleteTag）不加域参——挂接恒同域=读面免域过滤、写面
+ *   由触发器/服务域同检守卫，多余域参=可与行真值冲突的冗余失败面
  * - 孤儿标签（无任何文献引用）由 listWithCounts 自然呈现 paperCount=0；
  *   物理清理由 deleteTag 承担（P7E-01 起可清）
  * - 全部语句在工厂内 db.prepare 预编译一次，参数一律绑定（禁止拼接）；
@@ -39,6 +51,7 @@
  * ── 文化层 ──
  * - 测试：tests/unit/db/repos/tags.repo.test.ts（已锁定）
  *   + tests/unit/db/repos/tags-lifecycle.repo.test.ts（P7E-01，always-active）
+ *   + tests/unit/services/tags-domain-limits.service.test.ts（U4 触发器透传）
  * - UUID 用 crypto.randomUUID()；tags 表无时间戳列
  */
 import type Database from 'better-sqlite3'
@@ -50,6 +63,12 @@ interface TagRow {
   id: string
   name: string
   color: string | null
+}
+
+/** [F-TAGS-02/DB-1 U4] findById 行形状（+folder_id 域列——019 起；repo 层
+ * 类型不入 IPC wire：Tag wire 形状 {id,name,color} 零变，folderId 不入 wire） */
+interface TagDomainRow extends TagRow {
+  folder_id: string
 }
 
 /** listWithCounts 的聚合行：COUNT 输出列以别名 paper_count 返回 */
@@ -69,8 +88,8 @@ interface TagNameByIdsRow {
 }
 
 export interface TagsRepo {
-  upsertByName(name: string): Tag
-  listWithCounts(): Array<Tag & { paperCount: number }>
+  upsertByName(folderId: string, name: string): Tag
+  listWithCounts(folderId: string): Array<Tag & { paperCount: number }>
   attach(paperId: string, tagId: string): void
   detach(paperId: string, tagId: string): void
   namesByPaper(paperId: string): string[]
@@ -78,29 +97,44 @@ export interface TagsRepo {
    *  禁逐 id 循环 N+1；序=ORDER BY paper_id, t.name ASC——namesByPaper 名序
    *  同源口径；空 ids=空数组） */
   tagNamesByIds(paperIds: readonly string[]): Array<{ paperId: string; name: string }>
-  /** P7E-01：rename 冲突预检（按名查行；TagRow 与 Tag 同形） */
-  findByName(name: string): Tag | undefined
+  /** P7E-01：rename 冲突预检（域内按名查行；TagRow 与 Tag 同形） */
+  findByName(folderId: string, name: string): Tag | undefined
+  /** [F-TAGS-02/DB-1 U4]：id→行+域读取单源（service 对 id 类操作的存在性
+   *  与域来源；Tag & { folderId } 不入 IPC wire） */
+  findById(tagId: string): (Tag & { folderId: string }) | undefined
+  /** [F-TAGS-02/DB-1 U4·回炉轮1 R1]：挂接在场判定（(paperId, tagId) id 键
+   *  ——attach 幂等早退判据；名键在跨域同名 tagId 下误判已挂=伪成功逃逸
+   *  触发器错误面，双席同中 W1 处置） */
+  isAttached(paperId: string, tagId: string): boolean
+  /** [F-TAGS-02 乙/DB-1 U4]：摘除该文献全部挂接（moveFolder 专用——INV-126
+   *  机制面②：papers.folder_id 变更后其挂接全为原域，摘除保表级域一致） */
+  detachAllByPaper(paperId: string): void
   /** P7E-01：改名（UPDATE…WHERE id=?；返回 changes>0——同名幂等时可能为 0，非错） */
   renameTag(id: string, name: string): boolean
   /** [F-TAGS-01]：颜色身份（hex|null=恢复默认；返回 changes>0——存在性预检归 service） */
   setColor(id: string, color: string | null): boolean
-  /** P7E-01：合并（三步事务：迁挂接→清源挂接→删源标签行；双挂由 OR IGNORE 吸收） */
+  /** P7E-01：合并（三步事务：迁挂接→清源挂接→删源标签行；双挂由 OR IGNORE 吸收；
+   *  跨域由 service 域同检先行拒——019 触发器兜底 ABORT） */
   mergeTags(sourceId: string, targetId: string): void
   /** P7E-01：删除（两步事务：清挂接→删标签行） */
   deleteTag(id: string): void
 }
 
 export function createTagsRepo(db: SqliteDb): TagsRepo {
-  const insertTag = db.prepare<[string, string]>(
-    'INSERT INTO tags (id, name) VALUES (?, ?) ON CONFLICT (name) DO NOTHING'
+  const insertTag = db.prepare<[string, string, string]>(
+    'INSERT INTO tags (id, name, folder_id) VALUES (?, ?, ?) ON CONFLICT (folder_id, name) DO NOTHING'
   )
-  const tagByName = db.prepare<[string], TagRow>(
-    'SELECT id, name, color FROM tags WHERE name = ?'
+  const tagByName = db.prepare<[string, string], TagRow>(
+    'SELECT id, name, color FROM tags WHERE folder_id = ? AND name = ?'
   )
-  const tagsWithCounts = db.prepare<[], TagCountRow>(
+  const tagById = db.prepare<[string], TagDomainRow>(
+    'SELECT id, name, color, folder_id FROM tags WHERE id = ?'
+  )
+  const tagsWithCounts = db.prepare<[string], TagCountRow>(
     `SELECT t.id, t.name, t.color, COUNT(pt.paper_id) AS paper_count
        FROM tags t
        LEFT JOIN paper_tags pt ON pt.tag_id = t.id
+      WHERE t.folder_id = ?
       GROUP BY t.id, t.name, t.color
       ORDER BY paper_count DESC, t.name ASC`
   )
@@ -132,6 +166,12 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
   )
   const deleteAttachmentsByTag = db.prepare<[string]>('DELETE FROM paper_tags WHERE tag_id = ?')
   const deleteTagRow = db.prepare<[string]>('DELETE FROM tags WHERE id = ?')
+  // [F-TAGS-02 乙/DB-1 U4] moveFolder 摘挂接（INV-126 机制面②——单语句纯 DELETE）
+  const detachAllByPaperStmt = db.prepare<[string]>('DELETE FROM paper_tags WHERE paper_id = ?')
+  // [R1/回炉轮1] 挂接在场判定（id 键——LIMIT 1 存在性快查）
+  const attachedExists = db.prepare<[string, string], { one: number }>(
+    'SELECT 1 AS one FROM paper_tags WHERE paper_id = ? AND tag_id = ? LIMIT 1'
+  )
   // 跨表多写用 db.transaction（头注架构层条款）：第二步失败则后续不落地
   const mergeTagsTxn = db.transaction((sourceId: string, targetId: string): void => {
     migrateAttachments.run(targetId, sourceId)
@@ -144,20 +184,21 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
   })
 
   return {
-    upsertByName(name: string): Tag {
-      // 冲突时忽略插入，随后按名回读：新插入行与既有行统一走同一条 SELECT
-      insertTag.run(crypto.randomUUID(), name)
-      const row = tagByName.get(name)
+    upsertByName(folderId: string, name: string): Tag {
+      // 冲突时忽略插入，随后按 (folder_id, name) 回读：新插入行与既有行统一走同一条 SELECT
+      insertTag.run(crypto.randomUUID(), name, folderId)
+      const row = tagByName.get(folderId, name)
       if (row === undefined) {
-        // 不可达分支：DO NOTHING 后 name 必有对应行（新插入或同名既有）
-        throw new Error(`tags.repo.upsertByName：按名回读失败（name=${name}）`)
+        // 不可达分支：DO NOTHING 后 (folder_id, name) 必有对应行（新插入或域内同名既有）
+        throw new Error(`tags.repo.upsertByName：按名回读失败（folderId=${folderId}, name=${name}）`)
       }
       return { id: row.id, name: row.name, color: row.color }
     },
 
-    listWithCounts(): Array<Tag & { paperCount: number }> {
-      // LEFT JOIN 保证孤儿标签以 paperCount=0 出现
-      return tagsWithCounts.all().map((row) => ({
+    listWithCounts(folderId: string): Array<Tag & { paperCount: number }> {
+      // LEFT JOIN 保证孤儿标签以 paperCount=0 出现（计数=域内挂接数——表级
+      // 域一致不变量下自然正确，挂接恒同域免域过滤）
+      return tagsWithCounts.all(folderId).map((row) => ({
         id: row.id,
         name: row.name,
         color: row.color,
@@ -166,7 +207,8 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
     },
 
     attach(paperId: string, tagId: string): void {
-      // OR IGNORE：重复挂接幂等（复合主键 paper_id+tag_id 冲突被吞掉）
+      // OR IGNORE：重复挂接幂等（复合主键 paper_id+tag_id 冲突被吞掉）；
+      // 域不一致由 019 触发器 RAISE(ABORT) 拒——非约束冲突，OR IGNORE 不吞
       attachTag.run(paperId, tagId)
     },
 
@@ -195,8 +237,21 @@ export function createTagsRepo(db: SqliteDb): TagsRepo {
       return q.all(...paperIds)
     },
 
-    findByName(name: string): Tag | undefined {
-      return tagByName.get(name) ?? undefined
+    findByName(folderId: string, name: string): Tag | undefined {
+      return tagByName.get(folderId, name) ?? undefined
+    },
+
+    findById(tagId: string): (Tag & { folderId: string }) | undefined {
+      const row = tagById.get(tagId)
+      return row === undefined ? undefined : { id: row.id, name: row.name, color: row.color, folderId: row.folder_id }
+    },
+
+    detachAllByPaper(paperId: string): void {
+      detachAllByPaperStmt.run(paperId)
+    },
+
+    isAttached(paperId: string, tagId: string): boolean {
+      return attachedExists.get(paperId, tagId) !== undefined
     },
 
     renameTag(id: string, name: string): boolean {

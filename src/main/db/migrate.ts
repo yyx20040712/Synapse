@@ -31,6 +31,7 @@ import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolo
 import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?raw'
 import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
 import appMetaSql from './migrations/018_app_meta.sql?raw'
+import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
 
 export interface Migration {
   version: number
@@ -94,7 +95,12 @@ export const MIGRATIONS: readonly Migration[] = [
   // ——010 lineage_graph_meta 同形态三列 KV 无 seed：身份值=运行期
   // ensureIdentity 缺席才生成，snapshot_seq=DB-3 面不初始化；纯新增表零 FK
   // 面，无 fkOff；新库 user_version 终值 18）
-  { version: 18, name: 'app_meta', sql: appMetaSql }
+  { version: 18, name: 'app_meta', sql: appMetaSql },
+  // [F-DBCAMP-01 DB-1 U4 / F-TAGS-02] tags 多域：folder_id 域列+UNIQUE(folder_id,
+  // name)+存量归主图+挂接域守卫触发器（012 族域资产语义——CASCADE 夹删随灭；
+  // 重建序独立于 016：无 FTS 面/无表上触发器/唯一子表=paper_tags；fkOff 同 016
+  // ——tags 是父表 DROP 级联灭挂接；新库 user_version 终值 19）
+  { version: 19, name: 'tags_folder_domain', sql: tagsFolderDomainSql, fkOff: true }
 ]
 
 export interface MigrateResult {

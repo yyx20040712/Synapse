@@ -185,6 +185,7 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
         <TagEditor
           key={detail.id}
           paperId={detail.id}
+          folderId={detail.folderId}
           tags={detail.tags}
           onChanged={() => {
             setReloadKey((k) => k + 1)

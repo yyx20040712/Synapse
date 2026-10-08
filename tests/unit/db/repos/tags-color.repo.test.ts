@@ -22,24 +22,24 @@ describe('F-TAGS-01 tags.repo —— color 列（011 迁移贯通）', () => {
   })
 
   it('upsertByName 新建行 color=null；findByName/listWithCounts 恒携带 color 字段', () => {
-    const tag = repo.upsertByName('必读')
+    const tag = repo.upsertByName('__main__', '必读')
     expect(tag.color).toBeNull()
-    expect(repo.findByName('必读')?.color).toBeNull()
-    expect(repo.listWithCounts().map((t) => t.color)).toEqual([null])
+    expect(repo.findByName('__main__', '必读')?.color).toBeNull()
+    expect(repo.listWithCounts('__main__').map((t) => t.color)).toEqual([null])
   })
 
   it('setColor：落库生效（findByName 回读）+listWithCounts 携带', () => {
-    const tag = repo.upsertByName('核心')
+    const tag = repo.upsertByName('__main__', '核心')
     expect(repo.setColor(tag.id, '#e11d48')).toBe(true)
-    expect(repo.findByName('核心')?.color).toBe('#e11d48')
-    expect(repo.listWithCounts().find((t) => t.id === tag.id)?.color).toBe('#e11d48')
+    expect(repo.findByName('__main__', '核心')?.color).toBe('#e11d48')
+    expect(repo.listWithCounts('__main__').find((t) => t.id === tag.id)?.color).toBe('#e11d48')
   })
 
   it('setColor(null)=恢复默认：color 归 null', () => {
-    const tag = repo.upsertByName('默认态')
+    const tag = repo.upsertByName('__main__', '默认态')
     repo.setColor(tag.id, '#0ea5e9')
     expect(repo.setColor(tag.id, null)).toBe(true)
-    expect(repo.findByName('默认态')?.color).toBeNull()
+    expect(repo.findByName('__main__', '默认态')?.color).toBeNull()
   })
 
   it('setColor 未命中 id：返回 false（changes=0——存在性语义归 service 预检）', () => {

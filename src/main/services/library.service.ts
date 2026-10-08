@@ -171,6 +171,8 @@ export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['lib
  *    无早退则 slot 自计重排组末+updated_at 刷新=非幂等副作用，早退零库写零广播）
  * 3. 跨图边清理：节点换图后其与旧图邻居的边=跨图（INV-90 违例）——同事务删除
  *    （边属图派生，连线不迁移——survey 矩阵「移动 F1→F2」行用户明示）
+ * 3b. [F-TAGS-02 乙 / F-DBCAMP-01 DB-1 U4] 摘挂接步：setFolderId 后该文献全部
+ *    paper_tags 挂接随域消亡（标签=工作区资产不随文献走——表级域一致 INV-126）
  * 4. 广播 folders.changed + lineage.changed（侧栏计数+图结构双失效）
  *
  * [F-UIRES-01 批 B] delete 事务序（设计稿 §2.4 统一级联契约）：
@@ -207,6 +209,11 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
       }
       deps.repos.withTransaction(() => {
         papers.setFolderId(req.paperId, req.toFolderId)
+        // [F-TAGS-02 乙 / F-DBCAMP-01 DB-1 U4] 摘挂接步（INV-126 机制面②——
+        // papers.folder_id 变更面）：移夹后其挂接全为原域（表级域一致下跨域行
+        // 永不存在）→ 同事务摘除；标签行不动（工作区资产留原域），文献在新夹
+        // 白手起家；广播面零改动（标签非图/夹结构面——INV-124 星标同口径）
+        deps.repos.tags.detachAllByPaper(req.paperId)
         const node = lineage.nodeByPaperId(req.paperId)
         if (node === null) {
           // 移入且无节点：自动入图（「挂入=自动入同名图」——survey §2.3）；

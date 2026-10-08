@@ -60,7 +60,7 @@ async function renderDropdown(
   }
   await act(async () => {
     root?.render(
-      <TagDropdown selectedTagIds={selectedTagIds} onFilterChange={onFilterChange} onMutated={onMutated} />
+      <TagDropdown folderId="__main__" selectedTagIds={selectedTagIds} onFilterChange={onFilterChange} onMutated={onMutated} />
     )
   })
 }
@@ -427,7 +427,7 @@ describe('色映射通道（onColorMapChange——INV-86 承接）', () => {
     root = createRoot(host)
     await act(async () => {
       root?.render(
-        <TagDropdown selectedTagIds={[]} onFilterChange={() => undefined} onColorMapChange={onMap} />
+        <TagDropdown folderId="__main__" selectedTagIds={[]} onFilterChange={() => undefined} onColorMapChange={onMap} />
       )
     })
     expect(onMap).toHaveBeenCalled()

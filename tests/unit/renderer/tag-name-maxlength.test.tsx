@@ -68,7 +68,7 @@ afterEach(() => {
 
 describe('T4 标签名输入点 maxLength=TAG_NAME_MAX（输入面+schema 单源接线）', () => {
   it('TagEditor「新增标签」输入框携带 maxLength', () => {
-    mount(<TagEditor paperId="p-1" tags={[TAG_A]} onChanged={() => undefined} />)
+    mount(<TagEditor paperId="p-1" folderId="__main__" tags={[TAG_A]} onChanged={() => undefined} />)
     const input = document.querySelector('input[aria-label="新增标签"]') as HTMLInputElement | null
     expect(input, '新增标签输入框在场').not.toBeNull()
     expect(input!.maxLength, `maxLength=${TAG_NAME_MAX}`).toBe(TAG_NAME_MAX)
@@ -76,7 +76,7 @@ describe('T4 标签名输入点 maxLength=TAG_NAME_MAX（输入面+schema 单源
 
   it('TagDropdown 行编辑态输入框携带 maxLength（B1 批——TagRenameDialog 校验承接）', async () => {
     mount(
-      <TagDropdown selectedTagIds={[]} onFilterChange={() => undefined} />
+      <TagDropdown folderId="__main__" selectedTagIds={[]} onFilterChange={() => undefined} />
     )
     await act(async () => {
       ;([...document.querySelectorAll('button')].find((b) =>
@@ -99,8 +99,8 @@ describe('T4 标签名输入点 maxLength=TAG_NAME_MAX（输入面+schema 单源
     const over = '甲'.repeat(TAG_NAME_MAX + 1)
     expect(tagSchema.safeParse({ id: 't', name: at, color: null }).success, '恰上限过（tagSchema）').toBe(true)
     expect(tagSchema.safeParse({ id: 't', name: over, color: null }).success, '超 1 拒（tagSchema）').toBe(false)
-    expect(tagNameReqSchema.safeParse({ name: at }).success, '恰上限过（tagNameReq）').toBe(true)
-    expect(tagNameReqSchema.safeParse({ name: over }).success, '超 1 拒（tagNameReq）').toBe(false)
+    expect(tagNameReqSchema.safeParse({ folderId: '__main__', name: at }).success, '恰上限过（tagNameReq）').toBe(true)
+    expect(tagNameReqSchema.safeParse({ folderId: '__main__', name: over }).success, '超 1 拒（tagNameReq）').toBe(false)
     expect(renameTagReqSchema.safeParse({ tagId: 't', name: at }).success, '恰上限过（renameTagReq）').toBe(true)
     expect(renameTagReqSchema.safeParse({ tagId: 't', name: over }).success, '超 1 拒（renameTagReq）').toBe(false)
   })

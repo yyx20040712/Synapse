@@ -105,7 +105,9 @@ export const API_SURFACE = {
     }
   },
   tags: {
-    list: { channel: 'tags/list', Req: S.voidReqSchema, Res: z.array(S.tagWithCountSchema) },
+    // [F-TAGS-02 / DB-1 U4] list Req=folderId 必填（域内列表——无全域并集消费面；
+    // Req 形状变通道数不变：本域八通道 pin 62 恒定）
+    list: { channel: 'tags/list', Req: S.tagListReqSchema, Res: z.array(S.tagWithCountSchema) },
     upsert: { channel: 'tags/upsert', Req: S.tagNameReqSchema, Res: tagSchema },
     attach: { channel: 'tags/attach', Req: S.attachTagReqSchema, Res: S.trueAckSchema },
     detach: { channel: 'tags/detach', Req: S.detachTagReqSchema, Res: S.trueAckSchema },

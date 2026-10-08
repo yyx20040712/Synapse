@@ -47,7 +47,10 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     const na = repos.lineage.nodeByPaperId('p-dom-a')!
     const nb = repos.lineage.nodeByPaperId('p-dom-b')!
     repos.lineage.upsertEdge({ fromNode: na.id, toNode: nb.id, label: '域内边' })
-    db.prepare("INSERT INTO tags (id, name) VALUES ('t-dom', '域标签')").run()
+    // [F-TAGS-02 / F-DBCAMP-01 DB-1 U4] 标签显式落域（夹具域对齐）：019 后
+    // 挂接受 paper_tags_domain_guard 守卫——p-dom-a 属 dom 夹，标签缺省
+    // __main__ 域必被触发器拒；且 tags.folder_id CASCADE=夹删随灭（域资产）
+    db.prepare('INSERT INTO tags (id, name, folder_id) VALUES (?, ?, ?)').run('t-dom', '域标签', folderId)
     db.prepare("INSERT INTO annotations (id, paper_id, page, kind, sort_key, created_at, updated_at) VALUES ('a-dom','p-dom-a',0,'highlight','0:0','t','t')").run()
     db.prepare("INSERT INTO notes (id, paper_id, created_at, updated_at) VALUES ('n-dom','p-dom-a','t','t')").run()
     db.prepare("INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-dom-a','t-dom')").run()
@@ -100,7 +103,10 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     expect(count('annotations')).toBe(0)
     expect(count('paper_tags')).toBe(0)
     expect(count('ai_notes')).toBe(0)
-    expect(count('tags')).toBe(1) // 标签定义行=库级实体保留（设计稿 §1.4 边界申报①）
+    // [F-TAGS-02 / F-DBCAMP-01 DB-1 U4] 019 起 tags=域资产（folder_id
+    // REFERENCES collections ON DELETE CASCADE——012 族先例）：删夹则域内
+    // 标签行随灭（原「标签定义行=库级实体保留」语义随域化退役）
+    expect(count('tags')).toBe(0)
     expect(count('papers_fts', ' WHERE papers_fts MATCH ?', '"文献p-dom-a"')).toBe(0) // FTS 触发器自清
     // 域外对照面全保持
     expect(count('papers', ' WHERE id=?', 'p-keep')).toBe(1)

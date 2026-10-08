@@ -3,7 +3,9 @@
  *
  * ── 行为层 ──
  * - { tags: Array<Tag & { paperCount: number }>; loading: boolean; error: string | null }
- * - refresh()：api.tags.list
+ * - refresh(folderId)：api.tags.list({folderId})——[F-TAGS-02/DB-1 U4] 域参化
+ *   （019 起标签按文件夹完全隔离；list Req=folderId 必填）；最近一次 refresh 的
+ *   域被记住（mutate 链式 refresh 复用——命令型动作是 id 类操作无域参）
  * - 命令型三动作（P7E-01）：renameTag/mergeTags/deleteTag——
  *   成功→内部 await refresh()（单一数据源自愈）后返回 { ok: true }；
  *   失败→返回 { ok: false, error: AppError }（发起方 toast——不经 store.error
@@ -32,6 +34,8 @@ import { create } from 'zustand'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import type { AppError, AppErrorCode } from '@shared/app-error'
 import type { Tag } from '@shared/models/tag'
+// [R2/回炉轮1] 默认域常量单源（MAIN_GRAPH_ID——FilterBar 同批先例，禁主图 id 字面量对齐）
+import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 
 /** 带计数的标签行（listWithCounts 形状——组件消费的单一类型来源） */
 export type TagWithCount = Tag & { paperCount: number }
@@ -48,7 +52,9 @@ export interface TagsStore {
   loading: boolean
   /** 最近一次 refresh 的失败信息（成功/新发起时清空）——消费方 watch 后 toast */
   error: string | null
-  refresh(): Promise<void>
+  /** [F-TAGS-02/DB-1 U4] 域参化：刷新该文件夹的标签域（默认域=主图——
+   *  未选文件夹时标签默认域=主图，门一 N1 口径） */
+  refresh(folderId: string): Promise<void>
   renameTag(tagId: string, name: string): Promise<TagsMutationResult>
   mergeTags(sourceId: string, targetId: string): Promise<TagsMutationResult>
   deleteTag(tagId: string): Promise<TagsMutationResult>
@@ -60,12 +66,16 @@ export const useTagsStore = create<TagsStore>()((set, get) => {
   // 请求序号（store 闭包，对齐 library.store）：TagEditor/TagDropdown 双挂载并发 refresh
   // 时只认最后一次发起的请求——迟到的旧响应（含旧失败）不污染最新 tags/error
   let loadSeq = 0
+  // [F-TAGS-02/DB-1 U4] 最近一次 refresh 的域（mutate 链式 refresh 复用——命令型
+  // 动作是 id 类操作无域参；默认=主图，挂载组件恒先 refresh 再可 mutate）
+  let lastFolderId = MAIN_GRAPH_ID
 
-  /** 命令型动作共用壳：成功链式 refresh；NOT_FOUND 失败自愈 refresh（S7），余零 refresh（S6） */
+  /** 命令型动作共用壳：成功链式 refresh（最近域）；NOT_FOUND 失败自愈 refresh
+   * （S7），余零 refresh（S6） */
   async function mutate(run: () => Promise<unknown>): Promise<TagsMutationResult> {
     try {
       await run()
-      await get().refresh()
+      await get().refresh(lastFolderId)
       return { ok: true }
     } catch (e) {
       const error: AppError =
@@ -74,7 +84,7 @@ export const useTagsStore = create<TagsStore>()((set, get) => {
           : { code: 'INTERNAL', message: TAG_OP_FAILED }
       // NOT_FOUND=本地列表陈旧（他处已删/已改）——重拉自愈；其余（CONFLICT/
       // INVALID_REQUEST 等）是用户输入问题，零 refresh 保持对话框态（S6）
-      if (error.code === 'NOT_FOUND') await get().refresh()
+      if (error.code === 'NOT_FOUND') await get().refresh(lastFolderId)
       return { ok: false, error }
     }
   }
@@ -84,11 +94,12 @@ export const useTagsStore = create<TagsStore>()((set, get) => {
     loading: false,
     error: null,
 
-    refresh: async () => {
+    refresh: async (folderId: string) => {
       const seq = ++loadSeq
+      lastFolderId = folderId
       set({ loading: true, error: null })
       try {
-        const tags = await unwrap(api.tags.list({}))
+        const tags = await unwrap(api.tags.list({ folderId }))
         if (seq !== loadSeq) return
         set({ tags, loading: false, error: null })
       } catch (e) {

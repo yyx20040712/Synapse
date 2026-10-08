@@ -68,11 +68,14 @@ try {
     "UPDATE papers SET folder_id = ? WHERE id = ? AND (folder_id IS NULL OR folder_id = '__main__')"
   )
   // [A1a] 文献库标签种子（同名幂等：DO NOTHING+按名回读——tags.repo
-  // upsertByName 同型；挂接 OR IGNORE 同型）
+  // upsertByName 同型；挂接 OR IGNORE 同型）。
+  // [F-TAGS-02 / F-DBCAMP-01 DB-1 U4] folder_id 域化：两语句均用节点循环内
+  // folderId 变量（T11 图夹非主图的种子若落主图必被 019 触发器 ABORT——
+  // assignFolder 已同步文献归属，标签随夹=域对齐）
   const insTag = db.prepare(
-    'INSERT INTO tags (id, name) VALUES (?, ?) ON CONFLICT (name) DO NOTHING'
+    'INSERT INTO tags (id, name, folder_id) VALUES (?, ?, ?) ON CONFLICT (folder_id, name) DO NOTHING'
   )
-  const tagIdByName = db.prepare('SELECT id FROM tags WHERE name = ?')
+  const tagIdByName = db.prepare('SELECT id FROM tags WHERE folder_id = ? AND name = ?')
   const attachPaperTag = db.prepare(
     'INSERT OR IGNORE INTO paper_tags (paper_id, tag_id) VALUES (?, ?)'
   )
@@ -114,10 +117,10 @@ try {
     )
     assignFolder.run(folderId, n.paperId)
     for (const name of n.libraryTags ?? []) {
-      insTag.run(randomUUID(), name)
-      const row = tagIdByName.get(name)
+      insTag.run(randomUUID(), name, folderId)
+      const row = tagIdByName.get(folderId, name)
       if (row === undefined) {
-        throw new Error(`seed-lineage: 标签按名回读失败（${name}）`)
+        throw new Error(`seed-lineage: 标签按名回读失败（${folderId}/${name}）`)
       }
       attachPaperTag.run(n.paperId, row.id)
     }

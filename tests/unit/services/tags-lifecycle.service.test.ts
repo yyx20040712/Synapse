@@ -13,11 +13,13 @@ import type { Repos } from '../../../src/main/db/repos'
 function stubRepos(over: Record<string, unknown> = {}): Repos {
   const tags = {
     listWithCounts: vi.fn(() => [{ id: 't-1', name: '甲', paperCount: 1, color: null }]),
-    upsertByName: vi.fn((name: string) => ({ id: 't-1', name, color: null })),
+    upsertByName: vi.fn((folderId: string, name: string) => ({ id: 't-1', name, color: null })),
     attach: vi.fn(),
     detach: vi.fn(),
     namesByPaper: vi.fn(() => []),
     findByName: vi.fn((): undefined => undefined),
+    // [F-TAGS-02/DB-1 U4] id→行+域读取单源（rename/merge/delete/setColor 预检换源）
+    findById: vi.fn(() => ({ id: 't-1', name: '甲', color: null, folderId: '__main__' })),
     renameTag: vi.fn(() => true),
     mergeTags: vi.fn(),
     deleteTag: vi.fn(),
@@ -51,17 +53,18 @@ describe('P7E-01 tags.service —— rename 校验序', () => {
     expect(repos.tags.renameTag).not.toHaveBeenCalled()
   })
 
-  it('tagId 不存在 → NOT_FOUND「标签不存在」（校验序先于冲突预检）', async () => {
-    const repos = stubRepos({ listWithCounts: vi.fn(() => []) })
+  it('tagId 不存在 → NOT_FOUND「标签不存在」（校验序先于冲突预检——[F-TAGS-02/DB-1 U4] findById 换源）', async () => {
+    const repos = stubRepos({ findById: vi.fn((): undefined => undefined) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.rename({ tagId: 't-x', name: '新名' }), 'NOT_FOUND', '标签不存在')
     expect(repos.tags.renameTag).not.toHaveBeenCalled()
   })
 
-  it('与其他标签同名 → CONFLICT「标签名已被占用」（不自动合并——数据语义变更须显式走 merge）', async () => {
+  it('与其他标签同名 → CONFLICT「标签名已被占用」（不自动合并——数据语义变更须显式走 merge；[F-TAGS-02/DB-1 U4] 域内冲突检查）', async () => {
     const repos = stubRepos({ findByName: vi.fn(() => ({ id: 't-2', name: '甲', color: null })) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.rename({ tagId: 't-1', name: '甲' }), 'CONFLICT', '标签名已被占用')
+    expect(repos.tags.findByName).toHaveBeenCalledWith('__main__', '甲')
     expect(repos.tags.renameTag).not.toHaveBeenCalled()
   })
 
@@ -88,26 +91,31 @@ describe('P7E-01 tags.service —— merge 校验序', () => {
     expect(repos.tags.mergeTags).not.toHaveBeenCalled()
   })
 
-  it('源不存在 → NOT_FOUND 且消息带源 id（先 source 后 target）', async () => {
-    const repos = stubRepos({ listWithCounts: vi.fn(() => [{ id: 't-2', name: '乙', paperCount: 0, color: null }]) })
+  it('源不存在 → NOT_FOUND 且消息带源 id（先 source 后 target——[F-TAGS-02/DB-1 U4] findById 换源）', async () => {
+    const repos = stubRepos({
+      findById: vi.fn((id: string) =>
+        id === 't-x' ? undefined : { id: 't-2', name: '乙', color: null, folderId: '__main__' }
+      )
+    })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.merge({ sourceId: 't-x', targetId: 't-2' }), 'NOT_FOUND', 't-x')
     expect(repos.tags.mergeTags).not.toHaveBeenCalled()
   })
 
   it('目标不存在 → NOT_FOUND 且消息带目标 id', async () => {
-    const repos = stubRepos()
+    const repos = stubRepos({
+      findById: vi.fn((id: string) =>
+        id === 't-y' ? undefined : { id: 't-1', name: '甲', color: null, folderId: '__main__' }
+      )
+    })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.merge({ sourceId: 't-1', targetId: 't-y' }), 'NOT_FOUND', 't-y')
     expect(repos.tags.mergeTags).not.toHaveBeenCalled()
   })
 
-  it('成功 → { ok: true }；mergeTags(source, target) 逐参', async () => {
+  it('成功 → { ok: true }；mergeTags(source, target) 逐参（[F-TAGS-02/DB-1 U4] 同域放行）', async () => {
     const repos = stubRepos({
-      listWithCounts: vi.fn(() => [
-        { id: 't-1', name: '甲', paperCount: 1, color: null },
-        { id: 't-2', name: '乙', paperCount: 2, color: null }
-      ])
+      findById: vi.fn((id: string) => ({ id, name: `名${id}`, color: null, folderId: '__main__' }))
     })
     const svc = createTagsService({ repos })
     await expect(svc.merge({ sourceId: 't-1', targetId: 't-2' })).resolves.toEqual({ ok: true })
@@ -116,8 +124,8 @@ describe('P7E-01 tags.service —— merge 校验序', () => {
 })
 
 describe('P7E-01 tags.service —— delete', () => {
-  it('不存在 → NOT_FOUND「标签不存在」（列表陈旧——他处已删）', async () => {
-    const repos = stubRepos({ listWithCounts: vi.fn(() => []) })
+  it('不存在 → NOT_FOUND「标签不存在」（列表陈旧——他处已删；[F-TAGS-02/DB-1 U4] findById 换源）', async () => {
+    const repos = stubRepos({ findById: vi.fn((): undefined => undefined) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.delete({ tagId: 't-x' }), 'NOT_FOUND', '标签不存在')
     expect(repos.tags.deleteTag).not.toHaveBeenCalled()

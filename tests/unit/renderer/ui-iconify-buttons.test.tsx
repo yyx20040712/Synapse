@@ -195,7 +195,7 @@ describe('F-UIRES-02 批 B 标签域——TagEditor', () => {
     document.body.appendChild(host)
     root = createRoot(host)
     await act(async () => {
-      root?.render(<TagEditor paperId="p-1" tags={[{ id: 't-1', name: '水锤' }]} onChanged={() => undefined} />)
+      root?.render(<TagEditor paperId="p-1" folderId="__main__" tags={[{ id: 't-1', name: '水锤' }]} onChanged={() => undefined} />)
     })
     const chipBtn = host!.querySelector<HTMLButtonElement>('[aria-label="移除标签 水锤"]')!
     expect(chipBtn, 'chip 移除钮在场').not.toBeNull()

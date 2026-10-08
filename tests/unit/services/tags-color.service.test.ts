@@ -14,11 +14,13 @@ import type { Repos } from '../../../src/main/db/repos'
 function stubRepos(over: Record<string, unknown> = {}): Repos {
   const tags = {
     listWithCounts: vi.fn(() => [{ id: 't-1', name: '甲', paperCount: 1, color: null }]),
-    upsertByName: vi.fn((name: string) => ({ id: 't-1', name, color: null })),
+    upsertByName: vi.fn((folderId: string, name: string) => ({ id: 't-1', name, color: null })),
     attach: vi.fn(),
     detach: vi.fn(),
     namesByPaper: vi.fn(() => []),
     findByName: vi.fn((): undefined => undefined),
+    // [F-TAGS-02/DB-1 U4] setColor 存在性预检换源（findById——rename/delete 同序）
+    findById: vi.fn(() => ({ id: 't-1', name: '甲', color: null, folderId: '__main__' })),
     renameTag: vi.fn(() => true),
     mergeTags: vi.fn(),
     deleteTag: vi.fn(),
@@ -67,8 +69,8 @@ describe('F-TAGS-01 tags.service —— setColor 校验序', () => {
     expect(repos.tags.setColor).not.toHaveBeenCalled()
   })
 
-  it('tagId 不存在 → NOT_FOUND「标签不存在」且 repo 未调（列表陈旧——rename/delete 同序）', async () => {
-    const repos = stubRepos({ listWithCounts: vi.fn(() => []) })
+  it('tagId 不存在 → NOT_FOUND「标签不存在」且 repo 未调（列表陈旧——rename/delete 同序；[F-TAGS-02/DB-1 U4] findById 换源）', async () => {
+    const repos = stubRepos({ findById: vi.fn((): undefined => undefined) })
     const svc = createTagsService({ repos })
     await expectDomainError(() => svc.setColor({ tagId: 't-x', color: '#e11d48' }), 'NOT_FOUND', '标签不存在')
     expect(repos.tags.setColor).not.toHaveBeenCalled()

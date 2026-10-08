@@ -92,7 +92,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
       .mockImplementationOnce(async () => okList([{ id: 't-9', name: '最新', paperCount: 2, color: null }]))
     const useStore = await loadStore({ tags: { list, rename } })
     const mutating = useStore.getState().renameTag('t-1', 'x') // 挂起中（不占 seq）
-    const concurrent = useStore.getState().refresh() // 并发 refresh（seq=2，响应将迟到）
+    const concurrent = useStore.getState().refresh('__main__') // 并发 refresh（seq=2，响应将迟到）
     resolveRename({ ok: true, data: { id: 't-1', name: 'x' } }) // 完成后链式 refresh（seq=3 即刻成功）
     await mutating
     resolveOld({ ok: false, error: { code: 'DB_ERROR', message: '旧失败' } }) // seq=2 迟到失败

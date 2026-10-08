@@ -31,6 +31,7 @@
  */
 import { useEffect, useState } from 'react'
 import type { LibraryQuery, LibrarySort } from '@shared/models/paper'
+import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { useDebounce } from '../../shared/hooks/useDebounce'
 import { useLibraryStore } from './library.store'
 import { TagDropdown } from '../tags/TagDropdown'
@@ -111,7 +112,12 @@ export function FilterBar(props: {
       </select>
       {/* [批 α 2026-10-03] 标签钮=排序钮右邻（自行尾移位——逻辑零改仅列序）； */}
       {/* 弹性空档吸收余宽（窄窗 flex-wrap 换行——library.css 既有行为） */}
+      {/* [F-TAGS-02/DB-1 U4] 标签域=当前文件夹（folder 解析式=LibraryPage 导入 */}
+      {/* 目标同式：folderScope 命中取其 folderId，否则主图） */}
       <TagDropdown
+        folderId={
+          query.folderScope?.kind === 'folder' ? query.folderScope.folderId : MAIN_GRAPH_ID
+        }
         selectedTagIds={query.tagIds ?? []}
         onFilterChange={(ids) => onChange({ tagIds: ids.length > 0 ? ids : undefined })}
         onMutated={() => void loadLibrary()}

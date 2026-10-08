@@ -193,7 +193,7 @@ describe('F-LGRAPH-01②U8 service：守卫重整（环/重边/悬空保留·ref
 describe('F-LGRAPH-01②U8 迁移 014（edges 视觉列 NOT NULL DEFAULT——存量零迁移归一）', () => {
   it('新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插无视觉列旧行读面归一（不炸）', () => {
     boot()
-    expect(readUserVersion(db)).toBe(18)
+    expect(readUserVersion(db)).toBe(19)
     db.prepare(
       `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
        VALUES ('e-old', ?, ?, '', 'tree', 't', 't')`

@@ -203,7 +203,8 @@ const VALID: Record<string, unknown[]> = {
     { id: 't1', name: '标签', paperCount: 0, color: null },
     { id: 't2', name: '彩标', paperCount: 3, color: '#0ea5e9' }
   ],
-  tagNameReqSchema: [{ name: '标签' }],
+  tagNameReqSchema: [{ folderId: '__main__', name: '标签' }],
+  tagListReqSchema: [{ folderId: '__main__' }],
   attachTagReqSchema: [{ paperId: 'p1', tagId: 't1' }],
   detachTagReqSchema: [{ paperId: 'p1', tagId: 't1' }],
   tagIdReqSchema: [{ tagId: 't1' }],
@@ -293,6 +294,7 @@ const SCHEMA_NAMES = [
   'sensorStatusSchema',
   'setQuitDirtyReqSchema',
   'tagIdReqSchema',
+  'tagListReqSchema',
   'tagNameReqSchema',
   'tagSetColorReqSchema',
   'tagWithCountSchema',
@@ -413,11 +415,17 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     ).toBe(false)
   })
 
-  it('标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界', () => {
-    expect(S.tagNameReqSchema.safeParse({ name: '课' }).success).toBe(true)
-    expect(S.tagNameReqSchema.safeParse({ name: '课'.repeat(50) }).success).toBe(true)
-    expect(S.tagNameReqSchema.safeParse({ name: '课'.repeat(51) }).success).toBe(false)
-    expect(S.tagNameReqSchema.safeParse({ name: '' }).success).toBe(false)
+  it('标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界；[F-TAGS-02/DB-1 U4] tags/list Req=folderId 必填（缺省/null/空串拒）', () => {
+    expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '课' }).success).toBe(true)
+    expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '课'.repeat(50) }).success).toBe(true)
+    expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '课'.repeat(51) }).success).toBe(false)
+    expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '' }).success).toBe(false)
+    // [F-TAGS-02/DB-1 U4] upsert/list 两 Req 的 folderId 域参必填面
+    expect(S.tagNameReqSchema.safeParse({ name: '课' }).success).toBe(false)
+    for (const bad of [undefined, null, '']) {
+      expect(S.tagListReqSchema.safeParse({ folderId: bad }).success, `tagListReq folderId=${String(bad)} 应拒`).toBe(false)
+    }
+    expect(S.tagListReqSchema.safeParse({ folderId: '__main__' }).success).toBe(true)
     expect(S.renameTagReqSchema.safeParse({ tagId: 't1', name: '课'.repeat(51) }).success).toBe(false)
     expect(S.workspaceCreateReqSchema.safeParse({ name: '课'.repeat(S.WORKSPACE_NAME_MAX) }).success).toBe(true)
     expect(S.workspaceCreateReqSchema.safeParse({ name: '课'.repeat(S.WORKSPACE_NAME_MAX + 1) }).success).toBe(false)

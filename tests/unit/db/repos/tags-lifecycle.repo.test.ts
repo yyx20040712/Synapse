@@ -33,27 +33,27 @@ describe('P7E-01 tags.repo —— 生命周期（rename/merge/delete）', () => 
   })
 
   it('findByName：命中返回 {id,name,color}；未命中 undefined', () => {
-    const tag = repo.upsertByName('必读')
-    expect(repo.findByName('必读')).toEqual({ id: tag.id, name: '必读', color: null })
-    expect(repo.findByName('不存在')).toBeUndefined()
+    const tag = repo.upsertByName('__main__', '必读')
+    expect(repo.findByName('__main__', '必读')).toEqual({ id: tag.id, name: '必读', color: null })
+    expect(repo.findByName('__main__', '不存在')).toBeUndefined()
   })
 
   it('renameTag：命中返回 true 且改名生效；未命中返回 false', () => {
-    const tag = repo.upsertByName('旧名')
+    const tag = repo.upsertByName('__main__', '旧名')
     expect(repo.renameTag(tag.id, '新名')).toBe(true)
-    expect(repo.findByName('新名')?.id).toBe(tag.id)
+    expect(repo.findByName('__main__', '新名')?.id).toBe(tag.id)
     expect(repo.renameTag('no-such-id', '任意名')).toBe(false)
   })
 
   it('mergeTags：源挂接全迁目标+源标签行删除；双挂同文献 OR IGNORE 幂等吸收', () => {
-    const src = repo.upsertByName('源')
-    const tgt = repo.upsertByName('目标')
+    const src = repo.upsertByName('__main__', '源')
+    const tgt = repo.upsertByName('__main__', '目标')
     repo.attach('p-1', src.id)
     repo.attach('p-1', tgt.id) // 双挂：p-1 同挂源与目标——迁移时复合主键冲突被吞
     repo.attach('p-2', src.id)
     repo.mergeTags(src.id, tgt.id)
     // 源标签行已删；目标吸收两篇文献
-    const list = repo.listWithCounts()
+    const list = repo.listWithCounts('__main__')
     expect(list.find((t) => t.id === src.id)).toBeUndefined()
     expect(list.find((t) => t.id === tgt.id)?.paperCount).toBe(2)
     // schema 前瞻守卫（W1 如实口径）：paper_tags 不残留死源 id——当前 CASCADE
@@ -68,7 +68,7 @@ describe('P7E-01 tags.repo —— 生命周期（rename/merge/delete）', () => 
   })
 
   it('deleteTag：挂接与标签行两步全删', () => {
-    const tag = repo.upsertByName('待删')
+    const tag = repo.upsertByName('__main__', '待删')
     repo.attach('p-1', tag.id)
     repo.deleteTag(tag.id)
     // schema 前瞻守卫（W1 如实口径）：同上——CASCADE 下恒真，编排锚在 merge
@@ -77,7 +77,7 @@ describe('P7E-01 tags.repo —— 生命周期（rename/merge/delete）', () => 
       .prepare<[string], { n: number }>('SELECT COUNT(*) AS n FROM paper_tags WHERE tag_id = ?')
       .get(tag.id)?.n
     expect(remain).toBe(0)
-    expect(repo.findByName('待删')).toBeUndefined()
+    expect(repo.findByName('__main__', '待删')).toBeUndefined()
   })
 
   it('mergeTags 事务原子性：第二步抛错→第三步不执行且异常上抛（mock db 语句桩）', () => {
@@ -159,7 +159,7 @@ describe('[A1a] tags.repo.tagNamesByIds —— 批量名查（动态 IN 单语�
   })
 
   it('同长度二次调用命中语句缓存（IN 语句 prepare 仅一次）', () => {
-    const alpha = repo.upsertByName('alpha')
+    const alpha = repo.upsertByName('__main__', 'alpha')
     repo.attach('p-1', alpha.id)
     const prepareSpy = vi.spyOn(db, 'prepare')
     repo.tagNamesByIds(['p-1', 'p-2'])

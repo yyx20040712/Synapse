@@ -22,17 +22,17 @@ guardedDescribe('SR-TAG-03', 'tags.store —— 刷新', () => {
       ]
     }))
     const useStore = await loadStore({ tags: { list } })
-    await useStore.getState().refresh()
+    await useStore.getState().refresh('__main__')
     expect(useStore.getState().tags).toHaveLength(2)
     expect(useStore.getState().loading).toBe(false)
-    expect(list).toHaveBeenCalledWith({})
+    expect(list).toHaveBeenCalledWith({ folderId: '__main__' })
   })
 
   it('refresh 失败：保留旧数据且不抛（错误由 toast 层处理）', async () => {
     const list = vi.fn(async () => ({ ok: false as const, error: { code: 'DB_ERROR', message: 'x' } }))
     const useStore = await loadStore({ tags: { list } })
     useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 0, color: null }] })
-    await useStore.getState().refresh()
+    await useStore.getState().refresh('__main__')
     expect(useStore.getState().tags[0]?.name).toBe('旧')
   })
 
@@ -41,9 +41,9 @@ guardedDescribe('SR-TAG-03', 'tags.store —— 刷新', () => {
       .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'DB_ERROR', message: '数据库暂不可用' } }))
       .mockImplementationOnce(async () => ({ ok: true as const, data: [] }))
     const useStore = await loadStore({ tags: { list } })
-    await useStore.getState().refresh()
+    await useStore.getState().refresh('__main__')
     expect(useStore.getState().error).toBe('数据库暂不可用')
-    await useStore.getState().refresh()
+    await useStore.getState().refresh('__main__')
     expect(useStore.getState().error).toBeNull()
   })
 
@@ -53,8 +53,8 @@ guardedDescribe('SR-TAG-03', 'tags.store —— 刷新', () => {
       .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
       .mockImplementationOnce(async () => ({ ok: true as const, data: [{ id: 't-1', name: '新', paperCount: 1 }] }))
     const useStore = await loadStore({ tags: { list } })
-    const first = useStore.getState().refresh() // 旧请求：挂起且注定失败
-    await useStore.getState().refresh() // 新请求：立即成功
+    const first = useStore.getState().refresh('__main__') // 旧请求：挂起且注定失败
+    await useStore.getState().refresh('__main__') // 新请求：立即成功
     resolveFirst({ ok: false, error: { code: 'DB_ERROR', message: '旧失败' } })
     await first.catch(() => undefined)
     expect(useStore.getState().tags[0]?.name).toBe('新') // 旧成功才覆盖；此处旧请求失败无 tags 面
