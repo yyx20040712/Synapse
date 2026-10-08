@@ -115,9 +115,9 @@
       "case": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久（:581）",
       "count": 1,
       "fingerprint": "重启后笔记 textarea 混入拼音残片 jian'li（期望 e2e 总评内容实得 e2e 总评内容jian'li——他处键入泄漏进 autosave 面；全套 #102 序列位/失败行 spec:627 toHaveValue；定向复跑 18/18 绿——复跑绿不销项）",
-      "status": "observing",
+      "status": "resolved",
       "first_seen": "2026-10-08",
-      "resolution": "观察（首现未达 2 次立案线——第 2 现即立案；U3 面无关性=renderer/notes 零 diff+复跑绿；史料=E:/zcode_md/synapse-archive/scripts-audits/20261008-dbcamp-db1/u3-e2e-close.raw.txt+u3-e2e-rerun1.raw.txt）"
+      "resolution": "销案（2026-10-08 用户裁决——根因=用户本人当时连续打字，真实键入经前台焦点混入被测 app 笔记 textarea（拼音残片 jian'li 即用户 IME 输入），属外部输入污染族（P7-A 剪贴板被占用同族），非代码/测试缺陷，无需修复不设观察——史料=u3-e2e-close.raw.txt+定向复跑 u3-e2e-rerun1.raw.txt 18/18 绿+全量复跑 u3-e2e-close2.raw.txt 102/102 EXIT=0）"
     }
   ]
 }
