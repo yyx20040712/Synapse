@@ -45,6 +45,7 @@ import { createRepos } from './db/repos'
 import { createFileStore } from './services/import_/file-store'
 import { createServices } from './services'
 import { readThemeSync } from './services/settings.service'
+import { runStartupRecovery } from './services/ai/ai-recovery'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
 import { createDataLayerContainer } from './data-layer.container'
@@ -170,6 +171,11 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
           fetchText: (url) => fetchText(url, { fetchImpl: fetchLike })
         }
       })
+      // [F-DBCAMP-01 DB-2 U2b-2a] 启动恢复扫描（§3.D 崩溃恢复）：悬置 running
+      // 任务批量 failed(interrupted)——ensureIdentity 后/services 返回前单点接线。
+      // [r1 d1-N5] fail-fast 语义：恢复扫描失败=库级故障即启动失败暴露
+      // （best-effort 不采纳——吞错会掩盖损坏态继续运行）
+      await runStartupRecovery(services.aiTasks)
       return { db, repos, fileStore, services }
     }
   })

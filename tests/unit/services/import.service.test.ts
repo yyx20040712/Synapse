@@ -63,6 +63,7 @@ function makeRepos(db: ReturnType<typeof createTestDb>): Repos {
     aiSessions: {} as Repos['aiSessions'], // [F-DBCAMP-01 DB-2 U2a] AI 会话域（面外桩）
     aiMemory: {} as Repos['aiMemory'], // [F-DBCAMP-01 DB-2 U2a] AI 记忆域（面外桩）
     aiTasks: {} as Repos['aiTasks'], // [F-DBCAMP-01 DB-2 U2b-1] AI 任务域（面外桩）
+    aiContext: {} as Repos['aiContext'], // [F-DBCAMP-01 DB-2 U2b-2a] AI 装配读面域（面外桩）
     annotations: {} as Repos['annotations'],
     aiNotes: {} as Repos['aiNotes'],
     // [回炉码 2] 挂接建节点走真 lineage repo（listGraph/upsertNode——真库）

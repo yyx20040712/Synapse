@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createAiTasksService,
+  TASK_STATUSES,
   type AiTasksServiceDeps
 } from '../../../src/main/services/ai/ai-tasks.service'
 import { createRepos } from '../../../src/main/db/repos'
@@ -604,6 +605,107 @@ describe('F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 ha
     expect(await svc.listTasks({ limit: 1 })).toHaveLength(1)
     await expect(svc.listTasks({ limit: 201 })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
     await expect(svc.listTasks({ limit: 1.5 })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
+    db.close()
+  })
+
+  // ── [F-DBCAMP-01 DB-2 U2b-2a] 非 CAP 回写映射（§3.d②——d1-N3）+输入闸 ──
+
+  it('R26 非 CAP 回写异常统一映射：注入面抛错 → failed 终态+error 含「结果回写失败」+mutation 保留+审计 failed 在场', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    // 变异+回写双面 handler（handlerOverrides 预留面）：先落 ai_memory（mutation）
+    // 再返回 writeback——注入 insertMessage 抛非 CAP 错构造回写失败
+    const svc = createAiTasksService({
+      repos,
+      handlerOverrides: {
+        'memory.search': () => (ctx) => {
+          repos.aiMemory.create(ctx.target.scope, ctx.target.anchor, {
+            category: 'method_note',
+            title: '变异保留探针',
+            content: '内容',
+            origin: 'agent',
+            sourceTaskId: ctx.task.id
+          })
+          return { result: '纯结果', writeback: '回写文本' }
+        }
+      },
+      insertMessage: () => {
+        throw new Error('回写通道炸点')
+      }
+    })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.search', payload: { query: 'x' } })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    // P8：handler 变更有效（事务 B 提交）+任务转 failed 终态（回写面失败告知）
+    expect(final.status).toBe('failed')
+    expect(final.error).toContain('结果回写失败')
+    expect(final.error).toContain('回写通道炸点')
+    // mutation 保留：SAVEPOINT 已 release 随事务提交——memory 行在场
+    expect(
+      (db.prepare(`SELECT COUNT(*) c FROM ai_memory WHERE title = '变异保留探针'`).get() as { c: number }).c
+    ).toBe(1)
+    // 审计 failed 行在场（detail 含映射文案）
+    const audit = repos.aiTasks.listAudit(t.id)
+    expect(audit[audit.length - 1]!.kind).toBe('failed')
+    expect(audit[audit.length - 1]!.detail).toContain('结果回写失败')
+    db.close()
+  })
+
+  it('R27 listTasks 运行期输入闸（d1-N9）：status 非法值/scope 非法值 → INVALID_REQUEST（防任意串透传 SQL）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    await expect(
+      svc.listTasks({ status: 'bogus' as never })
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST', message: expect.stringContaining('任务状态值非法') })
+    await expect(
+      svc.listTasks({ scope: 'galaxy' as never })
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST', message: expect.stringContaining('范围') })
+    // 合法 6 态集不拒（queued 在集内）
+    await expect(svc.listTasks({ status: 'queued' })).resolves.toEqual([])
+    db.close()
+  })
+
+  it('R28 外移零行为回归（handlers 件接线佐证）：注入面缺省=生产回写通道——CAP 态 result_overflow+仍 succeeded（N-6 同构重放）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    // 缺省 insertMessage（不注入）——writeback 走 repos.aiSessions.insertWithEviction 原路
+    const svc = createAiTasksService({ repos })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const seed = db.prepare(
+      `INSERT INTO ai_messages (session_id, role, content, pinned, created_at, updated_at)
+       VALUES (?, 'user', ?, 1, 't', 't')`
+    )
+    for (let i = 1; i <= 50; i++) seed.run(s.id, `消息${i}`)
+    seedMemory(db, 'paper', 'p-1', '浊度语料', 'x')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.search', payload: { query: '浊度' } })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    expect(final.result).toBeNull()
+    expect(repos.aiTasks.listAudit(t.id).map((a) => a.kind)).toEqual([
+      'submitted',
+      'target_resolved',
+      'result_overflow',
+      'succeeded'
+    ])
+    db.close()
+  })
+
+  it('R29 TASK_STATUSES==DDL CHECK 集对账（r1 k3-N3+d1-N7——sqlite_master 取证沿 G14 先例；r2 注：格式哨兵——正则依赖 DDL 以 status IN (\'…\') 单引号字面量书写，DDL 改写法时本用例先红=fail-closed 非误报）', async () => {
+    const db = createTestDb()
+    const ddl = (
+      db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='ai_tasks'").get() as {
+        sql: string
+      }
+    ).sql
+    const m = ddl.match(/CHECK\s*\(\s*status\s+IN\s*\(([^)]*)\)/)
+    expect(m, 'DDL status CHECK 可抽取').not.toBeNull()
+    const ddlStatuses = [...m![1]!.matchAll(/'([^']+)'/g)].map((x) => x[1]!)
+    expect(ddlStatuses, 'DDL 恰 6 态').toHaveLength(6)
+    // 服务层闸常量==DDL 枚举（sort 后集合等值——运行期闸与库级 CHECK 零漂移）
+    expect([...TASK_STATUSES].sort()).toEqual([...ddlStatuses].sort())
     db.close()
   })
 })

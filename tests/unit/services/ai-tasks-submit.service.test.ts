@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { createAiTasksService } from '../../../src/main/services/ai/ai-tasks.service'
+import { AiDomainError } from '../../../src/main/services/ai/ai-sessions.service'
 import { AI_TASK_ACTIONS, AI_MEMORY_CATEGORIES } from '../../../src/main/services/ai/ai-tasks.actions'
 import { TASK_HANDLER_ACTIONS } from '../../../src/main/services/ai/ai-tasks.service'
 import { createRepos } from '../../../src/main/db/repos'
@@ -379,6 +380,116 @@ describe('F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标�
       union.push(...ddlCats)
     }
     expect(union, '19 类全集（6+7+6）').toHaveLength(19)
+    db.close()
+  })
+
+  // ── [F-DBCAMP-01 DB-2 U2b-2a] 运行期输入闸（§3.d③——d1-N9）──
+
+  it('G16 idempotencyKey 空串/非串 → INVALID_REQUEST「幂等键不能为空」', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    await expectDomainError(
+      () =>
+        svc.submitTask({
+          sessionId: s.id,
+          action: 'memory.list',
+          payload: {},
+          idempotencyKey: ''
+        }),
+      'INVALID_REQUEST',
+      '幂等键不能为空'
+    )
+    await expectDomainError(
+      () =>
+        svc.submitTask({
+          sessionId: s.id,
+          action: 'memory.list',
+          payload: {},
+          idempotencyKey: 42 as unknown as string
+        }),
+      'INVALID_REQUEST',
+      '幂等键不能为空'
+    )
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })
+    db.close()
+  })
+
+  it('G17 target.anchorId=null/非串 → INVALID_REQUEST（防 DDL 原始异常泄漏——非 SqliteError 断言）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    let caught: unknown = null
+    try {
+      await svc.submitTask({
+        sessionId: s.id,
+        action: 'memory.list',
+        payload: {},
+        target: { scope: 'paper', anchorId: null as unknown as string }
+      })
+      expect.unreachable('应抛域错误')
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as { code?: string }).code).toBe('INVALID_REQUEST')
+    expect((caught as Error).message).toContain('锚')
+    expect((caught as { constructor?: { name?: string } }).constructor?.name).not.toBe('SqliteError')
+    await expectDomainError(
+      () =>
+        svc.submitTask({
+          sessionId: s.id,
+          action: 'memory.list',
+          payload: {},
+          target: { scope: 'paper', anchorId: 7 as unknown as string }
+        }),
+      'INVALID_REQUEST'
+    )
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })
+    db.close()
+  })
+
+  it('G18 target.scope 运行时非法值（非枚举串）→ INVALID_REQUEST（if 链核对锚）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    await expectDomainError(
+      () =>
+        svc.submitTask({
+          sessionId: s.id,
+          action: 'memory.list',
+          payload: {},
+          target: { scope: 'folder' as never, anchorId: 'p-1' }
+        }),
+      'INVALID_REQUEST',
+      '全局资源不可为任务目标'
+    )
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })
+    db.close()
+  })
+
+  it('G19 target null/非对象 → INVALID_REQUEST（r1 d1-N8：原 null 透传 else 读 null.scope=TypeError）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    // 域错误载体断言（防 TypeError 假绿——d1-N8 缺陷本体即 TypeError）
+    await expect(
+      svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {}, target: null as never })
+    ).rejects.toBeInstanceOf(AiDomainError)
+    await expect(
+      svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {}, target: 42 as never })
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      message: expect.stringContaining('任务目标非法')
+    })
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })
     db.close()
   })
 })
