@@ -187,7 +187,9 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
     seedCollection(db, 'c-a', '图甲')
     seedTag(db, 't-1', '必读')
     const before = objectMultiset(db)
-    const result = migrate(db)
+    // [F-DBCAMP-01 DB-2 U1] 020 起本用例钉 19：020 纯新增面（53 对象）不纳入
+    // 增量判据——020 增量由 migrate-ai-domain 专属用例锁定
+    const result = migrate(db, MIGRATIONS.filter((m) => m.version <= 19))
     // 判别器：19 确已应用（否则多重集断言=无迁移恒真）
     expect(result.appliedVersions).toEqual([19])
     expect(objectMultiset(db)).toEqual([...before, 'trigger:paper_tags_domain_guard'].sort())
@@ -201,11 +203,11 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
   it('新库全链：user_version=19+应用清单 [1..19]+幂等重入（再跑 applied=[]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(19)
+    expect(result.currentVersion).toBe(20)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
     ])
-    expect(readUserVersion(db)).toBe(19)
+    expect(readUserVersion(db)).toBe(20)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
@@ -222,8 +224,8 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
     db.prepare("INSERT INTO tags (id, name, color) VALUES ('t-1', '必读', '#0ea5e9')").run()
     db.prepare("INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-a', 't-1')").run()
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([16, 17, 18, 19])
-    expect(readUserVersion(db)).toBe(19)
+    expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])
+    expect(readUserVersion(db)).toBe(20)
     expect(db.prepare("SELECT name, color, folder_id FROM tags WHERE id='t-1'").get()).toEqual({
       name: '必读',
       color: '#0ea5e9',
@@ -240,7 +242,7 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
     seedTag(db, 't-1', '必读')
     seedPaperTag(db, 'p-a', 't-1')
     migrate(db)
-    expect(readUserVersion(db)).toBe(19)
+    expect(readUserVersion(db)).toBe(20)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.close()

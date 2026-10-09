@@ -4751,6 +4751,312 @@
         }
       ]
     },
+    "tests/unit/db/ai-domain-constraints.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 19 类合法插入逐档过（paper 6→papers.id 锚/lineage 7→collections.id 锚/global 6→NULL 锚）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 19 类合法插入逐档过（paper 6→papers.id 锚/lineage 7→collections.id 锚/global 6→NULL 锚）",
+          "markers": [],
+          "line": 73,
+          "assertions": [
+            "expect(() => insertMemory(db, 'paper', 'p-cat', c), `paper:${c}`).not.toThrow()",
+            "expect(() => insertMemory(db, 'lineage', 'c-cat', c), `lineage:${c}`).not.toThrow()",
+            "expect(() => insertMemory(db, 'global', null, c), `global:${c}`).not.toThrow()",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 19 })"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 非法类逐档拒≥3 样本（paper 类入 lineage 档/global 类入 paper 档/杜撰类），taxonomy CHECK 文案承载\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 非法类逐档拒≥3 样本（paper 类入 lineage 档/global 类入 paper 档/杜撰类），taxonomy CHECK 文案承载",
+          "markers": [],
+          "line": 90,
+          "assertions": [
+            "expect(() => insertMemory(db, 'lineage', 'c-cat', 'term_glossary')).toThrow( /CHECK constraint failed:[\\s\\S]*category IN/ )",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'user_preference')).toThrow( /CHECK constraint failed:[\\s\\S]*category IN/ )",
+            "expect(() => insertMemory(db, 'global', null, 'misc_note')).toThrow( /CHECK constraint failed:[\\s\\S]*category IN/ )"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 多态 anchor：global+NULL 过、global+非 NULL 拒、paper+NULL 拒、lineage+NULL 拒（poly CHECK 文案承载）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 多态 anchor：global+NULL 过、global+非 NULL 拒、paper+NULL 拒、lineage+NULL 拒（poly CHECK 文案承载）",
+          "markers": [],
+          "line": 106,
+          "assertions": [
+            "expect(() => insertMemory(db, 'global', null, 'user_preference')).not.toThrow()",
+            "expect(() => insertMemory(db, 'global', 'p-cat', 'user_preference')).toThrow( /CHECK constraint failed:[\\s\\S]*anchor_id IS NULL/ )",
+            "expect(() => insertMemory(db, 'paper', null, 'reading_insight')).toThrow( /CHECK constraint failed:[\\s\\S]*anchor_id IS NOT NULL/ )",
+            "expect(() => insertMemory(db, 'lineage', null, 'node_role')).toThrow( /CHECK constraint failed:[\\s\\S]*anchor_id IS NOT NULL/ )"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 跨档互斥穷举：他档值对本档全拒（paper 拒 lineage∪global 13 值/lineage 拒 12 值/global 拒 13 值=38 动态拒）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 跨档互斥穷举：他档值对本档全拒（paper 拒 lineage∪global 13 值/lineage 拒 12 值/global 拒 13 值=38 动态拒）",
+          "markers": [],
+          "line": 123,
+          "assertions": [
+            "expect(() => insertMemory(db, scope, anchor, c), `${scope} 档拒他档值 ${c}`).toThrow( /CHECK constraint failed:[\\s\\S]*category IN/ )",
+            "expect(rejects).toBe(38)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 scope=NULL 拒+category=NULL 拒（NOT NULL 文案含表.列）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 scope=NULL 拒+category=NULL 拒（NOT NULL 文案含表.列）",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(() => insertMemory(db, null, 'p-cat', 'reading_insight')).toThrow( /NOT NULL constraint failed: ai_memory\\.scope/ )",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', null)).toThrow( /NOT NULL constraint failed: ai_memory\\.category/ )"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 ai_sessions 枚举与多态：scope 非法拒/global+anchor 拒/paper+NULL 拒/global+NULL 过\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 ai_sessions 枚举与多态：scope 非法拒/global+anchor 拒/paper+NULL 拒/global+NULL 过",
+          "markers": [],
+          "line": 156,
+          "assertions": [
+            "expect(() => insertSession('workspace', 'p-cat')).toThrow( /CHECK constraint failed: scope IN \\('paper','lineage','global'\\)/ )",
+            "expect(() => insertSession('global', 'p-cat')).toThrow( /CHECK constraint failed:[\\s\\S]*anchor_id IS NULL/ )",
+            "expect(() => insertSession('paper', null)).toThrow( /CHECK constraint failed:[\\s\\S]*anchor_id IS NOT NULL/ )",
+            "expect(() => insertSession('global', null)).not.toThrow()"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 role/pinned/origin/status/action 枚举各拒一非法值\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 role/pinned/origin/status/action 枚举各拒一非法值",
+          "markers": [],
+          "line": 177,
+          "assertions": [
+            "expect(() => db.prepare( `INSERT INTO ai_messages (session_id, role, content, created_at, updated_at) VALUES (?, 'system', '问', 't', 't')` ).run(sid) ).toThrow(/CHECK constraint failed: role IN/)",
+            "expect(() => db.prepare( `INSERT INTO ai_messages (session_id, role, content, pinned, created_at, updated_at) VALUES (?, 'user', '问', 2, 't', 't')` ).run(sid) ).toThrow(/CHECK constraint failed: pinned/)",
+            "expect(() => db.prepare( `INSERT INTO ai_memory (scope, anchor_id, category, title, content, pinned, origin, created_at, updated_at) VALUES ('paper', 'p-cat', 'reading_insight', '题', '内容', 2, 'manual', 't', 't')` ).run() ).toThrow(/CHECK constraint failed: pinned/)",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'reading_insight')).not.toThrow()",
+            "expect(() => db.prepare(`UPDATE ai_memory SET origin='bot' WHERE anchor_id='p-cat'`).run() ).toThrow(/CHECK constraint failed: origin/)",
+            "expect(() => db.prepare( `INSERT INTO ai_tasks (scope, anchor_id, action, payload, status, created_at, updated_at) VALUES ('paper', 'p-cat', 'memory.create', '{}', 'paused', 't', 't')` ).run() ).toThrow(/CHECK constraint failed: status/)",
+            "expect(() => db.prepare( `INSERT INTO ai_tasks (scope, anchor_id, action, payload, created_at, updated_at) VALUES ('paper', 'p-cat', 'paper.delete', '{}', 't', 't')` ).run() ).toThrow(/CHECK constraint failed: action/)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 title 长度契约：0/121 拒、1/120 过（length(title) CHECK 文案承载）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 title 长度契约：0/121 拒、1/120 过（length(title) CHECK 文案承载）",
+          "markers": [],
+          "line": 223,
+          "assertions": [
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'reading_insight', '')).toThrow( /CHECK constraint failed: length\\(title\\)/ )",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'reading_insight', 'x'.repeat(121))).toThrow( /CHECK constraint failed: length\\(title\\)/ )",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'reading_insight', 'x')).not.toThrow()",
+            "expect(() => insertMemory(db, 'paper', 'p-cat', 'reading_insight', 'x'.repeat(120))).not.toThrow()",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 2 })"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 idempotency_key UNIQUE：同键二任务拒（UNIQUE 文案含表.列）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 idempotency_key UNIQUE：同键二任务拒（UNIQUE 文案含表.列）",
+          "markers": [],
+          "line": 238,
+          "assertions": [
+            "expect(ins).not.toThrow()",
+            "expect(ins).toThrow(/UNIQUE constraint failed: ai_tasks\\.idempotency_key/)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 1 })"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 payload 非 JSON 拒（json_valid CHECK 文案承载）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 payload 非 JSON 拒（json_valid CHECK 文案承载）",
+          "markers": [],
+          "line": 253,
+          "assertions": [
+            "expect(() => db.prepare( `INSERT INTO ai_tasks (scope, anchor_id, action, payload, created_at, updated_at) VALUES ('paper', 'p-cat', 'memory.create', 'not-json', 't', 't')` ).run() ).toThrow(/CHECK constraint failed: json_valid/)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M4 ai_tasks scope=global 拒（围栏：任务目标仅 paper/lineage——W-2 目标规则 DDL 面）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M4 ai_tasks scope=global 拒（围栏：任务目标仅 paper/lineage——W-2 目标规则 DDL 面）",
+          "markers": [],
+          "line": 265,
+          "assertions": [
+            "expect(() => db.prepare( `INSERT INTO ai_tasks (scope, anchor_id, action, payload, created_at, updated_at) VALUES ('global', 'p-cat', 'memory.create', '{}', 't', 't')` ).run() ).toThrow(/CHECK constraint failed: scope IN \\('paper','lineage'\\)/)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only\",\"M5 G2 append-only：INSERT 过（UNIQUE(task_id,seq) 同 seq 拒）+UPDATE 拒+DELETE 拒（RAISE 文案承载）\"]",
+          "describePath": [
+            "db/ai-domain-constraints —— M4 分类/多态/枚举/长度/UNIQUE/json_valid+M5 G2 append-only"
+          ],
+          "title": "M5 G2 append-only：INSERT 过（UNIQUE(task_id,seq) 同 seq 拒）+UPDATE 拒+DELETE 拒（RAISE 文案承载）",
+          "markers": [],
+          "line": 276,
+          "assertions": [
+            "expect(() => insertAudit(1)).not.toThrow()",
+            "expect(() => insertAudit(2)).not.toThrow()",
+            "expect(() => insertAudit(2)).toThrow(/UNIQUE constraint failed: ai_task_audit\\.task_id, ai_task_audit\\.seq/)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_task_audit').get()).toEqual({ c: 2 })",
+            "expect(() => db.prepare(`UPDATE ai_task_audit SET detail='篡改' WHERE task_id=?`).run(tid)).toThrow( /ai_task_audit 为 G2 append-only 审计面：禁止修改/ )",
+            "expect(() => db.prepare(`DELETE FROM ai_task_audit WHERE task_id=?`).run(tid)).toThrow( /ai_task_audit 为 G2 append-only 审计面：禁止删除/ )",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_task_audit').get()).toEqual({ c: 2 })"
+          ]
+        }
+      ]
+    },
+    "tests/unit/db/ai-domain-epoch.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M2 播种：恰 10 行 epoch=0 且表名=集合物理名（多/少/错名均红）\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M2 播种：恰 10 行 epoch=0 且表名=集合物理名（多/少/错名均红）",
+          "markers": [],
+          "line": 172,
+          "assertions": [
+            "expect(rows.map((r) => r.table_name)).toEqual([...EPOCH_TABLES].sort())",
+            "expect(rows.every((r) => r.epoch === 0)).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M2 三一致：epoch 集合 10 表↔每表恰 3 个 epoch 触发器（ai/au/ad 名单精确）↔全库 epoch 触发器恰 30（无多余）\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M2 三一致：epoch 集合 10 表↔每表恰 3 个 epoch 触发器（ai/au/ad 名单精确）↔全库 epoch 触发器恰 30（无多余）",
+          "markers": [],
+          "line": 182,
+          "assertions": [
+            "expect(names, `${t} 的 epoch 触发器`).toEqual( [`${t}_epoch_ad`, `${t}_epoch_ai`, `${t}_epoch_au`].sort() )",
+            "expect(total).toBe(30)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M2 逐表 I→+1、U→+1、D→+1（10 表×3=30 断言；_au 无 OF=任意列更新皆 bump）\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M2 逐表 I→+1、U→+1、D→+1（10 表×3=30 断言；_au 无 OF=任意列更新皆 bump）",
+          "markers": [],
+          "line": 204,
+          "assertions": [
+            "expect(e0, `${t} 计数行在场`).toBeDefined()",
+            "expect(epochOf(db, t), `${t} INSERT 后 +1`).toBe(e0! + 1)",
+            "expect(epochOf(db, t), `${t} UPDATE 后 +2`).toBe(e0! + 2)",
+            "expect(epochOf(db, t), `${t} DELETE 后 +3`).toBe(e0! + 3)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M2 中间步逐格复证（papers 三格序列+is_starred 翻转亦 bump——保守过失效语义）\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M2 中间步逐格复证（papers 三格序列+is_starred 翻转亦 bump——保守过失效语义）",
+          "markers": [],
+          "line": 223,
+          "assertions": [
+            "expect(epochOf(db, 'papers')).toBe(1)",
+            "expect(epochOf(db, 'papers')).toBe(2)",
+            "expect(epochOf(db, 'papers')).toBe(3)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M2 自愈：删计数行→该表下次写→重建=1（不回 0——变化已发生）；ai_memory 同款\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M2 自愈：删计数行→该表下次写→重建=1（不回 0——变化已发生）；ai_memory 同款",
+          "markers": [],
+          "line": 234,
+          "assertions": [
+            "expect(epochOf(db, 'papers')).toBeUndefined()",
+            "expect(epochOf(db, 'papers')).toBe(1)",
+            "expect(epochOf(db, 'ai_memory')).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M3 共存（papers）：插入/更新后 papers_fts 行在（MATCH 命中/旧词清）且 papers epoch 同步前进——旧 FTS 触发器与新 epoch 触发器同表互不干扰\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M3 共存（papers）：插入/更新后 papers_fts 行在（MATCH 命中/旧词清）且 papers epoch 同步前进——旧 FTS 触发器与新 epoch 触发器同表互不干扰",
+          "markers": [],
+          "line": 249,
+          "assertions": [
+            "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"文献p-co\"'`).get() ).toBeTruthy()",
+            "expect(epochOf(db, 'papers')).toBe(1)",
+            "expect(epochOf(db, 'papers')).toBe(2)",
+            "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"水务管理综述摘要\"'`).get() ).toBeTruthy()",
+            "expect(epochOf(db, 'papers')).toBe(3)",
+            "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"水务管理综述摘要\"'`).get() ).toBeUndefined()",
+            "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"更换后的摘要\"'`).get() ).toBeTruthy()"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M3 共存（ai_memory 抽测·_au 协议锁）：插入词命中+更新后旧词 MATCH 归零/新词命中（delete 旧值+insert 新值双语句），epoch 同步 +2\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M3 共存（ai_memory 抽测·_au 协议锁）：插入词命中+更新后旧词 MATCH 归零/新词命中（delete 旧值+insert 新值双语句），epoch 同步 +2",
+          "markers": [],
+          "line": 274,
+          "assertions": [
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"记忆原文甲\"'`).get() ).toBeTruthy()",
+            "expect(epochOf(db, 'ai_memory')).toBe(1)",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"记忆原文甲\"'`).get() ).toBeUndefined()",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"记忆新词乙\"'`).get() ).toBeTruthy()",
+            "expect(epochOf(db, 'ai_memory')).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存\",\"M3 共存（notes 抽测）：插入后 notes_fts 行在且 notes epoch +1\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·U·D 递增/自愈）+M3 与既有 FTS 触发器共存"
+          ],
+          "title": "M3 共存（notes 抽测）：插入后 notes_fts 行在且 notes epoch +1",
+          "markers": [],
+          "line": 297,
+          "assertions": [
+            "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"反渗透膜污染机理\"'`).get() ).toBeTruthy()",
+            "expect(epochOf(db, 'notes')).toBe(1)"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/connection.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -4904,6 +5210,116 @@
         }
       ]
     },
+    "tests/unit/db/migrate-ai-domain.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）\",\"M1 新库全链：user_version=20+应用清单 [1..20]+幂等重入（再跑 applied=[]）\"]",
+          "describePath": [
+            "db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）"
+          ],
+          "title": "M1 新库全链：user_version=20+应用清单 [1..20]+幂等重入（再跑 applied=[]）",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
+            "expect(readUserVersion(db)).toBe(20)",
+            "expect(again.appliedVersions).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）\",\"M1 019 基线库→应用 020：applied=[20]+终值 20（升级链增量恰一跳）\"]",
+          "describePath": [
+            "db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）"
+          ],
+          "title": "M1 019 基线库→应用 020：applied=[20]+终值 20（升级链增量恰一跳）",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(result.appliedVersions).toEqual([20])",
+            "expect(readUserVersion(db)).toBe(20)"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）\",\"M1 v19→20 对象多重集增量=恰本批 53 件（表 11+显式索引 5+触发器 37；多增/丢失均红）+autoindex 增 3\"]",
+          "describePath": [
+            "db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）"
+          ],
+          "title": "M1 v19→20 对象多重集增量=恰本批 53 件（表 11+显式索引 5+触发器 37；多增/丢失均红）+autoindex 增 3",
+          "markers": [],
+          "line": 187,
+          "assertions": [
+            "expect(result.appliedVersions).toEqual([20])",
+            "expect(objectMultiset(db)).toEqual([...before, ...expected020Objects()].sort())",
+            "expect(autoindexCount(db) - autoBefore).toBe(3)"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）\",\"M6 paper 锚级联：删 paper→sessions/messages（含置顶）/memory（FTS 净）/tasks 全灭；audit 恒存；epoch 前进；他锚零扰动\"]",
+          "describePath": [
+            "db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）"
+          ],
+          "title": "M6 paper 锚级联：删 paper→sessions/messages（含置顶）/memory（FTS 净）/tasks 全灭；audit 恒存；epoch 前进；他锚零扰动",
+          "markers": [],
+          "line": 200,
+          "assertions": [
+            "expect(() => db.prepare(`DELETE FROM papers WHERE id='p-a1'`).run()).not.toThrow()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='p-a1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_messages`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_messages WHERE content='置顶回答甲'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_memory WHERE anchor_id='p-a1'`).get()).toEqual({ c: 0 })",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"锚级联内容甲\"'`).get() ).toBeUndefined()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_tasks WHERE anchor_id='p-a1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_task_audit WHERE task_id=?`).get(t1)).toEqual({ c: 2 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_task_audit WHERE task_id=?`).get(t2)).toEqual({ c: 1 })",
+            "expect(epochOf(db, 'papers')).toBe(papersEpochBefore + 1)",
+            "expect(epochOf(db, 'ai_memory')).toBe(memoryEpochBefore + 2)",
+            "expect(epochOf(db, 'notes')).toBe(notesEpochBefore + 1)",
+            "expect(epochOf(db, 'annotations')).toBe(annotationsEpochBefore + 1)",
+            "expect(epochOf(db, 'paper_tags')).toBe(paperTagsEpochBefore + 1)",
+            "expect(epochOf(db, 'tags')).toBe(tagsEpochBefore)",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM notes`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM annotations`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM paper_tags`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM tags`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='p-a2'`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_memory WHERE anchor_id='p-a2'`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"锚级联内容乙\"'`).get()).toBeTruthy()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_tasks WHERE anchor_id='p-a2'`).get()).toEqual({ c: 1 })"
+          ]
+        },
+        {
+          "key": "[\"db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）\",\"M6 lineage 锚级联（collections_ai_anchor_cascade，scope=lineage）：同款全灭/恒存/前进/零扰+FK 级联面（tags/lineage_nodes 随夹灭）\"]",
+          "describePath": [
+            "db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+随锚级联）"
+          ],
+          "title": "M6 lineage 锚级联（collections_ai_anchor_cascade，scope=lineage）：同款全灭/恒存/前进/零扰+FK 级联面（tags/lineage_nodes 随夹灭）",
+          "markers": [],
+          "line": 274,
+          "assertions": [
+            "expect(() => db.prepare(`DELETE FROM collections WHERE id='c-g1'`).run()).not.toThrow()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='c-g1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_messages`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_memory WHERE anchor_id='c-g1'`).get()).toEqual({ c: 0 })",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"图域级联内容一\"'`).get() ).toBeUndefined()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_tasks WHERE anchor_id='c-g1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_task_audit WHERE task_id=?`).get(t1)).toEqual({ c: 1 })",
+            "expect(epochOf(db, 'collections')).toBe(collectionsEpochBefore + 1)",
+            "expect(epochOf(db, 'ai_memory')).toBe(memoryEpochBefore + 2)",
+            "expect(epochOf(db, 'tags')).toBe(tagsEpochBefore + 1)",
+            "expect(epochOf(db, 'lineage_nodes')).toBe(nodesEpochBefore + 1)",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM tags WHERE id='t-g1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM lineage_nodes WHERE id='ln-g1'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='c-g2'`).get()).toEqual({ c: 1 })",
+            "expect(db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"图域级联内容二\"'`).get()).toBeTruthy()",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM ai_tasks WHERE anchor_id='c-g2'`).get()).toEqual({ c: 1 })"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/migrate-app-meta.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -4918,9 +5334,9 @@
           "markers": [],
           "line": 36,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -4933,8 +5349,8 @@
           "markers": [],
           "line": 49,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.prepare(\"SELECT title FROM papers WHERE id = 'p-1'\").get()).toEqual({ title: '文献p-1' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM app_meta').get()).toEqual({ c: 0 })"
           ]
@@ -4986,9 +5402,9 @@
           "markers": [],
           "line": 54,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-            "expect(result.currentVersion).toBe(19)",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5015,7 +5431,7 @@
           "assertions": [
             "expect(before).toEqual({ '#3a5bd9': 2, '#3A5BD9': 1, '#c07a2a': 1, '#1e3a8a': 1 })",
             "expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5028,7 +5444,7 @@
           "line": 86,
           "assertions": [
             "expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5060,8 +5476,8 @@
           "markers": [],
           "line": 68,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-            "expect(result.currentVersion).toBe(19)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(result.currentVersion).toBe(20)",
             "expect(paperCols).toContain('folder_id')",
             "expect(paperCols).toContain('impact_factor')",
             "expect(nodeCols).toContain('folder_id')",
@@ -5147,7 +5563,7 @@
           "markers": [],
           "line": 193,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(tag.color).toBe('#112233')",
             "expect(paper.folder_id).toBe('__main__')",
             "expect(node.folder_id).toBe('__main__')",
@@ -5181,7 +5597,7 @@
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(squatter.name).toBe('主图 (主图)')",
             "expect(mainRow.name).toBe('主图')",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5196,7 +5612,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 3')",
             "expect(row.name).toBe(sname)",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5211,7 +5627,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(residue.name).toBe('主图 (主图)')",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -5264,7 +5680,7 @@
           "line": 372,
           "assertions": [
             "expect(row.name).toBe('既有主图行')",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         }
       ]
@@ -5283,7 +5699,7 @@
           "markers": [],
           "line": 30,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
             "expect(nodeCols).toContain('month')",
             "expect(nodeCols).toContain('slot')",
             "expect(edgeCols).toContain('sub')"
@@ -5298,8 +5714,8 @@
           "markers": [],
           "line": 46,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(row.month).toBeNull()",
             "expect(row.slot).toBe(1)"
           ]
@@ -5431,7 +5847,7 @@
           ],
           "title": "v15→16：FTS 双扫重建后 MATCH 恢复+已清孤儿不残留+三触发器在新表 I/U/D 三路活性",
           "markers": [],
-          "line": 229,
+          "line": 231,
           "assertions": [
             "expect(hit).toBeTruthy()",
             "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"未归档遗孤\"'`).get() ).toBeUndefined()",
@@ -5448,9 +5864,9 @@
           ],
           "title": "v15→16：foreign_key_check=0+FK 复位 ON+级联活性恢复（新表与子表 FK 关系真接上；[F-DBCAMP-01 U2] 017 随链=终值 17）",
           "markers": [],
-          "line": 263,
+          "line": 265,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)",
             "expect(db.prepare('SELECT COUNT(*) c FROM annotations').get()).toEqual({ c: 0 })",
@@ -5464,7 +5880,7 @@
           ],
           "title": "投影再对齐保险丝：错位节点（folder≠文献归属）与 NULL 归属节点回正为文献归属；主题节点不碰（folder↔graph 一一对应——2026-10-08 裁决①）",
           "markers": [],
-          "line": 280,
+          "line": 282,
           "assertions": [
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-mis'\").get() ).toEqual({ folder_id: '__main__' })",
             "expect( db.prepare(\"SELECT folder_id FROM lineage_nodes WHERE id='n-null'\").get() ).toEqual({ folder_id: 'c-other' })",
@@ -5478,11 +5894,11 @@
           ],
           "title": "新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）",
           "markers": [],
-          "line": 302,
+          "line": 304,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5493,7 +5909,7 @@
           ],
           "title": "[回炉轮1 R1] FTS 清旧扫判别锚：rowid 空洞形态（幸存者 rowid=1,3）——逐文献 MATCH 恰一行且 rowid=新表实读值（排他：残留/错位即多行或错号）",
           "markers": [],
-          "line": 315,
+          "line": 317,
           "assertions": [
             "expect(preRowids).toEqual([1, 3])",
             "expect(ma).toEqual([{ rowid: ra.rowid }])",
@@ -5507,7 +5923,7 @@
           ],
           "title": "NOT NULL 契约：folder_id=NULL 写拒（UPDATE/显式 NULL INSERT 双面）+列级非空标记在档",
           "markers": [],
-          "line": 343,
+          "line": 345,
           "assertions": [
             "expect(() => db.prepare(`UPDATE papers SET folder_id=NULL WHERE id='p-1'`).run()).toThrow( /NOT NULL constraint failed/ )",
             "expect(() => db.prepare( `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at, folder_id) VALUES ('p-2', 'f/2.pdf', 'sha-2', 't', 't', 't', NULL)` ).run() ).toThrow(/NOT NULL constraint failed/)",
@@ -5522,7 +5938,7 @@
           ],
           "title": "fkOff 迁移违约：事务内 foreign_key_check 拦截→抛+整体回滚（半成品表不残留）+FK 复位 ON",
           "markers": [],
-          "line": 373,
+          "line": 375,
           "assertions": [
             "expect(() => migrate(db, bad)).toThrow(/foreign_key_check/)",
             "expect(readUserVersion(db)).toBe(0)",
@@ -5537,7 +5953,7 @@
           ],
           "title": "fkOff 迁移正常应用：user_version 前进+FK 复位 ON+FK OFF 期可观察（NO ACTION 子行在场 DROP 父表——FK ON 下必炸）+后续常规迁移不受染",
           "markers": [],
-          "line": 395,
+          "line": 397,
           "assertions": [
             "expect(result.appliedVersions).toEqual([1, 2])",
             "expect(readUserVersion(db)).toBe(2)",
@@ -5562,7 +5978,7 @@
           "markers": [],
           "line": 34,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-old-1'\").get()).toEqual({ is_starred: 0 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-new'\").get()).toEqual({ is_starred: 0 })",
@@ -5611,8 +6027,8 @@
           "markers": [],
           "line": 106,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.prepare(\"SELECT title, is_starred FROM papers WHERE id = 'p-a'\").get()).toEqual({ title: '文献甲', is_starred: 0 })"
           ]
         },
@@ -5625,9 +6041,9 @@
           "markers": [],
           "line": 124,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         }
@@ -5647,8 +6063,8 @@
           "markers": [],
           "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
@@ -5663,8 +6079,8 @@
           "line": 32,
           "assertions": [
             "expect(papersColumns(db)).toContain('reading_seconds')",
-            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')"
           ]
         },
@@ -5677,8 +6093,8 @@
           "markers": [],
           "line": 44,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(row).toBeUndefined()",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers').get()).toEqual({ c: 0 })"
@@ -5801,11 +6217,11 @@
           ],
           "title": "新库全链：user_version=19+应用清单 [1..19]+幂等重入（再跑 applied=[]）",
           "markers": [],
-          "line": 201,
+          "line": 203,
           "assertions": [
-            "expect(result.currentVersion).toBe(19)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5816,10 +6232,10 @@
           ],
           "title": "v15→19 跨链一次到位：016 重建后链上执行 019（applied=[16,17,18,19]）+行数据保全+触发器活性",
           "markers": [],
-          "line": 214,
+          "line": 216,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.prepare(\"SELECT name, color, folder_id FROM tags WHERE id='t-1'\").get()).toEqual({ name: '必读', color: '#0ea5e9', folder_id: '__main__' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })"
           ]
@@ -5831,9 +6247,9 @@
           ],
           "title": "fkOff 迁移违约守卫延链：019 后 foreign_key_check=0+FK 复位 ON（摘除步+重建零违约遗留）",
           "markers": [],
-          "line": 236,
+          "line": 238,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)"
           ]
@@ -5854,7 +6270,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -39385,7 +39801,7 @@
           "markers": [],
           "line": 167,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(repo.listGraph().edges[0]!.via).toBeUndefined()"
           ]
         }
@@ -39614,7 +40030,7 @@
           "line": 68,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(19)"
+            "expect(readUserVersion(db)).toBe(20)"
           ]
         },
         {
@@ -39875,7 +40291,7 @@
           "markers": [],
           "line": 194,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(19)",
+            "expect(readUserVersion(db)).toBe(20)",
             "expect(edge!.dashed).toBe(false)",
             "expect(edge!.color).toBe(LINE_TYPE_COLORS[0])"
           ]
@@ -43990,9 +44406,9 @@
     }
   },
   "stats": {
-    "fileCount": 303,
-    "caseCount": 2943,
-    "assertionCount": 9609,
+    "fileCount": 306,
+    "caseCount": 2968,
+    "assertionCount": 9729,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -44002,10 +44418,268 @@
   },
   "exemptionsSnapshot": [
     {
-      "file": "tests/unit/services/tags-domain-limits.service.test.ts",
-      "caseTitle": "已挂幂等放行（namesByPaper 含 tag.name → ok 直返零写入）",
-      "reason": "回炉轮 1 R1（门一双席同中 W1）：attach 幂等判据名键→id 键（isAttached）——用例改题+断言换源随链（名键跨域同名 tagId 误判已挂=伪成功逃逸触发器错误面），纯收紧 succession",
-      "rulingLink": "runId=20261008-dbcamp-db1c-r1；主控回炉轮 1 派发 R1 条款（k1 B0W4N6/d1 B0W5N7 PASS_WITH_CONDITIONS）；台账=u4-exemptions-registry.md（U4 主批）+本轮增补节"
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "caseTitle": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/services/lineage-edge-via.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
+    },
+    {
+      "file": "tests/unit/services/lineage-u8-linetype.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(19)",
+      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
+      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
     }
   ]
 }

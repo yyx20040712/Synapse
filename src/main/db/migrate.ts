@@ -32,6 +32,7 @@ import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?
 import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
 import appMetaSql from './migrations/018_app_meta.sql?raw'
 import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
+import aiDomainSql from './migrations/020_ai_domain.sql?raw'
 
 export interface Migration {
   version: number
@@ -100,7 +101,14 @@ export const MIGRATIONS: readonly Migration[] = [
   // name)+存量归主图+挂接域守卫触发器（012 族域资产语义——CASCADE 夹删随灭；
   // 重建序独立于 016：无 FTS 面/无表上触发器/唯一子表=paper_tags；fkOff 同 016
   // ——tags 是父表 DROP 级联灭挂接；新库 user_version 终值 19）
-  { version: 19, name: 'tags_folder_domain', sql: tagsFolderDomainSql, fkOff: true }
+  { version: 19, name: 'tags_folder_domain', sql: tagsFolderDomainSql, fkOff: true },
+  // [F-DBCAMP-01 DB-2 U1] AI 域数据面：change_epochs epoch 基建（INV-J，10 表
+  // ×3 触发器+播种 10 行）+AI 域 5 新表（sessions/messages/tasks/memory/
+  // task_audit）+分类条件枚举（19=6+7+6 冻结）+ai_memory FTS（external content
+  // +trigram）+G2 审计触发器+随锚级联触发器（用户裁定①②④⑥——纯新增无表
+  // 重建，无 fkOff；级联体 T3 实照修正=memory 先删链式 _ad 清 FTS，见 020 头注；
+  // 新库 user_version 终值 20）
+  { version: 20, name: 'ai_domain', sql: aiDomainSql }
 ]
 
 export interface MigrateResult {
