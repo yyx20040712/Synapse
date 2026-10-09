@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-09T02:59:26.3259738Z",
+    "generatedAt":  "2026-10-09T05:38:03.9096753Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "3c5c68744e40c9bcba1d3a8524fa459c603c425f8a3150b9d58a71760afaf362"
+                      "sha256":  "edcfcc7ab0ad44183f030af5d5629ac3e412d90645892f084a24ac84554e06be"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -83,7 +83,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "fa6b24b90a6110eab7cb495924122c479c3826529fe19952c1a8e600ea875d09"
+                      "sha256":  "667453486628dea30b604b30621c654bea5ef934dea9547cf113c49235dd97e7"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
@@ -508,6 +508,10 @@
                   {
                       "path":  "tests/unit/db/repos/ai_notes.repo.test.ts",
                       "sha256":  "53c2a8e40bce35481365d0007f3216b5300fdd465da2f294150890eaa3f39ea5"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/ai-sessions.repo.test.ts",
+                      "sha256":  "d0053f77c8dd507c26090161cb336373f7492d531b5037dd201f8dfd8660132e"
                   },
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",
@@ -1278,12 +1282,20 @@
                       "sha256":  "6330db8f11981ad19adb7ff6e332761f7ce02f89997d00f17e61399d7ebe507d"
                   },
                   {
+                      "path":  "tests/unit/services/ai-memory-search.service.test.ts",
+                      "sha256":  "29a169cf2f348ae18ef12e5f6ae7f06226e1d24f8f88beca827a9ca16eea4866"
+                  },
+                  {
                       "path":  "tests/unit/services/ai-notes-import.test.ts",
                       "sha256":  "88d0667be1e6cd3c8919dff017e7bc1cf610e7c26794497d4be1f35f32d94536"
                   },
                   {
                       "path":  "tests/unit/services/ai-sensor.service.test.ts",
                       "sha256":  "8e37391174da77595ad0a93090d8de8a64b8d07a6b6259fea0d0cd144e323220"
+                  },
+                  {
+                      "path":  "tests/unit/services/ai-sessions.service.test.ts",
+                      "sha256":  "51c87465ec80b30929f16a67a94e70a69676d596a236f28f25682f3617cb920d"
                   },
                   {
                       "path":  "tests/unit/services/bibtex.serializer.test.ts",
@@ -1303,7 +1315,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "8f963acf94392bcef94deb72b3c397d92d6b9705a15bea520c2e04d9c535a34a"
+                      "sha256":  "bfc0c55750d450d4f11d17cf30c2ccc06a9884cc8580d58f2bd6321bc39a9d7c"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -1327,7 +1339,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "a939da701d30751474f0432b8cba2a155f51480e9d6c4f1e87ad262ff1c7eee4"
+                      "sha256":  "d02a7b46eb9fd776b283c4068f3a49756d893e239d309f2cf87cfab7c7ecc020"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -1539,7 +1551,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "964b4d220f6adefc4ec82331b360d097b5271da1ba4712093f9eb7d933c59d88"
+                      "sha256":  "61232d78c6e8854f3baf177459b210d57c2b61d33e2388a86b8528f86af33622"
                   },
                   {
                       "path":  "tests/utils/live-frame.ts",

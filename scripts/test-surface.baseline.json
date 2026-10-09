@@ -6355,6 +6355,199 @@
         }
       ]
     },
+    "tests/unit/db/repos/ai-sessions.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M1 常态直插：<50 零淘汰+id 递增（count/列表序双证）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M1 常态直插：<50 零淘汰+id 递增（count/列表序双证）",
+          "markers": [],
+          "line": 74,
+          "assertions": [
+            "expect(rows.map((r) => r.id)).toEqual([1, 2, 3])",
+            "expect(repo.countMessages(s)).toBe(3)",
+            "expect(repo.listMessages(s).map((r) => r.content)).toEqual(['第一条', '第二条', '第三条'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M2 恰满插第 50 条零汰（49 存量→excess=0 直插）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M2 恰满插第 50 条零汰（49 存量→excess=0 直插）",
+          "markers": [],
+          "line": 89,
+          "assertions": [
+            "expect(repo.countMessages(s)).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect(repo.listMessages(s).map((r) => r.id)).toEqual(ids(AI_SESSION_MESSAGE_CAP))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M3 满员有可汰：50 行含 3 置顶→插新汰最旧非置顶 1 行+置顶全保留\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M3 满员有可汰：50 行含 3 置顶→插新汰最旧非置顶 1 行+置顶全保留",
+          "markers": [],
+          "line": 101,
+          "assertions": [
+            "expect(rows.length).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect(rows.some((r) => r.id === 1)).toBe(false)",
+            "expect(rows.find((r) => r.id === id)?.pinned).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）",
+          "markers": [],
+          "line": 118,
+          "assertions": [
+            "expect(err).toBeInstanceOf(SessionCapAllPinnedError)",
+            "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(AI_SESSION_MESSAGE_CAP)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M5 拒写后库态逐行不变（回滚原子性——行数+逐行内容比对）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M5 拒写后库态逐行不变（回滚原子性——行数+逐行内容比对）",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect(before.length).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect(() => repo.insertWithEviction(s, 'assistant', '再拒写探针')).toThrow( SessionCapAllPinnedError )",
+            "expect(rawMessages(db, s)).toEqual(before)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M6 victim 序=非置顶 id ASC（乱序 pin：置顶 id 1/3 后 victim=id 2 非 id 1）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M6 victim 序=非置顶 id ASC（乱序 pin：置顶 id 1/3 后 victim=id 2 非 id 1）",
+          "markers": [],
+          "line": 148,
+          "assertions": [
+            "expect(rows.length).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect(rows.some((r) => r.id === 2)).toBe(false)",
+            "expect(rows.find((r) => r.id === 1)?.pinned).toBe(1)",
+            "expect(rows.find((r) => r.id === 3)?.pinned).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M7 存量 55 行收敛：插新汰 6 至 50（excess=55+1-50——200 时代遗留行路径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M7 存量 55 行收敛：插新汰 6 至 50（excess=55+1-50——200 时代遗留行路径）",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(rows.length).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect(rows.map((r) => r.id)).toEqual(ids(AI_SESSION_MESSAGE_CAP, 7))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M8 收敛态全置顶拒写：55 行全置顶→typed error（pinnedCount=55）+行数不变\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M8 收敛态全置顶拒写：55 行全置顶→typed error（pinnedCount=55）+行数不变",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(err).toBeInstanceOf(SessionCapAllPinnedError)",
+            "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(55)",
+            "expect(repo.countMessages(s)).toBe(55)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M9 pin 往返：pinned 翻转+updated_at 刷新+其余列不变（role/content/created_at）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M9 pin 往返：pinned 翻转+updated_at 刷新+其余列不变（role/content/created_at）",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(repo.setPinned(1, true)).toBe(true)",
+            "expect(pinnedRow.pinned).toBe(1)",
+            "expect(pinnedRow.role).toBe(before.role)",
+            "expect(pinnedRow.content).toBe(before.content)",
+            "expect(pinnedRow.created_at).toBe(before.created_at)",
+            "expect(ISO_RE.test(pinnedRow.updated_at)).toBe(true)",
+            "expect(pinnedRow.updated_at > before.updated_at).toBe(true)",
+            "expect(repo.setPinned(1, false)).toBe(true)",
+            "expect(rawMessages(db, s)[0]!.pinned).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M10 setPinned 缺 id 零行变更（false+全表快照不变）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M10 setPinned 缺 id 零行变更（false+全表快照不变）",
+          "markers": [],
+          "line": 215,
+          "assertions": [
+            "expect(repo.setPinned(9999, true)).toBe(false)",
+            "expect(rawMessages(db, s)).toEqual(before)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M11 listMessages 序=id ASC（置顶不改变列表序——稳定序承诺）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M11 listMessages 序=id ASC（置顶不改变列表序——稳定序承诺）",
+          "markers": [],
+          "line": 226,
+          "assertions": [
+            "expect(repo.listMessages(s).map((r) => r.id)).toEqual([1, 2, 3, 4, 5])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M12 时间戳=应用层 ISO（createSession/insertWithEviction 双面——弃 DDL DEFAULT）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M12 时间戳=应用层 ISO（createSession/insertWithEviction 双面——弃 DDL DEFAULT）",
+          "markers": [],
+          "line": 236,
+          "assertions": [
+            "expect(ISO_RE.test(session.createdAt)).toBe(true)",
+            "expect(session.updatedAt).toBe(session.createdAt)",
+            "expect(new Date(session.createdAt).getTime()).toBeGreaterThanOrEqual(t0)",
+            "expect(row).toEqual({ scope: 'global', anchor_id: null })",
+            "expect(ISO_RE.test(m.createdAt)).toBe(true)",
+            "expect(m.updatedAt).toBe(m.createdAt)",
+            "expect(new Date(m.createdAt).getTime()).toBeGreaterThanOrEqual(t0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M13 evict 已执行→insert 触 DDL CHECK 失败→事务回滚行集逐行还原（非法 role 直插 repo 路径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M13 evict 已执行→insert 触 DDL CHECK 失败→事务回滚行集逐行还原（非法 role 直插 repo 路径）",
+          "markers": [],
+          "line": 253,
+          "assertions": [
+            "expect(() => repo.insertWithEviction(s, 'system' as 'user', '触发回滚')).toThrow(/CHECK/)",
+            "expect(rawMessages(db, s)).toEqual(before)"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/repos/ai_notes.repo.order.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -37344,6 +37537,290 @@
         }
       ]
     },
+    "tests/unit/services/ai-memory-search.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R1 空查询 route=empty 零行（trim 后码点 0——不触检索）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R1 空查询 route=empty 零行（trim 后码点 0——不触检索）",
+          "markers": [],
+          "line": 74,
+          "assertions": [
+            "expect(await svc.searchMemory({ scope: 'global', anchorId: null, query: '' })).toEqual({ route: 'empty', rows: [] })",
+            "expect(await svc.searchMemory({ scope: 'global', anchorId: null, query: ' ' })).toEqual({ route: 'empty', rows: [] })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R2 单字中文 route='like' 命中真值（'<3 码点 MATCH 静默零命中'回退——§2 实测）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R2 单字中文 route='like' 命中真值（'<3 码点 MATCH 静默零命中'回退——§2 实测）",
+          "markers": [],
+          "line": 89,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.map((r) => r.id)).toEqual([hit])",
+            "expect(res.rows.some((r) => r.id === miss)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R3 二字中文 route='like'（1-2 码点界内——路由阈值红锚）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R3 二字中文 route='like'（1-2 码点界内——路由阈值红锚）",
+          "markers": [],
+          "line": 101,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.map((r) => r.id)).toEqual([hit])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R4 ≥3 字中文 route='match'（FTS trigram 域内）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R4 ≥3 字中文 route='match'（FTS trigram 域内）",
+          "markers": [],
+          "line": 111,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([hit])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R5 英文≥3 route='match'\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R5 英文≥3 route='match'",
+          "markers": [],
+          "line": 121,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([hit])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R6 混排 route='match'\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R6 混排 route='match'",
+          "markers": [],
+          "line": 131,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([hit])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R7 LIKE 特字符：查询含 \\\\ % _ →字面命中不变形（escapeLike+ESCAPE 子句）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R7 LIKE 特字符：查询含 \\ % _ →字面命中不变形（escapeLike+ESCAPE 子句）",
+          "markers": [],
+          "line": 141,
+          "assertions": [
+            "expect(resPct.route).toBe('like')",
+            "expect(idsOf(resPct.rows)).toEqual([pctOnly, mixed].sort((a, b) => a - b))",
+            "expect(resPct.rows.some((r) => r.id === plain)).toBe(false)",
+            "expect(idsOf(resUs.rows)).toEqual([underscoreOnly, mixed].sort((a, b) => a - b))",
+            "expect(resUs.rows.some((r) => r.id === plain)).toBe(false)",
+            "expect(idsOf(resBs.rows)).toEqual([backslashOnly])",
+            "expect(idsOf(resMixed.rows)).toEqual([mixed])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R8 MATCH 注入：含 \\\" 与 OR →短语字面查找非布尔式（escapeFtsQuery 复用）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R8 MATCH 注入：含 \" 与 OR →短语字面查找非布尔式（escapeFtsQuery 复用）",
+          "markers": [],
+          "line": 192,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([literal])",
+            "expect(res.rows.some((r) => r.id === bothWords)).toBe(false)",
+            "expect(res.rows.some((r) => r.id === splitWords)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R9 隔离-paper：锚 A 不见锚 B 行+不见 global 行（裁定①完全隔离——无并集）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R9 隔离-paper：锚 A 不见锚 B 行+不见 global 行（裁定①完全隔离——无并集）",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.map((r) => r.id)).toEqual([mine])",
+            "expect(res.rows.some((r) => r.id === other)).toBe(false)",
+            "expect(res.rows.some((r) => r.id === globalRow)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R10 隔离-lineage 同构（MATCH 路同谓词——锚=collections.id；同构=亦不见 global 行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R10 隔离-lineage 同构（MATCH 路同谓词——锚=collections.id；同构=亦不见 global 行）",
+          "markers": [],
+          "line": 253,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([mine])",
+            "expect(res.rows.some((r) => r.id === other)).toBe(false)",
+            "expect(res.rows.some((r) => r.id === globalRow)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R17 隔离-paper×MATCH 路（对偶 R9 的 LIKE 路——other 锚行内容含查询词仍缺席）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R17 隔离-paper×MATCH 路（对偶 R9 的 LIKE 路——other 锚行内容含查询词仍缺席）",
+          "markers": [],
+          "line": 285,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.map((r) => r.id)).toEqual([mine])",
+            "expect(res.rows.some((r) => r.id === other)).toBe(false)",
+            "expect(res.rows.some((r) => r.id === globalRow)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R11 隔离-global：global 全集+不见 paper/lineage 行（同词三档对照）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R11 隔离-global：global 全集+不见 paper/lineage 行（同词三档对照）",
+          "markers": [],
+          "line": 316,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.map((r) => r.id)).toEqual([g])",
+            "expect(res.rows.some((r) => r.id === p)).toBe(false)",
+            "expect(res.rows.some((r) => r.id === l)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R12 排序=updated_at DESC,id DESC（同 updated_at 用 id 破平——两路同口径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R12 排序=updated_at DESC,id DESC（同 updated_at 用 id 破平——两路同口径）",
+          "markers": [],
+          "line": 347,
+          "assertions": [
+            "expect(like.route).toBe('like')",
+            "expect(like.rows.map((r) => r.id)).toEqual(expected.map((r) => r))",
+            "expect(match.route).toBe('match')",
+            "expect(match.rows.map((r) => r.id)).toEqual(expected.map((r) => r))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R13 topK=8（播 10 命中恰 8——top 8 按 (updated_at,id) DESC）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R13 topK=8（播 10 命中恰 8——top 8 按 (updated_at,id) DESC）",
+          "markers": [],
+          "line": 381,
+          "assertions": [
+            "expect(res.route).toBe('match')",
+            "expect(res.rows.length).toBe(MEMORY_SEARCH_TOP_K)",
+            "expect(res.rows.map((r) => r.id)).toEqual([10, 9, 8, 7, 6, 5, 4, 3])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R14 大小写折叠两路一致（INV-127 行为锁——ASCII 折叠，两路均命中）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R14 大小写折叠两路一致（INV-127 行为锁——ASCII 折叠，两路均命中）",
+          "markers": [],
+          "line": 401,
+          "assertions": [
+            "expect(like.route).toBe('like')",
+            "expect(like.rows.map((r) => r.id)).toEqual([hit])",
+            "expect(match.route).toBe('match')",
+            "expect(match.rows.map((r) => r.id)).toEqual([hit])",
+            "expect(none.rows).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R18 label 列命中（非空 label+LIKE 路三列 OR 的 label 分支——title/content 均不含查询词）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R18 label 列命中（非空 label+LIKE 路三列 OR 的 label 分支——title/content 均不含查询词）",
+          "markers": [],
+          "line": 424,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.map((r) => r.id)).toEqual([labeled])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R19 LIKE 路 topK=8（播 10 命中恰 8——对偶 R13 的 MATCH 路）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R19 LIKE 路 topK=8（播 10 命中恰 8——对偶 R13 的 MATCH 路）",
+          "markers": [],
+          "line": 440,
+          "assertions": [
+            "expect(res.route).toBe('like')",
+            "expect(res.rows.length).toBe(MEMORY_SEARCH_TOP_K)",
+            "expect(res.rows.map((r) => r.id)).toEqual([10, 9, 8, 7, 6, 5, 4, 3])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R15 非法 scope → INVALID_REQUEST（封闭三值外——与 openSession 同规则）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R15 非法 scope → INVALID_REQUEST（封闭三值外——与 openSession 同规则）",
+          "markers": [],
+          "line": 460,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R16 global 带 anchor 拒+paper 缺 anchor 拒（形态校验——§3.E）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R16 global 带 anchor 拒+paper 缺 anchor 拒（形态校验——§3.E）",
+          "markers": [],
+          "line": 476,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"escapeLike 单元面：\\\\ % _ 三字符逐字转义（service 内助手直证）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "escapeLike 单元面：\\ % _ 三字符逐字转义（service 内助手直证）",
+          "markers": [],
+          "line": 493,
+          "assertions": [
+            "expect(escapeLike('a\\\\b%c_d')).toBe('a\\\\\\\\b\\\\%c\\\\_d')",
+            "expect(escapeLike('普通')).toBe('普通')"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/ai-notes-import.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -37708,6 +38185,113 @@
             "expect(await h.svc.hasPendingJob('p-1')).toBe(true)",
             "expect(await h.svc.productExists('p-1')).toBe(true)",
             "expect(again.jobId).not.toBe(jobFile!.replace(/\\.json$/, ''))"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/ai-sessions.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S1 paper 锚在 → 会话建立（scope/anchor 落库真值）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S1 paper 锚在 → 会话建立（scope/anchor 落库真值）",
+          "markers": [],
+          "line": 55,
+          "assertions": [
+            "expect(sessionId).toBeGreaterThan(0)",
+            "expect( db.prepare('SELECT scope, anchor_id FROM ai_sessions WHERE id = ?').get(sessionId) ).toEqual({ scope: 'paper', anchor_id: 'p-1' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S2 paper 锚缺 → NOT_FOUND+零会话行残留（防悬挂会话行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S2 paper 锚缺 → NOT_FOUND+零会话行残留（防悬挂会话行）",
+          "markers": [],
+          "line": 67,
+          "assertions": [
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_sessions').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S3 lineage 锚在+缺（锚=collections.id——ADR-0025 folder↔graph 投影）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S3 lineage 锚在+缺（锚=collections.id——ADR-0025 folder↔graph 投影）",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect( db.prepare('SELECT scope, anchor_id FROM ai_sessions WHERE id = ?').get(ok.sessionId) ).toEqual({ scope: 'lineage', anchor_id: 'c-1' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S4 global 带 anchor 拒（INVALID_REQUEST）+null 通过（anchor 落 NULL）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S4 global 带 anchor 拒（INVALID_REQUEST）+null 通过（anchor 落 NULL）",
+          "markers": [],
+          "line": 94,
+          "assertions": [
+            "expect( db.prepare('SELECT scope, anchor_id FROM ai_sessions WHERE id = ?').get(sessionId) ).toEqual({ scope: 'global', anchor_id: null })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S5 非法 scope → INVALID_REQUEST（封闭三值外）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S5 非法 scope → INVALID_REQUEST（封闭三值外）",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_sessions').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S6 满员全置顶 append → CONFLICT（message 含 50 上限+置顶计数实数+管理面板引导）+库态不变\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S6 满员全置顶 append → CONFLICT（message 含 50 上限+置顶计数实数+管理面板引导）+库态不变",
+          "markers": [],
+          "line": 127,
+          "assertions": [
+            "expect( db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE session_id = ?').get(sessionId) ).toEqual({ c: AI_SESSION_MESSAGE_CAP })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S7 role 非法+空 content → INVALID_REQUEST（双拒+零写入）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S7 role 非法+空 content → INVALID_REQUEST（双拒+零写入）",
+          "markers": [],
+          "line": 147,
+          "assertions": [
+            "expect( db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE session_id = ?').get(sessionId) ).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S8 pin/unpin：在场 ok 往返+缺席 NOT_FOUND 分流\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S8 pin/unpin：在场 ok 往返+缺席 NOT_FOUND 分流",
+          "markers": [],
+          "line": 169,
+          "assertions": [
+            "expect(svc.pinMessage(m.id)).resolves.toEqual({ ok: true })",
+            "expect( db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id) ).toEqual({ pinned: 1 })",
+            "expect(svc.unpinMessage(m.id)).resolves.toEqual({ ok: true })",
+            "expect( db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id) ).toEqual({ pinned: 0 })"
           ]
         }
       ]
@@ -38363,7 +38947,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 103,
+          "line": 105,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -38376,7 +38960,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 120,
+          "line": 122,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -38388,7 +38972,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 140,
+          "line": 142,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -38401,7 +38985,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 158,
+          "line": 160,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -38414,7 +38998,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 181,
+          "line": 183,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -38426,7 +39010,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 193,
+          "line": 195,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -38438,7 +39022,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 217,
+          "line": 219,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -38452,7 +39036,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 244,
+          "line": 246,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -39108,7 +39692,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 74,
+          "line": 76,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -39132,7 +39716,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 118,
+          "line": 120,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -39149,7 +39733,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 148,
+          "line": 150,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -39163,7 +39747,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 171,
+          "line": 173,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -39178,7 +39762,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 194,
+          "line": 196,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -39194,7 +39778,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 222,
+          "line": 224,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -39214,7 +39798,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 266,
+          "line": 268,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -39228,7 +39812,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 316,
+          "line": 318,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -39244,7 +39828,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 347,
+          "line": 349,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -39258,7 +39842,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 371,
+          "line": 373,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -44406,9 +44990,9 @@
     }
   },
   "stats": {
-    "fileCount": 306,
-    "caseCount": 2968,
-    "assertionCount": 9729,
+    "fileCount": 309,
+    "caseCount": 3009,
+    "assertionCount": 9843,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -44416,270 +45000,5 @@
     "eachExpandedRows": 348,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": [
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-      "caseTitle": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(result.currentVersion).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/services/lineage-edge-via.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/services/lineage-tags.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    },
-    {
-      "file": "tests/unit/services/lineage-u8-linetype.test.ts",
-      "assertionText": "expect(readUserVersion(db)).toBe(19)",
-      "reason": "020-U1 版本链 succession：注册迁移 020 后版本断言延链至 20（断言值指纹变更；个别用例标题内链值随延链——证据=仓外 20261009-dbcamp-db2a/u1-impl-report.md）——设计单源 docs/design/2026-10-09_f-dbcamp01-db2-ai-domain-report.md §6『受锁测试面 succession』在批范围",
-      "rulingLink": "docs/prompts/2026-10-09_loop-handoff-v170-db2-ai-report.md §1（用户晨裁开工序）+账本 runId=20261009-dbcamp-db2a"
-    }
-  ]
+  "exemptionsSnapshot": []
 }

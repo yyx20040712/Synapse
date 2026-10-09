@@ -34,6 +34,8 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       lineage: null as never,
       folders: null as never,
       papers: null as never,
+      aiSessions: null as never, // [F-DBCAMP-01 DB-2 U2a] AI 域两键（面外桩）
+      aiMemorySearch: null as never,
       ...over.services
     },
     dialogs: {

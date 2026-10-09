@@ -44,6 +44,14 @@ import {
 } from './enrich/providers/crossref'
 import { createOpenalexProvider, type OpenalexWork } from './enrich/providers/openalex'
 import { createArxivProvider, type ArxivWork } from './enrich/providers/arxiv'
+import {
+  createAiSessionsService,
+  type AiSessionsService
+} from './ai/ai-sessions.service'
+import {
+  createAiMemorySearchService,
+  type AiMemorySearchService
+} from './ai/ai-memory-search.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -105,6 +113,12 @@ export interface ServiceBundle {
   folders: ApiHandlers['folders']
   /** [F-FOLDER-01] papers 域（move-folder 移动/移出事务序——§3.4+W2） */
   papers: ApiHandlers['papers']
+  /** [F-DBCAMP-01 DB-2 U2a] AI 会话域（50 上限+多态锚——本批零 IPC，
+   *  handlers 接线归 U2b/后续票） */
+  aiSessions: AiSessionsService
+  /** [F-DBCAMP-01 DB-2 U2a] AI 记忆检索路由（码点路由+三档完全隔离——
+   *  本批零 IPC） */
+  aiMemorySearch: AiMemorySearchService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -181,7 +195,9 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       pubNos: (ids) => deps.repos.papers.pubNoByIds(ids),
       // [A1a] 文献库标签伴生 map 装配（tags.tagNamesByIds 单源——卡标签行换源）
       tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids)
-    })
+    }),
+    aiSessions: createAiSessionsService({ repos: deps.repos }),
+    aiMemorySearch: createAiMemorySearchService({ repos: deps.repos })
   }
 }
 
