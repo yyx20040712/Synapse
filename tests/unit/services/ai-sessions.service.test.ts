@@ -185,4 +185,92 @@ describe('F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限
     await expectDomainError(() => svc.unpinMessage(9999), 'NOT_FOUND', '消息不存在')
     db.close()
   })
+
+  it('S9 幽灵会话 append/list → NOT_FOUND「会话不存在」（U2b-1 裁①——零消息行残留）', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    await expectDomainError(
+      () => svc.appendMessage({ sessionId: 9999, role: 'user', content: '幽灵探针' }),
+      'NOT_FOUND',
+      '会话不存在'
+    )
+    await expectDomainError(() => svc.listMessages(9999), 'NOT_FOUND', '会话不存在')
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_messages').get()).toEqual({ c: 0 })
+    db.close()
+  })
+
+  it('S9b 幽灵会话 pin/unpin（孤儿消息=FK 关断播种）→ NOT_FOUND「会话不存在」优先于「消息不存在」', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiSessionsService({ repos })
+    seedPaper(db, 'p-1')
+    // 播种孤儿消息：建真会话+消息→关 FK 删会话（生产不可达形态——CASCADE 恒随灭；
+    // 测试为裁① pin/unpin 入口补会话存在性前置校验的对偶面）
+    const { sessionId } = await svc.openSession({ scope: 'paper', anchorId: 'p-1' })
+    const m = await svc.appendMessage({ sessionId, role: 'user', content: '待孤儿化' })
+    db.pragma('foreign_keys = OFF')
+    db.prepare('DELETE FROM ai_sessions WHERE id = ?').run(sessionId)
+    db.pragma('foreign_keys = ON')
+    expect(repos.aiSessions.sessionExists(sessionId)).toBe(false)
+    await expectDomainError(() => svc.pinMessage(m.id), 'NOT_FOUND', '会话不存在')
+    await expectDomainError(() => svc.unpinMessage(m.id), 'NOT_FOUND', '会话不存在')
+    db.close()
+  })
+
+  it('S10 append 复合序：非法 role×幽灵会话 → INVALID_REQUEST 先于 NOT_FOUND（裁③形态先于存在性）', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    await expectDomainError(
+      () =>
+        svc.appendMessage({ sessionId: 9999, role: 'system' as 'user', content: '内容' }),
+      'INVALID_REQUEST',
+      '角色'
+    )
+    // 空 content 同序（role 合法后 content 形态仍先于会话存在性）
+    await expectDomainError(
+      () => svc.appendMessage({ sessionId: 9999, role: 'user', content: '  ' }),
+      'INVALID_REQUEST',
+      '内容'
+    )
+    db.close()
+  })
+
+  it('S11 拒写文案修（U2b-1 裁②）：55 行×50 置顶 → CONFLICT 含「可淘汰的非置顶消息不足（置顶 50 条/共 55 条）」', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiSessionsService({ repos })
+    seedPaper(db, 'p-1')
+    const { sessionId } = await svc.openSession({ scope: 'paper', anchorId: 'p-1' })
+    // 5 非置顶+50 置顶=55 行：excess=6>可汰 5 → pinned=50/total=55
+    const seedMixed = db.prepare(
+      `INSERT INTO ai_messages (session_id, role, content, pinned, created_at, updated_at)
+       VALUES (?, 'user', ?, ?, 't', 't')`
+    )
+    for (let i = 1; i <= 5; i++) seedMixed.run(sessionId, `非置顶${i}`, 0)
+    for (let i = 1; i <= 50; i++) seedMixed.run(sessionId, `置顶${i}`, 1)
+    await expectDomainError(
+      () => svc.appendMessage({ sessionId, role: 'user', content: '第 56 条' }),
+      'CONFLICT',
+      '可淘汰的非置顶消息不足（置顶 50 条/共 55 条）',
+      '管理面板'
+    )
+    expect(
+      db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE session_id = ?').get(sessionId)
+    ).toEqual({ c: 55 })
+    db.close()
+  })
+
+  it('S12 同锚重复 openSession=允许新建（裁①测试锁：同锚两次 open→两个不同 id）', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    seedPaper(db, 'p-1')
+    const a = await svc.openSession({ scope: 'paper', anchorId: 'p-1' })
+    const b = await svc.openSession({ scope: 'paper', anchorId: 'p-1' })
+    expect(a.sessionId).not.toBe(b.sessionId)
+    expect(
+      db.prepare('SELECT COUNT(*) c FROM ai_sessions WHERE scope=? AND anchor_id=?')
+        .get('paper', 'p-1')
+    ).toEqual({ c: 2 })
+    db.close()
+  })
 })

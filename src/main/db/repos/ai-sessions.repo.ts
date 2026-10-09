@@ -51,14 +51,17 @@ export interface AiMessageRow {
   updatedAt: string
 }
 
-/** 拒写态错误（可汰行不足——非置顶数<excess；携带 pinnedCount 实数供服务层文案） */
+/** 拒写态错误（可汰行不足——非置顶数<excess；携带 pinnedCount/total 实数供服务层
+ * 文案——U2b-1 裁②：携带面扩为 {pinnedCount, total}） */
 export class SessionCapAllPinnedError extends Error {
   readonly pinnedCount: number
+  readonly total: number
 
-  constructor(pinnedCount: number) {
-    super(`会话消息已达上限且可汰行不足（置顶 ${pinnedCount} 条）`)
+  constructor(pinnedCount: number, total: number) {
+    super(`会话消息已达上限且可淘汰的非置顶消息不足（置顶 ${pinnedCount} 条/共 ${total} 条）`)
     this.name = 'SessionCapAllPinnedError'
     this.pinnedCount = pinnedCount
+    this.total = total
   }
 }
 
@@ -74,6 +77,12 @@ interface RawMessageRow {
 
 export interface AiSessionsRepo {
   createSession(scope: AiScope, anchorId: string | null): AiSessionRow
+  /** 会话行读（目标继承面消费——U2b-1 submitTask 缺省 target 继承会话 (scope,anchor)） */
+  getSessionById(sessionId: number): AiSessionRow | null
+  /** 会话存在性（U2b-1 裁①：四入口幽灵会话前置校验） */
+  sessionExists(sessionId: number): boolean
+  /** 消息行读（pin/unpin 幽灵会话判定的消息→会话解析面） */
+  getMessageById(messageId: number): AiMessageRow | null
   /** 多态锚存在性（§3.F：paper→papers.id/lineage→collections.id/global 恒真） */
   anchorExists(scope: AiScope, anchorId: string | null): boolean
   /** 写时同步淘汰（§3.A 三步单事务；拒写=SessionCapAllPinnedError 整体回滚） */
@@ -118,6 +127,11 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
     `SELECT id, session_id, role, content, pinned, created_at, updated_at FROM ai_messages
      WHERE session_id = ? ORDER BY id ASC`
   )
+  const sessionExistsStmt = db.prepare(`SELECT 1 AS hit FROM ai_sessions WHERE id = ? LIMIT 1`)
+  const messageByIdStmt = db.prepare(
+    `SELECT id, session_id, role, content, pinned, created_at, updated_at FROM ai_messages
+     WHERE id = ? LIMIT 1`
+  )
 
   function toMessage(r: RawMessageRow): AiMessageRow {
     return {
@@ -126,6 +140,22 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
       role: r.role,
       content: r.content,
       pinned: r.pinned,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }
+  }
+
+  function toSession(r: {
+    id: number
+    scope: AiScope
+    anchor_id: string | null
+    created_at: string
+    updated_at: string
+  }): AiSessionRow {
+    return {
+      id: r.id,
+      scope: r.scope,
+      anchorId: r.anchor_id,
       createdAt: r.created_at,
       updatedAt: r.updated_at
     }
@@ -140,7 +170,7 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
         const evictable = (evictableCountStmt.get(sessionId) as { c: number }).c
         if (evictable < excess) {
           const pinned = (pinnedCountStmt.get(sessionId) as { c: number }).c
-          throw new SessionCapAllPinnedError(pinned)
+          throw new SessionCapAllPinnedError(pinned, count)
         }
         evictStmt.run(sessionId, excess)
       }
@@ -162,20 +192,37 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
     createSession(scope, anchorId) {
       const now = new Date().toISOString()
       const info = insertSessionStmt.run(scope, anchorId, now, now)
-      const row = sessionByIdStmt.get(Number(info.lastInsertRowid)) as {
-        id: number
-        scope: AiScope
-        anchor_id: string | null
-        created_at: string
-        updated_at: string
-      }
-      return {
-        id: row.id,
-        scope: row.scope,
-        anchorId: row.anchor_id,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at
-      }
+      return toSession(
+        sessionByIdStmt.get(Number(info.lastInsertRowid)) as {
+          id: number
+          scope: AiScope
+          anchor_id: string | null
+          created_at: string
+          updated_at: string
+        }
+      )
+    },
+
+    getSessionById(sessionId) {
+      const row = sessionByIdStmt.get(sessionId) as
+        | {
+            id: number
+            scope: AiScope
+            anchor_id: string | null
+            created_at: string
+            updated_at: string
+          }
+        | undefined
+      return row === undefined ? null : toSession(row)
+    },
+
+    sessionExists(sessionId) {
+      return sessionExistsStmt.get(sessionId) !== undefined
+    },
+
+    getMessageById(messageId) {
+      const row = messageByIdStmt.get(messageId) as RawMessageRow | undefined
+      return row === undefined ? null : toMessage(row)
     },
 
     anchorExists(scope, anchorId) {

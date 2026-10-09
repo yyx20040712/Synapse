@@ -8,12 +8,18 @@
  *   （paper→papers.id/lineage→collections.id）。DDL CHECK 面经服务层前置校验
  *   全覆盖（兜底捕获分支不可经本层触达，不设死分支）。
  * - appendMessage（§3.A/§3.E）：role∈{user,assistant}（system 拒——DDL CHECK
- *   同口径）；content trim 后空拒；insertWithEviction 抛 SessionCapAllPinnedError
- *   →映射 AiDomainError('CONFLICT')——**复用 CONFLICT 预裁**（tags U4 限额同型
- *   先例；禁新增 AppErrorCode——封闭枚举需 ADR+[locked-change]，本批不动 shared）。
- * - pinMessage/unpinMessage：repo setPinned false（缺 id 零行变更）→NOT_FOUND
- *   消息不存在；置顶操作本身无上限（§3.A 单一规则）。
- * - listMessages：透传 repo 稳定序（id ASC）。
+ *   同口径）；content trim 后空拒；**幽灵会话前置校验→NOT_FOUND「会话不存在」
+ *   （U2b-1 裁①；序=形态先于存在性——裁③：role→content→会话存在性）**；
+ *   insertWithEviction 抛 SessionCapAllPinnedError →映射 AiDomainError('CONFLICT')
+ *   ——**复用 CONFLICT 预裁**（tags U4 限额同型先例；禁新增 AppErrorCode——封闭
+ *   枚举需 ADR+[locked-change]，本批不动 shared）；文案携带 pinnedCount/total 双
+ *   实数（U2b-1 裁②）。
+ * - pinMessage/unpinMessage：**会话存在性前置**（消息→会话解析：缺席消息
+ *   NOT_FOUND「消息不存在」、在场消息会话已灭 NOT_FOUND「会话不存在」——U2b-1
+ *   裁①对偶面；生产 CASCADE 使后者结构性不可达，防御面承载裁①统一性）；
+ *   repo setPinned false（缺 id 零行变更）→NOT_FOUND 消息不存在；置顶操作本身
+ *   无上限（§3.A 单一规则）。
+ * - listMessages：幽灵会话 NOT_FOUND（裁①）；在场透传 repo 稳定序（id ASC）。
  *
  * ── 架构层 ──
  * - SQL 全在 repo（service 零 SQL）；错误语义归 service、数据事实归 repo
@@ -73,6 +79,25 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
     }
   }
 
+  /** 幽灵会话前置校验（U2b-1 裁①：四入口统一 NOT_FOUND「会话不存在」） */
+  function assertSessionExists(sessionId: number): void {
+    if (!aiSessions.sessionExists(sessionId)) {
+      throw new AiDomainError('NOT_FOUND', '会话不存在')
+    }
+  }
+
+  /** pin/unpin 的会话存在性前置（消息→会话解析；缺席消息先判「消息不存在」，
+   *  在场消息的会话已灭（生产 CASCADE 不可达形态）→「会话不存在」——裁①对偶面） */
+  function assertMessageSessionExists(messageId: number): void {
+    const message = aiSessions.getMessageById(messageId)
+    if (message === null) {
+      throw new AiDomainError('NOT_FOUND', '消息不存在')
+    }
+    if (!aiSessions.sessionExists(message.sessionId)) {
+      throw new AiDomainError('NOT_FOUND', '会话不存在')
+    }
+  }
+
   return {
     async openSession(req) {
       assertScopeShape(req.scope, req.anchorId)
@@ -92,14 +117,17 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
       if (req.content.trim() === '') {
         throw new AiDomainError('INVALID_REQUEST', '消息内容不能为空')
       }
+      // 幽灵会话=显式 NOT_FOUND（U2b-1 裁①）；序=形态先于存在性（裁③）
+      assertSessionExists(req.sessionId)
       try {
         return aiSessions.insertWithEviction(req.sessionId, req.role, req.content)
       } catch (e) {
         if (e instanceof SessionCapAllPinnedError) {
+          // U2b-1 裁②文案：携带 pinnedCount/total 双实数
           throw new AiDomainError(
             'CONFLICT',
-            `会话消息已达 ${AI_SESSION_MESSAGE_CAP} 条上限且全部置顶` +
-              `（置顶 ${e.pinnedCount} 条），请先在管理面板取消置顶`
+            `会话消息已达 ${AI_SESSION_MESSAGE_CAP} 条上限且可淘汰的非置顶消息不足` +
+              `（置顶 ${e.pinnedCount} 条/共 ${e.total} 条），请先在管理面板取消置顶`
           )
         }
         throw e
@@ -107,6 +135,7 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
     },
 
     async pinMessage(messageId) {
+      assertMessageSessionExists(messageId)
       if (!aiSessions.setPinned(messageId, true)) {
         throw new AiDomainError('NOT_FOUND', '消息不存在')
       }
@@ -114,6 +143,7 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
     },
 
     async unpinMessage(messageId) {
+      assertMessageSessionExists(messageId)
       if (!aiSessions.setPinned(messageId, false)) {
         throw new AiDomainError('NOT_FOUND', '消息不存在')
       }
@@ -121,6 +151,7 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
     },
 
     async listMessages(sessionId) {
+      assertSessionExists(sessionId)
       return aiSessions.listMessages(sessionId)
     }
   }

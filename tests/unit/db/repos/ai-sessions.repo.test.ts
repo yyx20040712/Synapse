@@ -115,7 +115,7 @@ describe('F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语', 
     db.close()
   })
 
-  it('M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）', () => {
+  it('M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount/total 实数——U2b-1 裁②携带面扩）', () => {
     const db = createTestDb()
     const repo = createAiSessionsRepo(db)
     const s = seedSession(db)
@@ -128,6 +128,10 @@ describe('F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语', 
     }
     expect(err).toBeInstanceOf(SessionCapAllPinnedError)
     expect((err as SessionCapAllPinnedError).pinnedCount).toBe(AI_SESSION_MESSAGE_CAP)
+    expect((err as SessionCapAllPinnedError).total).toBe(AI_SESSION_MESSAGE_CAP)
+    expect((err as Error).message).toContain(
+      `可淘汰的非置顶消息不足（置顶 ${AI_SESSION_MESSAGE_CAP} 条/共 ${AI_SESSION_MESSAGE_CAP} 条）`
+    )
     db.close()
   })
 
@@ -189,7 +193,42 @@ describe('F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语', 
     }
     expect(err).toBeInstanceOf(SessionCapAllPinnedError)
     expect((err as SessionCapAllPinnedError).pinnedCount).toBe(55)
+    expect((err as SessionCapAllPinnedError).total).toBe(55)
     expect(repo.countMessages(s)).toBe(55)
+    db.close()
+  })
+
+  it('M14 混合态拒写计数实数：55 行含 50 置顶+5 非置顶→pinnedCount=50/total=55（U2b-1 裁②）', () => {
+    const db = createTestDb()
+    const repo = createAiSessionsRepo(db)
+    const s = seedSession(db)
+    // id 1-5 非置顶（可汰 5 行）+id 6-55 置顶：excess=55+1-50=6>5→拒写
+    seedN(db, s, 5, 0)
+    seedN(db, s, 50, 1)
+    let err: unknown
+    try {
+      repo.insertWithEviction(s, 'user', '混合态探针')
+    } catch (e) {
+      err = e
+    }
+    expect(err).toBeInstanceOf(SessionCapAllPinnedError)
+    expect((err as SessionCapAllPinnedError).pinnedCount).toBe(50)
+    expect((err as SessionCapAllPinnedError).total).toBe(55)
+    expect((err as Error).message).toContain('可淘汰的非置顶消息不足（置顶 50 条/共 55 条）')
+    db.close()
+  })
+
+  it('M15 会话/消息存在性原语：sessionExists 在场 true 缺席 false+getMessageById 行映射与缺席 null', () => {
+    const db = createTestDb()
+    const repo = createAiSessionsRepo(db)
+    const s = seedSession(db)
+    seedMessage(db, s, 1)
+    expect(repo.sessionExists(s)).toBe(true)
+    expect(repo.sessionExists(9999)).toBe(false)
+    const m = repo.getMessageById(1)
+    expect(m?.sessionId).toBe(s)
+    expect(m?.content).toBe('消息1')
+    expect(repo.getMessageById(9999)).toBeNull()
     db.close()
   })
 

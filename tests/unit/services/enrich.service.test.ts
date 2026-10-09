@@ -80,6 +80,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     appMeta: {} as Repos['appMeta'], // [F-DBCAMP-01 DB-1 U3] app_meta 域（面外桩）
     aiSessions: {} as Repos['aiSessions'], // [F-DBCAMP-01 DB-2 U2a] AI 会话域（面外桩）
     aiMemory: {} as Repos['aiMemory'], // [F-DBCAMP-01 DB-2 U2a] AI 记忆域（面外桩）
+    aiTasks: {} as Repos['aiTasks'], // [F-DBCAMP-01 DB-2 U2b-1] AI 任务域（面外桩）
     // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
     withTransaction: <T>(fn: () => T): T => fn()
   }

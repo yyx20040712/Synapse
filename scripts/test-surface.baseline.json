@@ -4946,7 +4946,7 @@
           ],
           "title": "M2 播种：恰 10 行 epoch=0 且表名=集合物理名（多/少/错名均红）",
           "markers": [],
-          "line": 172,
+          "line": 174,
           "assertions": [
             "expect(rows.map((r) => r.table_name)).toEqual([...EPOCH_TABLES].sort())",
             "expect(rows.every((r) => r.epoch === 0)).toBe(true)"
@@ -4959,7 +4959,7 @@
           ],
           "title": "M2 三一致：epoch 集合 10 表↔每表恰 3 个 epoch 触发器（ai/au/ad 名单精确）↔全库 epoch 触发器恰 30（无多余）",
           "markers": [],
-          "line": 182,
+          "line": 184,
           "assertions": [
             "expect(names, `${t} 的 epoch 触发器`).toEqual( [`${t}_epoch_ad`, `${t}_epoch_ai`, `${t}_epoch_au`].sort() )",
             "expect(total).toBe(30)"
@@ -4972,7 +4972,7 @@
           ],
           "title": "M2 逐表 I→+1、U→+1、D→+1（10 表×3=30 断言；_au 无 OF=任意列更新皆 bump）",
           "markers": [],
-          "line": 204,
+          "line": 206,
           "assertions": [
             "expect(e0, `${t} 计数行在场`).toBeDefined()",
             "expect(epochOf(db, t), `${t} INSERT 后 +1`).toBe(e0! + 1)",
@@ -4987,7 +4987,7 @@
           ],
           "title": "M2 中间步逐格复证（papers 三格序列+is_starred 翻转亦 bump——保守过失效语义）",
           "markers": [],
-          "line": 223,
+          "line": 225,
           "assertions": [
             "expect(epochOf(db, 'papers')).toBe(1)",
             "expect(epochOf(db, 'papers')).toBe(2)",
@@ -5001,7 +5001,7 @@
           ],
           "title": "M2 自愈：删计数行→该表下次写→重建=1（不回 0——变化已发生）；ai_memory 同款",
           "markers": [],
-          "line": 234,
+          "line": 236,
           "assertions": [
             "expect(epochOf(db, 'papers')).toBeUndefined()",
             "expect(epochOf(db, 'papers')).toBe(1)",
@@ -5015,7 +5015,7 @@
           ],
           "title": "M3 共存（papers）：插入/更新后 papers_fts 行在（MATCH 命中/旧词清）且 papers epoch 同步前进——旧 FTS 触发器与新 epoch 触发器同表互不干扰",
           "markers": [],
-          "line": 249,
+          "line": 251,
           "assertions": [
             "expect( db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"文献p-co\"'`).get() ).toBeTruthy()",
             "expect(epochOf(db, 'papers')).toBe(1)",
@@ -5033,7 +5033,7 @@
           ],
           "title": "M3 共存（ai_memory 抽测·_au 协议锁）：插入词命中+更新后旧词 MATCH 归零/新词命中（delete 旧值+insert 新值双语句），epoch 同步 +2",
           "markers": [],
-          "line": 274,
+          "line": 276,
           "assertions": [
             "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"记忆原文甲\"'`).get() ).toBeTruthy()",
             "expect(epochOf(db, 'ai_memory')).toBe(1)",
@@ -5049,10 +5049,57 @@
           ],
           "title": "M3 共存（notes 抽测）：插入后 notes_fts 行在且 notes epoch +1",
           "markers": [],
-          "line": 297,
+          "line": 299,
           "assertions": [
             "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"反渗透膜污染机理\"'`).get() ).toBeTruthy()",
             "expect(epochOf(db, 'notes')).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）\",\"R4-1 edges 二段级联断言锁：删 collections→nodes CASCADE→edges 级联灭+edges epoch 前进\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）"
+          ],
+          "title": "R4-1 edges 二段级联断言锁：删 collections→nodes CASCADE→edges 级联灭+edges epoch 前进",
+          "markers": [],
+          "line": 315,
+          "assertions": [
+            "expect(db.prepare(`SELECT COUNT(*) c FROM lineage_nodes WHERE folder_id = 'c-r4'`).get()).toEqual({ c: 0 })",
+            "expect(db.prepare(`SELECT COUNT(*) c FROM lineage_edges`).get()).toEqual({ c: 0 })",
+            "expect(epochOf(db, 'lineage_edges')).toBe(edgesBefore + 1)",
+            "expect(epochOf(db, 'lineage_nodes')).toBe(nodesBefore + 2)"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）\",\"R7-2 空锚级联场景：删无 AI 资源的 paper → ai_memory epoch 恰 +1（显式 bump）+三 AI 表零行灭+audit 零行\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）"
+          ],
+          "title": "R7-2 空锚级联场景：删无 AI 资源的 paper → ai_memory epoch 恰 +1（显式 bump）+三 AI 表零行灭+audit 零行",
+          "markers": [],
+          "line": 339,
+          "assertions": [
+            "expect(before).toBe(0)",
+            "expect(epochOf(db, 'ai_memory')).toBe(before + 1)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_sessions').get()).toEqual({ c: 0 })",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_task_audit').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）\",\"R7-3 杜撰锚采样：anchorExists 杜撰 id（999999）paper·lineage 各 1 枚拒例（openSession NOT_FOUND 对偶面）\"]",
+          "describePath": [
+            "db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）"
+          ],
+          "title": "R7-3 杜撰锚采样：anchorExists 杜撰 id（999999）paper·lineage 各 1 枚拒例（openSession NOT_FOUND 对偶面）",
+          "markers": [],
+          "line": 354,
+          "assertions": [
+            "expect(repos.aiSessions.anchorExists('paper', '999999')).toBe(false)",
+            "expect(repos.aiSessions.anchorExists('lineage', '999999')).toBe(false)",
+            "expect( svc.openSession({ scope: 'paper', anchorId: '999999' }) ).rejects.toMatchObject({ code: 'NOT_FOUND' })",
+            "expect( svc.openSession({ scope: 'lineage', anchorId: '999999' }) ).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
         }
       ]
@@ -6355,6 +6402,233 @@
         }
       ]
     },
+    "tests/unit/db/repos/ai-memory.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W1 create 落位：origin=agent+sourceTaskId 落库+FTS 行在场（MATCH 命中）+ISO 时间戳\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W1 create 落位：origin=agent+sourceTaskId 落库+FTS 行在场（MATCH 命中）+ISO 时间戳",
+          "markers": [],
+          "line": 45,
+          "assertions": [
+            "expect(row.id).toBeGreaterThan(0)",
+            "expect(row.scope).toBe('paper')",
+            "expect(row.anchorId).toBe('p-1')",
+            "expect(row.category).toBe('reading_insight')",
+            "expect(row.label).toBe('标签甲')",
+            "expect(row.origin).toBe('agent')",
+            "expect(row.sourceTaskId).toBe(taskId)",
+            "expect(row.pinned).toBe(0)",
+            "expect(ISO_RE.test(row.createdAt)).toBe(true)",
+            "expect(row.updatedAt).toBe(row.createdAt)",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"膜污染三阶段\"'`).get() ).toBeTruthy()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W2 create 缺省面：label null+sourceTaskId null+origin manual（用户手写面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W2 create 缺省面：label null+sourceTaskId null+origin manual（用户手写面）",
+          "markers": [],
+          "line": 80,
+          "assertions": [
+            "expect(row.label).toBeNull()",
+            "expect(row.sourceTaskId).toBeNull()",
+            "expect(row.origin).toBe('manual')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W3 getById：在场行映射+缺席 null\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W3 getById：在场行映射+缺席 null",
+          "markers": [],
+          "line": 95,
+          "assertions": [
+            "expect(repo.getById(id)?.title).toBe('方法')",
+            "expect(repo.getById(9999)).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W4 update 部分字段：仅 title——其余列不动+updated_at 刷新+FTS 旧词清新词命中\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W4 update 部分字段：仅 title——其余列不动+updated_at 刷新+FTS 旧词清新词命中",
+          "markers": [],
+          "line": 104,
+          "assertions": [
+            "expect(updated?.title).toBe('新标题乙')",
+            "expect(updated?.content).toBe('旧文')",
+            "expect(updated?.label).toBe('旧签')",
+            "expect(updated?.category).toBe('method_note')",
+            "expect((updated?.updatedAt ?? '') > '2024-01-01T00:00:00.000Z').toBe(true)",
+            "expect(ISO_RE.test(updated?.updatedAt ?? '')).toBe(true)",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"旧标题甲\"'`).get() ).toBeUndefined()",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"新标题乙\"'`).get() ).toBeTruthy()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W5 update 多字段（title+content+label 同刷）+缺席 id → null\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W5 update 多字段（title+content+label 同刷）+缺席 id → null",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(updated?.title).toBe('新')",
+            "expect(updated?.content).toBe('新文')",
+            "expect(updated?.label).toBe('新签')",
+            "expect(repo.update(9999, { title: '无的放矢' })).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W6 delete：行灭+FTS 清（MATCH 归零）+缺席 false\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W6 delete：行灭+FTS 清（MATCH 归零）+缺席 false",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(repo.delete(9999)).toBe(false)",
+            "expect(repo.delete(id)).toBe(true)",
+            "expect(repo.getById(id)).toBeNull()",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"术语解释文\"'`).get() ).toBeUndefined()",
+            "expect(countMemory(db)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W7 setPinned 往返：翻转+updated_at 刷新+缺席 false 零行变更\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W7 setPinned 往返：翻转+updated_at 刷新+缺席 false 零行变更",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect(repo.setPinned(id, true)).toBe(true)",
+            "expect(repo.getById(id)?.pinned).toBe(1)",
+            "expect((repo.getById(id)?.updatedAt ?? '') > '2024-01-01T00:00:00.000Z').toBe(true)",
+            "expect(repo.setPinned(id, false)).toBe(true)",
+            "expect(repo.getById(id)?.pinned).toBe(0)",
+            "expect(repo.setPinned(9999, true)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"W8 listByAnchor：仅本锚行（他锚/global 排除）+序=(updated_at DESC, id DESC)+limit\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "W8 listByAnchor：仅本锚行（他锚/global 排除）+序=(updated_at DESC, id DESC)+limit",
+          "markers": [],
+          "line": 167,
+          "assertions": [
+            "expect(rows.map((r) => r.title)).toEqual(['晚', '中', '早'])",
+            "expect(repo.listByAnchor('paper', 'p-1', { limit: 2 }).map((r) => r.title)).toEqual(['晚', '中'])",
+            "expect(repo.listByAnchor('paper', 'p-1', { category: 'method_note', limit: 50 }).map((r) => r.title)).toEqual(['早'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"U1 searchByLikeUnion（裁④可见集=目标锚∪global）：本锚+global 命中/他锚隔离\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "U1 searchByLikeUnion（裁④可见集=目标锚∪global）：本锚+global 命中/他锚隔离",
+          "markers": [],
+          "line": 182,
+          "assertions": [
+            "expect(rows.map((r) => r.title).sort()).toEqual(['污染防治方法', '污染防治能力'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"U2 searchByMatchUnion：FTS 路同并集（本锚+global 命中/他锚隔离）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "U2 searchByMatchUnion：FTS 路同并集（本锚+global 命中/他锚隔离）",
+          "markers": [],
+          "line": 194,
+          "assertions": [
+            "expect(rows.map((r) => r.content).sort()).toEqual(['跨栅栏技术要义', '跨栅栏技术配方'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"U3 listUnion：目标锚∪global+category 过滤+limit+他锚隔离\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "U3 listUnion：目标锚∪global+category 过滤+limit+他锚隔离",
+          "markers": [],
+          "line": 205,
+          "assertions": [
+            "expect(rows.map((r) => r.title)).toEqual(['全局丙', '全局乙', '本锚甲'])",
+            "expect(repo.listUnion('paper', 'p-1', 'method_note', 50).map((r) => r.title)).toEqual(['本锚甲'])",
+            "expect(repo.listUnion('paper', 'p-1', null, 2).map((r) => r.title)).toEqual(['全局丙', '全局乙'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"U4 并集无目标行态：仅 global 命中（目标锚零行不空转错误）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "U4 并集无目标行态：仅 global 命中（目标锚零行不空转错误）",
+          "markers": [],
+          "line": 219,
+          "assertions": [
+            "expect(repo.searchByLikeUnion('lineage', 'c-empty', '%任务产出%', 50).map((r) => r.title)).toEqual(['任务产出'])",
+            "expect(repo.listUnion('lineage', 'c-empty', null, 50).map((r) => r.title)).toEqual(['任务产出'])",
+            "expect(repo.searchByMatchUnion('lineage', 'c-empty', '\"任务产出\"', 50).map((r) => r.title)).toEqual(['任务产出'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"U5 并集序=(updated_at DESC, id DESC)（两路检索同口径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "U5 并集序=(updated_at DESC, id DESC)（两路检索同口径）",
+          "markers": [],
+          "line": 229,
+          "assertions": [
+            "expect(like.map((r) => r.title)).toEqual(['晚行', '早行'])",
+            "expect(match.map((r) => r.title)).toEqual(['晚行', '早行'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"I1 隔离谓词回归：既有 searchByLike 仍三档完全隔离（他锚/global 均不可见）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "I1 隔离谓词回归：既有 searchByLike 仍三档完全隔离（他锚/global 均不可见）",
+          "markers": [],
+          "line": 241,
+          "assertions": [
+            "expect(rows.map((r) => r.title)).toEqual(['本锚可见'])",
+            "expect(repo.searchByLike('global', null, '%可见%', 50).map((r) => r.title)).toEqual(['全局不可见'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索\",\"I2 隔离谓词回归：既有 searchByMatch 同隔离（PREDICATE 不动双路对齐）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索"
+          ],
+          "title": "I2 隔离谓词回归：既有 searchByMatch 同隔离（PREDICATE 不动双路对齐）",
+          "markers": [],
+          "line": 253,
+          "assertions": [
+            "expect(rows.map((r) => r.content)).toEqual(['隔离语料本图'])"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/repos/ai-sessions.repo.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -6402,16 +6676,18 @@
           ]
         },
         {
-          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）\"]",
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount/total 实数——U2b-1 裁②携带面扩）\"]",
           "describePath": [
             "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
           ],
-          "title": "M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）",
+          "title": "M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount/total 实数——U2b-1 裁②携带面扩）",
           "markers": [],
           "line": 118,
           "assertions": [
             "expect(err).toBeInstanceOf(SessionCapAllPinnedError)",
-            "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(AI_SESSION_MESSAGE_CAP)"
+            "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect((err as SessionCapAllPinnedError).total).toBe(AI_SESSION_MESSAGE_CAP)",
+            "expect((err as Error).message).toContain( `可淘汰的非置顶消息不足（置顶 ${AI_SESSION_MESSAGE_CAP} 条/共 ${AI_SESSION_MESSAGE_CAP} 条）` )"
           ]
         },
         {
@@ -6421,7 +6697,7 @@
           ],
           "title": "M5 拒写后库态逐行不变（回滚原子性——行数+逐行内容比对）",
           "markers": [],
-          "line": 134,
+          "line": 138,
           "assertions": [
             "expect(before.length).toBe(AI_SESSION_MESSAGE_CAP)",
             "expect(() => repo.insertWithEviction(s, 'assistant', '再拒写探针')).toThrow( SessionCapAllPinnedError )",
@@ -6435,7 +6711,7 @@
           ],
           "title": "M6 victim 序=非置顶 id ASC（乱序 pin：置顶 id 1/3 后 victim=id 2 非 id 1）",
           "markers": [],
-          "line": 148,
+          "line": 152,
           "assertions": [
             "expect(rows.length).toBe(AI_SESSION_MESSAGE_CAP)",
             "expect(rows.some((r) => r.id === 2)).toBe(false)",
@@ -6450,7 +6726,7 @@
           ],
           "title": "M7 存量 55 行收敛：插新汰 6 至 50（excess=55+1-50——200 时代遗留行路径）",
           "markers": [],
-          "line": 166,
+          "line": 170,
           "assertions": [
             "expect(rows.length).toBe(AI_SESSION_MESSAGE_CAP)",
             "expect(rows.map((r) => r.id)).toEqual(ids(AI_SESSION_MESSAGE_CAP, 7))"
@@ -6463,11 +6739,43 @@
           ],
           "title": "M8 收敛态全置顶拒写：55 行全置顶→typed error（pinnedCount=55）+行数不变",
           "markers": [],
-          "line": 179,
+          "line": 183,
           "assertions": [
             "expect(err).toBeInstanceOf(SessionCapAllPinnedError)",
             "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(55)",
+            "expect((err as SessionCapAllPinnedError).total).toBe(55)",
             "expect(repo.countMessages(s)).toBe(55)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M14 混合态拒写计数实数：55 行含 50 置顶+5 非置顶→pinnedCount=50/total=55（U2b-1 裁②）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M14 混合态拒写计数实数：55 行含 50 置顶+5 非置顶→pinnedCount=50/total=55（U2b-1 裁②）",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(err).toBeInstanceOf(SessionCapAllPinnedError)",
+            "expect((err as SessionCapAllPinnedError).pinnedCount).toBe(50)",
+            "expect((err as SessionCapAllPinnedError).total).toBe(55)",
+            "expect((err as Error).message).toContain('可淘汰的非置顶消息不足（置顶 50 条/共 55 条）')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语\",\"M15 会话/消息存在性原语：sessionExists 在场 true 缺席 false+getMessageById 行映射与缺席 null\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.repo —— 会话 50 上限原语"
+          ],
+          "title": "M15 会话/消息存在性原语：sessionExists 在场 true 缺席 false+getMessageById 行映射与缺席 null",
+          "markers": [],
+          "line": 221,
+          "assertions": [
+            "expect(repo.sessionExists(s)).toBe(true)",
+            "expect(repo.sessionExists(9999)).toBe(false)",
+            "expect(m?.sessionId).toBe(s)",
+            "expect(m?.content).toBe('消息1')",
+            "expect(repo.getMessageById(9999)).toBeNull()"
           ]
         },
         {
@@ -6477,7 +6785,7 @@
           ],
           "title": "M9 pin 往返：pinned 翻转+updated_at 刷新+其余列不变（role/content/created_at）",
           "markers": [],
-          "line": 196,
+          "line": 235,
           "assertions": [
             "expect(repo.setPinned(1, true)).toBe(true)",
             "expect(pinnedRow.pinned).toBe(1)",
@@ -6497,7 +6805,7 @@
           ],
           "title": "M10 setPinned 缺 id 零行变更（false+全表快照不变）",
           "markers": [],
-          "line": 215,
+          "line": 254,
           "assertions": [
             "expect(repo.setPinned(9999, true)).toBe(false)",
             "expect(rawMessages(db, s)).toEqual(before)"
@@ -6510,7 +6818,7 @@
           ],
           "title": "M11 listMessages 序=id ASC（置顶不改变列表序——稳定序承诺）",
           "markers": [],
-          "line": 226,
+          "line": 265,
           "assertions": [
             "expect(repo.listMessages(s).map((r) => r.id)).toEqual([1, 2, 3, 4, 5])"
           ]
@@ -6522,7 +6830,7 @@
           ],
           "title": "M12 时间戳=应用层 ISO（createSession/insertWithEviction 双面——弃 DDL DEFAULT）",
           "markers": [],
-          "line": 236,
+          "line": 275,
           "assertions": [
             "expect(ISO_RE.test(session.createdAt)).toBe(true)",
             "expect(session.updatedAt).toBe(session.createdAt)",
@@ -6540,10 +6848,286 @@
           ],
           "title": "M13 evict 已执行→insert 触 DDL CHECK 失败→事务回滚行集逐行还原（非法 role 直插 repo 路径）",
           "markers": [],
-          "line": 253,
+          "line": 292,
           "assertions": [
             "expect(() => repo.insertWithEviction(s, 'system' as 'user', '触发回滚')).toThrow(/CHECK/)",
             "expect(rawMessages(db, s)).toEqual(before)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/db/repos/ai-tasks.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T1 insertQueued 落位：status=queued 全列+ISO 时间戳+审计 submitted 行（detail 含目标描述符+action）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T1 insertQueued 落位：status=queued 全列+ISO 时间戳+审计 submitted 行（detail 含目标描述符+action）",
+          "markers": [],
+          "line": 38,
+          "assertions": [
+            "expect(row.id).toBeGreaterThan(0)",
+            "expect(row.scope).toBe('lineage')",
+            "expect(row.anchorId).toBe('c-1')",
+            "expect(row.action).toBe('memory.search')",
+            "expect(row.payload).toBe('{\"query\":\"语料\"}')",
+            "expect(row.status).toBe('queued')",
+            "expect(row.result).toBeNull()",
+            "expect(row.error).toBeNull()",
+            "expect(row.idempotencyKey).toBe('idem-1')",
+            "expect(ISO_RE.test(row.createdAt)).toBe(true)",
+            "expect(row.updatedAt).toBe(row.createdAt)",
+            "expect(audit.map((a) => a.kind)).toEqual(['submitted'])",
+            "expect(audit[0]!.seq).toBe(1)",
+            "expect(audit[0]!.detail).toContain('target_resolved=(scope=lineage,anchor=c-1)')",
+            "expect(audit[0]!.detail).toContain('action=memory.search')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T2 幂等键查询：findByIdempotencyKey 命中/缺席 null+无键任务 idempotencyKey=null\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T2 幂等键查询：findByIdempotencyKey 命中/缺席 null+无键任务 idempotencyKey=null",
+          "markers": [],
+          "line": 68,
+          "assertions": [
+            "expect(repo.findByIdempotencyKey('idem-a')?.id).toBe(withKey)",
+            "expect(repo.findByIdempotencyKey('无此键')).toBeNull()",
+            "expect(repo.getById(noKey)?.idempotencyKey).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T3 getById：在场全列映射+缺席 null\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T3 getById：在场全列映射+缺席 null",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(repo.getById(id)?.action).toBe('memory.create')",
+            "expect(repo.getById(9999)).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T4 transitionToRunning：queued→running+审计 target_resolved 行+行返回\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T4 transitionToRunning：queued→running+审计 target_resolved 行+行返回",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect(row?.status).toBe('running')",
+            "expect(row && ISO_RE.test(row.updatedAt)).toBe(true)",
+            "expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted', 'target_resolved'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T5 守卫 UPDATE 拒非 queued：running 二迁→null+零审计增量+状态不动\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T5 守卫 UPDATE 拒非 queued：running 二迁→null+零审计增量+状态不动",
+          "markers": [],
+          "line": 99,
+          "assertions": [
+            "expect(repo.transitionToRunning(id, 'd2')).toBeNull()",
+            "expect(repo.getById(id)?.status).toBe('running')",
+            "expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted', 'target_resolved'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T6 守卫 UPDATE 拒终态回迁：succeeded/cancelled→running 均 null（每终态回迁抽样）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T6 守卫 UPDATE 拒终态回迁：succeeded/cancelled→running 均 null（每终态回迁抽样）",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(repo.transitionToRunning(a, 'd')).toBeNull()",
+            "expect(repo.transitionToRunning(b, 'd')).toBeNull()",
+            "expect(repo.getById(b)?.status).toBe('cancelled')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T7 cancelQueued：queued→cancelled+审计 cancelled 行\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T7 cancelQueued：queued→cancelled+审计 cancelled 行",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect(row?.status).toBe('cancelled')",
+            "expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted', 'cancelled'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T8 cancelQueued 拒 running（v1 running 不可取消）+拒已 cancelled（幂等拒）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T8 cancelQueued 拒 running（v1 running 不可取消）+拒已 cancelled（幂等拒）",
+          "markers": [],
+          "line": 136,
+          "assertions": [
+            "expect(repo.cancelQueued(id, '取消探针')).toBeNull()",
+            "expect(repo.getById(id)?.status).toBe('running')",
+            "expect(repo.cancelQueued(b, '二次')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T9 finalizeRunning 三终态：succeeded（result+审计）/failed（error+审计）/timeout（error+审计）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T9 finalizeRunning 三终态：succeeded（result+审计）/failed（error+审计）/timeout（error+审计）",
+          "markers": [],
+          "line": 149,
+          "assertions": [
+            "expect(ra?.status).toBe('succeeded')",
+            "expect(ra?.result).toBe('{\"memoryId\":9}')",
+            "expect(ra?.error).toBeNull()",
+            "expect(rb?.status).toBe('failed')",
+            "expect(rb?.error).toBe('围栏越界')",
+            "expect(rb?.result).toBeNull()",
+            "expect(rc?.status).toBe('timeout')",
+            "expect(rc?.error).toBe('任务超时')",
+            "expect(repo.listAudit(id).map((x) => x.kind)).toEqual(['submitted', 'target_resolved', kind])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T10 appendAudit seq：同任务 1→2→3 严格递增+跨任务独立（各自从 1 起）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T10 appendAudit seq：同任务 1→2→3 严格递增+跨任务独立（各自从 1 起）",
+          "markers": [],
+          "line": 181,
+          "assertions": [
+            "expect(repo.listAudit(a).map((x) => x.seq)).toEqual([1, 2, 3])",
+            "expect(repo.listAudit(b).map((x) => x.seq)).toEqual([1, 2])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T11 recoverInterrupted：running→failed(interrupted) 计数+逐行审计+queued/succeeded 不动\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T11 recoverInterrupted：running→failed(interrupted) 计数+逐行审计+queued/succeeded 不动",
+          "markers": [],
+          "line": 194,
+          "assertions": [
+            "expect(n).toBe(2)",
+            "expect(repo.getById(id)?.status).toBe('failed')",
+            "expect(repo.getById(id)?.error).toBe('interrupted')",
+            "expect(kinds[kinds.length - 1]).toBe('failed')",
+            "expect(repo.listAudit(id).at(-1)?.detail).toContain('interrupted')",
+            "expect(repo.getById(q)?.status).toBe('queued')",
+            "expect(repo.getById(s)?.status).toBe('succeeded')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T12 recoverInterrupted 空扫描：零 running → 0（幂等可重跑）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T12 recoverInterrupted 空扫描：零 running → 0（幂等可重跑）",
+          "markers": [],
+          "line": 219,
+          "assertions": [
+            "expect(repo.recoverInterrupted('interrupted')).toBe(0)",
+            "expect(repo.getById(id)?.status).toBe('queued')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T13 runTaskTx 原子性：fn 抛错→整体回滚（终态零残留）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T13 runTaskTx 原子性：fn 抛错→整体回滚（终态零残留）",
+          "markers": [],
+          "line": 228,
+          "assertions": [
+            "expect(() => repo.runTaskTx((api) => { api.appendAudit(id, 'mutated', '将回滚') throw new Error('事务内炸点') }) ).toThrow('事务内炸点')",
+            "expect(repo.listAudit(id).map((x) => x.kind)).toEqual(['submitted'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T14 savepoint 语义：begin→mutate→rollback→release=变异灭；begin→mutate→release=变异存（提交后可见）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T14 savepoint 语义：begin→mutate→rollback→release=变异灭；begin→mutate→release=变异存（提交后可见）",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(details.some((d) => d.includes('保留段'))).toBe(true)",
+            "expect(details.some((d) => d.includes('将回滚段'))).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T15 savepoint 后 finalize 同事务共存：rollback→finalize timeout 落库（超时终态承载面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T15 savepoint 后 finalize 同事务共存：rollback→finalize timeout 落库（超时终态承载面）",
+          "markers": [],
+          "line": 261,
+          "assertions": [
+            "expect(repo.getById(id)?.status).toBe('timeout')",
+            "expect(kinds).toEqual(['submitted', 'target_resolved', 'timeout'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T16 listTasks：无过滤序=id DESC+过滤（scope/anchor/status）+limit 截断+默认上限 50\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T16 listTasks：无过滤序=id DESC+过滤（scope/anchor/status）+limit 截断+默认上限 50",
+          "markers": [],
+          "line": 279,
+          "assertions": [
+            "expect(all.map((r) => r.id)).toEqual([...all.map((r) => r.id)].sort((x, y) => y - x))",
+            "expect(all).toHaveLength(4)",
+            "expect(repo.listTasks({ scope: 'paper', anchorId: 'p-2', limit: 50 })).toHaveLength(1)",
+            "expect(repo.listTasks({ status: 'queued', limit: 50 })).toHaveLength(4)",
+            "expect(repo.listTasks({ status: 'running', limit: 50 })).toHaveLength(0)",
+            "expect(repo.listTasks({ limit: 2 })).toHaveLength(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T17 listTasks 默认上限 50：55 行 → 恰 50 行（id DESC 前 50）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T17 listTasks 默认上限 50：55 行 → 恰 50 行（id DESC 前 50）",
+          "markers": [],
+          "line": 294,
+          "assertions": [
+            "expect(rows).toHaveLength(50)",
+            "expect(rows[0]!.anchorId).toBe('p-55')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T18 finalize 守卫拒态（r1 k3-N2）：非 running 态调 finalizeRunning → throw+零审计增量+状态不动\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T18 finalize 守卫拒态（r1 k3-N2）：非 running 态调 finalizeRunning → throw+零审计增量+状态不动",
+          "markers": [],
+          "line": 304,
+          "assertions": [
+            "expect(() => repo.finalizeRunning(id, 'succeeded', { result: '{}' }, { kind: 'succeeded', detail: 'd' }) ).toThrow(/非 running/)",
+            "expect(repo.getById(id)?.status).toBe('queued')",
+            "expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted'])"
           ]
         }
       ]
@@ -38293,6 +38877,655 @@
             "expect(svc.unpinMessage(m.id)).resolves.toEqual({ ok: true })",
             "expect( db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id) ).toEqual({ pinned: 0 })"
           ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S9 幽灵会话 append/list → NOT_FOUND「会话不存在」（U2b-1 裁①——零消息行残留）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S9 幽灵会话 append/list → NOT_FOUND「会话不存在」（U2b-1 裁①——零消息行残留）",
+          "markers": [],
+          "line": 189,
+          "assertions": [
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_messages').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S9b 幽灵会话 pin/unpin（孤儿消息=FK 关断播种）→ NOT_FOUND「会话不存在」优先于「消息不存在」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S9b 幽灵会话 pin/unpin（孤儿消息=FK 关断播种）→ NOT_FOUND「会话不存在」优先于「消息不存在」",
+          "markers": [],
+          "line": 202,
+          "assertions": [
+            "expect(repos.aiSessions.sessionExists(sessionId)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S10 append 复合序：非法 role×幽灵会话 → INVALID_REQUEST 先于 NOT_FOUND（裁③形态先于存在性）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S10 append 复合序：非法 role×幽灵会话 → INVALID_REQUEST 先于 NOT_FOUND（裁③形态先于存在性）",
+          "markers": [],
+          "line": 220,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S11 拒写文案修（U2b-1 裁②）：55 行×50 置顶 → CONFLICT 含「可淘汰的非置顶消息不足（置顶 50 条/共 55 条）」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S11 拒写文案修（U2b-1 裁②）：55 行×50 置顶 → CONFLICT 含「可淘汰的非置顶消息不足（置顶 50 条/共 55 条）」",
+          "markers": [],
+          "line": 238,
+          "assertions": [
+            "expect( db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE session_id = ?').get(sessionId) ).toEqual({ c: 55 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义\",\"S12 同锚重复 openSession=允许新建（裁①测试锁：同锚两次 open→两个不同 id）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限语义"
+          ],
+          "title": "S12 同锚重复 openSession=允许新建（裁①测试锁：同锚两次 open→两个不同 id）",
+          "markers": [],
+          "line": 263,
+          "assertions": [
+            "expect(a.sessionId).not.toBe(b.sessionId)",
+            "expect( db.prepare('SELECT COUNT(*) c FROM ai_sessions WHERE scope=? AND anchor_id=?') .get('paper', 'p-1') ).toEqual({ c: 2 })"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/ai-tasks-run.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R1 幽灵任务 runTask → NOT_FOUND「任务不存在」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R1 幽灵任务 runTask → NOT_FOUND「任务不存在」",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(svc.runTask({ taskId: 9999, sessionId: s.id })).rejects.toMatchObject({ code: 'NOT_FOUND', message: expect.stringContaining('任务不存在') })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R2 幽灵会话 runTask → NOT_FOUND「会话不存在」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R2 幽灵会话 runTask → NOT_FOUND「会话不存在」",
+          "markers": [],
+          "line": 85,
+          "assertions": [
+            "expect(svc.runTask({ taskId: t.id, sessionId: 9999 })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R3 全合法迁移链：queued→running→succeeded+审计序 submitted→target_resolved→mutated→succeeded\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R3 全合法迁移链：queued→running→succeeded+审计序 submitted→target_resolved→mutated→succeeded",
+          "markers": [],
+          "line": 98,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(final.result).toContain('memoryId')",
+            "expect(repos.aiTasks.listAudit(taskId).map((a) => a.kind)).toEqual([ 'submitted', 'target_resolved', 'mutated', 'succeeded' ])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R4 非法迁移拒：终态再 run → CONFLICT「任务不在可执行状态」（每终态回迁+越序抽样）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R4 非法迁移拒：终态再 run → CONFLICT「任务不在可执行状态」（每终态回迁+越序抽样）",
+          "markers": [],
+          "line": 117,
+          "assertions": [
+            "expect(svc.runTask({ taskId: a.id, sessionId: s.id })).rejects.toMatchObject({ code: 'CONFLICT', message: expect.stringContaining('任务不在可执行状态') })",
+            "expect(svc.runTask({ taskId: b.id, sessionId: s.id })).rejects.toMatchObject({ code: 'CONFLICT' })",
+            "expect((await svc.cancelTask(b.id).catch((e) => e)).code).toBe('CONFLICT')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R5 cancel 律：queued→cancelled+审计；running 不可取消（CONFLICT）；幽灵任务 NOT_FOUND\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R5 cancel 律：queued→cancelled+审计；running 不可取消（CONFLICT）；幽灵任务 NOT_FOUND",
+          "markers": [],
+          "line": 140,
+          "assertions": [
+            "expect(cancelled.status).toBe('cancelled')",
+            "expect(repos.aiTasks.listAudit(t.id).map((a) => a.kind)).toEqual(['submitted', 'cancelled'])",
+            "expect(svc.cancelTask(r.id)).rejects.toMatchObject({ code: 'CONFLICT' })",
+            "expect(svc.cancelTask(9999)).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R6 memory.create 落位（INV-128）：(scope,anchor)=目标+origin=agent+sourceTaskId=本任务+ai_memory epoch +1\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R6 memory.create 落位（INV-128）：(scope,anchor)=目标+origin=agent+sourceTaskId=本任务+ai_memory epoch +1",
+          "markers": [],
+          "line": 159,
+          "assertions": [
+            "expect(row.scope).toBe('paper')",
+            "expect(row.anchor_id).toBe('p-2')",
+            "expect(row.origin).toBe('agent')",
+            "expect(row.source_task_id).toBe(t.id)",
+            "expect(row.label).toBe('签')",
+            "expect(epochAfter).toBe(epochBefore + 1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R7 memory.create 分类档错位（paper 目标+lineage 类）→ failed 终态（19 值集过闸②/档集执行期拒）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R7 memory.create 分类档错位（paper 目标+lineage 类）→ failed 终态（19 值集过闸②/档集执行期拒）",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(final.status).toBe('failed')",
+            "expect(final.error).toContain('分类')",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R8 memory.update：部分刷+updated_at 刷新+result 含 memoryId\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R8 memory.update：部分刷+updated_at 刷新+result 含 memoryId",
+          "markers": [],
+          "line": 210,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(row.title).toBe('新标题乙')",
+            "expect(row.updated_at > '2024-01-01T00:00:00.000Z').toBe(true)",
+            "expect(final.result).toContain(String(id))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R9 围栏负例：跨锚 memoryId（update/delete/pin 抽样）→ failed 终态+审计 failed+零副作用\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R9 围栏负例：跨锚 memoryId（update/delete/pin 抽样）→ failed 终态+审计 failed+零副作用",
+          "markers": [],
+          "line": 230,
+          "assertions": [
+            "expect(final.status).toBe('failed')",
+            "expect(final.error).toContain('任务目标锚')",
+            "expect(kinds[kinds.length - 1]).toBe('failed')",
+            "expect(db.prepare('SELECT title FROM ai_memory WHERE id = ?').get(foreign)).toEqual({ title: '他锚记忆' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R10 memory.update 缺席 memoryId → failed「记忆不存在」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R10 memory.update 缺席 memoryId → failed「记忆不存在」",
+          "markers": [],
+          "line": 247,
+          "assertions": [
+            "expect(final.status).toBe('failed')",
+            "expect(final.error).toContain('记忆不存在')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R24 写后抛错零副作用（r1 k3-N4）：handler 落 ai_memory 后抛 → failed+memory 行灭+审计恰三行\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R24 写后抛错零副作用（r1 k3-N4）：handler 落 ai_memory 后抛 → failed+memory 行灭+审计恰三行",
+          "markers": [],
+          "line": 260,
+          "assertions": [
+            "expect(final.status).toBe('failed')",
+            "expect(final.error).toContain('写后抛错点')",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })",
+            "expect(repos.aiTasks.listAudit(t.id).map((a) => a.kind)).toEqual([ 'submitted', 'target_resolved', 'failed' ])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R11 memory.delete：行灭+FTS 同步清（MATCH 归零）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R11 memory.delete：行灭+FTS 同步清（MATCH 归零）",
+          "markers": [],
+          "line": 299,
+          "assertions": [
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"删除目标内容语料\"'`).get() ).toBeTruthy()",
+            "expect(final.status).toBe('succeeded')",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })",
+            "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"删除目标内容语料\"'`).get() ).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R23 摘要截断（r1 W-d1-1）：120 码点 title+300 码点 content → mutated detail 每侧 ≤200 码点（create 路直证）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R23 摘要截断（r1 W-d1-1）：120 码点 title+300 码点 content → mutated detail 每侧 ≤200 码点（create 路直证）",
+          "markers": [],
+          "line": 319,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(mutated).toBeDefined()",
+            "expect([...afterSide].length, 'after 侧 ≤200 码点').toBeLessThanOrEqual(200)",
+            "expect(afterSide).toContain(longTitle)",
+            "expect([...detail.split(' after=')[0]!].length).toBeLessThanOrEqual(200)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R23b 摘要截断 update 路（r2 d1-N1）：before 侧非空直证——120 码点 title+300 码点 content 播种→update 换 300 码点长文→两侧 digest 各 ≤200 码点\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R23b 摘要截断 update 路（r2 d1-N1）：before 侧非空直证——120 码点 title+300 码点 content 播种→update 换 300 码点长文→两侧 digest 各 ≤200 码点",
+          "markers": [],
+          "line": 342,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(mutated).toBeDefined()",
+            "expect(beforeDigest.length, 'before 侧非空（create 路 before=(null) 缺口的直证）').toBeGreaterThan(0)",
+            "expect([...beforeDigest].length, 'before 侧 ≤200 码点').toBeLessThanOrEqual(200)",
+            "expect([...afterDigest].length, 'after 侧 ≤200 码点').toBeLessThanOrEqual(200)",
+            "expect(beforeDigest).toContain(longTitle)",
+            "expect(afterDigest).toContain('新'.repeat(50))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R25 handlerOverrides 守卫（r2 d1-delta-W1+k3-N3）：typo 键构造即 throw（fail-fast 杀静默忽略面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R25 handlerOverrides 守卫（r2 d1-delta-W1+k3-N3）：typo 键构造即 throw（fail-fast 杀静默忽略面）",
+          "markers": [],
+          "line": 370,
+          "assertions": [
+            "expect(() => createAiTasksService({ repos, handlerOverrides: badOverrides })).toThrow( 'handlerOverrides 非法动作键：memory.creat' )"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R12 memory.pin/unpin：翻转+审计 mutated；跨锚围栏 → failed\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R12 memory.pin/unpin：翻转+审计 mutated；跨锚围栏 → failed",
+          "markers": [],
+          "line": 382,
+          "assertions": [
+            "expect(pin.final.status).toBe('succeeded')",
+            "expect(db.prepare('SELECT pinned FROM ai_memory WHERE id = ?').get(id)).toEqual({ pinned: 1 })",
+            "expect(unpin.final.status).toBe('succeeded')",
+            "expect(db.prepare('SELECT pinned FROM ai_memory WHERE id = ?').get(id)).toEqual({ pinned: 0 })",
+            "expect(bad.final.status).toBe('failed')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R13 memory.search 1-2 码点 → LIKE 并集（本锚+global 命中/他锚隔离）+assistant 回写+result 摘要\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R13 memory.search 1-2 码点 → LIKE 并集（本锚+global 命中/他锚隔离）+assistant 回写+result 摘要",
+          "markers": [],
+          "line": 399,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.route).toBe('like')",
+            "expect(parsed.rows.map((r) => r.title).sort()).toEqual(['浊度全局', '浊度语料'])",
+            "expect(msgs).toHaveLength(1)",
+            "expect(msgs[0]!.role).toBe('assistant')",
+            "expect(msgs[0]!.content).toContain('浊度语料')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R14 memory.search ≥3 码点 → MATCH 并集路\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R14 memory.search ≥3 码点 → MATCH 并集路",
+          "markers": [],
+          "line": 424,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.route).toBe('match')",
+            "expect(parsed.rows).toHaveLength(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R15 memory.list：并集可见+category 过滤+回写+result 含 count\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R15 memory.list：并集可见+category 过滤+回写+result 含 count",
+          "markers": [],
+          "line": 441,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.count).toBe(2)",
+            "expect(parsed.rows.map((r) => r.title).sort()).toEqual(['全局乙', '本锚甲'])",
+            "expect( (db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE role=?').get('assistant') as { c: number }).c ).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R16 memory.list limit 闸②：上限 50 拒/非法值拒（提交期 INVALID_REQUEST）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R16 memory.list limit 闸②：上限 50 拒/非法值拒（提交期 INVALID_REQUEST）",
+          "markers": [],
+          "line": 462,
+          "assertions": [
+            "expect( svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: { limit: 51 } }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
+            "expect( svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: { limit: 0 } }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R17 message.pin/unpin：本会话消息 ok 往返+审计 mutated；他会话消息 → failed 围栏\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R17 message.pin/unpin：本会话消息 ok 往返+审计 mutated；他会话消息 → failed 围栏",
+          "markers": [],
+          "line": 477,
+          "assertions": [
+            "expect(done.status).toBe('succeeded')",
+            "expect(db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id)).toEqual({ pinned: 1 })",
+            "expect(db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id)).toEqual({ pinned: 0 })",
+            "expect(bad.status).toBe('failed')",
+            "expect(bad.error).toContain('本任务会话')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R18 message.pin 缺席消息 → failed「消息不存在」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R18 message.pin 缺席消息 → failed「消息不存在」",
+          "markers": [],
+          "line": 501,
+          "assertions": [
+            "expect(final.status).toBe('failed')",
+            "expect(final.error).toContain('消息不存在')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R19 超时（now 注入）：变异零副作用（memory 行灭+mutated 审计灭）+timeout 终态+error+审计 timeout\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R19 超时（now 注入）：变异零副作用（memory 行灭+mutated 审计灭）+timeout 终态+error+审计 timeout",
+          "markers": [],
+          "line": 514,
+          "assertions": [
+            "expect(final.status).toBe('timeout')",
+            "expect(final.error).toContain('超时')",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })",
+            "expect(kinds).toEqual(['submitted', 'target_resolved', 'timeout'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R19b 未超时（elapsed=4000<5000）→ 正常 succeeded（now 注入对照组）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R19b 未超时（elapsed=4000<5000）→ 正常 succeeded（now 注入对照组）",
+          "markers": [],
+          "line": 531,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R20 成功路径拒写分支（N-6）：CAP 态回写 → result_overflow 审计+仍 succeeded+result=null+50 行不变\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R20 成功路径拒写分支（N-6）：CAP 态回写 → result_overflow 审计+仍 succeeded+result=null+50 行不变",
+          "markers": [],
+          "line": 545,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(final.result).toBeNull()",
+            "expect(audit.map((a) => a.kind)).toEqual(['submitted', 'target_resolved', 'result_overflow', 'succeeded'])",
+            "expect(audit[2]!.detail).toContain('浊度')",
+            "expect( (db.prepare('SELECT COUNT(*) c FROM ai_messages WHERE session_id = ?').get(s.id) as { c: number }).c ).toBe(50)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R21 恢复扫描：running 行 → failed(interrupted) 计数+queued 不动\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R21 恢复扫描：running 行 → failed(interrupted) 计数+queued 不动",
+          "markers": [],
+          "line": 571,
+          "assertions": [
+            "expect(svc.recoverInterruptedTasks()).resolves.toBe(2)",
+            "expect(repos.aiTasks.getById(id)?.status).toBe('failed')",
+            "expect(repos.aiTasks.getById(id)?.error).toBe('interrupted')",
+            "expect(repos.aiTasks.getById(q.id)?.status).toBe('queued')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R22 listTasks：scope/anchor/status 过滤+id DESC+limit 默认 50/超 200 拒/非法拒\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R22 listTasks：scope/anchor/status 过滤+id DESC+limit 默认 50/超 200 拒/非法拒",
+          "markers": [],
+          "line": 591,
+          "assertions": [
+            "expect(all.map((t) => t.id)).toEqual([t2.id, t1.id])",
+            "expect(await svc.listTasks({ status: 'cancelled' })).toHaveLength(1)",
+            "expect(await svc.listTasks({ scope: 'paper', anchorId: 'p-1' })).toHaveLength(2)",
+            "expect(await svc.listTasks({ limit: 1 })).toHaveLength(1)",
+            "expect(svc.listTasks({ limit: 201 })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
+            "expect(svc.listTasks({ limit: 1.5 })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/ai-tasks-submit.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G1 非法 action → INVALID_REQUEST（白名单外）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G1 非法 action → INVALID_REQUEST（白名单外）",
+          "markers": [],
+          "line": 51,
+          "assertions": [
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G2 payload 非对象/未知字段/类型错 → INVALID_REQUEST（闸②白名单 schema）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G2 payload 非对象/未知字段/类型错 → INVALID_REQUEST（闸②白名单 schema）",
+          "markers": [],
+          "line": 71,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G3 payload 值域错：分类不在 19 值集/title 超长/content 空白 → INVALID_REQUEST\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G3 payload 值域错：分类不在 19 值集/title 超长/content 空白 → INVALID_REQUEST",
+          "markers": [],
+          "line": 114,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G4 幽灵会话 → NOT_FOUND「会话不存在」（闸③）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G4 幽灵会话 → NOT_FOUND「会话不存在」（闸③）",
+          "markers": [],
+          "line": 153,
+          "assertions": [
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G5 复合序：非法 action×幽灵会话 → INVALID_REQUEST 先（形态先于存在性——裁③）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G5 复合序：非法 action×幽灵会话 → INVALID_REQUEST 先（形态先于存在性——裁③）",
+          "markers": [],
+          "line": 166,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G6 global 会话缺 target → INVALID_REQUEST（无默认锚）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G6 global 会话缺 target → INVALID_REQUEST（无默认锚）",
+          "markers": [],
+          "line": 182,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G7 显式 target scope=global → INVALID_REQUEST「全局资源不可为任务目标」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G7 显式 target scope=global → INVALID_REQUEST「全局资源不可为任务目标」",
+          "markers": [],
+          "line": 195,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G8 显式 target anchorId 空 → INVALID_REQUEST\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G8 显式 target anchorId 空 → INVALID_REQUEST",
+          "markers": [],
+          "line": 215,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G9 target 锚不存在：paper/lineage 各 1 → NOT_FOUND（存在性闸）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G9 target 锚不存在：paper/lineage 各 1 → NOT_FOUND（存在性闸）",
+          "markers": [],
+          "line": 235,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G10 缺省 target 继承：paper/lineage 会话 → 任务行 (scope,anchor)=会话对\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G10 缺省 target 继承：paper/lineage 会话 → 任务行 (scope,anchor)=会话对",
+          "markers": [],
+          "line": 265,
+          "assertions": [
+            "expect([tp.scope, tp.anchorId]).toEqual(['paper', 'p-1'])",
+            "expect([tl.scope, tl.anchorId]).toEqual(['lineage', 'c-1'])",
+            "expect(tp.status).toBe('queued')",
+            "expect(tp.payload).toBe('{}')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G11 显式 target 跨锚合法：paper 会话+target 他锚 → 任务行落显式目标\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G11 显式 target 跨锚合法：paper 会话+target 他锚 → 任务行落显式目标",
+          "markers": [],
+          "line": 282,
+          "assertions": [
+            "expect([t.scope, t.anchorId]).toEqual(['paper', 'p-2'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G12 提交审计：submitted 行 detail 含 target_resolved 描述符（目标+action）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G12 提交审计：submitted 行 detail 含 target_resolved 描述符（目标+action）",
+          "markers": [],
+          "line": 299,
+          "assertions": [
+            "expect(audit.map((a) => a.kind)).toEqual(['submitted'])",
+            "expect(audit[0]!.detail).toContain('target_resolved=(scope=paper,anchor=p-1)')",
+            "expect(audit[0]!.detail).toContain('action=memory.search')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G13 幂等：同 key 二提 → 返回既有行（同 id）+审计恰一行 submitted（不重执行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G13 幂等：同 key 二提 → 返回既有行（同 id）+审计恰一行 submitted（不重执行）",
+          "markers": [],
+          "line": 313,
+          "assertions": [
+            "expect(second.id).toBe(first.id)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 1 })",
+            "expect(repos.aiTasks.listAudit(first.id)).toHaveLength(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G14 三方对齐（r1 W-k3-1 断言改造）：DDL CHECK 正则抽取==AI_TASK_ACTIONS==dispatch 键集==独立镜像（sort 后集合等值）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G14 三方对齐（r1 W-k3-1 断言改造）：DDL CHECK 正则抽取==AI_TASK_ACTIONS==dispatch 键集==独立镜像（sort 后集合等值）",
+          "markers": [],
+          "line": 337,
+          "assertions": [
+            "expect(checkMatch, 'DDL action CHECK 可抽取').not.toBeNull()",
+            "expect(ddlActions, 'DDL 恰 9 动作').toHaveLength(9)",
+            "expect([...ddlActions].sort()).toEqual([...NINE_ACTIONS].sort())",
+            "expect([...AI_TASK_ACTIONS].sort()).toEqual([...ddlActions].sort())",
+            "expect([...TASK_HANDLER_ACTIONS].sort()).toEqual([...ddlActions].sort())"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等\",\"G15 分类对齐（r1 d1-N8 并案）：AI_MEMORY_CATEGORIES 三档并集==ai_memory DDL CHECK 分类全集（逐档正则抽取集合等值）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 提交面三闸+目标围栏+幂等"
+          ],
+          "title": "G15 分类对齐（r1 d1-N8 并案）：AI_MEMORY_CATEGORIES 三档并集==ai_memory DDL CHECK 分类全集（逐档正则抽取集合等值）",
+          "markers": [],
+          "line": 358,
+          "assertions": [
+            "expect(branches, 'DDL 恰三分支（paper/lineage/global）').toHaveLength(3)",
+            "expect([...ddlCats].sort(), `档 ${scope} 逐档集合等值`).toEqual([...constant].sort())",
+            "expect(union, '19 类全集（6+7+6）').toHaveLength(19)"
+          ]
         }
       ]
     },
@@ -38947,7 +40180,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 105,
+          "line": 106,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -38960,7 +40193,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 122,
+          "line": 123,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -38972,7 +40205,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 142,
+          "line": 143,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -38985,7 +40218,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 160,
+          "line": 161,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -38998,7 +40231,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 183,
+          "line": 184,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -39010,7 +40243,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 195,
+          "line": 196,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -39022,7 +40255,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 219,
+          "line": 220,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -39036,7 +40269,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 246,
+          "line": 247,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -39692,7 +40925,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 76,
+          "line": 77,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -39716,7 +40949,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 120,
+          "line": 121,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -39733,7 +40966,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 150,
+          "line": 151,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -39747,7 +40980,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 173,
+          "line": 174,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -39762,7 +40995,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 196,
+          "line": 197,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -39778,7 +41011,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 224,
+          "line": 225,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -39798,7 +41031,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 268,
+          "line": 269,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -39812,7 +41045,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 318,
+          "line": 319,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -39828,7 +41061,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 349,
+          "line": 350,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -39842,7 +41075,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 373,
+          "line": 374,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -44990,9 +46223,9 @@
     }
   },
   "stats": {
-    "fileCount": 309,
-    "caseCount": 3009,
-    "assertionCount": 9843,
+    "fileCount": 313,
+    "caseCount": 3094,
+    "assertionCount": 10121,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -45000,5 +46233,18 @@
     "eachExpandedRows": 348,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": []
+  "exemptionsSnapshot": [
+    {
+      "file": "tests/unit/db/repos/ai-sessions.repo.test.ts",
+      "caseTitle": "M4 全置顶拒写：typed error（SessionCapAllPinnedError 带 pinnedCount 实数）",
+      "reason": "U2b-1 裁②文案修：M4 原位改写（Error 携带面扩 {pinnedCount,total}+新文案断言收紧）——标题随实现更新，旧标题退役；语义=旧断言超集（新增 total 断言零放宽），临时豁免随基线 regen 清空",
+      "rulingLink": "org-ledger.jsonl 954 行 ruling（用户裁② 2026-10-09 14:35）"
+    },
+    {
+      "file": "tests/unit/db/repos/ai-sessions.repo.test.ts",
+      "caseTitle": "M8 收敛态全置顶拒写：55 行全置顶→typed error（pinnedCount=55）+行数不变",
+      "reason": "U2b-1 裁②文案修：M8 原位改写（55×50 混合态 pinnedCount=50/total=55 实数断言收紧——M14 新增对偶）——标题随实现更新，旧标题退役；语义=旧断言超集，临时豁免随基线 regen 清空",
+      "rulingLink": "org-ledger.jsonl 954 行 ruling（用户裁② 2026-10-09 14:35）"
+    }
+  ]
 }

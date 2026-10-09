@@ -9,6 +9,8 @@
 import { describe, expect, it } from 'vitest'
 import { openDatabase } from '../../../src/main/db/connection'
 import { migrate } from '../../../src/main/db/migrate'
+import { createRepos } from '../../../src/main/db/repos'
+import { createAiSessionsService } from '../../../src/main/services/ai/ai-sessions.service'
 
 type Db = ReturnType<typeof openDatabase>
 
@@ -305,6 +307,62 @@ describe('db/ai-domain-epoch —— M2 epoch 机制（10 表播种/三一致/I·
       db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '"反渗透膜污染机理"'`).get()
     ).toBeTruthy()
     expect(epochOf(db, 'notes')).toBe(1)
+    db.close()
+  })
+})
+
+describe('db/ai-domain-epoch —— U2b-1 R4/R7 断言强化三件（v171 §2 沿承+d1-N2 挂账）', () => {
+  it('R4-1 edges 二段级联断言锁：删 collections→nodes CASCADE→edges 级联灭+edges epoch 前进', () => {
+    const db = openFull()
+    seedCollection(db, 'c-r4', '级联图')
+    const nodeStmt = db.prepare(
+      `INSERT INTO lineage_nodes (id, title, folder_id, created_at, updated_at)
+       VALUES (?, ?, 'c-r4', 't', 't')`
+    )
+    nodeStmt.run('ln-r4a', '节点甲')
+    nodeStmt.run('ln-r4b', '节点乙')
+    db.prepare(
+      `INSERT INTO lineage_edges (id, from_node, to_node, created_at, updated_at)
+       VALUES ('le-r4', 'ln-r4a', 'ln-r4b', 't', 't')`
+    ).run()
+    const edgesBefore = epochOf(db, 'lineage_edges')!
+    const nodesBefore = epochOf(db, 'lineage_nodes')!
+    db.prepare(`DELETE FROM collections WHERE id = 'c-r4'`).run()
+    // 二段级联：节点（folder_id FK CASCADE）灭→边（from/to FK CASCADE）随灭
+    expect(db.prepare(`SELECT COUNT(*) c FROM lineage_nodes WHERE folder_id = 'c-r4'`).get()).toEqual({ c: 0 })
+    expect(db.prepare(`SELECT COUNT(*) c FROM lineage_edges`).get()).toEqual({ c: 0 })
+    expect(epochOf(db, 'lineage_edges')).toBe(edgesBefore + 1)
+    expect(epochOf(db, 'lineage_nodes')).toBe(nodesBefore + 2)
+    db.close()
+  })
+
+  it('R7-2 空锚级联场景：删无 AI 资源的 paper → ai_memory epoch 恰 +1（显式 bump）+三 AI 表零行灭+audit 零行', () => {
+    const db = openFull()
+    seedPaper(db, 'p-empty')
+    const before = epochOf(db, 'ai_memory')!
+    expect(before).toBe(0)
+    db.prepare(`DELETE FROM papers WHERE id = 'p-empty'`).run()
+    // 0 行级联：链式 ai_memory_epoch_ad 不点火（零行灭）——仅显式 bump +1
+    expect(epochOf(db, 'ai_memory')).toBe(before + 1)
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_sessions').get()).toEqual({ c: 0 })
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_tasks').get()).toEqual({ c: 0 })
+    expect(db.prepare('SELECT COUNT(*) c FROM ai_task_audit').get()).toEqual({ c: 0 })
+    db.close()
+  })
+
+  it('R7-3 杜撰锚采样：anchorExists 杜撰 id（999999）paper·lineage 各 1 枚拒例（openSession NOT_FOUND 对偶面）', async () => {
+    const db = openFull()
+    const repos = createRepos(db)
+    const svc = createAiSessionsService({ repos })
+    expect(repos.aiSessions.anchorExists('paper', '999999')).toBe(false)
+    expect(repos.aiSessions.anchorExists('lineage', '999999')).toBe(false)
+    await expect(
+      svc.openSession({ scope: 'paper', anchorId: '999999' })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(
+      svc.openSession({ scope: 'lineage', anchorId: '999999' })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
     db.close()
   })
 })

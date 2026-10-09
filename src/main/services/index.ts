@@ -52,6 +52,7 @@ import {
   createAiMemorySearchService,
   type AiMemorySearchService
 } from './ai/ai-memory-search.service'
+import { createAiTasksService, type AiTasksService } from './ai/ai-tasks.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -119,6 +120,10 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-2 U2a] AI 记忆检索路由（码点路由+三档完全隔离——
    *  本批零 IPC） */
   aiMemorySearch: AiMemorySearchService
+  /** [F-DBCAMP-01 DB-2 U2b-1] AI 任务系统（9 动作 dispatch+6 态机+审计；
+   *  本批零 IPC——main 启动序接线=U2b-2/后续批，recoverInterruptedTasks
+   *  供 bootstrap 装配调用） */
+  aiTasks: AiTasksService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -197,7 +202,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids)
     }),
     aiSessions: createAiSessionsService({ repos: deps.repos }),
-    aiMemorySearch: createAiMemorySearchService({ repos: deps.repos })
+    aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),
+    aiTasks: createAiTasksService({ repos: deps.repos })
   }
 }
 
