@@ -57,9 +57,12 @@ adjudicator 29.5k）+主控 host-max。设计稿同步=§3.3-补（九条预裁+
 
 ## §3 待用户面（均非即刻）
 
-1. **Kimi 路由沿承确认**：本场用户指令「调用kimi时使用k3子智能体（Kimi-main 源）」已按
-   门一审包席落地（k3 全程承载三轮）——下场默认沿承（交接档+账本在档），如需回默认 k1
-   （kimi-third）或扩展到全部 Kimi 岗（adjudicator 现为 kimi-third 座）请翻案。
+1. **Kimi 默认席位=k3（已确认裁定，修订五）**：用户 2026-10-10 续裁「先调成默认k3吧」——
+   门一 Kimi **默认席位=ops-gate1-k3（kimi-main 源A，$max）**，k1（kimi-third）退兜底
+   （显式派发仍可用），k2 深备/d1 异构席不动；与项目配给红线吻合（kimi-main 必保面=受锁面/
+   回炉第二轮——U2 批正属）。其余 Kimi 绑定岗（drafter/adjudicator，kimi-third 座）维持
+   现绑——扩展换源=agent_bindings 配置批另裁。承载=账本 ruling 行（runId=20261010-
+   dbcamp-db2g）+本档（遵用户口径不调技能件）；翻案即回 k1。
 2. F-UIRES-04 C/D 呈裁（沿承——等批 1a 探针时机随批）。
 3. 设计定稿 §7 新呈裁 3 条复核窗口（主控代裁全采建议案——影响面最大者=新呈裁-1）。
 
