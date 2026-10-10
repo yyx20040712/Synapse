@@ -16,6 +16,7 @@ import {
   lineTypeNamesSchema,
   lineageEdgeUpsertSchema
 } from '../models/lineage'
+import { AI_BUDGET_DEFAULTS, aiBudgetsSchema } from '../models/ai-domain'
 
 /** 空请求（无参数通道） */
 export const voidReqSchema = z.object({}).strict()
@@ -479,13 +480,19 @@ export const uiScaleSchema = z.enum(['small', 'medium', 'large'])
 export type UiScale = z.infer<typeof uiScaleSchema>
 export const UI_SCALE: Record<UiScale, number> = { small: 1, medium: 1.1, large: 1.25 }
 
+// AI 域 13 通道 schema=ai-schemas.ts——U2 接线 api-surface 时直引
 export const appSettingsSchema = z
   .object({
     contactEmail: z.string().email(), // 开放 API 礼貌池标识
     // T3-P1 主题三族：'system' 退役（A6 不跟随系统）——枚举 light/dark/sepia，
     // 默认白天；存量 settings.json theme:'system' 由 settings.service 读侧迁移
     theme: z.enum(['light', 'dark', 'sepia']).default('light'),
-    uiScale: uiScaleSchema.default('small')
+    uiScale: uiScaleSchema.default('small'),
+    // [F-DBCAMP-01 DB-2 U1] AI 域预算档（默认值单源=AI_BUDGET_DEFAULTS）。
+    // [R6] default 用函数形+structuredClone——每次 parse 独立深副本，防 parse
+    // 输出共享模块常量引用被消费方原地污染（显式防御；zod 值形 default 在
+    // 3.25 实测亦隔离，函数形=契约自证不依赖 zod 版本行为）
+    aiBudgets: aiBudgetsSchema.default(() => structuredClone(AI_BUDGET_DEFAULTS))
   })
   .strict()
 export type AppSettings = z.infer<typeof appSettingsSchema>

@@ -513,15 +513,36 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     ).toBe(false)
   })
 
-  it('appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）', () => {
+  // [F-DBCAMP-01 DB-2 U1] aiBudgets 期望为测试内字面（值 pin，不 import——
+  // 默认值漂移须意识化改本用例）；aiBudgets 档结构单源=models/ai-domain
+  it('appSettings：缺省填充 theme=light/uiScale=small/aiBudgets=默认预算档；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）+aiBudgets 档内超限拒', () => {
     expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({
       contactEmail: 'user@example.com',
       theme: 'light',
-      uiScale: 'small'
+      uiScale: 'small',
+      aiBudgets: {
+        paper: { cap: 8000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1000 },
+        lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 },
+        global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 },
+        agent: { perShot: 800, perRound: 2000 }
+      }
     })
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', theme: 'blue' }).success).toBe(false)
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', uiScale: 'huge' }).success).toBe(false)
+    // 档内超限拒：paper l1+l2Cap+tail=800+2200+1001=4001>cap 4000（其余档合法——
+    // refine 逐档独立，单档超限整体拒）
+    expect(
+      S.appSettingsSchema.safeParse({
+        contactEmail: 'user@example.com',
+        aiBudgets: {
+          paper: { cap: 4000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1001 },
+          lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 },
+          global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 },
+          agent: { perShot: 800, perRound: 2000 }
+        }
+      }).success
+    ).toBe(false)
   })
 
   it('UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）', () => {

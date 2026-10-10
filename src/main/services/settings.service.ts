@@ -53,13 +53,21 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { appSettingsSchema, type AppSettings } from '../../shared/ipc/schemas'
 import { ALLOWED_REMOTE_HOSTS, DEFAULT_CONTACT_EMAIL, SETTINGS_FILE_NAME } from '../../shared/constants'
+import { AI_BUDGET_DEFAULTS } from '../../shared/models/ai-domain'
 import { atomicWriteFile } from './shared/atomic-write'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 
 /** 网络诊断探活签名（与 IpcDeps.ping 同形——注入面即现成字段） */
 type PingFn = (host: string) => Promise<{ ok: boolean; latencyMs: number }>
 
-const DEFAULTS: AppSettings = { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'light', uiScale: 'small' }
+// [F-DBCAMP-01 DB-2 U1] aiBudgets 键随 appSettingsSchema 输出型必含（默认值单源
+// =AI_BUDGET_DEFAULTS——回退语义与 zod default 填充值逐位一致）
+const DEFAULTS: AppSettings = {
+  contactEmail: DEFAULT_CONTACT_EMAIL,
+  theme: 'light',
+  uiScale: 'small',
+  aiBudgets: AI_BUDGET_DEFAULTS
+}
 
 /**
  * [T3-U1] 存量 'system' 主题档迁移（读侧单源——readSettings 与 readThemeSync

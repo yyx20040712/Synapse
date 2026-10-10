@@ -1,6 +1,7 @@
 # F-DBCAMP-01 DB-2 UI 面 前端任务设计书（定稿 v2.1）
 
-> 版本：v2.1=v2（拟定者回炉稿）+主控终裁补遗（§8——W-1..W-5/N-1..N-5 处置+新呈裁 3 条裁定+预算默认值锚定）。
+> 版本：v2.1=v2（拟定者回炉稿）+主控终裁补遗（§8——W-1..W-5/N-1..N-5 处置+新呈裁 3 条裁定+预算默认值锚定）；
+> +§3.3-补（U1 实施实照对齐——2026-10-10 U1 批主控预裁九条+回炉 R1 交叉矩阵扩展）。
 > 设计链：拟定者 v1（仓外 design-v1.md）→对抗审核 r1（B7/W8/N6 返工，仓外 audit-r1.md）→主控处置单
 > R1-R19（仓外 disposition-r1.md）→拟定者 v2（仓外 design-v2.md）→复核轮 r2（B=0/W=5/N=5 有条件放行，
 > 仓外 audit-r2.md）→主控终裁补遗定稿（本档）。证据档=仓外 scripts-audits/20261010-dbcamp-db2f/。
@@ -223,6 +224,33 @@ term_glossary/reading_insight；lineage 7=node_role/relation_note/branch_summary
 controversy_debate/gap_opportunity/domain_glossary；global 6=user_preference/ui_guidance/
 capability_note/automation_recipe/task_outcome/constraint_limit——020 DDL 实照）。预算默认值常量=§1.5 表。
 
+### 3.3-补 U1 实施实照对齐（主控预裁，2026-10-10 U1 批——账本 ruling 行在档）
+
+U1 实施期实照核对（020 DDL+src/main/services/ai/ 冻结件）与本文 §3.2/§3.3 字面的九处接缝，
+按 v176 §2「以实照为准」预裁定型（U2-U6 批以本补注+shared 实件为单源）：
+
+1. **通道名斜杠形**（S1）：契约测试机检 `域/动作`（tests/contracts/api-surface.test.ts:19），
+   本文连字符形仅=设计层标识；实施名 1:1 斜杠映射（ai-sessions/open…ai-cascade/preview 共 13）。
+2. **AiTask 无 sessionId**（S2）：020 无列、payload 无键；UI 按 scope+anchorId 过滤（§1.2）。
+3. **AiTask 行级平铺**（S3）：scope('paper'|'lineage')+anchorId(非空串) 顶层恒在；targetTitle
+   恒在可空（U2 LEFT JOIN 投影）；不做 target 嵌套。
+4. **字段名 status/result**（S4/S5）：沿 DDL/服务列名；摘要派生归 U2/UI。
+5. **AiAuditRow.kind=冻结 8 值**（S6）：submitted/target_resolved/mutated/result_overflow/
+   succeeded/failed/timeout/cancelled；detail 单字段（before/after 内嵌各截 200 字符）；
+   无 id（taskId+seq 定位）。§1.3 的 mutation/permission 二分=展示映射，无数据面。
+6. **AiMemory.label=string|null**（S7）：DDL 可空；写侧 default '' 归 U2 服务。
+7. **不新建 AiDomainErrorCode**（S8）：AppErrorCode 已含三码（U2b 裁「禁新增封闭枚举」）。
+8. **api-surface 通道表随 U2 注册**（S9-范围）：U1 只落 schema 件（ipc/ai-schemas.ts）——
+   通道注册与 handler 同批保 typecheck 闭合链（createIpcHandlers:ApiHandlers+
+   tests/types Required 探针）。
+9. **读通道交叉矩阵扩展**（U1 回炉 R1，超出 W-2a 字面的预裁扩展）：list-pinned/tasks-list
+   的 anchorId 与 scope 双在席时 global⇔null 双条件闭合（任一缺省=逃逸）；tasks 域
+   scope:'global'/裸 anchorId:null=恒空合法过滤形（DDL 无 global 任务行——U2 服务层注释声明）。
+
+另：label≤50=终裁 W-3 落 AI_MEMORY_LABEL_MAX；§9 表 17 默认值已与服务层常数（L1_CAP/L2_CAP/
+L2 配额/AGENT_PULL）三方对账吻合；AI_BUDGET_DEFAULTS 双级运行时冻结+appSettings default
+getter（structuredClone 逐 parse 独立副本）——消费接线（caps 注入）仍归对话管线批。
+
 ## §4 组件树 + store + 单元切分
 
 ### 4.1 组件树（features/ai/ + 三处薄集成；单件 ≤250 行，Tailwind，零新依赖）
@@ -258,8 +286,8 @@ aiSessionStore=会话/消息列表态；aiTasksStore=任务+取消+审计行（�
 
 | 单元 | 交付件 | 受锁标记 | verify 边界 | 依赖 |
 | --- | --- | --- | --- | --- |
-| U1 shared 类型面 | shared AI 类型件（§3.3）+api-surface 扩展（13 通道）+zod schema 件（§3.2 矩阵）+appSettings aiBudgets+分类/预算默认常量 | [locked-change] | 全量 verify 绿（零行为面） | 无 |
-| U2 main 侧服务+IPC | main/ipc 六域 handler；ai-memory 手动服务面（origin 盖写+校验+检索路由复用）；ai-cascade 服务（preview+单事务级联**paper/folder 双分支单测全覆盖**——终裁 W-5 服务面）；sessions 扩 openOrGetSession+repo 扩 getSessionByAnchor；pinned 跨会话查询；scope 级 listByScope 锚标题 JOIN；tasks targetTitle JOIN；preload 扩展 | 服务/handler 非受锁；配套单测=[locked-change][test-refactor] | 全量 verify 绿（含新单测） | U1 |
+| U1 shared 类型面 | shared AI 类型件（§3.3）+zod schema 件（§3.2 矩阵——ipc/ai-schemas.ts）+appSettings aiBudgets+分类/预算默认常量；**api-surface 扩展移 U2**（§3.3-补 8） | [locked-change] | 全量 verify 绿（零行为面） | 无 |
+| U2 main 侧服务+IPC | **api-surface 13 通道注册**（§3.2→§3.3-补 1 斜杠名）+main/ipc 六域 handler；ai-memory 手动服务面（origin 盖写+校验+检索路由复用）；ai-cascade 服务（preview+单事务级联**paper/folder 双分支单测全覆盖**——终裁 W-5 服务面）；sessions 扩 openOrGetSession+repo 扩 getSessionByAnchor；pinned 跨会话查询；scope 级 listByScope 锚标题 JOIN；tasks targetTitle JOIN；preload 扩展 | 服务/handler 非受锁；配套单测=[locked-change][test-refactor] | 全量 verify 绿（含新单测） | U1 |
 | U3 renderer 会话面板 | AiSessionPanel+MessageList+MessageItem+ComposerDisabled+aiSessionStore+三处集成；tests/e2e/ai-seed.ts（**含 seedCollectionRow**——终裁 W-4；函数面=§5.0） | 组件非受锁；ai-seed+E1=[locked-change][test-refactor] | verify 绿+E1 绿 | U2 |
 | U4 任务卡+审计抽屉 | TaskCard+AuditDrawer+aiTasksStore；E2（六态+取消+running 无取消+终态三态）、E6（审计抽屉） | 组件非受锁；E2/E6=[locked-change][test-refactor] | verify 绿+E2/E6 绿 | U2+U3 |
 | U5 管理面板三 Tab | manage/ 四件+aiMemoryStore+管理节集成；E3（置顶闭环）、E7（记忆 CRUD 全链 global 档） | 同上 | verify 绿+E3/E7 绿 | U2 |

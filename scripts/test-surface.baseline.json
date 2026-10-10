@@ -1,6 +1,248 @@
 {
   "version": 1,
   "files": {
+    "tests/contracts/ai-schemas.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组1 锚矩阵（ai-sessions/open+ai-memory/create）：合法 3 形过、非法 3 形拒（global⇔null 双向）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组1 锚矩阵（ai-sessions/open+ai-memory/create）：合法 3 形过、非法 3 形拒（global⇔null 双向）",
+          "markers": [],
+          "line": 51,
+          "assertions": [
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'global', anchorId: null }).success).toBe(true)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'paper', anchorId: 'p1' }).success).toBe(true)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'lineage', anchorId: 'c1' }).success).toBe(true)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'global', anchorId: 'p1' }).success).toBe(false)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'paper', anchorId: null }).success).toBe(false)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'lineage', anchorId: null }).success).toBe(false)",
+            "expect(A.aiSessionsOpenReqSchema.safeParse({ scope: 'paper', anchorId: '' }).success).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'global', anchorId: null, category: 'user_preference', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'lineage', anchorId: 'c1', category: 'node_role', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'global', anchorId: 'p1', category: 'user_preference', title: 't', content: 'c' }).success ).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: null, category: 'excerpt_quote', title: 't', content: 'c' }).success ).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'lineage', anchorId: null, category: 'node_role', title: 't', content: 'c' }).success ).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: '', category: 'excerpt_quote', title: 't', content: 'c' }).success ).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组2 读通道交叉矩阵（list-pinned/tasks-list，R1）：anchorId 缺省=过滤维度逃逸、在席即锚矩阵闭合（与写面同构）；空串/空洞组合拒；scope 缺省过；status 外值拒\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组2 读通道交叉矩阵（list-pinned/tasks-list，R1）：anchorId 缺省=过滤维度逃逸、在席即锚矩阵闭合（与写面同构）；空串/空洞组合拒；scope 缺省过；status 外值拒",
+          "markers": [],
+          "line": 88,
+          "assertions": [
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'global' }).success).toBe(true)",
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'global', anchorId: null }).success).toBe(true)",
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'paper', anchorId: 'p1' }).success).toBe(true)",
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'paper', anchorId: '' }).success).toBe(false)",
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'global', anchorId: 'p1' }).success).toBe(false)",
+            "expect(A.aiMessagesListPinnedReqSchema.safeParse({ scope: 'paper', anchorId: null }).success).toBe(false)",
+            "expect(A.aiTasksListReqSchema.safeParse({}).success).toBe(true)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'paper', anchorId: 'p1' }).success).toBe(true)",
+            "expect(A.aiTasksListReqSchema.safeParse({ anchorId: null }).success).toBe(true)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'global', anchorId: null }).success).toBe(true)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'paper', anchorId: null }).success).toBe(false)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'paper', anchorId: '' }).success).toBe(false)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'global', anchorId: 'p1' }).success).toBe(false)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'paper', status: 'queued' }).success).toBe(true)",
+            "expect(A.aiTasksListReqSchema.safeParse({ scope: 'paper', status: 'paused' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组3 cascade 独立矩阵（ai-cascade/preview）：scope 仅 paper/folder；lineage/global 拒；anchorId 恒必填非空（缺省/null/空串拒）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组3 cascade 独立矩阵（ai-cascade/preview）：scope 仅 paper/folder；lineage/global 拒；anchorId 恒必填非空（缺省/null/空串拒）",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'paper', anchorId: 'p1' }).success).toBe(true)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'folder', anchorId: 'c1' }).success).toBe(true)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'lineage', anchorId: 'c1' }).success).toBe(false)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'global', anchorId: 'p1' }).success).toBe(false)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'paper' }).success).toBe(false)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'paper', anchorId: null }).success).toBe(false)",
+            "expect(A.aiCascadePreviewReqSchema.safeParse({ scope: 'paper', anchorId: '' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组4 ai-memory/list-by-scope 互斥（W-1）：query 与 category/pinnedOnly 互斥；limit 0 拒/MAX_PAGE_SIZE 过/超 1 拒\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组4 ai-memory/list-by-scope 互斥（W-1）：query 与 category/pinnedOnly 互斥；limit 0 拒/MAX_PAGE_SIZE 过/超 1 拒",
+          "markers": [],
+          "line": 120,
+          "assertions": [
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '关键词' }).success).toBe(true)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: 'q', category: 'excerpt_quote' }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: 'q', pinnedOnly: true }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, category: 'excerpt_quote', pinnedOnly: true }).success).toBe(true)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, limit: 0 }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, limit: MAX_PAGE_SIZE }).success).toBe(true)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, limit: MAX_PAGE_SIZE + 1 }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, category: '' }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '' }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组5 category 值域（N-3 档级）：create 跨档拒/档内过/未知串拒；update 并集过+外值拒；title 长度界 120/121（变异红证锚）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组5 category 值域（N-3 档级）：create 跨档拒/档内过/未知串拒；update 并集过+外值拒；title 长度界 120/121（变异红证锚）",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'node_role', title: 't', content: 'c' }).success ).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'lineage', anchorId: 'c1', category: 'node_role', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'global', anchorId: null, category: 'user_preference', title: 't', content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'bogus', title: 't', content: 'c' }).success ).toBe(false)",
+            "expect(A.aiMemoryUpdateReqSchema.safeParse({ id: 1, patch: { category: 'node_role' } }).success).toBe(true)",
+            "expect(A.aiMemoryUpdateReqSchema.safeParse({ id: 1, patch: { category: 'excerpt_quote' } }).success).toBe(true)",
+            "expect(A.aiMemoryUpdateReqSchema.safeParse({ id: 1, patch: { category: 'bogus' } }).success).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: '题'.repeat(120), content: 'c' }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: '题'.repeat(121), content: 'c' }).success ).toBe(false)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: 't', content: 'c', label: '标'.repeat(50) }).success ).toBe(true)",
+            "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: 't', content: 'c', label: '标'.repeat(51) }).success ).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组6 预算 refine：默认档 parse 绿；l1+l2Cap+tail=cap+1 拒（和 4001>cap 4000）；负数/非整数拒；perShot=perRound 过/+1 拒\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组6 预算 refine：默认档 parse 绿；l1+l2Cap+tail=cap+1 拒（和 4001>cap 4000）；负数/非整数拒；perShot=perRound 过/+1 拒",
+          "markers": [],
+          "line": 171,
+          "assertions": [
+            "expect(M.aiBudgetsSchema.safeParse(M.AI_BUDGET_DEFAULTS).success).toBe(true)",
+            "expect(M.aiBudgetTierSchema.safeParse(tierOver).success).toBe(false)",
+            "expect(M.aiBudgetTierSchema.safeParse({ ...tierOver, cap: 4001 }).success).toBe(true)",
+            "expect(M.aiBudgetTierSchema.safeParse({ cap: -1, l1: 0, l2Slices: 0, l2Cap: 0, tail: 0 }).success).toBe(false)",
+            "expect(M.aiBudgetTierSchema.safeParse({ cap: 0.5, l1: 0, l2Slices: 0, l2Cap: 0, tail: 0 }).success).toBe(false)",
+            "expect(M.aiAgentBudgetSchema.safeParse({ perShot: 800, perRound: 800 }).success).toBe(true)",
+            "expect(M.aiAgentBudgetSchema.safeParse({ perShot: 801, perRound: 800 }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组7 appSettings 集成：旧形 parse 补默认预算档（toEqual 深比）；全形往返；未知字段拒；默认档引用隔离（R6）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组7 appSettings 集成：旧形 parse 补默认预算档（toEqual 深比）；全形往返；未知字段拒；默认档引用隔离（R6）",
+          "markers": [],
+          "line": 186,
+          "assertions": [
+            "expect(parsed.theme).toBe('light')",
+            "expect(parsed.uiScale).toBe('small')",
+            "expect(parsed.aiBudgets).toEqual(M.AI_BUDGET_DEFAULTS)",
+            "expect(parsed.aiBudgets).not.toBe(second.aiBudgets)",
+            "expect(parsed.aiBudgets.paper).not.toBe(second.aiBudgets.paper)",
+            "expect(appSettingsSchema.parse(full)).toEqual(full)",
+            "expect(appSettingsSchema.safeParse({ contactEmail: 'u@e.com', bogus: 1 }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组8 实体负锚：aiTask 未知字段/scope:global 拒（S3）；aiAuditRow kind 冻结 8 值外拒×2+detail:null 过（S6）；aiMemory label:null 过（S7）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组8 实体负锚：aiTask 未知字段/scope:global 拒（S3）；aiAuditRow kind 冻结 8 值外拒×2+detail:null 过（S6）；aiMemory label:null 过（S7）",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(M.aiTaskSchema.safeParse(taskItem).success).toBe(true)",
+            "expect(M.aiTaskSchema.safeParse({ ...taskItem, __probe: 1 }).success).toBe(false)",
+            "expect(M.aiTaskSchema.safeParse({ ...taskItem, scope: 'global' }).success).toBe(false)",
+            "expect(M.aiAuditRowSchema.safeParse(auditRow).success).toBe(true)",
+            "expect(M.aiAuditRowSchema.safeParse({ ...auditRow, kind: 'permission' }).success).toBe(false)",
+            "expect(M.aiAuditRowSchema.safeParse({ ...auditRow, kind: 'mutation' }).success).toBe(false)",
+            "expect(M.aiAuditRowSchema.safeParse({ ...auditRow, detail: 'before=(null) after=title:t1→t2' }).success).toBe(true)",
+            "expect(M.aiMemorySchema.safeParse(memoryItem).success).toBe(true)",
+            "expect(M.aiMemorySchema.safeParse({ ...memoryItem, label: '标签' }).success).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组9 常量闭合 pin：三档类目计数 6/7/6+19 值并集跨档零同名；动作 9/态 6/审计 kind 8；AI_BUDGET_DEFAULTS 17 值字面 pin；R4 四枚举全量字面 pin\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组9 常量闭合 pin：三档类目计数 6/7/6+19 值并集跨档零同名；动作 9/态 6/审计 kind 8；AI_BUDGET_DEFAULTS 17 值字面 pin；R4 四枚举全量字面 pin",
+          "markers": [],
+          "line": 220,
+          "assertions": [
+            "expect(M.AI_MEMORY_CATEGORIES.paper).toHaveLength(6)",
+            "expect(M.AI_MEMORY_CATEGORIES.lineage).toHaveLength(7)",
+            "expect(M.AI_MEMORY_CATEGORIES.global).toHaveLength(6)",
+            "expect( new Set([...M.AI_MEMORY_CATEGORIES.paper, ...M.AI_MEMORY_CATEGORIES.lineage, ...M.AI_MEMORY_CATEGORIES.global]).size ).toBe(19)",
+            "expect(M.AI_TASK_ACTIONS).toHaveLength(9)",
+            "expect(M.AI_TASK_STATUSES).toHaveLength(6)",
+            "expect(M.AI_AUDIT_KINDS).toHaveLength(8)",
+            "expect(M.AI_BUDGET_DEFAULTS).toEqual({ paper: { cap: 8000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1000 }, lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 }, global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 }, agent: { perShot: 800, perRound: 2000 } })",
+            "expect(M.AI_TASK_ACTIONS).toEqual([ 'memory.create', 'memory.update', 'memory.delete', 'memory.pin', 'memory.unpin', 'memory.search', 'memory.list', 'message.pin', 'message.unpin' ])",
+            "expect(M.AI_TASK_STATUSES).toEqual(['queued', 'running', 'succeeded', 'failed', 'timeout', 'cancelled'])",
+            "expect(M.AI_AUDIT_KINDS).toEqual([ 'submitted', 'target_resolved', 'mutated', 'result_overflow', 'succeeded', 'failed', 'timeout', 'cancelled' ])",
+            "expect(M.AI_MEMORY_CATEGORIES).toEqual({ paper: ['excerpt_quote', 'method_note', 'data_evidence', 'critique_limit', 'term_glossary', 'reading_insight'], lineage: [ 'node_role', 'relation_note', 'branch_summary', 'timeline_milestone', 'controversy_debate', 'gap_opportunity', 'domain_glossary' ], global: ['user_preference', 'ui_guidance', 'capability_note', 'automation_recipe', 'task_outcome', 'constraint_limit'] })",
+            "expect(Object.isFrozen(M.AI_BUDGET_DEFAULTS)).toBe(true)",
+            "expect(Object.isFrozen(M.AI_BUDGET_DEFAULTS.paper)).toBe(true)",
+            "expect(Object.isFrozen(M.AI_BUDGET_DEFAULTS.agent)).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组10 Res smoke（R5）：12 件 Res schema 合法形逐件过+错键名拒锚（sessions/memory/count）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组10 Res smoke（R5）：12 件 Res schema 合法形逐件过+错键名拒锚（sessions/memory/count）",
+          "markers": [],
+          "line": 279,
+          "assertions": [
+            "expect(A.aiSessionsOpenResSchema.safeParse({ session }).success).toBe(true)",
+            "expect(A.aiSessionsListMessagesResSchema.safeParse({ messages: [message] }).success).toBe(true)",
+            "expect(A.aiMessagesSetPinnedResSchema.safeParse({ message }).success).toBe(true)",
+            "expect(A.aiMessagesListPinnedResSchema.safeParse({ items: [pinnedItem] }).success).toBe(true)",
+            "expect(A.aiMemoryListByScopeResSchema.safeParse({ items: [memoryListEntry] }).success).toBe(true)",
+            "expect(A.aiMemoryCreateResSchema.safeParse({ item: memoryItem }).success).toBe(true)",
+            "expect(A.aiMemoryUpdateResSchema.safeParse({ item: memoryItem }).success).toBe(true)",
+            "expect(A.aiMemorySetPinnedResSchema.safeParse({ item: memoryItem }).success).toBe(true)",
+            "expect(A.aiTasksListResSchema.safeParse({ tasks: [taskItem] }).success).toBe(true)",
+            "expect(A.aiTasksCancelResSchema.safeParse({ task: taskItem }).success).toBe(true)",
+            "expect(A.aiAuditListResSchema.safeParse({ rows: [audit] }).success).toBe(true)",
+            "expect(A.aiCascadePreviewResSchema.safeParse({ counts }).success).toBe(true)",
+            "expect(A.aiSessionsOpenResSchema.safeParse({ sessions: session }).success).toBe(false)",
+            "expect(A.aiMemoryCreateResSchema.safeParse({ memory: memoryItem }).success).toBe(false)",
+            "expect(A.aiCascadePreviewResSchema.safeParse({ count: counts }).success).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组11 投影项 anchorTitle（R5）：pinnedMessageItem/aiMemoryListItem 正形过+缺席拒（extend 投影锚）\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组11 投影项 anchorTitle（R5）：pinnedMessageItem/aiMemoryListItem 正形过+缺席拒（extend 投影锚）",
+          "markers": [],
+          "line": 304,
+          "assertions": [
+            "expect(M.pinnedMessageItemSchema.safeParse({ ...message, anchorTitle: '论文' }).success).toBe(true)",
+            "expect(M.pinnedMessageItemSchema.safeParse(message).success).toBe(false)",
+            "expect(M.aiMemoryListItemSchema.safeParse({ ...memoryItem, anchorTitle: null }).success).toBe(true)",
+            "expect(M.aiMemoryListItemSchema.safeParse(memoryItem).success).toBe(false)"
+          ]
+        }
+      ]
+    },
     "tests/contracts/api-surface-closure.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -2177,18 +2419,19 @@
           ]
         },
         {
-          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）\"]",
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"appSettings：缺省填充 theme=light/uiScale=small/aiBudgets=默认预算档；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）+aiBudgets 档内超限拒\"]",
           "describePath": [
             "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
           ],
-          "title": "appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）",
+          "title": "appSettings：缺省填充 theme=light/uiScale=small/aiBudgets=默认预算档；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）+aiBudgets 档内超限拒",
           "markers": [],
-          "line": 516,
+          "line": 518,
           "assertions": [
-            "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'light', uiScale: 'small' })",
+            "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'light', uiScale: 'small', aiBudgets: { paper: { cap: 8000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1000 }, lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 }, global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 }, agent: { perShot: 800, perRound: 2000 } } })",
             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)",
             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', theme: 'blue' }).success).toBe(false)",
-            "expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', uiScale: 'huge' }).success).toBe(false)"
+            "expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', uiScale: 'huge' }).success).toBe(false)",
+            "expect( S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', aiBudgets: { paper: { cap: 4000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1001 }, lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 }, global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 }, agent: { perShot: 800, perRound: 2000 } } }).success ).toBe(false)"
           ]
         },
         {
@@ -2198,7 +2441,7 @@
           ],
           "title": "UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）",
           "markers": [],
-          "line": 527,
+          "line": 548,
           "assertions": [
             "expect(Object.keys(S.UI_SCALE).sort()).toEqual([...S.uiScaleSchema.options].sort())",
             "expect(S.UI_SCALE).toEqual({ small: 1, medium: 1.1, large: 1.25 })"
@@ -2211,7 +2454,7 @@
           ],
           "title": "windowControlAction 四动作枚举 pin（action 枚举只住此处——renderer 复用禁手写第二份）",
           "markers": [],
-          "line": 532,
+          "line": 553,
           "assertions": [
             "expect([...S.windowControlActionSchema.options]).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])",
             "expect(S.windowControlReqSchema.safeParse({ action: 'bogus' }).success).toBe(false)"
@@ -2224,7 +2467,7 @@
           ],
           "title": "trueAck/windowControlRes 拒 ok:false（literal(true) 单值域）",
           "markers": [],
-          "line": 537,
+          "line": 558,
           "assertions": [
             "expect(S.trueAckSchema.safeParse({ ok: false }).success).toBe(false)",
             "expect(S.windowControlResSchema.safeParse({ ok: false, maximized: true }).success).toBe(false)"
@@ -2237,7 +2480,7 @@
           ],
           "title": "netDiagItem latencyMs：-1（超时哨兵）过、-2 拒",
           "markers": [],
-          "line": 542,
+          "line": 563,
           "assertions": [
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -1 }).success).toBe(true)",
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -2 }).success).toBe(false)"
@@ -2250,7 +2493,7 @@
           ],
           "title": "内联枚举基数 pin：clipboard format 两值/zcodeLinkDetect state 五值/导入导出事件 phase 四与三值（新增枚举值须意识化更新）",
           "markers": [],
-          "line": 547,
+          "line": 568,
           "assertions": [
             "expect([...(S.clipboardReqSchema.shape.format.options)]).toEqual(['bibtex', 'csv'])",
             "expect([...(S.zcodeLinkDetectResSchema.shape.state.options)]).toEqual([ 'zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error' ])",
@@ -2265,7 +2508,7 @@
           ],
           "title": "zcodeLinkDetect 五态枚举探针：各态过、bogus 拒（四呈现态+error）",
           "markers": [],
-          "line": 560,
+          "line": 581,
           "assertions": [
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state, status: null, overwrite: false }).success, `态 ${state} 应合法`).toBe(true)",
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state: 'bogus', status: null, overwrite: false }).success).toBe(false)"
@@ -2278,7 +2521,7 @@
           ],
           "title": "id 类字段空串拒（paperId/annotationId/tagId/noteId/lineage id——min(1) 全位探针）",
           "markers": [],
-          "line": 567,
+          "line": 588,
           "assertions": [
             "expect(S.paperIdReqSchema.safeParse({ paperId: '' }).success).toBe(false)",
             "expect(S.annotationIdReqSchema.safeParse({ annotationId: '' }).success).toBe(false)",
@@ -2294,7 +2537,7 @@
           ],
           "title": "aiSensorStatusRes/noteGetRes 可空两形：null 与对象均过（null=status.json 不存在/无笔记的合法态）",
           "markers": [],
-          "line": 575,
+          "line": 596,
           "assertions": [
             "expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)",
             "expect(S.noteGetResSchema.safeParse(null).success).toBe(true)",
@@ -2308,7 +2551,7 @@
           ],
           "title": "tagSetColorReqSchema color 负例：大写/短位/缺 # 拒，null=恢复默认合法（d1-N5——hex 契约负向锁）",
           "markers": [],
-          "line": 581,
+          "line": 602,
           "assertions": [
             "expect( S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: bad }).success, `非法 color ${JSON.stringify(bad)} 应拒` ).toBe(false)",
             "expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1' }).success, '缺 color 键应拒（required 非 optional——宽松化正则防）').toBe(false)",
@@ -9436,7 +9679,7 @@
           ],
           "title": "get：无文件返回默认值（contactEmail 合法 email，theme=light）",
           "markers": [],
-          "line": 22,
+          "line": 32,
           "assertions": [
             "expect(s.theme).toBe('light')",
             "expect(s.contactEmail).toContain('@')"
@@ -9449,10 +9692,10 @@
           ],
           "title": "set→get 往返一致；损坏文件回退默认",
           "markers": [],
-          "line": 29,
+          "line": 39,
           "assertions": [
             "expect(saved.contactEmail).toBe('me@example.com')",
-            "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })",
+            "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small', aiBudgets: AI_BUDGETS_DEFAULT })",
             "expect(fallback.theme).toBe('light')"
           ]
         },
@@ -9463,7 +9706,7 @@
           ],
           "title": "写入文件为 UTF-8（中文主题值无乱码——原子写 tmp+rename）",
           "markers": [],
-          "line": 44,
+          "line": 65,
           "assertions": [
             "expect(JSON.parse(raw)).toMatchObject({ contactEmail: 'a@b.c' })",
             "expect(raw).not.toMatch(/[\\uFFFD]/)"
@@ -9476,7 +9719,7 @@
           ],
           "title": "R2-SET1 旧 settings.json 无 uiScale：get 走 zod default 填充 small（非 fallback）且既有字段保留",
           "markers": [],
-          "line": 53,
+          "line": 74,
           "assertions": [
             "expect(s.uiScale).toBe('small')",
             "expect(s.theme).toBe('dark')",
@@ -9490,7 +9733,7 @@
           ],
           "title": "R2-SET1 set 带 uiScale=large：持久化回读一致",
           "markers": [],
-          "line": 68,
+          "line": 89,
           "assertions": [
             "expect(reread.uiScale).toBe('large')",
             "expect(reread.theme).toBe('dark')"
@@ -9503,7 +9746,7 @@
           ],
           "title": "T3-P1 旧 settings.json theme=system：get 读侧平滑迁移为 light 且既有字段保全（迁移锁）",
           "markers": [],
-          "line": 77,
+          "line": 98,
           "assertions": [
             "expect(s.theme, \"存量 theme:'system' 应迁移为 'light'（枚举退役，A6 不跟随系统）\").toBe('light')",
             "expect(s.contactEmail, '迁移不得丢既有字段').toBe('me@example.com')",
@@ -9517,7 +9760,7 @@
           ],
           "title": "diagNetwork：对全部白名单 host 并发 ping",
           "markers": [],
-          "line": 92,
+          "line": 113,
           "assertions": [
             "expect(pinged.sort()).toEqual([...ALLOWED_REMOTE_HOSTS].sort())",
             "expect(diag).toHaveLength(ALLOWED_REMOTE_HOSTS.length)",
@@ -31300,7 +31543,7 @@
           ],
           "title": "load 写入 settings",
           "markers": [],
-          "line": 20,
+          "line": 29,
           "assertions": [
             "expect(useStore.getState().settings).toEqual({ contactEmail: 'a@b.c', theme: 'dark' })"
           ]
@@ -31312,7 +31555,7 @@
           ],
           "title": "save：发送补丁，成功后本地合并；saving 复位",
           "markers": [],
-          "line": 30,
+          "line": 39,
           "assertions": [
             "expect(set).toHaveBeenCalledWith({ contactEmail: 'new@x.y' })",
             "expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')",
@@ -31326,7 +31569,7 @@
           ],
           "title": "R2-SET1 save({uiScale}) 透传：set 收到的参数恰为补丁（Partial 通道不滤字段）",
           "markers": [],
-          "line": 42,
+          "line": 51,
           "assertions": [
             "expect(set).toHaveBeenCalledWith({ uiScale: 'medium' })",
             "expect(useStore.getState().settings?.uiScale).toBe('medium')"
@@ -31339,7 +31582,7 @@
           ],
           "title": "乱序守卫：save 派发后，更早发起的 load 响应到达不得覆盖已保存设置",
           "markers": [],
-          "line": 57,
+          "line": 66,
           "assertions": [
             "expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')"
           ]
@@ -31351,7 +31594,7 @@
           ],
           "title": "乱序守卫：save 在途时派发的 load 读到旧态且响应后到，落地时丢弃",
           "markers": [],
-          "line": 72,
+          "line": 81,
           "assertions": [
             "expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')"
           ]
@@ -31363,7 +31606,7 @@
           ],
           "title": "乱序守卫：save 在途时 load 响应先到——瞬态应用旧读，save 落地后终态正确（格4）",
           "markers": [],
-          "line": 87,
+          "line": 96,
           "assertions": [
             "expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')",
             "expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')"
@@ -31376,7 +31619,7 @@
           ],
           "title": "乱序守卫：save 失败不抬版本——在途 load 读到的真值照常应用",
           "markers": [],
-          "line": 105,
+          "line": 114,
           "assertions": [
             "expect(useStore.getState().save({ contactEmail: 'new@x.y' })).rejects.toThrow('写盘失败')",
             "expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')",
@@ -31390,7 +31633,7 @@
           ],
           "title": "并发全序：save₁ 挂起中 save₂ 排队——settle 前 save₂ 的 set 不被调，settle 后恰一次；终态=save₂ 值；saving 归零",
           "markers": [],
-          "line": 143,
+          "line": 152,
           "assertions": [
             "expect(set).toHaveBeenCalledTimes(1)",
             "expect(set).toHaveBeenCalledWith({ contactEmail: 'one@x.y' })",
@@ -31407,7 +31650,7 @@
           ],
           "title": "链不断：save₁ reject 后排队的 save₂ 照常发出并成功，save₁ 错误上抛其调用方",
           "markers": [],
-          "line": 168,
+          "line": 177,
           "assertions": [
             "expect(set).toHaveBeenCalledTimes(1)",
             "expect(pSave1).rejects.toThrow('写盘失败')",
@@ -31424,7 +31667,7 @@
           ],
           "title": "C-3 N2 链深≥3：save₃ 排在 save₂ 后——尾尾相接不折断，逐个补发，终态=save₃ 值",
           "markers": [],
-          "line": 194,
+          "line": 203,
           "assertions": [
             "expect(set).toHaveBeenCalledTimes(1)",
             "expect(set).toHaveBeenCalledTimes(2)",
@@ -31441,7 +31684,7 @@
           ],
           "title": "saving 连续：save₁ settle 后 save₂ 起跑前不闪 false（订阅帧 false 仅在全部 settle 后出现一次）",
           "markers": [],
-          "line": 225,
+          "line": 234,
           "assertions": [
             "expect(frames[0]).toBe(true)",
             "expect(frames.indexOf(false)).toBe(frames.length - 1)",
@@ -47895,9 +48138,9 @@
     }
   },
   "stats": {
-    "fileCount": 319,
-    "caseCount": 3213,
-    "assertionCount": 10447,
+    "fileCount": 320,
+    "caseCount": 3224,
+    "assertionCount": 10562,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -47905,5 +48148,18 @@
     "eachExpandedRows": 348,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": []
+  "exemptionsSnapshot": [
+    {
+      "file": "tests/contracts/schemas.test.ts",
+      "caseTitle": "appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）",
+      "reason": "F-DBCAMP-01 DB-2 U1：appSettingsSchema 增 aiBudgets 默认档（getter structuredClone）后该用例标题随载荷语义改写（+aiBudgets=默认预算档+档内超限拒）——标题变=身份变，旧身份淘汰属 [locked-change][test-refactor] 有意改写非删测，新标题用例随新基线登账（gate1 双席链在档）",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
+    },
+    {
+      "file": "tests/unit/ipc/settings.test.ts",
+      "assertionText": "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })",
+      "reason": "F-DBCAMP-01 DB-2 U1：reread 精确断言扩容 aiBudgets 默认档键（AppSettings 输出型必含——zod default 填充）——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
+    }
+  ]
 }

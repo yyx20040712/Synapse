@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-10T02:33:42.6084379Z",
+    "generatedAt":  "2026-10-10T07:05:53.9070295Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,11 +87,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "1398a2d68ee39c731593791efb8b488f9507548d17724bd28a074688dc52ac9a"
+                      "sha256":  "a57b51b7fe02b88ea3caf5832e5f40a293f38411b5a9cdf11f7194703fc78fdd"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+                      "sha256":  "40b6be05578626b164125277030d087118d80f5e26494e1ea320caff8bb08218"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -210,6 +210,10 @@
                       "sha256":  "87585511dd33ed5119d93661fb198bfe3144d2f28ff40df1ace91b0c447df1b0"
                   },
                   {
+                      "path":  "src/shared/ipc/ai-schemas.ts",
+                      "sha256":  "130633e6ca3571d006c35b29c8598c45f0203975f595ad1d04923a7be288366b"
+                  },
+                  {
                       "path":  "src/shared/ipc/api-surface.ts",
                       "sha256":  "a0b25fba444d80c7fffa915ce4877743b68dc9c53d5366de50a443c608463475"
                   },
@@ -219,7 +223,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "81322ba1720b9862a4401e6a4f513525031d523928caf4abe54f018bfff18308"
+                      "sha256":  "83942c11088fc2f890f8d3959595cce273d6547cb4c14142d927d9b2be212d6a"
+                  },
+                  {
+                      "path":  "src/shared/models/ai-domain.ts",
+                      "sha256":  "6ec40e67c17639fa8762852aad03c047095af953c3e5f9249b6a5949b6721a3b"
                   },
                   {
                       "path":  "src/shared/models/ai-note.ts",
@@ -262,6 +270,10 @@
                       "sha256":  "f9869c75fce02ad6a92dd3b506ed50696454bf218d7c24968ad42e7ae5ff6734"
                   },
                   {
+                      "path":  "tests/contracts/ai-schemas.test.ts",
+                      "sha256":  "9e525736ea6bd00975560ce4a7f6f51ff0d8f484bc63abaa8dfdca8088b33b49"
+                  },
+                  {
                       "path":  "tests/contracts/api-surface.test.ts",
                       "sha256":  "f824b7d8d903352bf7944ef3cd23b85f9ca3fae5c87124c0c4687b3e488f3c86"
                   },
@@ -287,7 +299,7 @@
                   },
                   {
                       "path":  "tests/contracts/schemas.test.ts",
-                      "sha256":  "3e16a3a4f89485da85c469d85f1559d912dc8c5e114b5ce33e686190bce97c6d"
+                      "sha256":  "8fdd7c797dd1db900b98fab370af339d9b0bf38b2c4baad1982f5d36faab4bc6"
                   },
                   {
                       "path":  "tests/e2e/corpus-export.spec.ts",
@@ -627,7 +639,7 @@
                   },
                   {
                       "path":  "tests/unit/ipc/settings.test.ts",
-                      "sha256":  "9c408d602991831a53fc241c2c5fda7740db04885fd559cbc4ea0d845305ae91"
+                      "sha256":  "22c7d6aa4d6abd40417c878e703a1577574d79c55b7a970bafdfe71c2005fd34"
                   },
                   {
                       "path":  "tests/unit/ipc/system.test.ts",
@@ -1179,7 +1191,7 @@
                   },
                   {
                       "path":  "tests/unit/renderer/settings.store.test.ts",
-                      "sha256":  "de7863cfd16264d1fff9b8579eaffd50f285c52a258bd178d5356c72503bb414"
+                      "sha256":  "7fbdd4368782fb318d8fbe2efa1f55c450383013f1739a98c23d2ff4a6753c4b"
                   },
                   {
                       "path":  "tests/unit/renderer/settings-page-enter.test.tsx",
