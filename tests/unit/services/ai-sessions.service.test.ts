@@ -274,3 +274,104 @@ describe('F-DBCAMP-01 DB-2 U2a ai-sessions.service —— 多态锚校验+上限
     db.close()
   })
 })
+
+describe('F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面', () => {
+  it('U2-1 openOrGetSession：同锚二次同 id（幂等）+首调建行+幽灵锚 NOT_FOUND+global 形态+多会话取最新不清理', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    seedPaper(db, 'p-1')
+    seedPaper(db, 'p-2')
+    // 首调建行+幂等
+    const a = await svc.openOrGetSession({ scope: 'paper', anchorId: 'p-1' })
+    const b = await svc.openOrGetSession({ scope: 'paper', anchorId: 'p-1' })
+    expect(b.id).toBe(a.id)
+    expect(a).toMatchObject({ scope: 'paper', anchorId: 'p-1' })
+    expect(a.id).toBeGreaterThan(0)
+    // 数据层多会话合法：openSession 建两行后 openOrGet 取最新（不清理旧行）
+    const _s1 = await svc.openSession({ scope: 'paper', anchorId: 'p-2' })
+    const s2 = await svc.openSession({ scope: 'paper', anchorId: 'p-2' })
+    const got = await svc.openOrGetSession({ scope: 'paper', anchorId: 'p-2' })
+    expect(got.id).toBe(s2.sessionId)
+    expect(
+      db.prepare('SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id=?').get('p-2')
+    ).toEqual({ c: 2 })
+    // 幽灵锚 NOT_FOUND（文案同 openSession）
+    await expectDomainError(
+      () => svc.openOrGetSession({ scope: 'paper', anchorId: 'p-ghost' }),
+      'NOT_FOUND',
+      '锚'
+    )
+    // global 形态（anchor null 幂等）
+    const g1 = await svc.openOrGetSession({ scope: 'global', anchorId: null })
+    const g2 = await svc.openOrGetSession({ scope: 'global', anchorId: null })
+    expect(g2.id).toBe(g1.id)
+    expect(g1.anchorId).toBeNull()
+    db.close()
+  })
+
+  it('U2-2 setPinnedMessage 行投影（pinned boolean+剥 updatedAt）+幽灵消息 NOT_FOUND+listMessages 投影形', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    seedPaper(db, 'p-1')
+    const { sessionId } = await svc.openSession({ scope: 'paper', anchorId: 'p-1' })
+    const m = await svc.appendMessage({ sessionId, role: 'user', content: '待置顶' })
+    const pinned = await svc.setPinnedMessage(m.id, true)
+    expect(pinned).toMatchObject({
+      id: m.id,
+      sessionId,
+      role: 'user',
+      content: '待置顶',
+      pinned: true
+    })
+    expect('updatedAt' in pinned).toBe(false) // AiMessage 剥 updatedAt（models/ai-domain 投影口径）
+    const unpinned = await svc.setPinnedMessage(m.id, false)
+    expect(unpinned.pinned).toBe(false)
+    await expectDomainError(() => svc.setPinnedMessage(9999, true), 'NOT_FOUND', '消息不存在')
+    // listMessages 投影改造锁：AiMessage 形（boolean pinned+剥 updatedAt）
+    const list = await svc.listMessages(sessionId)
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ id: m.id, pinned: false, content: '待置顶' })
+    expect('updatedAt' in list[0]!).toBe(false)
+    db.close()
+  })
+
+  it('U2-3 listPinnedMessages：跨会话聚合+三值语义+anchorTitle 解析+m.id DESC', async () => {
+    const db = createTestDb()
+    const svc = createAiSessionsService({ repos: createRepos(db) })
+    seedPaper(db, 'p-1')
+    seedPaper(db, 'p-2')
+    seedCollection(db, 'c-1')
+    async function pinnedSession(scope: 'paper' | 'lineage' | 'global', anchorId: string | null, content: string): Promise<number> {
+      // openSession 恒新会话——同锚两会话各置顶一条，锁跨会话聚合面
+      const s = await svc.openSession({ scope, anchorId })
+      const m = await svc.appendMessage({ sessionId: s.sessionId, role: 'user', content })
+      await svc.pinMessage(m.id)
+      return s.sessionId
+    }
+    await pinnedSession('paper', 'p-1', '置顶甲')
+    await pinnedSession('paper', 'p-1', '置顶乙')
+    await pinnedSession('paper', 'p-2', '置顶丙')
+    await pinnedSession('lineage', 'c-1', '置顶丁')
+    await pinnedSession('global', null, '置顶戊')
+    // undefined=该 scope 全部（跨锚聚合）+m.id DESC（乙后插→首行）
+    const paperAll = await svc.listPinnedMessages({ scope: 'paper' })
+    expect(paperAll.map((r) => r.content)).toEqual(['置顶丙', '置顶乙', '置顶甲'])
+    expect(paperAll.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1', '文献p-1'])
+    expect(paperAll.every((r) => r.pinned === true)).toBe(true)
+    // 非空串=该锚
+    const anchorScoped = await svc.listPinnedMessages({ scope: 'paper', anchorId: 'p-1' })
+    expect(anchorScoped.map((r) => r.content)).toEqual(['置顶乙', '置顶甲'])
+    // null=仅 global（anchorTitle=null）
+    const globalOnly = await svc.listPinnedMessages({ scope: 'global', anchorId: null })
+    expect(globalOnly.map((r) => r.content)).toEqual(['置顶戊'])
+    expect(globalOnly[0]!.anchorTitle).toBeNull()
+    // lineage→collections.name
+    const lineage = await svc.listPinnedMessages({ scope: 'lineage', anchorId: 'c-1' })
+    expect(lineage.map((r) => [r.content, r.anchorTitle])).toEqual([['置顶丁', '图c-1']])
+    // 非置顶消息不入列
+    const sFree = await svc.openOrGetSession({ scope: 'paper', anchorId: 'p-1' })
+    await svc.appendMessage({ sessionId: sFree.id, role: 'assistant', content: '非置顶' })
+    expect((await svc.listPinnedMessages({ scope: 'paper' })).map((r) => r.content)).not.toContain('非置顶')
+    db.close()
+  })
+})

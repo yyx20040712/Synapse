@@ -13,8 +13,7 @@
  *   单向（db 层禁依赖 services），服务层捕获后映射 AiDomainError CONFLICT（§3.E）。
  * - setPinned：pinned 翻转+updated_at 刷新（应用层 ISO），其余列不动；未命中 false
  *   零行变更。置顶操作本身无上限（全置顶态自然落入拒写）。
- * - listMessages=ORDER BY id ASC（装配尾段新到旧=U2b 消费面，本批只保稳定序）；
- *   读路径（list/count）永不触发淘汰。
+ * - listMessages=ORDER BY id ASC（装配尾段新到旧=U2b 消费面，本批只保稳定序）；读路径（list/count）永不触发淘汰。
  * - anchorExists（§3.F 多态锚无 FK=服务层校验面，SQL 单源在本层）：
  *   paper→papers.id / lineage→collections.id（ADR-0025 folder↔graph 投影）/
  *   global→无锚恒真。
@@ -75,6 +74,8 @@ interface RawMessageRow {
   updated_at: string
 }
 
+type PinnedRawRow = RawMessageRow & { anchor_title: string | null }
+
 export interface AiSessionsRepo {
   createSession(scope: AiScope, anchorId: string | null): AiSessionRow
   /** 会话行读（目标继承面消费——U2b-1 submitTask 缺省 target 继承会话 (scope,anchor)） */
@@ -92,6 +93,11 @@ export interface AiSessionsRepo {
   /** 置顶翻转（updated_at 刷新）；未命中 false 零行变更 */
   setPinned(messageId: number, pinned: boolean): boolean
   listMessages(sessionId: number): AiMessageRow[]
+  /** [F-DBCAMP-01 DB-2 U2] 三原语：锚命中读（多会话合法取最新）/多态锚标题单查（paper→papers.title/
+   *  lineage→collections.name/global→null；cancel 投影回查消费）/跨会话置顶读（anchorId 三值维度；m.id DESC） */
+  getSessionByAnchor(scope: AiScope, anchorId: string | null): AiSessionRow | null
+  anchorTitleOf(scope: AiScope, anchorId: string | null): string | null
+  listPinned(scope: AiScope, anchorId: string | null | undefined): Array<AiMessageRow & { anchorTitle: string | null }>
 }
 
 export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
@@ -132,6 +138,26 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
     `SELECT id, session_id, role, content, pinned, created_at, updated_at FROM ai_messages
      WHERE id = ? LIMIT 1`
   )
+  // [F-DBCAMP-01 DB-2 U2] 三路标题 CASE 模板（paper→title/lineage→name/global→null）；
+  // 置顶三值维度=三条固定语句（谓词常量内联非拼值——ai-memory.repo PREDICATE 先例）
+  const sessionByAnchorStmt = db.prepare(
+    `SELECT id, scope, anchor_id, created_at, updated_at FROM ai_sessions
+     WHERE scope = ? AND (anchor_id = ? OR (? IS NULL AND anchor_id IS NULL))
+     ORDER BY id DESC LIMIT 1`
+  )
+  const anchorTitleStmt = db.prepare(
+    `SELECT CASE WHEN ? = 'paper' THEN (SELECT title FROM papers WHERE id = ?)
+       WHEN ? = 'lineage' THEN (SELECT name FROM collections WHERE id = ?)
+       ELSE NULL END AS anchor_title`
+  )
+  const pinnedSel = `SELECT m.id, m.session_id, m.role, m.content, m.pinned, m.created_at, m.updated_at,
+     CASE WHEN s.scope = 'paper' THEN p.title WHEN s.scope = 'lineage' THEN c.name ELSE NULL END AS anchor_title
+     FROM ai_messages m JOIN ai_sessions s ON m.session_id = s.id
+     LEFT JOIN papers p ON s.scope = 'paper' AND p.id = s.anchor_id
+     LEFT JOIN collections c ON s.scope = 'lineage' AND c.id = s.anchor_id`
+  const pinnedAllStmt = db.prepare(`${pinnedSel} WHERE m.pinned = 1 AND s.scope = ? ORDER BY m.id DESC`)
+  const pinnedGlobalStmt = db.prepare(`${pinnedSel} WHERE m.pinned = 1 AND s.scope = ? AND s.anchor_id IS NULL ORDER BY m.id DESC`)
+  const pinnedAnchorStmt = db.prepare(`${pinnedSel} WHERE m.pinned = 1 AND s.scope = ? AND s.anchor_id = ? ORDER BY m.id DESC`)
 
   function toMessage(r: RawMessageRow): AiMessageRow {
     return {
@@ -247,6 +273,27 @@ export function createAiSessionsRepo(db: SqliteDb): AiSessionsRepo {
 
     listMessages(sessionId) {
       return (listStmt.all(sessionId) as RawMessageRow[]).map(toMessage)
+    },
+
+    getSessionByAnchor(scope, anchorId) {
+      const row = sessionByAnchorStmt.get(scope, anchorId, anchorId) as
+        | { id: number; scope: AiScope; anchor_id: string | null; created_at: string; updated_at: string }
+        | undefined
+      return row === undefined ? null : toSession(row)
+    },
+
+    anchorTitleOf(scope, anchorId) {
+      return (anchorTitleStmt.get(scope, anchorId, scope, anchorId) as { anchor_title: string | null }).anchor_title
+    },
+
+    listPinned(scope, anchorId) {
+      const rows =
+        anchorId === undefined
+          ? (pinnedAllStmt.all(scope) as PinnedRawRow[])
+          : anchorId === null
+            ? (pinnedGlobalStmt.all(scope) as PinnedRawRow[])
+            : (pinnedAnchorStmt.all(scope, anchorId) as PinnedRawRow[])
+      return rows.map((r) => ({ ...toMessage(r), anchorTitle: r.anchor_title }))
     }
   }
 }

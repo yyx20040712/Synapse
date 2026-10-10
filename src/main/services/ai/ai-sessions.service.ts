@@ -20,6 +20,11 @@
  *   repo setPinned false（缺 id 零行变更）→NOT_FOUND 消息不存在；置顶操作本身
  *   无上限（§3.A 单一规则）。
  * - listMessages：幽灵会话 NOT_FOUND（裁①）；在场透传 repo 稳定序（id ASC）。
+ * - [F-DBCAMP-01 DB-2 U2] IPC 读面四方法：openOrGetSession（每锚单活动会话入口
+ *   ——数据层多会话合法，取最新不清理旧行）；listMessages 投影改造=返回 AiMessage
+ *   （pinned 0|1→boolean+剥 updatedAt——映射点=服务层 toMessageView 单源，改造时
+ *   点零 IPC 消费方〔U2a 冻结接口仅测试消费〕）；setPinnedMessage（投影回读）；
+ *   listPinnedMessages（repo.listPinned 直投同款映射+anchorTitle）。
  *
  * ── 架构层 ──
  * - SQL 全在 repo（service 零 SQL）；错误语义归 service、数据事实归 repo
@@ -34,9 +39,11 @@ import {
   AI_SESSION_MESSAGE_CAP,
   SessionCapAllPinnedError,
   type AiMessageRow,
+  type AiSessionRow,
   type AiScope
 } from '../../db/repos/ai-sessions.repo'
 import type { Repos } from '../../db/repos'
+import type { AiMessage, PinnedMessageItem } from '../../../shared/models/ai-domain'
 import { DomainError } from '../shared/domain-error'
 
 /** AI 域错误载体（§3.E 映射单源；ai-memory-search.service 同域消费） */
@@ -54,7 +61,14 @@ export interface AiSessionsService {
   }): Promise<AiMessageRow>
   pinMessage(messageId: number): Promise<{ ok: true }>
   unpinMessage(messageId: number): Promise<{ ok: true }>
-  listMessages(sessionId: number): Promise<AiMessageRow[]>
+  /** [U2 投影改造] AiMessageRow → AiMessage（布尔 pinned+剥 updatedAt） */
+  listMessages(sessionId: number): Promise<AiMessage[]>
+  /** [F-DBCAMP-01 DB-2 U2] 每锚单活动会话入口（幂等——锚命中即返，未命中建行） */
+  openOrGetSession(req: { scope: AiScope; anchorId: string | null }): Promise<AiSessionRow>
+  /** [F-DBCAMP-01 DB-2 U2] 置顶翻转+投影回读（AiMessage 形） */
+  setPinnedMessage(messageId: number, pinned: boolean): Promise<AiMessage>
+  /** [F-DBCAMP-01 DB-2 U2] 跨会话置顶聚合（anchorId 三值语义 zod 已锁——直投 repo） */
+  listPinnedMessages(req: { scope: AiScope; anchorId?: string | null }): Promise<PinnedMessageItem[]>
 }
 
 const ANCHOR_MISSING_MSG: Record<'paper' | 'lineage', string> = {
@@ -95,6 +109,19 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
     }
     if (!aiSessions.sessionExists(message.sessionId)) {
       throw new AiDomainError('NOT_FOUND', '会话不存在')
+    }
+  }
+
+  /** [F-DBCAMP-01 DB-2 U2] DB→IPC 行投影（映射点=服务层单源）：pinned 0|1→boolean
+   *  +剥 updatedAt（models/ai-domain 头注口径——listMessages/setPinned/listPinned 共用） */
+  function toMessageView(r: AiMessageRow): AiMessage {
+    return {
+      id: r.id,
+      sessionId: r.sessionId,
+      role: r.role,
+      content: r.content,
+      pinned: r.pinned === 1,
+      createdAt: r.createdAt
     }
   }
 
@@ -152,7 +179,36 @@ export function createAiSessionsService(deps: { repos: Repos }): AiSessionsServi
 
     async listMessages(sessionId) {
       assertSessionExists(sessionId)
-      return aiSessions.listMessages(sessionId)
+      return aiSessions.listMessages(sessionId).map(toMessageView)
+    },
+
+    async openOrGetSession(req) {
+      assertScopeShape(req.scope, req.anchorId)
+      if (
+        req.scope !== 'global' &&
+        !aiSessions.anchorExists(req.scope, req.anchorId)
+      ) {
+        throw new AiDomainError('NOT_FOUND', ANCHOR_MISSING_MSG[req.scope])
+      }
+      const existing = aiSessions.getSessionByAnchor(req.scope, req.anchorId)
+      if (existing !== null) return existing
+      return aiSessions.createSession(req.scope, req.anchorId)
+    },
+
+    async setPinnedMessage(messageId, pinned) {
+      assertMessageSessionExists(messageId)
+      if (!aiSessions.setPinned(messageId, pinned)) {
+        throw new AiDomainError('NOT_FOUND', '消息不存在')
+      }
+      const row = aiSessions.getMessageById(messageId)
+      if (row === null) throw new AiDomainError('NOT_FOUND', '消息不存在')
+      return toMessageView(row)
+    },
+
+    async listPinnedMessages(req) {
+      return aiSessions
+        .listPinned(req.scope, req.anchorId)
+        .map((r) => ({ ...toMessageView(r), anchorTitle: r.anchorTitle }))
     }
   }
 }

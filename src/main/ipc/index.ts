@@ -18,6 +18,13 @@ import { createSettingsIpc } from './settings'
 import { createSystemIpc } from './system'
 import { createFoldersIpc } from './folders'
 import { createPapersIpc } from './papers'
+// [F-DBCAMP-01 DB-2 U2] AI 域六件（13 通道——契约=shared/ipc/ai-schemas.ts）
+import { createAiSessionsIpc } from './ai_sessions'
+import { createAiMessagesIpc } from './ai_messages'
+import { createAiMemoryIpc } from './ai_memory'
+import { createAiTasksIpc } from './ai_tasks'
+import { createAiAuditIpc } from './ai_audit'
+import { createAiCascadeIpc } from './ai_cascade'
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
   return {
@@ -33,6 +40,12 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     settings: createSettingsIpc(deps),
     system: createSystemIpc(deps),
     folders: createFoldersIpc(deps),
-    papers: createPapersIpc(deps)
+    papers: createPapersIpc(deps),
+    ai_sessions: createAiSessionsIpc(deps),
+    ai_messages: createAiMessagesIpc(deps),
+    ai_memory: createAiMemoryIpc(deps),
+    ai_tasks: createAiTasksIpc(deps),
+    ai_audit: createAiAuditIpc(deps),
+    ai_cascade: createAiCascadeIpc(deps)
   }
 }

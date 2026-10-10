@@ -49,6 +49,9 @@ export interface AiTaskAuditRepo {
   /** @internal 服务层经 runTaskTx 内 api 消费，顶层口=测试/审计抽屉读面——禁新
    *  服务直调（类型收窄挂账 U2b-2） */
   listAudit(taskId: number): TaskAuditRow[]
+  /** [F-DBCAMP-01 DB-2 U2] 游标翻页读（seq>afterSeq 升序+limit——UI 审计抽屉面；
+   *  幽灵 taskId=空 rows〔append-only 读面不设存在性前置——服务层注释声明〕） */
+  listAuditPage(taskId: number, afterSeq: number, limit: number): TaskAuditRow[]
 }
 
 export function createAiTaskAuditRepo(db: SqliteDb): AiTaskAuditRepo {
@@ -61,6 +64,10 @@ export function createAiTaskAuditRepo(db: SqliteDb): AiTaskAuditRepo {
     `SELECT id, task_id, seq, kind, detail, created_at FROM ai_task_audit
      WHERE task_id = ? ORDER BY seq ASC`
   )
+  const listAuditPageStmt = db.prepare(
+    `SELECT id, task_id, seq, kind, detail, created_at FROM ai_task_audit
+     WHERE task_id = ? AND seq > ? ORDER BY seq ASC LIMIT ?`
+  )
 
   return {
     appendAudit(taskId, kind, detail) {
@@ -69,6 +76,10 @@ export function createAiTaskAuditRepo(db: SqliteDb): AiTaskAuditRepo {
 
     listAudit(taskId) {
       return (listAuditStmt.all(taskId) as RawAuditRow[]).map(toAuditRow)
+    },
+
+    listAuditPage(taskId, afterSeq, limit) {
+      return (listAuditPageStmt.all(taskId, afterSeq, limit) as RawAuditRow[]).map(toAuditRow)
     }
   }
 }

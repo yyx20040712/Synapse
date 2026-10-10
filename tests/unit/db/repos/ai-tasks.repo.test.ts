@@ -312,4 +312,43 @@ describe('F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁�
     expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted'])
     db.close()
   })
+
+  it('T19 listTasksWithTitles：targetTitle 投影（paper→papers.title/lineage→collections.name/幽灵锚 null）+三值过滤', () => {
+    const db = createTestDb()
+    const repo = newRepo(db)
+    db.prepare(
+      `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at)
+       VALUES ('p-1', 'f/p-1.pdf', 'sha-p-1', '文献甲', 't', 't')`
+    ).run()
+    db.prepare(`INSERT INTO collections (id, name, position) VALUES ('c-1', '图丙', 0)`).run()
+    queuedTask(db) // 默认 paper/p-1
+    db.prepare(
+      `INSERT INTO ai_tasks (scope, anchor_id, action, payload, created_at, updated_at)
+       VALUES ('lineage', 'c-1', 'memory.list', '{}', 't', 't')`
+    ).run()
+    queuedTask(db, { anchor: 'p-ghost' }) // 幽灵锚（无 FK——targetTitle null 形）
+    const rows = repo.listTasksWithTitles({ limit: 50 })
+    expect(rows).toHaveLength(3)
+    const byAnchor = new Map(rows.map((r) => [`${r.scope}:${r.anchorId}`, r.targetTitle]))
+    expect(byAnchor.get('paper:p-1')).toBe('文献甲')
+    expect(byAnchor.get('lineage:c-1')).toBe('图丙')
+    expect(byAnchor.get('paper:p-ghost')).toBeNull()
+    // 过滤面（scope/anchorId/status 三值——IS NULL OR 固定语句）
+    expect(repo.listTasksWithTitles({ scope: 'paper', anchorId: 'p-1', limit: 50 })).toHaveLength(1)
+    expect(repo.listTasksWithTitles({ scope: 'lineage', limit: 50 })).toHaveLength(1)
+    expect(repo.listTasksWithTitles({ status: 'queued', limit: 50 })).toHaveLength(3)
+    expect(repo.listTasksWithTitles({ status: 'running', limit: 50 })).toHaveLength(0)
+    db.close()
+  })
+
+  it('T20 listAuditPage：afterSeq 游标翻页（seed 5 行取 afterSeq=2 limit=2→seq 3,4）+升序+尾游标空', () => {
+    const db = createTestDb()
+    const repo = newRepo(db)
+    const id = queuedTask(db) // 插入自带 submitted 行（seq 1）——appendAudit 续 seq 2..6
+    for (let i = 1; i <= 5; i++) repo.appendAudit(id, 'mutated', `d${i}`)
+    expect(repo.listAuditPage(id, 2, 2).map((r) => r.seq)).toEqual([3, 4])
+    expect(repo.listAuditPage(id, 0, 100).map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6])
+    expect(repo.listAuditPage(id, 6, 100)).toEqual([])
+    db.close()
+  })
 })

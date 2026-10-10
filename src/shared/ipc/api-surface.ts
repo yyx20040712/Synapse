@@ -18,6 +18,7 @@ import { aiNoteSchema } from '../models/ai-note'
 import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
 import { folderSchema } from '../models/folder'
 import * as S from './schemas'
+import * as AI from './ai-schemas'
 
 export interface Endpoint {
   /** 通道名，全局唯一 */
@@ -160,6 +161,51 @@ export const API_SURFACE = {
     moveFolder: { channel: 'papers/move-folder', Req: S.paperMoveReqSchema, Res: S.trueAckSchema },
     delete: { channel: 'papers/delete', Req: S.paperDeleteReqSchema, Res: S.trueAckSchema },
     setStarred: { channel: 'papers/set-starred', Req: S.paperSetStarredReqSchema, Res: S.trueAckSchema }
+  },
+  // [F-DBCAMP-01 DB-2 U2] AI 域六域 13 通道（契约=ipc/ai-schemas.ts，U1 落）。域 key
+  // 与通道前缀解耦先例=ai_sensor 域含 zcode-link/*：audit 通道 ai-tasks/list-audit
+  // 域归属 ai_audit（挂账②锚点）；ai-memory/delete Res=trueAckSchema（S 复用直引
+  // ——ai-schemas.ts 头注约定，schemas.ts 夹具闭合表零 churn）
+  ai_sessions: {
+    open: { channel: 'ai-sessions/open', Req: AI.aiSessionsOpenReqSchema, Res: AI.aiSessionsOpenResSchema },
+    listMessages: {
+      channel: 'ai-sessions/list-messages',
+      Req: AI.aiSessionsListMessagesReqSchema,
+      Res: AI.aiSessionsListMessagesResSchema
+    }
+  },
+  ai_messages: {
+    setPinned: {
+      channel: 'ai-messages/set-pinned',
+      Req: AI.aiMessagesSetPinnedReqSchema,
+      Res: AI.aiMessagesSetPinnedResSchema
+    },
+    listPinned: {
+      channel: 'ai-messages/list-pinned',
+      Req: AI.aiMessagesListPinnedReqSchema,
+      Res: AI.aiMessagesListPinnedResSchema
+    }
+  },
+  ai_memory: {
+    listByScope: {
+      channel: 'ai-memory/list-by-scope',
+      Req: AI.aiMemoryListByScopeReqSchema,
+      Res: AI.aiMemoryListByScopeResSchema
+    },
+    create: { channel: 'ai-memory/create', Req: AI.aiMemoryCreateReqSchema, Res: AI.aiMemoryCreateResSchema },
+    update: { channel: 'ai-memory/update', Req: AI.aiMemoryUpdateReqSchema, Res: AI.aiMemoryUpdateResSchema },
+    delete: { channel: 'ai-memory/delete', Req: AI.aiMemoryDeleteReqSchema, Res: S.trueAckSchema },
+    setPinned: { channel: 'ai-memory/set-pinned', Req: AI.aiMemorySetPinnedReqSchema, Res: AI.aiMemorySetPinnedResSchema }
+  },
+  ai_tasks: {
+    list: { channel: 'ai-tasks/list', Req: AI.aiTasksListReqSchema, Res: AI.aiTasksListResSchema },
+    cancel: { channel: 'ai-tasks/cancel', Req: AI.aiTasksCancelReqSchema, Res: AI.aiTasksCancelResSchema }
+  },
+  ai_audit: {
+    list: { channel: 'ai-tasks/list-audit', Req: AI.aiAuditListReqSchema, Res: AI.aiAuditListResSchema }
+  },
+  ai_cascade: {
+    preview: { channel: 'ai-cascade/preview', Req: AI.aiCascadePreviewReqSchema, Res: AI.aiCascadePreviewResSchema }
   }
 } satisfies Record<string, Record<string, Endpoint>>
 

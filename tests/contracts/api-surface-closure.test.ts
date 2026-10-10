@@ -15,13 +15,21 @@ import * as S from '../../src/shared/ipc/schemas'
  * 执法对象，pin 即变更审计锚。新测试 always-active。
  */
 
-/** 14 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-FOLDER-01] +folders/+papers 两域五通道；
- *  [F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法；
+/** 20 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-DBCAMP-01 DB-2 U2]
+ *  +AI 六域 13 通道（ai_sessions/ai_messages/ai_memory/ai_tasks/ai_audit/ai_cascade
+ *  ——audit 通道 ai-tasks/list-audit 域归属 ai_audit）；[F-FOLDER-01] +folders/+papers
+ *  两域五通道；[F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法；
  *  [F-ALIGN-01 D1] lineage 域 upsertNode→patchNode（通道拆分——2026-10-04）；
  *  [F-UIRES-01 批 B] papers 域 +delete——1→2 方法；[F-DBCAMP-01 DB-1 U2 /
  *  F-STAR-01] papers 域 +setStarred——2→3 方法） */
 const DOMAIN_PINS: readonly [string, readonly string[]][] = [
+  ['ai_audit', ['list']],
+  ['ai_cascade', ['preview']],
+  ['ai_memory', ['create', 'delete', 'listByScope', 'setPinned', 'update']],
+  ['ai_messages', ['listPinned', 'setPinned']],
   ['ai_sensor', ['aiStatus', 'importAll', 'listByPaper', 'observe', 'requestAiRead', 'zcodeDetect', 'zcodeInstall']],
+  ['ai_sessions', ['listMessages', 'open']],
+  ['ai_tasks', ['cancel', 'list']],
   ['enrich', ['fetch']],
   ['export_', ['bibtex', 'clipboard', 'corpus', 'corpusItem', 'corpusSession', 'csv', 'report']],
   ['folders', ['create', 'delete', 'list', 'rename']],
@@ -37,20 +45,19 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['workspaces', ['create', 'list', 'rename', 'switch']]
 ]
 
-// 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——改名即
-// 全组 MISSING_CASE）；活锚=下方「通道总数」用例断言 toBe(61)（[F-ALIGN-01
-// D1] upsert-node→patch-node 换名零增减；[F-UIRES-01
-// 批 B] 60→61：+papers/delete——§2.4 统一级联契约；此前 [F-BAKRET-01]
-// 61→60：lineage/import 退役——用户裁决 2026-09-30；[F-FOLDER-01]
-// 56→61：+folders 四通道+papers/move-folder 单通道）
-describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）', () => {
-  it('通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
-    expect(allChannels().length).toBe(62)
+// 组名数字=活锚同步（[r1 R4 k3-N6/d1-N1] 55→75 陈旧计数同步——describePath 入
+// test-surface 基线指纹 key，组名变=全组旧身份淘汰（豁免随批登记，新基线登账）；
+// 沿革：[F-DBCAMP-01 DB-2 U2] 62→75 +AI 六域 13 通道；[F-FOLDER-01]
+// 56→61：+folders 四通道+papers/move-folder；[F-UIRES-01 批 B] 60→61：+papers/delete；
+// [F-BAKRET-01] 61→60：lineage/import 退役——用户裁决 2026-09-30）
+describe('contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）', () => {
+  it('通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
+    expect(allChannels().length).toBe(75)
   })
 
-  it('域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）', () => {
+  it('域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）', () => {
     expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())
-    expect(DOMAIN_PINS).toHaveLength(14)
+    expect(DOMAIN_PINS).toHaveLength(20)
   })
 
   it.each(DOMAIN_PINS)('域 %s 方法集 pin', (domain, methods) => {
@@ -60,8 +67,13 @@ describe('contracts/api-surface-closure —— 接线表闭合性（55 通道 pi
   it('路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）', () => {
     const prefixes = [...new Set(allChannels().map((c) => c.channel.split('/')[0]))].sort()
     expect(prefixes).toEqual([
+      'ai-cascade',
+      'ai-memory',
+      'ai-messages',
       'ai-notes',
       'ai-sensor',
+      'ai-sessions',
+      'ai-tasks',
       'enrich',
       'export',
       'folders',

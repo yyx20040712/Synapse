@@ -83,6 +83,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     aiTasks: {} as Repos['aiTasks'], // [F-DBCAMP-01 DB-2 U2b-1] AI 任务域（面外桩）
     aiContext: {} as Repos['aiContext'], // [F-DBCAMP-01 DB-2 U2b-2a] AI 装配读面域（面外桩）
     aiSearch: {} as Repos['aiSearch'], // [F-DBCAMP-01 DB-2 U2b-2b] AI 文献检索读面域（面外桩）
+    aiCascade: {} as Repos['aiCascade'], // [F-DBCAMP-01 DB-2 U2] AI 级联预览计数域（面外桩）
     // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
     withTransaction: <T>(fn: () => T): T => fn()
   }

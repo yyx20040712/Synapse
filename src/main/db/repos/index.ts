@@ -17,6 +17,7 @@ import { createAiMemoryRepo, type AiMemoryRepo } from './ai-memory.repo'
 import { createAiTasksRepo, type AiTasksRepo } from './ai-tasks.repo'
 import { createAiContextRepo, type AiContextRepo } from './ai-context.repo'
 import { createAiSearchRepo, type AiSearchRepo } from './ai-search.repo'
+import { createAiCascadeRepo, type AiCascadeRepo } from './ai-cascade.repo'
 
 export interface Repos {
   papers: PapersRepo
@@ -47,6 +48,9 @@ export interface Repos {
   /** [F-DBCAMP-01 DB-2 U2b-2b] 文献域检索读面（两腿合并 top-5+图内过滤；
    *  消费=ai-tail.service 文献展开腿——本批零 IPC） */
   aiSearch: AiSearchRepo
+  /** [F-DBCAMP-01 DB-2 U2] 随锚级联预览计数（两次确认第一跳计数面——级联删除
+   *  本体=020 触发器；消费=ai-cascade.service） */
+  aiCascade: AiCascadeRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */
@@ -69,6 +73,7 @@ export function createRepos(db: SqliteDb): Repos {
     aiTasks: createAiTasksRepo(db),
     aiContext: createAiContextRepo(db),
     aiSearch: createAiSearchRepo(db),
+    aiCascade: createAiCascadeRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
@@ -88,5 +93,6 @@ export type {
   AiMemoryRepo,
   AiTasksRepo,
   AiContextRepo,
-  AiSearchRepo
+  AiSearchRepo,
+  AiCascadeRepo
 }

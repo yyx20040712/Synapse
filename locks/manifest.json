@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-10T07:05:53.9070295Z",
+    "generatedAt":  "2026-10-10T09:47:02.6325680Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -87,11 +87,11 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "a57b51b7fe02b88ea3caf5832e5f40a293f38411b5a9cdf11f7194703fc78fdd"
+                      "sha256":  "a6eb1ef120b3e7ca3cc49c3bf29176f6033ac1db997dda5599fc41267beedca7"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
-                      "sha256":  "40b6be05578626b164125277030d087118d80f5e26494e1ea320caff8bb08218"
+                      "sha256":  "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
                   },
                   {
                       "path":  "scripts/test-surface/extract.mjs",
@@ -211,11 +211,11 @@
                   },
                   {
                       "path":  "src/shared/ipc/ai-schemas.ts",
-                      "sha256":  "130633e6ca3571d006c35b29c8598c45f0203975f595ad1d04923a7be288366b"
+                      "sha256":  "fa6d8e2d583b0c205b1013ac15ed254f6bcc659c93cc6f59f97023176c8bb0b8"
                   },
                   {
                       "path":  "src/shared/ipc/api-surface.ts",
-                      "sha256":  "a0b25fba444d80c7fffa915ce4877743b68dc9c53d5366de50a443c608463475"
+                      "sha256":  "8691597d5f573d21da86914cf9fced4136e9461484e19b638dde4af2740a474d"
                   },
                   {
                       "path":  "src/shared/ipc/events.schemas.ts",
@@ -223,7 +223,7 @@
                   },
                   {
                       "path":  "src/shared/ipc/schemas.ts",
-                      "sha256":  "83942c11088fc2f890f8d3959595cce273d6547cb4c14142d927d9b2be212d6a"
+                      "sha256":  "9e900aa6909d42dc5974dbb38ff12be0b58e5d0efb2bbaa859e49a9a26aa6aaf"
                   },
                   {
                       "path":  "src/shared/models/ai-domain.ts",
@@ -271,15 +271,15 @@
                   },
                   {
                       "path":  "tests/contracts/ai-schemas.test.ts",
-                      "sha256":  "9e525736ea6bd00975560ce4a7f6f51ff0d8f484bc63abaa8dfdca8088b33b49"
+                      "sha256":  "da02bde37c0980c158ce923bc9eb1b6416e761be294bdec974c7ad01a2722873"
                   },
                   {
                       "path":  "tests/contracts/api-surface.test.ts",
-                      "sha256":  "f824b7d8d903352bf7944ef3cd23b85f9ca3fae5c87124c0c4687b3e488f3c86"
+                      "sha256":  "1f8f8ebd9ebeb406067f79ceeffce64699c891446d29022dc7180d8ac0488b36"
                   },
                   {
                       "path":  "tests/contracts/api-surface-closure.test.ts",
-                      "sha256":  "dd9cc18bc045b998b4df2545cffb0b5d54e2f9687511f995ee21e50dd0b9f944"
+                      "sha256":  "aa1f8ea6e2177ba22f2507b1010fc3133817e81d60b02078b9cce53ae0cafa00"
                   },
                   {
                       "path":  "tests/contracts/app-error.test.ts",
@@ -459,7 +459,7 @@
                   },
                   {
                       "path":  "tests/types/api-assembly.type-test.ts",
-                      "sha256":  "9ce168bf0034ff6c05c8e027930074d6f089e0823e889c96f42602fdc78e3419"
+                      "sha256":  "a822ed9519942056ff58a01c76cc9c5608748ff3c2f9685830b7e17244a03ed4"
                   },
                   {
                       "path":  "tests/unit/db/ai-domain-constraints.test.ts",
@@ -531,7 +531,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/ai-memory.repo.test.ts",
-                      "sha256":  "82b0a024574de9e5860ae83d303bb872d6b14d914a4e3e2ec70f3fef8c384268"
+                      "sha256":  "cf684876b2d6933824d2064f3b5d6418ab05979a9a5e46dc0a6dff6ef40de711"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai-search.repo.test.ts",
@@ -543,7 +543,7 @@
                   },
                   {
                       "path":  "tests/unit/db/repos/ai-tasks.repo.test.ts",
-                      "sha256":  "9bd6141dcade6484f6ee72daea4941afb2d9076626b313d84c4819d6c2a7a646"
+                      "sha256":  "c68068b2ef435436191181bfcd49625b8ab73778003d4cc5bc06772046564114"
                   },
                   {
                       "path":  "tests/unit/db/repos/annotations.repo.test.ts",
@@ -1314,12 +1314,20 @@
                       "sha256":  "6330db8f11981ad19adb7ff6e332761f7ce02f89997d00f17e61399d7ebe507d"
                   },
                   {
+                      "path":  "tests/unit/services/ai-cascade.service.test.ts",
+                      "sha256":  "d4117a241b7c4344e3882c2a37a7dbef550a4a95cdd56db26236f966b40c9293"
+                  },
+                  {
                       "path":  "tests/unit/services/ai-context.service.test.ts",
                       "sha256":  "fd13c59dbc25a14d03da470c43db1a4fb717e6f66808c352f5c461adda801fa9"
                   },
                   {
                       "path":  "tests/unit/services/ai-estimate.test.ts",
                       "sha256":  "3eca9b495f077483456547d35471f942c468e3a9d7eda08b429cdf3767ecb411"
+                  },
+                  {
+                      "path":  "tests/unit/services/ai-memory-manual.service.test.ts",
+                      "sha256":  "b789b337716cc6b0f5f3c39a22707c1a7d16a458107d676a3cc52af5ef290c2d"
                   },
                   {
                       "path":  "tests/unit/services/ai-memory-search.service.test.ts",
@@ -1339,7 +1347,7 @@
                   },
                   {
                       "path":  "tests/unit/services/ai-sessions.service.test.ts",
-                      "sha256":  "6f881613f5161a9861c845697e305183c8521808bb4c840aa91db7f6283deec5"
+                      "sha256":  "b6865ae45e97d30c5f709a9c46da435fab00992926d297f91676c01be847901e"
                   },
                   {
                       "path":  "tests/unit/services/ai-tail.service.test.ts",
@@ -1352,6 +1360,10 @@
                   {
                       "path":  "tests/unit/services/ai-tasks-submit.service.test.ts",
                       "sha256":  "b9d763d944fa197c6ff0206cf80bcb83d4779954706f4d3b8c7d63e41861ea6e"
+                  },
+                  {
+                      "path":  "tests/unit/services/ai-tasks-ui.service.test.ts",
+                      "sha256":  "b8612fc525c8851e307b3e8db8e98acb55d482fdd3cdda2161ff3df58fbf4d42"
                   },
                   {
                       "path":  "tests/unit/services/bibtex.serializer.test.ts",
@@ -1371,7 +1383,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "09d2e22c63814ff4ed26da1bd7ce4948e37dbbe3314f0a62c856bc0366b1ec30"
+                      "sha256":  "1e53c6d262e56f4525f8660b6378d86819ad7a79ac0eda321e03da7e1c0640d9"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -1395,7 +1407,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "0f8ec8dd86fba3c586d0f4120bbf2e37de123f49e40ea08e0aa89bbb2b8131e4"
+                      "sha256":  "b322a08a9ecb5c451bbbd8488ed4b82dfffec8c6c473a51579db13680456dbf0"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -1607,7 +1619,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "13ae6cb6421e73bd6e48ccc6b8d24a5ab98939dd9773b472439d4b5e8826d269"
+                      "sha256":  "7e3812a41ee583609460b6ec8c94afb466b591417663f48b5a8542fae8bd3451"
                   },
                   {
                       "path":  "tests/utils/live-frame.ts",

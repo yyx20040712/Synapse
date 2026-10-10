@@ -70,6 +70,11 @@
  * - status 非 undefined 时∈6 态集（外值→INVALID_REQUEST「任务状态值非法」——防
  *   任意串透传 SQL）；scope 非 undefined 时∈{paper,lineage}（运行时校验——原仅
  *   类型标注）；limit 1-200 既有校验。
+ * - [F-DBCAMP-01 DB-2 U2] UI 读面三方法（加性——既有接口零动）：listTasksForUi
+ *   （挂账①死过滤形注释块见方法体）/cancelTaskForUi（剥 payload+anchorTitleOf
+ *   回查投影——cancelTask 返回 AiTaskRow 直透 Res=静默缺陷〔TS 结构赋值多余
+ *   属性不拦——运行时 payload 泄漏+targetTitle undefined〕，本面包装消解）/
+ *   listAudit（游标翻页剥 id 投影——幽灵 taskId=空 rows 不设存在性前置）。
  *
  * ── 架构层 ──
  * - SQL 全在 repo（service 零 SQL）；错误语义归 service；AiDomainError 复用
@@ -84,6 +89,7 @@ import type { AiTaskAction, AiTaskFinalStatus, AiTaskRow, AiTaskStatus } from '.
 import type { AiMessageRow } from '../../db/repos/ai-sessions.repo'
 import type { Repos } from '../../db/repos'
 import { SessionCapAllPinnedError } from '../../db/repos/ai-sessions.repo'
+import type { AiTask, AiAuditRow } from '../../../shared/models/ai-domain'
 import { estimateTokens } from './ai-estimate'
 import { isAgentEnvelope } from './ai-tail.service'
 import { AiDomainError } from './ai-sessions.service'
@@ -112,6 +118,9 @@ export const AI_TASK_TIMEOUT_MS = 5000
 /** listTasks limit 档（§3.d 预裁：默认 50 上限 200） */
 export const AI_TASK_LIST_DEFAULT_LIMIT = 50
 export const AI_TASK_LIST_MAX_LIMIT = 200
+
+/** [F-DBCAMP-01 DB-2 U2] listAudit limit 缺省（简报 §三-乙：audit 100） */
+export const AI_AUDIT_LIST_DEFAULT_LIMIT = 100
 
 /** 代理拉取单发上限（§3.d P11——单任务回写信封预算；deps.pullCaps 注入可测） */
 export const AGENT_PULL_SINGLE_CAP = 800
@@ -157,6 +166,15 @@ export interface AiTasksService {
   cancelTask(taskId: number): Promise<AiTaskRow>
   recoverInterruptedTasks(): Promise<number>
   listTasks(req: ListTasksRequest): Promise<AiTaskRow[]>
+  /** [F-DBCAMP-01 DB-2 U2] UI 读面（AiTask 投影：剥 payload+targetTitle 平铺） */
+  listTasksForUi(req: {
+    scope?: 'paper' | 'lineage' | 'global'
+    anchorId?: string | null
+    status?: AiTaskRow['status']
+    limit?: number
+  }): Promise<AiTask[]>
+  cancelTaskForUi(taskId: number): Promise<AiTask>
+  listAudit(req: { taskId: number; afterSeq?: number; limit?: number }): Promise<AiAuditRow[]>
 }
 
 export interface AiTasksServiceDeps {
@@ -242,6 +260,37 @@ export function createAiTasksService(deps: AiTasksServiceDeps): AiTasksService {
       throw new Error(`handlerOverrides 非法动作键：${key}（白名单外）`)
     }
     handlers[key as AiTaskAction] = overrides[key]!(repos)
+  }
+
+  /** [F-DBCAMP-01 DB-2 U2] AiTaskRow→AiTask 投影（剥 payload+targetTitle 平铺——
+   *  targetTitle 由调用方供：list=repo JOIN 直取，cancel=anchorTitleOf 回查） */
+  function toTaskView(row: AiTaskRow, targetTitle: string | null): AiTask {
+    return {
+      id: row.id,
+      scope: row.scope,
+      anchorId: row.anchorId,
+      action: row.action,
+      status: row.status,
+      result: row.result,
+      error: row.error,
+      idempotencyKey: row.idempotencyKey,
+      targetTitle,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    }
+  }
+
+  /** cancel 共核（cancelTask 既有语义零动——cancelTaskForUi 复用） */
+  async function cancelRow(taskId: number): Promise<AiTaskRow> {
+    const task = aiTasks.getById(taskId)
+    if (task === null) {
+      throw new AiDomainError('NOT_FOUND', '任务不存在')
+    }
+    const cancelled = aiTasks.cancelQueued(taskId, '用户取消')
+    if (cancelled === null) {
+      throw new AiDomainError('CONFLICT', '任务不在可取消状态')
+    }
+    return cancelled
   }
 
   return {
@@ -420,15 +469,7 @@ export function createAiTasksService(deps: AiTasksServiceDeps): AiTasksService {
     },
 
     async cancelTask(taskId) {
-      const task = aiTasks.getById(taskId)
-      if (task === null) {
-        throw new AiDomainError('NOT_FOUND', '任务不存在')
-      }
-      const cancelled = aiTasks.cancelQueued(taskId, '用户取消')
-      if (cancelled === null) {
-        throw new AiDomainError('CONFLICT', '任务不在可取消状态')
-      }
-      return cancelled
+      return cancelRow(taskId)
     },
 
     async recoverInterruptedTasks() {
@@ -456,6 +497,53 @@ export function createAiTasksService(deps: AiTasksServiceDeps): AiTasksService {
         status: req.status ?? null,
         limit
       })
+    },
+
+    async listTasksForUi(req) {
+      // [挂账①] 死过滤形声明：scope:'global'（020 ai_tasks CHECK 无 global——任务
+      // 行恒锚定档）与裸 anchorId===null（无 scope 的 global-only 跨档过滤形——
+      // zod 注记「有意义合法形」）均为**恒空合法过滤形**——服务层短路返回 []
+      // （服务层声明非 repo 谓词：repo 面零 global 分支，DDL 无该行态）
+      if (req.scope === 'global') return []
+      if (req.anchorId === null) return []
+      let limit = AI_TASK_LIST_DEFAULT_LIMIT
+      if (req.limit !== undefined) {
+        if (!Number.isInteger(req.limit) || req.limit < 1 || req.limit > AI_TASK_LIST_MAX_LIMIT) {
+          throw new AiDomainError('INVALID_REQUEST', `limit 须 1-${AI_TASK_LIST_MAX_LIMIT} 整数`)
+        }
+        limit = req.limit
+      }
+      // 运行期输入闸（沿 listTasks 同款：status∈6 态/scope∈锚定两值——防任意串透传 SQL）
+      if (req.status !== undefined && !TASK_STATUSES.includes(req.status)) {
+        throw new AiDomainError('INVALID_REQUEST', '任务状态值非法')
+      }
+      if (req.scope !== undefined && req.scope !== 'paper' && req.scope !== 'lineage') {
+        throw new AiDomainError('INVALID_REQUEST', '任务范围值非法（仅 paper/lineage）')
+      }
+      return aiTasks
+        .listTasksWithTitles({ scope: req.scope, anchorId: req.anchorId, status: req.status, limit })
+        .map((r) => toTaskView(r, r.targetTitle))
+    },
+
+    async cancelTaskForUi(taskId) {
+      const cancelled = await cancelRow(taskId)
+      // targetTitle 投影回查（anchorTitleOf 单源——repo 标题 CASE 同形）
+      return toTaskView(cancelled, aiSessions.anchorTitleOf(cancelled.scope, cancelled.anchorId))
+    },
+
+    async listAudit(req) {
+      // 幽灵 taskId=空 rows（append-only 读面不设存在性前置——UI「暂无审计记录」
+      // 同态；行键=taskId+seq——id 剥除投影 AiAuditRow）
+      const rows = aiTasks.listAuditPage(req.taskId, req.afterSeq ?? 0, req.limit ?? AI_AUDIT_LIST_DEFAULT_LIMIT)
+      // kind 联合收窄=信任边界声明：写入侧冻结 8 值（appendAudit 调用面单源，
+      // DDL 无 CHECK——值域由服务层写入面承担，ai-domain.ts 头注同口径）
+      return rows.map((r) => ({
+        taskId: r.taskId,
+        seq: r.seq,
+        kind: r.kind as AiAuditRow['kind'],
+        detail: r.detail,
+        createdAt: r.createdAt
+      }))
     }
   }
 }

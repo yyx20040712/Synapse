@@ -35,6 +35,10 @@
 import type { SqliteDb } from '../connection'
 import type { AiScope } from './ai-sessions.repo'
 import {
+  createAiMemoryScopeRepo,
+  type AiMemoryListRow
+} from './ai-memory-scope.repo'
+import {
   MEMORY_COLS,
   toMemoryRow as toRow,
   type AiMemoryRow,
@@ -101,11 +105,13 @@ export interface AiMemoryCreateInput {
   sourceTaskId?: number | null
 }
 
-/** 部分更新载荷（update——出席字段才刷，缺席=null=COALESCE 保持原值） */
+/** 部分更新载荷（update——出席字段才刷，缺席=null=COALESCE 保持原值；category
+ *  档级归属校验在服务层〔zod 只验 19 值并集——ai-schemas.ts 接缝注释〕） */
 export interface AiMemoryUpdateInput {
   title?: string
   content?: string
   label?: string | null
+  category?: string
 }
 
 export interface AiMemoryRepo {
@@ -131,9 +137,16 @@ export interface AiMemoryRepo {
   searchByMatchUnion(targetScope: AiTaskScope, targetAnchor: string, ftsQuery: string, limit: number): AiMemoryRow[]
   /** 并集清单（同上；category 缺省=null 全类） */
   listUnion(targetScope: AiTaskScope, targetAnchor: string, category: string | null, limit: number): AiMemoryRow[]
+  /** [F-DBCAMP-01 DB-2 U2] scope 级三原语（跨锚——管理面板 UI 面；SQL/映射单源=
+   *  ai-memory-scope.repo 拆件，本面委托——repo 300 行上限 r3 先例） */
+  listByScope(scope: AiScope, opts: { category?: string; pinnedOnly?: boolean; limit: number }): AiMemoryListRow[]
+  searchByLikeScope(scope: AiScope, pattern: string, limit: number): AiMemoryListRow[]
+  searchByMatchScope(scope: AiScope, ftsQuery: string, limit: number): AiMemoryListRow[]
 }
 
 export function createAiMemoryRepo(db: SqliteDb): AiMemoryRepo {
+  // [F-DBCAMP-01 DB-2 U2] scope 级读面拆件（同连接组装——委托面承载）
+  const scope = createAiMemoryScopeRepo(db)
   const stmt = {
     like: {
       paper: db.prepare(likeSql(PREDICATE.paper.sql)),
@@ -152,10 +165,11 @@ export function createAiMemoryRepo(db: SqliteDb): AiMemoryRepo {
        origin, source_task_id, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
   )
-  // 部分更新=COALESCE（缺席字段 null 保持原值——label 载荷仅「出席=string」形态）
+  // 部分更新=COALESCE（缺席字段 null 保持原值——label 载荷仅「出席=string」形态；
+  // category 同款缺席保持〔U2 扩列〕）
   const updateStmt = db.prepare(
     `UPDATE ai_memory SET title = COALESCE(?, title), content = COALESCE(?, content),
-       label = COALESCE(?, label), updated_at = ? WHERE id = ?`
+       label = COALESCE(?, label), category = COALESCE(?, category), updated_at = ? WHERE id = ?`
   )
   const deleteStmt = db.prepare(`DELETE FROM ai_memory WHERE id = ?`)
   const setPinnedStmt = db.prepare(`UPDATE ai_memory SET pinned = ?, updated_at = ? WHERE id = ?`)
@@ -223,6 +237,7 @@ export function createAiMemoryRepo(db: SqliteDb): AiMemoryRepo {
         input.title ?? null,
         input.content ?? null,
         input.label ?? null,
+        input.category ?? null,
         new Date().toISOString(),
         memoryId
       )
@@ -261,6 +276,18 @@ export function createAiMemoryRepo(db: SqliteDb): AiMemoryRepo {
       return (listUnionStmt.all(targetScope, targetAnchor, category, category, limit) as RawMemoryRow[]).map(
         toRow
       )
+    },
+
+    listByScope(s, opts) {
+      return scope.listByScope(s, opts)
+    },
+
+    searchByLikeScope(s, pattern, limit) {
+      return scope.searchByLikeScope(s, pattern, limit)
+    },
+
+    searchByMatchScope(s, ftsQuery, limit) {
+      return scope.searchByMatchScope(s, ftsQuery, limit)
     }
   }
 }

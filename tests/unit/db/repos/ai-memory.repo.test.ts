@@ -261,3 +261,74 @@ describe('F-DBCAMP-01 DB-2 U2b-1 ai-memory.repo —— 写原语+并集检索', 
     db.close()
   })
 })
+
+describe('F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷', () => {
+  function seedPaper(db: Db, id: string): void {
+    db.prepare(
+      `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at)
+       VALUES (?, ?, ?, ?, 't', 't')`
+    ).run(id, `f/${id}.pdf`, `sha-${id}`, `文献${id}`)
+  }
+
+  it('V1 listByScope：scope 单条件跨锚+category/pinnedOnly 过滤+序+anchorTitle 投影', () => {
+    const db = createTestDb()
+    const repo = createAiMemoryRepo(db)
+    seedPaper(db, 'p-1')
+    seedPaper(db, 'p-2')
+    seedRow(db, { scope: 'paper', anchor: 'p-1', category: 'method_note', title: '早', content: 'a', updatedAt: '2024-01-01T00:00:00.000Z' })
+    seedRow(db, { scope: 'paper', anchor: 'p-1', category: 'term_glossary', title: '中', content: 'b', updatedAt: '2024-02-01T00:00:00.000Z' })
+    seedRow(db, { scope: 'paper', anchor: 'p-2', category: 'method_note', title: '晚', content: 'c', updatedAt: '2024-03-01T00:00:00.000Z' })
+    seedRow(db, { scope: 'global', anchor: null, category: 'user_preference', title: '全', content: 'd' })
+    db.prepare('UPDATE ai_memory SET pinned=1 WHERE title=?').run('中')
+    const all = repo.listByScope('paper', { limit: 50 })
+    expect(all.map((r) => r.title)).toEqual(['晚', '中', '早'])
+    expect(all.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1', '文献p-1'])
+    expect(repo.listByScope('paper', { category: 'method_note', limit: 50 }).map((r) => r.title)).toEqual(['晚', '早'])
+    expect(repo.listByScope('paper', { pinnedOnly: true, limit: 50 }).map((r) => r.title)).toEqual(['中'])
+    expect(repo.listByScope('paper', { limit: 2 }).map((r) => r.title)).toEqual(['晚', '中'])
+    const globalRows = repo.listByScope('global', { limit: 50 })
+    expect(globalRows.map((r) => r.title)).toEqual(['全'])
+    expect(globalRows[0]!.anchorTitle).toBeNull()
+    db.close()
+  })
+
+  it('V2 searchByLikeScope/searchByMatchScope：跨锚命中（scope 级单条件）+anchorTitle 随行', () => {
+    const db = createTestDb()
+    const repo = createAiMemoryRepo(db)
+    seedPaper(db, 'p-1')
+    seedPaper(db, 'p-2')
+    seedRow(db, { scope: 'paper', anchor: 'p-1', category: 'method_note', title: '共享词甲', content: 'x', updatedAt: '2024-02-01T00:00:00.000Z' })
+    seedRow(db, { scope: 'paper', anchor: 'p-2', category: 'method_note', title: '共享词乙', content: 'y', updatedAt: '2024-03-01T00:00:00.000Z' })
+    seedRow(db, { scope: 'lineage', anchor: 'c-1', category: 'node_role', title: '共享词丙', content: 'z' })
+    const like = repo.searchByLikeScope('paper', '%共享词%', 50)
+    expect(like.map((r) => r.title)).toEqual(['共享词乙', '共享词甲'])
+    expect(like.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1'])
+    const match = repo.searchByMatchScope('paper', '"共享词"', 50)
+    expect(match.map((r) => r.title)).toEqual(['共享词乙', '共享词甲'])
+    db.close()
+  })
+
+  it('V3 update category 载荷：在席改（同档合法值）+缺席保持原值', () => {
+    const db = createTestDb()
+    const repo = createAiMemoryRepo(db)
+    const id = seedRow(db, { scope: 'paper', anchor: 'p-1', category: 'method_note', title: '题', content: 'w' })
+    const changed = repo.update(id, { category: 'term_glossary' })
+    expect(changed?.category).toBe('term_glossary')
+    expect(changed?.title).toBe('题')
+    const kept = repo.update(id, { title: '只改题' })
+    expect(kept?.category).toBe('term_glossary')
+    expect(kept?.title).toBe('只改题')
+    db.close()
+  })
+
+  it('V4 [r1 R5] listByScope lineage 标题路锚：anchorTitle=collections.name 值断言（k3-N8——三路 CASE 的 lineage 支补锚）', () => {
+    const db = createTestDb()
+    const repo = createAiMemoryRepo(db)
+    db.prepare(`INSERT INTO collections (id, name, position) VALUES ('c-1', '图丙', 0)`).run()
+    seedRow(db, { scope: 'lineage', anchor: 'c-1', category: 'node_role', title: '节点', content: 'x' })
+    const rows = repo.listByScope('lineage', { limit: 50 })
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.anchorTitle).toBe('图丙')
+    db.close()
+  })
+})

@@ -23,6 +23,7 @@
  *   扫描（逐行守卫 UPDATE+failed 审计行；写的是 ai_tasks 行非审计面——G2 合法）。
  * - listTasks：过滤面（scope/anchorId/status 全可缺省）经 IS NULL OR 固定语句
  *   承载（无动态 SQL 拼接）；序=id DESC；limit 缺省 50 上限 200（服务层钳制面）。
+ *   [U2] listTasksWithTitles=同款过滤+两路标题 CASE JOIN；listAuditPage=游标翻页委托面。
  * - 时间戳=应用层 new Date().toISOString()（U2a 头注先例）。
  *
  * ── 文化层 ──
@@ -92,6 +93,11 @@ export interface AiTasksRepo {
   /** @internal 服务层经 runTaskTx 内 api 消费，顶层口=测试/审计抽屉读面——禁新
    *  服务直调（类型收窄挂账 U2b-2） */
   listAudit(taskId: number): TaskAuditRow[]
+  /** [F-DBCAMP-01 DB-2 U2] 同款过滤面+两路标题 CASE JOIN（ai_tasks.scope 恒
+   *  paper/lineage 无 global 路；targetTitle 可空=幽灵锚形） */
+  listTasksWithTitles(filter: { scope?: string | null; anchorId?: string | null; status?: string | null; limit?: number }): Array<AiTaskRow & { targetTitle: string | null }>
+  /** [F-DBCAMP-01 DB-2 U2] 审计游标翻页（seq>afterSeq 升序——委托 ai-task-audit.repo） */
+  listAuditPage(taskId: number, afterSeq: number, limit: number): TaskAuditRow[]
 }
 
 export function createAiTasksRepo(db: SqliteDb): AiTasksRepo {
@@ -127,6 +133,15 @@ export function createAiTasksRepo(db: SqliteDb): AiTasksRepo {
   const spRollbackStmt = db.prepare(`ROLLBACK TO ai_task_handler_sp`)
   const spReleaseStmt = db.prepare(`RELEASE ai_task_handler_sp`)
   const runningIdsStmt = db.prepare(`SELECT id FROM ai_tasks WHERE status = 'running' ORDER BY id`)
+  // [F-DBCAMP-01 DB-2 U2] 标题两路 CASE JOIN（固定语句——过滤面同 listStmt）
+  const listWithTitlesStmt = db.prepare(
+    `SELECT m.id, m.idempotency_key, m.scope, m.anchor_id, m.action, m.payload, m.status, m.result, m.error, m.created_at, m.updated_at,
+       CASE WHEN m.scope = 'paper' THEN p.title WHEN m.scope = 'lineage' THEN c.name ELSE NULL END AS target_title
+     FROM ai_tasks m LEFT JOIN papers p ON m.scope = 'paper' AND p.id = m.anchor_id
+     LEFT JOIN collections c ON m.scope = 'lineage' AND c.id = m.anchor_id
+     WHERE (? IS NULL OR m.scope = ?) AND (? IS NULL OR m.anchor_id = ?) AND (? IS NULL OR m.status = ?)
+     ORDER BY m.id DESC LIMIT ?`
+  )
 
   function fresh(taskId: number): AiTaskRow {
     return toTask(byIdStmt.get(taskId) as RawTaskRow)
@@ -272,6 +287,13 @@ export function createAiTasksRepo(db: SqliteDb): AiTasksRepo {
       return (listStmt.all(...params) as RawTaskRow[]).map(toTask)
     },
 
-    listAudit: audit.listAudit
+    listAudit: audit.listAudit,
+
+    listTasksWithTitles(filter) {
+      const s = filter.scope ?? null, a = filter.anchorId ?? null, t = filter.status ?? null
+      return (listWithTitlesStmt.all(s, s, a, a, t, t, filter.limit ?? 50) as Array<RawTaskRow & { target_title: string | null }>).map((r) => ({ ...toTask(r), targetTitle: r.target_title }))
+    },
+
+    listAuditPage: audit.listAuditPage
   }
 }

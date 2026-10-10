@@ -131,6 +131,12 @@ describe('contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵
     expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '' }).success).toBe(false)
   })
 
+  it('组4b [r1 R3] query⊥limit 互斥扩：query+limit 同席拒；limit 缺席（检索模式无 limit）过', () => {
+    const base = { scope: 'paper' as const }
+    expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '关键词', limit: 50 }).success).toBe(false)
+    expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '关键词' }).success).toBe(true)
+  })
+
   it('组5 category 值域（N-3 档级）：create 跨档拒/档内过/未知串拒；update 并集过+外值拒；title 长度界 120/121（变异红证锚）', () => {
     // create：档级值域
     expect(

@@ -21,9 +21,11 @@ import type { ApiHandlers } from '../../src/shared/ipc/api-surface'
 import type { IpcAssemblyProbe } from '../../src/main/bootstrap'
 import type { createIpcHandlers } from '../../src/main/ipc'
 
-// 正向证：装配体（11 静态域 + workspaces 组合注入）满足 Required<ApiHandlers>
+// 正向证：装配体（19 静态域 + workspaces 组合注入）满足 Required<ApiHandlers>
 // 全量——探针类型全推断（ReturnType<typeof createIpcHandlers> & { workspaces:
 // ReturnType<typeof createWorkspaceService> }），无手工成员声明。
+// [F-DBCAMP-01 DB-2 U2] 静态域 13→19（+AI 六域；ReturnType 链自动覆盖新域，
+// 本件仅同步计数注——原「11」系 F-FOLDER-01 加 folders/papers 两域后失准）。
 const _full: Required<ApiHandlers> = null as unknown as IpcAssemblyProbe
 
 // 负向证：缺 workspaces 域（ComposedHandlerDomains 漏组合——裸

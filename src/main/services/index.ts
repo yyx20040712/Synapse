@@ -54,6 +54,11 @@ import {
 } from './ai/ai-memory-search.service'
 import { createAiTasksService, type AiTasksService } from './ai/ai-tasks.service'
 import {
+  createAiMemoryManualService,
+  type AiMemoryManualService
+} from './ai/ai-memory-manual.service'
+import { createAiCascadeService, type AiCascadeService } from './ai/ai-cascade.service'
+import {
   createAiContextService,
   type AiContextService
 } from './ai/ai-context.service'
@@ -138,6 +143,11 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-2 U2b-2b] AI L3 尾段现算装配（消息窗/召回/文献/代理四腿
    *  ——对话管线批消费；本批零 IPC） */
   aiTail: AiTailService
+  /** [F-DBCAMP-01 DB-2 U2] AI 记忆手动 CRUD 面（ai_memory 域五通道消费） */
+  aiMemoryManual: AiMemoryManualService
+  /** [F-DBCAMP-01 DB-2 U2] AI 随锚级联预览计数（ai_cascade 域单通道消费——
+   *  级联删除本体=020 触发器，本面零删除方法） */
+  aiCascade: AiCascadeService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -219,7 +229,9 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),
     aiTasks: createAiTasksService({ repos: deps.repos }),
     aiContext: createAiContextService({ repos: deps.repos }),
-    aiTail: createAiTailService({ repos: deps.repos })
+    aiTail: createAiTailService({ repos: deps.repos }),
+    aiMemoryManual: createAiMemoryManualService({ repos: deps.repos }),
+    aiCascade: createAiCascadeService({ repos: deps.repos })
   }
 }
 

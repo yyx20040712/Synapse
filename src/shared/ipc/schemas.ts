@@ -492,6 +492,7 @@ export const appSettingsSchema = z
     // [R6] default 用函数形+structuredClone——每次 parse 独立深副本，防 parse
     // 输出共享模块常量引用被消费方原地污染（显式防御；zod 值形 default 在
     // 3.25 实测亦隔离，函数形=契约自证不依赖 zod 版本行为）
+    // [U2 挂账④] 值形 default 深隔离=zod 3.25.76 内建行为（2026-10-10 U1 回炉探针实证）；structuredClone 逐 parse 为显式防御双层
     aiBudgets: aiBudgetsSchema.default(() => structuredClone(AI_BUDGET_DEFAULTS))
   })
   .strict()

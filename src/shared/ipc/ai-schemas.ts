@@ -94,7 +94,8 @@ export type AiMessagesListPinnedRes = z.infer<typeof aiMessagesListPinnedResSche
 // ── ai-memory（记忆域）────────────────────────────────────────────
 /**
  * ai-memory/list-by-scope 请求：query 在席=检索模式（W-1 双语义——恒真组合），
- * 与 category/pinnedOnly 互斥；category/query 携带即须有意义（R2 min(1) 空串拒）；
+ * 与 category/pinnedOnly/limit 互斥（[r1 R3] 扩 limit——检索模式 limit 恒=topK
+ * 单源，载荷携带即拒）；category/query 携带即须有意义（R2 min(1) 空串拒）；
  * limit 上界=MAX_PAGE_SIZE 单源（constants）
  */
 export const aiMemoryListByScopeReqSchema = z
@@ -106,9 +107,14 @@ export const aiMemoryListByScopeReqSchema = z
     limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional()
   })
   .strict()
-  .refine((v) => v.query === undefined || (v.category === undefined && v.pinnedOnly === undefined), {
-    message: 'query 检索模式不得与 category/pinnedOnly 过滤同席'
-  })
+  .refine(
+    (v) =>
+      v.query === undefined ||
+      (v.category === undefined && v.pinnedOnly === undefined && v.limit === undefined),
+    {
+      message: 'query 检索模式不得与 category/pinnedOnly/limit 同席'
+    }
+  )
 export type AiMemoryListByScopeReq = z.infer<typeof aiMemoryListByScopeReqSchema>
 
 export const aiMemoryListByScopeResSchema = z

@@ -50,6 +50,13 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       system: unimplementedObject('SAMPLE-IPC', 'x'),
       folders: unimplementedObject('SAMPLE-IPC', 'x'),
       papers: unimplementedObject('SAMPLE-IPC', 'x'),
+      // [F-DBCAMP-01 DB-2 U2] AI 域六域（13 通道——契约=ipc/ai-schemas.ts）
+      ai_sessions: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_messages: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_memory: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_tasks: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_audit: unimplementedObject('SAMPLE-IPC', 'x'),
+      ai_cascade: unimplementedObject('SAMPLE-IPC', 'x'),
       workspaces: unimplementedObject<NonNullable<ApiHandlers['workspaces']>>('SAMPLE-IPC', 'x')
     }
     expect(() => handlers.library.list).toThrow(NotImplementedError)

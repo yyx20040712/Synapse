@@ -96,13 +96,26 @@
           ]
         },
         {
+          "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组4b [r1 R3] query⊥limit 互斥扩：query+limit 同席拒；limit 缺席（检索模式无 limit）过\"]",
+          "describePath": [
+            "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
+          ],
+          "title": "组4b [r1 R3] query⊥limit 互斥扩：query+limit 同席拒；limit 缺席（检索模式无 limit）过",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '关键词', limit: 50 }).success).toBe(false)",
+            "expect(A.aiMemoryListByScopeReqSchema.safeParse({ ...base, query: '关键词' }).success).toBe(true)"
+          ]
+        },
+        {
           "key": "[\"contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）\",\"组5 category 值域（N-3 档级）：create 跨档拒/档内过/未知串拒；update 并集过+外值拒；title 长度界 120/121（变异红证锚）\"]",
           "describePath": [
             "contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵（[F-DBCAMP-01 DB-2 U1]）"
           ],
           "title": "组5 category 值域（N-3 档级）：create 跨档拒/档内过/未知串拒；update 并集过+外值拒；title 长度界 120/121（变异红证锚）",
           "markers": [],
-          "line": 134,
+          "line": 140,
           "assertions": [
             "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'node_role', title: 't', content: 'c' }).success ).toBe(false)",
             "expect( A.aiMemoryCreateReqSchema.safeParse({ scope: 'paper', anchorId: 'p1', category: 'excerpt_quote', title: 't', content: 'c' }).success ).toBe(true)",
@@ -125,7 +138,7 @@
           ],
           "title": "组6 预算 refine：默认档 parse 绿；l1+l2Cap+tail=cap+1 拒（和 4001>cap 4000）；负数/非整数拒；perShot=perRound 过/+1 拒",
           "markers": [],
-          "line": 171,
+          "line": 177,
           "assertions": [
             "expect(M.aiBudgetsSchema.safeParse(M.AI_BUDGET_DEFAULTS).success).toBe(true)",
             "expect(M.aiBudgetTierSchema.safeParse(tierOver).success).toBe(false)",
@@ -143,7 +156,7 @@
           ],
           "title": "组7 appSettings 集成：旧形 parse 补默认预算档（toEqual 深比）；全形往返；未知字段拒；默认档引用隔离（R6）",
           "markers": [],
-          "line": 186,
+          "line": 192,
           "assertions": [
             "expect(parsed.theme).toBe('light')",
             "expect(parsed.uiScale).toBe('small')",
@@ -161,7 +174,7 @@
           ],
           "title": "组8 实体负锚：aiTask 未知字段/scope:global 拒（S3）；aiAuditRow kind 冻结 8 值外拒×2+detail:null 过（S6）；aiMemory label:null 过（S7）",
           "markers": [],
-          "line": 206,
+          "line": 212,
           "assertions": [
             "expect(M.aiTaskSchema.safeParse(taskItem).success).toBe(true)",
             "expect(M.aiTaskSchema.safeParse({ ...taskItem, __probe: 1 }).success).toBe(false)",
@@ -181,7 +194,7 @@
           ],
           "title": "组9 常量闭合 pin：三档类目计数 6/7/6+19 值并集跨档零同名；动作 9/态 6/审计 kind 8；AI_BUDGET_DEFAULTS 17 值字面 pin；R4 四枚举全量字面 pin",
           "markers": [],
-          "line": 220,
+          "line": 226,
           "assertions": [
             "expect(M.AI_MEMORY_CATEGORIES.paper).toHaveLength(6)",
             "expect(M.AI_MEMORY_CATEGORIES.lineage).toHaveLength(7)",
@@ -207,7 +220,7 @@
           ],
           "title": "组10 Res smoke（R5）：12 件 Res schema 合法形逐件过+错键名拒锚（sessions/memory/count）",
           "markers": [],
-          "line": 279,
+          "line": 285,
           "assertions": [
             "expect(A.aiSessionsOpenResSchema.safeParse({ session }).success).toBe(true)",
             "expect(A.aiSessionsListMessagesResSchema.safeParse({ messages: [message] }).success).toBe(true)",
@@ -233,7 +246,7 @@
           ],
           "title": "组11 投影项 anchorTitle（R5）：pinnedMessageItem/aiMemoryListItem 正形过+缺席拒（extend 投影锚）",
           "markers": [],
-          "line": 304,
+          "line": 310,
           "assertions": [
             "expect(M.pinnedMessageItemSchema.safeParse({ ...message, anchorTitle: '论文' }).success).toBe(true)",
             "expect(M.pinnedMessageItemSchema.safeParse(message).success).toBe(false)",
@@ -249,218 +262,290 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
-          "title": "通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）",
+          "title": "通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
           "markers": [],
-          "line": 47,
+          "line": 54,
           "assertions": [
-            "expect(allChannels().length).toBe(62)"
+            "expect(allChannels().length).toBe(75)"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
-          "title": "域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）",
+          "title": "域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
           "markers": [],
-          "line": 51,
+          "line": 58,
           "assertions": [
             "expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())",
-            "expect(DOMAIN_PINS).toHaveLength(14)"
+            "expect(DOMAIN_PINS).toHaveLength(20)"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 ai_sensor 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_audit 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_audit 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_cascade 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_cascade 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_memory 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_memory 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_messages 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_messages 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_sensor 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 ai_sensor 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 enrich 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_sessions 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_sessions 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_tasks 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+          ],
+          "title": "域 ai_tasks 方法集 pin",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 enrich 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 enrich 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 export_ 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 export_ 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 export_ 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 folders 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 folders 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 folders 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 import_ 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 import_ 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 import_ 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 library 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 library 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 library 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 lineage 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 lineage 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 lineage 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 notes 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 notes 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 notes 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 papers 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 papers 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 papers 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 reader 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 reader 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 reader 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 settings 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 settings 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 settings 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 system 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 system 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 system 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 tags 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 tags 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 tags 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"域 workspaces 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 workspaces 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "域 workspaces 方法集 pin",
           "markers": [],
-          "line": 56,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
           "markers": [],
-          "line": 60,
+          "line": 67,
           "assertions": [
-            "expect(prefixes).toEqual([ 'ai-notes', 'ai-sensor', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])"
+            "expect(prefixes).toEqual([ 'ai-cascade', 'ai-memory', 'ai-messages', 'ai-notes', 'ai-sensor', 'ai-sessions', 'ai-tasks', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
           "markers": [],
-          "line": 82,
+          "line": 94,
           "assertions": [
             "expect(domains, `PRELOAD_HIDDEN_METHODS 引用了不存在的域 ${domain}`).toContain(domain)",
             "expect(inTable, `PRELOAD_HIDDEN_METHODS 引用了 ${domain}.${m} 但表内无此方法`).toContain(m)",
@@ -468,13 +553,13 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
           "markers": [],
-          "line": 100,
+          "line": 112,
           "assertions": [
             "expect(Object.keys(EVENT_CHANNELS).sort()).toEqual([ 'exportCorpus', 'foldersChanged', 'importProgress', 'lineageChanged', 'windowState' ])",
             "expect(ch.endsWith('/event'), `事件通道 ${ch} 应带 /event 后缀（单向推送命名约定）`).toBe(true)",
@@ -483,37 +568,37 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
           "markers": [],
-          "line": 117,
+          "line": 129,
           "assertions": [
             "expect(Object.entries(PRELOAD_HIDDEN_METHODS).map(([d, ms]) => `${d}:[${[...ms].sort().join(',')}]`)).toEqual([ 'import_:[fromPaths]' ])"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
           "markers": [],
-          "line": 123,
+          "line": 135,
           "assertions": [
             "expect({ ...EVENT_CHANNELS }).toEqual({ importProgress: 'import/progress/event', exportCorpus: 'export/corpus/event', windowState: 'system/window-state/event', foldersChanged: 'folders/changed/event', lineageChanged: 'lineage/changed/event' })"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
           "markers": [],
-          "line": 133,
+          "line": 145,
           "assertions": [
             "expect(typeof S.importProgressEventSchema.safeParse).toBe('function')",
             "expect(typeof S.exportProgressEventSchema.safeParse).toBe('function')",
@@ -523,13 +608,13 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）\",\"组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（55 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
           ],
           "title": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
           "markers": [],
-          "line": 141,
+          "line": 153,
           "assertions": [
             "expect( allChannels() .filter((c) => c.domain === 'workspaces') .map((c) => c.channel) .sort() ).toEqual(['workspaces/create', 'workspaces/list', 'workspaces/rename', 'workspaces/switch'])"
           ]
@@ -600,7 +685,7 @@
           ],
           "title": "workspaces 域（R1-WS1 扩容）：四通道在表 + create 名长 1-40 边界 + Res 形状",
           "markers": [],
-          "line": 62,
+          "line": 69,
           "assertions": [
             "expect(Object.keys(API_SURFACE.workspaces).sort()).toEqual(['create', 'list', 'rename', 'switch'])",
             "expect(create.success).toBe(true)",
@@ -619,7 +704,7 @@
           ],
           "title": "所有模型 schema fixture 往返：合法通过/非法拒绝（抽样关键端点）",
           "markers": [],
-          "line": 81,
+          "line": 88,
           "assertions": [
             "expect(list.success).toBe(true)",
             "expect(list.data).toMatchObject({ sort: 'added_desc', offset: 0, limit: 50 })",
@@ -7022,6 +7107,66 @@
           "assertions": [
             "expect(rows.map((r) => r.content)).toEqual(['隔离语料本图'])"
           ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷\",\"V1 listByScope：scope 单条件跨锚+category/pinnedOnly 过滤+序+anchorTitle 投影\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷"
+          ],
+          "title": "V1 listByScope：scope 单条件跨锚+category/pinnedOnly 过滤+序+anchorTitle 投影",
+          "markers": [],
+          "line": 273,
+          "assertions": [
+            "expect(all.map((r) => r.title)).toEqual(['晚', '中', '早'])",
+            "expect(all.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1', '文献p-1'])",
+            "expect(repo.listByScope('paper', { category: 'method_note', limit: 50 }).map((r) => r.title)).toEqual(['晚', '早'])",
+            "expect(repo.listByScope('paper', { pinnedOnly: true, limit: 50 }).map((r) => r.title)).toEqual(['中'])",
+            "expect(repo.listByScope('paper', { limit: 2 }).map((r) => r.title)).toEqual(['晚', '中'])",
+            "expect(globalRows.map((r) => r.title)).toEqual(['全'])",
+            "expect(globalRows[0]!.anchorTitle).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷\",\"V2 searchByLikeScope/searchByMatchScope：跨锚命中（scope 级单条件）+anchorTitle 随行\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷"
+          ],
+          "title": "V2 searchByLikeScope/searchByMatchScope：跨锚命中（scope 级单条件）+anchorTitle 随行",
+          "markers": [],
+          "line": 295,
+          "assertions": [
+            "expect(like.map((r) => r.title)).toEqual(['共享词乙', '共享词甲'])",
+            "expect(like.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1'])",
+            "expect(match.map((r) => r.title)).toEqual(['共享词乙', '共享词甲'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷\",\"V3 update category 载荷：在席改（同档合法值）+缺席保持原值\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷"
+          ],
+          "title": "V3 update category 载荷：在席改（同档合法值）+缺席保持原值",
+          "markers": [],
+          "line": 311,
+          "assertions": [
+            "expect(changed?.category).toBe('term_glossary')",
+            "expect(changed?.title).toBe('题')",
+            "expect(kept?.category).toBe('term_glossary')",
+            "expect(kept?.title).toBe('只改题')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷\",\"V4 [r1 R5] listByScope lineage 标题路锚：anchorTitle=collections.name 值断言（k3-N8——三路 CASE 的 lineage 支补锚）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory.repo —— scope 级三原语+update category 载荷"
+          ],
+          "title": "V4 [r1 R5] listByScope lineage 标题路锚：anchorTitle=collections.name 值断言（k3-N8——三路 CASE 的 lineage 支补锚）",
+          "markers": [],
+          "line": 324,
+          "assertions": [
+            "expect(rows).toHaveLength(1)",
+            "expect(rows[0]!.anchorTitle).toBe('图丙')"
+          ]
         }
       ]
     },
@@ -7722,6 +7867,39 @@
             "expect(() => repo.finalizeRunning(id, 'succeeded', { result: '{}' }, { kind: 'succeeded', detail: 'd' }) ).toThrow(/非 running/)",
             "expect(repo.getById(id)?.status).toBe('queued')",
             "expect(repo.listAudit(id).map((a) => a.kind)).toEqual(['submitted'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T19 listTasksWithTitles：targetTitle 投影（paper→papers.title/lineage→collections.name/幽灵锚 null）+三值过滤\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T19 listTasksWithTitles：targetTitle 投影（paper→papers.title/lineage→collections.name/幽灵锚 null）+三值过滤",
+          "markers": [],
+          "line": 316,
+          "assertions": [
+            "expect(rows).toHaveLength(3)",
+            "expect(byAnchor.get('paper:p-1')).toBe('文献甲')",
+            "expect(byAnchor.get('lineage:c-1')).toBe('图丙')",
+            "expect(byAnchor.get('paper:p-ghost')).toBeNull()",
+            "expect(repo.listTasksWithTitles({ scope: 'paper', anchorId: 'p-1', limit: 50 })).toHaveLength(1)",
+            "expect(repo.listTasksWithTitles({ scope: 'lineage', limit: 50 })).toHaveLength(1)",
+            "expect(repo.listTasksWithTitles({ status: 'queued', limit: 50 })).toHaveLength(3)",
+            "expect(repo.listTasksWithTitles({ status: 'running', limit: 50 })).toHaveLength(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复\",\"T20 listAuditPage：afterSeq 游标翻页（seed 5 行取 afterSeq=2 limit=2→seq 3,4）+升序+尾游标空\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.repo —— 任务行 CRUD+守卫迁移+审计+恢复"
+          ],
+          "title": "T20 listAuditPage：afterSeq 游标翻页（seed 5 行取 afterSeq=2 limit=2→seq 3,4）+升序+尾游标空",
+          "markers": [],
+          "line": 344,
+          "assertions": [
+            "expect(repo.listAuditPage(id, 2, 2).map((r) => r.seq)).toEqual([3, 4])",
+            "expect(repo.listAuditPage(id, 0, 100).map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6])",
+            "expect(repo.listAuditPage(id, 6, 100)).toEqual([])"
           ]
         }
       ]
@@ -38715,6 +38893,82 @@
         }
       ]
     },
+    "tests/unit/services/ai-cascade.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约\",\"C1 paper 分支四计数：空会话计入（N-4）+他锚排除+零资源锚全 0\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约"
+          ],
+          "title": "C1 paper 分支四计数：空会话计入（N-4）+他锚排除+零资源锚全 0",
+          "markers": [],
+          "line": 84,
+          "assertions": [
+            "expect(await svc.previewCounts({ scope: 'paper', anchorId: 'p-1' })).toEqual({ sessions: 2, messages: 2, memories: 1, tasks: 1 })",
+            "expect(await svc.previewCounts({ scope: 'paper', anchorId: 'p-0' })).toEqual({ sessions: 0, messages: 0, memories: 0, tasks: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约\",\"C2 folder 分支双面合计：夹内 papers 的 paper 档+夹 id 的 lineage 档逐字段相加\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约"
+          ],
+          "title": "C2 folder 分支双面合计：夹内 papers 的 paper 档+夹 id 的 lineage 档逐字段相加",
+          "markers": [],
+          "line": 114,
+          "assertions": [
+            "expect(counts).toEqual({ sessions: 2, messages: 3, memories: 2, tasks: 2 })",
+            "expect(counts).toEqual({ sessions: paperFace1.sessions + paperFace2.sessions + lineageFace.sessions, messages: paperFace1.messages + paperFace2.messages + lineageFace.messages, memories: paperFace1.memories + paperFace2.memories + lineageFace.memories, tasks: paperFace1.tasks + paperFace2.tasks + lineageFace.tasks })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约\",\"C3 锚缺席：paper/folder 两形 → NOT_FOUND 分流文案\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约"
+          ],
+          "title": "C3 锚缺席：paper/folder 两形 → NOT_FOUND 分流文案",
+          "markers": [],
+          "line": 147,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约\",\"C4 folder 级联行为（W-5）：夹内 papers 先删再删夹行 → lineage+paper 档 AI 资源俱灭+audit 恒存+他锚零扰\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约"
+          ],
+          "title": "C4 folder 级联行为（W-5）：夹内 papers 先删再删夹行 → lineage+paper 档 AI 资源俱灭+audit 恒存+他锚零扰",
+          "markers": [],
+          "line": 163,
+          "assertions": [
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_sessions WHERE scope='lineage' AND anchor_id='f-1'`)).toBe(0)",
+            "expect( scalar(db, `SELECT COUNT(*) c FROM ai_sessions WHERE scope='paper' AND anchor_id IN ('p-1','p-2')`) ).toBe(0)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_messages`)).toBe(0)",
+            "expect( scalar(db, `SELECT COUNT(*) c FROM ai_memory WHERE (scope='paper' AND anchor_id IN ('p-1','p-2')) OR (scope='lineage' AND anchor_id='f-1')`) ).toBe(0)",
+            "expect( scalar(db, `SELECT COUNT(*) c FROM ai_tasks WHERE (scope='paper' AND anchor_id IN ('p-1','p-2')) OR (scope='lineage' AND anchor_id='f-1')`) ).toBe(0)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_task_audit WHERE task_id IN (?, ?, ?)`, t1, t2, t3)).toBe(3)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='p-other'`)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约\",\"C5 paper 级联回归轻锚：删 papers 行 → 该锚 AI 资源灭+他锚零扰\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-cascade.service —— 级联预览计数+触发器契约"
+          ],
+          "title": "C5 paper 级联回归轻锚：删 papers 行 → 该锚 AI 资源灭+他锚零扰",
+          "markers": [],
+          "line": 203,
+          "assertions": [
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='p-1'`)).toBe(0)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_memory WHERE anchor_id='p-1'`)).toBe(0)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_tasks WHERE anchor_id='p-1'`)).toBe(0)",
+            "expect(scalar(db, `SELECT COUNT(*) c FROM ai_messages WHERE session_id=?`, s2)).toBe(1)"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/ai-context.service.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -39305,6 +39559,96 @@
           "assertions": [
             "expect(ESTIMATE_CJK_WEIGHT).toBe(1.0)",
             "expect(ESTIMATE_OTHER_WEIGHT).toBe(0.25)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/ai-memory-manual.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面\",\"M1 列表模式：category/pinnedOnly 过滤（含组合）+序=(updated_at DESC,id DESC)+limit 200 缺省+外值 category 空结果（挂账③）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面"
+          ],
+          "title": "M1 列表模式：category/pinnedOnly 过滤（含组合）+序=(updated_at DESC,id DESC)+limit 200 缺省+外值 category 空结果（挂账③）",
+          "markers": [],
+          "line": 66,
+          "assertions": [
+            "expect(all.map((r) => r.title)).toEqual(['丙', '丁', '乙', '甲'])",
+            "expect(all.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1', '文献p-1', '文献p-1'])",
+            "expect((await svc.listByScope({ scope: 'paper', category: 'method_note' })).map((r) => r.title)).toEqual(['丙', '丁', '甲'])",
+            "expect((await svc.listByScope({ scope: 'paper', pinnedOnly: true })).map((r) => r.title)).toEqual(['丁'])",
+            "expect((await svc.listByScope({ scope: 'paper', category: 'method_note', pinnedOnly: true })).map((r) => r.title)).toEqual(['丁'])",
+            "expect(await svc.listByScope({ scope: 'paper', category: 'node_role' })).toEqual([])",
+            "expect(await svc.listByScope({ scope: 'paper', category: 'method_note' })).toHaveLength(200)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面\",\"M2 检索模式（W-1）：1 码点 LIKE 路/≥3 码点 FTS 路/topK=8 上界/跨锚命中/空白 query 空 rows\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面"
+          ],
+          "title": "M2 检索模式（W-1）：1 码点 LIKE 路/≥3 码点 FTS 路/topK=8 上界/跨锚命中/空白 query 空 rows",
+          "markers": [],
+          "line": 93,
+          "assertions": [
+            "expect(like).toHaveLength(8)",
+            "expect(like.every((r) => r.title.startsWith('预算语料'))).toBe(true)",
+            "expect([...new Set(like.map((r) => r.anchorId))].sort()).toEqual(['p-1', 'p-2'])",
+            "expect(match).toHaveLength(8)",
+            "expect(match.every((r) => r.anchorTitle === `文献${r.anchorId}`)).toBe(true)",
+            "expect(await svc.listByScope({ scope: 'paper', query: ' ' })).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面\",\"M3 create：origin 恒 manual 盖写+label 缺省空串+幽灵锚 NOT_FOUND（paper/lineage 两形）+行断言\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面"
+          ],
+          "title": "M3 create：origin 恒 manual 盖写+label 缺省空串+幽灵锚 NOT_FOUND（paper/lineage 两形）+行断言",
+          "markers": [],
+          "line": 117,
+          "assertions": [
+            "expect(created).toMatchObject({ scope: 'paper', anchorId: 'p-1', category: 'reading_insight', label: '', title: '机理洞见', content: '膜污染三阶段', pinned: false, origin: 'manual' })",
+            "expect(labeled.label).toBe('偏好签')",
+            "expect(labeled.origin).toBe('manual')",
+            "expect(pinnedOnCreate.pinned).toBe(true)",
+            "expect(db.prepare('SELECT pinned FROM ai_memory WHERE id = ?').get(pinnedOnCreate.id)).toEqual({ pinned: 1 })",
+            "expect(pinnedDefault.pinned).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面\",\"M4 update：档级类目校验（跨档→INVALID_REQUEST）+合法 patch 生效+空 patch 原样零写（updated_at 不刷）+幽灵 id NOT_FOUND\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面"
+          ],
+          "title": "M4 update：档级类目校验（跨档→INVALID_REQUEST）+合法 patch 生效+空 patch 原样零写（updated_at 不刷）+幽灵 id NOT_FOUND",
+          "markers": [],
+          "line": 181,
+          "assertions": [
+            "expect(updated).toMatchObject({ category: 'relation_note', title: '新题' })",
+            "expect((updated.updatedAt ?? '') > '2024-01-01T00:00:00.000Z').toBe(true)",
+            "expect(untouched).toMatchObject({ title: '新题', category: 'relation_note', updatedAt: '2024-01-01T00:00:00.000Z' })",
+            "expect((await svc.update({ id, patch: {} })).updatedAt).toBe('2024-01-01T00:00:00.000Z')",
+            "expect((touched.updatedAt ?? '') > '2024-01-01T00:00:00.000Z').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面\",\"M5 delete/setPinned：生效（返回投影行）+幽灵 NOT_FOUND+翻转后 pinnedOnly 可见性\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-memory-manual.service —— 记忆手动 CRUD 面"
+          ],
+          "title": "M5 delete/setPinned：生效（返回投影行）+幽灵 NOT_FOUND+翻转后 pinnedOnly 可见性",
+          "markers": [],
+          "line": 207,
+          "assertions": [
+            "expect(pinnedRow.pinned).toBe(true)",
+            "expect((await svc.listByScope({ scope: 'paper', pinnedOnly: true })).map((r) => r.title)).toEqual(['待删'])",
+            "expect(deleted).toMatchObject({ id, title: '待删' })",
+            "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 0 })"
           ]
         }
       ]
@@ -40213,6 +40557,60 @@
           "assertions": [
             "expect(a.sessionId).not.toBe(b.sessionId)",
             "expect( db.prepare('SELECT COUNT(*) c FROM ai_sessions WHERE scope=? AND anchor_id=?') .get('paper', 'p-1') ).toEqual({ c: 2 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面\",\"U2-1 openOrGetSession：同锚二次同 id（幂等）+首调建行+幽灵锚 NOT_FOUND+global 形态+多会话取最新不清理\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面"
+          ],
+          "title": "U2-1 openOrGetSession：同锚二次同 id（幂等）+首调建行+幽灵锚 NOT_FOUND+global 形态+多会话取最新不清理",
+          "markers": [],
+          "line": 279,
+          "assertions": [
+            "expect(b.id).toBe(a.id)",
+            "expect(a).toMatchObject({ scope: 'paper', anchorId: 'p-1' })",
+            "expect(a.id).toBeGreaterThan(0)",
+            "expect(got.id).toBe(s2.sessionId)",
+            "expect( db.prepare('SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id=?').get('p-2') ).toEqual({ c: 2 })",
+            "expect(g2.id).toBe(g1.id)",
+            "expect(g1.anchorId).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面\",\"U2-2 setPinnedMessage 行投影（pinned boolean+剥 updatedAt）+幽灵消息 NOT_FOUND+listMessages 投影形\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面"
+          ],
+          "title": "U2-2 setPinnedMessage 行投影（pinned boolean+剥 updatedAt）+幽灵消息 NOT_FOUND+listMessages 投影形",
+          "markers": [],
+          "line": 312,
+          "assertions": [
+            "expect(pinned).toMatchObject({ id: m.id, sessionId, role: 'user', content: '待置顶', pinned: true })",
+            "expect('updatedAt' in pinned).toBe(false)",
+            "expect(unpinned.pinned).toBe(false)",
+            "expect(list).toHaveLength(1)",
+            "expect(list[0]).toMatchObject({ id: m.id, pinned: false, content: '待置顶' })",
+            "expect('updatedAt' in list[0]!).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面\",\"U2-3 listPinnedMessages：跨会话聚合+三值语义+anchorTitle 解析+m.id DESC\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 ai-sessions.service —— openOrGet/置顶 IPC 读面"
+          ],
+          "title": "U2-3 listPinnedMessages：跨会话聚合+三值语义+anchorTitle 解析+m.id DESC",
+          "markers": [],
+          "line": 338,
+          "assertions": [
+            "expect(paperAll.map((r) => r.content)).toEqual(['置顶丙', '置顶乙', '置顶甲'])",
+            "expect(paperAll.map((r) => r.anchorTitle)).toEqual(['文献p-2', '文献p-1', '文献p-1'])",
+            "expect(paperAll.every((r) => r.pinned === true)).toBe(true)",
+            "expect(anchorScoped.map((r) => r.content)).toEqual(['置顶乙', '置顶甲'])",
+            "expect(globalOnly.map((r) => r.content)).toEqual(['置顶戊'])",
+            "expect(globalOnly[0]!.anchorTitle).toBeNull()",
+            "expect(lineage.map((r) => [r.content, r.anchorTitle])).toEqual([['置顶丁', '图c-1']])",
+            "expect((await svc.listPinnedMessages({ scope: 'paper' })).map((r) => r.content)).not.toContain('非置顶')"
           ]
         }
       ]
@@ -41444,6 +41842,100 @@
         }
       ]
     },
+    "tests/unit/services/ai-tasks-ui.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-1 listTasksForUi 死过滤形双路短路：scope:global / 裸 anchorId:null → 恒空 []（DDL 无 global 任务行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-1 listTasksForUi 死过滤形双路短路：scope:global / 裸 anchorId:null → 恒空 []（DDL 无 global 任务行）",
+          "markers": [],
+          "line": 62,
+          "assertions": [
+            "expect(await svc.listTasksForUi({ scope: 'global' })).toEqual([])",
+            "expect(await svc.listTasksForUi({ anchorId: null })).toEqual([])",
+            "expect(await svc.listTasksForUi({})).toHaveLength(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-2 listTasksForUi limit 运行期闸：0/201/非整数 → INVALID_REQUEST；1-200 过\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-2 listTasksForUi limit 运行期闸：0/201/非整数 → INVALID_REQUEST；1-200 过",
+          "markers": [],
+          "line": 74,
+          "assertions": [
+            "expect(await svc.listTasksForUi({ limit: 1 })).toHaveLength(1)",
+            "expect(await svc.listTasksForUi({ limit: 200 })).toHaveLength(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-3 listTasksForUi 运行期值域闸：status 外值拒+scope 外值拒（global=zod 合法值走短路〔R1-1 已锚〕，此处锚闸拒路径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-3 listTasksForUi 运行期值域闸：status 外值拒+scope 外值拒（global=zod 合法值走短路〔R1-1 已锚〕，此处锚闸拒路径）",
+          "markers": [],
+          "line": 87,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-4 listTasksForUi 投影：剥 payload+targetTitle 精确值（paper→papers.title/lineage→collections.name）+scope/anchorId 平铺恒在\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-4 listTasksForUi 投影：剥 payload+targetTitle 精确值（paper→papers.title/lineage→collections.name）+scope/anchorId 平铺恒在",
+          "markers": [],
+          "line": 105,
+          "assertions": [
+            "expect(tasks).toHaveLength(2)",
+            "expect('payload' in t).toBe(false)",
+            "expect(t.scope === 'paper' || t.scope === 'lineage').toBe(true)",
+            "expect(typeof t.anchorId).toBe('string')",
+            "expect(t.anchorId.length).toBeGreaterThan(0)",
+            "expect(byScope.get('paper')?.targetTitle).toBe('文献甲')",
+            "expect(byScope.get('lineage')?.targetTitle).toBe('图丙')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-5 cancelTaskForUi：payload 剥离+targetTitle 回查+键集与 aiTaskSchema 字面集对齐；幽灵 NOT_FOUND；非 queued CONFLICT\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-5 cancelTaskForUi：payload 剥离+targetTitle 回查+键集与 aiTaskSchema 字面集对齐；幽灵 NOT_FOUND；非 queued CONFLICT",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect('payload' in cancelled).toBe(false)",
+            "expect(cancelled.targetTitle).toBe('文献甲')",
+            "expect(cancelled.status).toBe('cancelled')",
+            "expect(Object.keys(cancelled).sort()).toEqual(TASK_KEYS)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）\",\"R1-6 listAudit：afterSeq=2+limit=2 → 恰 seq 3,4 升序；缺省 limit=100（105 行断言 100）+缺省 afterSeq=0 含 seq1；剥 id 投影；幽灵空 rows 非抛\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2 r1 ai-tasks.service —— UI 读面（listTasksForUi/cancelTaskForUi/listAudit）"
+          ],
+          "title": "R1-6 listAudit：afterSeq=2+limit=2 → 恰 seq 3,4 升序；缺省 limit=100（105 行断言 100）+缺省 afterSeq=0 含 seq1；剥 id 投影；幽灵空 rows 非抛",
+          "markers": [],
+          "line": 141,
+          "assertions": [
+            "expect(page.map((r) => r.seq)).toEqual([3, 4])",
+            "expect('id' in r).toBe(false)",
+            "expect(defaulted).toHaveLength(100)",
+            "expect(defaulted[0]!.seq).toBe(1)",
+            "expect('id' in r).toBe(false)",
+            "expect(await svc.listAudit({ taskId: 9999 })).toEqual([])"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/bibtex.serializer.test.ts": {
       "ticketIds": [
         "SR-SVC-07"
@@ -42095,7 +42587,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 108,
+          "line": 109,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -42108,7 +42600,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 125,
+          "line": 126,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -42120,7 +42612,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 145,
+          "line": 146,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -42133,7 +42625,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 163,
+          "line": 164,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -42146,7 +42638,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 186,
+          "line": 187,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -42158,7 +42650,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 198,
+          "line": 199,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -42170,7 +42662,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 222,
+          "line": 223,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -42184,7 +42676,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 249,
+          "line": 250,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -42840,7 +43332,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 79,
+          "line": 80,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -42864,7 +43356,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 123,
+          "line": 124,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -42881,7 +43373,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 153,
+          "line": 154,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -42895,7 +43387,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 176,
+          "line": 177,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -42910,7 +43402,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 199,
+          "line": 200,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -42926,7 +43418,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 227,
+          "line": 228,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -42946,7 +43438,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 271,
+          "line": 272,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -42960,7 +43452,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 321,
+          "line": 322,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -42976,7 +43468,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 352,
+          "line": 353,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -42990,7 +43482,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 376,
+          "line": 377,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -48138,14 +48630,14 @@
     }
   },
   "stats": {
-    "fileCount": 320,
-    "caseCount": 3224,
-    "assertionCount": 10562,
+    "fileCount": 323,
+    "caseCount": 3256,
+    "assertionCount": 10683,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
-    "eachExpandedRows": 348,
+    "eachExpandedRows": 354,
     "unresolvableCount": 0
   },
   "exemptionsSnapshot": [
@@ -48160,6 +48652,145 @@
       "assertionText": "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })",
       "reason": "F-DBCAMP-01 DB-2 U1：reread 精确断言扩容 aiBudgets 默认档键（AppSettings 输出型必含——zod default 填充）——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
       "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）",
+      "reason": "F-DBCAMP-01 DB-2 U2：API_SURFACE 六域 13 通道注册（62→75），通道总数 pin 标题随数意识化改写——标题变=身份变，旧身份淘汰属 [locked-change][test-refactor] 有意改写非删测，新标题用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）",
+      "reason": "F-DBCAMP-01 DB-2 U2：+AI 六域（14→20 域），域枚举 pin 标题随数意识化改写——标题变=身份变，有意改写非删测，新标题用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
+      "assertionText": "expect(prefixes).toEqual([ 'ai-notes', 'ai-sensor', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])",
+      "reason": "F-DBCAMP-01 DB-2 U2：+AI 五前缀（ai-sessions/ai-messages/ai-memory/ai-tasks/ai-cascade——audit 通道复用 ai-tasks 前缀），前缀集 pin 断言扩容——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_sensor 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 enrich 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 export_ 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 folders 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 import_ 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 library 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 lineage 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 notes 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 papers 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 reader 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 settings 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 system 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 tags 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 workspaces 方法集 pin",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
+      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
+      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
     }
   ]
 }

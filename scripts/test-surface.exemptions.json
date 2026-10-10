@@ -1,17 +1,4 @@
 {
   "version": 1,
-  "entries": [
-    {
-      "file": "tests/contracts/schemas.test.ts",
-      "caseTitle": "appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）",
-      "reason": "F-DBCAMP-01 DB-2 U1：appSettingsSchema 增 aiBudgets 默认档（getter structuredClone）后该用例标题随载荷语义改写（+aiBudgets=默认预算档+档内超限拒）——标题变=身份变，旧身份淘汰属 [locked-change][test-refactor] 有意改写非删测，新标题用例随新基线登账（gate1 双席链在档）",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
-    },
-    {
-      "file": "tests/unit/ipc/settings.test.ts",
-      "assertionText": "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })",
-      "reason": "F-DBCAMP-01 DB-2 U1：reread 精确断言扩容 aiBudgets 默认档键（AppSettings 输出型必含——zod default 填充）——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
-    }
-  ]
+  "entries": []
 }
