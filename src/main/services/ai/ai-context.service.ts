@@ -8,7 +8,10 @@
  * ai_memory）。一切进入 L1/L2 前缀的数据源必须属该集合：ctx_ver 前进⇒前缀缓存
  * 失效的正确性前提（集合外数据变更不推进 ctx_ver=陈旧缓存）。ai_sessions/
  * ai_messages/ai_tasks/ai_task_audit 不入集合（消息=现算尾段——U2b-2b 面、
- * 任务/审计不进 prompt——020 头注既有结论）。声明处=本头注+docs/invariants.md；
+ * 任务/审计不进 prompt——020 头注既有结论）。[INV-131 互锁指针] L3 尾段
+ * （ai-tail.service 四腿）恒现算不缓存——与本条 ai_sessions/ai_messages 不入
+ * 集合互为双侧锚定（U2b-2b §3.f 唯一允许改动行）。声明处=本头注+docs/
+ * invariants.md；
  * 强制=装配源清单对账测试+020 epoch 元测试。
  *
  * ── 行为层 ──

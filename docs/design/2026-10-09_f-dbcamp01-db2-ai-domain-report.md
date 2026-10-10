@@ -82,8 +82,11 @@ fixture 32 行（锚词唯一），查询类集 5 类×≥3 例，FTS5 MATCH 与
 - DDL：category CHECK / label / title（1-120 字）/ content / scope+anchor CHECK /
   pinned / origin(manual|agent) / source_task_id（SET NULL）/(created_at,updated_at)；
   索引 (scope,anchor,category,pinned,updated_at,id)。
-- **FTS=external content+三触发器**（沿 001 先例）+tokenizer=trigram；文献域 unicode61
-  不动（两域分治，防顺手统一）。
+- **FTS=external content+三触发器**（沿 001 先例）+tokenizer=trigram~~；文献域 unicode61
+  不动（两域分治，防顺手统一）~~（**勘误 2026-10-10 U2b-2b**：001 实照三 FTS 表
+  papers_fts/notes_fts/annotations_fts **均 trigram**——本句「文献域 unicode61」与
+  实照矛盾系撰写时笔误；两域同 tokenizer，「防顺手统一」顾虑自然消解，L3① 文献
+  检索两路同路由纪律成立）。
 - 淘汰沿承（置顶豁免；victim (pinned,updated_at,id) ASC），本档仅保列/索引支撑。
 
 预裁点：双层分类法结构；label 单值化（多值按 Rule of Three 延后）；origin 列；
@@ -139,10 +142,20 @@ a=1.0/b=0.25），代表性语料（中英混排笔记/标注/记忆各≥20 样
   估算 @30 节点 ~1500 tok（cap 1800）；大图护栏=节点>120 截断（星标与高连接度
   优先）+meta 标注（阈值预裁，骨架轻化后自 60 放宽）。
 - **按需展开（L3① 检索源扩展）**=当前消息经 FTS/LIKE 检索**图内文献域**
-  （title+abstract+core_idea+notes）→命中 top-K=5 篇展开「摘要+core idea+top
-  笔记片」，单篇 cap 250 tok。局部邻域不按需取——连线+标题常驻，AI 可自推任意
+  （~~title+abstract+core_idea+notes~~ **落地三列=title+abstract+notes——2026-10-10
+  U2b-2b 预裁 P-A 裁减 core_idea**：F-CONTRACTA-01 已全退役该列（lineage_nodes 列死置
+  ''、读写面零映射），四列案与实况互斥按「论文实况」裁减；authors 列虽在 papers_fts
+  但 match 路经 `{title abstract}:` 列过滤排除〔PAPERS_COL_FILTER——authors 不在授权
+  检索域〕）→命中 top-K=5 篇展开「摘要+~~core idea+~~top
+  笔记片」（=摘要+笔记），单篇 cap 250 tok。局部邻域不按需取——连线+标题常驻，AI 可自推任意
   文献的邻域。解读注记：「其摘要和图」之图=局部脉络邻域；若指论文 PDF 内图片
   内容=多模态读取另立票（默认不做）。
+  （**U2b-2b 落地注 2026-10-10**：L3 尾段四腿〔消息窗/召回/文献展开/代理结果〕与
+  代理结果识别=ai_messages 行信封形状〔INV-130——ai_tasks 无回写消息关联列的结构性
+  补位〕、拉取预算轮语义〔单发 800/轮 2000，轮=自最近 user 消息起〕、校准协议
+  〔scripts/calibrate-token-estimate.mjs 受锁+docs 结果档；系数维持冻结——两类正向
+  过估 26-28% 登记，真实分词器落定后终校准〕已随 U2b-2b 落地——实现单源=
+  ai-tail.service/ai-search.repo/ai-tasks.service 预算闸。）
 - **L2 收缩**=图元 meta 2 片+文件夹名 1 片（节点/边/文献/笔记片取消——骨架与
   按需面覆盖）。
 - **尾段重分配**=消息窗 400+检索展开（记忆召回+文献展开）600+代理 200（cap

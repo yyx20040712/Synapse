@@ -52,6 +52,20 @@
  *   succeeded/failed/timeout/cancelled；mutated detail=before/after 摘要各截
  *   200 字符。
  *
+ * ── 行为层（代理拉取预算闸 §3.d——U2b-2b P11） ──
+ * - 回写文本（agent 信封）超有效上限→JSON.parse→尾部整行舍弃 rows 至 ≤上限或
+ *   空→顶层加 truncated:true（保留原字段序）→JSON.stringify 同时用作 result 与
+ *   writeback。非解析 JSON/无 rows 数组→原样通过（防御——result/writeback 均不动）。
+ * - 有效上限=max(0,min(单发 800,轮 2000−pulledSoFar))；轮=自最近 user 消息起
+ *   的代理信封行 ΣestimateTokens（无 user 行=会话全量——user 行重置轮）；信封
+ *   识别谓词 isAgentEnvelope 单源在 ai-tail.service（INV-130——禁两处复制）。
+ * - 拟合口径：rows 舍弃循环的测量**含 truncated:true 标记**（最终落库文本即预
+ *   算面——边界行恰满时标记自身占位优先）。deps.pullCaps 注入=测试面；实施点
+ *   =本件回写路径（handlers 零触碰）；审计面零新 kind。
+ * - 闸下界〔r1 R-W1〕=骨架信封（rows:[] + truncated:true，≈14-16 tok）——cap=0
+ *   时落库骨架属票面「或 rows 空」明文兜底；轮累计可微量越 2000（骨架量级，
+ *   ~14 tok/发——既知接受面：骨架携带 count/truncated 使消费方可感知截断态）。
+ *
  * ── 行为层（listTasks §3.d——运行期输入闸） ──
  * - status 非 undefined 时∈6 态集（外值→INVALID_REQUEST「任务状态值非法」——防
  *   任意串透传 SQL）；scope 非 undefined 时∈{paper,lineage}（运行时校验——原仅
@@ -70,6 +84,8 @@ import type { AiTaskAction, AiTaskFinalStatus, AiTaskRow, AiTaskStatus } from '.
 import type { AiMessageRow } from '../../db/repos/ai-sessions.repo'
 import type { Repos } from '../../db/repos'
 import { SessionCapAllPinnedError } from '../../db/repos/ai-sessions.repo'
+import { estimateTokens } from './ai-estimate'
+import { isAgentEnvelope } from './ai-tail.service'
 import { AiDomainError } from './ai-sessions.service'
 import { AI_TASK_ACTIONS, messageOf, truncateDetail, validatePayload } from './ai-tasks.actions'
 import {
@@ -96,6 +112,12 @@ export const AI_TASK_TIMEOUT_MS = 5000
 /** listTasks limit 档（§3.d 预裁：默认 50 上限 200） */
 export const AI_TASK_LIST_DEFAULT_LIMIT = 50
 export const AI_TASK_LIST_MAX_LIMIT = 200
+
+/** 代理拉取单发上限（§3.d P11——单任务回写信封预算；deps.pullCaps 注入可测） */
+export const AGENT_PULL_SINGLE_CAP = 800
+
+/** 代理拉取轮上限（§3.d P11——自最近 user 消息起的轮内累计预算） */
+export const AGENT_PULL_ROUND_CAP = 2000
 
 /** listTasks status 合法集（DDL CHECK 同源——运行期闸防任意串透传 SQL；
  *  导出面=R29 sqlite_master 对账断言消费〔r1 k3-N3+d1-N7〕） */
@@ -149,6 +171,51 @@ export interface AiTasksServiceDeps {
    *  三步单事务（计数→汰旧→插入——嵌套进本层事务 B 时 SAVEPOINT 化，任一步抛
    *  即整体回滚零半写残留）；注入实现须承同一契约（主控亲验销在案） */
   insertMessage?: (sessionId: number, role: 'user' | 'assistant', content: string) => AiMessageRow
+  /** 拉取预算闸注入面（U2b-2b §3.d——P11 可测性；缺省=冻结常量 800/2000） */
+  pullCaps?: { single: number; round: number }
+}
+
+/** 轮内已拉取量（§3.d P11）：自最近 user 消息起（新到旧扫至首条 user 行）代理
+ *  信封行 ΣestimateTokens；无 user 行=会话全量。信封识别=isAgentEnvelope 单源
+ *  复用（INV-130——禁两处复制）。 */
+function sumAgentPulled(messages: AiMessageRow[]): number {
+  let sum = 0
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]!
+    if (m.role === 'user') break
+    if (m.role === 'assistant' && isAgentEnvelope(m.content)) sum += estimateTokens(m.content)
+  }
+  return sum
+}
+
+/** 信封收缩（§3.d P11）：尾部整行舍弃 rows 至 ≤cap 或空→顶层加 truncated:true
+ *  （保留原字段序——rows 键位不动、truncated 追加）→JSON.stringify。测量含
+ *  truncated 标记（最终落库文本即预算面）。非解析 JSON/非对象/无 rows 数组→
+ *  null=原样通过（防御）。
+ *  〔r1 R-N6〕count 截断语义：count 保留**原始命中数**（不随 rows 舍弃回写）——
+ *  截断后实际行数=rows.length；truncated 消费方按 rows.length 取数（count=
+ *  「曾命中多少」的审计语义，非「本信封含多少」）。 */
+function shrinkEnvelopeToCap(text: string, cap: number): string | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return null
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+  const obj = parsed as Record<string, unknown>
+  if (!Array.isArray(obj.rows)) return null
+  const rows = obj.rows as unknown[]
+  let keep = rows.length
+  obj.rows = rows.slice(0, keep)
+  obj.truncated = true
+  let out = JSON.stringify(obj)
+  while (keep > 0 && estimateTokens(out) > cap) {
+    keep -= 1
+    obj.rows = rows.slice(0, keep)
+    out = JSON.stringify(obj)
+  }
+  return out
 }
 
 export function createAiTasksService(deps: AiTasksServiceDeps): AiTasksService {
@@ -308,15 +375,27 @@ export function createAiTasksService(deps: AiTasksServiceDeps): AiTasksService {
           )
         }
         api.savepointRelease()
-        // 成功路径：读动作回写（CAP→result_overflow 审计+仍 succeeded——N-6；
-        // 非 CAP→failed 终态+mutation 保留——d1-N3 统一映射）
+        // 成功路径：读动作回写（U2b-2b §3.d 先过代理拉取预算闸；CAP→result_overflow
+        // 审计+仍 succeeded——N-6；非 CAP→failed 终态+mutation 保留——d1-N3 统一映射）
         let result = outcome!.result
-        if (outcome!.writeback !== undefined) {
+        let writeback = outcome!.writeback
+        if (writeback !== undefined) {
+          const singleCap = deps.pullCaps?.single ?? AGENT_PULL_SINGLE_CAP
+          const roundCap = deps.pullCaps?.round ?? AGENT_PULL_ROUND_CAP
+          const pulledSoFar = sumAgentPulled(aiSessions.listMessages(req.sessionId))
+          const effectiveCap = Math.max(0, Math.min(singleCap, roundCap - pulledSoFar))
+          if (estimateTokens(writeback) > effectiveCap) {
+            const shrunk = shrinkEnvelopeToCap(writeback, effectiveCap)
+            if (shrunk !== null) {
+              writeback = shrunk
+              result = shrunk
+            }
+          }
           try {
-            insertMessage(req.sessionId, 'assistant', outcome!.writeback)
+            insertMessage(req.sessionId, 'assistant', writeback)
           } catch (e) {
             if (e instanceof SessionCapAllPinnedError) {
-              api.appendAudit(task.id, 'result_overflow', truncateDetail(outcome!.writeback))
+              api.appendAudit(task.id, 'result_overflow', truncateDetail(writeback))
               result = null
             } else {
               // 非 CAP 回写失败：handler 变更有效（SAVEPOINT 已 release 随事务

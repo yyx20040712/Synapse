@@ -1,5 +1,5 @@
 {
-    "generatedAt":  "2026-10-09T15:18:14.2759957Z",
+    "generatedAt":  "2026-10-10T02:33:42.6084379Z",
     "files":  [
                   {
                       "path":  ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
                   },
                   {
                       "path":  "docs/invariants.md",
-                      "sha256":  "9015c9e0951e6f9f4f2913e076d292e78668887a4d21075a5bfee1ad496b4aed"
+                      "sha256":  "4a458163418aba9905ea32ac7c64c7131e58b2ac41355e8b70856b11033a22a5"
                   },
                   {
                       "path":  "electron.vite.config.ts",
@@ -24,6 +24,10 @@
                   {
                       "path":  "playwright.config.ts",
                       "sha256":  "2d3971915ed6b0983fda51b1cf9d32dc91f5b66414c0685978997185843110a2"
+                  },
+                  {
+                      "path":  "scripts/calibrate-token-estimate.mjs",
+                      "sha256":  "06f2c6584620b0cc3885774ef8af16661de3408eac5a40435eac3364da39923b"
                   },
                   {
                       "path":  "scripts/check-dup-constants.mjs",
@@ -83,7 +87,7 @@
                   },
                   {
                       "path":  "scripts/test-surface.baseline.json",
-                      "sha256":  "d686e4d9e5853d6c2f7b77ac4ab8f32582b90eb6b56cc57291a972bdbffbd267"
+                      "sha256":  "1398a2d68ee39c731593791efb8b488f9507548d17724bd28a074688dc52ac9a"
                   },
                   {
                       "path":  "scripts/test-surface.exemptions.json",
@@ -516,6 +520,10 @@
                   {
                       "path":  "tests/unit/db/repos/ai-memory.repo.test.ts",
                       "sha256":  "82b0a024574de9e5860ae83d303bb872d6b14d914a4e3e2ec70f3fef8c384268"
+                  },
+                  {
+                      "path":  "tests/unit/db/repos/ai-search.repo.test.ts",
+                      "sha256":  "8ab2c3e00dd703b6efdd1ba3f5e79997d7e6e738d1876b1e412841c3e1361a51"
                   },
                   {
                       "path":  "tests/unit/db/repos/ai-sessions.repo.test.ts",
@@ -1303,7 +1311,7 @@
                   },
                   {
                       "path":  "tests/unit/services/ai-memory-search.service.test.ts",
-                      "sha256":  "29a169cf2f348ae18ef12e5f6ae7f06226e1d24f8f88beca827a9ca16eea4866"
+                      "sha256":  "b575aff62439a44c9c0698ffe5f320211e16b8face055eec413fc34f8f6f10c5"
                   },
                   {
                       "path":  "tests/unit/services/ai-notes-import.test.ts",
@@ -1322,8 +1330,12 @@
                       "sha256":  "6f881613f5161a9861c845697e305183c8521808bb4c840aa91db7f6283deec5"
                   },
                   {
+                      "path":  "tests/unit/services/ai-tail.service.test.ts",
+                      "sha256":  "9d91d40335cad1f7ad6dd04d3e948686b68fef40e842a95ac73d36e27f0dff51"
+                  },
+                  {
                       "path":  "tests/unit/services/ai-tasks-run.service.test.ts",
-                      "sha256":  "90cd2cb2af8f7fe7f70b23f764970c4f24ddf68ba3eaa507da63b0ef378a49cc"
+                      "sha256":  "56285594166ba74cd80809d1e453932fa010211a05f4e09706bf6769d741ee9c"
                   },
                   {
                       "path":  "tests/unit/services/ai-tasks-submit.service.test.ts",
@@ -1347,7 +1359,7 @@
                   },
                   {
                       "path":  "tests/unit/services/enrich.service.test.ts",
-                      "sha256":  "3b794931083f4a15b6185f8cf689c34aff69bdd2c339d60b6a37a1473d542d0b"
+                      "sha256":  "09d2e22c63814ff4ed26da1bd7ce4948e37dbbe3314f0a62c856bc0366b1ec30"
                   },
                   {
                       "path":  "tests/unit/services/export.service.test.ts",
@@ -1371,7 +1383,7 @@
                   },
                   {
                       "path":  "tests/unit/services/import.service.test.ts",
-                      "sha256":  "02ccc2fdcd3ed8317561cdf5cbb6b3aabdfd4eff3be921be72e401f561668a67"
+                      "sha256":  "0f8ec8dd86fba3c586d0f4120bbf2e37de123f49e40ea08e0aa89bbb2b8131e4"
                   },
                   {
                       "path":  "tests/unit/services/library.service.test.ts",
@@ -1583,7 +1595,7 @@
                   },
                   {
                       "path":  "tests/utils/ipc-deps.ts",
-                      "sha256":  "0f1b1921b98c81601f954bf625e3f353b7a4ed49774a54e99bca874d6abecf0f"
+                      "sha256":  "13ae6cb6421e73bd6e48ccc6b8d24a5ab98939dd9773b472439d4b5e8826d269"
                   },
                   {
                       "path":  "tests/utils/live-frame.ts",

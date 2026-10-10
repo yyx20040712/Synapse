@@ -38,6 +38,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       aiMemorySearch: null as never,
       aiTasks: null as never, // [F-DBCAMP-01 DB-2 U2b-1] AI 任务键（面外桩）
       aiContext: null as never, // [F-DBCAMP-01 DB-2 U2b-2a] AI 装配引擎键（面外桩）
+      aiTail: null as never, // [F-DBCAMP-01 DB-2 U2b-2b] AI 尾段装配键（面外桩）
       ...over.services
     },
     dialogs: {

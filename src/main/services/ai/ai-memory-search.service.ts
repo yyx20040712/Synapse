@@ -8,6 +8,8 @@
  *   0→empty（直接空召回标注，不触 SQL）；1-2→LIKE 路（escapeLike 转义 \ % _ 三字符
  *   +%q% 包装→三列 OR，SQL 侧 ESCAPE '\'）；≥3→MATCH 路（escapeFtsQuery 复用
  *   src/main/db/fts.ts——禁重写）。空命中=合法态返回空 rows。
+ *   [U2b-2b §3.c] 路由判定提取为 routeQueryByCodePoints（导出——ai-tail.service
+ *   尾段召回/文献两腿同源消费；searchMemory 改消费该函数=零行为变更）。
  * - 隔离=完全隔离无并集（裁定①——§3.C 逐字；谓词单源在 ai-memory.repo）。
  * - 排序两路同口径 (updated_at DESC, id DESC)；topK=8（MEMORY_SEARCH_TOP_K 单源）。
  * - ASCII 大小写折叠偏差=INV-127（两路同折叠——已知偏差非缺陷，行为锁测试承载）。
@@ -41,6 +43,18 @@ export function escapeLike(q: string): string {
   return q.replace(/[\\%_]/g, (ch) => `\\${ch}`)
 }
 
+/**
+ * 码点路由判定（§3.c——U2b-2b 提取导出）：trim 后查询按 [...q].length 三路由
+ * 0→empty / ≤2→like / ≥3→match。单源——searchMemory 与 ai-tail 尾段两腿共用，
+ * 禁两处复制（阈值语义漂移=路由行为分裂）。
+ */
+export function routeQueryByCodePoints(trimmedQuery: string): 'empty' | 'like' | 'match' {
+  const codePoints = [...trimmedQuery].length
+  if (codePoints === 0) return 'empty'
+  if (codePoints <= 2) return 'like'
+  return 'match'
+}
+
 export interface AiMemorySearchService {
   searchMemory(req: MemorySearchRequest): Promise<MemorySearchResult>
 }
@@ -66,19 +80,19 @@ export function createAiMemorySearchService(deps: { repos: Repos }): AiMemorySea
     async searchMemory(req) {
       assertScopeShape(req.scope, req.anchorId)
       const q = req.query.trim()
-      const codePoints = [...q].length
-      if (codePoints === 0) {
-        return { route: 'empty', rows: [] }
+      const route = routeQueryByCodePoints(q)
+      if (route === 'empty') {
+        return { route, rows: [] }
       }
-      if (codePoints <= 2) {
+      if (route === 'like') {
         const pattern = `%${escapeLike(q)}%`
         return {
-          route: 'like',
+          route,
           rows: aiMemory.searchByLike(req.scope, req.anchorId, pattern, MEMORY_SEARCH_TOP_K)
         }
       }
       return {
-        route: 'match',
+        route,
         rows: aiMemory.searchByMatch(req.scope, req.anchorId, escapeFtsQuery(q), MEMORY_SEARCH_TOP_K)
       }
     }

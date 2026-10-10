@@ -9,7 +9,8 @@ import { describe, expect, it } from 'vitest'
 import {
   createAiMemorySearchService,
   escapeLike,
-  MEMORY_SEARCH_TOP_K
+  MEMORY_SEARCH_TOP_K,
+  routeQueryByCodePoints
 } from '../../../src/main/services/ai/ai-memory-search.service'
 import { createRepos } from '../../../src/main/db/repos'
 import type { AiScope } from '../../../src/main/db/repos/ai-sessions.repo'
@@ -493,5 +494,25 @@ describe('F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索
   it('escapeLike 单元面：\\ % _ 三字符逐字转义（service 内助手直证）', () => {
     expect(escapeLike('a\\b%c_d')).toBe('a\\\\b\\%c\\_d')
     expect(escapeLike('普通')).toBe('普通')
+  })
+
+  // ── [F-DBCAMP-01 DB-2 U2b-2b] 码点路由助手（§3.c——ai-tail 消费面） ──
+
+  it('R20 routeQueryByCodePoints 三路由阈值（0/2/3 码点——trim 后入参）', () => {
+    expect(routeQueryByCodePoints('')).toBe('empty')
+    expect(routeQueryByCodePoints('水')).toBe('like')
+    expect(routeQueryByCodePoints('水文')).toBe('like')
+    expect(routeQueryByCodePoints('水文站')).toBe('match')
+    expect(routeQueryByCodePoints('abc')).toBe('match')
+  })
+
+  it('R21 路由对齐：searchMemory.route ≡ routeQueryByCodePoints(query.trim())（零行为变更锁）', async () => {
+    const db = createTestDb()
+    const svc = makeSvc(db)
+    for (const q of ['', '   ', '水', '水文', '水文站网', 'water leak']) {
+      const res = await svc.searchMemory({ scope: 'global', anchorId: null, query: q })
+      expect(res.route, `query=${JSON.stringify(q)}`).toBe(routeQueryByCodePoints(q.trim()))
+    }
+    db.close()
   })
 })

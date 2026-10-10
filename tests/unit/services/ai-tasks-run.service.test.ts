@@ -13,6 +13,8 @@ import {
   TASK_STATUSES,
   type AiTasksServiceDeps
 } from '../../../src/main/services/ai/ai-tasks.service'
+import { AGENT_PULL_SINGLE_CAP } from '../../../src/main/services/ai/ai-tasks.service'
+import { estimateTokens } from '../../../src/main/services/ai/ai-estimate'
 import { createRepos } from '../../../src/main/db/repos'
 import type { Repos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
@@ -706,6 +708,200 @@ describe('F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 ha
     expect(ddlStatuses, 'DDL 恰 6 态').toHaveLength(6)
     // 服务层闸常量==DDL 枚举（sort 后集合等值——运行期闸与库级 CHECK 零漂移）
     expect([...TASK_STATUSES].sort()).toEqual([...ddlStatuses].sort())
+    db.close()
+  })
+
+  // ── [F-DBCAMP-01 DB-2 U2b-2b] 代理拉取预算闸（§3.d——P11） ──
+
+  /** 20 行长题记忆底座（memory.list 信封 ~1040 tok > 800 单发上限） */
+  function seedBigMemoryList(db: Db): void {
+    for (let i = 1; i <= 20; i++) seedMemory(db, 'paper', 'p-1', `${i}`.padStart(2, '0') + '题'.repeat(40))
+  }
+
+  /** 既有轮内拉取信封（~1600 tok——代理腿原料直插会话） */
+  function seedPriorEnvelope(db: Db, sessionId: number): void {
+    const rows = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      category: 'method_note',
+      title: '拉'.repeat(150)
+    }))
+    db.prepare(
+      `INSERT INTO ai_messages (session_id, role, content, pinned, created_at, updated_at)
+       VALUES (?, 'assistant', ?, 0, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z')`
+    ).run(sessionId, JSON.stringify({ action: 'memory.list', count: rows.length, rows }))
+  }
+
+  /** 会话内首条 assistant 回写行（任务回写取回面） */
+  function writebackOf(repos: Repos, sessionId: number): string {
+    const m = repos.aiSessions.listMessages(sessionId).find((r) => r.role === 'assistant')
+    if (m === undefined) throw new Error('回写行缺席')
+    return m.content
+  }
+
+  it('R30 单发 800 截断：大信封→尾部整行舍弃 rows+truncated:true+result==writeback 且 ≤800', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedBigMemoryList(db)
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    const parsed = JSON.parse(final.result!) as { truncated?: boolean; count: number; rows: unknown[] }
+    expect(parsed.truncated).toBe(true)
+    expect(parsed.rows.length).toBeLessThan(20)
+    expect(parsed.rows.length).toBeGreaterThan(0)
+    expect(estimateTokens(final.result!)).toBeLessThanOrEqual(AGENT_PULL_SINGLE_CAP)
+    expect(writebackOf(repos, s.id)).toBe(final.result)
+    db.close()
+  })
+
+  it('R31 轮累计 2000：既有轮内信封 ~1600 tok→有效上限=min(800, 2000-1600)——行数少于对照', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedBigMemoryList(db)
+    // 对照会话：无既有拉取
+    const control = await submitRun(svc, repos, db, { action: 'memory.list', payload: {} })
+    const controlRows = (JSON.parse(control.final.result!) as { rows: unknown[] }).rows.length
+    // 轮内会话：先插 ~1600 tok 信封再跑
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    seedPriorEnvelope(db, s.id)
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    const limited = JSON.parse(final.result!) as { truncated?: boolean; rows: unknown[] }
+    expect(limited.truncated).toBe(true)
+    expect(limited.rows.length).toBeLessThan(controlRows)
+    db.close()
+  })
+
+  it('R32 user 消息重置轮：既有信封后插入 user 行→轮重开（行数回升=对照）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedBigMemoryList(db)
+    const control = await submitRun(svc, repos, db, { action: 'memory.list', payload: {} })
+    const controlRows = (JSON.parse(control.final.result!) as { rows: unknown[] }).rows.length
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    seedPriorEnvelope(db, s.id)
+    db.prepare(
+      `INSERT INTO ai_messages (session_id, role, content, pinned, created_at, updated_at)
+       VALUES (?, 'user', '新一轮提问', 0, '2024-01-02T00:00:00.000Z', '2024-01-02T00:00:00.000Z')`
+    ).run(s.id)
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    const reset = JSON.parse(final.result!) as { truncated?: boolean; rows: unknown[] }
+    expect(reset.rows.length).toBe(controlRows)
+    db.close()
+  })
+
+  it('R33 小信封原样通过：2 行短题→无 truncated 字段+result==writeback 字节等', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedMemory(db, 'paper', 'p-1', '短题甲')
+    seedMemory(db, 'paper', 'p-1', '短题乙')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    const parsed = JSON.parse(final.result!) as { truncated?: boolean; count: number; rows: unknown[] }
+    expect(parsed.truncated).toBeUndefined()
+    expect(parsed.count).toBe(2)
+    expect(parsed.rows).toHaveLength(2)
+    expect(writebackOf(repos, s.id)).toBe(final.result)
+    db.close()
+  })
+
+  it('R34 pullCaps 注入：{single:60}→信封压至 ≤60（rows 可空+truncated:true）', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos, pullCaps: { single: 60, round: 2000 } })
+    seedBigMemoryList(db)
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    const parsed = JSON.parse(final.result!) as { truncated?: boolean; rows: unknown[] }
+    expect(parsed.truncated).toBe(true)
+    expect(estimateTokens(final.result!)).toBeLessThanOrEqual(60)
+    db.close()
+  })
+
+  it('R35 非解析 JSON 回写原样通过（防御）：纯长文本→零截断+result 不被覆盖', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const longText = '非'.repeat(4000)
+    const svc = createAiTasksService({
+      repos,
+      handlerOverrides: {
+        'memory.search': () => () => ({ result: '纯结果文本', writeback: longText })
+      }
+    })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.search', payload: { query: 'x' } })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    expect(final.result).toBe('纯结果文本')
+    expect(writebackOf(repos, s.id)).toBe(longText)
+    db.close()
+  })
+
+  // ── [r1 回炉] W1 闸下界语义+N3 无 rows 数组防御 ──
+
+  it('R36 [r1 R-W1] 轮预算耗尽：三发累计 ~1990 后第四发 effectiveCap≈0→落库=空 rows+truncated:true 骨架', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const svc = createAiTasksService({ repos })
+    seedBigMemoryList(db)
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    // 三发真任务各经闸收缩落库（≈780+780+430 tok——轮内累计）
+    for (let i = 1; i <= 3; i++) {
+      const t = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+      const f = await svc.runTask({ taskId: t.id, sessionId: s.id })
+      expect(f.status).toBe('succeeded')
+    }
+    const pulled = repos.aiSessions
+      .listMessages(s.id)
+      .filter((m) => m.role === 'assistant')
+      .reduce((sum, m) => sum + estimateTokens(m.content), 0)
+    expect(pulled).toBeGreaterThanOrEqual(1960)
+    // 第四发：effectiveCap=max(0,min(800,2000-pulled))≈0 → 骨架（票面「或 rows 空」兜底）
+    const t4 = await svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: {} })
+    const final = await svc.runTask({ taskId: t4.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    const parsed = JSON.parse(final.result!) as { truncated?: boolean; count: number; rows: unknown[] }
+    expect(parsed.truncated).toBe(true)
+    expect(parsed.rows).toEqual([])
+    expect(parsed.count).toBe(20)
+    // 骨架量级（~14 tok）——轮累计可微量越 2000 的既知面（闸下界声明）
+    expect(estimateTokens(final.result!)).toBeLessThanOrEqual(40)
+    const lastWriteback = repos.aiSessions
+      .listMessages(s.id)
+      .filter((m) => m.role === 'assistant')
+      .at(-1)!
+    expect(lastWriteback.content).toBe(final.result)
+    db.close()
+  })
+
+  it('R37 [r1 R-N3] 解析成功但无 rows 数组→原样通过：count-only 超限信封零截断落库', async () => {
+    const db = createTestDb()
+    const repos = createRepos(db)
+    const noRowsEnvelope = JSON.stringify({ action: 'memory.list', count: 1, pad: 'x'.repeat(4000) })
+    const svc = createAiTasksService({
+      repos,
+      handlerOverrides: {
+        'memory.search': () => () => ({ result: '原样结果', writeback: noRowsEnvelope })
+      }
+    })
+    seedPaper(db, 'p-1')
+    const s = repos.aiSessions.createSession('paper', 'p-1')
+    const t = await svc.submitTask({ sessionId: s.id, action: 'memory.search', payload: { query: 'x' } })
+    const final = await svc.runTask({ taskId: t.id, sessionId: s.id })
+    expect(final.status).toBe('succeeded')
+    expect(final.result).toBe('原样结果')
+    expect(writebackOf(repos, s.id)).toBe(noRowsEnvelope)
     db.close()
   })
 })

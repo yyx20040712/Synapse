@@ -57,6 +57,10 @@ import {
   createAiContextService,
   type AiContextService
 } from './ai/ai-context.service'
+import {
+  createAiTailService,
+  type AiTailService
+} from './ai/ai-tail.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -131,6 +135,9 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-2 U2b-2a] AI 上下文装配引擎（L1 骨架+L2 片段——对话
    *  管线批消费；本批零 IPC） */
   aiContext: AiContextService
+  /** [F-DBCAMP-01 DB-2 U2b-2b] AI L3 尾段现算装配（消息窗/召回/文献/代理四腿
+   *  ——对话管线批消费；本批零 IPC） */
+  aiTail: AiTailService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -211,7 +218,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiSessions: createAiSessionsService({ repos: deps.repos }),
     aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),
     aiTasks: createAiTasksService({ repos: deps.repos }),
-    aiContext: createAiContextService({ repos: deps.repos })
+    aiContext: createAiContextService({ repos: deps.repos }),
+    aiTail: createAiTailService({ repos: deps.repos })
   }
 }
 

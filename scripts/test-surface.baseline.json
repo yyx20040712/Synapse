@@ -6782,6 +6782,204 @@
         }
       ]
     },
+    "tests/unit/db/repos/ai-search.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S1 match papers 腿 title 命中（trigram 短语+图内节点行——noteContentMd 无笔记=null）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S1 match papers 腿 title 命中（trigram 短语+图内节点行——noteContentMd 无笔记=null）",
+          "markers": [],
+          "line": 74,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])",
+            "expect(hits[0]!.title).toBe('管网漏损检测方法')",
+            "expect(hits[0]!.year).toBe(2020)",
+            "expect(hits[0]!.abstract).toBe('摘要甲')",
+            "expect(hits[0]!.noteContentMd).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S2 match papers 腿 abstract 列命中（三列检索域=title+abstract）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S2 match papers 腿 abstract 列命中（三列检索域=title+abstract）",
+          "markers": [],
+          "line": 86,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toContain('p-3')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S3 match notes 腿命中（noteContentMd=命中行 content_md）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S3 match notes 腿命中（noteContentMd=命中行 content_md）",
+          "markers": [],
+          "line": 96,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-2'])",
+            "expect(hits[0]!.noteContentMd).toBe('实验记录：夜间流量法与声学检测联用方案')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S4 跨腿去重：同 paperId 双腿命中→合并单条（papers 腿形态保留——note 随行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S4 跨腿去重：同 paperId 双腿命中→合并单条（papers 腿形态保留——note 随行）",
+          "markers": [],
+          "line": 106,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])",
+            "expect(hits[0]!.noteContentMd).toBe('笔记也提到管网漏损检测')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S5 papers 腿序在前：title 命中行先于 notes 腿命中行（合并序行为锁）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S5 papers 腿序在前：title 命中行先于 notes 腿命中行（合并序行为锁）",
+          "markers": [],
+          "line": 116,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-9', 'p-1', 'p-2'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S6 图内过滤：文件夹内论文但非图节点→排除（无 lineage_nodes 行的 p-ghost 不入）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S6 图内过滤：文件夹内论文但非图节点→排除（无 lineage_nodes 行的 p-ghost 不入）",
+          "markers": [],
+          "line": 133,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])",
+            "expect(hits.some((h) => h.paperId === 'p-ghost')).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S7 paper_id NULL 节点排除：纯主题节点不 Whitelist 任何论文（IS NOT NULL 子句）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S7 paper_id NULL 节点排除：纯主题节点不 Whitelist 任何论文（IS NOT NULL 子句）",
+          "markers": [],
+          "line": 143,
+          "assertions": [
+            "expect(hits).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S8 top-5：7 篇图内命中→恰 5（LIMIT 截断）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S8 top-5：7 篇图内命中→恰 5（LIMIT 截断）",
+          "markers": [],
+          "line": 153,
+          "assertions": [
+            "expect(hits).toHaveLength(5)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S9 rank 序确定性：同参两次调用 deep-equal+字段全等（无 Date/random 参与）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S9 rank 序确定性：同参两次调用 deep-equal+字段全等（无 Date/random 参与）",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(a).toEqual(b)",
+            "expect(JSON.stringify(a)).toBe(JSON.stringify(b))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S10 like title 命中（pattern 由调用方构造——repo 收绑定参数）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S10 like title 命中（pattern 由调用方构造——repo 收绑定参数）",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S11 like notes content 命中+\\\\ % _ 转义（通配符字面匹配——负对照不含 _ 变体）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S11 like notes content 命中+\\ % _ 转义（通配符字面匹配——负对照不含 _ 变体）",
+          "markers": [],
+          "line": 186,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S12 幽灵 folder：空结果（图内过滤天然空集）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S12 幽灵 folder：空结果（图内过滤天然空集）",
+          "markers": [],
+          "line": 202,
+          "assertions": [
+            "expect(repo.searchLiterature('c-ghost', '\"管网漏损检测\"', 'match')).toEqual([])",
+            "expect(repo.searchLiterature('c-ghost', likePattern('管网'), 'like')).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S13 [r1 R-B1] match papers 腿列过滤：authors-only 命中行排除（检索域三列声明强制面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S13 [r1 R-B1] match papers 腿列过滤：authors-only 命中行排除（检索域三列声明强制面）",
+          "markers": [],
+          "line": 211,
+          "assertions": [
+            "expect(repo.searchLiterature('c-1', '\"quantum\"', 'match')).toEqual([])",
+            "expect(repo.searchLiterature('c-1', '\"水质研究\"', 'match')).toHaveLength(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S14 [r1 R-N2] like 路 abstract 列分支：abstract 含词 title 不含→命中\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S14 [r1 R-N2] like 路 abstract 列分支：abstract 含词 title 不含→命中",
+          "markers": [],
+          "line": 225,
+          "assertions": [
+            "expect(hits.map((h) => h.paperId)).toEqual(['p-1'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）\",\"S15 [r1 R-N1] notes 腿 like 第二决胜键：P13 破（同论文双笔记行）→nt.rowid ASC 可重复序\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-search.repo —— 文献域检索读面（两腿+图内过滤）"
+          ],
+          "title": "S15 [r1 R-N1] notes 腿 like 第二决胜键：P13 破（同论文双笔记行）→nt.rowid ASC 可重复序",
+          "markers": [],
+          "line": 237,
+          "assertions": [
+            "expect(hits).toHaveLength(1)",
+            "expect(hits[0]!.noteContentMd).toBe('先插笔记含沉积物语料')"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/repos/ai-sessions.repo.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -38880,7 +39078,7 @@
           ],
           "title": "R1 空查询 route=empty 零行（trim 后码点 0——不触检索）",
           "markers": [],
-          "line": 74,
+          "line": 75,
           "assertions": [
             "expect(await svc.searchMemory({ scope: 'global', anchorId: null, query: '' })).toEqual({ route: 'empty', rows: [] })",
             "expect(await svc.searchMemory({ scope: 'global', anchorId: null, query: ' ' })).toEqual({ route: 'empty', rows: [] })"
@@ -38893,7 +39091,7 @@
           ],
           "title": "R2 单字中文 route='like' 命中真值（'<3 码点 MATCH 静默零命中'回退——§2 实测）",
           "markers": [],
-          "line": 89,
+          "line": 90,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.map((r) => r.id)).toEqual([hit])",
@@ -38907,7 +39105,7 @@
           ],
           "title": "R3 二字中文 route='like'（1-2 码点界内——路由阈值红锚）",
           "markers": [],
-          "line": 101,
+          "line": 102,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.map((r) => r.id)).toEqual([hit])"
@@ -38920,7 +39118,7 @@
           ],
           "title": "R4 ≥3 字中文 route='match'（FTS trigram 域内）",
           "markers": [],
-          "line": 111,
+          "line": 112,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([hit])"
@@ -38933,7 +39131,7 @@
           ],
           "title": "R5 英文≥3 route='match'",
           "markers": [],
-          "line": 121,
+          "line": 122,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([hit])"
@@ -38946,7 +39144,7 @@
           ],
           "title": "R6 混排 route='match'",
           "markers": [],
-          "line": 131,
+          "line": 132,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([hit])"
@@ -38959,7 +39157,7 @@
           ],
           "title": "R7 LIKE 特字符：查询含 \\ % _ →字面命中不变形（escapeLike+ESCAPE 子句）",
           "markers": [],
-          "line": 141,
+          "line": 142,
           "assertions": [
             "expect(resPct.route).toBe('like')",
             "expect(idsOf(resPct.rows)).toEqual([pctOnly, mixed].sort((a, b) => a - b))",
@@ -38977,7 +39175,7 @@
           ],
           "title": "R8 MATCH 注入：含 \" 与 OR →短语字面查找非布尔式（escapeFtsQuery 复用）",
           "markers": [],
-          "line": 192,
+          "line": 193,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([literal])",
@@ -38992,7 +39190,7 @@
           ],
           "title": "R9 隔离-paper：锚 A 不见锚 B 行+不见 global 行（裁定①完全隔离——无并集）",
           "markers": [],
-          "line": 222,
+          "line": 223,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.map((r) => r.id)).toEqual([mine])",
@@ -39007,7 +39205,7 @@
           ],
           "title": "R10 隔离-lineage 同构（MATCH 路同谓词——锚=collections.id；同构=亦不见 global 行）",
           "markers": [],
-          "line": 253,
+          "line": 254,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([mine])",
@@ -39022,7 +39220,7 @@
           ],
           "title": "R17 隔离-paper×MATCH 路（对偶 R9 的 LIKE 路——other 锚行内容含查询词仍缺席）",
           "markers": [],
-          "line": 285,
+          "line": 286,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.map((r) => r.id)).toEqual([mine])",
@@ -39037,7 +39235,7 @@
           ],
           "title": "R11 隔离-global：global 全集+不见 paper/lineage 行（同词三档对照）",
           "markers": [],
-          "line": 316,
+          "line": 317,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.map((r) => r.id)).toEqual([g])",
@@ -39052,7 +39250,7 @@
           ],
           "title": "R12 排序=updated_at DESC,id DESC（同 updated_at 用 id 破平——两路同口径）",
           "markers": [],
-          "line": 347,
+          "line": 348,
           "assertions": [
             "expect(like.route).toBe('like')",
             "expect(like.rows.map((r) => r.id)).toEqual(expected.map((r) => r))",
@@ -39067,7 +39265,7 @@
           ],
           "title": "R13 topK=8（播 10 命中恰 8——top 8 按 (updated_at,id) DESC）",
           "markers": [],
-          "line": 381,
+          "line": 382,
           "assertions": [
             "expect(res.route).toBe('match')",
             "expect(res.rows.length).toBe(MEMORY_SEARCH_TOP_K)",
@@ -39081,7 +39279,7 @@
           ],
           "title": "R14 大小写折叠两路一致（INV-127 行为锁——ASCII 折叠，两路均命中）",
           "markers": [],
-          "line": 401,
+          "line": 402,
           "assertions": [
             "expect(like.route).toBe('like')",
             "expect(like.rows.map((r) => r.id)).toEqual([hit])",
@@ -39097,7 +39295,7 @@
           ],
           "title": "R18 label 列命中（非空 label+LIKE 路三列 OR 的 label 分支——title/content 均不含查询词）",
           "markers": [],
-          "line": 424,
+          "line": 425,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.map((r) => r.id)).toEqual([labeled])"
@@ -39110,7 +39308,7 @@
           ],
           "title": "R19 LIKE 路 topK=8（播 10 命中恰 8——对偶 R13 的 MATCH 路）",
           "markers": [],
-          "line": 440,
+          "line": 441,
           "assertions": [
             "expect(res.route).toBe('like')",
             "expect(res.rows.length).toBe(MEMORY_SEARCH_TOP_K)",
@@ -39124,7 +39322,7 @@
           ],
           "title": "R15 非法 scope → INVALID_REQUEST（封闭三值外——与 openSession 同规则）",
           "markers": [],
-          "line": 460,
+          "line": 461,
           "assertions": []
         },
         {
@@ -39134,7 +39332,7 @@
           ],
           "title": "R16 global 带 anchor 拒+paper 缺 anchor 拒（形态校验——§3.E）",
           "markers": [],
-          "line": 476,
+          "line": 477,
           "assertions": []
         },
         {
@@ -39144,10 +39342,38 @@
           ],
           "title": "escapeLike 单元面：\\ % _ 三字符逐字转义（service 内助手直证）",
           "markers": [],
-          "line": 493,
+          "line": 494,
           "assertions": [
             "expect(escapeLike('a\\\\b%c_d')).toBe('a\\\\\\\\b\\\\%c\\\\_d')",
             "expect(escapeLike('普通')).toBe('普通')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R20 routeQueryByCodePoints 三路由阈值（0/2/3 码点——trim 后入参）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R20 routeQueryByCodePoints 三路由阈值（0/2/3 码点——trim 后入参）",
+          "markers": [],
+          "line": 501,
+          "assertions": [
+            "expect(routeQueryByCodePoints('')).toBe('empty')",
+            "expect(routeQueryByCodePoints('水')).toBe('like')",
+            "expect(routeQueryByCodePoints('水文')).toBe('like')",
+            "expect(routeQueryByCodePoints('水文站')).toBe('match')",
+            "expect(routeQueryByCodePoints('abc')).toBe('match')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索\",\"R21 路由对齐：searchMemory.route ≡ routeQueryByCodePoints(query.trim())（零行为变更锁）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2a ai-memory-search —— 码点路由+隔离检索"
+          ],
+          "title": "R21 路由对齐：searchMemory.route ≡ routeQueryByCodePoints(query.trim())（零行为变更锁）",
+          "markers": [],
+          "line": 509,
+          "assertions": [
+            "expect(res.route, `query=${JSON.stringify(q)}`).toBe(routeQueryByCodePoints(q.trim()))"
           ]
         }
       ]
@@ -39748,6 +39974,412 @@
         }
       ]
     },
+    "tests/unit/services/ai-tail.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T1 形态：幽灵会话 → NOT_FOUND「会话不存在」（与 ai-sessions.service 逐字对齐）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T1 形态：幽灵会话 → NOT_FOUND「会话不存在」（与 ai-sessions.service 逐字对齐）",
+          "markers": [],
+          "line": 104,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T2 形态：currentMessage 非 string → INVALID_REQUEST（形态先于存在性——裁③）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T2 形态：currentMessage 非 string → INVALID_REQUEST（形态先于存在性——裁③）",
+          "markers": [],
+          "line": 110,
+          "assertions": []
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T3 消息窗正序输出：旧→新（渲染 [user]/[assistant] 前缀）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T3 消息窗正序输出：旧→新（渲染 [user]/[assistant] 前缀）",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(lines).toEqual(['[user] 第一条', '[assistant] 第二条', '[user] 第三条'])",
+            "expect(r.meta.windowLoaded).toBe(3)",
+            "expect(r.meta.windowTruncated).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T4 消息窗新到旧装入+边界截断：注入 window cap 7→最新整条+次新截半+最旧弃\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T4 消息窗新到旧装入+边界截断：注入 window cap 7→最新整条+次新截半+最旧弃",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(r.tail.split('\\n')).toEqual(['[user] ', '[user] 甲甲甲'])",
+            "expect(r.meta.windowLoaded).toBe(2)",
+            "expect(r.meta.windowTruncated).toBe(true)",
+            "expect(r.meta.legsTruncated).toEqual(['window'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T5 分桶：信封 assistant 入代理腿（原样 content）；非信封 assistant 留窗（4 形负对照）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T5 分桶：信封 assistant 入代理腿（原样 content）；非信封 assistant 留窗（4 形负对照）",
+          "markers": [],
+          "line": 160,
+          "assertions": [
+            "expect(lines.slice(0, 5)).toEqual([ '[user] 问', `[assistant] ${createEnv}`, '[assistant] 普通助手文本', '[assistant] [1,2,3]', `[assistant] ${noAction}` ])",
+            "expect(lines.slice(5)).toEqual([e2, e1])",
+            "expect(r.meta.agentLoaded).toBe(2)",
+            "expect(r.meta.windowLoaded).toBe(5)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T6 三档预算：46 行×10 tok → paper/global 全装（≤500）、lineage 截断（400）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T6 三档预算：46 行×10 tok → paper/global 全装（≤500）、lineage 截断（400）",
+          "markers": [],
+          "line": 193,
+          "assertions": [
+            "expect(p.meta.windowLoaded).toBe(46)",
+            "expect(p.meta.windowTruncated).toBe(false)",
+            "expect(l.meta.windowLoaded).toBe(40)",
+            "expect(l.meta.windowTruncated).toBe(true)",
+            "expect(g.meta.windowLoaded).toBe(46)",
+            "expect(g.meta.windowTruncated).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T7 召回三路由：空串→empty 零行、2 码点→like、≥3 码点→match\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T7 召回三路由：空串→empty 零行、2 码点→like、≥3 码点→match",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(empty.meta.recallRoute).toBe('empty')",
+            "expect(empty.meta.recallRows).toBe(0)",
+            "expect(empty.tail).not.toContain('[记忆召回')",
+            "expect(like.meta.recallRoute).toBe('like')",
+            "expect(like.meta.recallRows).toBe(1)",
+            "expect(match.meta.recallRoute).toBe('match')",
+            "expect(match.meta.recallRows).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T8 召回隔离谓词：scope+anchor 传会话行值（本锚行 only——他锚/global 不入）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T8 召回隔离谓词：scope+anchor 传会话行值（本锚行 only——他锚/global 不入）",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(r.meta.recallRows).toBe(1)",
+            "expect(r.tail).toContain('[记忆召回:method_note] 浊度甲|内容')",
+            "expect(r.tail).not.toContain('浊度乙')",
+            "expect(r.tail).not.toContain('浊度丙')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T9 召回 topK：10 命中→恰 8（MEMORY_SEARCH_TOP_K 单源）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T9 召回 topK：10 命中→恰 8（MEMORY_SEARCH_TOP_K 单源）",
+          "markers": [],
+          "line": 259,
+          "assertions": [
+            "expect(r.meta.recallRows).toBe(MEMORY_SEARCH_TOP_K)",
+            "expect(r.tail.split('\\n').filter((l) => l.startsWith('[记忆召回'))).toHaveLength(8)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T10 召回腿 cap 截断：注入 recall 100→首行整装+次行截半+余弃（legsTruncated）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T10 召回腿 cap 截断：注入 recall 100→首行整装+次行截半+余弃（legsTruncated）",
+          "markers": [],
+          "line": 271,
+          "assertions": [
+            "expect(recallLines).toHaveLength(2)",
+            "expect(recallLines[1]!.length).toBeLessThan(recallLines[0]!.length)",
+            "expect(r.meta.recallRows).toBe(8)",
+            "expect(r.meta.legsTruncated).toContain('recall')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T11 文献 top-5：7 篇图内命中→literatureHits=5+恰 5 块\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T11 文献 top-5：7 篇图内命中→literatureHits=5+恰 5 块",
+          "markers": [],
+          "line": 287,
+          "assertions": [
+            "expect(r.meta.literatureHits).toBe(5)",
+            "expect(r.tail.split('\\n').filter((l) => l.startsWith('[文献展开]'))).toHaveLength(5)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T12 单篇 250：400 码点摘要→块估计 ≤250+前缀保留（LITERATURE_PAPER_CAP）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T12 单篇 250：400 码点摘要→块估计 ≤250+前缀保留（LITERATURE_PAPER_CAP）",
+          "markers": [],
+          "line": 302,
+          "assertions": [
+            "expect(estimateTokens(block)).toBeLessThanOrEqual(LITERATURE_PAPER_CAP)",
+            "expect(block.startsWith('[文献展开] 甲文（2020）|摘要 长长长')).toBe(true)",
+            "expect(r.meta.legsTruncated).not.toContain('literature')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T13 文献腿 300：注入 literature 40→边界块截半（legsTruncated 含 literature）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T13 文献腿 300：注入 literature 40→边界块截半（legsTruncated 含 literature）",
+          "markers": [],
+          "line": 318,
+          "assertions": [
+            "expect(blocks.length).toBe(2)",
+            "expect(r.meta.literatureHits).toBe(5)",
+            "expect(r.meta.legsTruncated).toContain('literature')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T14 仅 lineage：paper/global 档无文献腿（literatureHits 缺席+零块）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T14 仅 lineage：paper/global 档无文献腿（literatureHits 缺席+零块）",
+          "markers": [],
+          "line": 335,
+          "assertions": [
+            "expect(p.meta.literatureHits).toBeUndefined()",
+            "expect(p.tail).not.toContain('[文献展开]')",
+            "expect(g.tail).not.toContain('[文献展开]')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T15 INV-130 识别契约见 T5（信封=对象+action∈{memory.search,memory.list}；4 负对照在窗）——本例补 search 形\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T15 INV-130 识别契约见 T5（信封=对象+action∈{memory.search,memory.list}；4 负对照在窗）——本例补 search 形",
+          "markers": [],
+          "line": 351,
+          "assertions": [
+            "expect(r.tail.split('\\n')).toEqual([searchEnv])",
+            "expect(r.meta.agentLoaded).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T16 代理腿 cap 200：3 信封 ~106 tok→最新整+次新截半+最旧弃\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T16 代理腿 cap 200：3 信封 ~106 tok→最新整+次新截半+最旧弃",
+          "markers": [],
+          "line": 364,
+          "assertions": [
+            "expect(agentLines).toHaveLength(2)",
+            "expect(agentLines[0]).toBe(e3)",
+            "expect(agentLines[1]!.length).toBeLessThan(e2.length)",
+            "expect(r.meta.agentLoaded).toBe(2)",
+            "expect(r.meta.legsTruncated).toContain('agent')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T17 meta 形状：四腿全命中（lineage）→全字段（recallRoute/recallRows/literatureHits/loaded 双量）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T17 meta 形状：四腿全命中（lineage）→全字段（recallRoute/recallRows/literatureHits/loaded 双量）",
+          "markers": [],
+          "line": 392,
+          "assertions": [
+            "expect(r.meta).toEqual({ scope: 'lineage', recallRoute: 'match', recallRows: 1, literatureHits: 1, windowLoaded: 1, windowTruncated: false, agentLoaded: 1, legsTruncated: [] })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T18 确定性：同输入两次调用 tail ===（硬断言）+meta toEqual（软断言）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T18 确定性：同输入两次调用 tail ===（硬断言）+meta toEqual（软断言）",
+          "markers": [],
+          "line": 416,
+          "assertions": [
+            "expect(a.tail).toBe(b.tail)",
+            "expect(a.meta).toEqual(b.meta)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T19 caps 注入全覆盖：四腿全注 1→各腿至多边界 1 tok 片（退化档不炸）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T19 caps 注入全覆盖：四腿全注 1→各腿至多边界 1 tok 片（退化档不炸）",
+          "markers": [],
+          "line": 435,
+          "assertions": [
+            "expect(r.meta.legsTruncated).toEqual(['window', 'recall', 'literature', 'agent'])",
+            "expect(estimateTokens(line)).toBeLessThanOrEqual(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T20 INV-131 断言一 cacheKey 零耦合：写 ai_messages 后 prefix cacheKey 不变\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T20 INV-131 断言一 cacheKey 零耦合：写 ai_messages 后 prefix cacheKey 不变",
+          "markers": [],
+          "line": 458,
+          "assertions": [
+            "expect(after.cacheKey).toBe(before.cacheKey)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T21 INV-131 断言二 前缀字节相等：写 ai_messages 后 prefix ===（L3 数据不入 L1/L2）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T21 INV-131 断言二 前缀字节相等：写 ai_messages 后 prefix ===（L3 数据不入 L1/L2）",
+          "markers": [],
+          "line": 471,
+          "assertions": [
+            "expect(after.prefix).toBe(before.prefix)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T22 装入序：窗→召回→文献→代理（indexOf 全序链）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T22 装入序：窗→召回→文献→代理（indexOf 全序链）",
+          "markers": [],
+          "line": 485,
+          "assertions": [
+            "expect(iWin).toBeGreaterThanOrEqual(0)",
+            "expect(iRecall).toBeGreaterThan(iWin)",
+            "expect(iLit).toBeGreaterThan(iRecall)",
+            "expect(iAgent).toBeGreaterThan(iLit)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T23 currentMessage trim 路由：首尾空白剥离（空白包裹的查询→match）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T23 currentMessage trim 路由：首尾空白剥离（空白包裹的查询→match）",
+          "markers": [],
+          "line": 507,
+          "assertions": [
+            "expect(r.meta.recallRoute).toBe('match')",
+            "expect(r.meta.recallRows).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T24 召回渲染格式：[记忆召回:{category}] {title}|{content≤120 片 cap}\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T24 召回渲染格式：[记忆召回:{category}] {title}|{content≤120 片 cap}",
+          "markers": [],
+          "line": 519,
+          "assertions": [
+            "expect(r.tail.split('\\n')).toEqual([`[记忆召回:method_note] 浊度记忆|${'内'.repeat(120)}`])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T25 文献渲染格式：title（year）|摘要 …|笔记 无/笔记内容（year null→短横线）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T25 文献渲染格式：title（year）|摘要 …|笔记 无/笔记内容（year null→短横线）",
+          "markers": [],
+          "line": 530,
+          "assertions": [
+            "expect(blocks).toEqual([ '[文献展开] 管网论文（-）|摘要 摘要本体|笔记 无', '[文献展开] 管网对照（2021）|摘要 摘要乙体|笔记 笔记内容' ])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T26 global 档全装配：窗+召回+代理三腿（无文献腿）——scope 从会话行读\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T26 global 档全装配：窗+召回+代理三腿（无文献腿）——scope 从会话行读",
+          "markers": [],
+          "line": 549,
+          "assertions": [
+            "expect(r.meta.scope).toBe('global')",
+            "expect(lines[0]).toBe('[user] 全局问题')",
+            "expect(lines[1]).toBe('[记忆召回:user_preference] 偏好甲|内容')",
+            "expect(lines[2]).toBe(envelope([{ id: 1, title: '题' }]))",
+            "expect(lines.some((l) => l.startsWith('[文献展开]'))).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T27 [r1 R-W2] literatureHits 真缺席：paper/global 档键不在场（in 检查非 undefined 值键）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T27 [r1 R-W2] literatureHits 真缺席：paper/global 档键不在场（in 检查非 undefined 值键）",
+          "markers": [],
+          "line": 568,
+          "assertions": [
+            "expect('literatureHits' in p.meta).toBe(false)",
+            "expect('literatureHits' in g.meta).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T28 [r1 R-W2] lineage 档+empty 路由：literatureHits=0 在场（空查询零 SQL 仍记 0）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T28 [r1 R-W2] lineage 档+empty 路由：literatureHits=0 在场（空查询零 SQL 仍记 0）",
+          "markers": [],
+          "line": 589,
+          "assertions": [
+            "expect(r.meta.recallRoute).toBe('empty')",
+            "expect(r.meta.literatureHits).toBe(0)",
+            "expect('literatureHits' in r.meta).toBe(true)",
+            "expect(r.tail).not.toContain('[文献展开]')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配\",\"T29 [r1 R-N4] INV-130 产出面直证：真 handler memory.search 回写→assembleTail 识别入代理腿\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-2b ai-tail.service —— L3 尾段现算装配"
+          ],
+          "title": "T29 [r1 R-N4] INV-130 产出面直证：真 handler memory.search 回写→assembleTail 识别入代理腿",
+          "markers": [],
+          "line": 604,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(r.meta.agentLoaded).toBe(1)",
+            "expect(r.tail.split('\\n')).toContain(writeback.content)",
+            "expect(r.tail).toContain('\"action\":\"memory.search\"')"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/ai-tasks-run.service.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -39760,7 +40392,7 @@
           ],
           "title": "R1 幽灵任务 runTask → NOT_FOUND「任务不存在」",
           "markers": [],
-          "line": 73,
+          "line": 75,
           "assertions": [
             "expect(svc.runTask({ taskId: 9999, sessionId: s.id })).rejects.toMatchObject({ code: 'NOT_FOUND', message: expect.stringContaining('任务不存在') })"
           ]
@@ -39772,7 +40404,7 @@
           ],
           "title": "R2 幽灵会话 runTask → NOT_FOUND「会话不存在」",
           "markers": [],
-          "line": 86,
+          "line": 88,
           "assertions": [
             "expect(svc.runTask({ taskId: t.id, sessionId: 9999 })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -39784,7 +40416,7 @@
           ],
           "title": "R3 全合法迁移链：queued→running→succeeded+审计序 submitted→target_resolved→mutated→succeeded",
           "markers": [],
-          "line": 99,
+          "line": 101,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(final.result).toContain('memoryId')",
@@ -39798,7 +40430,7 @@
           ],
           "title": "R4 非法迁移拒：终态再 run → CONFLICT「任务不在可执行状态」（每终态回迁+越序抽样）",
           "markers": [],
-          "line": 118,
+          "line": 120,
           "assertions": [
             "expect(svc.runTask({ taskId: a.id, sessionId: s.id })).rejects.toMatchObject({ code: 'CONFLICT', message: expect.stringContaining('任务不在可执行状态') })",
             "expect(svc.runTask({ taskId: b.id, sessionId: s.id })).rejects.toMatchObject({ code: 'CONFLICT' })",
@@ -39812,7 +40444,7 @@
           ],
           "title": "R5 cancel 律：queued→cancelled+审计；running 不可取消（CONFLICT）；幽灵任务 NOT_FOUND",
           "markers": [],
-          "line": 141,
+          "line": 143,
           "assertions": [
             "expect(cancelled.status).toBe('cancelled')",
             "expect(repos.aiTasks.listAudit(t.id).map((a) => a.kind)).toEqual(['submitted', 'cancelled'])",
@@ -39827,7 +40459,7 @@
           ],
           "title": "R6 memory.create 落位（INV-128）：(scope,anchor)=目标+origin=agent+sourceTaskId=本任务+ai_memory epoch +1",
           "markers": [],
-          "line": 160,
+          "line": 162,
           "assertions": [
             "expect(row.scope).toBe('paper')",
             "expect(row.anchor_id).toBe('p-2')",
@@ -39844,7 +40476,7 @@
           ],
           "title": "R7 memory.create 分类档错位（paper 目标+lineage 类）→ failed 终态（19 值集过闸②/档集执行期拒）",
           "markers": [],
-          "line": 197,
+          "line": 199,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('分类')",
@@ -39858,7 +40490,7 @@
           ],
           "title": "R8 memory.update：部分刷+updated_at 刷新+result 含 memoryId",
           "markers": [],
-          "line": 211,
+          "line": 213,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(row.title).toBe('新标题乙')",
@@ -39873,7 +40505,7 @@
           ],
           "title": "R9 围栏负例：跨锚 memoryId（update/delete/pin 抽样）→ failed 终态+审计 failed+零副作用",
           "markers": [],
-          "line": 231,
+          "line": 233,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('任务目标锚')",
@@ -39888,7 +40520,7 @@
           ],
           "title": "R10 memory.update 缺席 memoryId → failed「记忆不存在」",
           "markers": [],
-          "line": 248,
+          "line": 250,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('记忆不存在')"
@@ -39901,7 +40533,7 @@
           ],
           "title": "R24 写后抛错零副作用（r1 k3-N4）：handler 落 ai_memory 后抛 → failed+memory 行灭+审计恰三行",
           "markers": [],
-          "line": 261,
+          "line": 263,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('写后抛错点')",
@@ -39916,7 +40548,7 @@
           ],
           "title": "R11 memory.delete：行灭+FTS 同步清（MATCH 归零）",
           "markers": [],
-          "line": 300,
+          "line": 302,
           "assertions": [
             "expect( db.prepare(`SELECT rowid FROM ai_memory_fts WHERE ai_memory_fts MATCH '\"删除目标内容语料\"'`).get() ).toBeTruthy()",
             "expect(final.status).toBe('succeeded')",
@@ -39931,7 +40563,7 @@
           ],
           "title": "R23 摘要截断（r1 W-d1-1）：120 码点 title+300 码点 content → mutated detail 每侧 ≤200 码点（create 路直证）",
           "markers": [],
-          "line": 320,
+          "line": 322,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(mutated).toBeDefined()",
@@ -39947,7 +40579,7 @@
           ],
           "title": "R23b 摘要截断 update 路（r2 d1-N1）：before 侧非空直证——120 码点 title+300 码点 content 播种→update 换 300 码点长文→两侧 digest 各 ≤200 码点",
           "markers": [],
-          "line": 343,
+          "line": 345,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(mutated).toBeDefined()",
@@ -39965,7 +40597,7 @@
           ],
           "title": "R25 handlerOverrides 守卫（r2 d1-delta-W1+k3-N3）：typo 键构造即 throw（fail-fast 杀静默忽略面）",
           "markers": [],
-          "line": 371,
+          "line": 373,
           "assertions": [
             "expect(() => createAiTasksService({ repos, handlerOverrides: badOverrides })).toThrow( 'handlerOverrides 非法动作键：memory.creat' )"
           ]
@@ -39977,7 +40609,7 @@
           ],
           "title": "R12 memory.pin/unpin：翻转+审计 mutated；跨锚围栏 → failed",
           "markers": [],
-          "line": 383,
+          "line": 385,
           "assertions": [
             "expect(pin.final.status).toBe('succeeded')",
             "expect(db.prepare('SELECT pinned FROM ai_memory WHERE id = ?').get(id)).toEqual({ pinned: 1 })",
@@ -39993,7 +40625,7 @@
           ],
           "title": "R13 memory.search 1-2 码点 → LIKE 并集（本锚+global 命中/他锚隔离）+assistant 回写+result 摘要",
           "markers": [],
-          "line": 400,
+          "line": 402,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(parsed.route).toBe('like')",
@@ -40010,7 +40642,7 @@
           ],
           "title": "R14 memory.search ≥3 码点 → MATCH 并集路",
           "markers": [],
-          "line": 425,
+          "line": 427,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(parsed.route).toBe('match')",
@@ -40024,7 +40656,7 @@
           ],
           "title": "R15 memory.list：并集可见+category 过滤+回写+result 含 count",
           "markers": [],
-          "line": 442,
+          "line": 444,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(parsed.count).toBe(2)",
@@ -40039,7 +40671,7 @@
           ],
           "title": "R16 memory.list limit 闸②：上限 50 拒/非法值拒（提交期 INVALID_REQUEST）",
           "markers": [],
-          "line": 463,
+          "line": 465,
           "assertions": [
             "expect( svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: { limit: 51 } }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
             "expect( svc.submitTask({ sessionId: s.id, action: 'memory.list', payload: { limit: 0 } }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST' })"
@@ -40052,7 +40684,7 @@
           ],
           "title": "R17 message.pin/unpin：本会话消息 ok 往返+审计 mutated；他会话消息 → failed 围栏",
           "markers": [],
-          "line": 478,
+          "line": 480,
           "assertions": [
             "expect(done.status).toBe('succeeded')",
             "expect(db.prepare('SELECT pinned FROM ai_messages WHERE id = ?').get(m.id)).toEqual({ pinned: 1 })",
@@ -40068,7 +40700,7 @@
           ],
           "title": "R18 message.pin 缺席消息 → failed「消息不存在」",
           "markers": [],
-          "line": 502,
+          "line": 504,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('消息不存在')"
@@ -40081,7 +40713,7 @@
           ],
           "title": "R19 超时（now 注入）：变异零副作用（memory 行灭+mutated 审计灭）+timeout 终态+error+审计 timeout",
           "markers": [],
-          "line": 515,
+          "line": 517,
           "assertions": [
             "expect(final.status).toBe('timeout')",
             "expect(final.error).toContain('超时')",
@@ -40096,7 +40728,7 @@
           ],
           "title": "R19b 未超时（elapsed=4000<5000）→ 正常 succeeded（now 注入对照组）",
           "markers": [],
-          "line": 532,
+          "line": 534,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(db.prepare('SELECT COUNT(*) c FROM ai_memory').get()).toEqual({ c: 1 })"
@@ -40109,7 +40741,7 @@
           ],
           "title": "R20 成功路径拒写分支（N-6）：CAP 态回写 → result_overflow 审计+仍 succeeded+result=null+50 行不变",
           "markers": [],
-          "line": 546,
+          "line": 548,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(final.result).toBeNull()",
@@ -40125,7 +40757,7 @@
           ],
           "title": "R21 恢复扫描：running 行 → failed(interrupted) 计数+queued 不动",
           "markers": [],
-          "line": 572,
+          "line": 574,
           "assertions": [
             "expect(svc.recoverInterruptedTasks()).resolves.toBe(2)",
             "expect(repos.aiTasks.getById(id)?.status).toBe('failed')",
@@ -40140,7 +40772,7 @@
           ],
           "title": "R22 listTasks：scope/anchor/status 过滤+id DESC+limit 默认 50/超 200 拒/非法拒",
           "markers": [],
-          "line": 592,
+          "line": 594,
           "assertions": [
             "expect(all.map((t) => t.id)).toEqual([t2.id, t1.id])",
             "expect(await svc.listTasks({ status: 'cancelled' })).toHaveLength(1)",
@@ -40157,7 +40789,7 @@
           ],
           "title": "R26 非 CAP 回写异常统一映射：注入面抛错 → failed 终态+error 含「结果回写失败」+mutation 保留+审计 failed 在场",
           "markers": [],
-          "line": 613,
+          "line": 615,
           "assertions": [
             "expect(final.status).toBe('failed')",
             "expect(final.error).toContain('结果回写失败')",
@@ -40174,7 +40806,7 @@
           ],
           "title": "R27 listTasks 运行期输入闸（d1-N9）：status 非法值/scope 非法值 → INVALID_REQUEST（防任意串透传 SQL）",
           "markers": [],
-          "line": 655,
+          "line": 657,
           "assertions": [
             "expect( svc.listTasks({ status: 'bogus' as never }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST', message: expect.stringContaining('任务状态值非法') })",
             "expect( svc.listTasks({ scope: 'galaxy' as never }) ).rejects.toMatchObject({ code: 'INVALID_REQUEST', message: expect.stringContaining('范围') })",
@@ -40188,7 +40820,7 @@
           ],
           "title": "R28 外移零行为回归（handlers 件接线佐证）：注入面缺省=生产回写通道——CAP 态 result_overflow+仍 succeeded（N-6 同构重放）",
           "markers": [],
-          "line": 670,
+          "line": 672,
           "assertions": [
             "expect(final.status).toBe('succeeded')",
             "expect(final.result).toBeNull()",
@@ -40202,11 +40834,130 @@
           ],
           "title": "R29 TASK_STATUSES==DDL CHECK 集对账（r1 k3-N3+d1-N7——sqlite_master 取证沿 G14 先例；r2 注：格式哨兵——正则依赖 DDL 以 status IN ('…') 单引号字面量书写，DDL 改写法时本用例先红=fail-closed 非误报）",
           "markers": [],
-          "line": 696,
+          "line": 698,
           "assertions": [
             "expect(m, 'DDL status CHECK 可抽取').not.toBeNull()",
             "expect(ddlStatuses, 'DDL 恰 6 态').toHaveLength(6)",
             "expect([...TASK_STATUSES].sort()).toEqual([...ddlStatuses].sort())"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R30 单发 800 截断：大信封→尾部整行舍弃 rows+truncated:true+result==writeback 且 ≤800\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R30 单发 800 截断：大信封→尾部整行舍弃 rows+truncated:true+result==writeback 且 ≤800",
+          "markers": [],
+          "line": 741,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.truncated).toBe(true)",
+            "expect(parsed.rows.length).toBeLessThan(20)",
+            "expect(parsed.rows.length).toBeGreaterThan(0)",
+            "expect(estimateTokens(final.result!)).toBeLessThanOrEqual(AGENT_PULL_SINGLE_CAP)",
+            "expect(writebackOf(repos, s.id)).toBe(final.result)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R31 轮累计 2000：既有轮内信封 ~1600 tok→有效上限=min(800, 2000-1600)——行数少于对照\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R31 轮累计 2000：既有轮内信封 ~1600 tok→有效上限=min(800, 2000-1600)——行数少于对照",
+          "markers": [],
+          "line": 759,
+          "assertions": [
+            "expect(limited.truncated).toBe(true)",
+            "expect(limited.rows.length).toBeLessThan(controlRows)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R32 user 消息重置轮：既有信封后插入 user 行→轮重开（行数回升=对照）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R32 user 消息重置轮：既有信封后插入 user 行→轮重开（行数回升=对照）",
+          "markers": [],
+          "line": 778,
+          "assertions": [
+            "expect(reset.rows.length).toBe(controlRows)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R33 小信封原样通过：2 行短题→无 truncated 字段+result==writeback 字节等\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R33 小信封原样通过：2 行短题→无 truncated 字段+result==writeback 字节等",
+          "markers": [],
+          "line": 798,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.truncated).toBeUndefined()",
+            "expect(parsed.count).toBe(2)",
+            "expect(parsed.rows).toHaveLength(2)",
+            "expect(writebackOf(repos, s.id)).toBe(final.result)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R34 pullCaps 注入：{single:60}→信封压至 ≤60（rows 可空+truncated:true）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R34 pullCaps 注入：{single:60}→信封压至 ≤60（rows 可空+truncated:true）",
+          "markers": [],
+          "line": 816,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.truncated).toBe(true)",
+            "expect(estimateTokens(final.result!)).toBeLessThanOrEqual(60)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R35 非解析 JSON 回写原样通过（防御）：纯长文本→零截断+result 不被覆盖\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R35 非解析 JSON 回写原样通过（防御）：纯长文本→零截断+result 不被覆盖",
+          "markers": [],
+          "line": 831,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(final.result).toBe('纯结果文本')",
+            "expect(writebackOf(repos, s.id)).toBe(longText)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R36 [r1 R-W1] 轮预算耗尽：三发累计 ~1990 后第四发 effectiveCap≈0→落库=空 rows+truncated:true 骨架\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R36 [r1 R-W1] 轮预算耗尽：三发累计 ~1990 后第四发 effectiveCap≈0→落库=空 rows+truncated:true 骨架",
+          "markers": [],
+          "line": 853,
+          "assertions": [
+            "expect(f.status).toBe('succeeded')",
+            "expect(pulled).toBeGreaterThanOrEqual(1960)",
+            "expect(final.status).toBe('succeeded')",
+            "expect(parsed.truncated).toBe(true)",
+            "expect(parsed.rows).toEqual([])",
+            "expect(parsed.count).toBe(20)",
+            "expect(estimateTokens(final.result!)).toBeLessThanOrEqual(40)",
+            "expect(lastWriteback.content).toBe(final.result)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复\",\"R37 [r1 R-N3] 解析成功但无 rows 数组→原样通过：count-only 超限信封零截断落库\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-2 U2b-1 ai-tasks.service —— 执行面状态机+9 handler+超时+恢复"
+          ],
+          "title": "R37 [r1 R-N3] 解析成功但无 rows 数组→原样通过：count-only 超限信封零截断落库",
+          "markers": [],
+          "line": 888,
+          "assertions": [
+            "expect(final.status).toBe('succeeded')",
+            "expect(final.result).toBe('原样结果')",
+            "expect(writebackOf(repos, s.id)).toBe(noRowsEnvelope)"
           ]
         }
       ]
@@ -41101,7 +41852,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 107,
+          "line": 108,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -41114,7 +41865,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 124,
+          "line": 125,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -41126,7 +41877,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 144,
+          "line": 145,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -41139,7 +41890,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 162,
+          "line": 163,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -41152,7 +41903,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 185,
+          "line": 186,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -41164,7 +41915,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 197,
+          "line": 198,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -41176,7 +41927,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 221,
+          "line": 222,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -41190,7 +41941,7 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 248,
+          "line": 249,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
@@ -41846,7 +42597,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 78,
+          "line": 79,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -41870,7 +42621,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 122,
+          "line": 123,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -41887,7 +42638,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 152,
+          "line": 153,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -41901,7 +42652,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 175,
+          "line": 176,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -41916,7 +42667,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 198,
+          "line": 199,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -41932,7 +42683,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 226,
+          "line": 227,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -41952,7 +42703,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 270,
+          "line": 271,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -41966,7 +42717,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 320,
+          "line": 321,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -41982,7 +42733,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 351,
+          "line": 352,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -41996,7 +42747,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 375,
+          "line": 376,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -47144,9 +47895,9 @@
     }
   },
   "stats": {
-    "fileCount": 317,
-    "caseCount": 3159,
-    "assertionCount": 10302,
+    "fileCount": 319,
+    "caseCount": 3213,
+    "assertionCount": 10447,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
