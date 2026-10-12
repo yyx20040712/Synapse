@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-12T02:42:04.294Z",
+    "generatedAt": "2026-10-12T14:10:01.120Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -691,7 +691,7 @@
         },
         {
             "path": "tests/unit/renderer/ai-session-store.test.ts",
-            "sha256": "e2519bb216ca71bd70f3a7821de9b7c5bf52974a57f637d99e609f88ac0c3138"
+            "sha256": "7aef41f6e977b332f4589eb32d8faa301b4ce31308a5aee2be41d6ed3e8e226d"
         },
         {
             "path": "tests/unit/renderer/anchor-blank-snap.test.ts",

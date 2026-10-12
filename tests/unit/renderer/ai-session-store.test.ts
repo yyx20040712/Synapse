@@ -303,4 +303,60 @@ describe('F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错�
     expect(open, 'open 恰 3 次（首链+两度重挂）').toHaveBeenCalledTimes(3)
     expect(listMessages, 'listMessages 恰 3 次（每链各一跳）').toHaveBeenCalledTimes(3)
   })
+
+  it('[r1″ R6] 第三道 stale-guard（catch 面）：listMessages 晚到失败不复活已删条目、不污染重挂新链', async () => {
+    // 受控 deferred：两链 open（d1/d2）+ 首链 listMessages（lm1 在途可控，第二链
+    // 即时空回包）——mock 按调用次数切换（沿 R5 手法）；lm1 以 ok:false 载荷
+    // resolve——unwrap 对 ok:false 抛 ApiClientError 走 catch 路径（第 5 用例
+    // 错误映射的载荷形态）
+    type MsgResult =
+      | { ok: true; data: { messages: (typeof MESSAGE)[] } }
+      | { ok: false; error: { code: string; message: string } }
+    const d1 = deferred<OpenResult>()
+    const d2 = deferred<OpenResult>()
+    const lm1 = deferred<MsgResult>()
+    let openCall = 0
+    let lmCall = 0
+    const open = vi.fn((): Promise<OpenResult> => {
+      openCall += 1
+      return openCall === 1 ? d1.promise : d2.promise
+    })
+    const listMessages = vi.fn((): Promise<MsgResult> => {
+      lmCall += 1
+      return lmCall === 1 ? lm1.promise : Promise.resolve({ ok: true, data: { messages: [] } })
+    })
+    const mod = await loadStore({ ai_sessions: { open, listMessages } })
+    const key = mod.aiSessionKey('paper', 'p-1')
+
+    // 首链中间态：open 已落地（d1→sessionId 7）而消息未到（lm1 在途）——loading
+    mod.useAiSessionStore.getState().open('paper', 'p-1')
+    d1.resolve(okSession(7))
+    await flush()
+    expect(listMessages, 'open 落地后链式派发 listMessages').toHaveBeenCalledTimes(1)
+    expect(listMessages).toHaveBeenCalledWith({ sessionId: 7 })
+    expect(mod.useAiSessionStore.getState().panels[key]?.status, '首链消息未到=loading 中间态').toBe('loading')
+
+    // 卸载清 key：条目删除+序号失格；重挂第 2 链（d2 在途）=loading
+    mod.useAiSessionStore.getState().unload(key)
+    expect(mod.useAiSessionStore.getState().panels[key], 'unload 即清').toBeUndefined()
+    mod.useAiSessionStore.getState().open('paper', 'p-1')
+    expect(mod.useAiSessionStore.getState().panels[key]?.status, '重挂第 2 链=loading').toBe('loading')
+
+    // 旧链晚到失败：lm1 以 ok:false 载荷 resolve（unwrap 抛 ApiClientError 走
+    // catch）——catch 首行守卫必须丢弃：不得把新链 loading 改写成 notFound、
+    // 亦不得经 setEntry 重建条目（红路径=守卫缺失时 loading→notFound）
+    lm1.resolve({ ok: false, error: { code: 'NOT_FOUND', message: '会话已灭' } })
+    await flush()
+    expect(mod.useAiSessionStore.getState().panels[key]?.status, '旧链晚到失败不改写新链 loading').toBe('loading')
+    expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId 未被旧链失败改写').toBeNull()
+
+    // 第 2 链落地：ready+sessionId=8+空消息（新链终态不受旧失败影响）
+    d2.resolve(okSession(8))
+    await flush()
+    expect(mod.useAiSessionStore.getState().panels[key]?.status, '新链最终落地=ready').toBe('ready')
+    expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId=第 2 链新值').toBe(8)
+    expect(mod.useAiSessionStore.getState().panels[key]?.messages, '消息面=第 2 链空回包').toEqual([])
+    expect(open, 'open 恰 2 次（首链+一度重挂）').toHaveBeenCalledTimes(2)
+    expect(listMessages, 'listMessages 恰 2 次（每链各一跳）').toHaveBeenCalledTimes(2)
+  })
 })
