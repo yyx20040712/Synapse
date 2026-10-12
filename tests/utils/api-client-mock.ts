@@ -75,6 +75,29 @@ vi.mock('../../src/renderer/shared/ui/toast-store', async (importOriginal) => {
   return { ...real, showToast: stubState.toastStore }
 })
 
+// [F-DBCAMP-01 DB-2 UI U3] SettingsPage 挂载链缺省桩面：AI 助手节挂载即
+// ai_sessions.open（三档统一）——挂 SettingsPage 的存量测试（settings-page-
+// enter/corpus-export/r3-rdr-set-visual 等）零逐件补桩（单点扩优于三件逐加，
+// U3 票面预裁）。恒 ok 空回包：open→global 档会话 id=1+listMessages 空——
+// 面板落在「暂无会话消息」终态，无 pending 泄漏。测试需自定义 AI 域行为时
+// 经 makeApiStub({ ai_sessions: … }) 覆盖（Object.assign 同键后写者胜）
+const stubAiSessionsDefault = {
+  open: vi.fn(async () => ({
+    ok: true as const,
+    data: {
+      session: {
+        id: 1,
+        scope: 'global',
+        anchorId: null,
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z'
+      }
+    }
+  })),
+  listMessages: vi.fn(async () => ({ ok: true as const, data: { messages: [] } }))
+}
+stubState.api.ai_sessions = stubAiSessionsDefault as unknown as Record<string, unknown>
+
 /** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
 export function makeApiStub<T extends object>(shape: T): T {
   Object.assign(stubState.api, shape)

@@ -21,6 +21,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
+import { AiSessionPanel } from '../ai/AiSessionPanel'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
@@ -196,6 +197,27 @@ export function SettingsPage(): JSX.Element {
             </tbody>
           </table>
         )}
+      </SettingsSection>
+
+      {/* [F-DBCAMP-01 DB-2 UI U3] AI 三节壳一次立（E1 断言锚）：节序=AI 助手→
+          AI 管理→AI 预算；插入点=「网络」节后、AI 语料导出节前。AI 助手=global
+          档会话面板内嵌（anchorId=null）；管理/预算=占位节（U5/U6 填内容不动
+          节标——文案字面锚「该功能将在后续版本开放」） */}
+      <DiamondRule />
+      <SettingsSection title="AI 助手">
+        <AiSessionPanel scope="global" anchorId={null} />
+      </SettingsSection>
+      <DiamondRule />
+      <SettingsSection title="AI 管理">
+        <p className="m-0 text-xs" style={{ color: 'var(--text-dim)' }}>
+          该功能将在后续版本开放
+        </p>
+      </SettingsSection>
+      <DiamondRule />
+      <SettingsSection title="AI 预算">
+        <p className="m-0 text-xs" style={{ color: 'var(--text-dim)' }}>
+          该功能将在后续版本开放
+        </p>
       </SettingsSection>
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}

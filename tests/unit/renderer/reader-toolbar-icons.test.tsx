@@ -131,7 +131,7 @@ describe('F-UI-02 侧栏 tab 图标化 —— OutlineAside 面', () => {
     const tabs = Array.from(
       host!.querySelectorAll<HTMLButtonElement>('[data-testid="reader-aside"] [role="tab"]')
     )
-    expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记'])
+    expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记', 'AI 会话'])
     for (const t of tabs) {
       expect(t.querySelector('svg[aria-hidden="true"]'), 'tab 应含 aria-hidden svg').not.toBeNull()
     }

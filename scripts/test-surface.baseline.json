@@ -2646,6 +2646,67 @@
         }
       ]
     },
+    "tests/e2e/ai-sessions-panel.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"E1① paper 档：阅读器侧栏 AI 会话页签可达（空会话+置灰发送框）\"]",
+          "describePath": [],
+          "title": "E1① paper 档：阅读器侧栏 AI 会话页签可达（空会话+置灰发送框）",
+          "markers": [],
+          "line": 21,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(aside).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByText('暂无会话消息')).toBeVisible({ timeout: 10_000 })",
+            "expect(composer).toHaveValue('对话能力将在后续版本接入')",
+            "expect(composer).toBeDisabled()",
+            "expect(aside.getByRole('button', { name: '发送' }), '发送钮可见置灰').toBeDisabled()"
+          ]
+        },
+        {
+          "key": "[\"E1② lineage 档：脉络侧栏 AI 会话页签可达（文件夹图锚）\"]",
+          "describePath": [],
+          "title": "E1② lineage 档：脉络侧栏 AI 会话页签可达（文件夹图锚）",
+          "markers": [],
+          "line": 50,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByTestId('lineage-sidebar')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('lineage-side-panel')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByText('暂无会话消息')).toBeVisible({ timeout: 10_000 })",
+            "expect(composer).toHaveValue('对话能力将在后续版本接入')",
+            "expect(composer).toBeDisabled()",
+            "expect(sidebar.getByRole('button', { name: '发送' }), '发送钮可见置灰').toBeDisabled()",
+            "expect(win.getByTestId('ai-session-panel')).toHaveAttribute('data-anchor', folderId)"
+          ]
+        },
+        {
+          "key": "[\"E1③ settings：AI 三节标在场+相对顺序（AI 助手→AI 管理→AI 预算）\"]",
+          "describePath": [],
+          "title": "E1③ settings：AI 三节标在场+相对顺序（AI 助手→AI 管理→AI 预算）",
+          "markers": [],
+          "line": 83,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByRole('heading', { name: 'AI 助手' })).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible()",
+            "expect(win.getByRole('heading', { name: 'AI 预算' })).toBeVisible()",
+            "expect(win.getByText('暂无会话消息')).toBeVisible({ timeout: 10_000 })",
+            "expect(composer).toHaveValue('对话能力将在后续版本接入')",
+            "expect(composer).toBeDisabled()",
+            "expect(order.some((x) => x === '网络'), '「网络」节锚在场').toBeTruthy()",
+            "expect(idx('网络'), 'AI 助手插在网络节后').toBeLessThan(idx('AI 助手'))",
+            "expect(idx('AI 助手')).toBeLessThan(idx('AI 管理'))",
+            "expect(idx('AI 管理')).toBeLessThan(idx('AI 预算'))",
+            "expect(order.some((x) => x.includes('语料导出')), 'AI 预算在语料导出节前').toBeTruthy()",
+            "expect(idx('AI 预算')).toBeLessThan(order.findIndex((x) => x.includes('语料导出')))"
+          ]
+        }
+      ]
+    },
     "tests/e2e/corpus-export.spec.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [
@@ -10669,6 +10730,204 @@
             "expect(ROLE_LABEL['first-read']).toBe('一审')",
             "expect(ROLE_LABEL['second-read']).toBe('二审')",
             "expect(ROLE_LABEL.adjudicate).toBe('裁决')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/ai-session-panel.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U3 r1′ R4 AiSessionPanel —— 错误终态渲染分支字面\",\"open 拒 NOT_FOUND→notFound 态：渲染「锚对象不存在或已删除」（幽灵锚文案锚）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 r1′ R4 AiSessionPanel —— 错误终态渲染分支字面"
+          ],
+          "title": "open 拒 NOT_FOUND→notFound 态：渲染「锚对象不存在或已删除」（幽灵锚文案锚）",
+          "markers": [],
+          "line": 65,
+          "assertions": [
+            "expect(stubApi.ai_sessions.open, '挂载即 open+载荷透传').toHaveBeenCalledWith({ scope: 'paper', anchorId: 'ghost-paper' })",
+            "expect(host?.textContent, '幽灵锚终态字面').toContain('锚对象不存在或已删除')",
+            "expect(host?.textContent, '错误态文案不得串场').not.toContain('请求无效，请重试')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 r1′ R4 AiSessionPanel —— 错误终态渲染分支字面\",\"open 拒 INVALID_REQUEST→error 态：渲染「请求无效，请重试」+role=alert 在场\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 r1′ R4 AiSessionPanel —— 错误终态渲染分支字面"
+          ],
+          "title": "open 拒 INVALID_REQUEST→error 态：渲染「请求无效，请重试」+role=alert 在场",
+          "markers": [],
+          "line": 80,
+          "assertions": [
+            "expect(host?.textContent, '通用错误终态字面').toContain('请求无效，请重试')",
+            "expect(host?.textContent, '幽灵锚文案不得串场').not.toContain('锚对象不存在或已删除')",
+            "expect(alert, 'error 态 role=alert 在场').not.toBeNull()",
+            "expect(alert?.textContent).toContain('请求无效，请重试')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/ai-session-store.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"态机：open 置 loading→成功落地 sessionId 并链式 listMessages→ready 落消息\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "态机：open 置 loading→成功落地 sessionId 并链式 listMessages→ready 落消息",
+          "markers": [],
+          "line": 77,
+          "assertions": [
+            "expect(key).toBe('paper:p-1')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '派发即 loading').toBe('loading')",
+            "expect(entry?.status, '链式成功→ready').toBe('ready')",
+            "expect(entry?.sessionId).toBe(7)",
+            "expect(entry?.messages).toEqual([MESSAGE])",
+            "expect(open).toHaveBeenCalledWith({ scope: 'paper', anchorId: 'p-1' })",
+            "expect(listMessages).toHaveBeenCalledWith({ sessionId: 7 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"key 口径：global 档 anchorId=null→「global」后缀；不同档互不串扰\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "key 口径：global 档 anchorId=null→「global」后缀；不同档互不串扰",
+          "markers": [],
+          "line": 96,
+          "assertions": [
+            "expect(mod.aiSessionKey('global', null)).toBe('global:global')",
+            "expect(mod.useAiSessionStore.getState().panels['global:global']?.status).toBe('ready')",
+            "expect(mod.useAiSessionStore.getState().panels['paper:p-1']?.status).toBe('ready')",
+            "expect(open).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"幂等护栏：ready 在场再 open 不派发；loading 在场同样不派发\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "幂等护栏：ready 在场再 open 不派发；loading 在场同样不派发",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(open, 'ready 幂等').toHaveBeenCalledTimes(1)",
+            "expect(open2, 'loading 幂等').toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"卸载清 key：unload 删条目；重挂（再 open）重新派发；在途旧响应被丢弃不复活\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "卸载清 key：unload 删条目；重挂（再 open）重新派发；在途旧响应被丢弃不复活",
+          "markers": [],
+          "line": 129,
+          "assertions": [
+            "expect(mod.useAiSessionStore.getState().panels[key], 'unload 即清').toBeUndefined()",
+            "expect(open).toHaveBeenCalledTimes(2)",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '旧响应丢弃').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status).toBe('ready')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.sessionId).toBe(8)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"错误码映射：open NOT_FOUND→notFound；INVALID_REQUEST→error；网络异常（非 Result）→error\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "错误码映射：open NOT_FOUND→notFound；INVALID_REQUEST→error；网络异常（非 Result）→error",
+          "markers": [],
+          "line": 158,
+          "assertions": [
+            "expect(mod.useAiSessionStore.getState().panels['paper:p-1']?.status).toBe(c.want)",
+            "expect(mod3.useAiSessionStore.getState().panels['global:global']?.status).toBe('error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"notFound/error 态可重派：面板重挂（mount→open）允许重试（护栏只锁 loading/ready）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "notFound/error 态可重派：面板重挂（mount→open）允许重试（护栏只锁 loading/ready）",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(mod.useAiSessionStore.getState().panels['paper:p-1']?.status).toBe('notFound')",
+            "expect(mod.useAiSessionStore.getState().panels['paper:p-1']?.status, '错误态重挂可重试').toBe('ready')",
+            "expect(open).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"[r1′ R3a] listMessages 链失败映射（统一口径行为现状锁定）：NOT_FOUND→notFound\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "[r1′ R3a] listMessages 链失败映射（统一口径行为现状锁定）：NOT_FOUND→notFound",
+          "markers": [],
+          "line": 198,
+          "assertions": [
+            "expect(open).toHaveBeenCalledTimes(1)",
+            "expect(listMessages).toHaveBeenCalledWith({ sessionId: 7 })",
+            "expect(mod.useAiSessionStore.getState().panels['paper:p-1']?.status, '链上 NOT_FOUND 同映射').toBe('notFound')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"[r1′ R3a] listMessages 链失败映射：网络错（非 NOT_FOUND）→error\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "[r1′ R3a] listMessages 链失败映射：网络错（非 NOT_FOUND）→error",
+          "markers": [],
+          "line": 213,
+          "assertions": [
+            "expect(mod.useAiSessionStore.getState().panels['lineage:folder-1']?.status, '链上其余错同映射').toBe('error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"[r1′ R3b] error 态可重派：INVALID_REQUEST 后重挂重试成功→ready（对偶第 6 用例 notFound 侧）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "[r1′ R3b] error 态可重派：INVALID_REQUEST 后重挂重试成功→ready（对偶第 6 用例 notFound 侧）",
+          "markers": [],
+          "line": 223,
+          "assertions": [
+            "expect(mod.useAiSessionStore.getState().panels['global:global']?.status).toBe('error')",
+            "expect(mod.useAiSessionStore.getState().panels['global:global']?.status, 'error 态重挂同样可重试').toBe('ready')",
+            "expect(mod.useAiSessionStore.getState().panels['global:global']?.sessionId).toBe(6)",
+            "expect(open).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"[r1″ R5] 第二道 stale-guard：listMessages 在途晚到不复活已删条目、不污染重挂新链；open 已落地而消息未到=loading 中间态\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "[r1″ R5] 第二道 stale-guard：listMessages 在途晚到不复活已删条目、不污染重挂新链；open 已落地而消息未到=loading 中间态",
+          "markers": [],
+          "line": 244,
+          "assertions": [
+            "expect(listMessages, 'open 落地后链式派发 listMessages').toHaveBeenCalledTimes(1)",
+            "expect(listMessages).toHaveBeenCalledWith({ sessionId: 7 })",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, 'open 已落地、消息未到=loading 中间态').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key], 'unload 即清').toBeUndefined()",
+            "expect(mod.useAiSessionStore.getState().panels[key], '旧 listMessages 晚到不复活已删条目').toBeUndefined()",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '第二链消息未到=loading').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '第三链重挂=loading').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '旧 listMessages 晚到不污染新链').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId 未被旧链改写').toBeNull()",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '新链最终落地=ready').toBe('ready')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId=第 3 链新值').toBe(9)",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.messages, '消息面=第 3 链空回包（旧消息零泄漏）').toEqual([])",
+            "expect(open, 'open 恰 3 次（首链+两度重挂）').toHaveBeenCalledTimes(3)",
+            "expect(listMessages, 'listMessages 恰 3 次（每链各一跳）').toHaveBeenCalledTimes(3)"
           ]
         }
       ]
@@ -25756,9 +26015,9 @@
           ],
           "title": "三项 tablist（目录/缩略图/笔记）；切换到笔记 tab 挂 ReaderNotesPanel；OutlinePanel 常驻（状态不丢）",
           "markers": [],
-          "line": 92,
+          "line": 111,
           "assertions": [
-            "expect(labels).toEqual(['目录', '缩略图', '笔记'])",
+            "expect(labels).toEqual(['目录', '缩略图', '笔记', 'AI 会话'])",
             "expect(host?.querySelector('[data-testid=\"reader-notes-panel\"]')).toBeNull()",
             "expect(host?.querySelector('[data-testid=\"reader-aside\"] button[title=\"Section 1\"]')).not.toBeNull()",
             "expect(host?.querySelector('[data-testid=\"reader-notes-panel\"]')).not.toBeNull()",
@@ -25774,7 +26033,7 @@
           ],
           "title": "目录跳页经 reader.store（props 削减后自取）：点击目录项→setPage",
           "markers": [],
-          "line": 118,
+          "line": 138,
           "assertions": [
             "expect(item).not.toBeNull()",
             "expect(useReaderStore.getState().tabs['p-1']?.page).toBe(3)"
@@ -25787,7 +26046,7 @@
           ],
           "title": "片段单击页级定位（C-05 前接缝）：FragmentNotesList 条目点击→setPage(该标注页)",
           "markers": [],
-          "line": 132,
+          "line": 152,
           "assertions": [
             "expect(entry).not.toBeNull()",
             "expect(useReaderStore.getState().tabs['p-1']?.page).toBe(7)"
@@ -25800,9 +26059,31 @@
           ],
           "title": "空态：activeId=null 时笔记 tab 显示引导（不崩）",
           "markers": [],
-          "line": 145,
+          "line": 165,
           "assertions": [
             "expect(host?.textContent).toContain('从文献库打开一篇文献后可写笔记')"
+          ]
+        },
+        {
+          "key": "[\"[F-DBCAMP-01 U3] OutlineAside AI 会话页签（always-active）\",\"切换挂 PaperAiPanel（有锚 open→空会话子态）；OutlinePanel 常驻真锁；activeId=null 空态占位不调 IPC\"]",
+          "describePath": [
+            "[F-DBCAMP-01 U3] OutlineAside AI 会话页签（always-active）"
+          ],
+          "title": "切换挂 PaperAiPanel（有锚 open→空会话子态）；OutlinePanel 常驻真锁；activeId=null 空态占位不调 IPC",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(host?.querySelector(outlineAnchor), '切换前目录树本体在场').not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"ai-session-panel\"]'), 'PaperAiPanel 挂载').not.toBeNull()",
+            "expect(host?.querySelector(outlineAnchor), 'OutlinePanel 本体仍在 DOM（display:none 非卸载）').not.toBeNull()",
+            "expect(host?.textContent).toContain('暂无会话消息')",
+            "expect(composer, '置灰发送框在场').not.toBeNull()",
+            "expect(composer!.value, '说明文案驻框内（同形承载）').toBe('对话能力将在后续版本接入')",
+            "expect(composer!.disabled, '输入框恒置灰').toBe(true)",
+            "expect(stubApi.ai_sessions.open, '锚=activeTab.paperId（挂载即 open）').toHaveBeenCalledWith({ scope: 'paper', anchorId: 'p-1' })",
+            "expect(host?.textContent).toContain('先打开一篇文献')",
+            "expect(host?.querySelector('[data-testid=\"ai-session-panel\"]'), '无锚不挂会话壳').toBeNull()",
+            "expect(stubApi.ai_sessions.open, '空态零新增 IPC').toHaveBeenCalledTimes(1)"
           ]
         }
       ]
@@ -29285,7 +29566,7 @@
           "markers": [],
           "line": 129,
           "assertions": [
-            "expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记'])",
+            "expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记', 'AI 会话'])",
             "expect(t.querySelector('svg[aria-hidden=\"true\"]'), 'tab 应含 aria-hidden svg').not.toBeNull()"
           ]
         },
@@ -48630,9 +48911,9 @@
     }
   },
   "stats": {
-    "fileCount": 323,
-    "caseCount": 3256,
-    "assertionCount": 10683,
+    "fileCount": 326,
+    "caseCount": 3272,
+    "assertionCount": 10773,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -48642,155 +48923,16 @@
   },
   "exemptionsSnapshot": [
     {
-      "file": "tests/contracts/schemas.test.ts",
-      "caseTitle": "appSettings：缺省填充 theme=light/uiScale=small；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）",
-      "reason": "F-DBCAMP-01 DB-2 U1：appSettingsSchema 增 aiBudgets 默认档（getter structuredClone）后该用例标题随载荷语义改写（+aiBudgets=默认预算档+档内超限拒）——标题变=身份变，旧身份淘汰属 [locked-change][test-refactor] 有意改写非删测，新标题用例随新基线登账（gate1 双席链在档）",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
+      "file": "tests/unit/renderer/outline-aside.test.tsx",
+      "assertionText": "expect(labels).toEqual(['目录', '缩略图', '笔记'])",
+      "reason": "F-DBCAMP-01 DB-2 UI U3：票面 16 明令 labels 精确数组扩第四项『AI 会话』（OutlineAside +第 4 页签 'ai'）——断言文本变=身份变，有意扩容非删锚，扩容后断言仍在原用例内（同 U1 reread 扩容先例）",
+      "rulingLink": "任务书 runId=20261010-dbcamp-db2i（U3 六段简报二段交付物 #16——主控显式枚举编辑面）"
     },
     {
-      "file": "tests/unit/ipc/settings.test.ts",
-      "assertionText": "expect(reread).toEqual({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'small' })",
-      "reason": "F-DBCAMP-01 DB-2 U1：reread 精确断言扩容 aiBudgets 默认档键（AppSettings 输出型必含——zod default 填充）——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2g（门一处置单+门二裁决部 GO_WITH_CONDITIONS）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "通道总数=62（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；此前 [F-UIRES-01 批 B] 60→61：+papers/delete）",
-      "reason": "F-DBCAMP-01 DB-2 U2：API_SURFACE 六域 13 通道注册（62→75），通道总数 pin 标题随数意识化改写——标题变=身份变，旧身份淘汰属 [locked-change][test-refactor] 有意改写非删测，新标题用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域枚举 pin：恰 14 域（[F-FOLDER-01] 12→14：+folders+papers）",
-      "reason": "F-DBCAMP-01 DB-2 U2：+AI 六域（14→20 域），域枚举 pin 标题随数意识化改写——标题变=身份变，有意改写非删测，新标题用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
-      "assertionText": "expect(prefixes).toEqual([ 'ai-notes', 'ai-sensor', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])",
-      "reason": "F-DBCAMP-01 DB-2 U2：+AI 五前缀（ai-sessions/ai-messages/ai-memory/ai-tasks/ai-cascade——audit 通道复用 ai-tasks 前缀），前缀集 pin 断言扩容——断言文本变=身份变，有意改写非删锚，扩容后断言仍在原用例内",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h（主控预裁 P1 六域注册）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_sensor 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 enrich 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 export_ 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 folders 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 import_ 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 library 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 lineage 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 notes 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 papers 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 reader 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 settings 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 system 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 tags 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 workspaces 方法集 pin",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
-      "reason": "F-DBCAMP-01 DB-2 U2 r1 R4（k3-N6/d1-N1）：describe 组名陈旧计数同步（55→75 通道 pin）——describePath 入 test-surface 基线指纹 key，组名变=全组旧身份淘汰，属 [locked-change][test-refactor] 有意改写非删测（用例本体零改），新组名用例随新基线登账",
-      "rulingLink": ".zcode/org-ledger.jsonl runId=20261010-dbcamp-db2h r1（门一双席审处置单 R4）"
+      "file": "tests/unit/renderer/reader-toolbar-icons.test.tsx",
+      "assertionText": "expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记'])",
+      "reason": "F-DBCAMP-01 DB-2 UI U3：票面 17 明令 tab textContent 数组同 16 扩『AI 会话』——断言文本变=身份变，有意扩容非删锚，扩容后断言仍在原用例内",
+      "rulingLink": "任务书 runId=20261010-dbcamp-db2i（U3 六段简报二段交付物 #17——主控显式枚举编辑面）"
     }
   ]
 }

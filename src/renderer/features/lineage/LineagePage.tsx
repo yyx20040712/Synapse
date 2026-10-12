@@ -24,24 +24,17 @@ import { useEffect, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaper, requestOpenPaperAnchored } from '../../shared/open-paper-bus'
 import { requestOpenLibrary } from '../../shared/open-library-bus'
-import { ICON_CHEVRONS_LEFT } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 import { gotoLibraryPlan } from './goto-library-plan'
+import { LineageAsideHost } from './LineageAsideHost'
 import { LineageBoard } from './LineageBoard'
 import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
 import { useLineageEscapeKey } from './use-lineage-esc'
 import type { NavFolder } from './nav-graph-picker'
-import { LineageSidePanel } from './LineageSidePanel'
-import {
-  SIDEBAR_MAX_WIDTH,
-  SIDEBAR_MIN_WIDTH,
-  SIDEBAR_RAIL_WIDTH,
-  useSidebarPane
-} from './use-sidebar-pane'
 
 export function LineagePage(): JSX.Element {
   const status = useLineageStore((s) => s.status)
@@ -63,8 +56,6 @@ export function LineagePage(): JSX.Element {
     selectedNode !== null && selectedNode.paperId !== null
       ? (paperMetrics[selectedNode.paperId] ?? null)
       : null
-  // [F-UIRES-03 B4③] 右侧详情栏宽/收起态（早退 return 前无 dip——hook 恒序）
-  const sidebar = useSidebarPane()
 
   useEffect(() => {
     // [F-LGRAPH-01②A1 兑现] 挂载恒走模式态 reset（P-1「进页缺省」直读——二次
@@ -187,62 +178,22 @@ export function LineagePage(): JSX.Element {
           {/* [F-UIRES-03 B5①] 两钮编排改道：现有回调零改动复用——消费面自 Board→Timeline 卡链转 SidePanel 操作行 */}
           <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
         </div>
-        {/* R2-LG11：白玻璃底/描边/圆角归 LineageSidePanel 根——aside 只留
-            尺寸直通；[②U4/P-16] 面板缺省宽 252=.lg-inspector 无 JS 回退；
-            [F-UIRES-03 B4③] JS 态宽/收起=useSidebarPane 行内承载（拖右缘
-            4px 手柄调宽 clamp 200–480+localStorage 持久；收起=48px 窄条
-            点击任意处展开，头部收起钮在 LineageSidePanel） */}
-        <aside
-          data-testid="lineage-sidebar"
-          className="relative shrink-0 overflow-hidden"
-          style={{ width: `${sidebar.collapsed ? SIDEBAR_RAIL_WIDTH : sidebar.width}px` }}
-        >
-          {sidebar.collapsed ? (
-            <button
-              type="button"
-              data-testid="lineage-sidebar-rail"
-              className="lg-side-rail"
-              title="展开详情面板"
-              aria-label="展开详情面板"
-              onClick={sidebar.expand}
-            >
-              {ICON_CHEVRONS_LEFT}
-              <span className="lg-side-rail-label">详情</span>
-            </button>
-          ) : (
-            <>
-              <LineageSidePanel
-                node={selectedNode}
-                onJumpToPaper={handleJumpToPaper}
-                onCollapse={sidebar.collapse}
-                onGotoLibrary={handleCardGotoLibrary}
-                onGotoReader={handleCardGotoReader}
-                pubNo={
-                  selectedNode !== null && selectedNode.paperId !== null
-                    ? (pubNos[selectedNode.paperId] ?? null)
-                    : null
-                }
-                metrics={selMetrics}
-              />
-              {/* [F-UIRES-03 B5②] 手柄键盘可达（APG separator）：tabIndex+onKeyDown
-                  四键调宽单源=useSidebarPane；title 提示双通道 */}
-              <div
-                data-testid="lineage-sidebar-resizer"
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="详情栏宽度"
-                aria-valuemin={SIDEBAR_MIN_WIDTH}
-                aria-valuemax={SIDEBAR_MAX_WIDTH}
-                aria-valuenow={sidebar.width}
-                tabIndex={0}
-                title="拖拽或左右键调宽"
-                className="lg-side-resizer"
-                onPointerDown={sidebar.onResizeStart}
-                onKeyDown={sidebar.onResizeKey}
-              />
-            </>
-          )}
-        </aside>
+        {/* [F-UIRES-03 B4③+F-DBCAMP-01 U3] aside 宿主拆件=LineageAsideHost：
+            宽/收起机制原语义原样迁驻（拖右缘 4px 手柄 clamp 200–480+localStorage
+            持久；收起=48px 窄条）+页签行「详情｜AI 会话」（详情缺省）——testid
+            锚全保持；编排态经 props 透传（Page 行数预算） */}
+        <LineageAsideHost
+          node={selectedNode}
+          onJumpToPaper={handleJumpToPaper}
+          pubNo={
+            selectedNode !== null && selectedNode.paperId !== null
+              ? (pubNos[selectedNode.paperId] ?? null)
+              : null
+          }
+          metrics={selMetrics}
+          onGotoLibrary={handleCardGotoLibrary}
+          onGotoReader={handleCardGotoReader}
+        />
       </div>
     </div>
   )

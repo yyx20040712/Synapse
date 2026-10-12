@@ -51,14 +51,24 @@
  */
 import { useEffect, useState } from 'react'
 import { locateAnchor } from '../anchors/anchor-locate'
+import { PaperAiPanel } from '../../ai/PaperAiPanel'
 import { OutlinePanel } from './OutlinePanel'
 import { ReaderNotesPanel } from './ReaderNotesPanel'
 import { useReaderStore } from '../state/reader.store'
 import { useActiveTab } from '../state/useActiveTab'
 
-type AsideTab = 'outline' | 'thumbs' | 'notes'
+// [F-DBCAMP-01 DB-2 UI U3] 第四页签 'ai'（label「AI 会话」——与划线问答笔记
+// 页签并列不并入，设计 §1.1）；'ai' 态与 'notes' 同待遇：OutlinePanel 常驻
+// 挂载仅 CSS 隐藏（display:none），内容分支挂 PaperAiPanel（锚=activeTab
+// .paperId——activeTab=null 时面板内空态占位不调 IPC）
+type AsideTab = 'outline' | 'thumbs' | 'notes' | 'ai'
 
-const TAB_LABELS: Record<AsideTab, string> = { outline: '目录', thumbs: '缩略图', notes: '笔记' }
+const TAB_LABELS: Record<AsideTab, string> = {
+  outline: '目录',
+  thumbs: '缩略图',
+  notes: '笔记',
+  ai: 'AI 会话'
+}
 
 /** F-UI-02 tab 图标（D7=24×24 单色描边；stroke 走 CSS 类 .rdr-aside-tabs
  *  button svg——theme-reader.css，禁内联色/禁新依赖） */
@@ -79,6 +89,11 @@ const TAB_ICONS: Record<AsideTab, JSX.Element> = {
   notes: (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M5 4h14v12l-4 4H5z M15 20v-4h4" />
+    </svg>
+  ),
+  ai: (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 5h16v11H10l-4 4v-4H4z" />
     </svg>
   )
 }
@@ -170,11 +185,16 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {/* OutlinePanel 常驻挂载（notes 态仅 CSS 隐藏）——目录树/滚动/懒加载
-            状态跨三栏切换全保留（卸载重挂会闪加载态+丢状态）；
+        {/* OutlinePanel 常驻挂载（notes/ai 态仅 CSS 隐藏——U3 起 'ai' 同待遇）——
+            目录树/滚动/懒加载状态跨页签切换全保留（卸载重挂会闪加载态+丢状态）；
             ReaderNotesPanel 编辑态驻 notes.store，按需挂载即走合并保护 */}
-        <div style={{ display: tab === 'notes' ? 'none' : 'block', height: '100%' }}>
-          <OutlinePanel pdfDoc={pdfDoc} mode={tab === 'notes' ? 'outline' : tab} currentPage={currentPage} onNavigate={navigate} />
+        <div style={{ display: tab === 'notes' || tab === 'ai' ? 'none' : 'block', height: '100%' }}>
+          <OutlinePanel
+            pdfDoc={pdfDoc}
+            mode={tab === 'outline' || tab === 'thumbs' ? tab : 'outline'}
+            currentPage={currentPage}
+            onNavigate={navigate}
+          />
         </div>
         {tab === 'notes' && (
           <ReaderNotesPanel
@@ -183,6 +203,7 @@ export function OutlineAside(props: { pdfDoc: unknown; onCollapse(): void }): JS
             highlightAnnotationId={noteHighlight?.annotationId ?? null}
           />
         )}
+        {tab === 'ai' && <PaperAiPanel />}
       </div>
     </aside>
   )

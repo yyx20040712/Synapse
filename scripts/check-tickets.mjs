@@ -112,7 +112,7 @@ for (const t of tickets) {
 
 // 1) 工单文件必须存在
 for (const t of tickets) {
-  if (!existsSync(join(root, t.file.replaceAll('/', '\\')))) {
+  if (!existsSync(join(root, t.file.replaceAll('\\', '/')))) {
     violations.push(`工单 ${t.id} 指向的文件不存在：${t.file}`)
   }
 }
@@ -176,7 +176,7 @@ const DIR_FILE_EXEMPT = new Set(['F-AUDIT-01', 'P7X-03', 'F-STOR-01'])
 const skippedNonCode = []
 for (const t of tickets.filter((x) => x.status === 'done')) {
   if (t.file === SELF_REL) continue
-  const p = join(root, t.file.replaceAll('/', '\\'))
+  const p = join(root, t.file.replaceAll('\\', '/'))
   if (!existsSync(p)) continue
   if (statSync(p).isDirectory()) {
     if (!DIR_FILE_EXEMPT.has(t.id)) {
@@ -200,7 +200,7 @@ for (const t of tickets.filter((x) => x.status === 'done')) {
 //    F-REG-01：限定 SR 系——本防线为骨架票设计，F 系 open 票（F-A9/F-A10/
 //    F-A11）是立案时已实现的真组件，无骨架占位语义，纳入即误报
 for (const t of tickets.filter((x) => /^SR2?-/.test(x.id) && x.status === 'open' && x.file.endsWith('.tsx'))) {
-  const p = join(root, t.file.replaceAll('/', '\\'))
+  const p = join(root, t.file.replaceAll('\\', '/'))
   if (!existsSync(p)) continue
   const content = readFileSync(p, 'utf-8')
   if (/JSX\.Element/.test(content) && !content.includes(`data-ticket="${t.id}"`)) {
@@ -213,7 +213,7 @@ for (const t of tickets.filter((x) => /^SR2?-/.test(x.id) && x.status === 'open'
 //     残留同样该红——窄化到「工单号初值」形态避免误伤正常常量命名）。
 //     完成定义「占位实现已删除」的机器防线（P7-A 工单化单元 deepseek W6 处置）
 for (const t of tickets.filter((x) => x.status === 'done')) {
-  const p = join(root, t.file.replaceAll('/', '\\'))
+  const p = join(root, t.file.replaceAll('\\', '/'))
   if (!existsSync(p)) continue
   if (statSync(p).isDirectory()) {
     if (!DIR_FILE_EXEMPT.has(t.id)) {
@@ -267,7 +267,7 @@ const roadmapContent = readFileSync(join(root, 'docs', 'ROADMAP.md'), 'utf-8')
 const decidedScopes = new Set([...roadmapContent.matchAll(/^### (P7-[A-Z])：/gm)].map((x) => x[1]))
 for (const t of tickets) {
   if (!t.id.startsWith('SR2-')) continue
-  const p = join(root, t.file.replaceAll('/', '\\'))
+  const p = join(root, t.file.replaceAll('\\', '/'))
   if (!existsSync(p)) continue // 文件缺失已在规则 1 报告
   if (statSync(p).isDirectory()) continue // SR2 票现无目录形态；防御性守卫防 EISDIR（门一 W-5）
   const content = readFileSync(p, 'utf-8')

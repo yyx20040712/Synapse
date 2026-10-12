@@ -113,7 +113,18 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
   ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']],
-  ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']]
+  ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']],
+  // F-DBCAMP-01 DB-2 UI U3（2026-10-10）：AI 会话面板=三档入口共享壳（设计
+  // §4.1 组件树明文 features/ai/ + 三处薄集成），五个接缝即三宿主挂面板
+  // （reader 侧栏第 4 页签/settings AI 助手节/lineage 侧栏页签）与两薄包装
+  // 自取锚（PaperAiPanel 消费 useActiveTab 取 paperId——ReaderNotesPanel
+  // 同型先例；LineageAiPanel 消费 lineage.store folderId）。聚合职责=AI 域
+  // 会话入口在宿主视图的组装点，各域其余文件引用 ai 仍是红线。
+  ['src/renderer/features/reader/panels/OutlineAside.tsx', ['ai/PaperAiPanel']],
+  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel']],
+  ['src/renderer/features/lineage/LineageAsideHost.tsx', ['ai/LineageAiPanel']],
+  ['src/renderer/features/ai/PaperAiPanel.tsx', ['reader/state/useActiveTab']],
+  ['src/renderer/features/ai/LineageAiPanel.tsx', ['lineage/lineage.store']]
 ])
 
 const featuresRoot = join(root, 'src', 'renderer', 'features')
@@ -127,7 +138,9 @@ for (const f of srcFiles.filter((p) => p.startsWith(featuresRoot))) {
     const target = join(dirname(f), m[1]).replaceAll('\\', '/')
     const rel = relative(featuresRoot.replaceAll('\\', '/'), target).replaceAll('\\', '/')
     const firstSeg = rel.split('/')[0] ?? ''
-    const myFeature = relative(featuresRoot, f).split('\\')[0] ?? ''
+    // 平台归一（2026-10-12 迁移 Linux 主控亲笔）：Windows/Linux 分隔符统一后取首段，
+    // 两平台结果与原 split('\\') 在 Windows 上逐字节等价
+    const myFeature = relative(featuresRoot, f).replaceAll('\\', '/').split('/')[0] ?? ''
     if (
       !rel.startsWith('..') &&
       firstSeg !== myFeature &&
