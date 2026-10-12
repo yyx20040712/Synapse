@@ -177,6 +177,8 @@ development Model Selection+loop-engineering references/06）；**架构与
 - 受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 `[locked-change]` 尾注。
 - 受锁文件修改前先 `npm run locks:unlock` 解除只读，改完即时 `npm run locks:apply` 重锁并
   更新 manifest（新增受锁路径需先 `npm run locks:generate` 再 apply）。
+  （WSL2/Linux：ps1 锁工具缺位，locks:unlock/apply/generate 三命令均不可用
+  ——manifest 维护走环境事实段的 node 复刻口径。）
 - 触碰锁定文件的提交**即时** `locks:apply`（manifest 与该提交同步），禁止跨提交
   延迟重生成——CI 只查 push head，中间提交锁不同步会造成按提交回溯时的假绿。
 - **自产 scripts/*.mjs/*.ps1 工具件写完即时 `locks:generate`+`apply`**：受锁集合
@@ -200,67 +202,57 @@ development Model Selection+loop-engineering references/06）；**架构与
   ③mutation backup 副本禁驻留（不变——变异还原毕即删）。
   收口毕 `git status` 未跟踪面应为零（不变——证据件在仓外+目录内容已
   ignore，自动成立）。
-- 中文一律 UTF-8；Windows 下写文件后验证可读。
+- 中文一律 UTF-8；写文件后验证可读（CI mojibake 关卡兜底）。
 
 ### 明确不做（v1 负面清单——防止顺手实现）
 
 知识图谱（指自动引文网络图可视化；人工策展的核心 idea 时间树不在此列——2026-08-25 E5 裁决，指针 ADR-0014）、翻译、PDF 下载管线（CARSI/CDP/Sci-Hub）、Scopus/WoS、插件系统、i18n 多语言、云同步、EPUB、多窗口（OS 级多 BrowserWindow；单窗口内多标签页不在此列——2026-08-23 用户裁决，指针 ROADMAP Phase 7+ B3）、遥测、后台自动网络任务（增强只手动触发）、Markdown 富文本编辑器（textarea 即可）。
 
-## 环境事实
+## 环境事实（Linux/WSL2 现役——2026-10-12 自 Windows 迁移；Windows 时代全文=git 历史本次维护批前版本+事故档）
 
-- Windows + Electron 44（44.4.3，2026-09-19 F-ELE-03 升级，Chromium M152/内嵌
-  Node 24/ABI 149）+ Node 24（**本地经
-  Volta 项目锁定**——package.json `volta` 字段 pin 24.20.0 随仓库走，clone 后新 shell
-  自动生效；CI ci.yml node-version=24 同口径。2026-09-02 起 D:\nodejs 被他应用自动升到
-  25.2.1——volta default=25.2.1 镜像系统现状，shim 在 PATH 首位拦截故其他应用零影响、
-  本项目拿 24。**volta 布局勘误（2026-09-02 六波场后同日复核，前「shim 失效」
-  判断作废）**：volta=全机安装（`C:\Program Files\Volta\` 存 volta.exe+全套
-  shim v2.0.2，System PATH 第 1 位即该目录、D:\nodejs 第 15 位——新 shell 恒
-  shim 优先）；VOLTA_HOME=`%LOCALAPPDATA%\Volta` 只存镜像/状态，**其 bin 为空
-  是本布局常态非损坏**；shim 链路亲验双点通过（项目内 v24.20.0/项目外
-  v25.2.1，platform.json default=25.2.1 在位）。此前「shim 失效」系误诊=
-  zcode 宿主 bash 环境缺 Volta PATH 条目（宿主会话态，非系统缺陷）——宿主内
-  `node` 落 D:\nodejs=25.2.1。**会话绕行**=绝对路径 `/c/Program Files/Volta/
-  npm.exe` 或 PATH 前缀该目录；**诊断纪律=判「环境损坏」前先查注册表 PATH+
-  绝对路径探针，勿凭本会话 PATH 断系统态**（VOLTA_HOME\log 的 10060 错误日志
-  =一次冗余 `volta install node@25.2.1` 网络失败，其目标态本已在位）。
-  **Node 25 下 vitest 2.1.9 jsdom localStorage 装载破损**（split-pane 11
-  用例结构性假红，node24 对照 11/11 绿实证）——check-quality 版本守卫已拦（非 24 即
-  红；CI 豁免；跳过口 SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用）。
-  engines >=22（2026-09-19 F-ELE-03 随 better-sqlite3 v13 engines 口径收紧，
-  原 >=20），CI 用 20 会因 v13 engines node>=22 不满足而红（v12 时代红因=缺
-  node-v115 预编译回退源码编译在 runner VS 18 失败——首跑实证）——勿改回）
-- **升 Electron 前先查 prebuild 矩阵**（教训实证 2026-08-22）：Electron 43（ABI 148）
-  在 better-sqlite3 12.11.1 上无 win32 预编译，而带 v148 的 12.11.2/12.12.0 只有
-  GitHub release 未发 npm、v13.x 无任何 win 预编译——故落 42（v146 现成）。
-  版本→ABI 映射数据源：npm 包 `node-abi`（registry.npmmirror.com 可下）。
-  **勘误（2026-09-19，F-ELE-02）**：前句「v13.x 无任何 win 预编译」失准——当时
-  调查只查了 GitHub release 资产，漏查 npm 包内 `prebuilds/` 新分发机制（v13 起
-  prebuilt 随 npm 包直发）；v13.0.3 已于本仓落地。教训本体保留且加严：prebuild
-  核查数据源**必须含 npm 包内容**（tar -tzf / npm pack --dry-run），不能只查
-  GitHub release 资产
-- **Electron 42 起 npm 包无 postinstall**（41 尚有、42 移除，实证）：二进制改为首次
-  require 时同步懒下载（卡在意想不到的位置）——postinstall 已显式串 `install-electron`
-  （幂等，dist 在则秒过），把下载失败暴露在 npm install 阶段；bin 由 electron 包提供
-- 网络代理 127.0.0.1:7890；GitHub 直连不稳 → `.npmrc` 已配 npmmirror 二进制镜像
-  （electron）
-- better-sqlite3 13.0.3 起为 N-API 版本（node-addon-api），同一份绑定跨
-  Node/Electron ABI 通用（2026-09-19 F-ELE-02 落地，SQLite 3.53.4；prebuilt 随
-  npm 包直发 prebuilds/win32-x64.node，npm 安装即得）；v12 时代的 V8 直接绑定
-  双 ABI 切换机制（scripts/sqlite-abi.mjs）已删除退役
-- 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）
-- git 位置因设备而异（旧机曾用 `E:\class\智慧水务\tools\MinGit`——**新设备以
-  docs/DEV-SETUP.md §3 配置为准**，路径占位符化 2026-08-27 设备迁移）；远端
-  origin=github.com/yyx20040712/Synapse。MinGit 默认 schannel 经代理握手失败——
-  须配 repo-local `http.sslBackend=openssl` + 自带 CA bundle（配置命令见
-  DEV-SETUP §3；.git/config 不随 clone 走，新机必配）
-- 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）
-- **shell 隔层传参四坑（v54 三现+v55 定型+v56 补一条，探针纪律）**：Git Bash→
-  Windows node.exe 隔层上——①node -e 双引号内 `$` 被 bash 展开；②中文经
-  shell 传参 GBK 化；③printf 正则变形；④**argv 丢弃含换行的参数**（v56
-  F-CSS-03 红证实录：多行脚本经 argv 传 node 静默丢参，输出空/异常非报错）。
-  探针类代码一律 Write/Edit 直写文件后 `node 文件`；node -e 仅限纯 ASCII
-  单行。
-- git geometric-repack「File exists」rename 竞态为 Windows 文件锁族噪声（2026-09-02
-  三现+`git gc --prune=now` 同报——gc 不自愈）；提交与仓库完整性无碍（fsck 亲验
-  exit=0），忽略即可，勿因此重装或重建仓库
+- **Linux/WSL2 + Electron 44**（44.4.3，Chromium M152/内嵌 Node 24/ABI 149）。
+  WSLg 下 e2e 开箱即用（electron linux dist 经 npmmirror 镜像随 npm ci 落位+playwright——**全量 105/105
+  实证 2026-10-13**，F-PLATFORM-01 后 Linux 全量绿=本地基线；CI 仍 windows-latest
+  跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+  DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
+  routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
+- **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装，2026-10-13；系统 apt
+  node 18 不满足 engines>=22）。check-quality 版本守卫**非 24 即红**（跳过口
+  SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用；Node 25 下 vitest 2.1.9
+  jsdom localStorage 装载破损=Windows 实证、jsdom 层推定平台无关——node24
+  对照绿实证）——每会话先
+  `export PATH=~/tools/node24/bin:$PATH`（~/.bashrc 已持久化）。package.json
+  `volta` 字段沿承勿删（Windows 机回归时 Volta 自动生效的跨平台保险；CI
+  ci.yml node-version=24 同口径）。engines >=22（F-ELE-03 随 better-sqlite3
+  v13 收紧，原 >=20——勿改回）。
+- **升 Electron 前先查 prebuild 矩阵**（2026-08-22 教训+2026-09-19 勘误加严）：
+  prebuild 核查数据源**必须含 npm 包内容**（tar -tzf / npm pack --dry-run），
+  不能只查 GitHub release 资产（v13 起 prebuilt 随 npm 包直发——勘误源头）。
+- **Electron 42 起 npm 包无 postinstall**（41 尚有、42 移除，实证）：二进制改
+  首次 require 懒下载——postinstall 已显式串 `install-electron`（幂等，dist
+  在则秒过），下载失败暴露在 npm install 阶段。
+- 网络本机**直连可用（无代理）**；`.npmrc` npmmirror 二进制镜像沿承有效
+  （electron）。旧机代理 127.0.0.1:7890 配置随迁移已删。
+- better-sqlite3 13.0.3 起 N-API 版：同一份绑定跨 Node/Electron ABI 通用
+  （prebuilds/ 随包直发含 linux-x64/win32-x64 等）；v12 时代双 ABI 切换机制
+  （scripts/sqlite-abi.mjs）已删除退役。
+- 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）。
+- git=系统 git；repo-local Windows 遗留覆盖（http.sslBackend/sslCAInfo 指向
+  MinGit 路径+proxy 7890）已于 F-PLATFORM-01 批毕删除——.git/config 不随
+  clone 走，新 WSL 机 git 零配置（直连）；**推送凭据（PAT/ssh）本机未配**（迁移时点
+  2026-10-13——配置后更新本句）——配法=docs/DEV-SETUP.md §3。远端 origin=github.com/yyx20040712/Synapse。
+- **ps1 锁工具四件 Linux 缺位**（locks:generate/apply/unlock+ticket:new）——
+  manifest 维护=node 复刻口径（sha256=createHash('sha256').update(
+  readFileSync(f))，与 check-locks.mjs 哈希行同式；排版=JSON.stringify(m,null,4)
+  +'\n'；受锁路径集不变以 check-locks walk 为准）：改受锁测试面→复刻同步
+  manifest→locks:check 绿→[locked-change] 提交（流程不变，工具件=/tmp 一次性；
+  unlock 的只读位=Windows fs 属性，Linux 侧无只读位=无等价需求——完整性由
+  locks:check 强制）。
+- 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准，勿删）。
+- **探针纪律沿承**：探针类代码一律 Write/Edit 直写文件后 `node 文件`；node -e
+  仅限纯 ASCII 单行。（Windows Git Bash→node.exe 隔层传参四坑原文=git 历史
+  ——`git log -p -- AGENTS.md` 环境事实段、本批前版本；其中①$ 展开/③printf
+  正则变形在 Linux bash 链路同样成立=纪律层仍适用，②GBK 化/④argv 丢换行参
+  =Windows 隔层特有。）
+- Windows 文件锁族噪声（geometric-repack「File exists」等，2026-09-02 三现）
+  教训归档 git 历史——WSL ext4 无此族；如回归 Windows 机沿承「忽略勿重装」。

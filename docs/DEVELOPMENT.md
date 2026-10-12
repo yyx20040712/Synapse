@@ -61,29 +61,36 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - vitest 报 window 未定义：renderer store 测试须先 `vi.stubGlobal('window', { api: 桩 })` 再动态 import。
 - e2e 起不来：确认先 `npm run build`；e2e 用 `SYNAPSE_USER_DATA` 隔离数据。
 - 手动调试主进程（不进 dev、直接跑产物）：
-  `SYNAPSE_USER_DATA=<临时目录> node_modules\electron\dist\electron.exe out\main\index.js`
-  （bootstrap 失败会 console.error + 原生错误框）。
+  `SYNAPSE_USER_DATA=<临时目录> node_modules/electron/dist/electron out/main/index.js`
+  （Linux 可执行文件无扩展名；Windows=`node_modules\electron\dist\electron.exe`。
+  bootstrap 失败会 console.error + 原生错误框）。
 - better-sqlite3 原生绑定报错：v13（N-API 版）单绑定跨 Node/Electron ABI 通用
-  （2026-09-19 F-ELE-02），无切换机制；绑定文件=prebuilds/win32-x64.node 随
-  npm 包直发，若手动动过 `node_modules`，重跑 `npm ci` 即可。
-- 中文乱码：统一 UTF-8；PowerShell 重定向用 `Out-File -Encoding utf8`；CI 有 mojibake 关卡兜底。
+  （2026-09-19 F-ELE-02），无切换机制；绑定文件=prebuilds/\<platform\>-x64.node
+  （linux-x64/win32-x64 等随 npm 包直发），若手动动过 `node_modules`，重跑
+  `npm ci` 即可。
+- 中文乱码：统一 UTF-8（bash/重定向天然 UTF-8；Windows 侧 PowerShell 用
+  `Out-File -Encoding utf8`）；CI 有 mojibake 关卡兜底。
 
 ## 6. 数据位置与备份（用户需知）
 
-- 数据目录：`%APPDATA%\Synapse\`（改名前旧目录 `Synapse Remake` 首启自动整体
+> 数据目录单源=代码 `app.getPath('userData')`（productName=Synapse）；下文
+> 「数据目录」两平台默认值仅速查——Electron 升级若改默认布局以代码为准。
+
+- 数据目录：Linux=`~/.config/Synapse/`（Electron userData 默认）；
+  Windows=`%APPDATA%\Synapse\`（改名前旧目录 `Synapse Remake` 首启自动整体
   迁移——ADR-0020；旧目录原样保留=天然备份）。
-- 数据库：`%APPDATA%\Synapse\workspaces\<课题 id>\synapse.db`（ADR-0018 库级
+- 数据库：`<数据目录>/workspaces/<课题 id>/synapse.db`（ADR-0018 库级
   分目录，每课题一库；WAL 模式，运行时伴生 `synapse.db-wal`/`-shm` 侧车）。
-  全新安装首启为 legacy-fresh 态（库暂在 `Synapse\` 根），二次启动迁移入
-  `workspaces\default\`。
-- 受管 PDF：`…\Synapse\workspaces\<课题 id>\files\<sha 分桶>\<sha256>.pdf`
+  全新安装首启为 legacy-fresh 态（库暂在数据目录根），二次启动迁移入
+  `workspaces/default/`。
+- 受管 PDF：`<数据目录>/workspaces/<课题 id>/files/<sha 分桶>/<sha256>.pdf`
   （内容寻址天然去重，随课题隔离）。
-- 设置与课题指针（应用级，不随课题切换）：`%APPDATA%\Synapse\settings.json`
+- 设置与课题指针（应用级，不随课题切换）：`<数据目录>/settings.json`
   （contactEmail / theme / uiScale）与 `workspace.json`（当前课题指针）。
-- **备份方法：完全退出应用后，整个 `%APPDATA%\Synapse` 目录复制到安全位置。**
+- **备份方法：完全退出应用后，整个数据目录复制到安全位置。**
   WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
 
-## 7. 打包与分发（Phase 6 起）
+## 7. 打包与分发（Phase 6 起；目标产物=Windows 安装包。本地 dev/build/test/e2e 已在 WSL2 全绿——electron-builder 安装包产物与 installer smoke 链未在 WSL2 验证，回归 Windows 机或验证后再用）
 
 - `npm run dist` 产 `dist/Synapse-<version>-setup.exe`；scripts/dist.mjs 自动编排：
   npmmirror 镜像 env（SKIP_MIRROR=1 跳过）→ 三段 build →
