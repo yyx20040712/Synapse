@@ -221,8 +221,9 @@ describe('resolveTemplateDir 双源解析（单函数收敛）', () => {
   })
 
   it('dev：仓库 tools/ai-sensor（mainDir 上两级=仓库根）', () => {
-    expect(resolveTemplateDir('E:\\repo\\out\\main', null, false)).toBe(
-      join('E:\\repo', 'tools', 'ai-sensor')
+    // [F-PLATFORM-01] 平台参数化：join 构造平台原生 mainDir（Windows 反斜杠/Linux 正斜杠一致语义）
+    expect(resolveTemplateDir(join('E:', 'repo', 'out', 'main'), null, false)).toBe(
+      join('E:', 'repo', 'tools', 'ai-sensor')
     )
   })
 })

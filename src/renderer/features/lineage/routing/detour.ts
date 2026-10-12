@@ -54,6 +54,12 @@ const FRAME_BORDER = 1.6
 /** 月框底 padding（.month-frame padding-bottom 12px——capacity.ts 未导出底
  *  值，本件镜像常量；capacity 属 U1 产出件本票只读） */
 const FRAME_PAD_BOTTOM = 12
+/** 边框亚像素渲染容差：border 1.6px 声明在 Linux Chromium（DPR=1）used value 落定 1px
+ *  （Windows 保 1.6px）——双侧至多亏 1.2px 使 innerH 低于 CARD_H 假封闭（F-PLATFORM-01
+ *  探针实证：注入 border 2px 后 route 由 overlap 翻 band；实测 Linux innerH=70.8、
+ *  救援阈 70.7 余量 0.1px——样式微调 border/padding 前先对账本带）。容差可及处仅幻影行，
+ *  其通道经净空门（真实障碍矩形判定）无害——同头注既有口径。 */
+const BORDER_SUBPIX_TOL = 1.3
 /** 阻挡带合并阈（相邻夹缝<28 合并=桩 20+L_min 8 横移夹缝判据——设计 §2 阻挡带集） */
 export const BLOCK_MERGE_GAP = 28
 /** [RR1 W2·RR2 d1-W2/k1-N2] DFS 组合访问预算（确定性常量）：候选组合理论
@@ -105,7 +111,7 @@ export function byTotalOrder<T extends { x: number }>(refX: number, curX: number
 function rowsFromFrame(f: { x: number; y: number; w: number; h: number }): Array<{ r: number; top: number }> {
   const fy0 = f.y + FRAME_BORDER
   const innerH = f.h - 2 * FRAME_BORDER - FRAME_PAD_TOP - FRAME_PAD_BOTTOM
-  const rows = Math.max(0, Math.floor((innerH - CARD_H) / PITCH_Y) + 1)
+  const rows = Math.max(0, Math.floor((innerH + BORDER_SUBPIX_TOL - CARD_H) / PITCH_Y) + 1)
   const out: Array<{ r: number; top: number }> = []
   for (let r = 0; r < rows; r++) out.push({ r, top: fy0 + FRAME_PAD_TOP + PITCH_Y * r })
   return out

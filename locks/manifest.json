@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-12T14:10:01.120Z",
+    "generatedAt": "2026-10-12T17:49:43.220Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -87,7 +87,7 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "a6a86897e99e95c42b18540bdd7aa6941638ca205b0acb97c5c7acc7860c4790"
+            "sha256": "1b0d76c437d43f9766db24db952e254fc23e6768e6b781d33e0393dcdcaf17c4"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
@@ -951,7 +951,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-routing.test.ts",
-            "sha256": "cc5343a9c877d79bada226669c0216b7f34687142f783065667f52475bd234f3"
+            "sha256": "ec94484b2f93c92b30cb65082806910518bb804dd254c7d29dba183b3bd973aa"
         },
         {
             "path": "tests/unit/renderer/lineage-routing-assign.test.ts",
@@ -1551,7 +1551,7 @@
         },
         {
             "path": "tests/unit/services/zcode-link.service.test.ts",
-            "sha256": "212dbedcc2720051d49fbdab13e598dd24003a50d9c5c21fa5ddd6bc1cf5326f"
+            "sha256": "fc974c738f5ba653dc99970f86bf81bedbd662468491718a47282f0bc35eefc2"
         },
         {
             "path": "tests/unit/shared/annotation-order.test.ts",

@@ -352,6 +352,31 @@ describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返
     expect(channels.every((c) => c.yLo === 100), '全部通道驻 row0 带（越界卡零幻影行）').toBe(true)
   })
 
+  it('[F-PLATFORM-01] 边框亚像素容差：Linux 框高 104（border 1px×2）→ 行集 1 行非 0——通道在册路由不退化 overlap', () => {
+    // Linux/WSLg 实测夹具（playwright 探针 2026-10-12）：frame(66,70.5,592,104)（Windows 同
+    // 布局=105.2——border 1.6px 双侧落定差 1.2px）；innerH=104−3.2−30=70.8<CARD_H=72
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(79, 89.5, CARD_W, CARD_H)],
+        ['乙', rect(279, 89.5, CARD_W, CARD_H)],
+        ['丙', rect(79, 219.5, CARD_W, CARD_H)],
+        ['B', rect(79, 349.5, CARD_W, CARD_H)]
+      ]),
+      labels: [rect(79, 202, 70.06, 20), rect(79, 332, 70.06, 20)],
+      yearHeads: [rect(20, 18, 55.3, 34.5), rect(87.3, 32, 20, 15)],
+      // 三个月框各 h=104（卡顶 89.5/219.5/349.5 等距 130——框顶=卡顶−19=border 1+pad 18；
+      // band 态 descend 需中间月通道承接 y 域，单框夹具 overlap 是几何必然非实现缺陷）
+      frames: [
+        { ...rect(66, 70.5, 592, 104), year: 2026 },
+        { ...rect(66, 200.5, 592, 104), year: 2026 },
+        { ...rect(66, 330.5, 592, 104), year: 2026 }
+      ]
+    })
+    expect(gridChannelsOf(snap).length, '通道全集非空（行集≥1 行）').toBeGreaterThan(0)
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route, '丙拦直连→绕行族承接（band/detour），不落 overlap 兜底').toBe('band')
+  })
+
   it('[B3] 中段夹缝封闭（h∈[28,36) 无槽）→ 该组合不可行：detourSkeleton 返 null（禁中点发明——坐标集闭包）', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([

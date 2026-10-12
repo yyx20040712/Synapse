@@ -10929,6 +10929,29 @@
             "expect(open, 'open 恰 3 次（首链+两度重挂）').toHaveBeenCalledTimes(3)",
             "expect(listMessages, 'listMessages 恰 3 次（每链各一跳）').toHaveBeenCalledTimes(3)"
           ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射\",\"[r1″ R6] 第三道 stale-guard（catch 面）：listMessages 晚到失败不复活已删条目、不污染重挂新链\"]",
+          "describePath": [
+            "F-DBCAMP-01 U3 aiSessionStore —— 态机/幂等/竞态/卸载/错误映射"
+          ],
+          "title": "[r1″ R6] 第三道 stale-guard（catch 面）：listMessages 晚到失败不复活已删条目、不污染重挂新链",
+          "markers": [],
+          "line": 307,
+          "assertions": [
+            "expect(listMessages, 'open 落地后链式派发 listMessages').toHaveBeenCalledTimes(1)",
+            "expect(listMessages).toHaveBeenCalledWith({ sessionId: 7 })",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '首链消息未到=loading 中间态').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key], 'unload 即清').toBeUndefined()",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '重挂第 2 链=loading').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '旧链晚到失败不改写新链 loading').toBe('loading')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId 未被旧链失败改写').toBeNull()",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.status, '新链最终落地=ready').toBe('ready')",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.sessionId, 'sessionId=第 2 链新值').toBe(8)",
+            "expect(mod.useAiSessionStore.getState().panels[key]?.messages, '消息面=第 2 链空回包').toEqual([])",
+            "expect(open, 'open 恰 2 次（首链+一度重挂）').toHaveBeenCalledTimes(2)",
+            "expect(listMessages, 'listMessages 恰 2 次（每链各一跳）').toHaveBeenCalledTimes(2)"
+          ]
         }
       ]
     },
@@ -22256,13 +22279,26 @@
           ]
         },
         {
+          "key": "[\"F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返工处置）\",\"[F-PLATFORM-01] 边框亚像素容差：Linux 框高 104（border 1px×2）→ 行集 1 行非 0——通道在册路由不退化 overlap\"]",
+          "describePath": [
+            "F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返工处置）"
+          ],
+          "title": "[F-PLATFORM-01] 边框亚像素容差：Linux 框高 104（border 1px×2）→ 行集 1 行非 0——通道在册路由不退化 overlap",
+          "markers": [],
+          "line": 355,
+          "assertions": [
+            "expect(gridChannelsOf(snap).length, '通道全集非空（行集≥1 行）').toBeGreaterThan(0)",
+            "expect(r.route, '丙拦直连→绕行族承接（band/detour），不落 overlap 兜底').toBe('band')"
+          ]
+        },
+        {
           "key": "[\"F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返工处置）\",\"[B3] 中段夹缝封闭（h∈[28,36) 无槽）→ 该组合不可行：detourSkeleton 返 null（禁中点发明——坐标集闭包）\"]",
           "describePath": [
             "F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返工处置）"
           ],
           "title": "[B3] 中段夹缝封闭（h∈[28,36) 无槽）→ 该组合不可行：detourSkeleton 返 null（禁中点发明——坐标集闭包）",
           "markers": [],
-          "line": 355,
+          "line": 380,
           "assertions": [
             "expect(r).toBeNull()"
           ]
@@ -22274,7 +22310,7 @@
           ],
           "title": "[W3] band 态通道槽位占用（下一段顺位首空槽）：两 band 边同 row1 右缘通道 → 次边取次槽 600.7（首边占 575.3）",
           "markers": [],
-          "line": 378,
+          "line": 403,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['band', 'band'])",
             "expect(paths[0]!.pts.some((q) => q.x === 575.3)).toBe(true)",
@@ -22289,7 +22325,7 @@
           ],
           "title": "byTotalOrder：拐弯数主键（x===curX=0 拐先于一切）→|x−refX| 次键→x 末键（等距对判别——拐弯键唯一判别面）",
           "markers": [],
-          "line": 400,
+          "line": 425,
           "assertions": [
             "expect([...cands].sort(byTotalOrder(150, 200)).map((c) => c.x)).toEqual([200, 100, 300])",
             "expect([...cands].sort(byTotalOrder(150, 0)).map((c) => c.x)).toEqual([100, 200, 300])"
@@ -22302,7 +22338,7 @@
           ],
           "title": "源面负锚：routing/chain.ts 零 corridor/fallback/CORRIDOR_/defaultCorridor/laneIndex 字面（走廊族彻底退役）",
           "markers": [],
-          "line": 412,
+          "line": 437,
           "assertions": [
             "expect(src).not.toMatch(/corridorSkeleton|defaultCorridor|CORRIDOR_|laneIndex/)",
             "expect(src).not.toMatch(/'corridor'|'fallback'/)"
@@ -22315,7 +22351,7 @@
           ],
           "title": "routeAll 态域：混合夹具全产出 route∈五态+manual（类型面+运行时双锁）",
           "markers": [],
-          "line": 420,
+          "line": 445,
           "assertions": [
             "expect(allowed.has(p.route), `route=${p.route} ∈ 五态域`).toBe(true)",
             "expect(p.d.length, `${p.edgeId} d 非空`).toBeGreaterThan(0)"
@@ -22328,7 +22364,7 @@
           ],
           "title": "对照基线：无 yearHead→direct（拦路实验的前提锁定）",
           "markers": [],
-          "line": 458,
+          "line": 483,
           "assertions": [
             "expect(r.route).toBe('direct')"
           ]
@@ -22340,7 +22376,7 @@
           ],
           "title": "year-head 拦 direct 中段→降级链触发（route≠direct+有产出）",
           "markers": [],
-          "line": 463,
+          "line": 488,
           "assertions": [
             "expect(r.route).not.toBe('direct')",
             "expect(r.d).not.toBe('')"
@@ -22353,7 +22389,7 @@
           ],
           "title": "障碍集组装：yearHeads 与卡/月标注同源并入（allObstacles 三源并集）",
           "markers": [],
-          "line": 471,
+          "line": 496,
           "assertions": [
             "expect(allObstacles(snap)).toHaveLength(3)"
           ]
@@ -22365,7 +22401,7 @@
           ],
           "title": "manual-override 不参与避让（via 在场穿 yearHead 照走——现状语义沿承）",
           "markers": [],
-          "line": 481,
+          "line": 506,
           "assertions": [
             "expect(r.route).toBe('manual-override')"
           ]
@@ -22377,7 +22413,7 @@
           ],
           "title": "via 折线构造：锚=端点卡主向定边（右 ½ 序）；route=manual-override；r=6 圆角 pass",
           "markers": [],
-          "line": 494,
+          "line": 519,
           "assertions": [
             "expect(r.route).toBe('manual-override')",
             "expect(r.d).toBe('M 228 136 L 294 136 Q 300 136 300 142 L 300 330 Q 300 336 294 336 L 228 336')"
@@ -22390,7 +22426,7 @@
           ],
           "title": "via 优先于甲链（在场即 manual——不落 direct/h-slip）+缺省 via 不触发",
           "markers": [],
-          "line": 510,
+          "line": 535,
           "assertions": [
             "expect(withVia.route).toBe('manual-override')",
             "expect(noVia.route).toBe('direct')"
@@ -22403,7 +22439,7 @@
           ],
           "title": "同输入 routeEdge 100 次输出全等+routeAll 单边一致（detour 夹具——网格通道派生确定性）",
           "markers": [],
-          "line": 525,
+          "line": 550,
           "assertions": [
             "expect(routeEdge(e, snap)).toEqual(first)",
             "expect(routeAll([e], snap)).toEqual([first])"
@@ -22416,7 +22452,7 @@
           ],
           "title": "月标挡首选 slot→散开第二槽终落 band（骨架末段=slot1 锚+d 手推）",
           "markers": [],
-          "line": 559,
+          "line": 584,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 224, y: 244 })",
@@ -22431,7 +22467,7 @@
           ],
           "title": "全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null+routeEdge 降级 overlap（走廊退役后兜底）",
           "markers": [],
-          "line": 575,
+          "line": 600,
           "assertions": [
             "expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')).toBeNull()",
             "expect(r.route).toBe('overlap')",
@@ -22445,7 +22481,7 @@
           ],
           "title": "散开锚 picks 落记=生效锚（tgt 项=散开 side/slot 非首选——仅胜出态）",
           "markers": [],
-          "line": 586,
+          "line": 611,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.picks).toEqual([ ['A', 'bottom', 2], ['B', 'top', 1] ])"
@@ -22458,7 +22494,7 @@
           ],
           "title": "[回炉 B2] 散开候选避开已 commit 槽（占用预检）：slot1 被占+slot0 月标挡→散至 slot2",
           "markers": [],
-          "line": 598,
+          "line": 623,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 256, y: 244 })",
@@ -22472,7 +22508,7 @@
           ],
           "title": "① 带内双下降共道→槽位化：同列两 direct 边穿同一行隙单元→x 电平互异且∈分点集+d 手推",
           "markers": [],
-          "line": 615,
+          "line": 640,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['direct', 'direct'])",
             "expect(paths[0]!.d).toBe('M 164 172 L 164 300')",
@@ -22489,7 +22525,7 @@
           ],
           "title": "③b 槽域穷尽豁免（n=1 单槽夹具）：两消费边→第 2 边 L3 豁免落 ideal 未偏移",
           "markers": [],
-          "line": 645,
+          "line": 670,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['h-slip', 'h-slip'])",
             "expect(paths[0]!.slotMarks).toBe('0:0')",
@@ -22508,7 +22544,7 @@
           ],
           "title": "⑧ [U4] 观测钩子投影：retain 例 overlapExempt 挂而 slotFallback 不挂；land 例两标志均不挂",
           "markers": [],
-          "line": 666,
+          "line": 691,
           "assertions": [
             "expect(paths[0]!.slotMarks).toBe('0:2')",
             "expect(paths[1]!.slotMarks).toBe('0:4')",
@@ -22525,7 +22561,7 @@
           ],
           "title": "⑩ [U4-RR1 k1-W1] 三线同端点对三落位：½→¾→¼ 三锚 ideal 164/196/132→槽 164 retain/200 land/128 land，三电平两两互异∈分点集",
           "markers": [],
-          "line": 682,
+          "line": 707,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['direct', 'direct', 'direct'])",
             "expect(paths[0]!.d).toBe('M 164 172 L 164 300')",
@@ -22543,7 +22579,7 @@
           ],
           "title": "[k1-W2′] Phase B 混合解：双带候选族互斥（带1=col0|1 族/带2=右缘族）无贯通类 → 异槽混合组合承接+detourMarks 双异值",
           "markers": [],
-          "line": 710,
+          "line": 735,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.detourMarks).toBe('358.7:182.7,575.3:399.3')",
@@ -22559,7 +22595,7 @@
           ],
           "title": "[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场（route=overlap 兜底）",
           "markers": [],
-          "line": 738,
+          "line": 763,
           "assertions": [
             "expect(paths.slice(0, 3).map((p) => p.route)).toEqual(['detour', 'detour', 'detour'])",
             "expect(paths[3]!.route).toBe('overlap')",
@@ -46999,7 +47035,7 @@
           "markers": [],
           "line": 223,
           "assertions": [
-            "expect(resolveTemplateDir('E:\\\\repo\\\\out\\\\main', null, false)).toBe( join('E:\\\\repo', 'tools', 'ai-sensor') )"
+            "expect(resolveTemplateDir(join('E:', 'repo', 'out', 'main'), null, false)).toBe( join('E:', 'repo', 'tools', 'ai-sensor') )"
           ]
         }
       ]
@@ -48912,8 +48948,8 @@
   },
   "stats": {
     "fileCount": 326,
-    "caseCount": 3272,
-    "assertionCount": 10773,
+    "caseCount": 3274,
+    "assertionCount": 10787,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -48923,16 +48959,10 @@
   },
   "exemptionsSnapshot": [
     {
-      "file": "tests/unit/renderer/outline-aside.test.tsx",
-      "assertionText": "expect(labels).toEqual(['目录', '缩略图', '笔记'])",
-      "reason": "F-DBCAMP-01 DB-2 UI U3：票面 16 明令 labels 精确数组扩第四项『AI 会话』（OutlineAside +第 4 页签 'ai'）——断言文本变=身份变，有意扩容非删锚，扩容后断言仍在原用例内（同 U1 reread 扩容先例）",
-      "rulingLink": "任务书 runId=20261010-dbcamp-db2i（U3 六段简报二段交付物 #16——主控显式枚举编辑面）"
-    },
-    {
-      "file": "tests/unit/renderer/reader-toolbar-icons.test.tsx",
-      "assertionText": "expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记'])",
-      "reason": "F-DBCAMP-01 DB-2 UI U3：票面 17 明令 tab textContent 数组同 16 扩『AI 会话』——断言文本变=身份变，有意扩容非删锚，扩容后断言仍在原用例内",
-      "rulingLink": "任务书 runId=20261010-dbcamp-db2i（U3 六段简报二段交付物 #17——主控显式枚举编辑面）"
+      "file": "tests/unit/services/zcode-link.service.test.ts",
+      "caseTitle": "dev：仓库 tools/ai-sensor（mainDir 上两级=仓库根）",
+      "reason": "F-PLATFORM-01 平台参数化：dev 用例输入/期望由 Windows 路径字面量改 join 构造（平台原生分隔符）——测试意图零变（同标题同断言结构，期望值两平台逐字节等价），仅断言规范化文本指纹随构造式变化；Linux 下原字面量形态结构性必红（posix 单段名语义）",
+      "rulingLink": "账本 .zcode/org-ledger.jsonl runId=20261012-fplatform01 裁决行（2026-10-13 主控）+仓外档 synapse-archive/scripts-audits/20261012-fplatform01/gate2-probe-pack.md"
     }
   ]
 }

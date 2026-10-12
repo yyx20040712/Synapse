@@ -11,7 +11,7 @@
  */
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, stat } from 'node:fs/promises'
-import { isAbsolute, resolve, sep } from 'node:path'
+import { isAbsolute, resolve, sep, win32 } from 'node:path'
 import { atomicWriteFile } from '../shared/atomic-write'
 import { DomainError } from '../shared/domain-error'
 
@@ -61,7 +61,9 @@ export function createFileStore(rootDir: string): FileStore {
     if (typeof fileRef !== 'string' || fileRef === '') {
       throw new FileStoreError('IO_ERROR', 'file_ref 不能为空')
     }
-    if (isAbsolute(fileRef) || fileRef.includes('..') || fileRef.includes('\\')) {
+    // win32 形态绝对路径（E:/x、\\server\share UNC）在 posix.isAbsolute 下漏判落相对
+    // 目录名=放行语义缺陷（F-PLATFORM-01——Linux 平台实证）
+    if (isAbsolute(fileRef) || win32.isAbsolute(fileRef) || fileRef.includes('..') || fileRef.includes('\\')) {
       throw new FileStoreError('IO_ERROR', `非法 file_ref：${fileRef}`)
     }
     if (!fileRef.endsWith('.pdf')) {
@@ -80,11 +82,15 @@ export function createFileStore(rootDir: string): FileStore {
       try {
         bytes = await readFile(srcPath)
       } catch (e) {
+        const raw = e instanceof Error ? e.message : String(e)
+        // 平台无关脱敏：底层错误回显的原始全路径（verbatim+两种全量斜杠规范化
+        // 形态——Windows/Linux 规范化方向相反）降为文件名；混合斜杠形态无已知产生源
+        const safe = raw
+          .replaceAll(srcPath, basename(srcPath))
+          .replaceAll(srcPath.replaceAll('/', '\\'), basename(srcPath))
+          .replaceAll(srcPath.replaceAll('\\', '/'), basename(srcPath))
         // 错误消息只含文件名不含本机全路径（错误会跨 IPC 展示）
-        throw new FileStoreError(
-          'IO_ERROR',
-          `读取源文件失败：${basename(srcPath)}（${e instanceof Error ? e.message : String(e)}）`
-        )
+        throw new FileStoreError('IO_ERROR', `读取源文件失败：${basename(srcPath)}（${safe}）`)
       }
       const fileName = basename(srcPath)
       return store(bytes, fileName)
