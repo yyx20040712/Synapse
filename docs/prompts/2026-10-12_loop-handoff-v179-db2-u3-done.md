@@ -1,5 +1,24 @@
 # 交接书 v179 —— DB-2 UI U3（renderer 会话面板）收官·迁移恢复场（2026-10-12）
 
+> **修订一（2026-10-12 同日，外席追认链）**：席位恢复（ai-dev-org 技能+ops-* 绑定岗
+> 在场）后执行 §3-1 选项③「外席重跑」——门一 delta 外席双席 **k3**（kimi-main 源A，
+> B0/W2/N4=PWC，两条件主控核销：E1② 终态断言 spec:71 先于 data-anchor 断言/
+> data-scope=授权渲染行对称三件套亲裁保留）+**d1**（deepseek，B0/W1/N5=PWC）真实
+> 异构重过；d1-W1 发现真缺口=aiSessionStore catch 首行（101 行）第三道 stale 守卫
+> 「晚到失败」零可红覆盖（GLM 全链未发现——异构价值实证）→**R6 回炉**（第 11 用例
+> +56 行，变异红证「notFound vs loading」，d1 微确认 PASS B0/W0/N0）→提交
+> **8e468620**（单 [locked-change]，2 件）。门二裁决部外席 **ops-adjudicator**
+> （kimi-third）终裁 **GO_WITH_CONDITIONS B0/W0/N3**——追认链成立、独立复算九笔
+> 全对账（含交叉咬合 326=297+29/3272=3167+105）、C1-C3 全核销（C3 勘误：恢复场
+> cfg_hash 非规范行=**9 行**非 8——裁决部亲数采纳）。**§3-1 席位追认窗口就此闭合
+> （选项③已执行）**；§4 基线更新：verify test 步 **3168=3165 绿+3 平台红**/指纹门
+> 提取侧 caseCount 3273（基线 3272 不 regen=superset 正确处置）/store 单测 11 用例
+> /HEAD=8e468620；§1-1「席位追认先行」**已达成**（U4 直接开工，门一沿 v177 §3-1
+> 修订五 k3 默认席）；§5 证据档追加 gate1-delta-pack-v2-external.md（外席自包含
+> 审包）。health-scan 补跑 RED=0/WARN=3（历史行字段缺口+cfg 漂移=上述勘误同源）。
+> 成本追认链≈1.87M subagent tokens（k3 30k+d1 69k+103k+executor 341k+
+> adjudicator 1200k）。
+
 > 前承 v178+中场档（docs/prompts/2026-10-11_loop-progress-u3-midstate.md——会话中断
 > 快照）。本档=恢复会话（runId=20261010-dbcamp-db2i 续，Linux/WSL2 迁移后首场）完成
 > **U3 收官全链（迁移事实核+门一 delta 双席+R5 回炉+门二 probe/终裁+收口）** 的单源。
