@@ -154,6 +154,15 @@
       "status": "observing",
       "first_seen": "2026-10-13",
       "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔右键顶点菜单未现〕，与 T9/S4 同跑漂移分布，族定性+排查归口 F-E2EFLK-01；单例复跑绿在档）"
+    },
+    {
+      "spec": "tests/e2e/library-density.spec.ts",
+      "case": "文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（libfix1 塌 0 回归锁）（:161）",
+      "count": 5,
+      "fingerprint": "差值型稳定（:222 .lib-r-main boundingBox 宽 Expected>=140/Received=120 恒值，predicate 5s 轮询超时非抖动——wideMin 分支 wideW>=1274?140:100 走 140 而列宽实收 120）；五数据点全同指纹（U5 树 3 现：全量 #19+主控单例复跑+probe 主树复核；基线树 worktree@1645cb5b 无 U5 diff 2 现稳定红——U5 diff 致病排除）；用例头注自述探针基线 ≈151.6 禁精确值断言防环境漂移",
+      "status": "filed",
+      "first_seen": "2026-10-14",
+      "resolution": "立案（2026-10-14 U5 批门二实证——「同用例 2 次」线远超且**非 flake 形态=当前机确定性恒红，复跑绿不可期待勿按销项口径处理**；同机时序矛盾在档：v182 前夜〔2026-10-13〕两跑全量本例绿→03 时段基线树稳定红=环境态漂移〔VMware 渲染/几何族嫌疑——F-PLATFORM-01 边框亚像素平台差同域〕；排查票=registry 同批 F-E2EFLK-02〔几何族独立于 F-E2EFLK-01 输入事件族；CI windows-latest 面未核归票〕；证据=仓外 20261014-db2ui-u5/{probe-e2e-full.log,probe-e2e-baseline.log}）"
     }
   ]
 }
