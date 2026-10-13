@@ -98,6 +98,25 @@ const stubAiSessionsDefault = {
 }
 stubState.api.ai_sessions = stubAiSessionsDefault as unknown as Record<string, unknown>
 
+// [F-DBCAMP-01 DB-2 UI U4] 同上 U3 习语缺省桩单点扩（主控扩权裁决，账本 ruling
+// 行在案——AiSessionPanel 挂载链新依赖）：任务区挂载即 ai_tasks.list（scope+
+// anchorId 过滤）；审计抽屉挂载即 ai_audit.list（首载 limit=100）。恒 ok 空回包：
+// 任务区落「暂无任务」/抽屉落「暂无审计记录」终态，无 pending 泄漏。测试需自定义
+// 行为时经 makeApiStub({ ai_tasks: … }) 覆盖（Object.assign 同键后写者胜）。
+// cancel 桩仅保在场（存量挂载链测试不触取消交互——U4 取消轴单测自带 mock 面）；
+// [R1-W2] 回包=契约合法形状 ok:false NOT_FOUND（成功载荷 task:null 不在
+// aiTaskSchema 值域——k3-N1/d1-W2 双席点名）
+const stubAiTasksDefault = {
+  list: vi.fn(async () => ({ ok: true as const, data: { tasks: [] } })),
+  cancel: vi.fn(async () => ({ ok: false as const, error: { code: 'NOT_FOUND', message: 'stub' } }))
+}
+stubState.api.ai_tasks = stubAiTasksDefault as unknown as Record<string, unknown>
+
+const stubAiAuditDefault = {
+  list: vi.fn(async () => ({ ok: true as const, data: { rows: [] } }))
+}
+stubState.api.ai_audit = stubAiAuditDefault as unknown as Record<string, unknown>
+
 /** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
 export function makeApiStub<T extends object>(shape: T): T {
   Object.assign(stubState.api, shape)

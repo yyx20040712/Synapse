@@ -118,6 +118,15 @@
       "status": "resolved",
       "first_seen": "2026-10-08",
       "resolution": "销案（2026-10-08 用户裁决——根因=用户本人当时连续打字，真实键入经前台焦点混入被测 app 笔记 textarea（拼音残片 jian'li 即用户 IME 输入），属外部输入污染族（P7-A 剪贴板被占用同族），非代码/测试缺陷，无需修复不设观察——史料=u3-e2e-close.raw.txt+定向复跑 u3-e2e-rerun1.raw.txt 18/18 绿+全量复跑 u3-e2e-close2.raw.txt 102/102 EXIT=0）"
+    },
+    {
+      "spec": "tests/e2e/lineage-route-slots.spec.ts + lineage-sidebar/lineage-topic-node/lineage.spec（lineage 族 14 例）",
+      "case": "U4 收口 probe e2e attempt1 第 36-49 例连续 14 ✘（全 lineage 族——DB-2 UI U4 白名单外，与本批改动零交集）",
+      "count": 1,
+      "fingerprint": "差值型分布（~40s 超时样+120ms/126ms/18s 速败族）；时间窗 07:12-07:2x 与另一兄弟会话误派探针 e2e 并发窗精确咬合（out/ 互覆+electron 争抢——让位裁决账本 2026-10-13T07:20 行+VOID.md 在档）；attempt2 同 36-49 例全 ✓（单次连续 108/108 EXIT=0）",
+      "status": "observing",
+      "first_seen": "2026-10-13",
+      "resolution": "contention 伪象定性（门二裁决部 Q2——同用例 2 次立案线未触〔各 1 现〕；观察面=后续批次 lineage 族 e2e 若再现同指纹且无并发窗即升级立案）"
     }
   ]
 }

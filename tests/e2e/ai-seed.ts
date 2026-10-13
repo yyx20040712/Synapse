@@ -11,10 +11,25 @@
  * 禁 test-only IPC（Q4 裁——e2e-env 直写 DB 先例族）。
  */
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 export type AiSeedScope = 'paper' | 'lineage' | 'global'
 export type AiSeedOrigin = 'manual' | 'agent'
+
+/**
+ * [U4 D11 小扩] 库文件解析：launch 前种子=裸 userData/synapse.db（首启
+ * legacy-fresh 建库面）；app 首次真实 launch 后 ensureWorkspaceLayout 按
+ * needsLegacyMigration 把裸库 rename 进 workspaces/default/（main 侧
+ * workspace-layout.ts）——app 在跑期间的种子/读数须走 workspace 路径
+ * （裸路径此刻=new Database 新建空库，「no such table」即此症状）。
+ * 裸库存在性判优=两阶段通吃（launch 前后同一函数）。
+ */
+function resolveDbFile(userData: string): string {
+  const bare = join(userData, 'synapse.db')
+  if (existsSync(bare)) return bare
+  return join(userData, 'workspaces', 'default', 'synapse.db')
+}
 
 /** 单次脚本执行结果按序回传（collection→{id} 等——脚本 stdout JSON 数组） */
 async function runAiSeed<T>(userData: string, ops: unknown[]): Promise<T[]> {
@@ -22,7 +37,7 @@ async function runAiSeed<T>(userData: string, ops: unknown[]): Promise<T[]> {
     const child = spawn(process.execPath, [join(process.cwd(), 'tests', 'e2e', 'seed-ai-domain.mjs')], {
       env: {
         ...process.env,
-        SEED_DB: join(userData, 'synapse.db'),
+        SEED_DB: resolveDbFile(userData),
         SEED_AI_JSON: JSON.stringify(ops)
       } as NodeJS.ProcessEnv,
       stdio: ['ignore', 'pipe', 'inherit']
