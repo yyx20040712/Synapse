@@ -43,7 +43,7 @@
         },
         {
             "path": "scripts/check-quality.mjs",
-            "sha256": "8f6de6c60a2fb66cae609933af77607d31b729d28bce91bb9ce205958c214f56"
+            "sha256": "a1d7433e18b49a8d985f23a33cf70db9a5e397b819ced58032970527d4bddb75"
         },
         {
             "path": "scripts/check-test-surface.mjs",
@@ -300,6 +300,10 @@
         {
             "path": "tests/contracts/schemas.test.ts",
             "sha256": "8fdd7c797dd1db900b98fab370af339d9b0bf38b2c4baad1982f5d36faab4bc6"
+        },
+        {
+            "path": "tests/e2e/ai-manage-tabs.spec.ts",
+            "sha256": "e9aa30af9479bce207e161e1f8e353ee83de0c8c9c64d24e587f9b99c1245873"
         },
         {
             "path": "tests/e2e/ai-seed.ts",
@@ -684,6 +688,14 @@
         {
             "path": "tests/unit/protocol/app-file.protocol.test.ts",
             "sha256": "df72a4ee0937da0d8b720831c711e9266e8d93b1fc236414fd5856d7c9c45e4d"
+        },
+        {
+            "path": "tests/unit/renderer/ai-manage-tabs.test.tsx",
+            "sha256": "7b2b9c3a0e2957d4af07c4c64a9649eb3e62a43b8aade110ec87205fb08caff4"
+        },
+        {
+            "path": "tests/unit/renderer/ai-memory-store.test.ts",
+            "sha256": "e579d9882918e74b3ea1d8894bf56834d825a4e412532242cbe47a01b1815c86"
         },
         {
             "path": "tests/unit/renderer/ai-note-style.test.ts",

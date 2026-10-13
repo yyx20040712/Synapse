@@ -121,7 +121,11 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   // 同型先例；LineageAiPanel 消费 lineage.store folderId）。聚合职责=AI 域
   // 会话入口在宿主视图的组装点，各域其余文件引用 ai 仍是红线。
   ['src/renderer/features/reader/panels/OutlineAside.tsx', ['ai/PaperAiPanel']],
-  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel']],
+  // [F-DBCAMP-01 DB-2 UI U5（2026-10-14）]：AI 管理面板=设置页「AI 管理」节
+  // 内容壳（设计 §4.1 settings 三节集成面——U3 五接缝同表扩条）：SettingsPage
+  // 组合 AiManageSection（三 Tab 自持，数据面全在 features/ai/ 内），沿同节
+  // AiSessionPanel 接缝先例；settings 域其余文件引用 ai 仍是红线。
+  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel', 'ai/manage/AiManageSection']],
   ['src/renderer/features/lineage/LineageAsideHost.tsx', ['ai/LineageAiPanel']],
   ['src/renderer/features/ai/PaperAiPanel.tsx', ['reader/state/useActiveTab']],
   ['src/renderer/features/ai/LineageAiPanel.tsx', ['lineage/lineage.store']]
