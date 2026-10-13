@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-13T01:51:30.518Z",
+    "generatedAt": "2026-10-13T23:02:25.437Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -43,7 +43,7 @@
         },
         {
             "path": "scripts/check-quality.mjs",
-            "sha256": "a1d7433e18b49a8d985f23a33cf70db9a5e397b819ced58032970527d4bddb75"
+            "sha256": "c7f4df74d851752666dbf55c0f0c80ea1b4980807fd8109cb42f1e10ef11461e"
         },
         {
             "path": "scripts/check-test-surface.mjs",
@@ -302,6 +302,14 @@
             "sha256": "8fdd7c797dd1db900b98fab370af339d9b0bf38b2c4baad1982f5d36faab4bc6"
         },
         {
+            "path": "tests/e2e/ai-budget.spec.ts",
+            "sha256": "f62af4b0c7382a545ba0a1c1e381c7117c9171d4ab717ca55296d9e4bb178911"
+        },
+        {
+            "path": "tests/e2e/ai-cascade-delete.spec.ts",
+            "sha256": "ddc55696f11f2e19037f5e3e7b90d575297bcd6c7f826a18c624f225a3b86f43"
+        },
+        {
             "path": "tests/e2e/ai-manage-tabs.spec.ts",
             "sha256": "e9aa30af9479bce207e161e1f8e353ee83de0c8c9c64d24e587f9b99c1245873"
         },
@@ -538,6 +546,14 @@
             "sha256": "5d31499c25c147f20d2f17c4b1ff8ea38bb011ebec82b44ff463bbeb5b0c2138"
         },
         {
+            "path": "tests/unit/db/repos/ai_notes.repo.order.test.ts",
+            "sha256": "db2365228758bada92b403c98e958e56fc73b3eb071e50200c5a9f5beaf8e449"
+        },
+        {
+            "path": "tests/unit/db/repos/ai_notes.repo.test.ts",
+            "sha256": "53c2a8e40bce35481365d0007f3216b5300fdd465da2f294150890eaa3f39ea5"
+        },
+        {
             "path": "tests/unit/db/repos/ai-context.repo.test.ts",
             "sha256": "0a45781f39b472e292c9b5280b5e6b65992764430606338f48d46e95683a45ea"
         },
@@ -556,14 +572,6 @@
         {
             "path": "tests/unit/db/repos/ai-tasks.repo.test.ts",
             "sha256": "c68068b2ef435436191181bfcd49625b8ab73778003d4cc5bc06772046564114"
-        },
-        {
-            "path": "tests/unit/db/repos/ai_notes.repo.order.test.ts",
-            "sha256": "db2365228758bada92b403c98e958e56fc73b3eb071e50200c5a9f5beaf8e449"
-        },
-        {
-            "path": "tests/unit/db/repos/ai_notes.repo.test.ts",
-            "sha256": "53c2a8e40bce35481365d0007f3216b5300fdd465da2f294150890eaa3f39ea5"
         },
         {
             "path": "tests/unit/db/repos/annotations.repo.test.ts",
@@ -626,20 +634,20 @@
             "sha256": "cc53824ef06396dab040f932a286db8fecd003b8efa5905058a8fa835e672a44"
         },
         {
-            "path": "tests/unit/ipc/export-clipboard.test.ts",
-            "sha256": "5a7fae67f38cec3612209633e5aa3f5f77898a96a31c8ea354b3bb31d394bb8e"
-        },
-        {
             "path": "tests/unit/ipc/export_.test.ts",
             "sha256": "4da387f60b3c63d0080a2cb16cec613849b8c0e659da501cf19f7c96c544743a"
         },
         {
-            "path": "tests/unit/ipc/import-paths.test.ts",
-            "sha256": "ced9ee333f726084f1117381bce919c15dce4b8b3bcc7feca34e320b8aa640e2"
+            "path": "tests/unit/ipc/export-clipboard.test.ts",
+            "sha256": "5a7fae67f38cec3612209633e5aa3f5f77898a96a31c8ea354b3bb31d394bb8e"
         },
         {
             "path": "tests/unit/ipc/import_.test.ts",
             "sha256": "48093179950ca0f9e6e9eac9759975ebf63db5429764ed8683081dfa60827e3e"
+        },
+        {
+            "path": "tests/unit/ipc/import-paths.test.ts",
+            "sha256": "ced9ee333f726084f1117381bce919c15dce4b8b3bcc7feca34e320b8aa640e2"
         },
         {
             "path": "tests/unit/ipc/library.test.ts",
@@ -695,7 +703,7 @@
         },
         {
             "path": "tests/unit/renderer/ai-memory-store.test.ts",
-            "sha256": "e579d9882918e74b3ea1d8894bf56834d825a4e412532242cbe47a01b1815c86"
+            "sha256": "ab58d544f940c2192f3fa153c1d51a39f8b4ae908baa531bfffa35ac54268993"
         },
         {
             "path": "tests/unit/renderer/ai-note-style.test.ts",
@@ -772,6 +780,14 @@
         {
             "path": "tests/unit/renderer/band-calibration.test.tsx",
             "sha256": "004132be79ad7e718d49e2539700569ff41e70be15ffd916760207a35982b2d8"
+        },
+        {
+            "path": "tests/unit/renderer/budget-section.test.tsx",
+            "sha256": "27827b8de75a7fdf853514cc6dd21069b531ee37cd602e2256c67b8c4f14114f"
+        },
+        {
+            "path": "tests/unit/renderer/cascade-guard.test.tsx",
+            "sha256": "a8e952b4ee2af6d3751cf727e747af64c64ff1fa148b93aa6aa590a41d4c86aa"
         },
         {
             "path": "tests/unit/renderer/corpus-export.test.tsx",
@@ -1643,7 +1659,7 @@
         },
         {
             "path": "tests/utils/api-client-mock.ts",
-            "sha256": "aae6e7972426f0efd887f18b0566fbd4a4eb90f21c005582c8b1a899db4a9a96"
+            "sha256": "e673514032f95f008d77ce93dcf2f861e647dfdca9acac8591e9f004296fadcc"
         },
         {
             "path": "tests/utils/factories.ts",

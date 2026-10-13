@@ -117,6 +117,19 @@ const stubAiAuditDefault = {
 }
 stubState.api.ai_audit = stubAiAuditDefault as unknown as Record<string, unknown>
 
+// [F-DBCAMP-01 DB-2 UI U6] 同上 U3/U4 习语缺省桩单点扩（主控扩权沿承——
+// 删除流接线新依赖）：静默/弹窗路径直删前挂载即 ai_cascade.preview。
+// 恒 ok 全零计数（合计=0→既有静默直删/单确认流外部行为零变——挂
+// LibraryPage/FolderNav 的存量测试零逐件补桩）；测试需自定义级联行为时经
+// makeApiStub({ ai_cascade: … }) 覆盖（Object.assign 同键后写者胜）。
+const stubAiCascadeDefault = {
+  preview: vi.fn(async () => ({
+    ok: true as const,
+    data: { counts: { sessions: 0, messages: 0, memories: 0, tasks: 0 } }
+  }))
+}
+stubState.api.ai_cascade = stubAiCascadeDefault as unknown as Record<string, unknown>
+
 /** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
 export function makeApiStub<T extends object>(shape: T): T {
   Object.assign(stubState.api, shape)

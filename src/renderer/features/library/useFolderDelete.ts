@@ -62,6 +62,10 @@ export function useFolderDeleteFlow(props: {
   reload(): Promise<void>
   /** 有保护资产→宿主挂 FolderDeleteDialog */
   onHasAssets(folder: Folder): void
+  /** [F-DBCAMP-01 U6] 静默路径级联门（宿主注入 useCascadeGuard.runWithCascade
+   *  ——夹零 papers 有 lineage 档 AI 资源形态可达，静默直删前同预览：合计>0
+   *  第二窗直出；preview 失败 fail-closed。设计 §1.6+N-4 诚实计数） */
+  onSilentCascade(req: { scope: 'folder'; anchorId: string; onProceed(): Promise<void> }): Promise<void>
 }): { requestDelete(folder: Folder): Promise<void>; handleDeleted(deletedId: string): void } {
   const { getScope, onChange, onMutated, reload, onHasAssets } = props
   /** 在途 folderId（null=空闲）——W1：区分同/异目标早退语义 */
@@ -110,15 +114,26 @@ export function useFolderDeleteFlow(props: {
       onHasAssets({ ...folder, paperCount: paperCountNow })
       return
     }
+    // [F-DBCAMP-01 U6] 静默路径级联门：直删前 preview（合计=0 既有静默直删
+    // 外部行为零变；>0 第二窗直出；preview 失败 fail-closed 不删）。交互期间
+    // ref 保持（在途串行）
     try {
-      await unwrap(api.folders.delete({ id: folder.id }))
-    } catch (e) {
-      showToast(e instanceof ApiClientError ? e.message : FOLDER_DELETE_FAILED, 'error')
+      await props.onSilentCascade({
+        scope: 'folder',
+        anchorId: folder.id,
+        onProceed: async () => {
+          try {
+            await unwrap(api.folders.delete({ id: folder.id }))
+          } catch (e) {
+            showToast(e instanceof ApiClientError ? e.message : FOLDER_DELETE_FAILED, 'error')
+            throw e
+          }
+          handleDeleted(folder.id)
+        }
+      })
+    } finally {
       deletingIdRef.current = null
-      return
     }
-    deletingIdRef.current = null
-    handleDeleted(folder.id)
   }
 
   return { requestDelete, handleDeleted }

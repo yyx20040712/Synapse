@@ -71,6 +71,10 @@ export interface PaperDeletePrompt {
 export function usePaperDeleteFlow(props: {
   /** 有连线→宿主挂 PaperDeleteDialog（计数=预检提示值） */
   onProtect(payload: PaperDeletePrompt): void
+  /** [F-DBCAMP-01 U6] 静默路径级联门（宿主注入 useCascadeGuard.runWithCascade
+   *  ——paper 无图有 AI 资源形态可达，静默直删前同预览：合计>0 第二窗直出；
+   *  preview 失败 fail-closed。设计 §1.6+N-4 诚实计数） */
+  onSilentCascade(req: { scope: 'paper'; anchorId: string; onProceed(): Promise<void> }): Promise<void>
 }): { requestDelete(paperId: string): Promise<void>; handleDeleted(deletedPaperId: string): Promise<void> } {
   const { onProtect } = props
   /** 在途 paperId（null=空闲）——W1：区分同/异目标早退语义 */
@@ -125,19 +129,29 @@ export function usePaperDeleteFlow(props: {
       onProtect({ paperId, graphName, edgeCount: detail.lineage?.edgeCount ?? 0 })
       return
     }
+    // [F-DBCAMP-01 U6] 静默路径级联门：直删前 preview（合计=0 既有静默直删
+    // 外部行为零变；>0 第二窗直出——无第一窗（图资产为零其文案语义不成立）；
+    // preview 失败 fail-closed 不删）。交互期间 ref 保持（在途串行）
     try {
-      await unwrap(api.papers.delete({ paperId }))
-    } catch (e) {
-      showToast(e instanceof ApiClientError ? e.message : PAPER_DELETE_FAILED, 'error')
-      deletingIdRef.current = null
-      return
-    }
-    // [RR1-1b/RR1-2a] 收尾独立捕获：ref 复位入 finally（load 异常不悬挂守卫）；
-    // 删除已成、列表未刷=专用文案（load 列表型契约本不抛——防御面）
-    try {
-      await handleDeleted(paperId)
-    } catch {
-      showToast(PAPER_RELOAD_FAILED, 'error')
+      await props.onSilentCascade({
+        scope: 'paper',
+        anchorId: paperId,
+        onProceed: async () => {
+          try {
+            await unwrap(api.papers.delete({ paperId }))
+          } catch (e) {
+            showToast(e instanceof ApiClientError ? e.message : PAPER_DELETE_FAILED, 'error')
+            throw e
+          }
+          // [RR1-1b/RR1-2a] 收尾独立捕获：删除已成、列表未刷=专用文案
+          //（load 列表型契约本不抛——防御面）
+          try {
+            await handleDeleted(paperId)
+          } catch {
+            showToast(PAPER_RELOAD_FAILED, 'error')
+          }
+        }
+      })
     } finally {
       deletingIdRef.current = null
     }

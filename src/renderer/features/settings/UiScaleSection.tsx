@@ -5,8 +5,9 @@
  * - 三档 segmented（small/medium/large；当前档 primary 高亮）：点档即存——
  *   与通用节「保存设置」按钮独立（SettingsPage runSave 面不涉缩放）
  * - 同因必须组装全量：set 通道 Req=完整 appSettingsSchema（register strict
- *   校验+整体落盘），漏带会被 zod default 静默填 'small' 抹掉用户已选档位
- *   （INV-39；载荷组装纪律从 SettingsPage 原地迁入，语义零变）
+ *   校验+整体落盘），漏带会被 zod default 静默填默认——uiScale 抹档位
+ *   （INV-39；载荷组装纪律从 SettingsPage 原地迁入，语义零变）+aiBudgets
+ *   抹已存预算（同因接缝，[F-DBCAMP-01 U6] 扩面四键）
  * - 档位真值取 store（设置页 load 与 App 挂载 load 同源幂等）；未载入前
  *   默认 small——与 App 兜底同口径
  *
@@ -43,7 +44,14 @@ export function UiScaleSection(): JSX.Element {
     if (saving || settings === null || settings.uiScale === next) {
       return
     }
-    save({ contactEmail: settings.contactEmail, theme: settings.theme, uiScale: next })
+    // aiBudgets 随行全量携带（U6 实修扩面——同因 INV-39：漏带会被 zod default
+    // 静默填默认预算抹掉用户已存预算；真值直读 store，此处 settings 非 null 保证）
+    save({
+      contactEmail: settings.contactEmail,
+      theme: settings.theme,
+      uiScale: next,
+      aiBudgets: settings.aiBudgets
+    })
       .then(() => showToast('界面缩放已保存', 'success'))
       .catch((e: unknown) => {
         showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')

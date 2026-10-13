@@ -53,6 +53,10 @@ export function FolderDeleteDialog(props: {
   onClose(): void
   /** 删除成功上抛（宿主=刷新列表+被删文件夹筛选回退） */
   onDone(deletedFolderId: string): void
+  /** [F-DBCAMP-01 U6] 级联门（可选）：确认后先预览 AI 域级联合计（双面）——
+   *  false=取消/失败（整体中止窗全关零删除）；true=放行既有删除通道。
+   *  门期间本窗保持开+按钮 busy（previewLoading 态的弹窗路径承载） */
+  onGate?(): Promise<boolean>
 }): JSX.Element {
   const guard = useBusyGuard()
   // 计数面：nodeCount/edgeCount=该图子图派生（lineage.graph——folders.service
@@ -70,6 +74,19 @@ export function FolderDeleteDialog(props: {
 
   async function confirm(): Promise<void> {
     if (!guard.begin()) return
+    if (props.onGate !== undefined) {
+      let pass = false
+      try {
+        pass = await props.onGate()
+      } catch {
+        pass = false
+      }
+      if (!pass) {
+        guard.end()
+        props.onClose()
+        return
+      }
+    }
     try {
       await unwrap(api.folders.delete({ id: props.folder.id }))
       props.onDone(props.folder.id)

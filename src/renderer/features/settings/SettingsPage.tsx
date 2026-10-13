@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
 import { AiSessionPanel } from '../ai/AiSessionPanel'
+import { BudgetSection } from '../ai/BudgetSection'
 import { AiManageSection } from '../ai/manage/AiManageSection'
 import { Button } from '../../shared/ui/Button'
 import { DiamondRule } from '../../shared/ui/DiamondRule'
@@ -33,6 +34,7 @@ import { SettingsSection } from './SettingsSection'
 import { UiScaleSection } from './UiScaleSection'
 import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
+import { AI_BUDGET_DEFAULTS, aiBudgetsSchema } from '@shared/models/ai-domain'
 
 const SAVE_OK = '设置已保存'
 
@@ -76,10 +78,17 @@ export function SettingsPage(): JSX.Element {
       showToast('邮箱格式不正确', 'info')
       return
     }
-    // uiScale 随行全量携带：set 通道 Req=完整 appSettingsSchema（register strict
-    // 校验+整体落盘），漏带会被 zod default 静默填 'small' 抹掉用户已选档位
-    // （F-G7 拆件后档位真值改直读 store——与 UiScaleSection 同口径：未载入默认 small）
-    save({ contactEmail: email, theme, uiScale: settings?.uiScale ?? 'small' })
+    // uiScale/aiBudgets 随行全量携带：set 通道 Req=完整 appSettingsSchema
+    // （register strict 校验+整体落盘），漏带会被 zod default 静默填默认——
+    // uiScale 抹档位（INV-39）+aiBudgets 抹已存预算（同因接缝，U6 实修扩面）。
+    // 档位/预算真值直读 store（F-G7 同口径）；未载入兜底=单源默认（aiBudgets
+    // 经 schema parse 取独立可变副本——AI_BUDGET_DEFAULTS 冻结件禁直传改写面）
+    save({
+      contactEmail: email,
+      theme,
+      uiScale: settings?.uiScale ?? 'small',
+      aiBudgets: settings?.aiBudgets ?? aiBudgetsSchema.parse(AI_BUDGET_DEFAULTS)
+    })
       .then(() => showToast(SAVE_OK, 'success'))
       .catch((e: unknown) => {
         showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
@@ -203,8 +212,8 @@ export function SettingsPage(): JSX.Element {
       {/* [F-DBCAMP-01 DB-2 UI U3] AI 三节壳一次立（E1 断言锚）：节序=AI 助手→
           AI 管理→AI 预算；插入点=「网络」节后、AI 语料导出节前。AI 助手=global
           档会话面板内嵌（anchorId=null）；[U5] 管理=三 Tab 面板（任务/置顶消息/
-          记忆——AiManageSection 自持）；预算=占位节（U6 填内容不动节标——文案
-          字面锚「该功能将在后续版本开放」） */}
+          记忆——AiManageSection 自持）；[U6] 预算=BudgetSection 自持（17 输入
+          +校验+保存——节标「AI 预算」逐字零动） */}
       <DiamondRule />
       <SettingsSection title="AI 助手">
         <AiSessionPanel scope="global" anchorId={null} />
@@ -215,9 +224,13 @@ export function SettingsPage(): JSX.Element {
       </SettingsSection>
       <DiamondRule />
       <SettingsSection title="AI 预算">
-        <p className="m-0 text-xs" style={{ color: 'var(--text-dim)' }}>
-          该功能将在后续版本开放
-        </p>
+        {/* [U6] 受控注入（ai 域件不 import settings 域 store——跨域 props 化）：
+            保存载荷由 BudgetSection 组装（全量四键），通道=settings.store.save */}
+        <BudgetSection
+          settings={settings}
+          saving={saving}
+          onSave={(payload) => save(payload)}
+        />
       </SettingsSection>
 
       {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}

@@ -125,7 +125,15 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   // 内容壳（设计 §4.1 settings 三节集成面——U3 五接缝同表扩条）：SettingsPage
   // 组合 AiManageSection（三 Tab 自持，数据面全在 features/ai/ 内），沿同节
   // AiSessionPanel 接缝先例；settings 域其余文件引用 ai 仍是红线。
-  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel', 'ai/manage/AiManageSection']],
+  // [F-DBCAMP-01 DB-2 UI U6（2026-10-14）]：预算节同节第三件=BudgetSection
+  //（设计 §4.1 settings 三节集成——17 输入自持，同节先例扩条）。
+  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel', 'ai/manage/AiManageSection', 'ai/BudgetSection']],
+  // [F-DBCAMP-01 DB-2 UI U6（2026-10-14）]：级联两次确认接线=library 域删除
+  // 流（papers/folders）消费 AI 域级联面（设计 §1.6/§4.1：CascadeConfirmDialog
+  // 归 features/ai/，双流共享 hook 宿主域=library）——单点接线件 useCascadeGuard
+  // 组合 ai/CascadeConfirmDialog（第二窗纯展示件）；library 其余文件引用 ai
+  // 仍是红线。
+  ['src/renderer/features/library/useCascadeGuard.tsx', ['ai/CascadeConfirmDialog']],
   ['src/renderer/features/lineage/LineageAsideHost.tsx', ['ai/LineageAiPanel']],
   ['src/renderer/features/ai/PaperAiPanel.tsx', ['reader/state/useActiveTab']],
   ['src/renderer/features/ai/LineageAiPanel.tsx', ['lineage/lineage.store']]

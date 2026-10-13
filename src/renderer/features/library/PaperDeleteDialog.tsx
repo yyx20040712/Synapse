@@ -60,11 +60,28 @@ export function PaperDeleteDialog(props: {
   onClose(): void
   /** 删除成功上抛（宿主=usePaperDelete.handleDeleted 收尾链） */
   onDone(deletedPaperId: string): void | Promise<void>
+  /** [F-DBCAMP-01 U6] 级联门（可选）：确认后先预览 AI 域级联合计——
+   *  false=取消/失败（整体中止窗全关零删除）；true=放行既有删除通道。
+   *  门期间本窗保持开+按钮 busy（previewLoading 态的弹窗路径承载） */
+  onGate?(): Promise<boolean>
 }): JSX.Element {
   const guard = useBusyGuard()
 
   async function confirm(): Promise<void> {
     if (!guard.begin()) return
+    if (props.onGate !== undefined) {
+      let pass = false
+      try {
+        pass = await props.onGate()
+      } catch {
+        pass = false
+      }
+      if (!pass) {
+        guard.end()
+        props.onClose()
+        return
+      }
+    }
     try {
       await unwrap(api.papers.delete({ paperId: props.paperId }))
     } catch (e) {

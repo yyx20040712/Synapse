@@ -31,6 +31,7 @@ import { requestOpenLineage } from '../../shared/open-lineage-bus'
 import { FolderDeleteDialog } from './FolderDialogs'
 import { FolderMenu } from './FolderMenu'
 import { FolderNavRows } from './FolderNavRows'
+import { useCascadeGuard } from './useCascadeGuard'
 import { useFolderDeleteFlow } from './useFolderDelete'
 import { useFolderNavEdit } from './useFolderNavEdit'
 import { useFolderDrop } from './useFolderDrop'
@@ -58,15 +59,19 @@ export function FolderNav(props: {
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<Folder | null>(null)
 
-  // 受控筛选态现值镜像（useFolderDelete W2：落定回退按最新筛选态判定）
+  // 受控筛选态现值镜像（useFolderDelete W2：落定回退按最新筛选态判定）；
+  // [F-DBCAMP-01 U6] 级联两次确认=弹窗路径 onGate+静默路径 onSilentCascade
+  //（第二窗/错误窗=cascade.dialog 挂载——LibraryPage 同型）
   const scopeRef = useRef(query.folderScope)
   scopeRef.current = query.folderScope
+  const cascade = useCascadeGuard()
   const { requestDelete, handleDeleted } = useFolderDeleteFlow({
     getScope: () => scopeRef.current,
     onChange,
     onMutated,
     reload: loadFolders,
-    onHasAssets: (f) => setDeleteDialog(f)
+    onHasAssets: (f) => setDeleteDialog(f),
+    onSilentCascade: (req) => cascade.runWithCascade(req)
   })
 
   useEffect(() => {
@@ -186,10 +191,12 @@ export function FolderNav(props: {
         <FolderDeleteDialog
           key={deleteDialog.id}
           folder={deleteDialog}
+          onGate={() => cascade.gate({ scope: 'folder', anchorId: deleteDialog.id })}
           onClose={() => setDeleteDialog(null)}
           onDone={handleDeleted}
         />
       )}
+      {cascade.dialog}
     </nav>
   )
 }

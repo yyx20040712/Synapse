@@ -49,15 +49,22 @@
  *   - [R12-N6] 编辑分类 select 值域=当前档冻结类目：历史异常值（行 category
  *     不在当前档值域——理论不可达，DDL 条件 CHECK 拦截）受控 select 显空
  *     option 不崩，防御面维持。
- *   - [r1-D1] 已知窄窗枚举：切档后再 startEdit / 重挂后再填编辑草稿 × 晚到
- *     成功回包交错——成功收尾无条件化会以**旧回包**清空**新**编辑态/草稿；
- *     窗口=IPC ms 级回包 × 秒级用户操作（先后倒置需用户快于回包），取舍=
- *     收尾无条件优先（防草稿残留重提重复行——R1 主缺陷面），U6 前清除候选
- *     （会话 epoch 计数可闭窗，届时随行为面一并补测）。
- *   - [r1-D2] 存活探针（panels[s] 在场）在 unload→重挂后**放行**：条目在场
- *     无法区分原/新会话，晚到失败回包 formError/rowErrors 可落新会话=一条
- *     错误文案误呈窄窗（同 D1 窗口量级；用户任一操作即覆盖自愈，U6 前与 D1
- *     同批清除候选）。
+ *   - [r1-D1] 已闭窗（epoch 机制，U6 前置首项）：切档/重挂后再 startEdit /
+ *     再填草稿 × 晚到成功回包交错——成功内容收尾（draft 复位/editing 清）
+ *     仅在 epoch 未变时无条件执行；epoch 已变时走**身份校验析取**（收尾
+ *     处方=gate1-r1-verdict W-r1-1）：当前草稿/编辑态仍逐字段等于提交时
+ *     值→仍复位（R1 防同稿重提语义保持）；已被替换（新稿/startEdit(B)）→
+ *     保留（不以旧回包吞新输入）。
+ *   - [r1-D2] 已闭窗（epoch 机制）：失败收尾（formError/rowErrors/NOT_FOUND
+ *     行移除）加 epoch 守卫（epoch!==ep→丢弃）；unload→重挂后存活探针
+ *     （panels[s] 在场）保留为防御带，epoch 守卫为主。
+ * 面五 会话 epoch（W-r1-1/N-r1-1 闭窗单源——store 闭包计数）：
+ *   epoch 0 起；unload() 与 setScope()（切档自增——同档 no-op 不增）各自
+ *   +1；create/update/setPinned/remove 派发时捕获当值 ep。收尾分层：在途
+ *   标志（creating/updating）复位**恒执行**（传输态非会话内容态——防 epoch
+ *   变更后标志悬挂卡死防重）；内容收尾仅 epoch===ep 或身份校验通过（面四
+ *   r1-D1 析取）；失败收尾仅 epoch===ep（面四 r1-D2）。列表 refresh 面不
+ *   需 epoch（unload/setScope 必伴随对应 seqs 自增——既有守卫已覆盖）。
  * 幂等护栏：load() 时条目 status∈{loading,ready} 且载入签名==当前签名→
  *   不派发；error 或签名不符→派发（沿 aiTasksStore 范式）。
  * 竞态丢弃：per-scope 请求序号 stale-guard（load/setScope/unload 自增使
@@ -163,6 +170,8 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
   // per-scope 请求序号+载入签名（stale-guard——沿 aiTasksStore 范式）
   const seqs = new Map<string, number>()
   const sigs = new Map<string, string>()
+  // 会话 epoch（面五）：unload/setScope 自增——晚到 CRUD 回包的内容收尾失格判据
+  let epoch = 0
 
   const setPanel = (scope: string, patch: Partial<AiMemoryEntry>): void => {
     set({ panels: { ...get().panels, [scope]: { ...EMPTY_ENTRY, ...get().panels[scope], ...patch } } })
@@ -235,6 +244,7 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
     setScope(scope) {
       const prev = get().filters
       if (prev.scope === scope) return
+      epoch += 1
       // 切档即清旧条目+序号自增（在途回包失格）；分类随档重置（值域随档）
       seqs.set(prev.scope, (seqs.get(prev.scope) ?? 0) + 1)
       dropPanel(prev.scope)
@@ -276,19 +286,28 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
       // 捕获原值（undefined 亦恒等比较——未派发过 list 时 CRUD 回包不误判失格；
       // 卸载/切档/重派自增后才失格——仅作用于 refresh 面，见面四收尾解耦）
       const seq = seqs.get('global')
+      const ep = epoch
       const { category, title, content } = get().draft
       set({ formError: null, creating: true })
       unwrap(api.ai_memory.create({ scope: 'global', anchorId: null, category, title, content }))
         .then(() => {
-          // R1 成功收尾无条件：draft 复位+在途复位（防残留重提重复行）
-          set({ draft: { ...BLANK_DRAFT }, creating: false })
+          // 在途复位恒执行（面五）；draft 复位=epoch 未变 ∨ 身份校验析取
+          //（当前草稿仍逐字段等于提交时草稿→复位防同稿重提重复行；已变=保留）
+          const d = get().draft
+          const untouched =
+            d.category === category && d.title === title && d.content === content
+          if (epoch === ep || untouched) {
+            set({ draft: { ...BLANK_DRAFT } })
+          }
+          set({ creating: false })
           // refresh 面仍受 seq 守卫（晚到不改写新链——列表可旧）
           if (seqs.get('global') !== seq) return
           dispatch('global', get().filters)
         })
         .catch((e: unknown) => {
           set({ creating: false })
-          // R1 失败收尾：面板已卸载/切走（条目缺席）→丢弃（无呈现面——面四自裁）
+          if (epoch !== ep) return // 面五 r1-D2：epoch 守卫为主
+          // R1 失败收尾防御带：面板已卸载/切走（条目缺席）→丢弃
           if (get().panels.global === undefined) return
           crudCatch('global', -1, true, e, seq)
         })
@@ -321,16 +340,31 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
       if (get().updating) return // R2 在途防重（双击单发）
       const scope = get().filters.scope
       const seq = seqs.get(scope)
+      const ep = epoch
       set({ updating: true })
       unwrap(api.ai_memory.update({ id: cur.id, patch: { title: cur.title, content: cur.content, category: cur.category } }))
         .then(() => {
-          // R1 成功收尾无条件：editing 清+行错清+在途复位
-          set({ editing: null, rowErrors: omitRowError(get().rowErrors, cur.id), updating: false })
+          // 在途复位恒执行（面五）；editing/行错清=epoch 未变 ∨ 身份校验析取
+          //（当前 editing 仍逐字段等于提交时编辑态→清+行错清——R1c 悬孤自愈
+          // 语义保持；已被替换（startEdit(B)/改字段）→保留不吞新编辑态）
+          const now = get().editing
+          const untouched =
+            now !== null &&
+            now.id === cur.id &&
+            now.category === cur.category &&
+            now.title === cur.title &&
+            now.content === cur.content
+          if (epoch === ep || untouched) {
+            set({ editing: null, rowErrors: omitRowError(get().rowErrors, cur.id), updating: false })
+          } else {
+            set({ updating: false })
+          }
           if (seqs.get(scope) !== seq) return
           dispatch(scope, get().filters)
         })
         .catch((e: unknown) => {
           set({ updating: false })
+          if (epoch !== ep) return // 面五 r1-D2：epoch 守卫为主
           if (get().panels[scope] === undefined) return // R1 卸载/切走→失败收尾丢弃
           crudCatch(scope, cur.id, false, e, seq)
         })
@@ -339,6 +373,7 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
     setPinned(id, pinned) {
       const scope = get().filters.scope
       const seq = seqs.get(scope)
+      const ep = epoch
       const rowErrors = omitRowError(get().rowErrors, id)
       set({ rowErrors })
       unwrap(api.ai_memory.setPinned({ id, pinned }))
@@ -347,6 +382,7 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
           dispatch(scope, get().filters)
         })
         .catch((e: unknown) => {
+          if (epoch !== ep) return // 面五 r1-D2：epoch 守卫为主
           if (get().panels[scope] === undefined) return // R1 卸载/切走→失败收尾丢弃
           crudCatch(scope, id, false, e, seq)
         })
@@ -355,6 +391,7 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
     remove(id) {
       const scope = get().filters.scope
       const seq = seqs.get(scope)
+      const ep = epoch
       unwrap(api.ai_memory.delete({ id }))
         .then(() => {
           if (seqs.get(scope) !== seq) return
@@ -363,12 +400,14 @@ export const useAiMemoryStore = create<AiMemoryStore>()((set, get) => {
           removeRow(scope, id)
         })
         .catch((e: unknown) => {
+          if (epoch !== ep) return // 面五 r1-D2：epoch 守卫为主
           if (get().panels[scope] === undefined) return // R1 卸载/切走→失败收尾丢弃
           crudCatch(scope, id, false, e, seq)
         })
     },
 
     unload() {
+      epoch += 1
       // 卸载清全部条目+序号自增（在途回包 refresh 面全失格）；R5 清检索过滤态
       // （query 复位——searchDraft 组件局部态随卸载消亡，防重挂脱节）；draft/
       // category/pinnedOnly/scope 保留（防丢稿+过滤面可见控件单源）

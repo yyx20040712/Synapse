@@ -41,6 +41,7 @@ import { PaperRowMenu } from './PaperRowMenu'
 import { useLibraryDnd } from './library-dnd.store'
 import { useLibraryStore } from './library.store'
 import { movePaperToFolder } from './paper-move'
+import { useCascadeGuard } from './useCascadeGuard'
 import { usePaperDeleteFlow, type PaperDeletePrompt } from './usePaperDelete'
 // 文献库皮肤（lib-* 类挂载点——feature 树全件共享；T3-P3 核心域+
 // [F-UIRES-01] 资源管理器形态域分域拆件=library-explorer.css[CSS 450 上限]）
@@ -68,10 +69,14 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
     anchor: { x: number; y: number }
   } | null>(null)
   // [F-UIRES-01 批 B] 删除流（预检分流 hook+保护弹窗态——FolderNav 挂
-  // FolderDeleteDialog 宿主模式同型）
+  // FolderDeleteDialog 宿主模式同型）；[F-DBCAMP-01 U6] 级联两次确认=弹窗
+  // 路径 onGate（第一窗确认后预览）+静默路径 onSilentCascade（直删前预览），
+  // 第二窗/错误窗=cascade.dialog 挂载
   const [deleteDialog, setDeleteDialog] = useState<PaperDeletePrompt | null>(null)
+  const cascade = useCascadeGuard()
   const { requestDelete, handleDeleted } = usePaperDeleteFlow({
-    onProtect: (p) => setDeleteDialog(p)
+    onProtect: (p) => setDeleteDialog(p),
+    onSilentCascade: (req) => cascade.runWithCascade(req)
   })
 
   // 挂载即拉取（useAsync 是显式 run 语义，故在 effect 中手动触发一次）
@@ -158,10 +163,12 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
           paperId={deleteDialog.paperId}
           graphName={deleteDialog.graphName}
           edgeCount={deleteDialog.edgeCount}
+          onGate={() => cascade.gate({ scope: 'paper', anchorId: deleteDialog.paperId })}
           onClose={() => setDeleteDialog(null)}
           onDone={handleDeleted}
         />
       )}
+      {cascade.dialog}
       <LibraryDragGhost />
     </div>
   )

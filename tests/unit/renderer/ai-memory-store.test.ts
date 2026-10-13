@@ -599,4 +599,163 @@ describe('F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义'
     await flush()
     expect(list).toHaveBeenLastCalledWith({ scope: 'global' })
   })
+
+  // ── [U6 前置首项] W-r1-1/N-r1-1 epoch 闭窗五轴（gate1-r1-verdict 处方：
+  //    会话 epoch 计数——unload/setScope 自增使晚到 CRUD 回包的内容收尾失格）──
+
+  it('[r1-W1a] create 在途×unload 重挂×新稿：晚到成功不清新稿（旧码必红）', async () => {
+    const list = vi.fn(async () => okItems([]))
+    type CreateResult = { ok: true; data: { item: AiMemoryListItem } }
+    const d = deferred<CreateResult>()
+    const create = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, create })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().setDraft({ title: '旧稿', content: '旧内容' })
+    mod.useAiMemoryStore.getState().create()
+    mod.useAiMemoryStore.getState().unload()
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().setDraft({ title: '新稿', content: '新内容' })
+
+    d.resolve({ ok: true, data: { item: mem({ id: 99, title: '旧稿' }) } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().draft.title, '晚到成功不清新稿').toBe('新稿')
+    expect(mod.useAiMemoryStore.getState().draft.content).toBe('新内容')
+    expect(mod.useAiMemoryStore.getState().creating, '在途标志复位恒执行').toBe(false)
+  })
+
+  it('[r1-W1b] create 在途×unload 重挂×草稿未动：晚到成功仍复位（R1 防同稿重提保持）', async () => {
+    const list = vi.fn(async () => okItems([]))
+    type CreateResult = { ok: true; data: { item: AiMemoryListItem } }
+    const d = deferred<CreateResult>()
+    const create = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, create })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().setDraft({ title: '同稿', content: '同内容' })
+    mod.useAiMemoryStore.getState().create()
+    mod.useAiMemoryStore.getState().unload()
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+
+    d.resolve({ ok: true, data: { item: mem({ id: 99, title: '同稿' }) } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().draft.title, '草稿未动=成功已落库仍复位').toBe('')
+    expect(mod.useAiMemoryStore.getState().draft.category).toBe('user_preference')
+    expect(mod.useAiMemoryStore.getState().creating).toBe(false)
+  })
+
+  it('[r1-W1c] update 在途×切档×startEdit(B)：晚到成功不吞 B（旧码必红）', async () => {
+    const list = vi.fn(async () => okItems([mem()]))
+    type UpdateResult = { ok: true; data: { item: AiMemoryListItem } }
+    const d = deferred<UpdateResult>()
+    const update = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, update })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().startEdit(mem())
+    mod.useAiMemoryStore.getState().update()
+    mod.useAiMemoryStore.getState().setScope('paper')
+    await flush()
+    const rowB = mem({ id: 32, scope: 'paper', anchorId: 'p-1', title: 'B 行' })
+    mod.useAiMemoryStore.getState().startEdit(rowB)
+
+    d.resolve({ ok: true, data: { item: mem({ title: '改后' }) } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().editing?.id, 'B 编辑态保留').toBe(32)
+    expect(mod.useAiMemoryStore.getState().editing?.title).toBe('B 行')
+    expect(mod.useAiMemoryStore.getState().updating, '在途标志复位恒执行').toBe(false)
+  })
+
+  it('[r1-N1a] create 失败回包晚于 unload→重挂：formError 不落新会话（旧码必红）', async () => {
+    const list = vi.fn(async () => okItems([]))
+    type CreateErr = { ok: false; error: { code: string; message: string } }
+    const d = deferred<CreateErr>()
+    const create = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, create })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().create()
+    mod.useAiMemoryStore.getState().unload()
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+
+    d.resolve({ ok: false, error: { code: 'INVALID_REQUEST', message: 'x' } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().formError, '重挂后条目在场也不落').toBeNull()
+    expect(mod.useAiMemoryStore.getState().creating).toBe(false)
+  })
+
+  it('[r1-N1b] remove 失败回包晚于 unload→重挂：rowErrors 不落新会话（旧码必红）', async () => {
+    const list = vi.fn(async () => okItems([mem()]))
+    type DelErr = { ok: false; error: { code: string; message: string } }
+    const d = deferred<DelErr>()
+    const del = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, delete: del })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().remove(31)
+    mod.useAiMemoryStore.getState().unload()
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+
+    d.resolve({ ok: false, error: { code: 'INVALID_REQUEST', message: 'x' } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().rowErrors[31], '重挂后条目在场也不落').toBeUndefined()
+    expect(mod.useAiMemoryStore.getState().panels.global?.items, '行保留').toEqual([mem()])
+  })
+
+  // ── [r1 处置 R3] epoch 失败面 setScope 轴补锚（k3-N5/d1-N3 双源命中：
+  //    切走又切回同档——panels 在场但 epoch 已变，失败收尾必须丢弃）──
+
+  it('[r1-R3a] update 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃', async () => {
+    const list = vi.fn(async () => okItems([mem()]))
+    type UpdateErr = { ok: false; error: { code: string; message: string } }
+    const d = deferred<UpdateErr>()
+    const update = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, update })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().startEdit(mem())
+    mod.useAiMemoryStore.getState().update()
+    // 切走又切回：global 条目重建（存活探针放行面）但 epoch 已两跳
+    mod.useAiMemoryStore.getState().setScope('paper')
+    await flush()
+    mod.useAiMemoryStore.getState().setScope('global')
+    await flush()
+    expect(mod.useAiMemoryStore.getState().panels.global, '切回后条目在场').toBeDefined()
+
+    d.resolve({ ok: false, error: { code: 'INVALID_REQUEST', message: 'x' } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().rowErrors[31], 'epoch 已变：失败收尾丢弃').toBeUndefined()
+    expect(mod.useAiMemoryStore.getState().updating, '在途标志复位恒执行').toBe(false)
+  })
+
+  it('[r1-R3b] setPinned 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃', async () => {
+    const list = vi.fn(async () => okItems([mem()]))
+    type PinErr = { ok: false; error: { code: string; message: string } }
+    const d = deferred<PinErr>()
+    const pin = vi.fn(() => d.promise)
+    const mod = await loadStore(apiStub(memApi({ listByScope: list, setPinned: pin })))
+
+    mod.useAiMemoryStore.getState().load()
+    await flush()
+    mod.useAiMemoryStore.getState().setPinned(31, true)
+    mod.useAiMemoryStore.getState().setScope('paper')
+    await flush()
+    mod.useAiMemoryStore.getState().setScope('global')
+    await flush()
+    expect(mod.useAiMemoryStore.getState().panels.global, '切回后条目在场').toBeDefined()
+
+    d.resolve({ ok: false, error: { code: 'INVALID_REQUEST', message: 'x' } })
+    await flush()
+    expect(mod.useAiMemoryStore.getState().rowErrors[31], 'epoch 已变：失败收尾丢弃').toBeUndefined()
+  })
 })
