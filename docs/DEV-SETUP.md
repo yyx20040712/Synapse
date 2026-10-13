@@ -1,24 +1,26 @@
-# DEV-SETUP —— 新设备开发环境引导（2026-08-27 方案 C 固化；2026-10-13 WSL2 迁移维护批更新——现役机=Linux/WSL2）
+# DEV-SETUP —— 新设备开发环境引导（2026-08-27 方案 C 固化；2026-10-13 WSL2 迁移维护批更新+同日 VMware 对齐批更新——现役机=Linux/VMware Ubuntu 24.04.5）
 
 > 本文档=把「新机从 clone 到 verify 全绿」所需的本机知识固化进仓库。
 > 按序走完 §1~§5，任何一步卡住先查 AGENTS.md「环境事实」节。
 > 基线核对数字见 §5——对不上=环境配错，停下排查勿硬闯。
 
-## 1. 前置环境（WSL2/Linux 现役机口径）
+## 1. 前置环境（Linux/VMware 现役机口径）
 
 | 项 | 要求 | 说明 |
 | --- | --- | --- |
-| Node | **24.x**（engines>=22；check-quality 版本守卫非 24 即红——Node 25 下 vitest jsdom 假红实证） | **WSL2=~/tools/node24 tarball**（npmmirror 下载解压：`curl -sL https://registry.npmmirror.com/-/binary/node/v24.20.0/node-v24.20.0-linux-x64.tar.xz`，PATH 前缀或 ~/.bashrc 持久化）；系统 apt node 18 不可用。Windows 机=Volta 项目锁定沿承（package.json `volta` 字段，clone 即生效） |
-| git | 系统 git | WSL2 **零额外网络配置**（直连；Windows 遗留 ssl/proxy 覆盖已删）；推送凭据=§3 |
+| Node | **24.x**（engines>=22；check-quality 版本守卫非 24 即红——Node 25 下 vitest jsdom 假红实证） | **Linux=~/tools/node24 tarball**（npmmirror 下载解压：`curl -sL https://registry.npmmirror.com/-/binary/node/v24.20.0/node-v24.20.0-linux-x64.tar.xz`，PATH 前缀或 ~/.bashrc 持久化）；系统 apt node 18 不可用。Windows 机=Volta 项目锁定沿承（package.json `volta` 字段，clone 即生效） |
+| git | 系统 git | Linux **零额外网络配置**（直连；Windows 遗留 ssl/proxy 覆盖已删）；推送凭据=§3 |
 | 网络 | 直连 | `.npmrc` npmmirror 二进制镜像入库沿承；旧机代理 7890 已废 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
 
-> 仓库应驻 WSL 原生文件系统（如 ~/，ext4）——/mnt/c（drvfs）下 git/npm 显著
-> 变慢且文件 watcher 失效。
+> 仓库应驻 Linux 原生文件系统（如 ~/，ext4）——网络盘/挂载盘下 git/npm 显著
+> 变慢且文件 watcher 失效（WSL2 时代=/mnt/c drvfs 同理）。
 >
 > 核对：新开 shell `node -v` 必须=24.x（系统 node18 会因版本守卫必红——见 AGENTS.md
-> 环境事实）；WSLg 下 playwright/electron 本机开箱即用（e2e 105/105 实证
-> 2026-10-13），若依赖库缺失再查 `npx playwright install-deps`。
+> 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（WSL2 单次全绿
+> 108/108〔v181〕；VMware 同日两跑 107/108·106/108——输入事件类偶发红 3 例
+> 〔T9/S4/T12〕单例复跑即绿=环境级噪声〔F-E2EFLK-01〕，非环境配置错），若依赖库
+> 缺失再查 `npx playwright install-deps`。
 
 > **本机残留备案**：仓库根 `.mimosa/`（finding-ledger/hook-state/history 等）系
 > zcode 宿主钩子的本机产物，非项目资产（.gitignore 已忽略）——审计/取证时勿误认；
@@ -36,18 +38,21 @@ npm ci          # .npmrc 已入库（npmmirror 二进制镜像）；
 
 - better-sqlite3 13.0.3（N-API 版）：prebuilt 随 npm 包直发（prebuilds/），
   npm ci 即得、Node/Electron 双运行时无需任何切换步骤；Electron linux-x64
-  二进制经 `.npmrc` npmmirror 镜像下载（clone 即生效——WSL2 实测）。
+  二进制经 `.npmrc` npmmirror 镜像下载（clone 即生效——WSL2 实测镜像下载
+  过程；VMware 实测=整目录拷贝 node_modules 直接可用〔免 ci，verify 全绿〕）。
 - **禁止 `npm run dev` 之外的裸 electron 启动**；全部命令收敛=verify/dev/test:e2e。
 
 ## 3. git 本地配置（clone 后必做——不随仓库走）
 
-WSL2/Linux（现役机）——网络零配置（直连），必做仅身份+推送凭据：
+Linux/VMware（现役机）——网络零配置（直连），必做仅身份+推送凭据：
 
 ```bash
 git config user.name user        # 与既有提交身份一致
 git config user.email user@local
 
-# 推送凭据二选一（迁移时点 2026-10-13 尚未配——F-PLATFORM-01 推送阻断项；配置后更新本注释）：
+# 推送凭据二选一（VMware 机 2026-10-13 未配——71 笔积压已在 WSL2 机清偿、
+# 远端 main=5c7d3616；本机 helper=store 已沿承、credentials 文件未随家目录迁移。
+# 配置后更新本注释）：
 #   ssh：ssh-keygen -t ed25519 → 公钥入 GitHub → git remote set-url origin git@github.com:yyx20040712/Synapse.git
 #   PAT：git config credential.helper store && git push（首推输入令牌即记住）
 ```
@@ -85,17 +90,19 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（全绿才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：297 文件 3169 用例 / locks 417（工单 open 数随排程浮动，
-                      # 以 tickets/registry.ts 实时为准；2026-10-13 F-PLATFORM-01 后基线）
-npm run build && npm run test:e2e   # 预期全量 105/105（Linux/WSLg 首次全绿=2026-10-13；
-                      # 旧文档 42/42=2026-08 Windows 默认门（非全量）口径快照——
-                      # 口径已迁全量；e2e 不含在 verify 里，须单独跑）
+npm run verify        # 预期 exit 0：299 文件 3194 用例 / locks 420（工单 open 数随排程浮动，
+                      # 以 tickets/registry.ts 实时为准；2026-10-13 v181 后基线——WSL2/VMware
+                      # 双机零漂移实测）
+npm run build && npm run test:e2e   # 预期全量 108/108（WSL2 单次全绿=2026-10-13 v181；
+                      # VMware 同日两跑 107/108·106/108——输入事件类偶发红
+                      # 〔T9/S4/T12 三例，单例复跑即绿=环境级噪声，F-E2EFLK-01〕
+                      # 非环境配置错；e2e 不含在 verify 里，须单独跑）
 ```
 
 - 数字对不上：先看是否 Node 版本≠24（裸跑 npx vitest 绕过版本守卫，
   Node 25 下 jsdom 假红——宪法既有纪律）；再核对是否忘了 build（e2e）。
 - locks 报受锁文件被改：新机**禁动** `tests/**`、`src/shared/**`、migrations、
-  CI/lint/构建/测试配置（sha256 对账，改须走 [locked-change] 流程——WSL2 下
+  CI/lint/构建/测试配置（sha256 对账，改须走 [locked-change] 流程——Linux 下
   ps1 锁工具缺位，manifest 维护=node 复刻口径，见 AGENTS.md 环境事实）。
 - 真实库位置（单源=代码 app.getPath，见 DEVELOPMENT §6）：Linux=
   `~/.config/Synapse/`（Electron userData 默认）；Windows=

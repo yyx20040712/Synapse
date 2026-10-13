@@ -177,7 +177,7 @@ development Model Selection+loop-engineering references/06）；**架构与
 - 受锁文件（tests/shared/migrations/CI/lint/构建/测试配置/脚本）变更必须带 `[locked-change]` 尾注。
 - 受锁文件修改前先 `npm run locks:unlock` 解除只读，改完即时 `npm run locks:apply` 重锁并
   更新 manifest（新增受锁路径需先 `npm run locks:generate` 再 apply）。
-  （WSL2/Linux：ps1 锁工具缺位，locks:unlock/apply/generate 三命令均不可用
+  （Linux：ps1 锁工具缺位，locks:unlock/apply/generate 三命令均不可用
   ——manifest 维护走环境事实段的 node 复刻口径。）
 - 触碰锁定文件的提交**即时** `locks:apply`（manifest 与该提交同步），禁止跨提交
   延迟重生成——CI 只查 push head，中间提交锁不同步会造成按提交回溯时的假绿。
@@ -193,8 +193,10 @@ development Model Selection+loop-engineering references/06）；**架构与
   用户同日批准呈批稿 a 选项——呈批档=docs/design/2026-09-19_f-stor01-bucket1-
   revision-proposal.md，前史三桶口径 2026-09-05 F-AUDIT-01 终裁见该档 §二）：
   ①证据件（raw/md/json/patch/diff/log——含简报/报告/门审档/verify 与变异输出、
-  探针工具件）**写入仓外档案区 `E:/zcode_md/synapse-archive/scripts-audits/`，
-  不入库**；批次日志登记文件名清单（登记制）。仓内 `scripts/audits/` 仅存
+  探针工具件）**写入仓外档案区（现役=`/home/yyx/synapse-archive/scripts-audits/`
+  ——路径随宿主用户目录，换机随迁更新本句；Windows 时代 E:/zcode_md/ 与
+  WSL2 时代 /home/agent/ 前缀均已失效），不入库**；
+  批次日志登记文件名清单（登记制）。仓内 `scripts/audits/` 仅存
   README 指针件（`.gitignore` `scripts/audits/*` 全拦+README 例外）。
   ②探针/工具件随证据件驻仓外档案区——check-locks walk 只认仓内
   `scripts/**.mjs|.ps1`，仓外件不入 manifest（跨 clone 无失效面）；`scripts/`
@@ -208,15 +210,20 @@ development Model Selection+loop-engineering references/06）；**架构与
 
 知识图谱（指自动引文网络图可视化；人工策展的核心 idea 时间树不在此列——2026-08-25 E5 裁决，指针 ADR-0014）、翻译、PDF 下载管线（CARSI/CDP/Sci-Hub）、Scopus/WoS、插件系统、i18n 多语言、云同步、EPUB、多窗口（OS 级多 BrowserWindow；单窗口内多标签页不在此列——2026-08-23 用户裁决，指针 ROADMAP Phase 7+ B3）、遥测、后台自动网络任务（增强只手动触发）、Markdown 富文本编辑器（textarea 即可）。
 
-## 环境事实（Linux/WSL2 现役——2026-10-12 自 Windows 迁移；Windows 时代全文=git 历史本次维护批前版本+事故档）
+## 环境事实（Linux/VMware 现役——2026-10-12 Windows→WSL2、2026-10-13 WSL2→VMware 两跳迁移；WSL2/Windows 时代全文=git 历史各维护批前版本+事故档）
 
-- **Linux/WSL2 + Electron 44**（44.4.3，Chromium M152/内嵌 Node 24/ABI 149）。
-  WSLg 下 e2e 开箱即用（electron linux dist 经 npmmirror 镜像随 npm ci 落位+playwright——**全量 105/105
-  实证 2026-10-13**，F-PLATFORM-01 后 Linux 全量绿=本地基线；CI 仍 windows-latest
-  跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+- **Linux（现役=VMware 虚拟机 Ubuntu 24.04.5，X11 桌面）+ Electron 44**（44.4.3，
+  Chromium M152/内嵌 Node 24/ABI 149）。e2e 开箱即用（electron linux dist 经
+  npmmirror 镜像随 npm ci 落位+playwright——WSLg 单次全量 108/108〔v181，
+  2026-10-13〕；VMware 机同日对齐批=verify 八步全绿零漂移+e2e 全量两跑
+  107/108·106/108，红点=输入事件类偶发漂移〔T9/S4/T12 三用例——VMware 两跑
+  内各 1 现，T9 另有 WSL2 attempt1 前科 1 现；三用例单例复跑全绿〕——环境级
+  嫌疑（F-E2EFLK-01 排查票承载，代码面零证据），VMware 单次全绿未取得
+  如实登记；CI 仍 windows-latest 跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
-- **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装，2026-10-13；系统 apt
+- **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装——WSL2/VMware 两机各
+  2026-10-13 落位（v24.20.0）；系统 apt
   node 18 不满足 engines>=22）。check-quality 版本守卫**非 24 即红**（跳过口
   SYNAPSE_SKIP_NODE_GUARD=1=vitest 升级票验证场专用；Node 25 下 vitest 2.1.9
   jsdom localStorage 装载破损=Windows 实证、jsdom 层推定平台无关——node24
@@ -239,8 +246,10 @@ development Model Selection+loop-engineering references/06）；**架构与
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）。
 - git=系统 git；repo-local Windows 遗留覆盖（http.sslBackend/sslCAInfo 指向
   MinGit 路径+proxy 7890）已于 F-PLATFORM-01 批毕删除——.git/config 不随
-  clone 走，新 WSL 机 git 零配置（直连）；**推送凭据（PAT/ssh）本机未配**（迁移时点
-  2026-10-13——配置后更新本句）——配法=docs/DEV-SETUP.md §3。远端 origin=github.com/yyx20040712/Synapse。
+  clone 走，新 Linux 机 git 零配置（直连）。**推送状态**：v181 挂账的 71 笔积压
+  已在 WSL2 机清偿（远端 main=HEAD=5c7d3616，2026-10-13 实测）；VMware 现机
+  凭据未配沿承（credential.helper=store 沿承、~/.git-credentials 未随家目录
+  迁移——配置后更新本句）——配法=docs/DEV-SETUP.md §3。远端 origin=github.com/yyx20040712/Synapse。
 - **ps1 锁工具四件 Linux 缺位**（locks:generate/apply/unlock+ticket:new）——
   manifest 维护=node 复刻口径（sha256=createHash('sha256').update(
   readFileSync(f))，与 check-locks.mjs 哈希行同式；排版=JSON.stringify(m,null,4)
@@ -255,4 +264,5 @@ development Model Selection+loop-engineering references/06）；**架构与
   正则变形在 Linux bash 链路同样成立=纪律层仍适用，②GBK 化/④argv 丢换行参
   =Windows 隔层特有。）
 - Windows 文件锁族噪声（geometric-repack「File exists」等，2026-09-02 三现）
-  教训归档 git 历史——WSL ext4 无此族；如回归 Windows 机沿承「忽略勿重装」。
+  教训归档 git 历史——Linux ext4 无此族（WSL2/VMware 两环境一致）；如回归
+  Windows 机沿承「忽略勿重装」。

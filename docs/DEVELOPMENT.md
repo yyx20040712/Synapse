@@ -90,7 +90,7 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
 - **备份方法：完全退出应用后，整个数据目录复制到安全位置。**
   WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
 
-## 7. 打包与分发（Phase 6 起；目标产物=Windows 安装包。本地 dev/build/test/e2e 已在 WSL2 全绿——electron-builder 安装包产物与 installer smoke 链未在 WSL2 验证，回归 Windows 机或验证后再用）
+## 7. 打包与分发（Phase 6 起；目标产物=Windows 安装包。本地 build/test 已在 Linux 双机全绿（WSL2/VMware，verify 同基线零漂移）；e2e 全量单次全绿=WSL2 2026-10-13〔108/108，v181〕，VMware 同日两跑 107/108·106/108〔输入事件类偶发红，F-E2EFLK-01〕——electron-builder 安装包产物与 installer smoke 链未在 Linux 验证，回归 Windows 机或验证后再用）
 
 - `npm run dist` 产 `dist/Synapse-<version>-setup.exe`；scripts/dist.mjs 自动编排：
   npmmirror 镜像 env（SKIP_MIRROR=1 跳过）→ 三段 build →

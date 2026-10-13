@@ -127,6 +127,33 @@
       "status": "observing",
       "first_seen": "2026-10-13",
       "resolution": "contention 伪象定性（门二裁决部 Q2——同用例 2 次立案线未触〔各 1 现〕；观察面=后续批次 lineage 族 e2e 若再现同指纹且无并发窗即升级立案）"
+    },
+    {
+      "spec": "tests/e2e/lineage.spec.ts",
+      "case": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+[②U6] 跨月物理域回弹无 toast+edit 态驱动（:901）",
+      "count": 2,
+      "fingerprint": "同用例同序列位（两现均全量序列 #49 位；第 2 现=spec:1002 .month-frame.stretch toHaveCount 期望 1 实得 0，8.4s fail-fast，14×重试零元素=跨月拖拽 stretch 态未出现；第 1 现=attempt1 40.5s 超时样——断言点未留存〔日志被杀〕，同断言点不可证仅同用例同位）；两环境复绿证据（WSL2 attempt2 全量 108/108 含本例+VMware 定向单例 3.5s 绿）——全量红/单例绿形态",
+      "status": "filed",
+      "first_seen": "2026-10-13",
+      "resolution": "立案（2026-10-13 VMware 对齐批——「同用例 2 次」通则线+上条（lineage 族）观察面「再现且无并发窗即升级」双触发：第 1 现=U4 收口 attempt1 #49〔WSL2，时属并发窗伪象族〕；第 2 现=VMware 首跑 #49〔无并发窗单会话〕。**与前条互见防双计误读**：attempt1 事件在前条按事件级登记（14 例集体）、本条按用例级计数（T9 全史失败次数）——同一次红不双轨处置，立案计数以本条用例级为准。**第 2 跑全量再证=本例绿+同跑 S4/T12 红（输入事件族漂移分布）→H2 环境级强化**（见下两条）。**族级主嫌=H2**（VMware X11 输入事件注入偶发丢〔环境级〕——三用例跨两跑漂移分布+全部单例复绿+WSL2 曾单次 108/108 全绿史=代码面零证据）；**次嫌=H1**（快环境时序压缩竞态——VMware 全量 5.3m vs WSL2 1.5h：90/5.3≈17.0、90/5.5≈16.4 倍）；H3 并发伪象残余最弱（两跑均无并发窗在场）；排查票=F-E2EFLK-01（registry 同批立案——VMware 对齐批 2026-10-13，族口径=本条+S4/T12 两条）；证据=仓外 20261013-vmware-align/{e2e-vmware-run1.log,e2e-vmware-run2.log,e2e-vmware-rerun-t9.log,e2e-vmware-rerun-s4t12.log}+20261013-u4/probe-e2e-attempt1-killed.log:91"
+    },
+    {
+      "spec": "tests/e2e/library-explorer.spec.ts",
+      "case": "S4：行拖入左栏文件夹=drop「移入」徽标+moveFolder 执行（合成内部拖拽）（:55）",
+      "count": 1,
+      "fingerprint": "同值（spec:69 新建文件夹后 navRow toBeVisible 超时——element not found 10s；VMware 第 2 跑 #19 位 12.2s；单例复跑 2.4s 绿）",
+      "status": "observing",
+      "first_seen": "2026-10-13",
+      "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔键盘路径：Enter 提交后行未现；用例主体=合成内部拖拽〕，与 T9/T12 同跑漂移分布，族定性+排查归口 F-E2EFLK-01（键盘路径在票面任务面②一并覆盖）；单例复跑绿在档）"
+    },
+    {
+      "spec": "tests/e2e/lineage.spec.ts",
+      "case": "T12 画线全链+手动调线+右键菜单（②U5：手柄/加点/拖顶点/穿卡警示软断言）（:1100）",
+      "count": 1,
+      "fingerprint": "同值（spec:1174 edge-menu toBeVisible 超时——右键 click force 后菜单未现 5s；VMware 第 2 跑 #51 位 7.8s；单例复跑 3.1s 绿）",
+      "status": "observing",
+      "first_seen": "2026-10-13",
+      "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔右键顶点菜单未现〕，与 T9/S4 同跑漂移分布，族定性+排查归口 F-E2EFLK-01；单例复跑绿在档）"
     }
   ]
 }

@@ -50,8 +50,11 @@ CI 的 `[dep-change]`/`[locked-change]` 检查只校验提交信息字符串：A
 
 - `check-quality`：'TO DO' 变体可绕过占位扫描；只扫静态 `from '...'` 导入，
   动态 `import()`/路径别名可绕分层与跨 feature 检查（ESLint import 关卡补位）。
-- `check-tickets`：路径分隔符硬编码 Windows（`replaceAll('/','\\')`）——
-  Linux/WSL 本地跑 verify 会全红（fail-closed 方向，非安全问题）。
+- `check-tickets`：~~路径分隔符硬编码 Windows（`replaceAll('/','\\')`）——
+  Linux/WSL 本地跑 verify 会全红~~ **〔已失效〕**——现行代码为双向归一
+  （`replaceAll('\\','/')`），Linux verify 全绿为基线事实（2026-10-13
+  F-PLATFORM-01 后 WSL2 首绿、同日 VMware 机复跑 EXIT=0 双实证）；
+  原盲区描述失效存档。
 - `check-locks` 跳过 coverage 目录而 quality/tickets 不跳：跑过 `--coverage` 后
   理论上可误红。
 - 工单锁定测试的覆盖面窄是历史根因（两轮 bug 的共同放行通道）：工单任务书
