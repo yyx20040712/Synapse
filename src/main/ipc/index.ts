@@ -25,6 +25,8 @@ import { createAiMemoryIpc } from './ai_memory'
 import { createAiTasksIpc } from './ai_tasks'
 import { createAiAuditIpc } from './ai_audit'
 import { createAiCascadeIpc } from './ai_cascade'
+// [F-DBCAMP-01 DB-3 U2] 快照导出域（5 通道——契约=shared/ipc/schemas.ts snapshot 段）
+import { createSnapshotIpc } from './snapshot'
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
   return {
@@ -46,6 +48,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     ai_memory: createAiMemoryIpc(deps),
     ai_tasks: createAiTasksIpc(deps),
     ai_audit: createAiAuditIpc(deps),
-    ai_cascade: createAiCascadeIpc(deps)
+    ai_cascade: createAiCascadeIpc(deps),
+    snapshot: createSnapshotIpc(deps)
   }
 }

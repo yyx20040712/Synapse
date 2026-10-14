@@ -42,6 +42,12 @@
   --accent: #3a5bd9;
   --accent-soft: #eaeefc;
   --gold: #b8935a;
+  /* [F-DBCAMP-01 DB-3 U2] QR 码功能色（扫描对比度要求=恒白底黑模块，跨主题
+     不变——非主题装饰色；token 化=INV-11 颜色消费单源）。--qr-bg 纯白三族
+     恒定，与 --panel 白天族值恰白=语义隔离合法共存（T3-P2 d1-W6 豁免判例
+     --accent-ink 同型——check-quality SAME_VALUE_EXEMPT_PROPS 注释互指） */
+  --qr-bg: #ffffff;
+  --qr-ink: #000000;
   --gold-soft: rgba(207, 174, 114, 0.16);
   --gold-bright: #e3c98f;
   --gold-line: rgba(207, 174, 114, 0.1);

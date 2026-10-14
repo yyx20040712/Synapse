@@ -4,19 +4,27 @@
  *
  * 载体=迁移 018 app_meta 三列 KV 表（010 lineage_graph_meta 同形态——见
  * src/main/db/migrations/018_app_meta.sql）。消费面=DB-3 envelope（owner/
- * snapshot_seq）+DB-2 设置页 token 展示——本批零 IPC 零 service（api-surface
- * 通道 pin 恒 62）。
+ * snapshot_seq/sync_key——[F-DBCAMP-01 DB-3 U2] 起经 snapshot 域五通道+
+ * snapshot.repo/service 全链）+DB-2 设置页 token 展示（现行 api-surface
+ * 通道 pin=80）。
  */
 
 /**
- * app_meta 键域三键单源（主控裁决③.2）。snapshot_seq 键名先登记——消费=
- * DB-3 envelope 面（本批不写不读不测行为，避免为未消费面写死行为）。
+ * app_meta 键域单源（主控裁决③.2；[F-DBCAMP-01 DB-3 U2] +syncKey+对端密钥
+ * 前缀）。snapshot_seq 键=DB-3 envelope 面（DB-1 批登记零消费，U2 起启用）。
+ * sync_key=库级同步主密钥（§13.6——ensure 语义同身份键：缺席才生成、在场
+ * 永不覆写；恒 64-hex=randomBytes(32)）；对端密钥=前缀拼 owner_id 的实键
+ * （值=64-hex 对端 sync_key——带外导入，§13.9-2 a 案）。
  */
 export const APP_META_KEYS = {
   ownerId: 'owner_id',
   deviceToken: 'device_token',
-  snapshotSeq: 'snapshot_seq'
+  snapshotSeq: 'snapshot_seq',
+  syncKey: 'sync_key'
 } as const
+
+/** 对端同步密钥实键前缀：实键=`peer_sync_key:<owner_id>`（值=64-hex） */
+export const PEER_SYNC_KEY_PREFIX = 'peer_sync_key:'
 
 /**
  * owner_id 形态=uuid v4 小写 hex（randomUUID() 产物）。生命周期（设计 §5.b）：

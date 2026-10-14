@@ -128,7 +128,14 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   // AiSessionPanel 接缝先例；settings 域其余文件引用 ai 仍是红线。
   // [F-DBCAMP-01 DB-2 UI U6（2026-10-14）]：预算节同节第三件=BudgetSection
   //（设计 §4.1 settings 三节集成——17 输入自持，同节先例扩条）。
-  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/AiSessionPanel', 'ai/manage/AiManageSection', 'ai/BudgetSection']],
+  // [回炉 R10] SettingsPage 行清 'ai/AiSessionPanel' 死条目（U2 AI 助手节壳外提
+  // 后该 import 已移 AiAssistantSection——现消费由本表 AiAssistantSection 行承载）
+  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/manage/AiManageSection', 'ai/BudgetSection']],
+  // [F-DBCAMP-01 DB-3 U2（2026-10-15）]：AI 助手节壳外提件（SettingsPage 插
+  // 同步密钥节后 251 行超组件 250 限——简报③-6 授权微调；行为零变=原四行节
+  // 壳搬运，接缝沿 SettingsPage 行 ai/AiSessionPanel 同型先例；settings 域
+  // 其余文件引用 ai 仍是红线）。
+  ['src/renderer/features/settings/AiAssistantSection.tsx', ['ai/AiSessionPanel']],
   // [F-DBCAMP-01 DB-2 UI U6（2026-10-14）]：级联两次确认接线=library 域删除
   // 流（papers/folders）消费 AI 域级联面（设计 §1.6/§4.1：CascadeConfirmDialog
   // 归 features/ai/，双流共享 hook 宿主域=library）——单点接线件 useCascadeGuard
@@ -302,7 +309,10 @@ for (const f of cssAll) {
 // [T3-P3 增补] --accent-ink 同族：accent 底字色纯白三族恒定（密度列表 T1
 // 徽章/抽屉主钮——mockup .tier.q1/.btn.primary），与 --panel 白天族同值=
 // 同语义隔离判例；theme.css --accent-ink 注释互指本常量。
-const SAME_VALUE_EXEMPT_PROPS = new Set(['--close-red-ink', '--accent-ink'])
+const SAME_VALUE_EXEMPT_PROPS = new Set(['--close-red-ink', '--accent-ink', '--qr-bg'])
+// [F-DBCAMP-01 DB-3 U2（2026-10-15）]：--qr-bg 同族判例第三件——QR 码功能色
+// 纯白三族恒定（扫描对比度要求=恒白底黑模块），与 --panel 白天族值恰白=
+// 语义隔离合法共存（--accent-ink 同型；theme.css --qr-bg 注释互指本常量）。
 const tokenByNorm = new Map()
 for (const d of tokenColorDecls) {
   if (SAME_VALUE_EXEMPT_PROPS.has(d.prop)) continue

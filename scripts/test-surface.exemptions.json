@@ -1,4 +1,179 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_audit 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_cascade 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_memory 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_messages 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_sensor 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_sessions 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_tasks 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 enrich 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 export_ 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 folders 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 import_ 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 library 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 lineage 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 notes 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 papers 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 reader 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 settings 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 system 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 tags 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 workspaces 方法集 pin",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
+      "reason": "U2 批通道活锚 75→80 同步+新增 snapshot 面（组名/用例名活锚数字随域扩更新——describePath 变=全组旧身份淘汰，断言面由新 80 通道 pin 等价承接）",
+      "rulingLink": "runId:20261015-db3u2"
+    }
+  ]
 }

@@ -66,6 +66,10 @@ import {
   createAiTailService,
   type AiTailService
 } from './ai/ai-tail.service'
+import {
+  createExportSnapshotService,
+  type SnapshotService
+} from './snapshot/export-snapshot.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -148,6 +152,9 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-2 U2] AI 随锚级联预览计数（ai_cascade 域单通道消费——
    *  级联删除本体=020 触发器，本面零删除方法） */
   aiCascade: AiCascadeService
+  /** [F-DBCAMP-01 DB-3 U2] 快照导出面（envelope 纯构建+对端密钥面——snapshot
+   *  域五通道消费；导入合并六闸归 U3） */
+  snapshot: SnapshotService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -231,7 +238,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiContext: createAiContextService({ repos: deps.repos }),
     aiTail: createAiTailService({ repos: deps.repos }),
     aiMemoryManual: createAiMemoryManualService({ repos: deps.repos }),
-    aiCascade: createAiCascadeService({ repos: deps.repos })
+    aiCascade: createAiCascadeService({ repos: deps.repos }),
+    snapshot: createExportSnapshotService({ repos: deps.repos })
   }
 }
 

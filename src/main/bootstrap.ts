@@ -131,6 +131,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       // 课题切换 assembleInto 同闭包全覆盖；workspace-layout initWorkspaceDb
       // 空建库不 ensure（空库身份=首次 assemble 补——两路径不双写）
       repos.appMeta.ensureIdentity()
+      // [F-DBCAMP-01 DB-3 U2] 库级同步密钥 ensure（§13.6——与身份同生命周期：
+      // 缺席才生成、在场永不覆写；同闭包单路径覆盖默认库首装+课题切换）
+      repos.snapshot.ensureSyncKey()
       const fileStore = createFileStore(filesDir)
       const services = createServices({
         repos,

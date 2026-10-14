@@ -57,6 +57,8 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       ai_tasks: unimplementedObject('SAMPLE-IPC', 'x'),
       ai_audit: unimplementedObject('SAMPLE-IPC', 'x'),
       ai_cascade: unimplementedObject('SAMPLE-IPC', 'x'),
+      // [F-DBCAMP-01 DB-3 U2] 快照导出域（5 通道——类型闭合随接线表增域）
+      snapshot: unimplementedObject('SAMPLE-IPC', 'x'),
       workspaces: unimplementedObject<NonNullable<ApiHandlers['workspaces']>>('SAMPLE-IPC', 'x')
     }
     expect(() => handlers.library.list).toThrow(NotImplementedError)

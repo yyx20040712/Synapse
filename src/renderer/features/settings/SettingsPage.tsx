@@ -21,7 +21,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
 import { ApiClientError } from '../../api/client'
-import { AiSessionPanel } from '../ai/AiSessionPanel'
 import { BudgetSection } from '../ai/BudgetSection'
 import { AiManageSection } from '../ai/manage/AiManageSection'
 import { Button } from '../../shared/ui/Button'
@@ -29,8 +28,10 @@ import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
 import { OP_FAILED, THEME_LABEL } from '../../shared/ui-constants'
 import { useSettingsStore } from './settings.store'
+import { AiAssistantSection } from './AiAssistantSection'
 import { CorpusExportSection } from './CorpusExportSection'
 import { SettingsSection } from './SettingsSection'
+import { SyncKeySection } from './SyncKeySection'
 import { UiScaleSection } from './UiScaleSection'
 import { ZcodeLinkSection } from './ZcodeLinkSection'
 import type { AppSettings } from '@shared/ipc/schemas'
@@ -209,15 +210,18 @@ export function SettingsPage(): JSX.Element {
         )}
       </SettingsSection>
 
-      {/* [F-DBCAMP-01 DB-2 UI U3] AI 三节壳一次立（E1 断言锚）：节序=AI 助手→
-          AI 管理→AI 预算；插入点=「网络」节后、AI 语料导出节前。AI 助手=global
-          档会话面板内嵌（anchorId=null）；[U5] 管理=三 Tab 面板（任务/置顶消息/
-          记忆——AiManageSection 自持）；[U6] 预算=BudgetSection 自持（17 输入
-          +校验+保存——节标「AI 预算」逐字零动） */}
+      {/* [F-DBCAMP-01 DB-3 U2] 同步密钥节（§13.9 已裁：文本串+二维码/导入单入口
+          ——自持组件直调 window.api.snapshot.*，不进 settings.store） */}
       <DiamondRule />
-      <SettingsSection title="AI 助手">
-        <AiSessionPanel scope="global" anchorId={null} />
-      </SettingsSection>
+      <SyncKeySection />
+
+      {/* [F-DBCAMP-01 DB-2 UI U3] AI 三节壳一次立（E1 断言锚）：节序=AI 助手→
+          AI 管理→AI 预算；插入点=同步密钥节后、AI 语料导出节前。AI 助手壳=
+          [F-DBCAMP-01 DB-3 U2] AiAssistantSection 外提（SettingsPage 250 行限）；
+          [U5] 管理=三 Tab 面板（任务/置顶消息/记忆——AiManageSection 自持）；
+          [U6] 预算=BudgetSection 自持（17 输入+校验+保存——节标「AI 预算」逐字零动） */}
+      <DiamondRule />
+      <AiAssistantSection />
       <DiamondRule />
       <SettingsSection title="AI 管理">
         <AiManageSection />

@@ -520,6 +520,50 @@ export {
 //    星标切换载荷——models/paper 单源）──
 export { paperDeleteReqSchema, paperSetStarredReqSchema } from '../models/paper'
 
+// ── snapshot（[F-DBCAMP-01 DB-3 U2] 快照导出面五通道——syncKey 本库密钥显形=
+//    §13.9-1 b 案已裁：用户显式打开设置页面才可见，经 preload 白名单桥取）──
+/** get-sync-key 响应：bundle=`<owner_id>:<sync_key>`（36+1+64=101 字符——QR 载荷） */
+export const syncKeyInfoResSchema = z
+  .object({
+    ownerId: z.string().min(1),
+    syncKey: z.string().min(1),
+    bundle: z.string().min(1)
+  })
+  .strict()
+export type SyncKeyInfo = z.infer<typeof syncKeyInfoResSchema>
+
+/** export-to-file 响应：落盘路径（main 系统对话框产生——INV-07）+卷序号+九表行数
+ *  （table_counts 键集=导出面九表，闸①锁定语义——服务侧保证，schema 记整数计数） */
+export const snapshotExportResSchema = z
+  .object({
+    filePath: z.string(),
+    snapshotSeq: z.number().int().min(1),
+    tableCounts: z.record(z.string(), z.number().int().min(0))
+  })
+  .strict()
+export type SnapshotExportRes = z.infer<typeof snapshotExportResSchema>
+
+/** import-peer-key 请求：bundle=`<uuid>:<64-hex>`（正则校验在 service——形态
+ *  锚=shared/models/app-meta OWNER_ID_PATTERN） */
+export const importPeerKeyReqSchema = z.object({ bundle: z.string().min(1) }).strict()
+export type ImportPeerKeyReq = z.infer<typeof importPeerKeyReqSchema>
+
+export const importPeerKeyResSchema = z.object({ ownerId: z.string().min(1) }).strict()
+
+/** 已导入对端密钥行（importedAt=导入时刻 ISO） */
+export const peerKeyItemSchema = z
+  .object({ ownerId: z.string().min(1), importedAt: z.string().min(1) })
+  .strict()
+export type PeerKeyItem = z.infer<typeof peerKeyItemSchema>
+
+export const listPeerKeysResSchema = z.object({ peers: z.array(peerKeyItemSchema) }).strict()
+export type ListPeerKeysRes = z.infer<typeof listPeerKeysResSchema>
+
+export const removePeerKeyReqSchema = z.object({ ownerId: z.string().min(1) }).strict()
+export type RemovePeerKeyReq = z.infer<typeof removePeerKeyReqSchema>
+
+export const removePeerKeyResSchema = z.object({ removed: z.boolean() }).strict()
+
 // ── folders.changed / lineage.changed 事件（[F-FOLDER-01] main→renderer 单向；
 //    载荷=空对象——纯失效通知（renderer 重拉 folders.list/lineage.graph），
 //    不携带数据防双真相）──────────────────────────────────────────

@@ -216,6 +216,19 @@ deletion_events 剪枝约束+隐私申报 ③021 判定补复合主键/FTS 重�
   stop==0 且恰 1 行（空行态 COALESCE 折算盲区——U1 回炉 R1 收紧）。
   落地状态=U1 批 021 迁移+九表触发器族+quality 第 11 段+开库断言全数
   在库；U2/U3 派发简报必须携带本勘正前提（级联超集口径）。**
+  **r5（2026-10-15 U2 实施批收口，主控亲笔——门二终裁 C-1 必办）：§13.6
+  两处字面勘正。〔甲〕AAD 句：原「GCM 加密以同 canonical envelope 字节
+  （除 hmac 字段）为 AAD」含 GCM tag 定点循环（tag 编码于 payload 而 AAD
+  决定 tag，互为前提物理不可达）——实测发现链=U2 实现（自裁①两段化）→
+  门一 k3-N8/d1 独立复算维持+主控追认→probe P2 纯 node:crypto 第三方复算
+  六对账过→adjudicator 终裁独立裁「安全性质无净损失」（仓外 20261015-
+  db3u2 gate2-adjudicator §②）；勘正后形态=MAC 面（去 hmac 键 canonical
+  全字节，payload 以密文 base64 在场）+AAD 面（同构造唯 payload 槽空串
+  占位）两段面。〔乙〕canonical 行序句：原「每表 (updated_at,id)」对
+  collections/tags/paper_tags 字面不可达（三表无 updated_at 列——主控
+  U2 开工调研实测发现，简报③-3 预裁矩阵代偿）——勘正为逐表矩阵（见
+  §13.6 canonical 段）。U3 派发简报必携本勘正口径（两段面复算同构性
+  =probe 已实证）。**
 
 ---
 
@@ -451,11 +464,20 @@ external content 派生面不随卷走，重建步随 ⑥ 收尾）。
     明文字段**（format_version/schema_version/snapshot_seq/owner_id/
     table_counts/payload_sha256）+payload 密文——owner/seq 均入 MAC 面；
     **覆盖面显式排除 hmac_sha256 字段本体**（防自指——auditor r2-N4）；
-    GCM 加密以同 canonical envelope 字节（除 hmac 字段）为 **AAD**——
-    字段搬运/重排/拼接全破。
+    GCM 的 **AAD 面=同构造唯 payload 槽空串占位**的 canonical 字节
+    （**两段面**——r5 勘正：原「GCM 以同 canonical envelope 字节〔除
+    hmac 字段〕为 AAD」字面含 GCM tag 定点循环〔tag 编码于 payload 而
+    AAD 决定 tag，互为前提物理不可达〕，MAC 面〔含 payload 密文〕与
+    AAD 面〔不含 payload 槽〕分立后认证覆盖无净损失——八明文字段两面
+    双覆盖+payload 由 HMAC 与 GCM tag 双拦）——字段搬运/重排/拼接全破。
   - **canonical 序列化规则**（INV-D 确定性口径落纸）：JSON 对象键=字母
-    序固定；重复键=解析后重序列化对账不符即拒收；行序=每表
-    (updated_at,id) 排序；编码=UTF-8。
+    序固定；重复键=解析后重序列化对账不符即拒收；行序=**逐表矩阵**（r5
+    勘正——原「每表 (updated_at,id)」字面对 collections/tags/paper_tags
+    不可达：三表无 updated_at 列〔001_init 实照〕；行序仅服务序列化确定性，
+    不承载合并语义）：papers/annotations/notes/lineage_nodes/lineage_
+    edges/lineage_graph_meta=（updated_at,id）序〔graph_meta id=key〕，
+    collections/tags=id 序，paper_tags=（paper_id,tag_id）序，pdf_refs=
+    paper_id 序，deletions=seq 序；编码=UTF-8。
   - envelope 明文面=format_version/schema_version/snapshot_seq/owner_id/
     table_counts/payload_sha256+**hmac_sha256**——服务端/中继可见（
     **明文面申报** auditor r1-N4②：表行数/owner/卷大小/卷数量/时序/

@@ -12,6 +12,7 @@ import { createTagsRepo, type TagsRepo } from './tags.repo'
 import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
 import { createFoldersRepo, type FoldersRepo } from './folders.repo'
 import { createAppMetaRepo, type AppMetaRepo } from './app-meta.repo'
+import { createSnapshotRepo, type SnapshotRepo } from './snapshot.repo'
 import { createAiSessionsRepo, type AiSessionsRepo } from './ai-sessions.repo'
 import { createAiMemoryRepo, type AiMemoryRepo } from './ai-memory.repo'
 import { createAiTasksRepo, type AiTasksRepo } from './ai-tasks.repo'
@@ -51,6 +52,9 @@ export interface Repos {
   /** [F-DBCAMP-01 DB-2 U2] 随锚级联预览计数（两次确认第一跳计数面——级联删除
    *  本体=020 触发器；消费=ai-cascade.service） */
   aiCascade: AiCascadeRepo
+  /** [F-DBCAMP-01 DB-3 U2] envelope 面专用仓储（sync_key ensure/snapshot_seq 计数/
+   *  对端密钥/九表导出读面——消费=export-snapshot.service；既有九 repo 零触碰） */
+  snapshot: SnapshotRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */
@@ -74,6 +78,7 @@ export function createRepos(db: SqliteDb): Repos {
     aiContext: createAiContextRepo(db),
     aiSearch: createAiSearchRepo(db),
     aiCascade: createAiCascadeRepo(db),
+    snapshot: createSnapshotRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
@@ -94,5 +99,6 @@ export type {
   AiTasksRepo,
   AiContextRepo,
   AiSearchRepo,
-  AiCascadeRepo
+  AiCascadeRepo,
+  SnapshotRepo
 }

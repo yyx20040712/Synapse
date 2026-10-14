@@ -41,6 +41,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       aiTail: null as never, // [F-DBCAMP-01 DB-2 U2b-2b] AI 尾段装配键（面外桩）
       aiMemoryManual: null as never, // [F-DBCAMP-01 DB-2 U2] AI 记忆手动面键（面外桩）
       aiCascade: null as never, // [F-DBCAMP-01 DB-2 U2] AI 级联预览键（面外桩）
+      snapshot: null as never, // [F-DBCAMP-01 DB-3 U2] 快照导出面键（面外桩——类型闭合随 ServiceBundle 增键）
       ...over.services
     },
     dialogs: {
