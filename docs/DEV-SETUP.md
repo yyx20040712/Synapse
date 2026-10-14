@@ -50,9 +50,9 @@ Linux/VMware（现役机）——网络零配置（直连），必做仅身份+�
 git config user.name user        # 与既有提交身份一致
 git config user.email user@local
 
-# 推送凭据二选一（VMware 机 2026-10-13 未配——71 笔积压已在 WSL2 机清偿、
-# 远端 main=5c7d3616；本机 helper=store 已沿承、credentials 文件未随家目录迁移。
-# 配置后更新本注释）：
+# 推送凭据二选一（VMware 机 2026-10-14 已配 PAT 入 store——三批 6 笔积压同日
+# 清偿、远端 main=56e01d16；换令牌=GitHub 重生成后覆写 ~/.git-credentials
+# 对应行即可）：
 #   ssh：ssh-keygen -t ed25519 → 公钥入 GitHub → git remote set-url origin git@github.com:yyx20040712/Synapse.git
 #   PAT：git config credential.helper store && git push（首推输入令牌即记住）
 ```
