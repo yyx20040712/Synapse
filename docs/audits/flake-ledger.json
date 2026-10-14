@@ -199,6 +199,15 @@
       "status": "observing",
       "first_seen": "2026-10-14",
       "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；与 case 20（E5 场景二，本地白天窗挂起型）同型不同例——挂起族跨例分布（本地白天窗+CI runner 两端各一例）=环境级线索候选；本用例第二现即立案+族级评估（两例并卷观察）"
+    },
+    {
+      "spec": "tests/e2e/theme-trio.spec.ts",
+      "case": "T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天（:96）",
+      "count": 1,
+      "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success",
+      "status": "observing",
+      "first_seen": "2026-10-14",
+      "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；机制候选=theme 三连切换各触发 settings.set→toast 堆叠不去重或前 toast 未消退（时序敏感）；第二现即立案排查（修复候选=app 侧 toast 去重/测试侧 .first() 收敛）"
     }
   ]
 }

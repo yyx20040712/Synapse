@@ -43,7 +43,10 @@
   ——挂起族跨例分布线索（本地白天窗 case20+CI runner case21 两端各一例
   =环境级候选）；任一第二现即立案+族级评估；④「禁 OR REPLACE」机检=
   U1 批挂卡项；⑤v1.3 §13.1 捕获面矩阵的「新删除路径入仓即对账」=
-  机检化后自动覆盖。
+  机检化后自动覆盖；⑥**T3-P4 双 toast 断言红=flake 台账 case 22
+  observing**（裁决批 attempt1 红→attempt2 绿·error-context 仓外
+  20261014-db3/t3p4-ci-toast-error-context.md·机制候选=toast 堆叠不去重
+  ——第二现即立案）。
 
 ## §3 待用户面（2026-10-14 晚用户裁决八项全落定——见账本 ruling 行）
 
