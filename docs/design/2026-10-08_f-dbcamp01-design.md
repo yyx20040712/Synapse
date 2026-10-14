@@ -1,10 +1,12 @@
-# F-DBCAMP-01 DB 战役·设计书 v1.2（末轮回炉稿）
+# F-DBCAMP-01 DB 战役·设计书 v1.3（DB-3 落纸终裁稿）
 
 > 版本沿革：v1.0 拟定（ops-drafter）→auditor 首轮（B4/W16/N8 返工）→v1.1
 > 回炉轮 1→auditor 二轮（B1/W8/N8 返工收窄；首轮 28 条处置=22 闭合/6 转移/
-> 0 未闭合）→**v1.2 末轮回炉稿**（回炉 2/2 用尽——余项主控终裁承接）。
+> 0 未闭合）→v1.2 末轮回炉稿（回炉 2/2 用尽——余项主控终裁承接）→
+> **v1.3 DB-3 落纸终裁稿（2026-10-14 主控亲笔——§12 四问主裁「丙→甲复合」
+> 甲授权：删事件日志+六项落纸条件一并处置；§13）**。
 > runId=20261008-dbcamp-open。用户四裁决（2026-10-07 夜逐字，账本 ruling 行）
-> 为硬约束。三段通道进行中：拟定三轮+对抗两轮毕，待三审+主控终裁+用户呈裁。
+> 为硬约束。
 
 ## 1 背景与目标
 
@@ -17,12 +19,15 @@
 |---|---|
 | snapshot_seq | 每 owner 单调序号，app_meta 持久；接收方高水位拒旧 |
 | envelope / payload | manifest=envelope{format_version,snapshot_seq,owner,table_counts,payload_sha256}+payload{data,pdf_refs}；确定性口径=payload 字节恒等（INV-D 修订） |
-| 删除护栏 | 三闸全过才执行对账删除：seq>高水位 ∧ 结构校验通过 ∧ 缺席量≤阈值（默认 20% 且 ≤50 行，估算呈裁） |
+| 删除护栏 | 三闸全过才执行对账删除：seq>高水位 ∧ 结构校验通过 ∧ 缺席量≤阈值（默认 20% 且 ≤50 行，估算呈裁）〔**v1.3 改写=删事件日志形态——§13.1，本行仅存史**〕 |
 | 摘录选择函数 | 前缀摘录=纯结构选取（(updated_at,id) 序），只依赖 (scope,ctx_ver)；FTS 检索=消息相关尾段，不入前缀 |
 | app_meta | DB-1 新增键值表：owner_id/snapshot_seq 载体 |
 | 冲突相等键 | (updated_at,id) 全等=入站拒收+冲突登记（A7） |
 
 ## 3 B1 护栏选型论证
+
+> 〔v1.3 注：本章 a+b+c 三层护栏栈已被 §12 A1 主裁改写为删事件日志
+> （§13.1）——B1/B2 由此整体消解；本章仅存论证史，实施以 §13 为准。〕
 
 候选：a 代际序号+拒旧 / b 删除确认阈值 / c 残卷校验 / d 删除显式指令化
 （对账仅报告）。定稿=**a+b+c 三层叠加**。d 否决论证：删除自动化是裁决②
@@ -79,7 +84,8 @@ tokenizer，偏差>20% 调系数，N5）。
 table_counts 与实载行数一致/format_version==当前）→②seq>本 owner 高水位
 （否则整卷拒收+记录）→③upsert（比较键 (updated_at,id)；**全等=拒收该行+
 冲突登记**，A7）→④对账删除：缺席≤阈值（默认 20% 且 ≤50 行，估算）执行，
-超阈=隔离报告人工确认→⑤更新高水位。
+超阈=隔离报告人工确认→⑤更新高水位。〔v1.3 注：②-⑤已改写=六闸+删除
+直执（§13.2）——本流程仅存史。〕
 **owner_id 生命周期**（W7 三缺口）：生成=首运行 uuid 写 **app_meta**
 （DB-1 落地，不依赖 settings 实测——缺口①闭合）；恢复己备份=app_meta
 随库走，身份延续（seq 回退由护栏拒旧兜底）；导入他人快照=只读独立命名
@@ -153,7 +159,364 @@ v1.0 首版。v1.1 二轮（B1-B4/W/N 28 条处置）。v1.2 末轮：B1 三层�
 UPSERT 自愈+三一致元测试+016 对象多重集断言；app_meta 落地身份/序号；
 trigram 验收集+LIKE 回退；manifest 两段式+INV-D 口径修订；迁移重编号
 016-021；9-新-5 三要素/A1 护栏/A7 相等键；未决项汇单门表。余项=主控
-终裁承接。
+终裁承接。**v1.3（2026-10-14）：DB-3 落纸——A1 改写=删事件日志（用户
+四问主裁）；三审六项落纸条件对位闭合；021 号改派（pk 实测推翻 uuid
+前置）；R4 空键高水位/R5 库级 token 定夺；A8 传输安全专项（中继云不可
+信→E2E）；导出面九表定稿；实施单元 U1-U4 切分（§13）。v1.3 r1（同日，
+ops-auditor 对抗审 B2/W7/N7 全处置）：B-1=同库多副本同 seq 第三态封堵
+（闸③前置自检 self_reimport+同键异内容 seq_conflict 拒收+同库单写者
+声明）；B-2=A8 构造参数面落纸（HKDF 三钥分离/随机 nonce+量级论证/全
+字段 MAC+AAD/canonical 序列化规则）；W=①blob 标识密钥化 HMAC ②
+deletion_events 剪枝约束+隐私申报 ③021 判定补复合主键/FTS 重建/schema
+兼容窗 ④触发器单事务原子性声明 ⑤降级形态闸①显式化 ⑥演练判据断言集
+⑦拒收原因码表；N=①skew 接受+同 updated_at=A7 键相等拒收 ②「六项/
+七面」勘误注 ③水位细则三则 ④呈裁补两项（密钥丢失代价申报+lineage
+归属确认）⑤表清单一行式+deletion_events=协议元数据定位 ⑥事件集不进
+  LWW+卷级幂等比较=payload_sha256 ⑦旧护栏零代码实现指认（实现票红线=
+  发现残存守卫即删）。**r2（同日二轮，auditor delta 复审有条件放行
+  B0/W5/N7 处置）：W1=payload_sha256 定义域闸③现场锚定（canonical
+  数据行+deletions 全量+在 MAC 面）；W2=导入日志 schema 落纸（owner/
+  seq/payload_sha256/outcome——已见面=仅 applied，失败尝试不并入）；
+  W3=逐表身份矩阵（九表→主键→序列化→冲突目标；paper_tags 唯一复合/
+  lineage_graph_meta 唯一 KV）+捕获面矩阵（OR REPLACE 全仓零命中实照/
+  019 级联链两端同构自愈+recursive_triggers=OFF 前提）；W5=直执落账
+  抑制（deletion_log_guard 守卫表+触发器 WHEN+同事务复位）；N1=nonce
+  量级勘正 7.6 个数量级（原「十个」误算）；N2=演练改异 owner 双库+
+  灾备用例不在 v1 申报；N3=owner/seq 自称值标注+null 降级；N4=AAD/
+  MAC 排除 hmac 字段本体；N5=A7 粒度=行级声明；N7=HKDF 常数盐+sync_
+  key 256bit CSPRNG 声明。**r3（同日终核轮，auditor 全文逐字核验=
+  有条件放行 B0/W2/N9 全处置）：W1=⑤「全等」细分消歧（键等且内容等
+  =幂等 no-op 常态跳过/键等且内容异=A7 拒收登记——v1.2 原文按字面
+  会误伤每次同步的未变更行）+演练⑨次轮同步零冲突回归锁；W2=payload_
+  sha256 摘要域单源声明（数据行+pdf_refs+deletions 三件合一——r2 括注
+  漏 pdf_refs 勘正）；N1=闸③内序决策表（applied 同 sha 幂等出口先于
+  水位比较/异 sha=seq_conflict/无记录且≤水位=seq_stale）；N2=导入
+  日志长期保留+裁剪退化申报；N3=deletion_events 增 UNIQUE(entity,id,
+  deleted_at)+INSERT OR IGNORE 去重（与 append-only 拒写防御语义兼容
+  论证）+deleted_at 取时勘误=触发器内 DB 时钟 ISO（原「应用层」不可
+  达）；N4=级联收敛论断收窄（限条件句+LWW 保留较新副本的永续分歧面
+  申报）；N5=重装 owner 重生=旧卷异源可达恢复路径申报接受；N6=「id
+  不复用」不变量登记（防复活过滤正确性前提）；N7=「禁 OR REPLACE」
+  quality 规则挂卡+guard 开库断言 stop==0；N8=演练 seq_conflict 构造
+  法（持钥自签注入）+decrypt_fail/hash_mismatch 细分+struct_invalid
+  owner 记 null；N9=PDF blob 传输通道=v2 边界申报。**
+
+---
+
+## 13. DB-3 落纸（v1.3 终裁稿——2026-10-14 主控亲笔·甲授权）
+
+> 授权链：§12 四问主裁「丙→甲复合」——DB-3 面按甲方向（授权主控按预裁定
+> 方向落纸 v1.3 终裁稿：删事件日志+六项落纸条件一并处置）在 DB-1/DB-2
+> 全毕后落纸。R5 取舍=双源复审链输入（本稿→ops-auditor 对抗审→主控终裁
+> 闭合）。输入=A1 主裁（删事件日志）+A8（传输安全专项）+U3 终裁 C4 残余
+> （R4/R5）+§12-6（A2 设备清单）+§12-7（A3 下行 v2 登记）。
+
+### 13.0 六项落纸条件处置表（三审 §七 对位闭合）
+
+> 三审 verdict 原档随 2026-10-12 迁移失存（WSL2→VMware 档案区未随迁）；
+> 权威摘录=账本 20261008-dbcamp-open 行 836（B2/W5/N5 返工——B1=隔离分支
+> 无出口且常态触发/B2=seq 护栏只有时限性；W=拒收可见性/阈值口径与威胁
+> 模型/seq 分配语义/同 owner 多机矛盾/迁移号台账漂移）。〔勘误注（auditor
+> r1-N2）：「六项」原始划分不可考（B2+W5=7 面与六计数不齐），本表按 836
+> 行摘录 **7 面逐面处置**——超集覆盖（7⊇6），以面覆盖为准不声称逐行对齐。〕
+> 对位处置：
+
+| 三审项 | v1.3 处置 | 落点 |
+|---|---|---|
+| B1 隔离分支无出口且常态触发 | **整体不存在**——删事件日志替代缺席对账：无缺席推断=无阈值=无隔离报告=无确认队列 | §13.1 |
+| B2 seq 护栏时限性（回退机穿越水位→陈旧全集进对账→静默删除） | **结构性消解**——删除只来自显式清单且必过水位闸；回退机旧 envelope seq≤水位=整卷拒收（不进合并）；回退机本地停留旧态=v1 上传单向可接受语义 | §13.1/§13.4 |
+| W1 拒收可见性 | 双层可见：拒收记 app_meta 导入日志键（计数+最近指纹）+导入对话框内联原因码（toast） | §13.2 |
+| W2 阈值口径与威胁模型 | 阈值机制随 B1 退役（无对账删除面）；威胁模型独立成文=A8 专项 | §13.6 |
+| W3 seq 分配语义 | =R4 定夺：分配=导出成功后 owner 本地计数+1（首导=1）；空键语义=高水位 0 | §13.4 |
+| W4 同 owner 多机矛盾 | v1 声明=**同库单写者**（同一库文件任意时刻至多一个导出端；多副本并发导出=范围外）；协议第三态封堵=同 (owner,seq) 异内容卷整卷拒收+冲突登记（§13.4——auditor r1-B1）；多机并发写=v1 范围外（A7 沿承）；下行多设备=v2（§12-7 登记） | §13.4 |
+| W5 迁移号台账漂移 | 021 号在 v1.2 台账指向 uuid 迁移——pk 实测推翻前置（§13.3），021 号改派删事件日志迁移；台账随本稿对齐 | §13.3 |
+
+### 13.1 A1 删事件日志（A1 主裁形态落纸）
+
+- **表**：`deletion_events`（迁移 021）——`seq INTEGER PRIMARY KEY
+  AUTOINCREMENT/entity TEXT NOT NULL/id TEXT NOT NULL/deleted_at TEXT NOT
+  NULL`+**UNIQUE(entity,id,deleted_at)**（重发幂等去重面——auditor
+  r3-N3）；append-only（防御=拒 UPDATE/DELETE 触发器，RAISE(ABORT)
+  ——019 专例先例：非约束冲突不被 OR IGNORE 吞；UNIQUE 冲突=约束冲突
+  →触发器 INSERT OR IGNORE 吞=去重机制，两语义兼容）。021 同批建
+  **直执守卫表** `deletion_log_guard(stop INTEGER)`（单行，导入直执期
+  置 1、事务内复位——见下「直执落账抑制」）。**deleted_at 取时口径**
+  （auditor r3-N3 勘误：触发器内无应用层时钟）=DB 时钟 ISO
+  （strftime('%Y-%m-%dT%H:%M:%fZ','now')）——与应用层 ISO 域差为
+  毫秒级混源，单调性由 seq 保、跨端比较不依赖 deleted_at（声明接受）。
+- **落账**：导出面九表（§13.7）各配 AFTER DELETE 触发器追加行（entity=
+  表名/id=被删行 id/deleted_at=DB 时钟 ISO——表定义段口径；INSERT OR
+  IGNORE 去重）——先例=019
+  paper_tags_domain_guard+020 epoch 族触发器；**服务层零侵入**（repo 删除
+  路径不改——299 压线双件自然零接触，开工预裁在案）。**单事务原子性**
+  （auditor r1-W4）=AFTER DELETE 触发器随删除语句同事务执行（SQLite
+  语义）——「行删而事件缺席」崩溃窗口不存在，无需启动期重放机制。
+  复合主键表身份约定（auditor r1-W3①）：paper_tags（PK=(paper_id,tag_id)）
+  的删除事件 id=`<paper_id>|<tag_id>` 竖线拼接序列化；行级 upsert 冲突
+  目标=各表主键（复合表=复合键）。
+- **逐表身份矩阵**（auditor r2-W3 补全——表→主键→身份序列化→upsert
+  冲突目标）：papers=TEXT uuid id→id→id；collections=TEXT uuid id→id→id；
+  tags=TEXT uuid id→id→id；paper_tags=**复合 (paper_id,tag_id)→`pid|tid`
+  拼接（两分量恒 uuid，`|` 不现于字母数字集=无碰撞无转义面）→复合键**；
+  annotations=TEXT uuid→id→id；notes=TEXT uuid→id→id；lineage_nodes=
+  TEXT uuid→id→id；lineage_edges=TEXT uuid id 主键〔UNIQUE(from_node,
+  to_node)=唯一约束非主键〕→id→id；lineage_graph_meta=**KV 表 key 主键
+  〔非 id 列〕→key 值→key**。九表唯一复合主键=paper_tags；唯一 KV=
+  lineage_graph_meta。
+- **捕获面矩阵**（auditor r2-W4）：①直接 DELETE 语句=AFTER DELETE
+  触发器捕获（全九表）；②`OR REPLACE` 冲突式删除=**全仓零命中**
+  （src/main grep 实照 2026-10-14——路径不存在）；③FK 级联删除=仅
+  019 tags.folder_id→collections CASCADE（020 族不在导出面）——SQLite
+  语义=recursive_triggers=OFF（connection.ts DB_PRAGMAS 无该键=缺省
+  恒定，两端同构）下级联不触发 DELETE 触发器，**中间表事件缺失不破坏
+  收敛——限条件成立**（auditor r3-N4 收窄：「同一终态」仅当两端级联
+  子集一致时保证；LWW 保留接收端较新副本时 folder_id 级联链可两端
+  不同——源删子行而接收端存续=该行永续分歧面〔无事件可纠、后续全量
+  卷不含该行〕；边界形态=下轮全量卷 upsert 自愈或申报接受，实现批
+  以限条件句落代码注释）。接收端直执 (collections,id) 删除后本地同
+  DDL 级联链自愈（两端 schema+pragma 同构）。实现票核对面（U1）=
+  删除路径盘点对账本矩阵+**「src/main 禁 OR REPLACE」quality 规则挂
+  卡**（一次性 grep 实照→机检常驻——auditor r3-N7①；受锁面变更走
+  [locked-change]）+**deletion_log_guard 开库断言 stop==0**（bootstrap
+  断言——守卫悬挂态由静默失效转显性告警，r3-N7②）。
+- **直执落账抑制**（auditor r2-W5）：导入⑥直执 DELETE 会再触发本库
+  落账（同 (entity,id) 异 deleted_at 重复事件+逐跳膨胀）——抑制=触发器
+  WHEN 守卫 `(SELECT COALESCE(stop,0) FROM deletion_log_guard)=0`；导入
+  事务内置 1→直执→复位 0（同事务=崩溃自回滚，无悬挂态）；守卫表与
+  触发器族同批 021 落地，元测试锁「守卫开=直执不落账/守卫关=本地删
+  落账」两态。
+- **envelope 携带**：`payload.deletions=deletion_events 全量`（append-only
+  不剪枝——v1 增长=删除操作数级〔单人千级库个位数/年量级〕；隐私残留
+  申报（auditor r1-W2）：被删条目 id 随卷流转=id 皆 uuid 零内容语义、
+  画像价值≈零，接受；**剪枝约束条款**：v2 剪枝须以接收端 ack 已应用为
+  前提，且剪枝后旧卷拒收面不变（seq 单调）——剪枝永不重引缺席推断
+  〔缺席推断机制已随 B1 退役，此为永久约束〕）。删除事件集**不进 LWW
+  裁决面**（auditor r1-N6）：接收端处理=追加幂等并集（本地既有+入站，
+  主键 (entity,id,deleted_at) 去重），无比较裁决。
+- **接收方直执**：六闸（§13.2）全过后，deletions 逐条按（entity,id）
+  删除（缺席=no-op 幂等）；批内执行序=先 upsert 后删除（同卷先立后删=
+  删除胜出，与单机操作时序一致）。
+- **与 seq 护栏关系**：删除指令只随 envelope 到达且必过水位闸③——旧
+  envelope 的陈旧删除清单整卷拒收，不进直执。
+
+### 13.2 接收方流程（六闸定稿——五闸+HMAC 闸）
+
+**闸③前置自检（auditor r1-B1/r3-N5）**：envelope.owner==本库 owner_id
+→ 整卷拒收（原因码 self_reimport——自身快照回导自身；行级全等拒收
+噪音消除）。**边界申报**：自检仅封「当前同 owner」回导；重装后
+owner_id 由 ensureIdentity 重生 → 旧卷按异源可达（水位键按旧 owner
+独立计）=事实恢复路径——**申报接受**（与 ADR-0013 手动备份互补的
+灾备后门；持旧 sync_key 即可解旧卷）。
+
+①结构校验（JSON 完整/**envelope 必填键在位含 hmac 字段——缺席=拒收，
+封降级卷**；format_version==当前精确匹配——不匹配=拒收封旧版本卷；
+**卷内 schema_version（=导出端 user_version）≤本库 user_version——
+超前=拒收封错时升级卷**〔auditor r1-W3③〕；table_counts 键集与九表
+对齐）→②**HMAC 验签**（对 canonical envelope 全字段+payload 密文
+——owner_id/seq 均入 MAC 面，防跨库字段搬运；不通过=整卷拒收）→
+③seq 检验（**内序决策表——auditor r3-N1**：a.查导入日志 applied 面
+——同 (owner,seq) **同 sha → 幂等 no-op 出口**（整卷零副作用，卷级
+幂等唯一可达路径——须先于水位比较，否则被 stale 吞）；b.同 (owner,
+seq) **异 sha → 整卷拒收 seq_conflict**；c.无 applied 记录且 seq≤
+水位（空键=0）→ 整卷拒收 **seq_stale**；d.seq>水位 → 过闸。两拒收
+分支均记录）→④解密+对账（**payload_sha256 摘要域单源声明**=canonical
+payload 全量明文=数据行+pdf_refs+deletions 三件合一（§13.6 payload
+定义同源——auditor r3-W2 勘正：r2 括注漏 pdf_refs 即摘要域不自洽；
+闸③「同 sha/异 sha」判据同此口径；处 MAC 覆盖面内）+table_counts 与
+实载行数一致）→
+⑤upsert（比较键 (updated_at,id)：入站新=写；入站旧=跳过；**键等细分
+（auditor r3-W1——v1.2 A7 原文「全等即拒收」按字面会误伤每次同步的
+未变更行=常态假冲突，本稿消歧）**：键等**且内容全等**（整行所有列
+一致）=**幂等 no-op 跳过**（常态路径——同源重传/同卷重放行，零登记）；
+键等**且内容异**（同时间戳异内容=分叉写入）=**拒收该行+冲突登记**
+A7——确定性不依赖到达序（auditor r1-N1）；**防复活过滤=入站行
+(entity,id) 命中本库 deletion_events 即跳过**——本库删除对单向源数据
+永不复活，合法重加=新 uuid 新 id 天然不受影响（**正确性前提=「id
+不复用」不变量：restore/undo 路径亦不得复用已删 id——复用即该 id
+入站行永被跳过；随 U1/U3 登记入 docs/invariants.md+核查实现路径
+——auditor r3-N6）；v1.2 缺席对账形态同病无解，删事件日志形态天然闭合）→⑥删除直执（§13.1）+高水位更新+导入日志键落
+app_meta（**水位细则〔auditor r1-N3〕：跳号合法〔全量卷语义，卷自含
+全量，seq 仅拒旧不补差〕；拒收卷不推进水位；水位推进与数据应用同
+事务——应用成功才推进，失败零副作用**）。
+
+**拒收可见性（W1 落纸——auditor r1-W7/r2-W2）**：每闸拒收产出原因码+
+记录落 app_meta 导入日志键+导入对话框内联展示。**导入日志记录 schema=
+(owner, seq, payload_sha256, outcome)**——outcome=applied｜rejected:
+<原因码>；**闸③第三态的「已见」面=仅 applied 记录**（失败尝试不并入
+——合法重发不被 no-op 静默跳过；跳号合法前提下已见面不可从水位数推
+出，故须独立记录面）。展示面 owner/seq=**自称值**（闸②通过前的未认证
+字段——日志与对话框标注；struct_invalid 卷 seq **与 owner** 不可解析时
+记 null 降级——auditor r2-N3/r3-N8）。**保留口径**（auditor r3-N2）=
+长期保留（量级=导入次数级）；v2 裁剪申报——裁剪后旧 seq 重发退化为
+seq_stale（安全，失 no-op/conflict 标签）。原因码表=self_reimport/
+struct_invalid（键缺或格式）/version_mismatch（format_version）/
+schema_newer（卷超前）/hmac_fail/decrypt_fail（GCM 认证失败——r3-N8
+细分，≠hash_mismatch）/seq_stale（≤水位）/seq_conflict（同键异内容）/
+hash_mismatch（解密后 sha 对账不符）/counts_mismatch。A7 全等拒收
+**粒度=行级**（拒收该行不影响同卷他行；同卷内确定性=键相等即拒收，
+不依赖到达序——跨卷间由水位闸定序——auditor
+r2-N5）。**FTS×3 导入后本地重建**（§13.7 排除面——auditor r1-W3②：
+external content 派生面不随卷走，重建步随 ⑥ 收尾）。
+
+### 13.3 021 条件判定（pk 实测定谳——条件不成立）
+
+- v1.2 §5.b「②自增→021 uuid 迁移为 DB-3 前置」：**实测推翻**——文献域
+  全表 id=TEXT PRIMARY KEY+应用层 randomUUID()（001_init 实照；
+  notes.repo:115/annotations.repo:167 生成点）；自增 INTEGER pk 仅 020
+  AI 族——α 裁决恒本地不同步。合并键 (updated_at,id) 的 id 跨机天然
+  免碰撞，uuid 迁移无消费面。
+- **021 号改派**=deletion_events+九表 DELETE 触发器族+append-only 拒写
+  防御（§13.1）；台账勘正在案（W5 处置）。user_version 20→21。
+
+### 13.4 R4 snapshot_seq 空键高水位语义（定夺）
+
+- **分配**：每次导出成功（envelope 文件完整落盘）owner 本地计数+1，首导
+  =1；计数器=app_meta `snapshot_seq` 键（018 登记、DB-3 首次启用——经
+  envelope 面专用 snapshot.repo 读写，不经 app-meta.repo 既有 get/set
+  〔app-meta.repo:14 头注契约沿承〕）。计数器为 **per-install 本地键**
+  （随库文件走）——同库多副本并存时各副本独立计数、可产出同 seq 异
+  内容卷，该形态由 §13.2 闸③第三态整卷拒收封堵+§13.0 W4 单写者声明
+  圈范围（auditor r1-B1）。
+- **空键语义**：接收侧该 owner 水位键缺席（首收）≡水位 0——任意 seq≥1
+  过闸③；首收即懒初始化写入水位。杜绝「未初始化=未定义行为」（R4 原问
+  指向）。
+- **命名空间**：接收水位键按源 owner 分键（`recv_seq:<owner_id>`）；本机
+  导出计数键=`snapshot_seq`——两空间不串（多学生快照汇入导师库=每源一
+  水位键，行 id=uuid 天然不碰撞——多用户可合并性机制面；**异 owner 同
+  seq=命名空间隔离天然合法**）。卷级幂等比较=payload_sha256（含数据行
+  +pdf_refs+事件集全量——§13.2 闸③摘要域单源同口径，auditor r3-W2）；
+  自身卷回导=闸③前置自检整卷拒收。
+- **单机声明**（W4+A3 合并）：v1 **同库单写者**（同一库文件任意时刻至多
+  一个导出端；多副本并发导出=范围外+第三态拒收兜底）；时钟域=单机
+  （LWW 防御性保留；跨机时钟 skew「新写被旧戳覆盖」=接受声明——auditor
+  r1-N1，v1 源-接收端错峰语义内可接受）。
+
+### 13.5 R5+A2 设备清单认证（库级粒度定夺）
+
+- **owner/token=库级**（R5 采纳）：沿 018 ensureIdentity——每课题库
+  （workspaces/<id>/ 一库一文件，ADR-0018）独立 owner uuid+device_token
+  （randomBytes(32) hex）。**设备级细分不采**：v1 单机上传端语义下无
+  同库多 token 并存面；§12-6 A2「可吊销单设备」在库级粒度下=吊销该库
+  token 即吊销其唯一上传端；v2 下行多设备立项时随服务端任务书重估。
+- **幂等语义**：上传幂等键=(owner_id, snapshot_seq)——同键重传=服务端
+  no-op（协议契约声明；客户端同 seq 不重发）。
+- 服务端设备清单/吊销 API=战役外任务书（N6 沿承）——本仓交付=协议
+  契约文档（§13.8 U4）。
+
+### 13.6 A8 传输安全专项（中继云不可信假设——分析+规划）
+
+- **威胁模型**：中继云（自建服务端）对**保密性与完整性不可信**；可用性
+  范围外（离线=同步不可用，文献功能无碍——§12 9-新-5 α 已裁）。TLS
+  仅防链路窃听，且 TLS 在中继终结——**不构成对中继自身的防御**。
+- **E2E 设计（v1 采纳案；构造参数面 auditor r1-B2 落纸）**：
+  - payload（data+pdf_refs+deletions）**AES-256-GCM 客户端加密**后出库；
+    主密钥=库级 `sync_key`（randomBytes(32)，app_meta 存储——与 owner/
+    token 同载体，ensure 语义同 ensureIdentity：缺席才生成、在场永不
+    覆写）。快照文件（v1 无服务端，文件即传输态）恒密文单一格式——
+    本地明文导出不设（自备份姿态沿 ADR-0013 手动指引，非本面）。
+  - **密钥分离**：HKDF-SHA256 自 sync_key 派生三钥——enc_key（info=
+    "synapse/aes"）/mac_key（info="synapse/hmac"）/blob_key（info=
+    "synapse/blob"）；salt=固定常数串 "synapse/dbcamp01/v1.3"（salt
+    无秘密性要求——域分离依赖 IKM+info，常数盐声明——auditor r2-N7）；
+    双原语不同钥，GCM 失效不连锁 HMAC（防「同源密钥=双挡实为单点」）。
+    sync_key 熵=256bit CSPRNG（node:crypto randomBytes(32)——非口令
+    派生，无 KDF 强度约束面）。
+  - **nonce 策略**：每卷 payload 加密与每 blob 加密各取 randomBytes(12)
+    随机 nonce——随机量级=导出/blob 上传次数（单人库百级≈10^2，距 NIST
+    随机 nonce 2^32≈4.3×10^9 碰撞界约 **7.6 个数量级**余量〔10^9.6−10^2
+    手算注——auditor r2-N1 勘正原「十个」误算〕）；不依赖计数器=无重装
+    复位面。
+  - **认证覆盖面**：HMAC-SHA256(mac_key) 对 **canonical envelope 全部
+    明文字段**（format_version/schema_version/snapshot_seq/owner_id/
+    table_counts/payload_sha256）+payload 密文——owner/seq 均入 MAC 面；
+    **覆盖面显式排除 hmac_sha256 字段本体**（防自指——auditor r2-N4）；
+    GCM 加密以同 canonical envelope 字节（除 hmac 字段）为 **AAD**——
+    字段搬运/重排/拼接全破。
+  - **canonical 序列化规则**（INV-D 确定性口径落纸）：JSON 对象键=字母
+    序固定；重复键=解析后重序列化对账不符即拒收；行序=每表
+    (updated_at,id) 排序；编码=UTF-8。
+  - envelope 明文面=format_version/schema_version/snapshot_seq/owner_id/
+    table_counts/payload_sha256+**hmac_sha256**——服务端/中继可见（
+    **明文面申报** auditor r1-N4②：表行数/owner/卷大小/卷数量/时序/
+    blob 指纹均中继可见，接受）；无 sync_key 不可伪造合法 HMAC。
+  - **重放/降级/拼接三形态封堵**：同卷重放=闸③水位；改卷伪造=闸②
+    HMAC；降级卷（剥 HMAC 字段/旧版本号）=闸①必填键拒收；字段跨卷
+    搬运=AAD+全字段 MAC 破。**同密钥多库=用户显式配对行为=该密钥域
+    内互信**（跨库重放仅此形态可达——申报接受，auditor r1-W5）；
+    **sync_key 持有者=该库同步域全权（含删除传导）**——导入为手动
+    动作（用户择卷）+应用/拒收全可见性兜底，接受申报（auditor r1-Q8
+    残项）。
+  - 密钥分发=**带外**：设置页「同步密钥」显形（形态=§13.9-1 呈裁）；
+    接收端一次性导入。**密钥不随快照传输**（自举悖论规避）。**丢失
+    代价申报**（auditor r1-N4①）：sync_key 丢失=中继旧卷不可解（本地
+    库仍在可重新导出，仅历史传输卷报废——接受）；配对/轮换/撤销流程
+    =v2 服务端任务书面（N6）。
+  - PDF 文件面：blob 标识=**HMAC(blob_key, sha256(content))**（密钥化
+    摘要——同库同内容同标识保去重；中继不可做候选文件存在性确认、
+    跨库同内容不关联——auditor r1-W1 采纳，弃明文 sha256 案）；blob
+    内容=enc_key AES-GCM 加密；服务端按标识去重——N3 只补不删。
+    **v1 客户端边界申报**（auditor r3-N9）：v1 交付=标识计算+加密
+    能力面+卷内 pdf_refs 清单；**blob 传输通道=v2 服务端批**——v1
+    快照文件不含 PDF 内容（文件面转移沿 ADR-0013 手动姿态）；U3
+    演练无附件用例=明示排除（断言面=pdf_refs 清单正确性）。
+  - 实现=node:crypto 现有能力（AES-256-GCM/HMAC/HKDF/随机）——
+    **零新依赖**。
+- **不采案申报**：纯 TLS 案（与 A8 假设直接冲突）；非对称每设备密钥对
+  案（v1 单机无多设备面，复杂度无消费面——v2 重估）。
+
+### 13.7 导出面表清单（文献域定稿——九表；一行式对账 auditor r1-N5）
+
+papers（留——文献主档）/collections（留——文件夹）/tags（留）/
+paper_tags（留——复合 PK，身份序列化见 §13.1）/annotations（留）/
+notes（留）/lineage_nodes（留——人工策展=文献域结构面，α 裁决只禁
+AI 面；呈裁 13.9-3 确认）/lineage_edges（留——同上；复合唯一键
+UNIQUE(from,to) 既有）/lineage_graph_meta（留——图级 KV）。**排除**：ai_notes（003
+——AI 笔记，α 裁决「AI 记忆与笔记」恒本地）/020 AI 族全表（同）/
+FTS×3（external content 派生面——接收端本地重建，§13.2⑥）/app_meta
+（身份载体不导出：owner 在 envelope；sync_key/token 永不出库）。
+**deletion_events 定位=协议元数据**（随 envelope 携带，不入导出表清单
+——§13.1）。
+
+### 13.8 实施单元切分（下场起序——节奏 ≤2 件/场沿承 v169 §1）
+
+- **U1 迁移面**：021 deletion_events+九表 DELETE 触发器族+append-only
+  拒写防御；元测试（九表↔触发器对位枚举——020 epoch 三一致元测试范式）
+  +逐表删除断言+变异红证。
+- **U2 导出面**：snapshot.repo（envelope 面专用：snapshot_seq 计数/
+  sync_key ensure/导入日志键）+export-snapshot.service（九表读面+
+  canonical 序列化+sha256+HMAC+AES-GCM）+IPC 通道（导出到文件——main
+  侧系统对话框路径，INV-07 边界）+设置页同步密钥节。
+- **U3 导入合并面**：六闸接收流程+A7 冲突登记+拒收可见性（原因码）+
+  **双机演练收口门（W6 判据可观测断言集落纸——auditor r1-W6/r2-N2）**：
+  演练形态=**异 owner 双库**（源库 owner X 导出→演练库 owner Y 导入——
+  与接收端真实形态及 self_reimport 拒收一致；**灾备/恢复用例不在 v1**
+  ——导出件=传输件非备份件，自库回导被闸③前置自检封死，备份姿态沿
+  ADR-0013——auditor r2-N2 申报）。正例断言=①X/Y 异行集合并→零覆盖
+  （新于入站的本地行原样保留）+零丢行（源行全数在场）；②删除传播：
+  X 删行→X 导出→Y 导入→该行在 Y 缺席；③防复活：Y 本库删除行+旧 X
+  卷（含该行）重导入→不复活；④同 (owner,seq) 异内容卷→seq_conflict
+  拒收可见；⑤同卷重放→seq_stale/幂等 no-op；⑥bit 翻转卷→hmac_fail；
+  ⑦剥 HMAC 字段卷→struct_invalid；⑧直执守卫=导入直执不落本地账
+  （§13.1）+FTS 重建后检索面可用。断言全部机器可观测（DB 行计数+
+  导入日志键+原因码）；多源合并用例=X/Z 双源异行集汇入 Y。**⑨次轮
+  同步零冲突**（auditor r3-W1 补钉）：同源次轮全量卷（未变更行为主）
+  导入→断言零 A7 登记（未变更行=键等且内容等=幂等跳过——⑤细分的
+  回归锁）。**④seq_conflict 构造法**（auditor r3-N8：异 owner 双库+
+  单写者自然流不可达）=测试内持源库 sync_key 自签同 seq 异内容卷注入。
+  **hash/解密失败区分**（r3-N8）=原因码细分 decrypt_fail（GCM 认证
+  失败）≠hash_mismatch（解密成功后 sha 对账不符）。
+- **U4 协议契约文档**：服务端任务书面（N6）——设备清单/幂等键/吊销/
+  E2E 契约+§13.9 呈裁项落定回写。
+
+### 13.9 呈裁项（随批呈用户）
+
+1. **sync_key 共享形态**：a=设置页文本串（手抄/IM 传输）；b=a+二维码
+   （推荐——录入容错）；c=密钥文件导出/导入。不裁=按 b 执行。
+2. **接收端密钥导入入口**：a=设置页「导入同步密钥」单一入口（推荐）；
+   b=导入快照对话框内联引导。不裁=按 a 执行。
+3. **lineage 三表入导出面确认**（auditor r1-N4③）：α 裁决文面只禁
+   AI 面（记忆/笔记）；lineage=人工策展结构=按文献域入导出面（本稿
+   默认，推荐）；异议=摘出 lineage 三表另裁（影响=脉络图不随库同步）。
 
 ---
 

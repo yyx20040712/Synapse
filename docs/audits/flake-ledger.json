@@ -190,6 +190,15 @@
       "status": "observing",
       "first_seen": "2026-10-14",
       "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；挂起型与 FLK-01 输入事件族异型；再现时首取 error-context 快照"
+    },
+    {
+      "spec": "tests/e2e/library-explorer.spec.ts",
+      "case": "S5a 行右键菜单三项版（删除项批 B 点亮+星标项不渲染）+移动子面执行（:108）",
+      "count": 1,
+      "fingerprint": "挂起型 CI 首现（run 38550671406 attempt1，2026-10-14 33f57f6a）：测试跑 1.5m 超时标 x+Worker teardown 90s 双层挂起（非断言红），worker 终止=run 26/114 处中止（前 25 全绿含 T3 域）；error-context=仓外 20261014-db3/s5a-ci-hang-error-context.md；attempt2 复跑全绿 success；批内容=纯文档 diff（AGENTS/methodology 4 行）与 app 行为零因果",
+      "status": "observing",
+      "first_seen": "2026-10-14",
+      "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；与 case 20（E5 场景二，本地白天窗挂起型）同型不同例——挂起族跨例分布（本地白天窗+CI runner 两端各一例）=环境级线索候选；本用例第二现即立案+族级评估（两例并卷观察）"
     }
   ]
 }
