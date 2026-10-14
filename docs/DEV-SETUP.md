@@ -50,9 +50,10 @@ Linux/VMware（现役机）——网络零配置（直连），必做仅身份+�
 git config user.name user        # 与既有提交身份一致
 git config user.email user@local
 
-# 推送凭据二选一（VMware 机 2026-10-14 已配——旧 PAT 自 txt 备份恢复入 store，
-# 三批 6 笔积压同日清偿；轮换候选=新 fine-grained 单仓库令牌后吊销旧令牌
-# 〔v184 §3-2〕；换令牌=GitHub 重生成后覆写 ~/.git-credentials 对应行即可）：
+# 推送凭据二选一（VMware 机已配——2026-10-13 21:39 gh auth login 会话承载：
+# gitconfig URL 级 helper=!gh auth git-credential；2026-10-14 首推免提示，
+# ~/.git-credentials=git 转存 store 的自动副作用；轮换候选+副本盘点=v184
+# §3-2；换令牌=新令牌经 gh auth login 入会话，或覆写 credentials 行）：
 #   ssh：ssh-keygen -t ed25519 → 公钥入 GitHub → git remote set-url origin git@github.com:yyx20040712/Synapse.git
 #   PAT：git config credential.helper store && git push（首推输入令牌即记住）
 ```

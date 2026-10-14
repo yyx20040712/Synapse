@@ -246,10 +246,12 @@ development Model Selection+loop-engineering references/06）；**架构与
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）。
 - git=系统 git；repo-local Windows 遗留覆盖（http.sslBackend/sslCAInfo 指向
   MinGit 路径+proxy 7890）已于 F-PLATFORM-01 批毕删除——.git/config 不随
-  clone 走，新 Linux 机 git 零配置（直连）。**推送状态**：VMware 现机已配凭据
-  （2026-10-14 用户恢复旧 PAT〔txt 备份〕入 store——三批 6 笔同日清偿+状态笔回写
-  笔已推，远端 main=HEAD 同步；旧令牌轮换候选=交接书 v184 §3-2；换机/换令牌
-  配法=docs/DEV-SETUP.md §3）。远端 origin=github.com/yyx20040712/Synapse。
+  clone 走，新 Linux 机 git 零配置（直连——npm 面；gitconfig 另有 github 限定
+  代理=宿主机 7890，呈报位=交接书 v184 §3-3）。**推送状态**：VMware 现机已配
+  凭据（2026-10-13 21:39 gh auth login 会话承载+gitconfig URL 级 helper；2026-10-14
+  首推经 gh 免提示认证，~/.git-credentials=git 转存 store 的自动副作用——三批
+  6 笔同日清偿，远端 main=HEAD 同步；令牌副本盘点+轮换候选=v184 §3-2；换机/
+  换令牌配法=docs/DEV-SETUP.md §3）。远端 origin=github.com/yyx20040712/Synapse。
 - **ps1 锁工具四件 Linux 缺位**（locks:generate/apply/unlock+ticket:new）——
   manifest 维护=node 复刻口径（sha256=createHash('sha256').update(
   readFileSync(f))，与 check-locks.mjs 哈希行同式；排版=JSON.stringify(m,null,4)
