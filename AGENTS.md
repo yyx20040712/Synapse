@@ -123,9 +123,9 @@ always-active（不经 guardedDescribe——K3 威胁在三屋结构性缺位）
 战役报告）。**派发必显式定档**（机型+供应商+思考等级一体写进派发指令；
 单一调用者，缺省=继承主控档=最贵档静默浪费，禁静默继承默认）。模型分工
 走 docs/methodology.md §4.5 终态：实现者=GLM5.3flash（deepseek 实现面
-禁用）/门一=Kimi 链**绑定子代理主通道**（ops-gate1-k1/k2，$max 显式档位
-——2026-09-18 裁决 13 入宪；外部派发器 ds-call=健康探针+后备通道，
-runbook 择路权保留）/门二=异构二审/体验额度优先
+禁用）/门一=Kimi 链**绑定子代理主通道**（**本项目默认席=ops-gate1-k3
+〔kimi-main 源A〕**——2026-10-14 用户裁决固化；k1/k2=额度兜底；$max
+显式档位——2026-09-18 裁决 13 入宪）/门二=异构二审/体验额度优先
 消费（2026-09-02 用户裁决+同日终态对齐，蓝本=subagent-driven-
 development Model Selection+loop-engineering references/06）；**架构与
 技术路线层面的设计与优化=Kimi 拟定→deepseek 审核→GLM5.3 主控终裁+指挥
