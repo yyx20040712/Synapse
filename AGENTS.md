@@ -94,6 +94,11 @@
   二次同族误差实证（U1 bond 方向+U2 宽 36 封闭，均赖门二实证部手算拦截；
   2026-10-08 用户裁决升格 DoD 候补条为正式条款）
 - [ ] 本票触及的 ADR/架构段落已回写（对照 docs/architecture.md §5 ADR 索引+§6 实体表；设计决策演进的票把变更同步到对应 ADR 修订记录或 architecture 对应节；无触及如实申报——2026-09-17 裁决 9）
+- [ ] **收口 push 后挂 CI 完成复查回执方可闭批**（gh api/run view 确认
+  conclusion；非 success=先定性：非确定失败单现→复跑定绿+flake 台账
+  observing；同指纹复现→立案排查。前史=F-CIFLK-01 教训〔v184 收口漏
+  CI 核查致 T3 四 run 恒红无人发现〕；2026-10-14 用户裁决自环境段
+  升格本段——v185/v187 两场践行闭环）
 
 ### 测试纪律
 
@@ -226,8 +231,9 @@ development Model Selection+loop-engineering references/06）；**架构与
   2026-10-14=T3 拖拽前 scrollIntoView 滚动锚——新 e2e 用例凡 boundingBox+
   mouse 拖拽/点击面对视口外元素须先滚动锚定〔T5/T3 先例〕；判读沉淀=CI
   再现 element-not-found 间接签名红首查视口外坐标；次生挂账 F-GEOMASSUME-01=
-  窄视口卡宽 flex 压缩≠CARD_W 128）；**v184 教训沿承：收口 push 后须挂
-  CI 完成复查回执方可闭批**）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+  窄视口卡宽 flex 压缩≠CARD_W 128——维持登记=2026-10-14 用户裁决）；**收口
+  CI 回执条款已升格完成定义段（2026-10-14 用户裁决——本段不再承载）**）。
+  **Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
 - **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装——WSL2/VMware 两机各
@@ -246,16 +252,19 @@ development Model Selection+loop-engineering references/06）；**架构与
 - **Electron 42 起 npm 包无 postinstall**（41 尚有、42 移除，实证）：二进制改
   首次 require 懒下载——postinstall 已显式串 `install-electron`（幂等，dist
   在则秒过），下载失败暴露在 npm install 阶段。
-- 网络本机**直连可用（无代理）**；`.npmrc` npmmirror 二进制镜像沿承有效
-  （electron）。旧机代理 127.0.0.1:7890 配置随迁移已删。
+- 网络两面分立（2026-10-14 用户裁决回写——v184 §3-3 呈报闭账）：**npm 面
+  本机直连可用**；`.npmrc` npmmirror 二进制镜像沿承有效（electron）。旧机
+  代理 127.0.0.1:7890 配置随迁移已删。**git 面（github.com）=gitconfig URL
+  级代理 192.168.163.1:7890**（VM 经宿主机代理访 GitHub，2026-10-13 随
+  gh 登录同刻落位——推送依赖宿主机代理在位；裁决=保留）。
 - better-sqlite3 13.0.3 起 N-API 版：同一份绑定跨 Node/Electron ABI 通用
   （prebuilds/ 随包直发含 linux-x64/win32-x64 等）；v12 时代双 ABI 切换机制
   （scripts/sqlite-abi.mjs）已删除退役。
 - 全部命令收敛：`npm run verify` / `npm run dev` / `npm run test:e2e`（需先 build）。
 - git=系统 git；repo-local Windows 遗留覆盖（http.sslBackend/sslCAInfo 指向
   MinGit 路径+proxy 7890）已于 F-PLATFORM-01 批毕删除——.git/config 不随
-  clone 走，新 Linux 机 git 零配置（直连——npm 面；gitconfig 另有 github 限定
-  代理=宿主机 7890，呈报位=交接书 v184 §3-3）。**推送状态**：VMware 现机已配
+  clone 走，新 Linux 机 git 零配置（直连——npm 面；git 面 github 代理=见本段
+  网络两面分立句〔2026-10-14 裁决保留〕——单源=网络段）。**推送状态**：VMware 现机已配
   凭据（2026-10-13 21:39 gh auth login 会话承载+gitconfig URL 级 helper；2026-10-14
   首推经 gh 免提示认证，~/.git-credentials=git 转存 store 的自动副作用——三批
   6 笔同日清偿，远端 main=HEAD 同步；令牌副本盘点+轮换候选=v184 §3-2；换机/
