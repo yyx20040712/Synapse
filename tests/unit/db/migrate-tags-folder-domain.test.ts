@@ -203,11 +203,11 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
   it('新库全链：user_version=19+应用清单 [1..19]+幂等重入（再跑 applied=[]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(20)
+    expect(result.currentVersion).toBe(21)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
     ])
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
@@ -224,8 +224,8 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
     db.prepare("INSERT INTO tags (id, name, color) VALUES ('t-1', '必读', '#0ea5e9')").run()
     db.prepare("INSERT INTO paper_tags (paper_id, tag_id) VALUES ('p-a', 't-1')").run()
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])
-    expect(readUserVersion(db)).toBe(20)
+    expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21])
+    expect(readUserVersion(db)).toBe(21)
     expect(db.prepare("SELECT name, color, folder_id FROM tags WHERE id='t-1'").get()).toEqual({
       name: '必读',
       color: '#0ea5e9',
@@ -242,7 +242,7 @@ describe('db/migrate —— 019 tags 多域（folder_id 域化+UNIQUE(folder_id,
     seedTag(db, 't-1', '必读')
     seedPaperTag(db, 'p-a', 't-1')
     migrate(db)
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.close()

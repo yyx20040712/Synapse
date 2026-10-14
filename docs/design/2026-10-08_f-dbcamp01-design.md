@@ -199,7 +199,23 @@ deletion_events 剪枝约束+隐私申报 ③021 判定补复合主键/FTS 重�
   不复用」不变量登记（防复活过滤正确性前提）；N7=「禁 OR REPLACE」
   quality 规则挂卡+guard 开库断言 stop==0；N8=演练 seq_conflict 构造
   法（持钥自签注入）+decrypt_fail/hash_mismatch 细分+struct_invalid
-  owner 记 null；N9=PDF blob 传输通道=v2 边界申报。**
+  owner 记 null；N9=PDF blob 传输通道=v2 边界申报。**r4（2026-10-14 U1
+  实施批收口，主控亲笔——门一双席 k3-N1/d1-E 必办项）：§13.1 捕获面
+  矩阵③勘正——r2-W3 原文两处事实错误：〔甲〕「FK 级联删除=仅 019
+  tags.folder_id→collections CASCADE」漏 001/004/012 全部级联面（paper_
+  tags/annotations/notes→papers、paper_tags→tags、lineage_nodes→papers、
+  lineage_edges→lineage_nodes 双端、lineage_nodes.folder_id→collections）；
+  〔乙〕「recursive_triggers=OFF 下级联不触发 DELETE 触发器」被实测推翻
+  ——本栈 FK 级联照常点火子表 AFTER DELETE 触发器（探针 probe-cascade-
+  deletionlog〔仓外 20261014-db3u1〕+020 头注 T3 实照+R4-1 锁定测试
+  三源互证；通用文档语义误植未再探即落纸）。勘正后语义=**级联删除行
+  完整落账（超集）**：r3-N4「中间表事件缺失+限条件/LWW folder_id 级联
+  链两端不同=永续分歧面」整体消解（级联灭失行与直删行同账，收敛不依赖
+  两端级联子集一致）；〔丙〕OR REPLACE 探针实证=隐式删除绕过 DELETE
+  触发器（quality 负锚漏账依据实锤）；〔丁〕guard 开库断言口径精确化=
+  stop==0 且恰 1 行（空行态 COALESCE 折算盲区——U1 回炉 R1 收紧）。
+  落地状态=U1 批 021 迁移+九表触发器族+quality 第 11 段+开库断言全数
+  在库；U2/U3 派发简报必须携带本勘正前提（级联超集口径）。**
 
 ---
 
@@ -263,22 +279,27 @@ deletion_events 剪枝约束+隐私申报 ③021 判定补复合主键/FTS 重�
   to_node)=唯一约束非主键〕→id→id；lineage_graph_meta=**KV 表 key 主键
   〔非 id 列〕→key 值→key**。九表唯一复合主键=paper_tags；唯一 KV=
   lineage_graph_meta。
-- **捕获面矩阵**（auditor r2-W4）：①直接 DELETE 语句=AFTER DELETE
-  触发器捕获（全九表）；②`OR REPLACE` 冲突式删除=**全仓零命中**
-  （src/main grep 实照 2026-10-14——路径不存在）；③FK 级联删除=仅
-  019 tags.folder_id→collections CASCADE（020 族不在导出面）——SQLite
-  语义=recursive_triggers=OFF（connection.ts DB_PRAGMAS 无该键=缺省
-  恒定，两端同构）下级联不触发 DELETE 触发器，**中间表事件缺失不破坏
-  收敛——限条件成立**（auditor r3-N4 收窄：「同一终态」仅当两端级联
-  子集一致时保证；LWW 保留接收端较新副本时 folder_id 级联链可两端
-  不同——源删子行而接收端存续=该行永续分歧面〔无事件可纠、后续全量
-  卷不含该行〕；边界形态=下轮全量卷 upsert 自愈或申报接受，实现批
-  以限条件句落代码注释）。接收端直执 (collections,id) 删除后本地同
-  DDL 级联链自愈（两端 schema+pragma 同构）。实现票核对面（U1）=
-  删除路径盘点对账本矩阵+**「src/main 禁 OR REPLACE」quality 规则挂
-  卡**（一次性 grep 实照→机检常驻——auditor r3-N7①；受锁面变更走
-  [locked-change]）+**deletion_log_guard 开库断言 stop==0**（bootstrap
-  断言——守卫悬挂态由静默失效转显性告警，r3-N7②）。
+- **捕获面矩阵**（auditor r2-W4；**r4 勘正见 §10**）：①直接 DELETE 语句=AFTER
+  DELETE 触发器捕获（全九表）；②`OR REPLACE` 冲突式删除=**全仓零命中**
+  （src/main grep 实照 2026-10-14——路径不存在；探针实证其隐式删除**绕过**
+  DELETE 触发器=若引入即漏账，「禁 OR REPLACE」quality 规则已挂卡〔U1 落地〕）；
+  ③FK 级联删除=**点火子表 DELETE 触发器（实测超集——r4 勘正）**：级联面=001
+  （paper_tags/annotations/notes→papers；paper_tags→tags）+004（lineage_nodes→
+  papers；lineage_edges→lineage_nodes 双端）+012（lineage_nodes.folder_id→
+  collections）+019（tags.folder_id→collections）（020 族不在导出面）。
+  **级联删除行完整落账**——本栈 recursive_triggers=0（connection.ts 无该键=
+  缺省）下 FK 级联照常点火子表 AFTER DELETE 触发器（探针 probe-cascade-
+  deletionlog+020 头注 T3 实照+R4-1 锁定测试三源互证；r2-W3 原文「级联不
+  触发 DELETE 触发器」系 SQLite 通用文档误植未再探即落纸——r4 勘正，原文
+  要点存 §10 r4 行）。级联行事件在场=r3-N4「中间表事件缺失+限条件」分歧面
+  整体消解：级联灭失行与直删行同账，接收端防复活过滤/直执同路径收敛，
+  「同一终态」不再依赖两端级联子集一致。接收端直执 (collections,id) 删除后
+  本地同 DDL 级联链自愈（两端 schema+pragma 同构——级联点火语义两端同构，
+  超集账两端各自独立成账、互不依赖对方级联子集）。实现票核对面（U1）=删除路径盘点对账本矩阵+「src/main
+  禁 OR REPLACE」quality 规则挂卡（一次性 grep 实照→机检常驻——auditor
+  r3-N7①；受锁面变更走 [locked-change]；**U1 已落地**）+**deletion_log_guard
+  开库断言**（stop==0 且恰 1 行——r3-N7②；**U1 已落地**=迁移后每次开库断言，
+  空行/多行/悬挂三态均显性 throw）。
 - **直执落账抑制**（auditor r2-W5）：导入⑥直执 DELETE 会再触发本库
   落账（同 (entity,id) 异 deleted_at 重复事件+逐跳膨胀）——抑制=触发器
   WHEN 守卫 `(SELECT COALESCE(stop,0) FROM deletion_log_guard)=0`；导入

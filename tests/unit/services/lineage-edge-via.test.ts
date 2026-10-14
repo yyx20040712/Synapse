@@ -166,7 +166,7 @@ describe('F-LINEAGE-02 ①a service 写面守卫（违者 INVALID_REQUEST）', (
 describe('F-LINEAGE-02 ①a 迁移 013（edges.via TEXT NULL——先例 007 tags JSON 列）', () => {
   it('新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插 via=NULL 行合法（存量零迁移兼容）', () => {
     boot()
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     db.prepare(
       `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
        VALUES ('e-legacy', ?, ?, '', 'tree', 't', 't')`

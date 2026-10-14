@@ -9,7 +9,8 @@
  * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）
  * / e2e 截图比对负锚（第 9 段——INV-64）/ 模型代号负锚（第 8 段——扫描面
  * 单源=scripts/check-model-names.mjs）/ 节点唯一来源负锚词表（第 10 段——
- * INV-NEW-1，F-ALIGN-01）+治理表行格数校验（10b 段）。
+ * INV-NEW-1，F-ALIGN-01）+治理表行格数校验（10b 段）/ src/main 禁冲突替换式
+ * 删除（第 11 段——F-DBCAMP-01 DB-3 U1，删事件账漏账路径负锚）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -500,6 +501,42 @@ for (let ln = 0; ln < govLines.length; ln++) {
 }
 if (govTableOk && govRowCount === 0) {
   violations.push('哨兵：defense-lifecycle.md 登记表零表行——表节缺席或标题漂移（10b fail-closed）')
+}
+
+// 11) [F-DBCAMP-01 DB-3 U1] src/main 禁冲突替换式删除（设计 §13.1 捕获面②
+//     ——2026-10-14 立段）：该写形态对既有行=隐式 DELETE，绕过 AFTER DELETE
+//     触发器=删事件账（021 deletion_events）漏账路径（探针实证 runId=20261014-
+//     db3u1 在档；存量零命中 grep 实照 2026-10-14）。命中形态=字面冲突替换
+//     合成词（大小写不敏感）或词组 REPLACE INTO（TS 内嵌字符串形态同拦——
+//     不锚行首）；合法替代=显式 DELETE+INSERT 或 ON CONFLICT 子句。扫描面=
+//     src/main 全部 .ts+.sql（walk 复用）；注释同禁（本段负锚面含注释——
+//     残留叙述即 stale 面需改写，段 10 同口径）。边界申报（负锚固有边界，
+//     接受）：SQL 注释夹词形态（如 REPLACE/*c*/INTO）与 ON CONFLICT ... DO
+//     UPDATE 合法子句变体不在拦截面——机检面=字面词组，语义等价改写由评审
+//     承载。治理登记=docs/defense-lifecycle.md（随批登记行）。
+const CONFLICT_REPLACE_RE = /\bor\s+replace\b/i
+const REPLACE_INTO_RE = /\breplace\s+into\b/i
+const mainFiles = walk(join(root, 'src', 'main'), (p) => /\.(ts|sql)$/.test(p))
+if (mainFiles.length === 0) violations.push('哨兵：src/main 下 walk 零 ts/sql 文件——冲突替换式删除负锚扫描面失能（段 11）')
+for (const f of mainFiles) {
+  const content = readFileSync(f, 'utf-8')
+  if (!CONFLICT_REPLACE_RE.test(content) && !REPLACE_INTO_RE.test(content)) continue
+  const lines = content.split('\n')
+  let located = false
+  for (let ln = 0; ln < lines.length; ln++) {
+    if (CONFLICT_REPLACE_RE.test(lines[ln]) || REPLACE_INTO_RE.test(lines[ln])) {
+      violations.push(
+        `${relative(root, f)}:${ln + 1}: 冲突替换式删除写形态（隐式 DELETE 绕过删事件触发器——DB-3 U1 漏账路径，改显式 DELETE+INSERT 或 ON CONFLICT 子句）`
+      )
+      located = true
+    }
+  }
+  // 跨行形态（词对被换行拆开）逐行定位不可达——整文件上报不漏拦（fail-closed）
+  if (!located) {
+    violations.push(
+      `${relative(root, f)}: 冲突替换式删除写形态（跨行形态——隐式 DELETE 绕过删事件触发器，改显式 DELETE+INSERT 或 ON CONFLICT 子句）`
+    )
+  }
 }
 
 if (violations.length > 0) {

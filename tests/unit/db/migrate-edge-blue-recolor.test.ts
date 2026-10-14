@@ -54,9 +54,9 @@ describe('db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）'
   it('新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-    expect(result.currentVersion).toBe(20)
-    expect(readUserVersion(db)).toBe(20)
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])
+    expect(result.currentVersion).toBe(21)
+    expect(readUserVersion(db)).toBe(21)
     db.close()
   })
 
@@ -79,7 +79,7 @@ describe('db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）'
     migrate(db)
     const after = colorCounts(db)
     expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     db.close()
   })
 
@@ -89,7 +89,7 @@ describe('db/migrate —— 015 存量边旧蓝换深蓝（#3a5bd9→#1e3a8a）'
     seedEdge(db, 'e-keep', 'n-a', 'n-b', '#0f8a6d')
     migrate(db)
     expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     db.close()
   })
 

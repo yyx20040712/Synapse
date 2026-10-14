@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-13T23:02:25.437Z",
+    "generatedAt": "2026-10-14T13:17:49.867Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -7,11 +7,11 @@
         },
         {
             "path": "docs/defense-lifecycle.md",
-            "sha256": "30d383d646213756e84520741ced79478c16fe8902b926daa86f2072b8b21b68"
+            "sha256": "d0302b43005182ef87bcfd6ee0c7a82a1f58ad067ee733f64a6d85c9f2d0797c"
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "4a458163418aba9905ea32ac7c64c7131e58b2ac41355e8b70856b11033a22a5"
+            "sha256": "60135b039f3da99c0e4fcd88aea587e1ef2489a713a325f64a1afe65a9ea71cd"
         },
         {
             "path": "electron.vite.config.ts",
@@ -43,7 +43,7 @@
         },
         {
             "path": "scripts/check-quality.mjs",
-            "sha256": "c7f4df74d851752666dbf55c0f0c80ea1b4980807fd8109cb42f1e10ef11461e"
+            "sha256": "8d979f3eab2907577d664f26773dd97b3606642548c8d1b06671fadb6d5f04ca"
         },
         {
             "path": "scripts/check-test-surface.mjs",
@@ -87,7 +87,7 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "d203818ee564ccedc5d916668b4ef48d205c0e7e3d339e74ce63fa7f2d9285e9"
+            "sha256": "38e11a7fdbbaf6624149f60394f1ee2ccfab1a7b3f475b6c842f314dea124777"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
@@ -184,6 +184,10 @@
         {
             "path": "src/main/db/migrations/020_ai_domain.sql",
             "sha256": "bd45472bffae79e04ed05115316e4a76c7fa109408acddb81974eea8b89477bc"
+        },
+        {
+            "path": "src/main/db/migrations/021_deletion_events.sql",
+            "sha256": "c8fdd02b5f8eb7c1423263d0d2e930f64162a66d3c15a4dea62e2d99c2fb88ec"
         },
         {
             "path": "src/renderer/app/StatusBar.tsx",
@@ -502,48 +506,52 @@
             "sha256": "3827179e3e05ebaad507df1020ad08a99c40b48df82a4c21a5780ee4320ee53e"
         },
         {
+            "path": "tests/unit/db/deletion-log.test.ts",
+            "sha256": "b329511353c1faa45a4e27224bd7f663aca8639c7d45d49bd4885fc572a8beab"
+        },
+        {
             "path": "tests/unit/db/fts.test.ts",
             "sha256": "744d318ebc08b41c64a8778d2692a09f39bd088ece22e18549303158df9511c3"
         },
         {
             "path": "tests/unit/db/migrate-ai-domain.test.ts",
-            "sha256": "7d168fc05292cf4847ad714574b1b1c60e0ba9a6f48cb0720a30807edbe5678e"
+            "sha256": "a8ea908f54328228a6c5e711cd2b696399a23b8481660a2e0557aeab81dae21a"
         },
         {
             "path": "tests/unit/db/migrate-app-meta.test.ts",
-            "sha256": "bd35538fd1fe411b4f11cd6ef759efeb04ecd653848ab310cca4cc1bb005b7d9"
+            "sha256": "d1c37664178555dd2a5e8e273806590a8eb49bc342408506353c4672bc801120"
         },
         {
             "path": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-            "sha256": "cb54805b1b0f9b59fc7490ad4c26214ec557362bb81fd3f0d4cd25ae0f9bdf89"
+            "sha256": "5f178b7221ec93b25ad19040723007d535846ea1dd1a2b5e6ef280ffed5ff7f7"
         },
         {
             "path": "tests/unit/db/migrate-folders-graphs.test.ts",
-            "sha256": "404753dcbbda2eb26bb2b872882bcf2cb11a7135c2933591ec21cb22ea1204ca"
+            "sha256": "f6d7c1e5a1ca8e2534e5648c8fd7e51db762c86758d9d0dda0775039d9ee539a"
         },
         {
             "path": "tests/unit/db/migrate-lineage-v2.test.ts",
-            "sha256": "72016c95f2f5e79eb350b92bd13984e1462e8af9f5e3d8377f364bf9dbe162b1"
+            "sha256": "f6442efce0cbb669bd1ad087aff4e09ed02905661f5ce629cc3c0f2311680677"
         },
         {
             "path": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-            "sha256": "0ef5dd909b95136166ebe0dbaea14d592fd8b4137642966558bb524fc033d324"
+            "sha256": "eb5904efafc34f905723456392ceaf6574d84e20385b9d7c7d09a6f4b5182531"
         },
         {
             "path": "tests/unit/db/migrate-papers-is-starred.test.ts",
-            "sha256": "2c01d1eb6ec394bfc9810b7b03c4c6566ce7fc7f56772422a717ba60c46876a8"
+            "sha256": "5734cf9eba1627003ee33b6ba43cd4fa773d7ceb47df3ace638bcc9ba2e6c179"
         },
         {
             "path": "tests/unit/db/migrate-reading-time.test.ts",
-            "sha256": "2ef7e1b2282d13552a8e301ca8191935372b47e415c3664e86de982617e961c6"
+            "sha256": "6220e847df2ba4f612097c857b26e1006d05c79824bb7baa533e485a37759ea7"
         },
         {
             "path": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-            "sha256": "697e0078ba1785fd93bf1d0c86ee8def399967704ff14252680a18fc220f7b2c"
+            "sha256": "591c02ef709df37de85ab9d8d524f5ec9e4fac21087f5b841e62a58d524f29f6"
         },
         {
             "path": "tests/unit/db/migrate.test.ts",
-            "sha256": "5d31499c25c147f20d2f17c4b1ff8ea38bb011ebec82b44ff463bbeb5b0c2138"
+            "sha256": "41460c7d37895762abec5137f227c5918fdc54a568cb4fd6fc8dc9870962c78d"
         },
         {
             "path": "tests/unit/db/repos/ai_notes.repo.order.test.ts",
@@ -1487,7 +1495,7 @@
         },
         {
             "path": "tests/unit/services/lineage-edge-via.test.ts",
-            "sha256": "5f1ae3ef404e5e4b9b2eea0e13279fa9681e9f27091feb198e0083fb624abff3"
+            "sha256": "5314be3773681571b5c0589a4616a45abbd10d345d1c6e57fa5de4709351b3c4"
         },
         {
             "path": "tests/unit/services/lineage-import.test.ts",
@@ -1499,11 +1507,11 @@
         },
         {
             "path": "tests/unit/services/lineage-tags.test.ts",
-            "sha256": "cc0192c9df422bb5cbb2ba6063f8e4429193c8f10f66e63446d214f1c17124b8"
+            "sha256": "e110930ca54790c44738872c04400d9de6112af388030498f5cb79bd93cc885c"
         },
         {
             "path": "tests/unit/services/lineage-u8-linetype.test.ts",
-            "sha256": "c95057b391338d1ce169b54dec35d391e1561ff9d4ff51d08e7eab65afa7e4a7"
+            "sha256": "9b3cee6441b9c443efb6177c2a5bd8fd7f5fc4b7a0d8815a06f5582184f226a5"
         },
         {
             "path": "tests/unit/services/lineage-v2-model.test.ts",

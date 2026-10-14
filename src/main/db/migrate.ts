@@ -33,6 +33,7 @@ import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
 import appMetaSql from './migrations/018_app_meta.sql?raw'
 import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
 import aiDomainSql from './migrations/020_ai_domain.sql?raw'
+import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
 
 export interface Migration {
   version: number
@@ -108,7 +109,12 @@ export const MIGRATIONS: readonly Migration[] = [
   // +trigram）+G2 审计触发器+随锚级联触发器（用户裁定①②④⑥——纯新增无表
   // 重建，无 fkOff；级联体 T3 实照修正=memory 先删链式 _ad 清 FTS，见 020 头注；
   // 新库 user_version 终值 20）
-  { version: 20, name: 'ai_domain', sql: aiDomainSql }
+  { version: 20, name: 'ai_domain', sql: aiDomainSql },
+  // [F-DBCAMP-01 DB-3 U1] 删事件日志（设计 §13.1/§13.3 021 号改派）：
+  // deletion_events append-only 账+deletion_log_guard 直执守卫+导出面九表
+  // AFTER DELETE 触发器族+append-only 拒写防御；服务层零侵入；纯新增表+触发器
+  // 无表重建，无 fkOff；新库 user_version 终值 21
+  { version: 21, name: 'deletion_events', sql: deletionEventsSql }
 ]
 
 export interface MigrateResult {
@@ -168,6 +174,37 @@ export function migrate(
       if (migration.fkOff === true) db.pragma('foreign_keys = ON')
     }
     applied.push(migration.version)
+  }
+
+  // [F-DBCAMP-01 DB-3 U1] 开库断言（设计 §13.1 r3-N7②）：库版本已达 021 时
+  // deletion_log_guard 须在位、恰 1 行、stop=0——守卫悬挂态（导入事务置 1 后未
+  // 复位/播种行被清空等形态）由静默失效转显性告警。空行态=触发器 WHEN 子查询
+  // NULL→静默停记（防线停摆面），由行数断言捕获。migrate 每次开库都调用
+  // （bootstrap/workspace-layout），循环零应用（已迁移库重开）断言仍须执行；
+  // 版本<21 的注入式部分迁移测试不受版本守卫波及。
+  if (readUserVersion(db) >= 21) {
+    let guard: { n: number; s: number }
+    try {
+      guard = db
+        .prepare('SELECT COUNT(*) AS n, COALESCE(MAX(stop), 0) AS s FROM deletion_log_guard')
+        .get() as { n: number; s: number }
+    } catch (e) {
+      throw new Error(
+        `deletion_log_guard 开库断言失败：表缺失或不可读（${String(e)}）——` +
+          '库版本已达 21 而守卫表不在位，库处于不一致态'
+      )
+    }
+    if (guard.n !== 1) {
+      throw new Error(
+        `deletion_log_guard 开库断言失败：守卫行数=${guard.n}≠1（播种恰 1 行被破坏` +
+          '——空行/多行均为防线停摆面，修复守卫表后再开库）'
+      )
+    }
+    if (guard.s !== 0) {
+      throw new Error(
+        `deletion_log_guard 开库断言失败：stop=${guard.s}≠0（导入直执守卫悬挂态——复位 0 后再开库）`
+      )
+    }
   }
 
   return { appliedVersions: applied, currentVersion: readUserVersion(db) }

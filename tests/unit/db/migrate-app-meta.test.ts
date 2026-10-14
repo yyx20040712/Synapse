@@ -36,11 +36,11 @@ describe('db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK �
   it('新库全链：user_version=18+应用清单 [1..18]+幂等重入（再跑 applied=[]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(20)
+    expect(result.currentVersion).toBe(21)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
     ])
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
@@ -51,8 +51,8 @@ describe('db/migrate —— 018 app_meta 键值表（纯新增 KV——零 FK �
     seedPaper(db, 'p-1')
     const result = migrate(db)
     // 判别器：18 确已应用（否则表不存在→下方 app_meta 查询 SQL 报错红）
-    expect(result.appliedVersions).toEqual([18, 19, 20])
-    expect(readUserVersion(db)).toBe(20)
+    expect(result.appliedVersions).toEqual([18, 19, 20, 21])
+    expect(readUserVersion(db)).toBe(21)
     expect(db.prepare("SELECT title FROM papers WHERE id = 'p-1'").get()).toEqual({
       title: '文献p-1'
     })

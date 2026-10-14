@@ -2646,6 +2646,149 @@
         }
       ]
     },
+    "tests/e2e/ai-budget.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"E4 预算节：持久化+校验+恢复默认（真实 settings.set 落盘回读）\"]",
+          "describePath": [],
+          "title": "E4 预算节：持久化+校验+恢复默认（真实 settings.set 落盘回读）",
+          "markers": [],
+          "line": 25,
+          "assertions": [
+            "expect(section.getByText('于下次对话生效')).toBeVisible()",
+            "expect(capInput).toHaveValue('8000')",
+            "expect(section.getByText('已保存')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('ai-budget-section').locator('input[aria-label=\"文献档 上限\"]')).toHaveValue('9000', { timeout: 10_000 })",
+            "expect(win.getByTestId('ai-budget-section').getByText('预算档内合计超上限')).toBeVisible()",
+            "expect(win.getByTestId('ai-budget-section').getByRole('button', { name: '保存预算' })).toBeDisabled()",
+            "expect(win.getByTestId('ai-budget-section').getByText('需为非负整数').first()).toBeVisible()",
+            "expect(win.getByTestId('ai-budget-section').getByRole('button', { name: '保存预算' })).toBeDisabled()",
+            "expect(win.getByTestId('ai-budget-section').getByText('需为非负整数').first()).toBeVisible()",
+            "expect(win.getByTestId('ai-budget-section').getByRole('button', { name: '保存预算' })).toBeDisabled()",
+            "expect(win.getByTestId('ai-budget-section').locator('input[aria-label=\"文献档 上限\"]')).toHaveValue('8000')"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/ai-cascade-delete.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存\"]",
+          "describePath": [],
+          "title": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存",
+          "markers": [],
+          "line": 28,
+          "assertions": [
+            "expect(row).toBeVisible({ timeout: 10_000 })",
+            "expect(firstDialog).toBeVisible({ timeout: 10_000 })",
+            "expect(second).toBeVisible({ timeout: 10_000 })",
+            "expect(second).toContainText('会话 1 个')",
+            "expect(second).toContainText('消息 2 条')",
+            "expect(second).toContainText('记忆 1 条')",
+            "expect(second).toContainText('任务 1 个')",
+            "expect(second).toContainText('审计记录将保留')",
+            "expect(win.locator('[role=\"dialog\"]')).toHaveCount(0)",
+            "expect(win.locator('.lib-row', { hasText: 'E5 场景一文献' }), '取消=对象保留').toBeVisible()",
+            "expect(aside).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByText('E5 场景一消息甲')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.locator('.lib-row', { hasText: 'E5 场景一文献' })).toBeVisible({ timeout: 10_000 })",
+            "expect(firstAgain).toBeVisible({ timeout: 10_000 })",
+            "expect(secondAgain).toBeVisible({ timeout: 10_000 })",
+            "expect(win.locator('.lib-row', { hasText: 'E5 场景一文献' }), '双确认后级联删').toHaveCount(0, { timeout: 10_000 })",
+            "expect(await readAiAuditCount(userData, taskId), '审计恒存').toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"E5 场景二 零计数：有图边无 AI 资源——仅第一窗无第二窗\"]",
+          "describePath": [],
+          "title": "E5 场景二 零计数：有图边无 AI 资源——仅第一窗无第二窗",
+          "markers": [],
+          "line": 103,
+          "assertions": [
+            "expect(row).toBeVisible({ timeout: 10_000 })",
+            "expect(dialog).toBeVisible({ timeout: 10_000 })",
+            "expect(win.locator('.lib-row', { hasText: 'E5 场景二文献' })).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.getByText('将同时删除'), '第二窗负锚').toHaveCount(0)"
+          ]
+        },
+        {
+          "key": "[\"E5 场景三 folder 删：paper 档+lineage 档（锚=collections.id）双面合计→确认→两档资源俱灭+审计恒存\"]",
+          "describePath": [],
+          "title": "E5 场景三 folder 删：paper 档+lineage 档（锚=collections.id）双面合计→确认→两档资源俱灭+审计恒存",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect(folderRow).toBeVisible({ timeout: 10_000 })",
+            "expect(firstDialog).toBeVisible({ timeout: 10_000 })",
+            "expect(second).toBeVisible({ timeout: 10_000 })",
+            "expect(second).toContainText('会话 2 个')",
+            "expect(second).toContainText('消息 2 条')",
+            "expect(second).toContainText('记忆 2 条')",
+            "expect(second).toContainText('任务 2 个')",
+            "expect(win.locator('.lib-fn-row', { hasText: 'E5 级联夹' })).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.locator('.lib-row', { hasText: 'E5 夹内文献' })).toHaveCount(0, { timeout: 10_000 })",
+            "expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(await readAiAuditCount(userData, paperTask), 'paper 档审计恒存').toBe(1)",
+            "expect(await readAiAuditCount(userData, lineageTask), 'lineage 档审计恒存').toBe(1)"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/ai-manage-tabs.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"E3 置顶闭环：置顶 Tab 断言消息文本+锚标题→取消置顶→行消失+空态\"]",
+          "describePath": [],
+          "title": "E3 置顶闭环：置顶 Tab 断言消息文本+锚标题→取消置顶→行消失+空态",
+          "markers": [],
+          "line": 25,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })",
+            "expect(pins.getByText('E3 置顶消息正文')).toBeVisible({ timeout: 10_000 })",
+            "expect(pins.getByText(title)).toBeVisible()",
+            "expect(pins.getByText('暂无置顶消息')).toBeVisible({ timeout: 10_000 })",
+            "expect(pins.getByText('E3 置顶消息正文')).toHaveCount(0)"
+          ]
+        },
+        {
+          "key": "[\"E7 记忆 CRUD 全链：global 档新建→列表→编辑→置顶→删除→空态；agent 行只读\"]",
+          "describePath": [],
+          "title": "E7 记忆 CRUD 全链：global 档新建→列表→编辑→置顶→删除→空态；agent 行只读",
+          "markers": [],
+          "line": 57,
+          "assertions": [
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('E7 手动记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('E7 改后记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('七号改后内容')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('E7 手动记忆')).toHaveCount(0)",
+            "expect(rowOf('E7 改后记忆').getByText('已置顶')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('暂无记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(mem.getByText('E7 代理记忆')).toBeVisible({ timeout: 10_000 })",
+            "expect(agentRow.getByText('代理生成', { exact: true })).toBeVisible()",
+            "expect(agentRow.getByRole('button', { name: '编辑', exact: true })).toHaveCount(0)",
+            "expect(agentRow.getByRole('button', { name: '置顶', exact: true })).toHaveCount(0)",
+            "expect(agentRow.getByRole('button', { name: '删除', exact: true })).toHaveCount(0)"
+          ]
+        }
+      ]
+    },
     "tests/e2e/ai-sessions-panel.spec.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -3582,7 +3725,7 @@
           ],
           "title": "T4 侧板三节新序+AI 评估分色→AI 双击退役负锚→片段双击跳阅读器目标页",
           "markers": [],
-          "line": 467,
+          "line": 487,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')",
@@ -3611,7 +3754,7 @@
           ],
           "title": "T6 [F-SLOTGRID-01] 砖砌网格：窄窗 5 卡同月→行容器分行=capacity 同源公式+奇行错位 100+零 margin-left 残留",
           "markers": [],
-          "line": 622,
+          "line": 642,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3633,7 +3776,7 @@
           ],
           "title": "T6n [U5 普查] nodeId 非空卫：卡集 data-node-id 全非空（R1/R2 同族）",
           "markers": [],
-          "line": 717,
+          "line": 737,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3648,7 +3791,7 @@
           ],
           "title": "T-P1b resize 直证：两档视口→route=band+路径卡锚定几何两档全等+线-卡 y 相对关系恒定",
           "markers": [],
-          "line": 764,
+          "line": 784,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3665,7 +3808,7 @@
           ],
           "title": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+[②U6] 跨月物理域回弹无 toast+edit 态驱动",
           "markers": [],
-          "line": 901,
+          "line": 921,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3686,7 +3829,7 @@
           ],
           "title": "T11 卡三层+详情面板+保存流（②U4：L3 真实文本/面板联动/dirty→clean/核 chip 零残留）",
           "markers": [],
-          "line": 1017,
+          "line": 1037,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3719,7 +3862,7 @@
           ],
           "title": "T12 画线全链+手动调线+右键菜单（②U5：手柄/加点/拖顶点/穿卡警示软断言）",
           "markers": [],
-          "line": 1100,
+          "line": 1120,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3752,7 +3895,7 @@
           ],
           "title": "T12b 画线锚点指示+容差边界+落空分层反馈（lnfix1：hint 在场/±10 建边/toast 分层）",
           "markers": [],
-          "line": 1189,
+          "line": 1209,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3777,7 +3920,7 @@
           ],
           "title": "T12c 线型链跨格全序列（C1：展开钮/色行 per-kind/点两卡连边/连画/Esc 分层/详情不开）",
           "markers": [],
-          "line": 1286,
+          "line": 1306,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3813,7 +3956,7 @@
           ],
           "title": "T12d pendingLink 提示条 Esc 退出（F-ESC-01：Esc 后点卡不建边）",
           "markers": [],
-          "line": 1393,
+          "line": 1413,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3830,7 +3973,7 @@
           ],
           "title": "T13 聚焦 dim+缩放+拖拽候选槽+退役零残留（②U6/U7）",
           "markers": [],
-          "line": 1432,
+          "line": 1452,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3858,7 +4001,7 @@
           ],
           "title": "样板① 拖拽候选槽计数几何（图四症一实锚：C3 修复后去标转绿）",
           "markers": [],
-          "line": 1512,
+          "line": 1532,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3883,7 +4026,7 @@
           ],
           "title": "插入位多样性：拖中≥2 个不同插入区各断言实态槽位置/序变化（图四症二联动验证）",
           "markers": [],
-          "line": 1651,
+          "line": 1671,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3900,7 +4043,7 @@
           ],
           "title": "C3 详情面板两钮：操作行常显+同行布局+去文献库（夹过滤+选中）+去阅读器（文本层装载）",
           "markers": [],
-          "line": 1715,
+          "line": 1735,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3931,7 +4074,7 @@
           ],
           "title": "样板② 拖影偏移恒定+dragstart 偏移绝对锚（图四漂移实锚：C3 修复后去包装翻转直陈）",
           "markers": [],
-          "line": 1798,
+          "line": 1818,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3949,7 +4092,7 @@
           ],
           "title": "γ1 [F-SLOTGRID-01 U3] 算术落点+FLIP 3 帧回评：拖奇行卡跨行插入→settle 落位格=positionOf 同源（连续 3 帧 ≤1px）",
           "markers": [],
-          "line": 1923,
+          "line": 1943,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3973,7 +4116,7 @@
           ],
           "title": "γ2 [F-SLOTGRID-01 U3] 候选阵列=算术网格+滞回直入（1280 水平）：槽几何/计数与松手落点同源",
           "markers": [],
-          "line": 2053,
+          "line": 2073,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -3994,7 +4137,7 @@
           ],
           "title": "γ3 [F-SLOTGRID-01 U3] 纵排语义（1000 视口 1/1）：跨行插入按 y 行带+行分布=partitionRows 同源",
           "markers": [],
-          "line": 2157,
+          "line": 2177,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -4014,7 +4157,7 @@
           ],
           "title": "γ4 [F-SLOTGRID-01 U4] 奇行候选/落点几何：候选含奇行 cell φ=100+实态槽入奇行+settle 落位=positionOf 奇行支",
           "markers": [],
-          "line": 2243,
+          "line": 2263,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -4040,7 +4183,7 @@
           ],
           "title": "样板③ 吸附高亮几何（三档 zoom 卫士——C2 形态：12 屏幕 px 恒定+中心=锚心）",
           "markers": [],
-          "line": 2377,
+          "line": 2397,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
@@ -4054,7 +4197,7 @@
           ],
           "title": "C2a 静态锚点层：armed 12 锚锚心=卡边 ¼/½/¾ 位（三档 zoom×每卡 12 锚）+hover ½ 位显隐",
           "markers": [],
-          "line": 2435,
+          "line": 2455,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(root).toBeVisible({ timeout: 10_000 })",
@@ -4080,7 +4223,7 @@
           ],
           "title": "C2b 吸附高亮↔落点一致：入/出域类切换+末帧预览端点=锚心±0.5px+落边建立",
           "markers": [],
-          "line": 2543,
+          "line": 2563,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(root).toBeVisible({ timeout: 10_000 })",
@@ -5638,6 +5781,165 @@
         }
       ]
     },
+    "tests/unit/db/deletion-log.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-1 对位：九表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=9+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-1 对位：九表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=9+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0",
+          "markers": [],
+          "line": 164,
+          "assertions": [
+            "expect(names, `${t} 的 deletion_log 触发器`).toContain(`${t}_deletion_log_ad`)",
+            "expect(dl, `${t} 的 deletion_log 触发器恰 1 个`).toHaveLength(1)",
+            "expect(dl[0]!.sql, `${t} WHEN 守卫读 deletion_log_guard`).toContain('FROM deletion_log_guard')",
+            "expect(total).toBe(9)",
+            "expect(appendOnly).toBe(2)",
+            "expect(guard.c).toBe(1)",
+            "expect(guard.s).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-2 guard 两态：stop=1 删行零事件；复位 0 恢复落账；守卫表空行=静默停记（防线停摆面——开库断言行数≠1 捕获，U1-9 锁）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-2 guard 两态：stop=1 删行零事件；复位 0 恢复落账；守卫表空行=静默停记（防线停摆面——开库断言行数≠1 捕获，U1-9 锁）",
+          "markers": [],
+          "line": 202,
+          "assertions": [
+            "expect(eventsOf(db, 'papers', 'p-g1')).toBe(0)",
+            "expect(eventsOf(db, 'papers', 'p-g2')).toBe(1)",
+            "expect(eventsOf(db, 'papers', 'p-g3')).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-3 逐表删除断言 ×9（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-3 逐表删除断言 ×9（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值）",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(eventsOf(db, t, expectId), `${t} 删除后 (entity,id) 事件在场`).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-4 append-only：UPDATE 与 DELETE deletion_events 各 throws（RAISE(ABORT)）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-4 append-only：UPDATE 与 DELETE deletion_events 各 throws（RAISE(ABORT)）",
+          "markers": [],
+          "line": 233,
+          "assertions": [
+            "expect(() => db.prepare(`UPDATE deletion_events SET id='篡改' WHERE entity='papers'`).run()).toThrow( /append-only.*禁止修改/ )",
+            "expect(() => db.prepare(`DELETE FROM deletion_events WHERE entity='papers'`).run()).toThrow( /append-only.*禁止删除/ )",
+            "expect(totalEvents(db)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-5 去重：同 (entity,id,deleted_at) 三元组 INSERT OR IGNORE 重插→行数仍 1（UNIQUE+OR IGNORE 两语义兼容）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-5 去重：同 (entity,id,deleted_at) 三元组 INSERT OR IGNORE 重插→行数仍 1（UNIQUE+OR IGNORE 两语义兼容）",
+          "markers": [],
+          "line": 248,
+          "assertions": [
+            "expect(totalEvents(db)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-6 级联超集锁：删带 1 note+1 annotation+1 paper_tag 的 paper→恰 4 事件；删带 1 tag+1 node(带 1 edge) 的 collection→恰 4 事件；删带 1 node(带 1 edge) 的 paper→恰 3 事件（FK 级联点火子表触发器——超集口径）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-6 级联超集锁：删带 1 note+1 annotation+1 paper_tag 的 paper→恰 4 事件；删带 1 tag+1 node(带 1 edge) 的 collection→恰 4 事件；删带 1 node(带 1 edge) 的 paper→恰 3 事件（FK 级联点火子表触发器——超集口径）",
+          "markers": [],
+          "line": 259,
+          "assertions": [
+            "expect(totalEvents(db)).toBe(4)",
+            "expect(eventsOf(db, 'papers', 'p-cs')).toBe(1)",
+            "expect(eventsOf(db, 'notes', 'n-cs')).toBe(1)",
+            "expect(eventsOf(db, 'annotations', 'a-cs')).toBe(1)",
+            "expect(eventsOf(db, 'paper_tags', 'p-cs|t-cs')).toBe(1)",
+            "expect(totalEvents(db2)).toBe(4)",
+            "expect(eventsOf(db2, 'collections', 'c-cs')).toBe(1)",
+            "expect(eventsOf(db2, 'tags', 't-cc')).toBe(1)",
+            "expect(eventsOf(db2, 'lineage_nodes', 'ln-cc')).toBe(1)",
+            "expect(eventsOf(db2, 'lineage_edges', 'le-cc')).toBe(1)",
+            "expect( (db2.prepare(`SELECT COUNT(*) c FROM lineage_nodes WHERE id='ln-out'`).get() as { c: number }).c ).toBe(1)",
+            "expect(totalEvents(db3)).toBe(3)",
+            "expect(eventsOf(db3, 'papers', 'p-cn')).toBe(1)",
+            "expect(eventsOf(db3, 'lineage_nodes', 'ln-cn')).toBe(1)",
+            "expect(eventsOf(db3, 'lineage_edges', 'le-cn')).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-7 deleted_at 格式锚：DB 时钟 ISO 毫秒 Z（触发器内取时——无应用层时钟）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-7 deleted_at 格式锚：DB 时钟 ISO 毫秒 Z（触发器内取时——无应用层时钟）",
+          "markers": [],
+          "line": 325,
+          "assertions": [
+            "expect(row.deleted_at).toMatch(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-8 epoch 共存：删 papers→papers epoch 仍恰 +1/步（deletion 触发器不扰 epoch 链）+全库 _epoch_ 触发器计数恒 30\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-8 epoch 共存：删 papers→papers epoch 仍恰 +1/步（deletion 触发器不扰 epoch 链）+全库 _epoch_ 触发器计数恒 30",
+          "markers": [],
+          "line": 336,
+          "assertions": [
+            "expect(epochOf(db, 'papers')).toBe(1)",
+            "expect(epochOf(db, 'papers')).toBe(2)",
+            "expect(eventsOf(db, 'papers', 'p-ec')).toBe(1)",
+            "expect(epochTriggers).toBe(30)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-9 migrate 开库断言：stop=1 再 migrate→throws；复位 0→applied=[] 正常；守卫表缺失→throws 显性错误；守卫表空行态→throws\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-9 migrate 开库断言：stop=1 再 migrate→throws；复位 0→applied=[] 正常；守卫表缺失→throws 显性错误；守卫表空行态→throws",
+          "markers": [],
+          "line": 351,
+          "assertions": [
+            "expect(() => migrate(db)).toThrow(/deletion_log_guard/)",
+            "expect(again.appliedVersions).toEqual([])",
+            "expect(() => migrate(db2)).toThrow(/deletion_log_guard/)",
+            "expect(() => migrate(db3)).toThrow(/deletion_log_guard/)"
+          ]
+        },
+        {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-10 FTS 共存抽测：删 note→notes_fts 同步清+事件在场（notes_fts_ad 与 notes_deletion_log_ad 同表并存）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U1-10 FTS 共存抽测：删 note→notes_fts 同步清+事件在场（notes_fts_ad 与 notes_deletion_log_ad 同表并存）",
+          "markers": [],
+          "line": 373,
+          "assertions": [
+            "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"絮凝剂投加量优化试验\"'`).get() ).toBeTruthy()",
+            "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"絮凝剂投加量优化试验\"'`).get() ).toBeUndefined()",
+            "expect(eventsOf(db, 'notes', 'n-fc')).toBe(1)"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/fts.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -5736,9 +6038,9 @@
           "markers": [],
           "line": 166,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5751,8 +6053,8 @@
           "markers": [],
           "line": 179,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([20])",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(result.appliedVersions).toEqual([20, 21])",
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -5762,7 +6064,7 @@
           ],
           "title": "M1 v19→20 对象多重集增量=恰本批 53 件（表 11+显式索引 5+触发器 37；多增/丢失均红）+autoindex 增 3",
           "markers": [],
-          "line": 187,
+          "line": 188,
           "assertions": [
             "expect(result.appliedVersions).toEqual([20])",
             "expect(objectMultiset(db)).toEqual([...before, ...expected020Objects()].sort())",
@@ -5776,7 +6078,7 @@
           ],
           "title": "M6 paper 锚级联：删 paper→sessions/messages（含置顶）/memory（FTS 净）/tasks 全灭；audit 恒存；epoch 前进；他锚零扰动",
           "markers": [],
-          "line": 200,
+          "line": 204,
           "assertions": [
             "expect(() => db.prepare(`DELETE FROM papers WHERE id='p-a1'`).run()).not.toThrow()",
             "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='p-a1'`).get()).toEqual({ c: 0 })",
@@ -5810,7 +6112,7 @@
           ],
           "title": "M6 lineage 锚级联（collections_ai_anchor_cascade，scope=lineage）：同款全灭/恒存/前进/零扰+FK 级联面（tags/lineage_nodes 随夹灭）",
           "markers": [],
-          "line": 274,
+          "line": 278,
           "assertions": [
             "expect(() => db.prepare(`DELETE FROM collections WHERE id='c-g1'`).run()).not.toThrow()",
             "expect(db.prepare(`SELECT COUNT(*) c FROM ai_sessions WHERE anchor_id='c-g1'`).get()).toEqual({ c: 0 })",
@@ -5846,9 +6148,9 @@
           "markers": [],
           "line": 36,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -5861,8 +6163,8 @@
           "markers": [],
           "line": 49,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.prepare(\"SELECT title FROM papers WHERE id = 'p-1'\").get()).toEqual({ title: '文献p-1' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM app_meta').get()).toEqual({ c: 0 })"
           ]
@@ -5914,9 +6216,9 @@
           "markers": [],
           "line": 54,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
-            "expect(result.currentVersion).toBe(20)",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -5943,7 +6245,7 @@
           "assertions": [
             "expect(before).toEqual({ '#3a5bd9': 2, '#3A5BD9': 1, '#c07a2a': 1, '#1e3a8a': 1 })",
             "expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -5956,7 +6258,7 @@
           "line": 86,
           "assertions": [
             "expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -5988,8 +6290,8 @@
           "markers": [],
           "line": 68,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
-            "expect(result.currentVersion).toBe(20)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(result.currentVersion).toBe(21)",
             "expect(paperCols).toContain('folder_id')",
             "expect(paperCols).toContain('impact_factor')",
             "expect(nodeCols).toContain('folder_id')",
@@ -6075,7 +6377,7 @@
           "markers": [],
           "line": 193,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(tag.color).toBe('#112233')",
             "expect(paper.folder_id).toBe('__main__')",
             "expect(node.folder_id).toBe('__main__')",
@@ -6109,7 +6411,7 @@
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(squatter.name).toBe('主图 (主图)')",
             "expect(mainRow.name).toBe('主图')",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -6124,7 +6426,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 3')",
             "expect(row.name).toBe(sname)",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -6139,7 +6441,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(residue.name).toBe('主图 (主图)')",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -6192,7 +6494,7 @@
           "line": 372,
           "assertions": [
             "expect(row.name).toBe('既有主图行')",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         }
       ]
@@ -6211,7 +6513,7 @@
           "markers": [],
           "line": 30,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
             "expect(nodeCols).toContain('month')",
             "expect(nodeCols).toContain('slot')",
             "expect(edgeCols).toContain('sub')"
@@ -6226,8 +6528,8 @@
           "markers": [],
           "line": 46,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(row.month).toBeNull()",
             "expect(row.slot).toBe(1)"
           ]
@@ -6378,7 +6680,7 @@
           "markers": [],
           "line": 265,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)",
             "expect(db.prepare('SELECT COUNT(*) c FROM annotations').get()).toEqual({ c: 0 })",
@@ -6408,9 +6710,9 @@
           "markers": [],
           "line": 304,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -6490,7 +6792,7 @@
           "markers": [],
           "line": 34,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-old-1'\").get()).toEqual({ is_starred: 0 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-new'\").get()).toEqual({ is_starred: 0 })",
@@ -6539,8 +6841,8 @@
           "markers": [],
           "line": 106,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.prepare(\"SELECT title, is_starred FROM papers WHERE id = 'p-a'\").get()).toEqual({ title: '文献甲', is_starred: 0 })"
           ]
         },
@@ -6553,9 +6855,9 @@
           "markers": [],
           "line": 124,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         }
@@ -6575,8 +6877,8 @@
           "markers": [],
           "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
@@ -6591,8 +6893,8 @@
           "line": 32,
           "assertions": [
             "expect(papersColumns(db)).toContain('reading_seconds')",
-            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')"
           ]
         },
@@ -6605,8 +6907,8 @@
           "markers": [],
           "line": 44,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(row).toBeUndefined()",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers').get()).toEqual({ c: 0 })"
@@ -6731,9 +7033,9 @@
           "markers": [],
           "line": 203,
           "assertions": [
-            "expect(result.currentVersion).toBe(20)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -6746,8 +7048,8 @@
           "markers": [],
           "line": 216,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20])",
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21])",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.prepare(\"SELECT name, color, folder_id FROM tags WHERE id='t-1'\").get()).toEqual({ name: '必读', color: '#0ea5e9', folder_id: '__main__' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })"
           ]
@@ -6761,7 +7063,7 @@
           "markers": [],
           "line": 238,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)"
           ]
@@ -6782,7 +7084,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -10759,6 +11061,672 @@
         }
       ]
     },
+    "tests/unit/renderer/ai-manage-tabs.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"①三 Tab 切换与空态：默认任务→暂无任务；置顶消息→暂无置顶消息；记忆→暂无记忆+过滤行在场\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "①三 Tab 切换与空态：默认任务→暂无任务；置顶消息→暂无置顶消息；记忆→暂无记忆+过滤行在场",
+          "markers": [],
+          "line": 159,
+          "assertions": [
+            "expect(text()).toContain('暂无任务')",
+            "expect(text()).toContain('暂无置顶消息')",
+            "expect(text()).toContain('暂无记忆')",
+            "expect(host?.querySelector('[aria-label=\"记忆档位\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"记忆分类\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"仅看置顶\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"记忆搜索\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"②TasksTab 列文本：动作/档/目标/状态/时间（形如 MM-DD HH:mm）；queued 取消钮在场+终态无钮\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "②TasksTab 列文本：动作/档/目标/状态/时间（形如 MM-DD HH:mm）；queued 取消钮在场+终态无钮",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(section).not.toBeNull()",
+            "expect(row?.textContent).toContain('memory.create')",
+            "expect(row?.textContent).toContain('文献')",
+            "expect(row?.textContent).toContain('管理文献甲')",
+            "expect(row?.textContent).toContain('排队中')",
+            "expect(row?.querySelector('[data-testid=\"ai-task-time\"]')?.textContent).toMatch(/^\\d{2}-\\d{2} \\d{2}:\\d{2}$/)",
+            "expect(row?.querySelector('[aria-label=\"取消任务\"]')).not.toBeNull()",
+            "expect(row2?.textContent).toContain('已完成')",
+            "expect(row2?.textContent).toContain('脉络')",
+            "expect(row2?.querySelector('[aria-label=\"取消任务\"]')).toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"任务档位过滤\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"任务状态过滤\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"③PinsTab 三档分组+行文本+锚标题；取消置顶→行消失（真实 setPinned false 桩链）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "③PinsTab 三档分组+行文本+锚标题；取消置顶→行消失（真实 setPinned false 桩链）",
+          "markers": [],
+          "line": 211,
+          "assertions": [
+            "expect(section).not.toBeNull()",
+            "expect(section?.textContent).toContain('文献')",
+            "expect(section?.textContent).toContain('脉络')",
+            "expect(section?.textContent).toContain('全局')",
+            "expect(section?.textContent).toContain('置顶消息正文')",
+            "expect(section?.textContent).toContain('锚文献标题')",
+            "expect(section?.textContent).toContain('锚文件夹标题')",
+            "expect(scopes).toEqual(['global', 'lineage', 'paper'])",
+            "expect(section?.querySelector('[data-id=\"51\"]')).toBeNull()",
+            "expect(pinsSet).toHaveBeenCalledWith({ messageId: 51, pinned: false })",
+            "expect(section?.textContent).not.toContain('置顶消息正文')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"④MemoryTab：manual 行三钮；agent 行「代理生成」标+无编辑面；编辑展开表单\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "④MemoryTab：manual 行三钮；agent 行「代理生成」标+无编辑面；编辑展开表单",
+          "markers": [],
+          "line": 254,
+          "assertions": [
+            "expect(manualRow?.textContent).toContain('记忆甲')",
+            "expect(manualRow?.querySelector('[aria-label=\"编辑\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"置顶\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"删除\"]')).not.toBeNull()",
+            "expect(agentRow?.textContent).toContain('代理生成')",
+            "expect(agentRow?.textContent).toContain('已置顶')",
+            "expect(agentRow?.querySelector('[aria-label=\"编辑\"]')).toBeNull()",
+            "expect(agentRow?.querySelector('[aria-label=\"置顶\"]')).toBeNull()",
+            "expect(agentRow?.querySelector('[aria-label=\"删除\"]')).toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"编辑标题\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"编辑内容\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"编辑分类\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"保存\"]')).not.toBeNull()",
+            "expect(manualRow?.querySelector('[aria-label=\"取消编辑\"]')).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"⑤MemoryTab 非 global 档：新建钮置灰+提示「暂不支持在本面板为该档新建」；global 档可用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "⑤MemoryTab 非 global 档：新建钮置灰+提示「暂不支持在本面板为该档新建」；global 档可用",
+          "markers": [],
+          "line": 294,
+          "assertions": [
+            "expect(createBtn()?.disabled).toBe(false)",
+            "expect(host?.querySelector('[aria-label=\"新建标题\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"新建内容\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[aria-label=\"新建分类\"]')).not.toBeNull()",
+            "expect(useAiMemoryStore.getState().filters.scope).toBe('paper')",
+            "expect(createBtn()?.disabled).toBe(true)",
+            "expect(host?.textContent).toContain('暂不支持在本面板为该档新建')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"⑥[R7] TasksTab 取消链四轴：成功原位替换/CONFLICT toast/NOT_FOUND 重拉/INVALID_REQUEST toast\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "⑥[R7] TasksTab 取消链四轴：成功原位替换/CONFLICT toast/NOT_FOUND 重拉/INVALID_REQUEST toast",
+          "markers": [],
+          "line": 322,
+          "assertions": [
+            "expect(row()?.querySelector('[data-testid=\"ai-task-status\"]')?.textContent, '原位替换→已取消').toBe('已取消')",
+            "expect(toastStoreSpy).not.toHaveBeenCalled()",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('仅排队中的任务可取消', 'error')",
+            "expect(host?.querySelector('[data-id=\"21\"] [data-testid=\"ai-task-status\"]')?.textContent).toBe('排队中')",
+            "expect(tasksList, 'NOT_FOUND 触发重拉').toHaveBeenCalledTimes(2)",
+            "expect(host?.querySelector('[data-id=\"21\"]')).toBeNull()",
+            "expect(host?.textContent).toContain('暂无任务')",
+            "expect(toastStoreSpy).not.toHaveBeenCalled()",
+            "expect(toastStoreSpy).toHaveBeenCalledWith('请求无效，请重试', 'error')",
+            "expect(host?.querySelector('[data-id=\"21\"] [data-testid=\"ai-task-status\"]')?.textContent, '行不动').toBe('排队中')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"⑦[R8] PinsTab 三轴：任一失败 error 聚合/unpin NOT_FOUND 行消失+刷新/INVALID_REQUEST 行内错误\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "⑦[R8] PinsTab 三轴：任一失败 error 聚合/unpin NOT_FOUND 行消失+刷新/INVALID_REQUEST 行内错误",
+          "markers": [],
+          "line": 400,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"ai-manage-pins\"]')?.textContent).toContain('置顶消息正文')",
+            "expect(pinsErr?.querySelector('[role=\"alert\"]')?.textContent, '任一失败→error 聚合').toBe('请求无效，请重试')",
+            "expect(pinsList).toHaveBeenCalledTimes(3)",
+            "expect(host?.querySelector('[data-id=\"51\"]'), 'NOT_FOUND→行消失').toBeNull()",
+            "expect(pinsList, 'NOT_FOUND 触发三通道刷新').toHaveBeenCalledTimes(6)",
+            "expect(rowPin, '行保留').not.toBeNull()",
+            "expect(rowPin?.querySelector('[role=\"alert\"]')?.textContent, '行内通用错误').toBe('请求无效，请重试')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"⑧[R9] 状态过滤在席×取消成功：cancelled 不符 queued 过滤→行本地移除（瞬态矛盾消除）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "⑧[R9] 状态过滤在席×取消成功：cancelled 不符 queued 过滤→行本地移除（瞬态矛盾消除）",
+          "markers": [],
+          "line": 479,
+          "assertions": [
+            "expect(host?.querySelector('[data-id=\"21\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[data-id=\"21\"]'), '过滤不符新态→行本地移除').toBeNull()",
+            "expect(host?.textContent).toContain('暂无任务')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面\",\"⑨[R2] create 在途：新建钮置灰（双击双发防重复行——store 防重联动画）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 管理面板三 Tab —— 组件渲染面"
+          ],
+          "title": "⑨[R2] create 在途：新建钮置灰（双击双发防重复行——store 防重联动画）",
+          "markers": [],
+          "line": 502,
+          "assertions": [
+            "expect(createBtn()?.disabled, '在途置灰').toBe(true)",
+            "expect(useAiMemoryStore.getState().creating).toBe(true)",
+            "expect(createBtn()?.disabled, '回包复位').toBe(false)",
+            "expect(useAiMemoryStore.getState().creating).toBe(false)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/ai-memory-store.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"态机：load 置 loading→list 成功→ready 落 items；无过滤列表模式 req={scope}（category/pinnedOnly 键省略）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "态机：load 置 loading→list 成功→ready 落 items；无过滤列表模式 req={scope}（category/pinnedOnly 键省略）",
+          "markers": [],
+          "line": 98,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global?.status, '派发即 loading').toBe('loading')",
+            "expect(entry?.status, '成功→ready').toBe('ready')",
+            "expect(entry?.items).toEqual([mem()])",
+            "expect(list).toHaveBeenCalledWith({ scope: 'global' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"列表模式带过滤：category+pinnedOnly 同席→req={scope,category,pinnedOnly:true}\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "列表模式带过滤：category+pinnedOnly 同席→req={scope,category,pinnedOnly:true}",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global', category: 'user_preference' })",
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global', category: 'user_preference', pinnedOnly: true })",
+            "expect(list).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"检索模式路由：query 在席→req={scope,query}（trim 后；category/pinnedOnly 不共发——W-1 互斥）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "检索模式路由：query 在席→req={scope,query}（trim 后；category/pinnedOnly 不共发——W-1 互斥）",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global', query: '关键词' })",
+            "expect(list).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"query 清空回落列表模式：空串提交→req 无 query 键（过滤面恢复生效）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "query 清空回落列表模式：空串提交→req 无 query 键（过滤面恢复生效）",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global' })",
+            "expect(list).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"幂等护栏：同签名 ready 再 load 不派发；error 态允许重派（重挂重试）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "幂等护栏：同签名 ready 再 load 不派发；error 态允许重派（重挂重试）",
+          "markers": [],
+          "line": 150,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global?.status, '错误→error').toBe('error')",
+            "expect(list, 'error 态重派').toHaveBeenCalledTimes(2)",
+            "expect(list, 'ready 幂等').toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"过滤签名变化重派：setCategory 触发新 list（同 scope 条目重走 loading）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "过滤签名变化重派：setCategory 触发新 list（同 scope 条目重走 loading）",
+          "markers": [],
+          "line": 168,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global?.status, '签名变化→loading').toBe('loading')",
+            "expect(list).toHaveBeenCalledTimes(2)",
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global', category: 'task_outcome' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"setScope 切档：旧条目删+晚到旧回包不复活；分类随档重置（req 无 category 键）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "setScope 切档：旧条目删+晚到旧回包不复活；分类随档重置（req 无 category 键）",
+          "markers": [],
+          "line": 181,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global, '切档即清旧条目').toBeUndefined()",
+            "expect(mod.useAiMemoryStore.getState().filters.scope).toBe('paper')",
+            "expect(mod.useAiMemoryStore.getState().filters.category, '分类随档重置').toBe('')",
+            "expect(mod.useAiMemoryStore.getState().panels.global, '晚到不复活').toBeUndefined()",
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'paper' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"unload：清全部条目+在途回包晚到不复活（卸载失格）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "unload：清全部条目+在途回包晚到不复活（卸载失格）",
+          "markers": [],
+          "line": 201,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global, 'unload 即清').toBeUndefined()",
+            "expect(mod.useAiMemoryStore.getState().panels.global, '晚到不复活').toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"create 成功（global 档）：req={scope:global,anchorId:null,category,title,content}→刷新列表+draft 清空\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "create 成功（global 档）：req={scope:global,anchorId:null,category,title,content}→刷新列表+draft 清空",
+          "markers": [],
+          "line": 216,
+          "assertions": [
+            "expect(create).toHaveBeenCalledWith({ scope: 'global', anchorId: null, category: 'user_preference', title: '新记忆', content: '新内容' })",
+            "expect(list, 'create 成功→刷新').toHaveBeenCalledTimes(2)",
+            "expect(draft.title, 'draft 清空').toBe('')",
+            "expect(mod.useAiMemoryStore.getState().formError).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"create 非 global 档：formError「暂不支持在本面板为该档新建」+零 IPC（新呈裁-1）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "create 非 global 档：formError「暂不支持在本面板为该档新建」+零 IPC（新呈裁-1）",
+          "markers": [],
+          "line": 240,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError).toBe('暂不支持在本面板为该档新建')",
+            "expect(create).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"create INVALID_REQUEST→formError「请求无效，请重试」+draft 保留（行内通用错误）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "create INVALID_REQUEST→formError「请求无效，请重试」+draft 保留（行内通用错误）",
+          "markers": [],
+          "line": 254,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError).toBe('请求无效，请重试')",
+            "expect(mod.useAiMemoryStore.getState().draft.title, 'draft 保留').toBe('保留草稿')",
+            "expect(list, '失败零追加刷新（1=挂载 load）').toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"update 成功：editing 清空+刷新列表（新行落地）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "update 成功：editing 清空+刷新列表（新行落地）",
+          "markers": [],
+          "line": 271,
+          "assertions": [
+            "expect(update).toHaveBeenCalledWith({ id: 31, patch: { title: '改后标题', content: '内容甲', category: 'user_preference' } })",
+            "expect(mod.useAiMemoryStore.getState().editing, 'editing 清空').toBeNull()",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items[0]?.title, '刷新落新行').toBe('改后标题')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"update INVALID_REQUEST→rowErrors[id] 行内错误+列表不动+editing 保留\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "update INVALID_REQUEST→rowErrors[id] 行内错误+列表不动+editing 保留",
+          "markers": [],
+          "line": 293,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().rowErrors[31]).toBe('请求无效，请重试')",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items).toEqual([mem()])",
+            "expect(mod.useAiMemoryStore.getState().editing, 'editing 保留（供改后重提）').not.toBeNull()",
+            "expect(list, '失败不刷新').toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"update NOT_FOUND→行消失+刷新（重派拉新事实）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "update NOT_FOUND→行消失+刷新（重派拉新事实）",
+          "markers": [],
+          "line": 310,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items.map((m) => m.id), '行消失+新事实').toEqual([32])",
+            "expect(list, 'NOT_FOUND 触发刷新').toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"setPinned 成功→刷新列表；NOT_FOUND→行消失+刷新\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "setPinned 成功→刷新列表；NOT_FOUND→行消失+刷新",
+          "markers": [],
+          "line": 329,
+          "assertions": [
+            "expect(pin).toHaveBeenCalledWith({ id: 31, pinned: true })",
+            "expect(listA, '置顶成功→刷新').toHaveBeenCalledTimes(2)",
+            "expect(modB.useAiMemoryStore.getState().panels.global?.items, 'NOT_FOUND→行消失+刷新').toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"remove 成功→行本地移除+零重派（删除即终态无需拉新）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "remove 成功→行本地移除+零重派（删除即终态无需拉新）",
+          "markers": [],
+          "line": 356,
+          "assertions": [
+            "expect(del).toHaveBeenCalledWith({ id: 31 })",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items.map((m) => m.id)).toEqual([32])",
+            "expect(list, '成功零重派').toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"remove NOT_FOUND→行消失+刷新；INVALID_REQUEST→rowErrors[id] 行内错误\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "remove NOT_FOUND→行消失+刷新；INVALID_REQUEST→rowErrors[id] 行内错误",
+          "markers": [],
+          "line": 371,
+          "assertions": [
+            "expect(modN.useAiMemoryStore.getState().panels.global?.items).toEqual([])",
+            "expect(listN, 'NOT_FOUND 触发刷新').toHaveBeenCalledTimes(2)",
+            "expect(modI.useAiMemoryStore.getState().rowErrors[31]).toBe('请求无效，请重试')",
+            "expect(modI.useAiMemoryStore.getState().panels.global?.items, '行保留').toEqual([mem()])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"CRUD 回包晚到（unload 后）：不复活/零刷新/零行内错误（seq 守卫）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "CRUD 回包晚到（unload 后）：不复活/零刷新/零行内错误（seq 守卫）",
+          "markers": [],
+          "line": 399,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global, '晚到不复活').toBeUndefined()",
+            "expect(list, '晚到零刷新').toHaveBeenCalledTimes(1)",
+            "expect(mod.useAiMemoryStore.getState().rowErrors[31]).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"过滤重派后 CRUD 回包失格：不触发刷新（旧回包不改写新链——沿 W1c 先例）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "过滤重派后 CRUD 回包失格：不触发刷新（旧回包不改写新链——沿 W1c 先例）",
+          "markers": [],
+          "line": 418,
+          "assertions": [
+            "expect(list).toHaveBeenCalledTimes(2)",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items, '新链 ready').toEqual([mem()])",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items, '旧删除回包不落新链（行保留）').toEqual([mem()])",
+            "expect(list, '晚到零刷新').toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R1a] 过滤变更×create 成功：draft 无条件复位（防残留重提重复行）+列表不刷新（可旧）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R1a] 过滤变更×create 成功：draft 无条件复位（防残留重提重复行）+列表不刷新（可旧）",
+          "markers": [],
+          "line": 444,
+          "assertions": [
+            "expect(list).toHaveBeenCalledTimes(2)",
+            "expect(mod.useAiMemoryStore.getState().draft.title, '成功收尾无条件：draft 复位').toBe('')",
+            "expect(mod.useAiMemoryStore.getState().creating, '在途标志复位').toBe(false)",
+            "expect(list, 'refresh 面仍受 seq 守卫：零追加刷新').toHaveBeenCalledTimes(2)",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.status, '列表驻新链（可旧）').toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R1b] 过滤变更×create 失败：formError 无条件落定+draft 保留（防静默不落）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R1b] 过滤变更×create 失败：formError 无条件落定+draft 保留（防静默不落）",
+          "markers": [],
+          "line": 468,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError, '失败收尾不受 seq 守卫吞').toBe('请求无效，请重试')",
+            "expect(mod.useAiMemoryStore.getState().draft.title, 'draft 保留').toBe('失败保留草稿')",
+            "expect(mod.useAiMemoryStore.getState().creating).toBe(false)",
+            "expect(list, '失败零刷新').toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R1c] 切档×update 成功：editing 无条件清（行已不在新档面——悬孤自愈）+旧档不复活\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R1c] 切档×update 成功：editing 无条件清（行已不在新档面——悬孤自愈）+旧档不复活",
+          "markers": [],
+          "line": 490,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().editing, '成功收尾无条件：editing 清').toBeNull()",
+            "expect(mod.useAiMemoryStore.getState().updating).toBe(false)",
+            "expect(mod.useAiMemoryStore.getState().panels.global, '旧档不复活').toBeUndefined()",
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'paper' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R1d] 卸载×create 失败：失败收尾丢弃（无呈现面——自裁申报）+在途标志复位\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R1d] 卸载×create 失败：失败收尾丢弃（无呈现面——自裁申报）+在途标志复位",
+          "markers": [],
+          "line": 513,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError, '卸载后无呈现面：失败收尾丢弃').toBeNull()",
+            "expect(mod.useAiMemoryStore.getState().creating).toBe(false)",
+            "expect(mod.useAiMemoryStore.getState().panels.global).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R2a] create 在途防重：双击单发（creating 在场再派发即 no-op）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R2a] create 在途防重：双击单发（creating 在场再派发即 no-op）",
+          "markers": [],
+          "line": 532,
+          "assertions": [
+            "expect(create, '在途双击单发').toHaveBeenCalledTimes(1)",
+            "expect(mod.useAiMemoryStore.getState().creating).toBe(true)",
+            "expect(mod.useAiMemoryStore.getState().creating, '回包复位').toBe(false)",
+            "expect(create, '复位后可再发').toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R2b] update 在途防重：双击单发（updating 在场再派发即 no-op）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R2b] update 在途防重：双击单发（updating 在场再派发即 no-op）",
+          "markers": [],
+          "line": 554,
+          "assertions": [
+            "expect(update, '在途双击单发').toHaveBeenCalledTimes(1)",
+            "expect(mod.useAiMemoryStore.getState().updating).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R4] startEdit 清 formError（新建面错误不残留到编辑面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R4] startEdit 清 formError（新建面错误不残留到编辑面）",
+          "markers": [],
+          "line": 573,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError).toBe('请求无效，请重试')",
+            "expect(mod.useAiMemoryStore.getState().formError, 'startEdit 清 formError').toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[R5] unload 清检索过滤态：query 复位空（防与组件 searchDraft 脱节）；重挂回落列表模式\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[R5] unload 清检索过滤态：query 复位空（防与组件 searchDraft 脱节）；重挂回落列表模式",
+          "markers": [],
+          "line": 588,
+          "assertions": [
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global', query: '关键词' })",
+            "expect(mod.useAiMemoryStore.getState().filters.query, 'unload 清检索态').toBe('')",
+            "expect(list).toHaveBeenLastCalledWith({ scope: 'global' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-W1a] create 在途×unload 重挂×新稿：晚到成功不清新稿（旧码必红）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-W1a] create 在途×unload 重挂×新稿：晚到成功不清新稿（旧码必红）",
+          "markers": [],
+          "line": 606,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().draft.title, '晚到成功不清新稿').toBe('新稿')",
+            "expect(mod.useAiMemoryStore.getState().draft.content).toBe('新内容')",
+            "expect(mod.useAiMemoryStore.getState().creating, '在途标志复位恒执行').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-W1b] create 在途×unload 重挂×草稿未动：晚到成功仍复位（R1 防同稿重提保持）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-W1b] create 在途×unload 重挂×草稿未动：晚到成功仍复位（R1 防同稿重提保持）",
+          "markers": [],
+          "line": 629,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().draft.title, '草稿未动=成功已落库仍复位').toBe('')",
+            "expect(mod.useAiMemoryStore.getState().draft.category).toBe('user_preference')",
+            "expect(mod.useAiMemoryStore.getState().creating).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-W1c] update 在途×切档×startEdit(B)：晚到成功不吞 B（旧码必红）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-W1c] update 在途×切档×startEdit(B)：晚到成功不吞 B（旧码必红）",
+          "markers": [],
+          "line": 651,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().editing?.id, 'B 编辑态保留').toBe(32)",
+            "expect(mod.useAiMemoryStore.getState().editing?.title).toBe('B 行')",
+            "expect(mod.useAiMemoryStore.getState().updating, '在途标志复位恒执行').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-N1a] create 失败回包晚于 unload→重挂：formError 不落新会话（旧码必红）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-N1a] create 失败回包晚于 unload→重挂：formError 不落新会话（旧码必红）",
+          "markers": [],
+          "line": 674,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().formError, '重挂后条目在场也不落').toBeNull()",
+            "expect(mod.useAiMemoryStore.getState().creating).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-N1b] remove 失败回包晚于 unload→重挂：rowErrors 不落新会话（旧码必红）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-N1b] remove 失败回包晚于 unload→重挂：rowErrors 不落新会话（旧码必红）",
+          "markers": [],
+          "line": 694,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().rowErrors[31], '重挂后条目在场也不落').toBeUndefined()",
+            "expect(mod.useAiMemoryStore.getState().panels.global?.items, '行保留').toEqual([mem()])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-R3a] update 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-R3a] update 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃",
+          "markers": [],
+          "line": 717,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global, '切回后条目在场').toBeDefined()",
+            "expect(mod.useAiMemoryStore.getState().rowErrors[31], 'epoch 已变：失败收尾丢弃').toBeUndefined()",
+            "expect(mod.useAiMemoryStore.getState().updating, '在途标志复位恒执行').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义\",\"[r1-R3b] setPinned 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃\"]",
+          "describePath": [
+            "F-DBCAMP-01 U5 aiMemoryStore —— scope 列表/CRUD/搜索双语义"
+          ],
+          "title": "[r1-R3b] setPinned 失败×切走又切回同档：panels 在场+epoch 已变→rowErrors 丢弃",
+          "markers": [],
+          "line": 741,
+          "assertions": [
+            "expect(mod.useAiMemoryStore.getState().panels.global, '切回后条目在场').toBeDefined()",
+            "expect(mod.useAiMemoryStore.getState().rowErrors[31], 'epoch 已变：失败收尾丢弃').toBeUndefined()"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/ai-note-style.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -14123,6 +15091,378 @@
             "expect(pct(rect!, 'height')).toBeCloseTo((8 / 792) * 100, 3)",
             "expect(bar).not.toBeNull()",
             "expect(arg.annotation.rects[0]!.y).toBeCloseTo(86 / 792, 4)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/budget-section.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"水合：store.settings 定制预算进表单+「于下次对话生效」文案在场+无变更保存禁用（clean）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "水合：store.settings 定制预算进表单+「于下次对话生效」文案在场+无变更保存禁用（clean）",
+          "markers": [],
+          "line": 124,
+          "assertions": [
+            "expect(input('文献档 上限').value, '定制值水合').toBe('9000')",
+            "expect(input('全局档 尾段').value).toBe('1000')",
+            "expect(input('代理 单发预算').value).toBe('800')",
+            "expect(host?.textContent ?? '', '固定文案').toContain('于下次对话生效')",
+            "expect(saveButton().disabled, 'clean 保存禁用').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"合法改动→dirty→保存可用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "合法改动→dirty→保存可用",
+          "markers": [],
+          "line": 135,
+          "assertions": [
+            "expect(input('文献档 上限').value).toBe('9500')",
+            "expect(saveButton().disabled, 'dirty 保存可用').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"负数→行内错误+保存禁用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "负数→行内错误+保存禁用",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(host?.textContent ?? '', '行内红字').toContain('需为非负整数')",
+            "expect(saveButton().disabled).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"清空→行内错误+保存禁用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "清空→行内错误+保存禁用",
+          "markers": [],
+          "line": 153,
+          "assertions": [
+            "expect(host?.textContent ?? '').toContain('需为非负整数')",
+            "expect(saveButton().disabled).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"非整数→行内错误+保存禁用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "非整数→行内错误+保存禁用",
+          "markers": [],
+          "line": 162,
+          "assertions": [
+            "expect(host?.textContent ?? '').toContain('需为非负整数')",
+            "expect(saveButton().disabled).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"档内合计超限（l1=9000→13000>9000）→行内错误+保存禁用（§9 默认合计=4000≤8000 对照合法）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "档内合计超限（l1=9000→13000>9000）→行内错误+保存禁用（§9 默认合计=4000≤8000 对照合法）",
+          "markers": [],
+          "line": 171,
+          "assertions": [
+            "expect(host?.textContent ?? '', '合计超限文案（与 shared refine 同字面）').toContain( '预算档内合计超上限' )",
+            "expect(saveButton().disabled).toBe(true)",
+            "expect(stubApi.settings.set).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"agent 单发超轮合计→行内错误+保存禁用\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "agent 单发超轮合计→行内错误+保存禁用",
+          "markers": [],
+          "line": 183,
+          "assertions": [
+            "expect(host?.textContent ?? '', 'agent 校验文案（与 shared refine 同字面）').toContain( '单次拉取预算不得超过单轮预算' )",
+            "expect(saveButton().disabled).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"保存→set 收到完整 AppSettings 四键（含 aiBudgets——INV-39 全量携带）+saved→2s 回 clean\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "保存→set 收到完整 AppSettings 四键（含 aiBudgets——INV-39 全量携带）+saved→2s 回 clean",
+          "markers": [],
+          "line": 194,
+          "assertions": [
+            "expect(stubApi.settings.set).toHaveBeenCalledTimes(1)",
+            "expect(req.contactEmail, '全量携带：contactEmail').toBe('set@x.y')",
+            "expect(req.theme, '全量携带：theme').toBe('dark')",
+            "expect(req.uiScale, '全量携带：uiScale').toBe('medium')",
+            "expect((req.aiBudgets as AiBudgets).paper.cap, '全量携带：aiBudgets').toBe(9999)",
+            "expect(host?.textContent ?? '', 'saved 文案').toContain('已保存')",
+            "expect(saveButton().disabled, 'saved 保存禁用').toBe(true)",
+            "expect(host?.textContent ?? '', '2s 回 clean：saved 文案退场').not.toContain('已保存')",
+            "expect(saveButton().disabled, 'clean 保存禁用').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"恢复默认→表单回 §9 默认值+dirty（可保存落盘）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "恢复默认→表单回 §9 默认值+dirty（可保存落盘）",
+          "markers": [],
+          "line": 223,
+          "assertions": [
+            "expect(input('文献档 上限').value).toBe('9000')",
+            "expect(input('文献档 上限').value, '回默认 8000').toBe('8000')",
+            "expect(input('脉络档 L2 片数').value, '回默认 3').toBe('3')",
+            "expect(saveButton().disabled, 'dirty 保存可用').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"恢复默认后再保存→aiBudgets=AI_BUDGET_DEFAULTS 逐档相等（shared 单源断言）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "恢复默认后再保存→aiBudgets=AI_BUDGET_DEFAULTS 逐档相等（shared 单源断言）",
+          "markers": [],
+          "line": 236,
+          "assertions": [
+            "expect(req.aiBudgets).toEqual(AI_BUDGET_DEFAULTS)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"settings 未载入（null）→表呈默认投影+保存禁用（全量载荷无源不保存）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "settings 未载入（null）→表呈默认投影+保存禁用（全量载荷无源不保存）",
+          "markers": [],
+          "line": 255,
+          "assertions": [
+            "expect(input('文献档 上限').value, '默认投影').toBe('8000')",
+            "expect(saveButton().disabled).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带\",\"保存失败→toast+回 dirty（表单保留可重试）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全量携带"
+          ],
+          "title": "保存失败→toast+回 dirty（表单保留可重试）",
+          "markers": [],
+          "line": 263,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalled()",
+            "expect(input('文献档 上限').value, '表单保留').toBe('9600')",
+            "expect(saveButton().disabled, 'dirty 可重试').toBe(false)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/cascade-guard.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"gate 合计=0：resolve true+零第二窗（skipped——旧单确认流外部行为不变）+preview req 形状\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "gate 合计=0：resolve true+零第二窗（skipped——旧单确认流外部行为不变）+preview req 形状",
+          "markers": [],
+          "line": 97,
+          "assertions": [
+            "expect(result, 'skipped 放行').toBe(true)",
+            "expect(dialogCount(), '零第二窗').toBe(0)",
+            "expect(preview).toHaveBeenCalledWith({ scope: 'paper', anchorId: 'p-1' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"gate 合计>0：第二窗四计数+「审计记录将保留」→确认→resolve true+窗关\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "gate 合计>0：第二窗四计数+「审计记录将保留」→确认→resolve true+窗关",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(dialogCount(), '第二窗在场').toBe(1)",
+            "expect(text).toContain('会话 2 个')",
+            "expect(text).toContain('消息 2 条')",
+            "expect(text).toContain('记忆 2 条')",
+            "expect(text).toContain('任务 2 个')",
+            "expect(text).toContain('审计记录将保留')",
+            "expect(result).toBe(null)",
+            "expect(result, '确认放行').toBe(true)",
+            "expect(dialogCount(), '窗关').toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"gate 第二窗取消：resolve false（整体中止——对象保留窗全关）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "gate 第二窗取消：resolve false（整体中止——对象保留窗全关）",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(result, '取消中止').toBe(false)",
+            "expect(dialogCount()).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"gate preview 失败：错误窗（禁盲删）→重试成功=0→resolve true\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "gate preview 失败：错误窗（禁盲删）→重试成功=0→resolve true",
+          "markers": [],
+          "line": 156,
+          "assertions": [
+            "expect(dialogCount(), '错误窗在场').toBe(1)",
+            "expect(dialogText()).toContain('预检失败面')",
+            "expect(dialogText()).toContain('重试')",
+            "expect(result, '重试后 skipped 放行').toBe(true)",
+            "expect(dialogCount()).toBe(0)",
+            "expect(preview).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"gate preview 失败→错误窗取消：resolve false（fail-closed 零盲删）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "gate preview 失败→错误窗取消：resolve false（fail-closed 零盲删）",
+          "markers": [],
+          "line": 180,
+          "assertions": [
+            "expect(result).toBe(false)",
+            "expect(dialogCount()).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"runWithCascade 合计=0：直删 onProceed（外部行为零变）+零第二窗\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "runWithCascade 合计=0：直删 onProceed（外部行为零变）+零第二窗",
+          "markers": [],
+          "line": 198,
+          "assertions": [
+            "expect(onProceed, '静默直删').toHaveBeenCalledTimes(1)",
+            "expect(dialogCount()).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"runWithCascade 合计>0：第二窗直出（无第一窗）→确认→onProceed；失败→toast+窗保持\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "runWithCascade 合计>0：第二窗直出（无第一窗）→确认→onProceed；失败→toast+窗保持",
+          "markers": [],
+          "line": 209,
+          "assertions": [
+            "expect(dialogCount(), '第二窗直出').toBe(1)",
+            "expect(dialogText()).toContain('会话 1 个')",
+            "expect(onProceed).toHaveBeenCalledTimes(1)",
+            "expect(dialogCount(), '失败窗保持可重试').toBe(1)",
+            "expect(onProceed, '重试再执行').toHaveBeenCalledTimes(2)",
+            "expect(dialogCount(), '成功窗关').toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"runWithCascade 合计>0→取消：零 onProceed（对象保留）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "runWithCascade 合计>0→取消：零 onProceed（对象保留）",
+          "markers": [],
+          "line": 239,
+          "assertions": [
+            "expect(onProceed, '取消零删除').not.toHaveBeenCalled()",
+            "expect(dialogCount()).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"runWithCascade preview 失败：fail-closed 零删除+error toast+无窗（沿预检失败先例）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "runWithCascade preview 失败：fail-closed 零删除+error toast+无窗（沿预检失败先例）",
+          "markers": [],
+          "line": 255,
+          "assertions": [
+            "expect(onProceed, 'fail-closed 零删除').not.toHaveBeenCalled()",
+            "expect(dialogCount(), '无窗').toBe(0)",
+            "expect(toastSpy).toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"[r1-W1] step2 在场再调 runWithCascade：入口早退——旧窗保持+第二次 no-op（不覆盖 proceedRef）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "[r1-W1] step2 在场再调 runWithCascade：入口早退——旧窗保持+第二次 no-op（不覆盖 proceedRef）",
+          "markers": [],
+          "line": 267,
+          "assertions": [
+            "expect(dialogCount(), '第一窗在场').toBe(1)",
+            "expect(dialogText()).toContain('会话 1 个')",
+            "expect(dialogCount(), '旧窗保持（未拆未换）').toBe(1)",
+            "expect(dialogText()).toContain('会话 1 个')",
+            "expect(onProceed1, '旧窗确认=第一份删除回调').toHaveBeenCalledTimes(1)",
+            "expect(onProceed2, '第二次调用零删除回调').not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径\",\"runWithCascade 合计=0 且 onProceed 抛出（删除失败已 toast）：吞掉不上抛+零窗\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 useCascadeGuard —— 级联两次确认双路径"
+          ],
+          "title": "runWithCascade 合计=0 且 onProceed 抛出（删除失败已 toast）：吞掉不上抛+零窗",
+          "markers": [],
+          "line": 297,
+          "assertions": [
+            "expect(onProceed).toHaveBeenCalledTimes(1)",
+            "expect(dialogCount()).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 第一窗 onGate 插入面（PaperDeleteDialog）\",\"gate true：放行既有删除通道（papers.delete 调用）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 第一窗 onGate 插入面（PaperDeleteDialog）"
+          ],
+          "title": "gate true：放行既有删除通道（papers.delete 调用）",
+          "markers": [],
+          "line": 346,
+          "assertions": [
+            "expect(papersDelete, 'gate 放行删除').toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 U6 第一窗 onGate 插入面（PaperDeleteDialog）\",\"gate false：零删除+窗关（整体中止）\"]",
+          "describePath": [
+            "F-DBCAMP-01 U6 第一窗 onGate 插入面（PaperDeleteDialog）"
+          ],
+          "title": "gate false：零删除+窗关（整体中止）",
+          "markers": [],
+          "line": 355,
+          "assertions": [
+            "expect(papersDelete, '取消零删除').not.toHaveBeenCalled()",
+            "expect(closed, '窗全关').toBe(true)"
           ]
         }
       ]
@@ -44804,7 +46144,7 @@
           "markers": [],
           "line": 167,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(repo.listGraph().edges[0]!.via).toBeUndefined()"
           ]
         }
@@ -45033,7 +46373,7 @@
           "line": 68,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(20)"
+            "expect(readUserVersion(db)).toBe(21)"
           ]
         },
         {
@@ -45294,7 +46634,7 @@
           "markers": [],
           "line": 194,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(20)",
+            "expect(readUserVersion(db)).toBe(21)",
             "expect(edge!.dashed).toBe(false)",
             "expect(edge!.color).toBe(LINE_TYPE_COLORS[0])"
           ]
@@ -49409,9 +50749,9 @@
     }
   },
   "stats": {
-    "fileCount": 329,
-    "caseCount": 3302,
-    "assertionCount": 10926,
+    "fileCount": 337,
+    "caseCount": 3386,
+    "assertionCount": 11298,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -49419,5 +50759,12 @@
     "eachExpandedRows": 354,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": []
+  "exemptionsSnapshot": [
+    {
+      "file": "tests/unit/db/deletion-log.test.ts",
+      "assertionText": "expect(dl[0].sql, `${t} WHEN 守卫读 deletion_log_guard`).toContain('FROM deletion_log_guard')",
+      "reason": "DB-3 U1 回炉 R4 断言 tsc 关口修复（dl[0]→dl[0]! 非空断言——vitest 经 esbuild 不查类型，typecheck 拦截后补修；断言语义零变）",
+      "rulingLink": "回炉指令 runId=20261014-db3u1 R4（U1-1 加强）+测试纪律段「受锁 e2e spec 改动后必须全量 verify——tsc 关卡才拦得住类型注解缺陷」"
+    }
+  ]
 }

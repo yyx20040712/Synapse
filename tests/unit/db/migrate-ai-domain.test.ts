@@ -166,11 +166,11 @@ describe('db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+�
   it('M1 新库全链：user_version=20+应用清单 [1..20]+幂等重入（再跑 applied=[]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(20)
+    expect(result.currentVersion).toBe(21)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
     ])
-    expect(readUserVersion(db)).toBe(20)
+    expect(readUserVersion(db)).toBe(21)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
@@ -179,8 +179,9 @@ describe('db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+�
   it('M1 019 基线库→应用 020：applied=[20]+终值 20（升级链增量恰一跳）', () => {
     const db = openV19()
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([20])
-    expect(readUserVersion(db)).toBe(20)
+    // [F-DBCAMP-01 DB-3 U1] 021 起随链：v19 库经全链 migrate 至链尾（20+21 两跳）
+    expect(result.appliedVersions).toEqual([20, 21])
+    expect(readUserVersion(db)).toBe(21)
     db.close()
   })
 
@@ -188,7 +189,10 @@ describe('db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+�
     const db = openV19()
     const before = objectMultiset(db)
     const autoBefore = autoindexCount(db)
-    const result = migrate(db)
+    // [F-DBCAMP-01 DB-3 U1] 021 起本用例钉 20：021 纯新增面（2 表+11 触发器）不
+    // 纳入本增量判据——021 增量由 deletion-log 专属用例锁定（migrate-papers-
+    // folder-not-null 020 批注入钉界同型先例）
+    const result = migrate(db, MIGRATIONS.filter((m) => m.version <= 20))
     expect(result.appliedVersions).toEqual([20])
     expect(objectMultiset(db)).toEqual([...before, ...expected020Objects()].sort())
     // autoindex 实测 +3：change_epochs TEXT PRIMARY KEY+ai_tasks.idempotency_key
