@@ -247,9 +247,9 @@ development Model Selection+loop-engineering references/06）；**架构与
 - git=系统 git；repo-local Windows 遗留覆盖（http.sslBackend/sslCAInfo 指向
   MinGit 路径+proxy 7890）已于 F-PLATFORM-01 批毕删除——.git/config 不随
   clone 走，新 Linux 机 git 零配置（直连）。**推送状态**：VMware 现机已配凭据
-  （2026-10-14 用户 PAT 入 store——v182/v183/U6 三批 6 笔同日清偿，远端
-  main=HEAD=56e01d16 实测；换机/换令牌配法=docs/DEV-SETUP.md §3）。远端
-  origin=github.com/yyx20040712/Synapse。
+  （2026-10-14 用户恢复旧 PAT〔txt 备份〕入 store——三批 6 笔同日清偿+状态笔回写
+  笔已推，远端 main=HEAD 同步；旧令牌轮换候选=交接书 v184 §3-2；换机/换令牌
+  配法=docs/DEV-SETUP.md §3）。远端 origin=github.com/yyx20040712/Synapse。
 - **ps1 锁工具四件 Linux 缺位**（locks:generate/apply/unlock+ticket:new）——
   manifest 维护=node 复刻口径（sha256=createHash('sha256').update(
   readFileSync(f))，与 check-locks.mjs 哈希行同式；排版=JSON.stringify(m,null,4)
