@@ -176,11 +176,11 @@
     {
       "spec": "tests/e2e/lineage.spec.ts",
       "case": "脉络图 e2e 全链 T3 重复加边拒绝 toast（:341，断言点 :411 .drag-slot:not(.cand)）",
-      "count": 4,
+      "count": 5,
       "fingerprint": "CI windows-latest 恒红型（与本地平台相反）：element(s) not found——拖拽进行中置入槽未渲染，toHaveText 5s 超时；四 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6）含 CI retry1 复跑红；本地 Linux 白天全量 #50 T3 绿 4.5s；引入窗=10-07 d2be052e 绿→10-13 5c7d3616 红（DB-2 批积压推送窗——src diff vs runner 镜像漂移二候选未分）",
-      "status": "filed",
+      "status": "resolved",
       "first_seen": "2026-10-13",
-      "resolution": "立案=F-CIFLK-01（2026-10-14 排查场发现——v184 收口漏 CI 核查教训同步入票：收口 push 后须挂 CI 完成复查回执方可闭批）"
+      "resolution": "立案=F-CIFLK-01（2026-10-14 排查场发现——v184 收口漏 CI 核查教训同步入票：收口 push 后须挂 CI 完成复查回执方可闭批）。定谳+修复（2026-10-14 runId=20261014-ciflk1）：五 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6/0b41b186 含 CI retry 红）；根因=e2e 视口几何链非产品缺陷——CI runner 虚拟屏 1024×768 钳制窗口（1280×800 被 clampBounds）→月框低容量区同月双卡分行（PITCH_Y 144=trace 纵差逐字吻合）+错位（OFFSET_O 100）推乙卡出视口（y=779.75>768）→attached 查询 boundingBox 视口外坐标→mouse.down 落空→拖拽会话未启动→置入槽零渲染；引入窗=SLOTGRID U1（4ab86fcf 10-08）布局网格化（分行指纹只有 U1 体系产生）；本地 Linux 绿=屏大 1280×800 同行形态。修复=T3 拖拽前乙卡 scrollIntoView 滚动锚（T5 先例同型）+instant 显式化+滚后视口兜底断言；探针复现（880×620 完全复刻 CI 形态，y=779.75 一字不差）红→绿实证+门二 probe 变异红证两轮一致；门一 k1+d1 双 PWC（W/N 全采纳）+门二 probe 6/6+裁决部 GO_WITH_CONDITIONS C1-C6 全兑现；verify 303/3262/427 对账基线 EXIT=0。证据=仓外 scripts-audits/20261014-ciflk1/（evidence.md+fix-final.diff+session-open）。判读口径沉淀：CI 再现 element-not-found 间接签名红（拖拽/点击类）首查视口外坐标（AGENTS 环境段同句）"
     },
     {
       "spec": "tests/e2e/ai-cascade-delete.spec.ts",

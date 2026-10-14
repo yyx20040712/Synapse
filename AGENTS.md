@@ -220,8 +220,14 @@ development Model Selection+loop-engineering references/06）；**架构与
   白天定向+全量双跑两票用例绿+CI windows-latest 三票用例绿，guest 环境假设全排除=环境登记态）
   +FLK-01 输入事件类偶发族（白天未复现，open 沿承）——**判读口径=automation
   清晨窗两红豁免/白天窗全量=权威**（单源=registry FLK 三票行+flake 台账）；CI
-  面=windows-latest lineage T3 拖拽恒红债（F-CIFLK-01——与本地平台相反；
-  **v184 收口漏 CI 核查教训：收口 push 后须挂 CI 完成复查回执方可闭批**）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+  面底色=windows-latest runner 虚拟屏 1024×768 钳制窗口（DEFAULT_BOUNDS
+  1280×800 被 clampBounds——窄视口下布局容量形态与本地 1280×800 不同构：
+  月框低容量区同月多卡分行+错位、卡可被推出视口；F-CIFLK-01 已清偿
+  2026-10-14=T3 拖拽前 scrollIntoView 滚动锚——新 e2e 用例凡 boundingBox+
+  mouse 拖拽/点击面对视口外元素须先滚动锚定〔T5/T3 先例〕；判读沉淀=CI
+  再现 element-not-found 间接签名红首查视口外坐标；次生挂账 F-GEOMASSUME-01=
+  窄视口卡宽 flex 压缩≠CARD_W 128）；**v184 教训沿承：收口 push 后须挂
+  CI 完成复查回执方可闭批**）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
 - **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装——WSL2/VMware 两机各

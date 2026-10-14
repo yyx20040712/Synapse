@@ -402,9 +402,29 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     //   拖拽调序承载（同一 patch-node 失败面：reorder 落定入暂存→保存→
     //   handler 已 patch 抛错→error 保存态）；[A3 F-CONTRACTA-01] 对话框
     //   写通道同批退役（历史沿革）
-    const bBox = await nodeG(win, '脉络乙文献').boundingBox()
+    // [F-CIFLK-01] 拖拽前滚动锚：CI runner 虚拟屏 1024×768 钳制窗口→月框
+    //   内容宽落入低容量区→同月双卡分行错位（PITCH_Y 144）推乙卡出视口
+    //   底缘（CI trace 实测中心 y≈780>768）——attached 查询的 boundingBox
+    //   返回视口外坐标，mouse.down 落空=拖拽会话不启动（置入槽零渲染，
+    //   四 run 确定性红）。T5 :321 滚动锚同型；滚后重取双卡坐标（视口系
+    //   随滚动变——禁用拖前快照）。behavior 显式 instant（k1-W2：防
+    //   未来 scroll-behavior:smooth 声明引入动画中间态坐标——现渲染面
+    //   零该声明，一词硬化结构性免疫）。
+    const bCard = nodeG(win, '脉络乙文献')
+    await bCard.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
+    const bBox = await bCard.boundingBox()
     const aBox = await nodeG(win, '脉络甲文献').boundingBox()
     if (bBox === null || aBox === null) throw new Error('调序双卡不可见')
+    // [F-CIFLK-01 d1-N1] 滚后视口内兜底：出视口=布局/滚动异常须直接红
+    //   ——间接签名=下游 5s toHaveText 超时（本票四 run 红的诊断成本所在）
+    const vpH = await win.evaluate(() => window.innerHeight)
+    if (bBox.y + bBox.height / 2 > vpH || aBox.y + aBox.height / 2 > vpH) {
+      throw new Error(
+        `调序双卡滚后仍出视口（乙 y=${Math.round(bBox.y + bBox.height / 2)} 甲 y=${Math.round(
+          aBox.y + aBox.height / 2
+        )} 视口高=${vpH}）`
+      )
+    }
     await win.mouse.move(bBox.x + bBox.width / 2, bBox.y + bBox.height / 2)
     await win.mouse.down()
     await win.mouse.move(aBox.x + aBox.width * 0.25, aBox.y + aBox.height / 2, { steps: 6 })
