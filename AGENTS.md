@@ -215,12 +215,13 @@ development Model Selection+loop-engineering references/06）；**架构与
 - **Linux（现役=VMware 虚拟机 Ubuntu 24.04.5，X11 桌面）+ Electron 44**（44.4.3，
   Chromium M152/内嵌 Node 24/ABI 149）。e2e 开箱即用（electron linux dist 经
   npmmirror 镜像随 npm ci 落位+playwright——WSLg 单次全量 108/108〔v181，
-  2026-10-13，108 用例时代〕；VMware 现役底色〔v184，全量 114 用例〕=112 过/
-  2 红——FLK-02 几何族+FLK-03 窗口状态族两环境级恒红豁免单点〔勿按复跑
-  销项〕+FLK-01 输入事件类偶发族〔T9/S4/T12 三用例，单例复跑即绿〕，三票
-  =F-E2EFLK-01/02/03 排查场承载（用户裁决=下场首场，v184 §1——证据状态
-  单源=registry 票面行）；VMware 114 用例全绿未取得如实登记；CI 仍
-  windows-latest 跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+  2026-10-13，108 用例时代〕；VMware e2e 底色〔2026-10-14 排查场定谳〕=深夜
+  automation 窗稳定红（FLK-02 几何族+FLK-03 窗口状态族两环境级豁免单点——
+  白天定向+全量双跑两票用例绿+CI windows-latest 三票用例绿，guest 环境假设全排除=环境登记态）
+  +FLK-01 输入事件类偶发族（白天未复现，open 沿承）——**判读口径=automation
+  清晨窗两红豁免/白天窗全量=权威**（单源=registry FLK 三票行+flake 台账）；CI
+  面=windows-latest lineage T3 拖拽恒红债（F-CIFLK-01——与本地平台相反；
+  **v184 收口漏 CI 核查教训：收口 push 后须挂 CI 完成复查回执方可闭批**）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
 - **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装——WSL2/VMware 两机各

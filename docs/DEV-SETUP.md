@@ -18,10 +18,11 @@
 >
 > 核对：新开 shell `node -v` 必须=24.x（系统 node18 会因版本守卫必红——见 AGENTS.md
 > 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（全量 114 用例
-> 〔v184 后〕：VMware 现役底色=112 过/2 红——FLK-02 几何族+FLK-03 窗口状态族
-> 两环境级恒红豁免单点〔勿按复跑销项〕+FLK-01 输入事件类偶发族〔单例复跑即绿〕，
-> 三票=F-E2EFLK-01/02/03 排查场承载（用户裁决=下场首场），非环境配置错；WSL2 曾单次 108/108 全绿
-> 〔v181，108 用例时代〕），若依赖库缺失再查 `npx playwright install-deps`。
+> 〔v184 后〕：白天窗全量≈113/114=权威判读〔2026-10-14 排查场——偶发红单例
+> 复跑绿即过〕；automation 清晨窗=FLK-02/03 两环境级稳定红豁免单点〔深夜窗
+> 红/白天绿/CI 绿——环境登记态，单源=registry FLK 票行+flake 台账〕，非环境
+> 配置错；WSL2 曾单次 108/108 全绿〔v181，108 用例时代〕），若依赖库缺失再查
+> `npx playwright install-deps`。
 
 > **本机残留备案**：仓库根 `.mimosa/`（finding-ledger/hook-state/history 等）系
 > zcode 宿主钩子的本机产物，非项目资产（.gitignore 已忽略）——审计/取证时勿误认；
@@ -94,11 +95,12 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ```bash
 npm run verify        # 预期 exit 0：303 文件 3262 用例 / locks 427（工单 open 数随排程浮动，
                       # 以 tickets/registry.ts 实时为准；2026-10-14 v184 后基线）
-npm run build && npm run test:e2e   # 预期全量 114 用例=112 过/2 红（两红=FLK-02 几何族+
-                      # FLK-03 窗口状态族环境级恒红豁免单点〔勿按复跑销项〕；FLK-01
-                      # 输入事件类偶发族单例复跑即绿——三票=F-E2EFLK-01/02/03 排查场
-                      # 承载〔用户裁决=下场首场〕，非环境配置错；e2e 全绿权威基线=
-                      # WSL2 v181〔108 用例时代〕；e2e 不含在 verify 里，须单独跑）
+npm run build && npm run test:e2e   # 预期全量 114 用例（白天窗≈113/114——偶发红单例
+                      # 复跑绿即过；automation 清晨窗=FLK-02/03 两环境级稳定红豁免单点
+                      # 〔2026-10-14 排查场定谳：深夜窗红/白天绿/CI 绿——环境登记态，
+                      # 勿按复跑销项亦勿按红修码〕，单源=registry FLK 票行+flake 台账；
+                      # e2e 全绿权威基线=WSL2 v181〔108 用例时代〕；e2e 不含在
+                      # verify 里，须单独跑）
 ```
 
 - 数字对不上：先看是否 Node 版本≠24（裸跑 npx vitest 绕过版本守卫，
