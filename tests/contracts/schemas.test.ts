@@ -117,6 +117,23 @@ const VALID: Record<string, unknown[]> = {
   listPeerKeysResSchema: [{ peers: [] }, { peers: [{ ownerId: 'o1', importedAt: 't1' }] }],
   removePeerKeyReqSchema: [{ ownerId: 'o1' }],
   removePeerKeyResSchema: [{ removed: true }, { removed: false }],
+  // [F-DBCAMP-01 DB-3 U3] 快照导入合并面（rejected=reason 必携+自称 owner/seq；
+  // applied 幂等 no-op=noop+stats 全零；a7 首例可选两键）
+  snapshotImportStatsSchema: [
+    { inserted: 0, updated: 0, skippedStale: 0, skippedRevive: 0, deleted: 0, a7Conflicts: 0 },
+    { inserted: 1, updated: 2, skippedStale: 3, skippedRevive: 4, deleted: 5, a7Conflicts: 6, a7FirstEntity: 'papers', a7FirstId: 'p1' }
+  ],
+  snapshotImportResSchema: [
+    {
+      outcome: 'applied',
+      ownerId: 'o1',
+      snapshotSeq: 2,
+      stats: { inserted: 3, updated: 1, skippedStale: 0, skippedRevive: 1, deleted: 1, a7Conflicts: 2, a7FirstEntity: 'papers', a7FirstId: 'p1' }
+    },
+    { outcome: 'rejected', reason: 'seq_stale', ownerId: 'o1', snapshotSeq: 1 },
+    { outcome: 'rejected', reason: 'struct_invalid' },
+    { outcome: 'applied', ownerId: 'o1', snapshotSeq: 1, noop: true, stats: { inserted: 0, updated: 0, skippedStale: 0, skippedRevive: 0, deleted: 0, a7Conflicts: 0 } }
+  ],
   foldersChangedEventSchema: [{}],
   lineageChangedEventSchema: [{}],
   lineageGraphReqSchema: [{}, { folderId: 'f1' }],
@@ -308,6 +325,8 @@ const SCHEMA_NAMES = [
   'saveProgressReqSchema',
   'sensorStatusSchema',
   'snapshotExportResSchema',
+  'snapshotImportResSchema',
+  'snapshotImportStatsSchema',
   'syncKeyInfoResSchema',
   'setQuitDirtyReqSchema',
   'tagIdReqSchema',

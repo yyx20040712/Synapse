@@ -207,13 +207,16 @@ export const API_SURFACE = {
   ai_cascade: {
     preview: { channel: 'ai-cascade/preview', Req: AI.aiCascadePreviewReqSchema, Res: AI.aiCascadePreviewResSchema }
   },
-  // snapshot 域（[F-DBCAMP-01 DB-3 U2] 快照导出面——设计书 §13.6 E2E/§13.8 U2）：
+  // snapshot 域（[F-DBCAMP-01 DB-3 U2] 快照导出面——设计书 §13.6 E2E/§13.8 U2；
+  // [DB-3 U3] +importFromFile 六闸导入合并面——通道 5→6/域 21 不变）：
   // getSyncKey=本库密钥显形（§13.9-1 b 案——密钥不出「用户显式打开设置页」面，
   // 不经对话框）；exportToFile=先构建后弹框（INV-07 路径=main 系统对话框）；
-  // 对端密钥三通道=§13.9-2 a 案设置页单入口消费
+  // importFromFile=main 系统开文件对话框选卷（INV-07 同型）；对端密钥三通道=
+  // §13.9-2 a 案设置页单入口消费
   snapshot: {
     getSyncKey: { channel: 'snapshot/get-sync-key', Req: S.voidReqSchema, Res: S.syncKeyInfoResSchema },
     exportToFile: { channel: 'snapshot/export-to-file', Req: S.voidReqSchema, Res: S.snapshotExportResSchema },
+    importFromFile: { channel: 'snapshot/import-from-file', Req: S.voidReqSchema, Res: S.snapshotImportResSchema },
     importPeerKey: { channel: 'snapshot/import-peer-key', Req: S.importPeerKeyReqSchema, Res: S.importPeerKeyResSchema },
     listPeerKeys: { channel: 'snapshot/list-peer-keys', Req: S.voidReqSchema, Res: S.listPeerKeysResSchema },
     removePeerKey: { channel: 'snapshot/remove-peer-key', Req: S.removePeerKeyReqSchema, Res: S.removePeerKeyResSchema }

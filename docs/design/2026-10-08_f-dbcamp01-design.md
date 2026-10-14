@@ -229,6 +229,28 @@ deletion_events 剪枝约束+隐私申报 ③021 判定补复合主键/FTS 重�
   U2 开工调研实测发现，简报③-3 预裁矩阵代偿）——勘正为逐表矩阵（见
   §13.6 canonical 段）。U3 派发简报必携本勘正口径（两段面复算同构性
   =probe 已实证）。**
+  **r6（2026-10-15 U3 实施批收口，主控亲笔——门二终裁 C-2 必办）：§13.2
+  三处勘正+一申报。〔甲〕闸⑤比较键逐表矩阵：原「比较键 (updated_at,id)」
+  对 collections/tags/paper_tags 字面不可达（三表无 updated_at 列——001
+  实照，§13.6 r5 行序勘正同源事实）——勘正为：有 updated_at 六表=
+  (updated_at,id) 序比较（graph_meta id=key 列）；无 updated_at 三表=纯
+  键等三分支（键缺席=INSERT/键等且内容全等=no-op/键等且内容异=A7——LWW
+  时间面物理不可达，U3 R-C 主控定夺；种子行 __main__〔012 position=
+  MAX+1 逐库独立求值〕/lineTypes〔010 epoch 哨兵〕两端播种同值=天然幂等，
+  position 异库分叉=A7 正常可见性语义——登记接受）。〔乙〕死置列勘正：
+  lineage_edges.kind（写面恒 'manual'——lineage.repo:199/014 头注；006
+  DDL 默认 'tree'）与 lineage_nodes.tags 非死置列——「出库真值/入落默认」
+  （U2 自裁③+k3-r1 复审沿承）方向错误，勘正为「**出库真值/入写真值**」
+  对偶对称（全列入 upsert 写面=TABLE_SPECS 单源派生）；门一 B1（k1+d1
+  双席互证）实证旧组合（死置列不写×整行全列比较）=含 lineage 行库每轮
+  同步永久 A7 假冲突且永不收敛——U3 回炉 R1 修复（演练⑨ 补 lineage 行
+  红→绿实证锚+probe ② 独立复演）。〔丙〕闸序实现分叉申报：实现序=形状
+  →self_reimport→format_version→schema_newer→table_counts 键集→未配对
+  owner（hmac_fail）→decode（②HMAC+④a 解密）→③seq→④b 对账——明文值检
+  前置于 MAC（与字面①→②→③→④ 有意分叉，fail-closed 等价：一切路径整卷
+  拒收零副作用，双错卷报码=明文可判项先报——U3 回炉 R2/R4 主控裁决）；
+  decrypt_fail 恒直报不评闸③（「坏卷+同 sha applied」报 decrypt_fail
+  不再 noop——不可解密卷无法证实内容同一性）。**
 
 ---
 
@@ -358,7 +380,12 @@ payload 全量明文=数据行+pdf_refs+deletions 三件合一（§13.6 payload
 定义同源——auditor r3-W2 勘正：r2 括注漏 pdf_refs 即摘要域不自洽；
 闸③「同 sha/异 sha」判据同此口径；处 MAC 覆盖面内）+table_counts 与
 实载行数一致）→
-⑤upsert（比较键 (updated_at,id)：入站新=写；入站旧=跳过；**键等细分
+⑤upsert（比较键逐表矩阵〔r6 勘正——原「(updated_at,id)」对三表
+  字面不可达〕：有 updated_at 六表〔papers/notes/annotations/lineage_
+  nodes/lineage_edges/lineage_graph_meta，graph_meta id=key 列〕=
+  (updated_at,id)，入站新=写/入站旧=跳过；无 updated_at 三表
+  〔collections/tags/paper_tags，001 实照〕=纯键等三分支，LWW 时间面
+  不可达——U3 R-C 定夺）：入站新=写；入站旧=跳过；**键等细分
 （auditor r3-W1——v1.2 A7 原文「全等即拒收」按字面会误伤每次同步的
 未变更行=常态假冲突，本稿消歧）**：键等**且内容全等**（整行所有列
 一致）=**幂等 no-op 跳过**（常态路径——同源重传/同卷重放行，零登记）；

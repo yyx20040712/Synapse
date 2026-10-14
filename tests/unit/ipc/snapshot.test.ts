@@ -1,13 +1,9 @@
 /**
  * [F-DBCAMP-01 DB-3 U2] ipc/snapshot 锁定测试（always-active——export_.test.ts
- * CANCELLED 先例+makeIpcDeps 桩）。
- *
- * 覆盖（简报③-5/③-8.6）：CANCELLED（saveFile=null→code=CANCELLED+零计数消耗
- * ——commitExport 未调）；成功路径（temp 目录真落盘+commit 调用+res 形状）；
- * 构建失败零弹框（service 构建抛→dialogs.saveFile 未调——export_.ts「先构建
- * 后弹框」先例）；默认文件名/过滤器形态。
+ * CANCELLED 先例+makeIpcDeps 桩）。[DB-3 U3] +importFromFile 三态（CANCELLED/
+ * 读失败 INVALID_REQUEST/成功分发——简报③-6/③-7-5）。
  */
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
@@ -38,6 +34,18 @@ function makeSnapshotService(over: Partial<Record<string, unknown>> = {}) {
     importPeerKey: vi.fn(async () => ({ ownerId: '4d3c9b15-6e7f-4a2b-8c3d-0f1a2b3c4d5e' })),
     listPeerKeys: vi.fn(async () => []),
     removePeerKey: vi.fn(async () => true),
+    ...over
+  }
+}
+
+function makeImportService(over: Partial<Record<string, unknown>> = {}) {
+  return {
+    importFromBuffer: vi.fn(async () => ({
+      outcome: 'applied',
+      ownerId: '4d3c9b15-6e7f-4a2b-8c3d-0f1a2b3c4d5e',
+      snapshotSeq: 2,
+      stats: { inserted: 1, updated: 0, skippedStale: 0, skippedRevive: 0, deleted: 0, a7Conflicts: 0 }
+    })),
     ...over
   }
 }
@@ -106,4 +114,50 @@ it('薄分发三通道：getSyncKey/importPeerKey/listPeerKeys 直通 service', 
   expect(listed).toEqual({ peers: [] })
   const removed = await ipc.removePeerKey({ ownerId: '4d3c9b15-6e7f-4a2b-8c3d-0f1a2b3c4d5e' })
   expect(removed).toEqual({ removed: true })
+})
+
+// [F-DBCAMP-01 DB-3 U3] importFromFile 三态（简报③-6：openFile→null=CANCELLED；
+// 读失败=INVALID_REQUEST 中文消息；成功=真读文件字节→service.importFromBuffer）
+
+it('importFromFile 成功：openFile（过滤器形态）→真读文件字节→importFromBuffer 收同字节→Res 直通', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'synapse-u3-'))
+  const target = join(dir, 'peer.synsnap')
+  await writeFile(target, Buffer.from('u3-envelope-bytes'))
+  const importer = makeImportService()
+  const openFile = vi.fn(async () => target)
+  const ipc = createSnapshotIpc(
+    makeIpcDeps({
+      services: { snapshotImport: importer as never },
+      dialogs: { openFile: openFile as never }
+    })
+  )
+  const r = await ipc.importFromFile({})
+  expect(r.outcome).toBe('applied')
+  expect(openFile).toHaveBeenCalledWith([{ name: 'Synapse 快照', extensions: ['synsnap'] }])
+  expect(importer.importFromBuffer).toHaveBeenCalledWith(Buffer.from('u3-envelope-bytes'))
+  await rm(dir, { recursive: true, force: true })
+})
+
+it('importFromFile 取消：openFile=null→code=CANCELLED+importFromBuffer 未调', async () => {
+  const importer = makeImportService()
+  const ipc = createSnapshotIpc(
+    makeIpcDeps({
+      services: { snapshotImport: importer as never },
+      dialogs: { openFile: async () => null }
+    })
+  )
+  await expect(ipc.importFromFile({})).rejects.toMatchObject({ code: 'CANCELLED' })
+  expect(importer.importFromBuffer).not.toHaveBeenCalled()
+})
+
+it('importFromFile 读失败：不存在路径→INVALID_REQUEST 中文消息+importFromBuffer 未调', async () => {
+  const importer = makeImportService()
+  const ipc = createSnapshotIpc(
+    makeIpcDeps({
+      services: { snapshotImport: importer as never },
+      dialogs: { openFile: async () => '/synapse-u3-nonexistent-dir/x.synsnap' }
+    })
+  )
+  await expect(ipc.importFromFile({})).rejects.toMatchObject({ code: 'INVALID_REQUEST' })
+  expect(importer.importFromBuffer).not.toHaveBeenCalled()
 })

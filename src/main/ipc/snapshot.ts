@@ -18,12 +18,13 @@
  * ── 文化层 ──
  * - 测试：tests/unit/ipc/snapshot.test.ts（always-active，dialogs/service 桩）。
  */
+import { readFile } from 'node:fs/promises'
 import { DomainError } from '../services/shared/domain-error'
 import { atomicWriteFile } from '../services/shared/atomic-write'
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { IpcDeps } from './ipc-deps'
 
-/** 域错误：用户取消保存（CANCELLED）载体（基类一行继承——F-DEDUP-01 单源） */
+/** 域错误：用户取消保存/导入（CANCELLED）与读失败（INVALID_REQUEST）载体 */
 class SnapshotIpcError extends DomainError {}
 
 const SNAP_FILTER = [{ name: 'Synapse 快照', extensions: ['synsnap'] }]
@@ -41,6 +42,23 @@ export function createSnapshotIpc(deps: IpcDeps): ApiHandlers['snapshot'] {
       await atomicWriteFile(target, built.bytes)
       deps.services.snapshot.commitExport(built.snapshotSeq)
       return { filePath: target, snapshotSeq: built.snapshotSeq, tableCounts: built.tableCounts }
+    },
+
+    // [F-DBCAMP-01 DB-3 U3] 导入合并面：main 系统开文件对话框选卷（INV-07——
+    // renderer 零路径面）→null=CANCELLED（exportToFile 同型）→读文件失败=
+    // INVALID_REQUEST 中文消息→service 六闸→Res
+    importFromFile: async (_req) => {
+      const target = await deps.dialogs.openFile(SNAP_FILTER)
+      if (target === null) {
+        throw new SnapshotIpcError('CANCELLED', '已取消导入')
+      }
+      let bytes: Buffer
+      try {
+        bytes = await readFile(target)
+      } catch {
+        throw new SnapshotIpcError('INVALID_REQUEST', '无法读取所选快照文件')
+      }
+      return deps.services.snapshotImport.importFromBuffer(bytes)
     },
 
     importPeerKey: async (req) => deps.services.snapshot.importPeerKey(req.bundle),

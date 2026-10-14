@@ -370,6 +370,16 @@ describe('db/deletion-log —— 021 删事件日志（九表落账/守卫两态
     db3.close()
   })
 
+  // [F-DBCAMP-01 DB-3 U3] guard 多行态定向锁（k3-r1-N1——U3 开 guard 写面前首任务）：
+  //   U1-9 空行态（n=0）用例对「n!==1→n<1」变异不敏感（0<1 仍红）——本用例
+  //   以 n=2 多行态封堵该变异存活面：开库断言必须按 n 精确 ≠1 拒绝。
+  it('U3-guard 多行态定向锁：guard 表 n=2 行→再 migrate 显性 throw（守卫行数=2——封堵 n<1 变异存活面）', () => {
+    const db = openFull()
+    db.prepare('INSERT INTO deletion_log_guard (stop) VALUES (0)').run()
+    expect(() => migrate(db)).toThrow(/守卫行数=2/)
+    db.close()
+  })
+
   it('U1-10 FTS 共存抽测：删 note→notes_fts 同步清+事件在场（notes_fts_ad 与 notes_deletion_log_ad 同表并存）', () => {
     const db = openFull()
     seedPaper(db, 'p-fc')

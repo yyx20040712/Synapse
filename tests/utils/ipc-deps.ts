@@ -42,12 +42,14 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       aiMemoryManual: null as never, // [F-DBCAMP-01 DB-2 U2] AI 记忆手动面键（面外桩）
       aiCascade: null as never, // [F-DBCAMP-01 DB-2 U2] AI 级联预览键（面外桩）
       snapshot: null as never, // [F-DBCAMP-01 DB-3 U2] 快照导出面键（面外桩——类型闭合随 ServiceBundle 增键）
+      snapshotImport: null as never, // [F-DBCAMP-01 DB-3 U3] 快照导入合并面键（面外桩——同上类型闭合）
       ...over.services
     },
     dialogs: {
       pickPdfFiles: async () => null,
       pickFolder: async () => null,
       saveFile: async () => null,
+      openFile: async () => null, // [F-DBCAMP-01 DB-3 U3] 快照导入开文件口（Dialogs 增键的类型闭合）
       ...over.dialogs
     },
     shell:

@@ -70,6 +70,10 @@ import {
   createExportSnapshotService,
   type SnapshotService
 } from './snapshot/export-snapshot.service'
+import {
+  createImportSnapshotService,
+  type SnapshotImportService
+} from './snapshot/import-snapshot.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -155,6 +159,9 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-3 U2] 快照导出面（envelope 纯构建+对端密钥面——snapshot
    *  域五通道消费；导入合并六闸归 U3） */
   snapshot: SnapshotService
+  /** [F-DBCAMP-01 DB-3 U3] 快照导入合并面（六闸+防复活+A7 行级+拒收可见性
+   *  ——snapshot 域第 6 通道 importFromFile 消费） */
+  snapshotImport: SnapshotImportService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
@@ -239,7 +246,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiTail: createAiTailService({ repos: deps.repos }),
     aiMemoryManual: createAiMemoryManualService({ repos: deps.repos }),
     aiCascade: createAiCascadeService({ repos: deps.repos }),
-    snapshot: createExportSnapshotService({ repos: deps.repos })
+    snapshot: createExportSnapshotService({ repos: deps.repos }),
+    snapshotImport: createImportSnapshotService({ repos: deps.repos })
   }
 }
 

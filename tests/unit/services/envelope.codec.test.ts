@@ -13,6 +13,7 @@ import {
   HKDF_SALT,
   buildEnvelope,
   canonicalJson,
+  decodeEnvelope,
   deriveKeys,
   envelopeToBytes,
   verifyEnvelope
@@ -155,5 +156,64 @@ describe('F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GC
     const { hmac_sha256: _mac, ...stripped } = env
     expect(verifyEnvelope(stripped, SYNC_KEY)).toBe(false)
     expect(verifyEnvelope(env, 'cd'.repeat(32))).toBe(false)
+  })
+
+  // [F-DBCAMP-01 DB-3 U3] decodeEnvelope 原因码细分（R-A——闸①②④分层判据；
+  // hash_mismatch/schema_newer/counts_mismatch=service 层产出，codec 不知本库
+  // user_version/水位）。密文<tag 长/nonce≠12B/非 base64=struct_invalid（闸①）
+  // ；format_version≠1=version_mismatch（闸①细分——版本≠当前精确拒收）；
+  // MAC 不符=hmac_fail（闸②）；GCM 认证失败=decrypt_fail（闸④——r3-N8 细分，
+  // ≠hash_mismatch）。
+  it('decodeEnvelope 合法卷 ok：body 九键+plaintext=canonical payload 字节（重序列化对账恒等）', () => {
+    const env = buildFixture()
+    const dec = decodeEnvelope(env, SYNC_KEY)
+    expect(dec.ok).toBe(true)
+    if (!dec.ok) throw new Error('unreachable')
+    expect(dec.body).toEqual(env)
+    const text = dec.plaintext.toString('utf8')
+    expect(canonicalJson(JSON.parse(text))).toBe(text)
+    expect(text).toContain('中文文献')
+  })
+
+  it('decodeEnvelope 四分支原因码逐码：struct_invalid（剥 hmac 键/nonce≠12B/密文<tag 长/非 base64）/version_mismatch（format_version=2）/hmac_fail（owner 换值）/decrypt_fail（密文翻转+MAC 重签——r3-N8 构造）', () => {
+    const env = buildFixture()
+    const { hmac_sha256: _drop, ...stripped } = env
+    void _drop
+    expect(decodeEnvelope(stripped, SYNC_KEY)).toMatchObject({ ok: false, reason: 'struct_invalid' })
+    // nonce≠12B：结构检查先于 MAC（闸①），无需重签
+    expect(decodeEnvelope({ ...env, payload_nonce: Buffer.alloc(8).toString('base64') }, SYNC_KEY)).toMatchObject({
+      ok: false,
+      reason: 'struct_invalid'
+    })
+    // 密文<tag 长（合法 base64 但不足 16 字节 tag）
+    expect(decodeEnvelope({ ...env, payload: Buffer.alloc(8).toString('base64') }, SYNC_KEY)).toMatchObject({
+      ok: false,
+      reason: 'struct_invalid'
+    })
+    // 非 base64 形态（Node 解码宽松吞非法字符——显式形态校验）
+    expect(decodeEnvelope({ ...env, payload: '!!not-base64!!' }, SYNC_KEY)).toMatchObject({
+      ok: false,
+      reason: 'struct_invalid'
+    })
+    // version_mismatch：format_version≠当前精确值（结构先行——MAC 陈旧不影响分支）
+    expect(decodeEnvelope({ ...env, format_version: 2 }, SYNC_KEY)).toMatchObject({
+      ok: false,
+      reason: 'version_mismatch'
+    })
+    // hmac_fail：owner 字段换值（跨库字段搬运——MAC 面含 owner_id）
+    expect(decodeEnvelope({ ...env, owner_id: '3f2b8a04-5c6d-4e1f-9a2b-7c8d9e0f1a2c' }, SYNC_KEY)).toMatchObject({
+      ok: false,
+      reason: 'hmac_fail'
+    })
+    // decrypt_fail：密文首字符翻转（flipChar 必异——U2 N-6 先例）+持钥重签 MAC
+    // （GCM 认证失败≠hash_mismatch：解密成功后 sha 对账属 service 层）
+    const flipChar = env.payload.startsWith('A') ? 'B' : 'A'
+    const moved = { ...env, payload: `${flipChar}${env.payload.slice(1)}` }
+    const { hmac_sha256: _m, ...rest } = moved
+    void _m
+    moved.hmac_sha256 = createHmac('sha256', deriveKeys(SYNC_KEY).macKey)
+      .update(Buffer.from(canonicalJson(rest), 'utf8'))
+      .digest('hex')
+    expect(decodeEnvelope(moved, SYNC_KEY)).toMatchObject({ ok: false, reason: 'decrypt_fail' })
   })
 })

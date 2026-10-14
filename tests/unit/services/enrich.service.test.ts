@@ -85,6 +85,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     aiSearch: {} as Repos['aiSearch'], // [F-DBCAMP-01 DB-2 U2b-2b] AI 文献检索读面域（面外桩）
     aiCascade: {} as Repos['aiCascade'], // [F-DBCAMP-01 DB-2 U2] AI 级联预览计数域（面外桩）
     snapshot: {} as Repos['snapshot'], // [F-DBCAMP-01 DB-3 U2] 快照导出面域（面外桩——类型闭合随 Repos 增键）
+    importSnapshot: {} as Repos['importSnapshot'], // [F-DBCAMP-01 DB-3 U3] 导入合并写面域（面外桩——同上类型闭合）
     // enrich 不涉多表写入：事务桩用直通（接口新增必需成员的适配）
     withTransaction: <T>(fn: () => T): T => fn()
   }

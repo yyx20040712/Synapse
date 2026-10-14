@@ -19,11 +19,14 @@ const stubApi = makeApiStub({
     importPeerKey: vi.fn(),
     listPeerKeys: vi.fn(),
     removePeerKey: vi.fn(),
-    exportToFile: vi.fn()
+    exportToFile: vi.fn(),
+    importFromFile: vi.fn()
   }
 })
 
 import { SyncKeySection } from '../../../src/renderer/features/settings/SyncKeySection'
+import { IMPORT_REASON_ZH } from '../../../src/renderer/features/settings/SnapshotImportButton'
+import { SNAPSHOT_IMPORT_REJECT_REASONS } from '../../../src/shared/ipc/schemas'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -80,6 +83,7 @@ beforeEach(() => {
   vi.mocked(stubApi.snapshot.importPeerKey).mockReset()
   vi.mocked(stubApi.snapshot.removePeerKey).mockReset()
   vi.mocked(stubApi.snapshot.exportToFile).mockReset()
+  vi.mocked(stubApi.snapshot.importFromFile).mockReset()
   toastSpy.mockClear()
 })
 
@@ -214,5 +218,115 @@ describe('F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节', (
     expect(writeText).toHaveBeenCalledWith(BUNDLE)
     expect(toastSpy).toHaveBeenCalledWith('同步密钥已复制', 'success')
     root?.unmount()
+  })
+
+  // [F-DBCAMP-01 DB-3 U3] 导入钮（toast 文案逐字——d1-W1 回炉先例形态）
+  it('导入快照 applied：成功 toast 逐字「已导入第 N 卷：新 X 改 Y 删 Z」', async () => {
+    await mountWithKey()
+    stubApi.snapshot.importFromFile.mockResolvedValue({
+      ok: true,
+      data: {
+        outcome: 'applied',
+        ownerId: PEER,
+        snapshotSeq: 2,
+        stats: { inserted: 3, updated: 1, skippedStale: 0, skippedRevive: 1, deleted: 2, a7Conflicts: 0 }
+      }
+    })
+    clickButton('从文件导入快照')
+    await settle()
+    expect(stubApi.snapshot.importFromFile).toHaveBeenCalledWith({})
+    expect(toastSpy).toHaveBeenCalledWith('已导入第 2 卷：新 3 改 1 删 2', 'success')
+    root?.unmount()
+  })
+
+  it('导入快照 A7 冲突：toast 附「冲突 n 行（首例 entity/id）」', async () => {
+    await mountWithKey()
+    stubApi.snapshot.importFromFile.mockResolvedValue({
+      ok: true,
+      data: {
+        outcome: 'applied',
+        ownerId: PEER,
+        snapshotSeq: 2,
+        stats: {
+          inserted: 1,
+          updated: 0,
+          skippedStale: 0,
+          skippedRevive: 0,
+          deleted: 0,
+          a7Conflicts: 2,
+          a7FirstEntity: 'papers',
+          a7FirstId: 'p-l3'
+        }
+      }
+    })
+    clickButton('从文件导入快照')
+    await settle()
+    expect(toastSpy).toHaveBeenCalledWith('已导入第 2 卷：新 1 改 0 删 0，冲突 2 行（首例 papers/p-l3）', 'success')
+    root?.unmount()
+  })
+
+  it('导入快照 rejected：原因码中文映射 toast（seq_stale 例）', async () => {
+    await mountWithKey()
+    stubApi.snapshot.importFromFile.mockResolvedValue({
+      ok: true,
+      data: { outcome: 'rejected', reason: 'seq_stale', ownerId: PEER, snapshotSeq: 1 }
+    })
+    clickButton('从文件导入快照')
+    await settle()
+    expect(toastSpy).toHaveBeenCalledWith('导入被拒：该快照卷不比本地已导入的新', 'error')
+    root?.unmount()
+  })
+
+  it('导入快照取消：CANCELLED 回包→info toast 已取消导入（非 error 面）', async () => {
+    await mountWithKey()
+    stubApi.snapshot.importFromFile.mockResolvedValue({
+      ok: false,
+      error: { code: 'CANCELLED', message: '已取消导入' }
+    })
+    clickButton('从文件导入快照')
+    await settle()
+    expect(toastSpy).toHaveBeenCalledWith('已取消导入', 'info')
+    expect(toastSpy).not.toHaveBeenCalledWith(expect.anything(), 'error')
+    root?.unmount()
+  })
+
+  it('导入快照幂等 no-op：noop 回包→info toast「第 N 卷此前已导入，本次未重复应用」', async () => {
+    await mountWithKey()
+    stubApi.snapshot.importFromFile.mockResolvedValue({
+      ok: true,
+      data: {
+        outcome: 'applied',
+        ownerId: PEER,
+        snapshotSeq: 2,
+        noop: true,
+        stats: { inserted: 0, updated: 0, skippedStale: 0, skippedRevive: 0, deleted: 0, a7Conflicts: 0 }
+      }
+    })
+    clickButton('从文件导入快照')
+    await settle()
+    expect(toastSpy).toHaveBeenCalledWith('第 2 卷此前已导入，本次未重复应用', 'info')
+    root?.unmount()
+  })
+
+  // [回炉 R8] 十码中文映射全键快照断言（Object.entries 循环锁全部文案值——
+  // 枚举单源=shared schemas；映射表单源=SnapshotImportButton 导出）
+  it('[R8] 拒收原因码中文映射：十码全键+文案逐字快照', () => {
+    const expected: Record<string, string> = {
+      self_reimport: '不能导入本库自身的快照',
+      struct_invalid: '快照文件结构无效',
+      version_mismatch: '快照格式版本不受支持',
+      schema_newer: '快照数据库版本比本库新，请先升级应用',
+      hmac_fail: '快照验签失败（密钥不匹配或文件损坏）',
+      decrypt_fail: '快照解密失败',
+      seq_stale: '该快照卷不比本地已导入的新',
+      seq_conflict: '同卷号内容不一致，已拒收',
+      hash_mismatch: '快照内容校验不符',
+      counts_mismatch: '快照行数校验不符'
+    }
+    expect(Object.keys(IMPORT_REASON_ZH).sort()).toEqual([...SNAPSHOT_IMPORT_REJECT_REASONS].sort())
+    for (const [reason, zh] of Object.entries(IMPORT_REASON_ZH)) {
+      expect(zh, `原因码 ${reason} 的中文映射`).toBe(expected[reason])
+      expect(zh.length, `原因码 ${reason} 映射非空`).toBeGreaterThan(0)
+    }
   })
 })

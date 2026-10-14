@@ -28,8 +28,8 @@
  * - AES-256-GCM：nonce 每卷一次随机（量级=导出次数，NIST 2^32 界 7.6 个数量级
  *   余量——§13.6）。确定性契约（INV-D）：同库内容+同 nonce+同 seq→文件字节全等
  *   ——nonce 工厂注入（测试注固定值）。
- * - verifyEnvelope：重算 MAC（timingSafeEqual）+GCM 认证双过才 true——本批
- *   测试消费（tamper 红证），U3 闸②④复用（非死代码）。
+ * - verifyEnvelope：decodeEnvelope 的薄布尔包装（U2 消费面兼容）；decodeEnvelope
+ *   =U3 六闸单源——结构→版本→MAC→GCM 四段细分原因码（R-A）。
  *
  * ── 文化层 ──
  * - node:crypto 现有能力零依赖；纯函数无状态；测试=
@@ -182,45 +182,71 @@ function sameAsciiHex(a: string, b: string): boolean {
   }
 }
 
+/** [F-DBCAMP-01 DB-3 U3] decodeEnvelope 结果（R-A——闸①②④原因码细分；
+ * hash_mismatch/schema_newer/counts_mismatch=service 层产出：codec 不知本库
+ * user_version/水位，分层如故） */
+export type DecodeEnvelopeResult =
+  | { ok: true; body: SnapshotEnvelope; plaintext: Buffer }
+  | { ok: false; reason: 'struct_invalid' | 'version_mismatch' | 'hmac_fail' | 'decrypt_fail' }
+
+/** base64 严格形态（Node Buffer.from 解码宽松吞非法字符——闸①显式拒非 base64） */
+const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/
+
 /**
- * 验签：重算 MAC（对去 hmac 键 canonical 面）+GCM 认证（AAD=两段面）双过才
- * true。非法形状/密钥错配/任何篡改恒 false（闸②④消费——本批测试 tamper 红证）。
+ * 解码+验签：结构（形状/必填键含 hmac 键/base64/nonce=12B/密文≥tag 长）→
+ * 版本（format_version!==1=version_mismatch——闸①细分）→MAC（timingSafeEqual
+ * 沿承）→GCM 解密。合法卷回 body 九键+明文字节（U3 六闸消费单源）。
  */
-export function verifyEnvelope(envelope: unknown, syncKeyHex: string): boolean {
-  if (envelope === null || typeof envelope !== 'object') return false
+export function decodeEnvelope(envelope: unknown, syncKeyHex: string): DecodeEnvelopeResult {
+  if (envelope === null || typeof envelope !== 'object' || Array.isArray(envelope)) {
+    return { ok: false, reason: 'struct_invalid' }
+  }
   const obj = envelope as Record<string, unknown>
   const { hmac_sha256: mac, ...rest } = obj
-  if (typeof mac !== 'string') return false
+  if (typeof mac !== 'string') return { ok: false, reason: 'struct_invalid' }
   const body = rest as unknown as Omit<SnapshotEnvelope, 'hmac_sha256'>
   if (
-    body.format_version !== 1 ||
+    typeof body.format_version !== 'number' ||
     typeof body.schema_version !== 'number' ||
     typeof body.snapshot_seq !== 'number' ||
     typeof body.owner_id !== 'string' ||
+    body.table_counts === null ||
     typeof body.table_counts !== 'object' ||
+    Array.isArray(body.table_counts) ||
     typeof body.payload_sha256 !== 'string' ||
     typeof body.payload_nonce !== 'string' ||
-    typeof body.payload !== 'string'
+    typeof body.payload !== 'string' ||
+    !BASE64_RE.test(body.payload_nonce) ||
+    !BASE64_RE.test(body.payload)
   ) {
-    return false
+    return { ok: false, reason: 'struct_invalid' }
   }
+  const nonce = Buffer.from(body.payload_nonce, 'base64')
+  const sealed = Buffer.from(body.payload, 'base64')
+  if (nonce.length !== NONCE_BYTES || sealed.length < GCM_TAG_BYTES) {
+    return { ok: false, reason: 'struct_invalid' }
+  }
+  if (body.format_version !== 1) return { ok: false, reason: 'version_mismatch' }
   const keys = deriveKeys(syncKeyHex)
-  const face = macFaceBytes(body)
-  const expected = createHmac('sha256', keys.macKey).update(face).digest('hex')
-  if (!sameAsciiHex(mac, expected)) return false
+  const expected = createHmac('sha256', keys.macKey).update(macFaceBytes(body)).digest('hex')
+  if (!sameAsciiHex(mac, expected)) return { ok: false, reason: 'hmac_fail' }
   try {
-    const nonce = Buffer.from(body.payload_nonce, 'base64')
-    const sealed = Buffer.from(body.payload, 'base64')
-    if (nonce.length !== NONCE_BYTES || sealed.length < GCM_TAG_BYTES) return false
     const tag = sealed.subarray(sealed.length - GCM_TAG_BYTES)
     const ct = sealed.subarray(0, sealed.length - GCM_TAG_BYTES)
     const decipher = createDecipheriv('aes-256-gcm', keys.encKey, nonce, { authTagLength: GCM_TAG_BYTES })
     decipher.setAAD(aadFaceBytes(body))
     decipher.setAuthTag(tag)
-    decipher.update(ct)
-    decipher.final()
-    return true
+    const plaintext = Buffer.concat([decipher.update(ct), decipher.final()])
+    return { ok: true, body: { ...body, hmac_sha256: mac }, plaintext }
   } catch {
-    return false
+    return { ok: false, reason: 'decrypt_fail' }
   }
+}
+
+/**
+ * 验签：decodeEnvelope 的薄布尔包装（U2 消费面兼容——既有测试零改动且行为
+ * 不变；闸②④全验通过才 true）。
+ */
+export function verifyEnvelope(envelope: unknown, syncKeyHex: string): boolean {
+  return decodeEnvelope(envelope, syncKeyHex).ok
 }

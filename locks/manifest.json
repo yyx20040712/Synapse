@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-14T16:10:26.856Z",
+    "generatedAt": "2026-10-14T20:09:32.528Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "60135b039f3da99c0e4fcd88aea587e1ef2489a713a325f64a1afe65a9ea71cd"
+            "sha256": "7f0854dbab2d581b293f556ebc3f850b7fda67a7cbf966a3c015d1c35e9f0fc8"
         },
         {
             "path": "electron.vite.config.ts",
@@ -87,11 +87,11 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "38e11a7fdbbaf6624149f60394f1ee2ccfab1a7b3f475b6c842f314dea124777"
+            "sha256": "9edd9091463a63e71a7f2844ea0f09988a3d200a25dc4debe1e014022f5fcc8c"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "a35a03bd84f31e082f3bb513def51c0973ee5987304c5155c8008f0aa07fd660"
+            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -219,7 +219,7 @@
         },
         {
             "path": "src/shared/ipc/api-surface.ts",
-            "sha256": "b30366f76fd33ca125e82c5d618c34ba38d6f6d1470d0f2324679e54cbe66c18"
+            "sha256": "ad4bc3f12245257c8be33d747124b92bbb206984fc7887c8eb27ba8c40c151a7"
         },
         {
             "path": "src/shared/ipc/events.schemas.ts",
@@ -227,7 +227,7 @@
         },
         {
             "path": "src/shared/ipc/schemas.ts",
-            "sha256": "ace30927130084994c25d9ac8a1898831bea14fcda3cd8e1d5f60f6578698596"
+            "sha256": "1f8a1ecbbef6412a9975aee2ee138ebf90a75b422feeaaedb03c79573a9ebdf2"
         },
         {
             "path": "src/shared/models/ai-domain.ts",
@@ -243,7 +243,7 @@
         },
         {
             "path": "src/shared/models/app-meta.ts",
-            "sha256": "bd96f85d8e845a4e8f0481b16b3c5e121a63ec4c74b47c61e5450a3c7b60014c"
+            "sha256": "733d2535f62f11d027865f628f9ae6ad080ffa51582139f706aaa97f73deb8dd"
         },
         {
             "path": "src/shared/models/collection.ts",
@@ -279,7 +279,7 @@
         },
         {
             "path": "tests/contracts/api-surface-closure.test.ts",
-            "sha256": "bda0de36bddb435baf6f8228d02382a77b50a6debabd34e5ea081c248f6be7a3"
+            "sha256": "a3b880689f7948994b96305f34f973ab614fc899462408981abd2ba98c915c36"
         },
         {
             "path": "tests/contracts/api-surface.test.ts",
@@ -303,7 +303,7 @@
         },
         {
             "path": "tests/contracts/schemas.test.ts",
-            "sha256": "14bfe3e5abb2708cce85f88c63cfded8ffddaa49418aefbba95365e258f9225f"
+            "sha256": "fdb32cdb45a6670021e437cdb67d593c11cf187ee950fcbdb7edb952a3bc78c6"
         },
         {
             "path": "tests/e2e/ai-budget.spec.ts",
@@ -507,7 +507,7 @@
         },
         {
             "path": "tests/unit/db/deletion-log.test.ts",
-            "sha256": "b329511353c1faa45a4e27224bd7f663aca8639c7d45d49bd4885fc572a8beab"
+            "sha256": "adcb6770a15f6cd0246f034a40b7fba08b41c95cf35f74f889064fe95d0cb704"
         },
         {
             "path": "tests/unit/db/fts.test.ts",
@@ -592,6 +592,10 @@
         {
             "path": "tests/unit/db/repos/collections.repo.test.ts",
             "sha256": "ec643863dd9654f3e420bdc1c12a9564f4cc5145012cf7d99fe215f8d447bbf0"
+        },
+        {
+            "path": "tests/unit/db/repos/import-snapshot.repo.test.ts",
+            "sha256": "341205b03e1474bb5123398e19ee24396d6533e410526b5b14e8d049133d24dc"
         },
         {
             "path": "tests/unit/db/repos/lineage.repo.order.test.ts",
@@ -683,7 +687,7 @@
         },
         {
             "path": "tests/unit/ipc/snapshot.test.ts",
-            "sha256": "0afed688849b6250d11d2ba80dfccaa975b645eefa50e45a14af51993f2a37dc"
+            "sha256": "bc21cef7cdcbeee62a416985c893596b1b8f3a6d8a9b36e8fe9928a540c285d3"
         },
         {
             "path": "tests/unit/ipc/system.test.ts",
@@ -1167,7 +1171,7 @@
         },
         {
             "path": "tests/unit/renderer/qr-encode.test.ts",
-            "sha256": "98755e8572673672bb9e8bead59e0f2416405a37a54b546924680dc4e4cb419f"
+            "sha256": "b674f67d6dfd62b16ba4b84da2ccaa9376a1cacdd834d8ecf33dcccd55c4f74e"
         },
         {
             "path": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
@@ -1283,7 +1287,7 @@
         },
         {
             "path": "tests/unit/renderer/sync-key-section.test.tsx",
-            "sha256": "c29aababb9ef091fc3026505c8cfdcdd0b70d9be4e15089843643a7095b260f5"
+            "sha256": "37ef857ddbedfb4a8eb9b8bd487beb6a557bb9874699614782ee8c4071a5e435"
         },
         {
             "path": "tests/unit/renderer/tab-bar.test.tsx",
@@ -1467,11 +1471,11 @@
         },
         {
             "path": "tests/unit/services/enrich.service.test.ts",
-            "sha256": "c2cad4bbab72b766275e4d230edc9d69f85c90ee96581e85415314de1fcb3ee3"
+            "sha256": "c4838173a34e12b4e23dc26bf8cb5cd0132869c376584d5a9dd810e591011742"
         },
         {
             "path": "tests/unit/services/envelope.codec.test.ts",
-            "sha256": "aea57f9131eac69862eb23b6ef80dfa423502947840810efef1da22fd1f8b97a"
+            "sha256": "f9ab966677aedea69d932b4cf4add3e53cc5466715bca8de700a2d642f7747f6"
         },
         {
             "path": "tests/unit/services/export-snapshot.service.test.ts",
@@ -1498,8 +1502,12 @@
             "sha256": "7ab8d67b3f7c44137a97f4e489a65efbec3b6ef4d224335612a3ffaa312d30e5"
         },
         {
+            "path": "tests/unit/services/import-snapshot.service.test.ts",
+            "sha256": "185dcd41785334c6fc5efc94ee943bd935fbcd1a036d7dc271083d8e29071060"
+        },
+        {
             "path": "tests/unit/services/import.service.test.ts",
-            "sha256": "9b5a5721fa10769bf9aad6585002008a1c40ffb67437e0ed2aee77ec877d543e"
+            "sha256": "e2b16af3c08070e5abb48d906b5b44b340e14e25ef736ec84b37f14cd5f12766"
         },
         {
             "path": "tests/unit/services/library-detail-lineage.test.ts",
@@ -1711,7 +1719,7 @@
         },
         {
             "path": "tests/utils/ipc-deps.ts",
-            "sha256": "6d85d73f8e3ce1d591720862f03907c6b92c7fb5baec6eb0c1ca7bed908030cd"
+            "sha256": "7659ac0b247a6894186b270897da8a5ded681b0c7db945373b0c9b12f03a8f8a"
         },
         {
             "path": "tests/utils/live-frame.ts",

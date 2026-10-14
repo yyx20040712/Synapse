@@ -163,8 +163,8 @@ describe('F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自�
     expect(bchRem(dataB)).toBe(fb & 0x3ff)
     expect(dataA >> 3).toBe(0)
     expect(dataB >> 3).toBe(0)
-    expect(dataA & 7).toBeGreaterThanOrEqual(0)
-    expect(dataA & 7).toBeLessThanOrEqual(7)
+    // [F-DBCAMP-01 DB-3 U3] R-B：删 `dataA & 7` 值域两行恒真断言（0≤x≤7 对
+    // 任意位运算结果恒真——实质锁由 BCH 回读/双副本一致/RS 回放族承载）
     expect(dataA).toBe(dataB)
   })
 

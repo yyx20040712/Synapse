@@ -564,6 +564,54 @@ export type RemovePeerKeyReq = z.infer<typeof removePeerKeyReqSchema>
 
 export const removePeerKeyResSchema = z.object({ removed: z.boolean() }).strict()
 
+// ── snapshot 导入合并面（[F-DBCAMP-01 DB-3 U3] snapshot 域第 6 通道
+//    import-from-file——设计 §13.2 六闸+拒收可见性；简报③-1）─────────────
+/** 拒收原因码枚举单源（§13.2 逐字十码——renderer 中文映射共用本导出） */
+export const SNAPSHOT_IMPORT_REJECT_REASONS = [
+  'self_reimport',
+  'struct_invalid',
+  'version_mismatch',
+  'schema_newer',
+  'hmac_fail',
+  'decrypt_fail',
+  'seq_stale',
+  'seq_conflict',
+  'hash_mismatch',
+  'counts_mismatch'
+] as const
+export type SnapshotImportRejectReason = (typeof SNAPSHOT_IMPORT_REJECT_REASONS)[number]
+
+/** 六闸应用统计（A7 首例 entity/id 随 stats 供 toast 展示——明细数组不上 Res，
+ *  量级与通道面约束〔③-6 首例需求与 ③-1 Res 形状的票内对账，自裁申报在档〕） */
+export const snapshotImportStatsSchema = z
+  .object({
+    inserted: z.number().int().min(0),
+    updated: z.number().int().min(0),
+    skippedStale: z.number().int().min(0),
+    skippedRevive: z.number().int().min(0),
+    deleted: z.number().int().min(0),
+    a7Conflicts: z.number().int().min(0),
+    a7FirstEntity: z.string().min(1).optional(),
+    a7FirstId: z.string().min(1).optional()
+  })
+  .strict()
+export type SnapshotImportStats = z.infer<typeof snapshotImportStatsSchema>
+
+/** import-from-file 响应：rejected 时 reason 必携、ownerId/snapshotSeq=自称值
+ *  （struct_invalid 不可解析则缺省）；applied 且幂等 no-op 出口时 noop=true+
+ *  stats 全零（闸③ a 分支——整卷零副作用） */
+export const snapshotImportResSchema = z
+  .object({
+    outcome: z.enum(['applied', 'rejected']),
+    reason: z.enum(SNAPSHOT_IMPORT_REJECT_REASONS).optional(),
+    ownerId: z.string().optional(),
+    snapshotSeq: z.number().int().optional(),
+    noop: z.boolean().optional(),
+    stats: snapshotImportStatsSchema.optional()
+  })
+  .strict()
+export type SnapshotImportRes = z.infer<typeof snapshotImportResSchema>
+
 // ── folders.changed / lineage.changed 事件（[F-FOLDER-01] main→renderer 单向；
 //    载荷=空对象——纯失效通知（renderer 重拉 folders.list/lineage.graph），
 //    不携带数据防双真相）──────────────────────────────────────────

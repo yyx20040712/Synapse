@@ -26,6 +26,7 @@ import { api, unwrap, ApiClientError } from '../../api/client'
 import { encodeQr } from '../../shared/qr/qr-encode'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
+import { SnapshotImportButton } from './SnapshotImportButton'
 import type { PeerKeyItem, SyncKeyInfo } from '@shared/ipc/schemas'
 
 /** bundle 预校验（与 main 侧 service 同式——渲染层拦非法串零通道调用） */
@@ -177,6 +178,8 @@ export function SyncKeySection(): JSX.Element {
               <Button size="sm" loading={exporting} onClick={() => void exportSnapshot()}>
                 导出快照到文件
               </Button>
+              {/* [F-DBCAMP-01 DB-3 U3] 从文件导入快照（导出钮同位——外提件压 250 帽） */}
+              <SnapshotImportButton />
             </div>
             <QrImage text={info.bundle} />
           </div>

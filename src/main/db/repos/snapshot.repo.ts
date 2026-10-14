@@ -18,9 +18,10 @@
  *   ORDER BY updated_at, id（graph_meta 主键=key 列，别名对齐——次序键用 key）；
  *   collections/tags=ORDER BY id；paper_tags=ORDER BY paper_id, tag_id。
  *   显式列清单=各表迁移终态全列（列名从 001/004/005/006/007/010/011/012/013/
- *   014/016/017/019 迁移实读对齐——[回炉 R4] 枚举勘正补 005/006/007；死置列
- *   007 lineage_nodes.tags/006 lineage_edges.kind 主控裁决入导出面=「迁移终态
- *   全列」票面字面，U3 import 不写即落 DDL 默认；SELECT 禁 *）。
+ *   014/016/017/019 迁移实读对齐——[回炉 R4] 枚举勘正补 005/006/007；007
+ *   lineage_nodes.tags/006 lineage_edges.kind 入导出面=「迁移终态全列」；
+ *   [DB-3 U3 回炉 R1] U3 import 写面=同全列（「出库真值/入写真值」对偶对称
+ *   ——原「入落 DDL 默认」死置列预裁证伪推翻）；SELECT 禁 *）。
  * - deletion_events 读面=只读全量消费（ORDER BY seq，不剪枝——§13.1；写协议
  *   红线=U2 零触 deletion_log_guard，guard 消费归 U3）。
  * - 018 头注契约沿承：snapshot_seq/sync_key 读写不经 app-meta.repo 既有 get/set
@@ -61,8 +62,10 @@ export interface PeerKeyRow {
   importedAt: string
 }
 
-/** 九表读面规格：显式列清单（迁移终态）+行序矩阵（头注行为层） */
-const TABLE_SPECS = [
+/** 九表读面规格：显式列清单（迁移终态）+行序矩阵（头注行为层）。
+ * [F-DBCAMP-01 DB-3 U3] export 关键字放开（简报③-4：import-snapshot.repo 写面
+ * 复用本单源——列集/行序双面同源禁两处漂移；读面方法零改动） */
+export const TABLE_SPECS = [
   {
     table: 'papers',
     columns: [
@@ -201,7 +204,14 @@ export function createSnapshotRepo(db: SqliteDb): SnapshotRepo {
 
     nextSnapshotSeq(): number {
       const v = get(APP_META_KEYS.snapshotSeq)
-      return (v === null ? 0 : Number.parseInt(v, 10)) + 1
+      if (v === null) return 1
+      // [F-DBCAMP-01 DB-3 U3] R-E：非数值存量值显性 throw（NaN 传染 commit 的
+      // 不可达潜伏防御——键域受控：commitSnapshotSeq 恒写 String(seq) 十进制）
+      const parsed = Number.parseInt(v, 10)
+      if (Number.isNaN(parsed)) {
+        throw new Error(`snapshot_seq 键值非十进制数字串：${v}（键域受控——异常态显性化）`)
+      }
+      return parsed + 1
     },
 
     commitSnapshotSeq(seq: number): void {

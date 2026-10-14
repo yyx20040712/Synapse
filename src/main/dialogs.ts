@@ -25,6 +25,9 @@ export interface Dialogs {
   pickFolder(): Promise<string | null>
   /** 保存文件（导出用；extFilters 形如 [{ name: 'BibTeX', extensions: ['bib'] }]） */
   saveFile(defaultName: string, extFilters: Array<{ name: string; extensions: string[] }>): Promise<string | null>
+  /** [F-DBCAMP-01 DB-3 U3] 打开单文件（快照导入用——INV-07 路径=main 系统对话框；
+   *  取消返回 null，pickPdfFiles 同型去多选） */
+  openFile(extFilters: Array<{ name: string; extensions: string[] }>): Promise<string | null>
 }
 
 export function createElectronDialogs(getParent: () => BrowserWindow | null): Dialogs {
@@ -67,6 +70,17 @@ export function createElectronDialogs(getParent: () => BrowserWindow | null): Di
         filters: extFilters
       })
       return r.canceled || !r.filePath ? null : r.filePath
+    },
+    openFile: async (extFilters) => {
+      const r = await openWithParent({
+        title: '选择要导入的快照文件',
+        defaultPath: lastDir,
+        properties: ['openFile'],
+        filters: extFilters
+      })
+      if (r.canceled || r.filePaths.length === 0) return null
+      lastDir = dirname(r.filePaths[0]!)
+      return r.filePaths[0]!
     }
   }
 }

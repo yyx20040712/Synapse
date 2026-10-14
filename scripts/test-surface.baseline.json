@@ -262,290 +262,302 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"通道总数=81（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面，域 21 不变）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
-          "title": "通道总数=75（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
+          "title": "通道总数=81（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面，域 21 不变）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
           "markers": [],
-          "line": 54,
+          "line": 59,
           "assertions": [
-            "expect(allChannels().length).toBe(75)"
+            "expect(allChannels().length).toBe(81)"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域枚举 pin：恰 21 域（[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
-          "title": "域枚举 pin：恰 20 域（[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
+          "title": "域枚举 pin：恰 21 域（[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
           "markers": [],
-          "line": 58,
+          "line": 63,
           "assertions": [
             "expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())",
-            "expect(DOMAIN_PINS).toHaveLength(20)"
+            "expect(DOMAIN_PINS).toHaveLength(21)"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_audit 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_audit 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_audit 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_cascade 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_cascade 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_cascade 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_memory 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_memory 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_memory 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_messages 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_messages 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_messages 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_sensor 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_sensor 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_sensor 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_sessions 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_sessions 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_sessions 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 ai_tasks 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 ai_tasks 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 ai_tasks 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 enrich 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 enrich 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 enrich 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 export_ 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 export_ 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 export_ 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 folders 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 folders 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 folders 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 import_ 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 import_ 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 import_ 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 library 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 library 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 library 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 lineage 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 lineage 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 lineage 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 notes 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 notes 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 notes 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 papers 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 papers 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 papers 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 reader 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 reader 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 reader 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 settings 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 settings 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 settings 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 system 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 snapshot 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
+          ],
+          "title": "域 snapshot 方法集 pin",
+          "markers": [],
+          "line": 68,
+          "assertions": [
+            "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
+          ]
+        },
+        {
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 system 方法集 pin\"]",
+          "describePath": [
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 system 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 tags 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 tags 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 tags 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"域 workspaces 方法集 pin\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"域 workspaces 方法集 pin\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "域 workspaces 方法集 pin",
           "markers": [],
-          "line": 63,
+          "line": 68,
           "assertions": [
             "expect(Object.keys(API_SURFACE[domain as keyof typeof API_SURFACE]).sort()).toEqual([...methods].sort())"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
           "markers": [],
-          "line": 67,
+          "line": 72,
           "assertions": [
-            "expect(prefixes).toEqual([ 'ai-cascade', 'ai-memory', 'ai-messages', 'ai-notes', 'ai-sensor', 'ai-sessions', 'ai-tasks', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'system', 'tags', 'workspaces', 'zcode-link' ])"
+            "expect(prefixes).toEqual([ 'ai-cascade', 'ai-memory', 'ai-messages', 'ai-notes', 'ai-sensor', 'ai-sessions', 'ai-tasks', 'enrich', 'export', 'folders', 'import', 'library', 'lineage', 'notes', 'papers', 'reader', 'settings', 'snapshot', 'system', 'tags', 'workspaces', 'zcode-link' ])"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
           "markers": [],
-          "line": 94,
+          "line": 100,
           "assertions": [
             "expect(domains, `PRELOAD_HIDDEN_METHODS 引用了不存在的域 ${domain}`).toContain(domain)",
             "expect(inTable, `PRELOAD_HIDDEN_METHODS 引用了 ${domain}.${m} 但表内无此方法`).toContain(m)",
@@ -553,13 +565,13 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
           "markers": [],
-          "line": 112,
+          "line": 118,
           "assertions": [
             "expect(Object.keys(EVENT_CHANNELS).sort()).toEqual([ 'exportCorpus', 'foldersChanged', 'importProgress', 'lineageChanged', 'windowState' ])",
             "expect(ch.endsWith('/event'), `事件通道 ${ch} 应带 /event 后缀（单向推送命名约定）`).toBe(true)",
@@ -568,37 +580,37 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
           "markers": [],
-          "line": 129,
+          "line": 135,
           "assertions": [
             "expect(Object.entries(PRELOAD_HIDDEN_METHODS).map(([d, ms]) => `${d}:[${[...ms].sort().join(',')}]`)).toEqual([ 'import_:[fromPaths]' ])"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
           "markers": [],
-          "line": 135,
+          "line": 141,
           "assertions": [
             "expect({ ...EVENT_CHANNELS }).toEqual({ importProgress: 'import/progress/event', exportCorpus: 'export/corpus/event', windowState: 'system/window-state/event', foldersChanged: 'folders/changed/event', lineageChanged: 'lineage/changed/event' })"
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
           "markers": [],
-          "line": 145,
+          "line": 151,
           "assertions": [
             "expect(typeof S.importProgressEventSchema.safeParse).toBe('function')",
             "expect(typeof S.exportProgressEventSchema.safeParse).toBe('function')",
@@ -608,13 +620,13 @@
           ]
         },
         {
-          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）\",\"组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）\"]",
+          "key": "[\"contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）\",\"组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）\"]",
           "describePath": [
-            "contracts/api-surface-closure —— 接线表闭合性（75 通道 pin）"
+            "contracts/api-surface-closure —— 接线表闭合性（81 通道 pin）"
           ],
           "title": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
           "markers": [],
-          "line": 153,
+          "line": 159,
           "assertions": [
             "expect( allChannels() .filter((c) => c.domain === 'workspaces') .map((c) => c.channel) .sort() ).toEqual(['workspaces/create', 'workspaces/list', 'workspaces/rename', 'workspaces/switch'])"
           ]
@@ -685,7 +697,7 @@
           ],
           "title": "workspaces 域（R1-WS1 扩容）：四通道在表 + create 名长 1-40 边界 + Res 形状",
           "markers": [],
-          "line": 69,
+          "line": 71,
           "assertions": [
             "expect(Object.keys(API_SURFACE.workspaces).sort()).toEqual(['create', 'list', 'rename', 'switch'])",
             "expect(create.success).toBe(true)",
@@ -704,7 +716,7 @@
           ],
           "title": "所有模型 schema fixture 往返：合法通过/非法拒绝（抽样关键端点）",
           "markers": [],
-          "line": 88,
+          "line": 90,
           "assertions": [
             "expect(list.success).toBe(true)",
             "expect(list.data).toMatchObject({ sort: 'added_desc', offset: 0, limit: 50 })",
@@ -1207,7 +1219,7 @@
           ],
           "title": "导出闭合：schemas.ts 全部 zod 导出 ⟷ 夹具表键 ⟷ 用例清单三方一致",
           "markers": [],
-          "line": 346,
+          "line": 382,
           "assertions": [
             "expect(Object.keys(VALID).sort(), '夹具表漏配或多配（新增 schema 须同步 VALID+SCHEMA_NAMES）').toEqual(runtimeZodExports)",
             "expect([...SCHEMA_NAMES].sort(), 'it.each 清单与夹具表漂移').toEqual(runtimeZodExports)"
@@ -1220,7 +1232,7 @@
           ],
           "title": "aiNotesImportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1234,7 +1246,7 @@
           ],
           "title": "aiReadJobResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1248,7 +1260,7 @@
           ],
           "title": "aiSensorStatusResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1262,7 +1274,7 @@
           ],
           "title": "annotationIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1276,7 +1288,7 @@
           ],
           "title": "annotationListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1290,7 +1302,7 @@
           ],
           "title": "appSettingsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1304,7 +1316,7 @@
           ],
           "title": "attachTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1318,7 +1330,7 @@
           ],
           "title": "clipboardReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1332,7 +1344,7 @@
           ],
           "title": "collectionListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1346,7 +1358,7 @@
           ],
           "title": "corpusItemReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1360,7 +1372,7 @@
           ],
           "title": "corpusReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1374,7 +1386,7 @@
           ],
           "title": "corpusSessionReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1388,7 +1400,7 @@
           ],
           "title": "corpusSessionResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1402,7 +1414,7 @@
           ],
           "title": "detachTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1416,7 +1428,35 @@
           ],
           "title": "enrichReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"importPeerKeyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "importPeerKeyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"importPeerKeyResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "importPeerKeyResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1430,7 +1470,7 @@
           ],
           "title": "exportProgressEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1444,7 +1484,7 @@
           ],
           "title": "folderCreateReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1458,7 +1498,7 @@
           ],
           "title": "folderDeleteReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1472,7 +1512,7 @@
           ],
           "title": "folderRenameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1486,7 +1526,7 @@
           ],
           "title": "folderSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1500,7 +1540,7 @@
           ],
           "title": "foldersChangedEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1514,7 +1554,7 @@
           ],
           "title": "exportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1528,7 +1568,7 @@
           ],
           "title": "exportSelectionReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1542,7 +1582,7 @@
           ],
           "title": "extractRequestEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1556,7 +1596,7 @@
           ],
           "title": "importPathsReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1570,7 +1610,7 @@
           ],
           "title": "importProgressEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1584,7 +1624,7 @@
           ],
           "title": "importResultSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1598,7 +1638,7 @@
           ],
           "title": "importTargetReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1612,7 +1652,21 @@
           ],
           "title": "libraryListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"listPeerKeysResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "listPeerKeysResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1626,7 +1680,7 @@
           ],
           "title": "lineageChangedEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1640,7 +1694,7 @@
           ],
           "title": "lineageGraphReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1654,7 +1708,7 @@
           ],
           "title": "lineageGraphResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1668,7 +1722,7 @@
           ],
           "title": "lineageIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1682,7 +1736,7 @@
           ],
           "title": "lineagePaperMetricsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1696,7 +1750,7 @@
           ],
           "title": "lineagePatchNodeReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1710,7 +1764,7 @@
           ],
           "title": "lineageUpsertEdgeReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1724,7 +1778,7 @@
           ],
           "title": "lineageUpsertLineTypesReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1738,7 +1792,7 @@
           ],
           "title": "mergeTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1752,7 +1806,7 @@
           ],
           "title": "netDiagItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1766,7 +1820,7 @@
           ],
           "title": "netDiagResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1780,7 +1834,7 @@
           ],
           "title": "noteGetResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1794,7 +1848,7 @@
           ],
           "title": "noteIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1808,7 +1862,7 @@
           ],
           "title": "noteSaveReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1822,7 +1876,7 @@
           ],
           "title": "observeResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1836,7 +1890,7 @@
           ],
           "title": "openExternalReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1850,7 +1904,7 @@
           ],
           "title": "paperIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1864,7 +1918,7 @@
           ],
           "title": "paperDeleteReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1878,7 +1932,7 @@
           ],
           "title": "paperMoveReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1892,7 +1946,21 @@
           ],
           "title": "paperSetStarredReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"peerKeyItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "peerKeyItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1906,7 +1974,35 @@
           ],
           "title": "readerOpenResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"removePeerKeyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "removePeerKeyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"removePeerKeyResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "removePeerKeyResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1920,7 +2016,7 @@
           ],
           "title": "renameTagReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1934,7 +2030,7 @@
           ],
           "title": "reportReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1948,7 +2044,7 @@
           ],
           "title": "saveAnnotationReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1962,7 +2058,7 @@
           ],
           "title": "saveProgressReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1976,7 +2072,63 @@
           ],
           "title": "sensorStatusSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"snapshotExportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "snapshotExportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"snapshotImportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "snapshotImportResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"snapshotImportStatsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "snapshotImportStatsSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
+          "assertions": [
+            "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
+            "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
+            "expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）\",\"syncKeyInfoResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）\"]",
+          "describePath": [
+            "contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接契约）"
+          ],
+          "title": "syncKeyInfoResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
+          "markers": [],
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -1990,7 +2142,7 @@
           ],
           "title": "setQuitDirtyReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2004,7 +2156,7 @@
           ],
           "title": "tagIdReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2018,7 +2170,7 @@
           ],
           "title": "tagListReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2032,7 +2184,7 @@
           ],
           "title": "tagNameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2046,7 +2198,7 @@
           ],
           "title": "tagSetColorReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2060,7 +2212,7 @@
           ],
           "title": "tagWithCountSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2074,7 +2226,7 @@
           ],
           "title": "trueAckSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2088,7 +2240,7 @@
           ],
           "title": "uiScaleSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2102,7 +2254,7 @@
           ],
           "title": "updateAnnotationReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2116,7 +2268,7 @@
           ],
           "title": "updateMetaReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2130,7 +2282,7 @@
           ],
           "title": "voidReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2144,7 +2296,7 @@
           ],
           "title": "windowControlActionSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2158,7 +2310,7 @@
           ],
           "title": "windowControlReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2172,7 +2324,7 @@
           ],
           "title": "windowControlResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2186,7 +2338,7 @@
           ],
           "title": "windowStateEventSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2200,7 +2352,7 @@
           ],
           "title": "workspaceCreateReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2214,7 +2366,7 @@
           ],
           "title": "workspaceCreateResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2228,7 +2380,7 @@
           ],
           "title": "workspaceItemSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2242,7 +2394,7 @@
           ],
           "title": "workspaceListResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2256,7 +2408,7 @@
           ],
           "title": "workspaceRenameReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2270,7 +2422,7 @@
           ],
           "title": "workspaceSwitchReqSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2284,7 +2436,7 @@
           ],
           "title": "zcodeLinkDetectResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2298,7 +2450,7 @@
           ],
           "title": "zcodeLinkInstallResSchema：合法夹具全过 + 对象面夹具加未知字段必拒（strict 闭合）",
           "markers": [],
-          "line": 355,
+          "line": 391,
           "assertions": [
             "expect(fixtures.length, `${name} 夹具表为空`).toBeGreaterThan(0)",
             "expect(schema.safeParse(fixture).success, `${name} 应接受合法夹具 ${JSON.stringify(fixture).slice(0, 80)}`).toBe(true)",
@@ -2312,7 +2464,7 @@
           ],
           "title": "saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段",
           "markers": [],
-          "line": 368,
+          "line": 404,
           "assertions": [
             "expect(S.saveProgressReqSchema.safeParse(base).success).toBe(true)",
             "expect(S.saveProgressReqSchema.safeParse({ paperId: 'p1', page: -1 }).success).toBe(false)",
@@ -2326,7 +2478,7 @@
           ],
           "title": "importPaths：数量门 1/100 过、0/101 拒；路径空串拒（第二道门——第一道在 preload）",
           "markers": [],
-          "line": 377,
+          "line": 413,
           "assertions": [
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(1), targetFolderId: 'f1' }).success).toBe(true)",
             "expect(S.importPathsReqSchema.safeParse({ paths: paths(100), targetFolderId: 'f1' }).success).toBe(true)",
@@ -2342,7 +2494,7 @@
           ],
           "title": "[F-ALIGN-01] 导入三通道 targetFolderId 必填（INV-NEW-2 主锚契约面——缺省/null/空串全拒）+paperMoveReq null 拒（D5 未归档域退役）",
           "markers": [],
-          "line": 386,
+          "line": 422,
           "assertions": [
             "expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'] }).success).toBe(false)",
             "expect(S.importPathsReqSchema.safeParse({ paths: ['C:/a.pdf'], targetFolderId: null }).success).toBe(false)",
@@ -2360,7 +2512,7 @@
           ],
           "title": "exportSelection：paperIds 1/1000 过、0/1001 拒",
           "markers": [],
-          "line": 401,
+          "line": 437,
           "assertions": [
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1) }).success).toBe(true)",
             "expect(S.exportSelectionReqSchema.safeParse({ paperIds: ids(1000) }).success).toBe(true)",
@@ -2375,7 +2527,7 @@
           ],
           "title": "corpusSession：paperIds 缺省过（全库）、0 条/1001 条拒",
           "markers": [],
-          "line": 409,
+          "line": 445,
           "assertions": [
             "expect(S.corpusSessionReqSchema.safeParse({}).success).toBe(true)",
             "expect(S.corpusSessionReqSchema.safeParse({ paperIds: ['p1'] }).success).toBe(true)",
@@ -2390,7 +2542,7 @@
           ],
           "title": "标签与课题名长度界：标签 1/50 字过、51 字/空串拒（upsert/rename 同界）；课题名 40/41 界；[F-TAGS-02/DB-1 U4] tags/list Req=folderId 必填（缺省/null/空串拒）",
           "markers": [],
-          "line": 418,
+          "line": 454,
           "assertions": [
             "expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '课' }).success).toBe(true)",
             "expect(S.tagNameReqSchema.safeParse({ folderId: '__main__', name: '课'.repeat(50) }).success).toBe(true)",
@@ -2411,7 +2563,7 @@
           ],
           "title": "extractRequestEvent：annotations 上界 5000 过、5001 拒",
           "markers": [],
-          "line": 434,
+          "line": 470,
           "assertions": [
             "expect(S.extractRequestEventSchema.safeParse(payload(5000)).success).toBe(true)",
             "expect(S.extractRequestEventSchema.safeParse(payload(5001)).success).toBe(false)"
@@ -2424,7 +2576,7 @@
           ],
           "title": "openExternal：url 长度界 2048 过、2049/空串拒",
           "markers": [],
-          "line": 447,
+          "line": 483,
           "assertions": [
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2048) }).success).toBe(true)",
             "expect(S.openExternalReqSchema.safeParse({ url: 'a'.repeat(2049) }).success).toBe(false)",
@@ -2438,7 +2590,7 @@
           ],
           "title": "corpusItem 判别联合：四 kind 各过；anno 缺 annotationId 拒、page 带 annotationId 拒（refine）；未知 kind 拒",
           "markers": [],
-          "line": 453,
+          "line": 489,
           "assertions": [
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'fulltext' }).success).toBe(true)",
             "expect(S.corpusItemReqSchema.safeParse({ ...base, kind: 'figure', figure: 'page' }).success).toBe(true)",
@@ -2457,7 +2609,7 @@
           ],
           "title": "lineagePaperMetrics null 语义：citedByCount null/0 均过（0=值非缺）；venueTier 三档过、T9 拒",
           "markers": [],
-          "line": 469,
+          "line": 505,
           "assertions": [
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: 0, venueTier: null }).success).toBe(true)",
             "expect(S.lineagePaperMetricsSchema.safeParse({ citedByCount: null, venueTier: 'T1' }).success).toBe(true)",
@@ -2472,7 +2624,7 @@
           ],
           "title": "[F-ALIGN-01] lineagePatchNodeReq：id 必填拒缺/空串；白名单外字段 strict 拒；paperId/folderId 不可 patch 拒；month null=清除语义合法",
           "markers": [],
-          "line": 476,
+          "line": 512,
           "assertions": [
             "expect(S.lineagePatchNodeReqSchema.safeParse({ x: 1 }).success).toBe(false)",
             "expect(S.lineagePatchNodeReqSchema.safeParse({ id: '' }).success).toBe(false)",
@@ -2492,7 +2644,7 @@
           ],
           "title": "嵌套模型层 strict 探针：rects/patch/failed/skipped/errors/annotations 元素与 paperMetrics 值去 strict 即红（首层探针覆盖不到的第二层）",
           "markers": [],
-          "line": 501,
+          "line": 537,
           "assertions": [
             "expect(S.saveAnnotationReqSchema.safeParse({ paperId: 'p1', annotation: { ...annotationInput, rects: [badRect] } }).success).toBe(false)",
             "expect(S.annotationListResSchema.safeParse([{ ...annotation, rects: [badRect] }]).success).toBe(false)",
@@ -2510,7 +2662,7 @@
           ],
           "title": "appSettings：缺省填充 theme=light/uiScale=small/aiBudgets=默认预算档；非法 email/theme/uiScale 拒（T3-P1 枚举退役 system）+aiBudgets 档内超限拒",
           "markers": [],
-          "line": 518,
+          "line": 554,
           "assertions": [
             "expect(S.appSettingsSchema.parse({ contactEmail: 'user@example.com' })).toEqual({ contactEmail: 'user@example.com', theme: 'light', uiScale: 'small', aiBudgets: { paper: { cap: 8000, l1: 800, l2Slices: 15, l2Cap: 2200, tail: 1000 }, lineage: { cap: 6000, l1: 1800, l2Slices: 3, l2Cap: 600, tail: 1200 }, global: { cap: 4000, l1: 600, l2Slices: 8, l2Cap: 1200, tail: 1000 }, agent: { perShot: 800, perRound: 2000 } } })",
             "expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)",
@@ -2526,7 +2678,7 @@
           ],
           "title": "UI_SCALE 映射与 uiScaleSchema 枚举闭合：三档键一致；数值 pin 1/1.1/1.25（--ui-scale 消费契约）",
           "markers": [],
-          "line": 548,
+          "line": 584,
           "assertions": [
             "expect(Object.keys(S.UI_SCALE).sort()).toEqual([...S.uiScaleSchema.options].sort())",
             "expect(S.UI_SCALE).toEqual({ small: 1, medium: 1.1, large: 1.25 })"
@@ -2539,7 +2691,7 @@
           ],
           "title": "windowControlAction 四动作枚举 pin（action 枚举只住此处——renderer 复用禁手写第二份）",
           "markers": [],
-          "line": 553,
+          "line": 589,
           "assertions": [
             "expect([...S.windowControlActionSchema.options]).toEqual(['minimize', 'maximize-toggle', 'close', 'get-state'])",
             "expect(S.windowControlReqSchema.safeParse({ action: 'bogus' }).success).toBe(false)"
@@ -2552,7 +2704,7 @@
           ],
           "title": "trueAck/windowControlRes 拒 ok:false（literal(true) 单值域）",
           "markers": [],
-          "line": 558,
+          "line": 594,
           "assertions": [
             "expect(S.trueAckSchema.safeParse({ ok: false }).success).toBe(false)",
             "expect(S.windowControlResSchema.safeParse({ ok: false, maximized: true }).success).toBe(false)"
@@ -2565,7 +2717,7 @@
           ],
           "title": "netDiagItem latencyMs：-1（超时哨兵）过、-2 拒",
           "markers": [],
-          "line": 563,
+          "line": 599,
           "assertions": [
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -1 }).success).toBe(true)",
             "expect(S.netDiagItemSchema.safeParse({ host: 'h', ok: false, latencyMs: -2 }).success).toBe(false)"
@@ -2578,7 +2730,7 @@
           ],
           "title": "内联枚举基数 pin：clipboard format 两值/zcodeLinkDetect state 五值/导入导出事件 phase 四与三值（新增枚举值须意识化更新）",
           "markers": [],
-          "line": 568,
+          "line": 604,
           "assertions": [
             "expect([...(S.clipboardReqSchema.shape.format.options)]).toEqual(['bibtex', 'csv'])",
             "expect([...(S.zcodeLinkDetectResSchema.shape.state.options)]).toEqual([ 'zcode-not-found', 'found-skill-missing', 'installed-idle', 'running', 'error' ])",
@@ -2593,7 +2745,7 @@
           ],
           "title": "zcodeLinkDetect 五态枚举探针：各态过、bogus 拒（四呈现态+error）",
           "markers": [],
-          "line": 581,
+          "line": 617,
           "assertions": [
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state, status: null, overwrite: false }).success, `态 ${state} 应合法`).toBe(true)",
             "expect(S.zcodeLinkDetectResSchema.safeParse({ state: 'bogus', status: null, overwrite: false }).success).toBe(false)"
@@ -2606,7 +2758,7 @@
           ],
           "title": "id 类字段空串拒（paperId/annotationId/tagId/noteId/lineage id——min(1) 全位探针）",
           "markers": [],
-          "line": 588,
+          "line": 624,
           "assertions": [
             "expect(S.paperIdReqSchema.safeParse({ paperId: '' }).success).toBe(false)",
             "expect(S.annotationIdReqSchema.safeParse({ annotationId: '' }).success).toBe(false)",
@@ -2622,7 +2774,7 @@
           ],
           "title": "aiSensorStatusRes/noteGetRes 可空两形：null 与对象均过（null=status.json 不存在/无笔记的合法态）",
           "markers": [],
-          "line": 596,
+          "line": 632,
           "assertions": [
             "expect(S.aiSensorStatusResSchema.safeParse(null).success).toBe(true)",
             "expect(S.noteGetResSchema.safeParse(null).success).toBe(true)",
@@ -2636,7 +2788,7 @@
           ],
           "title": "tagSetColorReqSchema color 负例：大写/短位/缺 # 拒，null=恢复默认合法（d1-N5——hex 契约负向锁）",
           "markers": [],
-          "line": 602,
+          "line": 638,
           "assertions": [
             "expect( S.tagSetColorReqSchema.safeParse({ tagId: 't1', color: bad }).success, `非法 color ${JSON.stringify(bad)} 应拒` ).toBe(false)",
             "expect(S.tagSetColorReqSchema.safeParse({ tagId: 't1' }).success, '缺 color 键应拒（required 非 optional——宽松化正则防）').toBe(false)",
@@ -5925,13 +6077,25 @@
           ]
         },
         {
+          "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U3-guard 多行态定向锁：guard 表 n=2 行→再 migrate 显性 throw（守卫行数=2——封堵 n<1 变异存活面）\"]",
+          "describePath": [
+            "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
+          ],
+          "title": "U3-guard 多行态定向锁：guard 表 n=2 行→再 migrate 显性 throw（守卫行数=2——封堵 n<1 变异存活面）",
+          "markers": [],
+          "line": 376,
+          "assertions": [
+            "expect(() => migrate(db)).toThrow(/守卫行数=2/)"
+          ]
+        },
+        {
           "key": "[\"db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）\",\"U1-10 FTS 共存抽测：删 note→notes_fts 同步清+事件在场（notes_fts_ad 与 notes_deletion_log_ad 同表并存）\"]",
           "describePath": [
             "db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）"
           ],
           "title": "U1-10 FTS 共存抽测：删 note→notes_fts 同步清+事件在场（notes_fts_ad 与 notes_deletion_log_ad 同表并存）",
           "markers": [],
-          "line": 373,
+          "line": 383,
           "assertions": [
             "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"絮凝剂投加量优化试验\"'`).get() ).toBeTruthy()",
             "expect( db.prepare(`SELECT rowid FROM notes_fts WHERE notes_fts MATCH '\"絮凝剂投加量优化试验\"'`).get() ).toBeUndefined()",
@@ -8706,6 +8870,208 @@
         }
       ]
     },
+    "tests/unit/db/repos/import-snapshot.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"upsert 表序=FK 父先子后钉死（collections→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "upsert 表序=FK 父先子后钉死（collections→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta）",
+          "markers": [],
+          "line": 99,
+          "assertions": [
+            "expect(IMPORT_TABLE_ORDER).toEqual([ 'collections', 'tags', 'papers', 'lineage_nodes', 'paper_tags', 'notes', 'annotations', 'lineage_edges', 'lineage_graph_meta' ])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"乱序构造 FK 违约红证：子先父后（paper_tags 先于 papers/tags）直执 upsert→throws 外键违约（表序必要性的行为锁）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "乱序构造 FK 违约红证：子先父后（paper_tags 先于 papers/tags）直执 upsert→throws 外键违约（表序必要性的行为锁）",
+          "markers": [],
+          "line": 113,
+          "assertions": [
+            "expect(() => repo.upsertRow('paper_tags', { paper_id: 'p-fk', tag_id: 't-fk' }) ).toThrow(/FOREIGN KEY|constraint/i)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"三分支语句面：新键 INSERT（inserted 面）+冲突全列 DO UPDATE（改 title 全列更新）+键查全列读（缺席=null）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "三分支语句面：新键 INSERT（inserted 面）+冲突全列 DO UPDATE（改 title 全列更新）+键查全列读（缺席=null）",
+          "markers": [],
+          "line": 121,
+          "assertions": [
+            "expect(repo.readRow('papers', { id: 'p-3b' })).toMatchObject({ id: 'p-3b', title: '文献p-3b' })",
+            "expect(repo.readRow('papers', { id: 'p-3b' })).toMatchObject({ id: 'p-3b', title: '改题', updated_at: '2026-01-02T00:00:00.000Z' })",
+            "expect((db.prepare(`SELECT COUNT(*) c FROM papers`).get() as { c: number }).c).toBe(1)",
+            "expect(repo.readRow('papers', { id: 'absent' })).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"[R1] 全列入写面：lineage_nodes.tags/lineage_edges.kind 入站真值写入本地（对偶对称——冲突更新亦随 excluded 刷新）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "[R1] 全列入写面：lineage_nodes.tags/lineage_edges.kind 入站真值写入本地（对偶对称——冲突更新亦随 excluded 刷新）",
+          "markers": [],
+          "line": 136,
+          "assertions": [
+            "expect(node.tags).toBe('[\"非默认\"]')",
+            "expect(edge.kind).toBe('manual')",
+            "expect((db.prepare(`SELECT tags FROM lineage_nodes WHERE id='ln-dc'`).get() as { tags: string | null }).tags).toBe( '[\"次轮\"]' )"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"guard 两法=UPDATE 单行：setGuardStop(1) 直执删除不落 deletion_events+复位 0 恢复落账+行数恒 1（INSERT/DELETE 禁——k3-N3 红线）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "guard 两法=UPDATE 单行：setGuardStop(1) 直执删除不落 deletion_events+复位 0 恢复落账+行数恒 1（INSERT/DELETE 禁——k3-N3 红线）",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect((db.prepare(`SELECT COUNT(*) c FROM deletion_events`).get() as { c: number }).c).toBe(0)",
+            "expect(guard.c).toBe(1)",
+            "expect(guard.s).toBe(0)",
+            "expect( (db.prepare(`SELECT COUNT(*) c FROM deletion_events WHERE entity='papers' AND id='p-g2'`).get() as { c: number }).c ).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"直执删除身份矩阵：paper_tags 拆竖线拼接/graph_meta 按 key/缺席=no-op 幂等（changes=0）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "直执删除身份矩阵：paper_tags 拆竖线拼接/graph_meta 按 key/缺席=no-op 幂等（changes=0）",
+          "markers": [],
+          "line": 175,
+          "assertions": [
+            "expect(repo.deleteDirect('paper_tags', 'p-dd|t-dd')).toBe(1)",
+            "expect(repo.deleteDirect('lineage_graph_meta', 'k-dd')).toBe(1)",
+            "expect(repo.deleteDirect('paper_tags', 'p-dd|t-dd')).toBe(0)",
+            "expect(repo.deleteDirect('papers', 'never')).toBe(0)",
+            "expect((db.prepare(`SELECT COUNT(*) c FROM paper_tags`).get() as { c: number }).c).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"身份序列化 identityOf：常规表=id/paper_tags=pid|tid 拼接/graph_meta=key 值（§13.1 矩阵单源）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "身份序列化 identityOf：常规表=id/paper_tags=pid|tid 拼接/graph_meta=key 值（§13.1 矩阵单源）",
+          "markers": [],
+          "line": 190,
+          "assertions": [
+            "expect(identityOf('papers', { id: 'p1' })).toBe('p1')",
+            "expect(identityOf('paper_tags', { paper_id: 'p1', tag_id: 't1' })).toBe('p1|t1')",
+            "expect(identityOf('lineage_graph_meta', { key: 'lineTypes', value: '[]' })).toBe('lineTypes')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"水位：空键≡0→setRecvSeq 分键独立推进（recv_seq:<owner> 十进制数字串）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "水位：空键≡0→setRecvSeq 分键独立推进（recv_seq:<owner> 十进制数字串）",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(repo.getRecvSeq('owner-x')).toBe(0)",
+            "expect(repo.getRecvSeq('owner-x')).toBe(3)",
+            "expect(repo.getRecvSeq('owner-z')).toBe(7)",
+            "expect(row.value).toBe('3')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"导入日志：缺席=null→setImportLog(owner,seq,sha) 单键读写（import_log:<owner>:<seq> 值=payload_sha256）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "导入日志：缺席=null→setImportLog(owner,seq,sha) 单键读写（import_log:<owner>:<seq> 值=payload_sha256）",
+          "markers": [],
+          "line": 210,
+          "assertions": [
+            "expect(repo.getImportLog('owner-x', 1)).toBeNull()",
+            "expect(repo.getImportLog('owner-x', 1)).toBe('ab'.repeat(32))",
+            "expect(row.value).toBe('ab'.repeat(32))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"拒收统计键：getRejectStats 缺席=null→setRejectStats JSON 落 app_meta（import_reject_stats 单键）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "拒收统计键：getRejectStats 缺席=null→setRejectStats JSON 落 app_meta（import_reject_stats 单键）",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(repo.getRejectStats()).toBeNull()",
+            "expect(repo.getRejectStats()).toEqual(stats)",
+            "expect(JSON.parse(row.value)).toEqual(stats)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"[R6] getRecvSeq 非数值存量值显性 throw；getRejectStats 损坏值→空统计 {count:0}（写入自愈）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "[R6] getRecvSeq 非数值存量值显性 throw；getRejectStats 损坏值→空统计 {count:0}（写入自愈）",
+          "markers": [],
+          "line": 237,
+          "assertions": [
+            "expect(() => repo.getRecvSeq('owner-bad')).toThrow(/recv_seq/)",
+            "expect(repo.getRejectStats()).toEqual({ count: 0, lastOwner: null, lastSeq: null, lastSha: null, lastReason: '', lastAt: '' })",
+            "expect(repo.getRejectStats()?.count).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"对端密钥读：readPeerKey 缺席=null→snapshot.repo setPeerKey 落的 64-hex 原值可回读（验签钥解析面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "对端密钥读：readPeerKey 缺席=null→snapshot.repo setPeerKey 落的 64-hex 原值可回读（验签钥解析面）",
+          "markers": [],
+          "line": 259,
+          "assertions": [
+            "expect(repo.readPeerKey('owner-x')).toBeNull()",
+            "expect(repo.readPeerKey('owner-x')).toBe('ab'.repeat(32))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"FTS×3 rebuild 后检索命中：清空索引→papers_fts 检索缺席→rebuildFts()→命中恢复（external content 对账步）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "FTS×3 rebuild 后检索命中：清空索引→papers_fts 检索缺席→rebuildFts()→命中恢复（external content 对账步）",
+          "markers": [],
+          "line": 268,
+          "assertions": [
+            "expect(match()).toBeTruthy()",
+            "expect(match()).toBeUndefined()",
+            "expect(match()).toBeTruthy()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面\",\"父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→九表行数对账（表序正确性的正向锚）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面"
+          ],
+          "title": "父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→九表行数对账（表序正确性的正向锚）",
+          "markers": [],
+          "line": 283,
+          "assertions": [
+            "expect((db.prepare(`SELECT COUNT(*) c FROM ${t}`).get() as { c: number }).c, `${t} 计数`).toBe(n)",
+            "expect( (db.prepare(`SELECT value FROM lineage_graph_meta WHERE key='lineTypes'`).get() as { value: string }).value ).toBe('[]')"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/repos/lineage.repo.order.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -9324,6 +9690,146 @@
           "line": 325,
           "assertions": [
             "expect(repo.listAllIds()).toEqual(['a-second', 'z-first'])"
+          ]
+        }
+      ]
+    },
+    "tests/unit/db/repos/snapshot.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"ensureSyncKey 新库生成 64-hex 落库+再 ensure 幂等值不变（在场永不覆写）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "ensureSyncKey 新库生成 64-hex 落库+再 ensure 幂等值不变（在场永不覆写）",
+          "markers": [],
+          "line": 40,
+          "assertions": [
+            "expect(first).toMatch(/^[0-9a-f]{64}$/)",
+            "expect(second).toBe(first)",
+            "expect(row?.value).toBe(first)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"ensureSyncKey 预置值恒返回（恢复己备份形态——身份/密钥同生命周期）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "ensureSyncKey 预置值恒返回（恢复己备份形态——身份/密钥同生命周期）",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect(repo.ensureSyncKey()).toBe(preset)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"readSyncKey 装配序缺陷=显性 throw（缺席态非 null 返回——ensure 已在装配期跑）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "readSyncKey 装配序缺陷=显性 throw（缺席态非 null 返回——ensure 已在装配期跑）",
+          "markers": [],
+          "line": 65,
+          "assertions": [
+            "expect(() => repo.readSyncKey()).toThrow(/sync_key/)",
+            "expect(repo.readSyncKey()).toMatch(/^[0-9a-f]{64}$/)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"nextSnapshotSeq 空键≡0→首导=1；commit 写回后=2（§13.4 分配语义）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "nextSnapshotSeq 空键≡0→首导=1；commit 写回后=2（§13.4 分配语义）",
+          "markers": [],
+          "line": 74,
+          "assertions": [
+            "expect(repo.nextSnapshotSeq()).toBe(1)",
+            "expect(repo.nextSnapshotSeq()).toBe(2)",
+            "expect(row?.value).toBe('1')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"对端密钥 set/list/remove：键前缀实键+importedAt=导入时刻+remove 布尔回值\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "对端密钥 set/list/remove：键前缀实键+importedAt=导入时刻+remove 布尔回值",
+          "markers": [],
+          "line": 87,
+          "assertions": [
+            "expect(peers).toHaveLength(1)",
+            "expect(peers[0]!.ownerId).toBe(owner)",
+            "expect(peers[0]!.importedAt).toMatch(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/)",
+            "expect(row?.value).toBe('cd'.repeat(32))",
+            "expect(repo.listPeerKeys().map((x) => x.ownerId)).toEqual([owner])",
+            "expect(repo.listPeerKeys()).toHaveLength(1)",
+            "expect(row2?.value).toBe('ef'.repeat(32))",
+            "expect(repo.removePeerKey(owner)).toBe(true)",
+            "expect(repo.removePeerKey(owner)).toBe(false)",
+            "expect(repo.listPeerKeys()).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"九表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "九表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表）",
+          "markers": [],
+          "line": 120,
+          "assertions": [
+            "expect(rows.papers.map((r) => r.id)).toEqual(['p-a', 'p-z', 'p-c', 'p-b'])",
+            "expect(rows.collections.map((r) => r.id)).toEqual(['__main__', 'c-1', 'c-2'])",
+            "expect(rows.tags.map((r) => r.id)).toEqual(['t-1', 't-2'])",
+            "expect(rows.paper_tags.map((r) => [r.paper_id, r.tag_id])).toEqual([ ['p-a', 't-1'], ['p-a', 't-2'], ['p-b', 't-1'] ])",
+            "expect(rows.notes.map((r) => r.id)).toEqual(['n-1', 'n-2'])",
+            "expect(rows.lineage_graph_meta.map((r) => r.key)).toEqual(['lineTypes', 'k-b', 'k-a'])",
+            "expect(rows.annotations.map((r) => r.id)).toEqual(['a-m', 'a-z2'])",
+            "expect(rows.lineage_nodes.map((r) => r.id)).toEqual(['ln-m', 'ln-z2'])",
+            "expect(rows.lineage_edges.map((r) => r.id)).toEqual(['le-m', 'le-z2'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"九表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "九表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面）",
+          "markers": [],
+          "line": 194,
+          "assertions": [
+            "expect(Object.keys(firstOf[t]!).sort(), `${t} 列集=迁移终态全列`).toEqual(expected)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"readDeletionEvents 全量读：删带 1 note+1 annotation+1 paper_tag 的 paper→4 事件全在场+seq 升序（r4 级联超集实证面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "readDeletionEvents 全量读：删带 1 note+1 annotation+1 paper_tag 的 paper→4 事件全在场+seq 升序（r4 级联超集实证面）",
+          "markers": [],
+          "line": 240,
+          "assertions": [
+            "expect(events).toHaveLength(4)",
+            "expect(new Set(events.map((e) => e.entity))).toEqual( new Set(['papers', 'notes', 'annotations', 'paper_tags']) )",
+            "expect(seqs).toEqual([...seqs].sort((a, b) => a - b))",
+            "expect(events[0]!.deleted_at).toMatch(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
+          ],
+          "title": "readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）",
+          "markers": [],
+          "line": 265,
+          "assertions": [
+            "expect(repo.readSchemaVersion()).toBe(21)"
           ]
         }
       ]
@@ -10383,6 +10889,108 @@
             "expect(diag).toHaveLength(ALLOWED_REMOTE_HOSTS.length)",
             "expect(cr).toEqual({ host: 'api.crossref.org', ok: true, latencyMs: 42 })",
             "expect(diag.filter((d) => !d.ok).every((d) => d.latencyMs === -1)).toBe(true)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/ipc/snapshot.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"exportToFile 成功路径：构建→saveFile（默认名+过滤器形态）→落盘真字节→commit→res 形状\"]",
+          "describePath": [],
+          "title": "exportToFile 成功路径：构建→saveFile（默认名+过滤器形态）→落盘真字节→commit→res 形状",
+          "markers": [],
+          "line": 53,
+          "assertions": [
+            "expect(r).toEqual({ filePath: target, snapshotSeq: 1, tableCounts: TABLE_COUNTS })",
+            "expect(saveFile).toHaveBeenCalledWith('synapse-snapshot.synsnap', [ { name: 'Synapse 快照', extensions: ['synsnap'] } ])",
+            "expect((await readFile(target, 'utf8'))).toBe('synsnap-fixture')",
+            "expect(service.commitExport).toHaveBeenCalledWith(1)"
+          ]
+        },
+        {
+          "key": "[\"取消保存：saveFile=null→code=CANCELLED+零落盘+零计数消耗（commitExport 未调）\"]",
+          "describePath": [],
+          "title": "取消保存：saveFile=null→code=CANCELLED+零落盘+零计数消耗（commitExport 未调）",
+          "markers": [],
+          "line": 69,
+          "assertions": [
+            "expect(ipc.exportToFile({})).rejects.toMatchObject({ code: 'CANCELLED' })",
+            "expect(service.commitExport).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"构建失败零弹框：exportToBuffer 抛→saveFile 未调（先构建后弹框——export_.ts 先例）\"]",
+          "describePath": [],
+          "title": "构建失败零弹框：exportToBuffer 抛→saveFile 未调（先构建后弹框——export_.ts 先例）",
+          "markers": [],
+          "line": 78,
+          "assertions": [
+            "expect(ipc.exportToFile({})).rejects.toThrow(/构建失败夹具/)",
+            "expect(saveFile).not.toHaveBeenCalled()",
+            "expect(service.commitExport).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"[回炉 R11b] 落盘失败→零 commitExport（seq 完整性路径——写失败不耗卷号）\"]",
+          "describePath": [],
+          "title": "[回炉 R11b] 落盘失败→零 commitExport（seq 完整性路径——写失败不耗卷号）",
+          "markers": [],
+          "line": 93,
+          "assertions": [
+            "expect(ipc.exportToFile({})).rejects.toThrow()",
+            "expect(service.commitExport).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"薄分发三通道：getSyncKey/importPeerKey/listPeerKeys 直通 service\"]",
+          "describePath": [],
+          "title": "薄分发三通道：getSyncKey/importPeerKey/listPeerKeys 直通 service",
+          "markers": [],
+          "line": 105,
+          "assertions": [
+            "expect(info.bundle).toHaveLength(101)",
+            "expect(imported.ownerId).toBe('4d3c9b15-6e7f-4a2b-8c3d-0f1a2b3c4d5e')",
+            "expect(service.importPeerKey).toHaveBeenCalledWith('x')",
+            "expect(listed).toEqual({ peers: [] })",
+            "expect(removed).toEqual({ removed: true })"
+          ]
+        },
+        {
+          "key": "[\"importFromFile 成功：openFile（过滤器形态）→真读文件字节→importFromBuffer 收同字节→Res 直通\"]",
+          "describePath": [],
+          "title": "importFromFile 成功：openFile（过滤器形态）→真读文件字节→importFromBuffer 收同字节→Res 直通",
+          "markers": [],
+          "line": 122,
+          "assertions": [
+            "expect(r.outcome).toBe('applied')",
+            "expect(openFile).toHaveBeenCalledWith([{ name: 'Synapse 快照', extensions: ['synsnap'] }])",
+            "expect(importer.importFromBuffer).toHaveBeenCalledWith(Buffer.from('u3-envelope-bytes'))"
+          ]
+        },
+        {
+          "key": "[\"importFromFile 取消：openFile=null→code=CANCELLED+importFromBuffer 未调\"]",
+          "describePath": [],
+          "title": "importFromFile 取消：openFile=null→code=CANCELLED+importFromBuffer 未调",
+          "markers": [],
+          "line": 141,
+          "assertions": [
+            "expect(ipc.importFromFile({})).rejects.toMatchObject({ code: 'CANCELLED' })",
+            "expect(importer.importFromBuffer).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"importFromFile 读失败：不存在路径→INVALID_REQUEST 中文消息+importFromBuffer 未调\"]",
+          "describePath": [],
+          "title": "importFromFile 读失败：不存在路径→INVALID_REQUEST 中文消息+importFromBuffer 未调",
+          "markers": [],
+          "line": 153,
+          "assertions": [
+            "expect(ipc.importFromFile({})).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
+            "expect(importer.importFromBuffer).not.toHaveBeenCalled()"
           ]
         }
       ]
@@ -29632,6 +30240,166 @@
         }
       ]
     },
+    "tests/unit/renderer/qr-encode.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"结构族：101 字节 bundle→版本 6（size=41）+三 finder 7×7 图案+分隔环浅色\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "结构族：101 字节 bundle→版本 6（size=41）+三 finder 7×7 图案+分隔环浅色",
+          "markers": [],
+          "line": 62,
+          "assertions": [
+            "expect(m.size).toBe(41)",
+            "expect(m.modules).toHaveLength(41)",
+            "expect(m.modules[r0 + i]![c0 + j]!, `finder(${r0},${c0}) 单元(${i},${j})`).toBe(isFinderCell(i, j))",
+            "expect(m.modules[7]![j]).toBe(false)",
+            "expect(m.modules[j]![7]).toBe(false)",
+            "expect(m.modules[7]![m.size - 1 - j]).toBe(false)",
+            "expect(m.modules[j]![m.size - 8]).toBe(false)",
+            "expect(m.modules[m.size - 8]![j]).toBe(false)",
+            "expect(m.modules[m.size - 1 - j]![7]).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"结构族：timing 行列交替（暗=偶下标）+dark module(4v+9,8) 恒黑\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "结构族：timing 行列交替（暗=偶下标）+dark module(4v+9,8) 恒黑",
+          "markers": [],
+          "line": 91,
+          "assertions": [
+            "expect(m.modules[6]![c]!, `timing 行列 ${c}`).toBe(c % 2 === 0)",
+            "expect(m.modules[c]![6]!, `timing 列行 ${c}`).toBe(c % 2 === 0)",
+            "expect(m.modules[4 * 6 + 9]![8]).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"结构族：alignment 图案按版本表在位（v6=[6,34]→唯一 (34,34) 中心；v10=[6,28,50]）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "结构族：alignment 图案按版本表在位（v6=[6,34]→唯一 (34,34) 中心；v10=[6,28,50]）",
+          "markers": [],
+          "line": 100,
+          "assertions": [
+            "expect(m6.size).toBe(41)",
+            "expect(m6.modules[34 - 2 + i]![34 - 2 + j]!, `v6 alignment(${i},${j})`).toBe(isAlignmentCell(i, j))",
+            "expect(m10.size).toBe(57)",
+            "expect(m10.modules[r - 2 + i]![c - 2 + j]!, `v10 alignment(${r},${c})(${i},${j})`).toBe( isAlignmentCell(i, j) )"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"结构族：format BCH(15,5) 解码回读=ECC M（ecl 位 00）+掩码号合法+双副本一致\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "结构族：format BCH(15,5) 解码回读=ECC M（ecl 位 00）+掩码号合法+双副本一致",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(bchRem(dataA)).toBe(fa & 0x3ff)",
+            "expect(bchRem(dataB)).toBe(fb & 0x3ff)",
+            "expect(dataA >> 3).toBe(0)",
+            "expect(dataB >> 3).toBe(0)",
+            "expect(dataA).toBe(dataB)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"RS 代数：v1 与 v6 各块完整码字在生成子全部根处求值≡0（GF(256) 独立复刻）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "RS 代数：v1 与 v6 各块完整码字在生成子全部根处求值≡0（GF(256) 独立复刻）",
+          "markers": [],
+          "line": 171,
+          "assertions": [
+            "expect(evalAtRoot(full, k), `输入 ${input} 块在 α^${k} 处`).toBe(0)",
+            "expect(b6.version).toBe(6)",
+            "expect(b6.blocks).toHaveLength(4)",
+            "expect(b6.blocks[0]!.data).toHaveLength(27)",
+            "expect(b6.blocks[0]!.ecc).toHaveLength(16)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"确定性：同输入两次矩阵全等；1 字节差矩阵不等\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "确定性：同输入两次矩阵全等；1 字节差矩阵不等",
+          "markers": [],
+          "line": 189,
+          "assertions": [
+            "expect(a1.modules).toEqual(a2.modules)",
+            "expect(b.modules).not.toEqual(a1.modules)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"容量锚：v1=14 字节上限含端；v6=106；v10=213 上限含端；214 字节显性 throw\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "容量锚：v1=14 字节上限含端；v6=106；v10=213 上限含端；214 字节显性 throw",
+          "markers": [],
+          "line": 197,
+          "assertions": [
+            "expect(encodeQr('x'.repeat(14)).size).toBe(21)",
+            "expect(encodeQr('x'.repeat(15)).size).toBe(25)",
+            "expect(encodeQr('x'.repeat(106)).size).toBe(41)",
+            "expect(encodeQr('x'.repeat(213)).size).toBe(57)",
+            "expect(() => encodeQr('x'.repeat(214))).toThrow(/QR 载荷超容量/)",
+            "expect(encodeQr('智慧水务').size).toBe(21)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"RS 代数 v10 锚：213 字节合成输入→v10（5 块 43/43/43/43/44+26ecc）根求值≡0（多块交错同锁）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "RS 代数 v10 锚：213 字节合成输入→v10（5 块 43/43/43/43/44+26ecc）根求值≡0（多块交错同锁）",
+          "markers": [],
+          "line": 207,
+          "assertions": [
+            "expect(b.version).toBe(10)",
+            "expect(b.blocks).toHaveLength(5)",
+            "expect(b.blocks.map((blk) => blk.data.length)).toEqual([43, 43, 43, 43, 44])",
+            "expect(b.blocks[0]!.ecc).toHaveLength(26)",
+            "expect(evalAtRoot(full, k), `v10 块在 α^${k} 处`).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"回放：矩阵（标准函数面跳过+掩码反转）zigzag 位流≡interleave 码字流（v1 短串）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "回放：矩阵（标准函数面跳过+掩码反转）zigzag 位流≡interleave 码字流（v1 短串）",
+          "markers": [],
+          "line": 366,
+          "assertions": [
+            "expect(replay.length).toBeGreaterThanOrEqual(expectBits.length)",
+            "expect(replay.slice(0, expectBits.length), '回放位流与编码码字流逐位对齐').toEqual(expectBits)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）\",\"回放：矩阵（标准函数面跳过+掩码反转）zigzag 位流≡interleave 码字流（101 字节 bundle（v6））\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 qr-encode —— byte mode/ECC M/v1-10/掩码自动（纯函数）"
+          ],
+          "title": "回放：矩阵（标准函数面跳过+掩码反转）zigzag 位流≡interleave 码字流（101 字节 bundle（v6））",
+          "markers": [],
+          "line": 366,
+          "assertions": [
+            "expect(replay.length).toBeGreaterThanOrEqual(expectBits.length)",
+            "expect(replay.slice(0, expectBits.length), '回放位流与编码码字流逐位对齐').toEqual(expectBits)"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/r3-rdr-set-visual.test.tsx": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -34157,6 +34925,195 @@
             "expect(h.getAttribute('aria-valuemax')).toBe('400')",
             "expect(h.getAttribute('aria-label')).not.toBeNull()",
             "expect(document.body.style.userSelect).toBe('')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/sync-key-section.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"节标题「同步密钥」真文本渲染+说明文案在场（密钥不随快照传输——带外分发）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "节标题「同步密钥」真文本渲染+说明文案在场（密钥不随快照传输——带外分发）",
+          "markers": [],
+          "line": 101,
+          "assertions": [
+            "expect(host?.textContent).toContain('同步密钥')",
+            "expect(host?.textContent).toContain('带外')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"bundle 文本形态=uuid:64-hex（等宽展示）+QR svg 在场（rect>0）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "bundle 文本形态=uuid:64-hex（等宽展示）+QR svg 在场（rect>0）",
+          "markers": [],
+          "line": 113,
+          "assertions": [
+            "expect(bundleEl?.textContent).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:[0-9a-f]{64}$/)",
+            "expect((rects?.length ?? 0)).toBeGreaterThan(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入非法串→错误 toast+importPeerKey 零调用（本地预校验拦）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入非法串→错误 toast+importPeerKey 零调用（本地预校验拦）",
+          "markers": [],
+          "line": 127,
+          "assertions": [
+            "expect(stubApi.snapshot.importPeerKey).not.toHaveBeenCalled()",
+            "expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('格式不正确'), 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入合法→importPeerKey 调用+对端列表刷新呈现（owner 短标=uuid 前 8 位）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入合法→importPeerKey 调用+对端列表刷新呈现（owner 短标=uuid 前 8 位）",
+          "markers": [],
+          "line": 142,
+          "assertions": [
+            "expect(stubApi.snapshot.importPeerKey).toHaveBeenCalledWith({ bundle: `${PEER}:${'cd'.repeat(32)}` })",
+            "expect(stubApi.snapshot.listPeerKeys).toHaveBeenCalledTimes(2)",
+            "expect(host?.textContent).toContain(PEER.slice(0, 8))",
+            "expect(toastSpy).toHaveBeenCalledWith('同步密钥已导入', 'success')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"移除对端→removePeerKey 调用+列表刷新为空\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "移除对端→removePeerKey 调用+列表刷新为空",
+          "markers": [],
+          "line": 164,
+          "assertions": [
+            "expect(stubApi.snapshot.removePeerKey).toHaveBeenCalledWith({ ownerId: PEER })",
+            "expect(host?.querySelector('[data-testid=\"sync-key-peers\"]')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"[回炉 R3] 导出快照成功：exportToFile 调用+成功 toast 含卷号（第 N 卷）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "[回炉 R3] 导出快照成功：exportToFile 调用+成功 toast 含卷号（第 N 卷）",
+          "markers": [],
+          "line": 183,
+          "assertions": [
+            "expect(stubApi.snapshot.exportToFile).toHaveBeenCalledWith({})",
+            "expect(toastSpy).toHaveBeenCalledWith('快照已导出（第 3 卷）', 'success')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"[回炉 R3] 导出取消：CANCELLED 回包→info toast 已取消导出（非 error 面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "[回炉 R3] 导出取消：CANCELLED 回包→info toast 已取消导出（非 error 面）",
+          "markers": [],
+          "line": 196,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('已取消导出', 'info')",
+            "expect(toastSpy).not.toHaveBeenCalledWith(expect.anything(), 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"[回炉 R11a] 复制按钮：navigator.clipboard.writeText 收 bundle 全串+成功 toast\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "[回炉 R11a] 复制按钮：navigator.clipboard.writeText 收 bundle 全串+成功 toast",
+          "markers": [],
+          "line": 209,
+          "assertions": [
+            "expect(writeText).toHaveBeenCalledWith(BUNDLE)",
+            "expect(toastSpy).toHaveBeenCalledWith('同步密钥已复制', 'success')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入快照 applied：成功 toast 逐字「已导入第 N 卷：新 X 改 Y 删 Z」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入快照 applied：成功 toast 逐字「已导入第 N 卷：新 X 改 Y 删 Z」",
+          "markers": [],
+          "line": 224,
+          "assertions": [
+            "expect(stubApi.snapshot.importFromFile).toHaveBeenCalledWith({})",
+            "expect(toastSpy).toHaveBeenCalledWith('已导入第 2 卷：新 3 改 1 删 2', 'success')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入快照 A7 冲突：toast 附「冲突 n 行（首例 entity/id）」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入快照 A7 冲突：toast 附「冲突 n 行（首例 entity/id）」",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('已导入第 2 卷：新 1 改 0 删 0，冲突 2 行（首例 papers/p-l3）', 'success')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入快照 rejected：原因码中文映射 toast（seq_stale 例）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入快照 rejected：原因码中文映射 toast（seq_stale 例）",
+          "markers": [],
+          "line": 268,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('导入被拒：该快照卷不比本地已导入的新', 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入快照取消：CANCELLED 回包→info toast 已取消导入（非 error 面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入快照取消：CANCELLED 回包→info toast 已取消导入（非 error 面）",
+          "markers": [],
+          "line": 280,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('已取消导入', 'info')",
+            "expect(toastSpy).not.toHaveBeenCalledWith(expect.anything(), 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"导入快照幂等 no-op：noop 回包→info toast「第 N 卷此前已导入，本次未重复应用」\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "导入快照幂等 no-op：noop 回包→info toast「第 N 卷此前已导入，本次未重复应用」",
+          "markers": [],
+          "line": 293,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('第 2 卷此前已导入，本次未重复应用', 'info')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节\",\"[R8] 拒收原因码中文映射：十码全键+文案逐字快照\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 SyncKeySection —— 设置页同步密钥节"
+          ],
+          "title": "[R8] 拒收原因码中文映射：十码全键+文案逐字快照",
+          "markers": [],
+          "line": 313,
+          "assertions": [
+            "expect(Object.keys(IMPORT_REASON_ZH).sort()).toEqual([...SNAPSHOT_IMPORT_REJECT_REASONS].sort())",
+            "expect(zh, `原因码 ${reason} 的中文映射`).toBe(expected[reason])",
+            "expect(zh.length, `原因码 ${reason} 映射非空`).toBeGreaterThan(0)"
           ]
         }
       ]
@@ -44706,7 +45663,7 @@
           ],
           "title": "有 DOI 且 CrossRef 命中：source=crossref，enrich_status=done",
           "markers": [],
-          "line": 109,
+          "line": 111,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(applied).toMatchObject({ source: 'crossref', enrichStatus: 'done' })"
@@ -44719,7 +45676,7 @@
           ],
           "title": "DOI 未命中 → OpenAlex 标题兜底",
           "markers": [],
-          "line": 126,
+          "line": 128,
           "assertions": [
             "expect(applied).toMatchObject({ source: 'openalex' })"
           ]
@@ -44731,7 +45688,7 @@
           ],
           "title": "全部未命中：enrich_status=failed，仍返回详情",
           "markers": [],
-          "line": 146,
+          "line": 148,
           "assertions": [
             "expect(r.enrichStatus).toBe('failed')",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -44744,7 +45701,7 @@
           ],
           "title": "上游抛错（网络）不向上传播：按 failed 回写",
           "markers": [],
-          "line": 164,
+          "line": 166,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(applied).toMatchObject({ enrichStatus: 'failed' })"
@@ -44757,7 +45714,7 @@
           ],
           "title": "文献不存在抛 NOT_FOUND",
           "markers": [],
-          "line": 187,
+          "line": 189,
           "assertions": [
             "expect(svc.enrichPaper('ghost')).rejects.toMatchObject({ code: 'NOT_FOUND' })"
           ]
@@ -44769,7 +45726,7 @@
           ],
           "title": "crossref 命中带被引数：applyEnrichment 第三参写入 {count,fetchedAt,source}",
           "markers": [],
-          "line": 199,
+          "line": 201,
           "assertions": [
             "expect(citedByArg).toEqual({ count: 5, fetchedAt: '2026-02-01T00:00:00Z', source: 'crossref' })"
           ]
@@ -44781,7 +45738,7 @@
           ],
           "title": "瀑布异常（work=null）：enrich_status=failed 且 citedBy 参数 undefined（缓存保留）",
           "markers": [],
-          "line": 223,
+          "line": 225,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'failed' })",
             "expect(enrichStatus).toBe('failed')",
@@ -44795,12 +45752,277 @@
           ],
           "title": "arxiv 命中（citedByCount=null）：done 且 citedBy 参数 undefined（不写缓存）",
           "markers": [],
-          "line": 250,
+          "line": 252,
           "assertions": [
             "expect(svc.enrichPaper('p-1')).resolves.toMatchObject({ enrichStatus: 'done' })",
             "expect(source).toBe('arxiv')",
             "expect(enrichStatus).toBe('done')",
             "expect(citedByArg).toBeUndefined()"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/envelope.codec.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"canonical 规则：键字母序+无空白+无尾换行+UTF-8 中文值原样（非转义）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "canonical 规则：键字母序+无空白+无尾换行+UTF-8 中文值原样（非转义）",
+          "markers": [],
+          "line": 59,
+          "assertions": [
+            "expect(canonicalJson({ b: 1, a: 2 })).toBe('{\"a\":2,\"b\":1}')",
+            "expect(canonicalJson({ z: { d: 1, c: [3, 1, 2] }, a: 'x' })).toBe('{\"a\":\"x\",\"z\":{\"c\":[3,1,2],\"d\":1}}')",
+            "expect(canonicalJson({ k: '文献' })).toBe('{\"k\":\"文献\"}')",
+            "expect(Buffer.from(canonicalJson({ k: '文献' }), 'utf8')).toEqual(Buffer.from('{\"k\":\"文献\"}', 'utf8'))",
+            "expect(text.endsWith('}')).toBe(true)",
+            "expect(text.endsWith('\\n')).toBe(false)",
+            "expect(text).not.toContain(': ')",
+            "expect(text).not.toContain(', ')",
+            "expect(text).not.toContain('\\n')",
+            "expect(payloadText).toContain('中文文献')",
+            "expect(payloadText).not.toContain('\\\\u')",
+            "expect(Buffer.from(payloadText, 'utf8')).toEqual(Buffer.from(payloadText, 'utf8'))"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"HKDF 三钥=独立 hkdfSync 复算对账（salt 逐字 synapse/dbcamp01/v1.3+三 info+三钥互异）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "HKDF 三钥=独立 hkdfSync 复算对账（salt 逐字 synapse/dbcamp01/v1.3+三 info+三钥互异）",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(Buffer.from(hkdfSync('sha256', ikm, HKDF_SALT, 'synapse/aes', 32)).toString('hex')).toBe( deriveKeys(SYNC_KEY).encKey.toString('hex') )",
+            "expect(Buffer.from(hkdfSync('sha256', ikm, HKDF_SALT, 'synapse/hmac', 32)).toString('hex')).toBe( deriveKeys(SYNC_KEY).macKey.toString('hex') )",
+            "expect(Buffer.from(hkdfSync('sha256', ikm, HKDF_SALT, 'synapse/blob', 32)).toString('hex')).toBe( deriveKeys(SYNC_KEY).blobKey.toString('hex') )",
+            "expect(HKDF_SALT).toBe('synapse/dbcamp01/v1.3')",
+            "expect(encKey.equals(macKey)).toBe(false)",
+            "expect(encKey.equals(blobKey)).toBe(false)",
+            "expect(macKey.equals(blobKey)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"MAC 面=去 hmac 键 canonical 字节（排除自指）：构造后以 macKey 独立重算仍等\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "MAC 面=去 hmac 键 canonical 字节（排除自指）：构造后以 macKey 独立重算仍等",
+          "markers": [],
+          "line": 97,
+          "assertions": [
+            "expect(_mac).toMatch(/^[0-9a-f]{64}$/)",
+            "expect(recomputed).toBe(env.hmac_sha256)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"envelope 字段九键钉死+table_counts=实载行数+format_version 恒 1+payload_nonce base64\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "envelope 字段九键钉死+table_counts=实载行数+format_version 恒 1+payload_nonce base64",
+          "markers": [],
+          "line": 106,
+          "assertions": [
+            "expect(Object.keys(env).sort()).toEqual( [ 'format_version', 'hmac_sha256', 'owner_id', 'payload', 'payload_nonce', 'payload_sha256', 'schema_version', 'snapshot_seq', 'table_counts' ].sort() )",
+            "expect(env.format_version).toBe(1)",
+            "expect(env.schema_version).toBe(21)",
+            "expect(env.snapshot_seq).toBe(1)",
+            "expect(env.table_counts).toEqual({ papers: 1, collections: 0, tags: 0, paper_tags: 0, notes: 1, annotations: 0, lineage_nodes: 0, lineage_edges: 0, lineage_graph_meta: 0 })",
+            "expect(env.payload_nonce).toBe(FIXED_NONCE.toString('base64'))",
+            "expect(env.payload_sha256).toMatch(/^[0-9a-f]{64}$/)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"verifyEnvelope 合法卷恒 true（GCM 认证+MAC 双过）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "verifyEnvelope 合法卷恒 true（GCM 认证+MAC 双过）",
+          "markers": [],
+          "line": 139,
+          "assertions": [
+            "expect(verifyEnvelope(env, SYNC_KEY)).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"AAD 面=MAC 面：重签 HMAC 的字段搬运卷被 GCM 认证拦（owner 换值+MAC 重算→仍 false）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "AAD 面=MAC 面：重签 HMAC 的字段搬运卷被 GCM 认证拦（owner 换值+MAC 重算→仍 false）",
+          "markers": [],
+          "line": 144,
+          "assertions": [
+            "expect(verifyEnvelope(tampered, SYNC_KEY)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"verifyEnvelope 缺 hmac 字段/密钥错配恒 false\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "verifyEnvelope 缺 hmac 字段/密钥错配恒 false",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect(verifyEnvelope(stripped, SYNC_KEY)).toBe(false)",
+            "expect(verifyEnvelope(env, 'cd'.repeat(32))).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"decodeEnvelope 合法卷 ok：body 九键+plaintext=canonical payload 字节（重序列化对账恒等）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "decodeEnvelope 合法卷 ok：body 九键+plaintext=canonical payload 字节（重序列化对账恒等）",
+          "markers": [],
+          "line": 167,
+          "assertions": [
+            "expect(dec.ok).toBe(true)",
+            "expect(dec.body).toEqual(env)",
+            "expect(canonicalJson(JSON.parse(text))).toBe(text)",
+            "expect(text).toContain('中文文献')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC\",\"decodeEnvelope 四分支原因码逐码：struct_invalid（剥 hmac 键/nonce≠12B/密文<tag 长/非 base64）/version_mismatch（format_version=2）/hmac_fail（owner 换值）/decrypt_fail（密文翻转+MAC 重签——r3-N8 构造）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 envelope.codec —— canonical+HKDF 三钥+AES-GCM+HMAC"
+          ],
+          "title": "decodeEnvelope 四分支原因码逐码：struct_invalid（剥 hmac 键/nonce≠12B/密文<tag 长/非 base64）/version_mismatch（format_version=2）/hmac_fail（owner 换值）/decrypt_fail（密文翻转+MAC 重签——r3-N8 构造）",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(decodeEnvelope(stripped, SYNC_KEY)).toMatchObject({ ok: false, reason: 'struct_invalid' })",
+            "expect(decodeEnvelope({ ...env, payload_nonce: Buffer.alloc(8).toString('base64') }, SYNC_KEY)).toMatchObject({ ok: false, reason: 'struct_invalid' })",
+            "expect(decodeEnvelope({ ...env, payload: Buffer.alloc(8).toString('base64') }, SYNC_KEY)).toMatchObject({ ok: false, reason: 'struct_invalid' })",
+            "expect(decodeEnvelope({ ...env, payload: '!!not-base64!!' }, SYNC_KEY)).toMatchObject({ ok: false, reason: 'struct_invalid' })",
+            "expect(decodeEnvelope({ ...env, format_version: 2 }, SYNC_KEY)).toMatchObject({ ok: false, reason: 'version_mismatch' })",
+            "expect(decodeEnvelope({ ...env, owner_id: '3f2b8a04-5c6d-4e1f-9a2b-7c8d9e0f1a2c' }, SYNC_KEY)).toMatchObject({ ok: false, reason: 'hmac_fail' })",
+            "expect(decodeEnvelope(moved, SYNC_KEY)).toMatchObject({ ok: false, reason: 'decrypt_fail' })"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/export-snapshot.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"getSyncKeyInfo：bundle=<owner>:<sync_key> 恒 101 字符（36+1+64）+三键齐\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "getSyncKeyInfo：bundle=<owner>:<sync_key> 恒 101 字符（36+1+64）+三键齐",
+          "markers": [],
+          "line": 116,
+          "assertions": [
+            "expect(info.ownerId).toBe(OWNER)",
+            "expect(info.syncKey).toMatch(/^[0-9a-f]{64}$/)",
+            "expect(info.bundle).toBe(`${info.ownerId}:${info.syncKey}`)",
+            "expect(info.bundle).toHaveLength(101)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"envelope 确定性（INV-D）：同库+注同 nonce→文件字节全等；异 nonce→payload/hmac 变、明文字段不变\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "envelope 确定性（INV-D）：同库+注同 nonce→文件字节全等；异 nonce→payload/hmac 变、明文字段不变",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect(Buffer.compare(a.bytes, b.bytes)).toBe(0)",
+            "expect(envA.payload).not.toBe(envC.payload)",
+            "expect(envA.hmac_sha256).not.toBe(envC.hmac_sha256)",
+            "expect(envA.payload_nonce).not.toBe(envC.payload_nonce)",
+            "expect(envA.payload_sha256).toBe(envC.payload_sha256)",
+            "expect(envA.owner_id).toBe(envC.owner_id)",
+            "expect(envA.table_counts).toEqual(envC.table_counts)",
+            "expect(envA.format_version).toBe(envC.format_version)",
+            "expect(envA.schema_version).toBe(envC.schema_version)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"tamper 红证三则：payload 改一字节/owner_id 换值/table_counts 改数→verifyEnvelope 恒 false\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "tamper 红证三则：payload 改一字节/owner_id 换值/table_counts 改数→verifyEnvelope 恒 false",
+          "markers": [],
+          "line": 152,
+          "assertions": [
+            "expect(verifyEnvelope(env, syncKey.value)).toBe(true)",
+            "expect(verifyEnvelope(tamperedPayload, syncKey.value)).toBe(false)",
+            "expect(verifyEnvelope(tamperedOwner, syncKey.value)).toBe(false)",
+            "expect(verifyEnvelope(tamperedCounts, syncKey.value)).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"table_counts=实载行数（九键恰 §13.7 九表）+seq 语义：首导 1/构建取消零耗/commit 后再导=2\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "table_counts=实载行数（九键恰 §13.7 九表）+seq 语义：首导 1/构建取消零耗/commit 后再导=2",
+          "markers": [],
+          "line": 177,
+          "assertions": [
+            "expect(first.snapshotSeq).toBe(1)",
+            "expect(first.tableCounts).toEqual({ papers: 1, collections: 1, tags: 1, paper_tags: 1, notes: 1, annotations: 1, lineage_nodes: 2, lineage_edges: 1, lineage_graph_meta: 1 })",
+            "expect(service.exportToBuffer().snapshotSeq).toBe(1)",
+            "expect(service.exportToBuffer().snapshotSeq).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"pdf_refs：paper_id 序+file_ref 随卷+blob_id=HMAC(blob_key, sha256) 独立手算对账\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "pdf_refs：paper_id 序+file_ref 随卷+blob_id=HMAC(blob_key, sha256) 独立手算对账",
+          "markers": [],
+          "line": 200,
+          "assertions": [
+            "expect(payload.pdf_refs.map((r) => r.paper_id)).toEqual(['p-0', 'p-1', 'p-9'])",
+            "expect(payload.pdf_refs[1]!.file_ref).toBe('f/p-1.pdf')",
+            "expect(payload.pdf_refs[1]!.blob_id).toBe(expected)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"deletions 全量含级联账（r4 勘正前提行为锁）：删 p-2→papers+notes 两事件在场（§13.1 超集）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "deletions 全量含级联账（r4 勘正前提行为锁）：删 p-2→papers+notes 两事件在场（§13.1 超集）",
+          "markers": [],
+          "line": 226,
+          "assertions": [
+            "expect(entities).toContain('papers')",
+            "expect(entities).toContain('notes')",
+            "expect(payload.deletions).toHaveLength(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面\",\"importPeerKey 三态：非法串=INVALID_REQUEST 中文消息；本库自身=拒；合法异库=落库+回 ownerId\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面"
+          ],
+          "title": "importPeerKey 三态：非法串=INVALID_REQUEST 中文消息；本库自身=拒；合法异库=落库+回 ownerId",
+          "markers": [],
+          "line": 242,
+          "assertions": [
+            "expect(() => service.importPeerKey('not-a-bundle')).toThrow(/同步密钥/)",
+            "expect(() => service.importPeerKey(`${OWNER}:${syncKey}`)).toThrow(/本库自身/)",
+            "expect(r).toEqual({ ownerId: PEER })",
+            "expect(service.listPeerKeys().map((p) => p.ownerId)).toEqual([PEER])",
+            "expect(service.removePeerKey(PEER)).toBe(true)"
           ]
         }
       ]
@@ -45437,6 +46659,313 @@
         }
       ]
     },
+    "tests/unit/services/import-snapshot.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练① X/Y 异行集合并→零覆盖（Y 本地行原样保留）+零丢行（源行全数在场）+inserted 计数不含种子行\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练① X/Y 异行集合并→零覆盖（Y 本地行原样保留）+零丢行（源行全数在场）+inserted 计数不含种子行",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats?.inserted).toBe(2)",
+            "expect(res.stats?.a7Conflicts).toBe(0)",
+            "expect(paperCount(y.db, 'p-x1')).toBe(1)",
+            "expect(paperCount(y.db, 'p-y1')).toBe(1)",
+            "expect(yRow.title).toBe('接收端本地文献')",
+            "expect(yRow.updated_at).toBe('2026-03-01T00:00:00.000Z')",
+            "expect(recvSeqOf(y.db, OWNER_X)).toBe(1)",
+            "expect( y.db.prepare(`SELECT rowid FROM papers_fts WHERE papers_fts MATCH '\"源端文献\"'`).get() ).toBeTruthy()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练② 删除传播：X 删行→X 导出卷 2→Y 导入→该行在 Y 缺席（deleted=1）+演练⑧ 直执守卫（Y deletion_events 全程 0 行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练② 删除传播：X 删行→X 导出卷 2→Y 导入→该行在 Y 缺席（deleted=1）+演练⑧ 直执守卫（Y deletion_events 全程 0 行）",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(paperCount(y.db, 'p-d1')).toBe(1)",
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats?.deleted).toBe(1)",
+            "expect(paperCount(y.db, 'p-d1')).toBe(0)",
+            "expect((y.db.prepare('SELECT COUNT(*) c FROM deletion_events').get() as { c: number }).c).toBe(0)",
+            "expect(recvSeqOf(y.db, OWNER_X)).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练③ 防复活（跨卷序列）：Y 导入卷 1→Y 本地删 r→X 卷 2（含 r）→Y 导入→r 缺席+skippedRevive≥1\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练③ 防复活（跨卷序列）：Y 导入卷 1→Y 本地删 r→X 卷 2（含 r）→Y 导入→r 缺席+skippedRevive≥1",
+          "markers": [],
+          "line": 226,
+          "assertions": [
+            "expect( (y.db.prepare(`SELECT COUNT(*) c FROM deletion_events WHERE entity='papers' AND id='p-r1'`).get() as { c: number }) .c ).toBe(1)",
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats?.skippedRevive).toBe(1)",
+            "expect(paperCount(y.db, 'p-r1')).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练④ seq_conflict：持 X 密钥自签同 (owner,seq=1) 异内容卷→整卷拒收（r3-N8 构造法）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练④ seq_conflict：持 X 密钥自签同 (owner,seq=1) 异内容卷→整卷拒收（r3-N8 构造法）",
+          "markers": [],
+          "line": 246,
+          "assertions": [
+            "expect(res).toMatchObject({ outcome: 'rejected', reason: 'seq_conflict', ownerId: OWNER_X, snapshotSeq: 1 })",
+            "expect(paperCount(y.db, 'p-c2')).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练⑤ 同卷重放→幂等 no-op（noop=true+stats 全零+零副作用）；旧卷（无 applied 记录）→seq_stale\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练⑤ 同卷重放→幂等 no-op（noop=true+stats 全零+零副作用）；旧卷（无 applied 记录）→seq_stale",
+          "markers": [],
+          "line": 293,
+          "assertions": [
+            "expect(r2.outcome).toBe('applied')",
+            "expect(replay).toMatchObject({ outcome: 'applied', noop: true, ownerId: OWNER_X, snapshotSeq: 2 })",
+            "expect(replay.stats).toEqual({ inserted: 0, updated: 0, skippedStale: 0, skippedRevive: 0, deleted: 0, a7Conflicts: 0 })",
+            "expect(stale).toMatchObject({ outcome: 'rejected', reason: 'seq_stale', ownerId: OWNER_X, snapshotSeq: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练⑥ bit 翻转卷→hmac_fail；演练⑦ 剥 hmac_sha256 键→struct_invalid（降级卷封堵）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练⑥ bit 翻转卷→hmac_fail；演练⑦ 剥 hmac_sha256 键→struct_invalid（降级卷封堵）",
+          "markers": [],
+          "line": 322,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(flipped)).toMatchObject({ outcome: 'rejected', reason: 'hmac_fail' })",
+            "expect(y.importer.importFromBuffer(Buffer.from(JSON.stringify(stripped), 'utf8'))).toMatchObject({ outcome: 'rejected', reason: 'struct_invalid', ownerId: OWNER_X, snapshotSeq: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"演练⑨ 次轮同步零冲突：同源次轮全量卷（未变更行为主）→a7Conflicts=0+全 no-op（r3-W1 回归锁；[回炉 R1] 补 lineage 行含非默认 tags/kind——次轮零 A7 判别力：kind/tags 全列入写面后全列内容等）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "演练⑨ 次轮同步零冲突：同源次轮全量卷（未变更行为主）→a7Conflicts=0+全 no-op（r3-W1 回归锁；[回炉 R1] 补 lineage 行含非默认 tags/kind——次轮零 A7 判别力：kind/tags 全列入写面后全列内容等）",
+          "markers": [],
+          "line": 348,
+          "assertions": [
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats).toMatchObject({ inserted: 0, updated: 0, skippedStale: 0, skippedRevive: 0, a7Conflicts: 0 })",
+            "expect((y.db.prepare(`SELECT tags FROM lineage_nodes WHERE id='ln-91'`).get() as { tags: string | null }).tags).toBe( '[\"非默认\"]' )",
+            "expect((y.db.prepare(`SELECT kind FROM lineage_edges WHERE id='le-91'`).get() as { kind: string }).kind).toBe('manual')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"多源合并：X/Z 双源异行集先后汇入 Y（水位键 recv_seq:X/recv_seq:Z 独立推进）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "多源合并：X/Z 双源异行集先后汇入 Y（水位键 recv_seq:X/recv_seq:Z 独立推进）",
+          "markers": [],
+          "line": 376,
+          "assertions": [
+            "expect(rx.outcome).toBe('applied')",
+            "expect(rz.outcome).toBe('applied')",
+            "expect(paperCount(y.db, 'p-mx')).toBe(1)",
+            "expect(paperCount(y.db, 'p-mz')).toBe(1)",
+            "expect(recvSeqOf(y.db, OWNER_X)).toBe(1)",
+            "expect(recvSeqOf(y.db, OWNER_Z)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"种子行幂等（R-C）：两端 010/012 播种态（lineTypes/__main__）导入→零 A7+零 inserted（键等且内容全等=no-op）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "种子行幂等（R-C）：两端 010/012 播种态（lineTypes/__main__）导入→零 A7+零 inserted（键等且内容全等=no-op）",
+          "markers": [],
+          "line": 397,
+          "assertions": [
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats?.a7Conflicts).toBe(0)",
+            "expect(res.stats?.inserted).toBe(0)",
+            "expect( (y.db.prepare(`SELECT value FROM lineage_graph_meta WHERE key='lineTypes'`).get() as { value: string }).value ).toBe('[]')",
+            "expect( (y.db.prepare(`SELECT name FROM collections WHERE id='__main__'`).get() as { name: string }).name ).toBe('主图')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"前置自检 self_reimport：X 卷回导 X→整卷拒收（闸③前置——§13.2 开头字面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "前置自检 self_reimport：X 卷回导 X→整卷拒收（闸③前置——§13.2 开头字面）",
+          "markers": [],
+          "line": 415,
+          "assertions": [
+            "expect(res).toMatchObject({ outcome: 'rejected', reason: 'self_reimport', ownerId: OWNER_X, snapshotSeq: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"schema_newer：伪造 schema_version=22 卷（buildEnvelope 直调）→拒收\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "schema_newer：伪造 schema_version=22 卷（buildEnvelope 直调）→拒收",
+          "markers": [],
+          "line": 423,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(envelopeToBytes(forged))).toMatchObject({ outcome: 'rejected', reason: 'schema_newer', ownerId: OWNER_X, snapshotSeq: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"counts_mismatch：手签卷 table_counts 改数（MAC+GCM 自洽）→拒收；hash_mismatch：手签卷 payload_sha256 失真→拒收\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "counts_mismatch：手签卷 table_counts 改数（MAC+GCM 自洽）→拒收；hash_mismatch：手签卷 payload_sha256 失真→拒收",
+          "markers": [],
+          "line": 445,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(wrongCounts)).toMatchObject({ outcome: 'rejected', reason: 'counts_mismatch' })",
+            "expect(y.importer.importFromBuffer(wrongSha)).toMatchObject({ outcome: 'rejected', reason: 'hash_mismatch' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"LWW 三分支（§13.2⑤）：入站新=updated/入站旧=skippedStale/键等且内容异=A7 行级（a7First=首例 entity/id）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "LWW 三分支（§13.2⑤）：入站新=updated/入站旧=skippedStale/键等且内容异=A7 行级（a7First=首例 entity/id）",
+          "markers": [],
+          "line": 474,
+          "assertions": [
+            "expect(res.outcome).toBe('applied')",
+            "expect(res.stats?.skippedStale).toBe(1)",
+            "expect(res.stats?.updated).toBe(1)",
+            "expect(res.stats?.a7Conflicts).toBe(1)",
+            "expect(res.stats?.a7FirstEntity).toBe('papers')",
+            "expect(res.stats?.a7FirstId).toBe('p-l3')",
+            "expect((y.db.prepare('SELECT title FROM papers WHERE id = ?').get('p-l1') as { title: string }).title).toBe( '本地新文献' )",
+            "expect((y.db.prepare('SELECT title FROM papers WHERE id = ?').get('p-l2') as { title: string }).title).toBe( '源端新版' )",
+            "expect((y.db.prepare('SELECT title FROM papers WHERE id = ?').get('p-l3') as { title: string }).title).toBe( '本地分叉文献' )"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"拒收统计键（W1 可见性）：拒收后 import_reject_stats=计数+最近指纹（owner/seq/sha 自称值）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "拒收统计键（W1 可见性）：拒收后 import_reject_stats=计数+最近指纹（owner/seq/sha 自称值）",
+          "markers": [],
+          "line": 504,
+          "assertions": [
+            "expect(stats).not.toBeNull()",
+            "expect(stats?.count).toBe(1)",
+            "expect(stats?.lastOwner).toBe(OWNER_X)",
+            "expect(stats?.lastSeq).toBe(1)",
+            "expect(stats?.lastSha).toBe(env.payload_sha256)",
+            "expect(stats?.lastReason).toBe('hmac_fail')",
+            "expect(y.repos.importSnapshot.getRejectStats()?.count).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"拒收卷零副作用：hmac_fail 卷不推进水位不落导入日志（拒收卷不推进水位——§13.2⑥）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "拒收卷零副作用：hmac_fail 卷不推进水位不落导入日志（拒收卷不推进水位——§13.2⑥）",
+          "markers": [],
+          "line": 527,
+          "assertions": [
+            "expect(recvSeqOf(y.db, OWNER_X)).toBeUndefined()",
+            "expect(y.repos.importSnapshot.getImportLog(OWNER_X, 1)).toBeNull()",
+            "expect(y.importer.importFromBuffer(vol).outcome).toBe('applied')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"[R2] 明文预检前置：{} 卷→struct_invalid 且 ownerId/snapshotSeq 缺省；未配对 owner→hmac_fail\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "[R2] 明文预检前置：{} 卷→struct_invalid 且 ownerId/snapshotSeq 缺省；未配对 owner→hmac_fail",
+          "markers": [],
+          "line": 547,
+          "assertions": [
+            "expect(r1).toEqual({ outcome: 'rejected', reason: 'struct_invalid' })",
+            "expect(r2).toMatchObject({ outcome: 'rejected', reason: 'hmac_fail', ownerId: OWNER_Z, snapshotSeq: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"[R4] 持钥自签+密文损坏→decrypt_fail；双错卷（schema 超前+密文损坏）→schema_newer（R2 重排字面序）；坏卷+同 sha applied 记录→decrypt_fail（新语义）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "[R4] 持钥自签+密文损坏→decrypt_fail；双错卷（schema 超前+密文损坏）→schema_newer（R2 重排字面序）；坏卷+同 sha applied 记录→decrypt_fail（新语义）",
+          "markers": [],
+          "line": 567,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(corruptCipher(good, syncKeyOf(x)))).toMatchObject({ outcome: 'rejected', reason: 'decrypt_fail' })",
+            "expect(y.importer.importFromBuffer(corruptCipher(newer, syncKeyOf(x)))).toMatchObject({ outcome: 'rejected', reason: 'schema_newer' })",
+            "expect(y.importer.importFromBuffer(vol).outcome).toBe('applied')",
+            "expect(y.importer.importFromBuffer(corruptCipher(applied, syncKeyOf(x)))).toMatchObject({ outcome: 'rejected', reason: 'decrypt_fail' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"[R3] collections 键等且内容异→A7 行级；paper_tags 防复活跨卷（pid|tid 序列化路径）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "[R3] collections 键等且内容异→A7 行级；paper_tags 防复活跨卷（pid|tid 序列化路径）",
+          "markers": [],
+          "line": 613,
+          "assertions": [
+            "expect(r1.stats?.a7Conflicts).toBe(1)",
+            "expect(r1.stats?.a7FirstEntity).toBe('collections')",
+            "expect(r1.stats?.a7FirstId).toBe('c-r3')",
+            "expect((y.db.prepare(`SELECT name FROM collections WHERE id='c-r3'`).get() as { name: string }).name).toBe('本地图')",
+            "expect( ( y2.db.prepare(`SELECT COUNT(*) c FROM deletion_events WHERE entity='paper_tags' AND id='p-px|t-px'`).get() as { c: number } ).c ).toBe(1)",
+            "expect(r2.stats?.skippedRevive).toBe(1)",
+            "expect( (y2.db.prepare(`SELECT COUNT(*) c FROM paper_tags WHERE paper_id='p-px' AND tag_id='t-px'`).get() as { c: number }) .c ).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"[R7] deletions 身份形态校验：paper_tags id 无竖线/空分量/双竖线、他表空 id→struct_invalid 整卷拒收\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "[R7] deletions 身份形态校验：paper_tags id 无竖线/空分量/双竖线、他表空 id→struct_invalid 整卷拒收",
+          "markers": [],
+          "line": 657,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(vol), `畸形 deletions ${text.slice(0, 60)}`).toMatchObject({ outcome: 'rejected', reason: 'struct_invalid' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"[R8] 非 canonical payload→struct_invalid：canonical 文本插入空白后持钥自签→闸④b 对账拒收\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
+          ],
+          "title": "[R8] 非 canonical payload→struct_invalid：canonical 文本插入空白后持钥自签→闸④b 对账拒收",
+          "markers": [],
+          "line": 686,
+          "assertions": [
+            "expect(y.importer.importFromBuffer(vol)).toMatchObject({ outcome: 'rejected', reason: 'struct_invalid' })"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/import.service.test.ts": {
       "ticketIds": [
         "SR-SVC-03"
@@ -45451,7 +46980,7 @@
           ],
           "title": "importFiles：成功入库（元数据来自抽取器，标题回退文件名）+K1①D3 落夹：恒落 targetFolderId+建节点（INV-88 投影恒等+folder_id 恒非空）",
           "markers": [],
-          "line": 80,
+          "line": 82,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.imported[0]?.title).toBe('论文一')",
@@ -45475,7 +47004,7 @@
           ],
           "title": "[F-ALIGN-01 D3] 落夹产物双播：imported>0 → folders.changed+lineage.changed 各恰一次；全重复零播",
           "markers": [],
-          "line": 124,
+          "line": 126,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(foldersChanged).toHaveBeenCalledTimes(1)",
@@ -45492,7 +47021,7 @@
           ],
           "title": "重复 sha256 进 duplicates 不重复入库",
           "markers": [],
-          "line": 154,
+          "line": 156,
           "assertions": [
             "expect(first.imported).toHaveLength(1)",
             "expect(second.imported).toHaveLength(0)",
@@ -45506,7 +47035,7 @@
           ],
           "title": "非 PDF 文件进 failed（含中文原因），不中断整批",
           "markers": [],
-          "line": 177,
+          "line": 179,
           "assertions": [
             "expect(result.imported).toHaveLength(1)",
             "expect(result.failed).toHaveLength(1)",
@@ -45521,7 +47050,7 @@
           ],
           "title": "importFolder：一级子目录名映射为集合并挂接；根文件落 targetFolderId（D3 单跳——collection=null 落点）",
           "markers": [],
-          "line": 200,
+          "line": 202,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(inCollection).toBeTruthy()",
@@ -45537,7 +47066,7 @@
           ],
           "title": "[回炉码 2→F-ALIGN-01 D3] 挂接即自动入图：一级子目录文献→节点落其文件夹+根文件→节点落 targetFolderId（folder=归属）+year 取元数据+month=null 缺省组+slot 组末（K1①②INV-88 投影恒等）",
           "markers": [],
-          "line": 228,
+          "line": 230,
           "assertions": [
             "expect(result.imported).toHaveLength(2)",
             "expect(rows).toHaveLength(2)",
@@ -45557,7 +47086,7 @@
           ],
           "title": "挂接失败整体回滚：papers 不得残留行，sha 不被占用（重导可成功）",
           "markers": [],
-          "line": 272,
+          "line": 274,
           "assertions": [
             "expect(r1.failed).toHaveLength(1)",
             "expect(rows.c).toBe(0)",
@@ -45571,7 +47100,7 @@
           ],
           "title": "进度事件全程同 sessionId，两次调用不同（非空字符串）",
           "markers": [],
-          "line": 322,
+          "line": 324,
           "assertions": [
             "expect(first.length).toBeGreaterThan(0)",
             "expect(first.every((id) => typeof id === 'string' && id.length > 0)).toBe(true)",
@@ -45587,7 +47116,7 @@
           ],
           "title": "gate enter/exit 各恰一次，failed 折叠路径也 exit（finally）",
           "markers": [],
-          "line": 353,
+          "line": 355,
           "assertions": [
             "expect(result.failed).toHaveLength(1)",
             "expect(enters).toBe(1)",
@@ -45601,7 +47130,7 @@
           ],
           "title": "域错误抛出路径也必经 finally：importFolder 读不了文件夹上抛 IO_ERROR 后 exit 恰一次",
           "markers": [],
-          "line": 377,
+          "line": 379,
           "assertions": [
             "expect(svc.importFolder(join(storeDir, '不存在'), TARGET_FOLDER)).rejects.toMatchObject({ code: 'IO_ERROR' })",
             "expect(enters).toBe(1)",
@@ -50749,22 +52278,15 @@
     }
   },
   "stats": {
-    "fileCount": 337,
-    "caseCount": 3386,
-    "assertionCount": 11298,
+    "fileCount": 345,
+    "caseCount": 3489,
+    "assertionCount": 11654,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
     "ticketIdCount": 57,
-    "eachExpandedRows": 354,
+    "eachExpandedRows": 367,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": [
-    {
-      "file": "tests/unit/db/deletion-log.test.ts",
-      "assertionText": "expect(dl[0].sql, `${t} WHEN 守卫读 deletion_log_guard`).toContain('FROM deletion_log_guard')",
-      "reason": "DB-3 U1 回炉 R4 断言 tsc 关口修复（dl[0]→dl[0]! 非空断言——vitest 经 esbuild 不查类型，typecheck 拦截后补修；断言语义零变）",
-      "rulingLink": "回炉指令 runId=20261014-db3u1 R4（U1-1 加强）+测试纪律段「受锁 e2e spec 改动后必须全量 verify——tsc 关卡才拦得住类型注解缺陷」"
-    }
-  ]
+  "exemptionsSnapshot": []
 }
