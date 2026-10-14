@@ -17,10 +17,11 @@
 > 变慢且文件 watcher 失效（WSL2 时代=/mnt/c drvfs 同理）。
 >
 > 核对：新开 shell `node -v` 必须=24.x（系统 node18 会因版本守卫必红——见 AGENTS.md
-> 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（WSL2 单次全绿
-> 108/108〔v181〕；VMware 同日两跑 107/108·106/108——输入事件类偶发红 3 例
-> 〔T9/S4/T12〕单例复跑即绿=环境级噪声〔F-E2EFLK-01〕，非环境配置错），若依赖库
-> 缺失再查 `npx playwright install-deps`。
+> 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（全量 114 用例
+> 〔v184 后〕：VMware 现役底色=112 过/2 红——FLK-02 几何族+FLK-03 窗口状态族
+> 两环境级恒红豁免单点〔勿按复跑销项〕+FLK-01 输入事件类偶发族〔单例复跑即绿〕，
+> 三票=F-E2EFLK-01/02/03 排查场承载（用户裁决=下场首场），非环境配置错；WSL2 曾单次 108/108 全绿
+> 〔v181，108 用例时代〕），若依赖库缺失再查 `npx playwright install-deps`。
 
 > **本机残留备案**：仓库根 `.mimosa/`（finding-ledger/hook-state/history 等）系
 > zcode 宿主钩子的本机产物，非项目资产（.gitignore 已忽略）——审计/取证时勿误认；
@@ -88,16 +89,16 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 - 日志恢复到 `scripts/audits/logs-restored/`（不直接混入——核对后自行处置）。
 - 不迁移也能开发：新库=空文献库（导入 PDF 即用）；日志仅证据链用途。
 
-## 5. 基线核对（全绿才算环境就绪）
+## 5. 基线核对（达到预期口径才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：299 文件 3194 用例 / locks 420（工单 open 数随排程浮动，
-                      # 以 tickets/registry.ts 实时为准；2026-10-13 v181 后基线——WSL2/VMware
-                      # 双机零漂移实测）
-npm run build && npm run test:e2e   # 预期全量 108/108（WSL2 单次全绿=2026-10-13 v181；
-                      # VMware 同日两跑 107/108·106/108——输入事件类偶发红
-                      # 〔T9/S4/T12 三例，单例复跑即绿=环境级噪声，F-E2EFLK-01〕
-                      # 非环境配置错；e2e 不含在 verify 里，须单独跑）
+npm run verify        # 预期 exit 0：303 文件 3262 用例 / locks 427（工单 open 数随排程浮动，
+                      # 以 tickets/registry.ts 实时为准；2026-10-14 v184 后基线）
+npm run build && npm run test:e2e   # 预期全量 114 用例=112 过/2 红（两红=FLK-02 几何族+
+                      # FLK-03 窗口状态族环境级恒红豁免单点〔勿按复跑销项〕；FLK-01
+                      # 输入事件类偶发族单例复跑即绿——三票=F-E2EFLK-01/02/03 排查场
+                      # 承载〔用户裁决=下场首场〕，非环境配置错；e2e 全绿权威基线=
+                      # WSL2 v181〔108 用例时代〕；e2e 不含在 verify 里，须单独跑）
 ```
 
 - 数字对不上：先看是否 Node 版本≠24（裸跑 npx vitest 绕过版本守卫，

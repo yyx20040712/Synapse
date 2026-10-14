@@ -331,10 +331,11 @@ flowchart TB
   LK --> MANIFEST["locks/manifest.json<br/>变更须 [locked-change] 尾注"]
 ```
 
-### 7.8 构建与原生绑定（Windows 环境事实）
+### 7.8 构建与原生绑定（跨平台事实）
 
 better-sqlite3 13.0.3（N-API 版，2026-09-19 F-ELE-02）：同一份
-`prebuilds/win32-x64.node` 绑定跨 Node/Electron ABI 通用（vitest=Node
+`prebuilds/<platform>-x64.node` 绑定（linux-x64/win32-x64 等随 npm 包直发）
+跨 Node/Electron ABI 通用（vitest=Node
 ABI 137 / electron-vite=Electron ABI 149——F-ELE-03 升 44 后，双运行时
 无需切换）；v12 时代
 双 ABI 切换机制（scripts/sqlite-abi.mjs+abi-cache）已删除退役。完整

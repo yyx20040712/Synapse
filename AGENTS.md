@@ -215,11 +215,12 @@ development Model Selection+loop-engineering references/06）；**架构与
 - **Linux（现役=VMware 虚拟机 Ubuntu 24.04.5，X11 桌面）+ Electron 44**（44.4.3，
   Chromium M152/内嵌 Node 24/ABI 149）。e2e 开箱即用（electron linux dist 经
   npmmirror 镜像随 npm ci 落位+playwright——WSLg 单次全量 108/108〔v181，
-  2026-10-13〕；VMware 机同日对齐批=verify 八步全绿零漂移+e2e 全量两跑
-  107/108·106/108，红点=输入事件类偶发漂移〔T9/S4/T12 三用例——VMware 两跑
-  内各 1 现，T9 另有 WSL2 attempt1 前科 1 现；三用例单例复跑全绿〕——环境级
-  嫌疑（F-E2EFLK-01 排查票承载，代码面零证据），VMware 单次全绿未取得
-  如实登记；CI 仍 windows-latest 跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
+  2026-10-13，108 用例时代〕；VMware 现役底色〔v184，全量 114 用例〕=112 过/
+  2 红——FLK-02 几何族+FLK-03 窗口状态族两环境级恒红豁免单点〔勿按复跑
+  销项〕+FLK-01 输入事件类偶发族〔T9/S4/T12 三用例，单例复跑即绿〕，三票
+  =F-E2EFLK-01/02/03 排查场承载（用户裁决=下场首场，v184 §1——证据状态
+  单源=registry 票面行）；VMware 114 用例全绿未取得如实登记；CI 仍
+  windows-latest 跑 vitest/e2e）。**Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
 - **Node 24=`~/tools/node24`**（tarball 自 npmmirror 装——WSL2/VMware 两机各

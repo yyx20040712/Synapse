@@ -68,8 +68,7 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
   （2026-09-19 F-ELE-02），无切换机制；绑定文件=prebuilds/\<platform\>-x64.node
   （linux-x64/win32-x64 等随 npm 包直发），若手动动过 `node_modules`，重跑
   `npm ci` 即可。
-- 中文乱码：统一 UTF-8（bash/重定向天然 UTF-8；Windows 侧 PowerShell 用
-  `Out-File -Encoding utf8`）；CI 有 mojibake 关卡兜底。
+- 中文乱码：统一 UTF-8（bash/重定向天然 UTF-8）；CI 有 mojibake 关卡兜底。
 
 ## 6. 数据位置与备份（用户需知）
 
