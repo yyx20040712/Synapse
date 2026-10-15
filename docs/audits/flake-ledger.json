@@ -205,10 +205,19 @@
       "case": "T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天（:96）",
       "count": 3,
       "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success；第二现（2026-10-15 本地 VMware 日间窗，DB-4 g2probe 全量首跑〔runId=20261015-dbcamp-db4〕）：同指纹 strict mode violation resolved to 2 elements；首跑红 14.4m 套件内+单例复跑绿（复跑绿不销项）；批内容=DB-4 星标/标签/治理面零因果（主题链路零触及）——两现跨环境（CI windows+本地 VMware）同指纹，count 1→2 filed 触发立案线（F-E2EFLK-04）；第三现（2026-10-15 DB-4 收口 CI run 38685349467 attempt1〔c5c86e4c〕）：同指纹 flaky 分类（attempt1 红+重试绿，run conclusion=success——ci-watch-c5c86e4c.raw.txt:443-470）；两环境〔CI windows+本地 VMware〕三天三现，FLK-04 排查紧迫度升",
-      "status": "filed",
+      "status": "resolved",
       "first_seen": "2026-10-14",
-      "resolution": "两现立案 F-E2EFLK-04（2026-10-15）；机制=theme 三连切换各触发 settings.set→同文案 toast 堆叠不去重或前 toast 未消退（时序敏感）；修复候选=app 侧 toast 去重折叠或测试侧 .first() 收敛/等旧 toast 退场（switchTheme 助手层）；排查首动作=两现 error-context 对照（首现档=仓外 20261014-db3/t3p4-ci-toast-error-context.md；第二现=g2probe-2-e2e-full.txt）",
+      "resolution": "2026-10-15 修复收口（runId=20261015-flk04，票=F-E2EFLK-04 翻 done）：根因=toast-store 去重窗 DEDUPE_MS=1000 与 success 停留 3500ms 结构失配——两保存间隔∈(1s,3.5s) 时旧卡未退场+新卡不被窗拦=同文案双卡共存 strict 双命中。修复=app 侧同文案同 kind 在场折叠（showToast fold：清旧计时→重置全程停留计时，同 id 不增卡不 notify；1s 窗保留防手动关后连点）=INV-134 登记；e2e spec 零改动（strict 断言升格行为锁）。行为锁=tests/unit/renderer/toast.test.tsx 折叠族五例 B1-B5（always-active）+三形状变异红证（M1 删 fold/M2 删计时重置/M3 find 删 kind 比较——M3 双红含既有异 kind 锁）。烤验=门一 k1（继任席——k3 认证失败）PASS B0W1N2+d1 PASS B0W0N4+门二 probe 七项（theme-trio 定向连跑 5/5 零 violation+e2e 全量 T3-P1/P4 恒绿）+adjudicator GO_WITH_CONDITIONS（C1-C3 全兑现）。诊断档=仓外 20261015-flk04/diagnosis.md。",
       "ticket": "F-E2EFLK-04"
+    },
+    {
+      "spec": "tests/e2e/ai-cascade-delete.spec.ts",
+      "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
+      "count": 1,
+      "fingerprint": "detach 循环 60s 超时型（非纯挂起型——与 case 20/21 同族异亚型，台账分别落笔=裁决部 C2）：TimeoutError locator.click 60s 于 spec:83 aside.getByRole('tab',{name:'AI 会话'}).click()——locator resolved 且 visible/enabled/stable 全过后「element was detached from the DOM, retrying」循环至超时（reader-aside 内该 tab 被反复重挂载）。首现=2026-10-15 18:43-19:02 本地 VMware（FLK-04 批门二 probe 全量+定向复跑同窗 2 红）；error-context=仓外 20261015-flk04/g2probe-2-error-context.md（含主控判别补记）。判别链（裁决部裁定成立）：①主工作区同构建红转绿（2/2 红→第三跑 3/3 绿——代码/构建变量排除）②干净 HEAD worktree 基线 3/3 绿 ③失败流程零 showToast 面+Toast.tsx diff 纯注释（静态解耦）→定性=环境相位漂移非代码回归。环境线索（申报面——无随档进程证据，不承载判别）：红窗与宿主机并行会话（waterprint vite dev+geckodriver 18:01 起）活跃期重合。",
+      "status": "observing",
+      "first_seen": "2026-10-15",
+      "resolution": "首现 observing（同窗 2 红按 FLK-04 先例归组记 count 1——裁决部维持）；挂起/超时族跨例第三例（E5 场景二 case 20+S5a case 21+本例）环境级候选线索增强；再现即触立案线（跨场次第二现=立案排查）。再现时首取 error-context 快照+对照本判别链。"
     }
   ]
 }
