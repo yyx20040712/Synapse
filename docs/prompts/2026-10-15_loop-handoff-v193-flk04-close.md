@@ -63,8 +63,10 @@
   ⊇ 绿 exemptions 0）。
 - e2e：日间窗全量 116/117（唯一红=E5 场景一环境相位漂移——判别链在档）
   +theme-trio 定向连跑 5/5；FLK-04 修复面（T3-P1/P4）全绿零 strict violation。
-- CI：push 后按宪法 DoD 挂完成复查回执闭批（**T3-P4 重点核对**——本档
-  落笔时点在 push 前；非 success 先定性）。
+- CI：**回执已闭账**——run 38728248769（954b370e 两笔）=completed success，
+  双 job 绿（manifest 尾注检查+六道关卡）；**e2e 117/117 全绿（6.7m）**，
+  **T3-P4 ok 3.8s+T3-P1 ok 2.5s 零 strict violation**（三现中两现所在
+  windows 面首跑全绿=修复面 CI 侧确认）；证据=仓外 ci-receipt-954b370e.raw.txt。
 - registry：**287 票（open 9/done 278）**——F-E2EFLK-04 翻 done。
 - 治理基线行：locks **451**；测试面 **324 文件 3438 用例**+e2e 117；
   MIGRATIONS/**user_version=22**；通道 81/域 21（零新通道）；INV **134**
