@@ -11,7 +11,7 @@
 | 批 3d 门二 | probe **七项全 PASS**（verify 双跑 EXIT=0+baseline 幂等 sha256 逐字节 2918421B+M3 独立复现还原零残留+判据 grep 五条+消费端三要素共位+台账复算+测试件判别力——自记更正一处报告面计数=当刻自愈）；adjudicator **GO_WITH_CONDITIONS 零回炉**（全数字独立复算零残差——manifest sha256 亲数 458、11↔13 双口径亲 grep；C1=CI 回执随 push/C2=视检清单进用户裁决位；残留 R1=四例红证下次触面顺带/R3=指纹提取器 helper 断言口径登记不立票） | g2probe-report+终裁在档 |
 | 收口 | registry 两行（F-SETSTYLE-01 翻 done 挂用户视检+F-UIRES-04 批 3d 注——票维持 open）+registry 改动后全量 verify 亲验 EXIT=0（3b 教训顺序）+feat [locked-change] 提交+本档+push 挂 CI 回执 | 见 §4 |
 
-成本：批 3d subagent tokens 合计 11,271,093（executor 9,812,308 两轮/k3+d1 首审+增量复审 167,658/probe 1,100,512/adjudicator 912,984〔两岗新增席位——账本分列〕）+主控 host-max。
+成本：批 3d subagent tokens 合计 11,992,872（executor 9,811,318=8,230,119+1,581,199；门一双审四审次 168,058=k3 58,539〔29,879+28,660〕+d1 109,519〔69,216+40,303〕；probe 1,100,512；adjudicator 912,984——9,811,318+168,058+1,100,512+912,984=11,992,872）+主控 host-max。〔首版笔误 167,658/11,271,093 随勘正笔清偿——同族第四现（probe 自记更正后本批第二现），计数纪律记档〕
 
 ## §1 下场开工序（单源）
 
