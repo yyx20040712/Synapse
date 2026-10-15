@@ -203,11 +203,12 @@
     {
       "spec": "tests/e2e/theme-trio.spec.ts",
       "case": "T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天（:96）",
-      "count": 1,
-      "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success",
-      "status": "observing",
+      "count": 2,
+      "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success；第二现（2026-10-15 本地 VMware 日间窗，DB-4 g2probe 全量首跑〔runId=20261015-dbcamp-db4〕）：同指纹 strict mode violation resolved to 2 elements；首跑红 14.4m 套件内+单例复跑绿（复跑绿不销项）；批内容=DB-4 星标/标签/治理面零因果（主题链路零触及）——两现跨环境（CI windows+本地 VMware）同指纹，count 1→2 filed 触发立案线（F-E2EFLK-04）",
+      "status": "filed",
       "first_seen": "2026-10-14",
-      "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；机制候选=theme 三连切换各触发 settings.set→toast 堆叠不去重或前 toast 未消退（时序敏感）；第二现即立案排查（修复候选=app 侧 toast 去重/测试侧 .first() 收敛）"
+      "resolution": "两现立案 F-E2EFLK-04（2026-10-15）；机制=theme 三连切换各触发 settings.set→同文案 toast 堆叠不去重或前 toast 未消退（时序敏感）；修复候选=app 侧 toast 去重折叠或测试侧 .first() 收敛/等旧 toast 退场（switchTheme 助手层）；排查首动作=两现 error-context 对照（首现档=仓外 20261014-db3/t3p4-ci-toast-error-context.md；第二现=g2probe-2-e2e-full.txt）",
+      "ticket": "F-E2EFLK-04"
     }
   ]
 }
