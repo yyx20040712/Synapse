@@ -5,8 +5,10 @@
  * message 已是中文）；App 根部挂一次 `<ToastHost />` 负责渲染（右上角堆叠）。
  *
  * - info/success 3.5s 自动消失，error 6s（错误文案需要更长阅读时间）
- * - 同文案同 kind 1s 内去重（防连点/批量失败刷屏）；按 message+kind 记忆——
- *   A→B→A 穿插序列仍拦第二条 A，不同 kind 同文案不互吞
+ * - 同文案同 kind 在场折叠（INV-134）：重复弹不叠卡、重置全程停留计时
+ *   （e2e strict locator「恒单命中」的行为基础）；不在场时 1s recentShown 窗
+ *   去重（防手动 × 关后连点重弹）；按 message+kind 记忆，不同 kind 同文案
+ *   不互吞
  * - 自包含模块级订阅，不依赖状态库；Host 未挂载时调用安全（只入队不渲染）
  * - 2026-08-25 拆分：队列纯逻辑移 toast-store.ts（.ts 消费方可导入，不被
  *   tsconfig.node 的 jsx 关卡拦）；本文件再导出 showToast，既有消费方零改动

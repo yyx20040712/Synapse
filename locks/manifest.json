@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "cec8416eb7f7f8588fc37670458b32aa3291903fca43a0929b2a7b131161ed60"
+            "sha256": "03657186778a70f6d4db740c8755c88161578579b9c1ab864ced0b10a5173484"
         },
         {
             "path": "electron.vite.config.ts",
@@ -1379,7 +1379,7 @@
         },
         {
             "path": "tests/unit/renderer/toast.test.tsx",
-            "sha256": "29b9f24cca275dfa92a37e576592d25a0d5ad9f3e79eafb18b86c1464a5f242f"
+            "sha256": "f3d19a9c3d0bcab14b77337488ab5609affcac8d7d0e9f518e3cb745b4591e4b"
         },
         {
             "path": "tests/unit/renderer/ui-iconify-buttons.test.tsx",
