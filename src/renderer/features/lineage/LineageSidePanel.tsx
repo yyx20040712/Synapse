@@ -32,6 +32,9 @@
  * - [F-UIRES-04 批 3a] 拆件瘦身：骑缝行/星标/收起钮→SideCapRow、徽章行→
  *   SideBadges（行为零变搬移，e2e 锚 testid 一字不动；主题节点分支/编排
  *   留宿主——设计书 §4.2 弃候选二理由沿承）。
+ * - [F-UIRES-04 批 3b] 两挂载点（§4.1 DOM 序）：头部徽章行后 TagsRow（§4.6
+ *   D5）/滚动区首件 SidePaperInfo（§4.7 信息区）——两件自持订阅取数，宿主
+ *   零 hooks；主题节点（paperId null）零渲染（§4.6 字面）。
  */
 import type { CSSProperties } from 'react'
 import type { Annotation } from '@shared/models/annotation'
@@ -39,6 +42,8 @@ import { MAIN_GRAPH_ID, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { SideBadges } from './SideBadges'
 import { SideCapRow } from './SideCapRow'
+import { TagsRow } from './TagsRow'
+import { SidePaperInfo } from './SidePaperInfo'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideFragments } from './LineageSideFragments'
 import { LineageSideManualNote } from './LineageSideManualNote'
@@ -133,6 +138,9 @@ export function LineageSidePanel(props: {
         <div className="insp-title">{node.title}</div>
         {/* [②U4] 详情域徽章：期刊/IF/被引/年月/T 档（原 badges 块零变搬移→SideBadges） */}
         <SideBadges node={node} metrics={props.metrics} />
+        {/* [F-UIRES-04 批 3b] 标签行（§4.6 D5：徽章行后操作行前；空标签整行
+            省略——TagsRow 自持订阅；主题节点零渲染） */}
+        {node.paperId !== null && <TagsRow />}
         {/* [F-UIRES-03 B5① v1.15 第五轮②] 头部操作行（两钮自卡面迁移——徽章行
             下两钮并排文字钮形；常驻非 hover；testid 沿卡面版不改名=迁移面 e2e
             改写最小。哨兵单源：title 判=MAIN_GRAPH_ID 常量——与 LineagePage
@@ -178,6 +186,9 @@ export function LineageSidePanel(props: {
           <p className="m-0" style={{ color: 'var(--text-dim)' }}>主题节点无笔记</p>
         ) : (
           <>
+            {/* [F-UIRES-04 批 3b] 论文信息区（§4.1 滚动区 DOM 序首件——与笔记
+                区同滚动承载；SidePaperInfo 自持 M1×M2 双机扇出） */}
+            <SidePaperInfo paperId={node.paperId} />
             {/* [F-UIRES-03 B2] 三节新序（DOM 序即此序）：全文笔记→片段笔记→
                 AI 评估与建议；后置占位章随③真节替代整删（B4 裁决终结） */}
             <LineageSideManualNote paperId={node.paperId} />

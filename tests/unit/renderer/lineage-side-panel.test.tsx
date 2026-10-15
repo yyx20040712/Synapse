@@ -30,7 +30,9 @@ const stubApi = makeApiStub({
   reader: { listAnnotations: vi.fn() },
   lineage: { graph: vi.fn() },
   // [F-FOLDER-02·B] LineagePage 页首图切换器文件夹域面
-  folders: { list: vi.fn() }
+  folders: { list: vi.fn() },
+  // [F-UIRES-04 批 3b 回炉 r1] SidePaperInfo M1 接缝面（主控裁 reject：error 态最小 DOM 增量，M2/pdfjs 链不进单测）
+  library: { detail: vi.fn(() => Promise.reject(new Error('library.detail: b3b 接缝面未桩接'))) }
 })
 stubApiEvents({
   onExportCorpus: vi.fn(() => () => undefined),

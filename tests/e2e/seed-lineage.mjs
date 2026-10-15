@@ -4,10 +4,12 @@
  * 原生模块文件锁，数据经环境变量传入不经 shell，SQL 一律 prepare 预编译+
  * 参数绑定）。
  * 载荷（SEED_LINEAGE_JSON）：{ folders?: [{id,name,position?}], nodes:
- * [{paperId,title,year,month?,slot?,folderId?,libraryTags?}]
+ * [{paperId,title,year,month?,slot?,folderId?,libraryTags?,authors?,abstract?}]
  * （[F-ALIGN-01] paperId 必填非空——主题节点形态退役，null 即 fail-fast；
  * [A1b F-CONTRACTA-01] tags 种子键随脉络私有标签域退役删除；
- * [A3 F-CONTRACTA-01 2026-10-04] coreIdea 种子键随 core_idea 全退役删除），
+ * [A3 F-CONTRACTA-01 2026-10-04] coreIdea 种子键随 core_idea 全退役删除；
+ * [F-UIRES-04 批 3b] authors/abstract=论文信息区种子面——papers 既有列
+ * authors_json/abstract 可选 UPDATE，两键均缺省不进 UPDATE），
  * edges: [{from,to,label?,kind?}] }——edges 的 from/to=paperId（脚本按
  * paper_id 解析节点行 id，ORDER BY created_at,rowid 首条）。
  * [A1a] libraryTags=文献库标签种子（tags+paper_tags 两行挂接该节点 paperId
@@ -79,6 +81,12 @@ try {
   const attachPaperTag = db.prepare(
     'INSERT OR IGNORE INTO paper_tags (paper_id, tag_id) VALUES (?, ?)'
   )
+  // [F-UIRES-04 批 3b] 论文信息区种子面：papers 既有列 UPDATE（authors_json
+  // JSON 序列化与 001 DDL 注释同源）；两键均缺省不进 UPDATE 保持既有调用
+  // 零改动；零命中行 fail-fast（papers 行须先经 seed-paper.mjs 落库）
+  const updPaperInfo = db.prepare(
+    'UPDATE papers SET authors_json = ?, abstract = ? WHERE id = ?'
+  )
   for (const n of payload.nodes ?? []) {
     // [F-ALIGN-01 D2] 主题节点兼容面退役（原 null paperId 静默落库行为废止）：
     // 种子载荷仅文献节点（INV-NEW-1——节点唯一来源=入库/移动
@@ -123,6 +131,16 @@ try {
         throw new Error(`seed-lineage: 标签按名回读失败（${folderId}/${name}）`)
       }
       attachPaperTag.run(n.paperId, row.id)
+    }
+    if (n.authors !== undefined || n.abstract !== undefined) {
+      const r = updPaperInfo.run(
+        JSON.stringify(n.authors ?? []),
+        n.abstract ?? '',
+        n.paperId
+      )
+      if (r.changes === 0) {
+        throw new Error(`seed-lineage: 信息区种子 UPDATE 无命中 papers 行（${n.paperId}）`)
+      }
     }
   }
   const byPaper = db.prepare(

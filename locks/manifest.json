@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-15T03:58:52.322Z",
+    "generatedAt": "2026-10-15T18:58:44.678Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "9f51508ff29bbfbc3faaa8780642bd01305efac812fc7f6fa054efd318ccde4f"
+            "sha256": "8e9dcf539657495ca5745700aab73773ed2aef6ed2e8e3508944532e5a9cafaa"
         },
         {
             "path": "electron.vite.config.ts",
@@ -339,7 +339,7 @@
         },
         {
             "path": "tests/e2e/e2e-env.ts",
-            "sha256": "0c59b31dbbd04e1a1ecb32aea4e124c90241e6737041d9698a585b028235f9e3"
+            "sha256": "40f34e1f46900c1db425b0fe60c81f5e3b5660552487194bb2e30132053256b0"
         },
         {
             "path": "tests/e2e/export-clipboard.spec.ts",
@@ -380,6 +380,10 @@
         {
             "path": "tests/e2e/lineage-route-slots.spec.ts",
             "sha256": "9c303bd46a52924c67f3d957e1165af5e7abf0c6ad35885047d1f928633301fb"
+        },
+        {
+            "path": "tests/e2e/lineage-side-info.spec.ts",
+            "sha256": "355dcbc67c064e36761256b8e250887ed1691949b0cf5bb503faa5da1ecb05ed"
         },
         {
             "path": "tests/e2e/lineage-sidebar.spec.ts",
@@ -431,7 +435,7 @@
         },
         {
             "path": "tests/e2e/seed-lineage.mjs",
-            "sha256": "0964f73b1bdcd58632b390909242799cf66e8d330a9f6677f62ac9b3ece270a3"
+            "sha256": "0f55db3e9f69863eee83ca5fb1c4f21619208add6baea280844698f43139c558"
         },
         {
             "path": "tests/e2e/seed-paper.mjs",
@@ -738,6 +742,10 @@
             "sha256": "e758cac641e6ff33e4a287c4a4b95f5ef2aa88b215acc010b83e63ed52c3eed1"
         },
         {
+            "path": "tests/unit/renderer/PaperInfoSection.test.tsx",
+            "sha256": "ba4db94e28d8c6423ac2a30d7f5be3197b48d2886bfeb8292234d7f2d691761b"
+        },
+        {
             "path": "tests/unit/renderer/ai-manage-tabs.test.tsx",
             "sha256": "7b2b9c3a0e2957d4af07c4c64a9649eb3e62a43b8aade110ec87205fb08caff4"
         },
@@ -963,7 +971,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-detail-panel.test.tsx",
-            "sha256": "a4b7adb630a98212bb31e6ebc9f43c1c77dd92202177beb5f3c11fcb7dc5ca72"
+            "sha256": "73e41bff542763ef85560c45115267552aa5dfef66140939cf2b2af868f5cf8d"
         },
         {
             "path": "tests/unit/renderer/lineage-drag-grid.test.ts",
@@ -1035,7 +1043,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-page-goto.test.tsx",
-            "sha256": "20e6e4ce789581c40efec46247f6c45469d26dfe200a6e016661dbb1a44eef75"
+            "sha256": "5feec0756f0b676aff9f3eabf5bcf0f47993bd26c8f22698fba887f44a663372"
         },
         {
             "path": "tests/unit/renderer/lineage-routing-assign-rr1.test.ts",
@@ -1079,19 +1087,19 @@
         },
         {
             "path": "tests/unit/renderer/lineage-side-jumps.test.tsx",
-            "sha256": "c69456be06352928c6d4e06a068b9086774ebde23c3e8026169cd222f9f58fc8"
+            "sha256": "a4b5327d69bb246f3c159625bfb64e1600d781bfdbc14fe263720cd0d495a3e4"
         },
         {
             "path": "tests/unit/renderer/lineage-side-panel.test.tsx",
-            "sha256": "3df5762dbc4eb17a29a6300443bc38e6b23353dbfde822ebe9df4559b28cb829"
+            "sha256": "9928bfb5d4a2a322a3beee288983060d2c484b48cfe3ba1443d9aa2354381b11"
         },
         {
             "path": "tests/unit/renderer/lineage-side-reskin.test.tsx",
-            "sha256": "4a7653a5bab38dcd82c7a7ab6aec08a1da5f54e07e32b68a76956aadd782265e"
+            "sha256": "9f7cb4d6f53cfe5bf36a3a5bc7b86d6c46525402b3ec93ef18825de00f872160"
         },
         {
             "path": "tests/unit/renderer/lineage-star-card.test.tsx",
-            "sha256": "95fc06fb8ce2804d511a5c12741f44c1faad6872b69845d8c9c046cba04169ab"
+            "sha256": "389b6e4ef17b7670584aad3b8093dcdb31a04fed8955f47e0948a0f84d6d19a5"
         },
         {
             "path": "tests/unit/renderer/lineage-store-reorder.test.ts",

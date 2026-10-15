@@ -32,7 +32,11 @@ const _stubApi = makeApiStub({
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn()
   },
-  library: { list: vi.fn() },
+  library: {
+    list: vi.fn(),
+    // [F-UIRES-04 批 3b 回炉 r1] SidePaperInfo M1 接缝面（主控裁 reject：error 态最小 DOM 增量，M2/pdfjs 链不进单测）
+    detail: vi.fn(() => Promise.reject(new Error('library.detail: b3b 接缝面未桩接')))
+  },
   // [B5①] 哨兵分支例挂 SidePanel（迁移面）——三节取数通道随挂面补桩
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },

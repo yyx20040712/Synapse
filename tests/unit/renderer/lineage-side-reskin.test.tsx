@@ -17,7 +17,9 @@ const stubApi = makeApiStub({
   ai_sensor: { listByPaper: vi.fn() },
   notes: { get: vi.fn() },
   reader: { listAnnotations: vi.fn() },
-  lineage: { graph: vi.fn() }
+  lineage: { graph: vi.fn() },
+  // [F-UIRES-04 批 3b 回炉 r1] SidePaperInfo M1 接缝面（主控裁 reject：error 态最小 DOM 增量，M2/pdfjs 链不进单测）
+  library: { detail: vi.fn(() => Promise.reject(new Error('library.detail: b3b 接缝面未桩接'))) }
 })
 
 import type { LineageNode } from '../../../src/shared/models/lineage'

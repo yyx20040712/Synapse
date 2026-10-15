@@ -30,7 +30,9 @@ const stubApi = makeApiStub({
     list: vi.fn(async () => ({ ok: true as const, data: [] })),
     listByPaper: vi.fn(async () => ({ ok: true as const, data: [] }))
   },
-  papers: { setStarred: vi.fn() }
+  papers: { setStarred: vi.fn() },
+  // [F-UIRES-04 批 3b 回炉 r1] SidePaperInfo M1 接缝面（主控裁 reject：error 态最小 DOM 增量，M2/pdfjs 链不进单测）
+  library: { detail: vi.fn(() => Promise.reject(new Error('library.detail: b3b 接缝面未桩接'))) }
 })
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
