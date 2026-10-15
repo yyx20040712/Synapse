@@ -59,7 +59,6 @@ export function MemoryTab(): JSX.Element {
   const canCreate = filters.scope === 'global'
   const creating = useAiMemoryStore((s) => s.creating)
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
-  const btnStyle = { borderColor: 'var(--border)' }
 
   return (
     <div data-testid="ai-manage-memory" className="flex flex-col gap-2 text-xs">
@@ -123,7 +122,8 @@ export function MemoryTab(): JSX.Element {
               setSearchDraft(e.target.value)
             }}
           />
-          <button type="submit" className="rounded border px-1.5 py-0.5 text-[10px] leading-none" style={btnStyle}>
+          {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS） */}
+          <button type="submit" className="btn-std">
             搜索
           </button>
         </form>
@@ -170,11 +170,11 @@ export function MemoryTab(): JSX.Element {
           }}
         />
         <div className="flex items-center gap-2">
+          {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS） */}
           <button
             type="button"
             aria-label="新建记忆"
-            className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
-            style={btnStyle}
+            className="btn-std"
             // [回炉 R2] 在途置灰（双击双发防重复行——store 防重联动画）
             disabled={!canCreate || creating}
             onClick={() => {

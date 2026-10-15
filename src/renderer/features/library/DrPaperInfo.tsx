@@ -6,7 +6,8 @@
  * - M2 扇出：mount/detail.id/fileUrl 变更→selectPaperImages(detail.id, detail.fileUrl)
  *   （useLayoutEffect——paint 前归位沿 3b 帧修先例）；卸载/换页 cleanup→
  *   unmountPaperImages()。两连接件（脉络侧板/库抽屉）不同页互斥挂载=M2 单
- *   currentPId 语义安全（unmountPaperImages 全局单点，同刻仅一连接件在场）。
+ *   currentPId 语义安全（unmountPaperImages 全局单点，同刻仅一连接件在场）
+ *   〔INV-139——与 SidePaperInfo.tsx 头注互指〕。
  * - M2 反应性=250ms getPaperImages 快照轮询（settle 完成态〔ready/partial〕
  *   停；error 续轮=I8 重试反应性通道——SidePaperInfo 同型；M2 订阅面升级挂
  *   F-M2SUB-01 回收）。

@@ -16,6 +16,10 @@
  *   §4.11 文案口径）；ready→PaperInfoSection——陈旧帧 S3 零残留=layout
  *   effect paint 前归位（entry/select 同步链）+key 换篇重挂载（摘要展开
  *   态跨篇不复位——expanded 随重挂载复位）。
+ * - [INV-139] 与库域 DrPaperInfo（文献库抽屉连接件——DrPaperInfo.tsx 头注
+ *   互指）不同页互斥挂载：同刻至多一连接件在场扇出 M2（unmountPaperImages
+ *   全局单点+currentPId 单值语义安全）；同窗并存需求出现时先升级 F-M2SUB-01
+ *   订阅面（禁先破互斥）。
  */
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { getPaperImages, selectPaperImages, unmountPaperImages, type PaperImageEntry } from '../../shared/PaperImageExtractor'

@@ -131,6 +131,41 @@
   color: var(--text);
 }
 
+/* ══ [F-UIRES-04 批 3d D8+F-SETSTYLE-01] 公共钮系：收起钮款 .collapse-btn +
+   标准文字钮款 .btn-std（radius/border 两款同源公共变量，token 单源=
+   theme.css --btn-std-radius/--btn-std-border——C-4c 语义锚）══
+   - .collapse-btn：收起钮公共视觉款（原 theme-lineage-nav.css nav 双钮视觉块
+     迁出——方案切换=删除旧方案；消费面=LineageNavPane 双钮+SideCapRow 侧板
+     收起钮双挂；语义类/testid 零涉，e2e 选择器不动）。
+   - .btn-std：设置页普通圆角矩形文字钮（F-SETSTYLE-01——消费面=
+     ZcodeLinkSection/AiManageSection/MemoryTab/MemoryRow/TasksTab/PinsTab
+     11 处 markup）；tab 选中态经类切换承载（.on——.lg-mode.on 同语言先例）。 */
+.collapse-btn {
+  font-family: inherit;
+  font-size: var(--fs-strong);
+  color: var(--dim);
+  background: transparent;
+  border: var(--btn-std-border);
+  border-radius: var(--btn-std-radius);
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.collapse-btn:hover { color: var(--accent); border-color: var(--accent); }
+.btn-std {
+  font-family: inherit;
+  border: var(--btn-std-border);
+  border-radius: var(--btn-std-radius);
+  padding: 2px 8px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-std:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+/* [F-SETSTYLE-01 批 3d r1——门一 k3-W2=d1-W3/W4-N4] 禁用灰化（先例=shared
+   Button 组件 tailwind disabled:cursor-not-allowed disabled:opacity-50 同语言） */
+.btn-std:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-std.on { border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
 /* ══ R3 菱形分隔线（共享语法——回炉 W3 自 library.css 迁入：R3-U2 文献库
    筛选区|列表与详情空态、R3-U4 设置分节复用同一语法；线段 min-width 24px+
    flex:1 窄窗防碰撞——设计定稿注意事项③）══ */

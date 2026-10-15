@@ -29,8 +29,9 @@ export function SideCapRow(props: {
         {node.paperId !== null && (
           <StarToggleSpan isStarred={node.isStarred === true} className="panel-star" testid="panel-star" label="星标" onActivate={toggleStar} />
         )}
+        {/* [F-UIRES-04 批 3d D8] collapse-btn=视觉款公共类（theme-buttons.css）——语义类/testid 零动 */}
         {props.onCollapse !== undefined && (
-          <button type="button" className="side-collapse-btn syn-icon-btn" data-testid="lineage-sidebar-collapse"
+          <button type="button" className="side-collapse-btn syn-icon-btn collapse-btn" data-testid="lineage-sidebar-collapse"
             title="收起详情面板" aria-label="收起详情面板" onClick={props.onCollapse}>
             {ICON_CHEVRONS_RIGHT}
           </button>

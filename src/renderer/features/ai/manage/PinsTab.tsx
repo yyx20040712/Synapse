@@ -138,11 +138,11 @@ export function PinsTab(): JSX.Element {
                   <span className="min-w-0 truncate" style={{ color: 'var(--text-dim)' }}>
                     {m.anchorTitle ?? '—'}
                   </span>
+                  {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS——shrink-0 布局 utility 保留） */}
                   <button
                     type="button"
                     aria-label="取消置顶"
-                    className="shrink-0 rounded border px-1.5 py-0.5 text-[10px] leading-none"
-                    style={{ borderColor: 'var(--border)', color: 'var(--danger)' }}
+                    className="shrink-0 btn-std"
                     onClick={() => {
                       unpin(m, scope)
                     }}

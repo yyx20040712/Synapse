@@ -56,17 +56,8 @@
   overflow: hidden;
 }
 .lineage-nav.collapsed { align-items: center; padding-top: 8px; }
-.nav-expand-btn, .nav-collapse-btn {
-  font-family: inherit;
-  font-size: var(--fs-strong);
-  color: var(--dim);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 3px 7px;
-  cursor: pointer;
-}
-.nav-expand-btn:hover, .nav-collapse-btn:hover { color: var(--accent); border-color: var(--accent); }
+/* [F-UIRES-04 批 3d D8] nav 双钮视觉款已迁出→theme-buttons.css .collapse-btn
+   （公共钮系——侧板收起钮同款；语义类挂点不动） */
 .nav-head {
   display: flex;
   align-items: center;

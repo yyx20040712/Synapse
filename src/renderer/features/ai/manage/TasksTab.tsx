@@ -184,12 +184,12 @@ export function TasksTab(): JSX.Element {
                 <td className="max-w-40 truncate py-1 pr-3">{t.targetTitle || SCOPE_LABEL[t.scope]}</td>
                 <td className="py-1 pr-3">
                   <span data-testid="ai-task-status">{STATUS_LABEL[t.status]}</span>
+                  {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS——ml-1.5 布局 utility 保留） */}
                   {t.status === 'queued' && (
                     <button
                       type="button"
                       aria-label="取消任务"
-                      className="ml-1.5 rounded border px-1.5 py-0.5 text-[10px] leading-none"
-                      style={{ borderColor: 'var(--border)', color: 'var(--danger)' }}
+                      className="ml-1.5 btn-std"
                       onClick={() => {
                         cancelTask(t)
                       }}

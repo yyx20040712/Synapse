@@ -3340,6 +3340,61 @@
         }
       ]
     },
+    "tests/e2e/library-detail-info.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"文献库选中文→抽屉论文元数据区渲染真实文本+机构禁用位在场\"]",
+          "describePath": [],
+          "title": "文献库选中文→抽屉论文元数据区渲染真实文本+机构禁用位在场",
+          "markers": [],
+          "line": 68,
+          "assertions": [
+            "expect(drawer.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })",
+            "expect(drawer.getByTestId('paper-info-authors')).toContainText('张三丰')",
+            "expect(drawer.getByTestId('paper-info-abstract')).toContainText('库域摘要锚句起首')",
+            "expect(drawer.getByText('机构信息待数据库升级后开放')).toBeVisible()"
+          ]
+        },
+        {
+          "key": "[\"两域同构：同 paperId 库详情面板与脉络侧板渲染同作者文本\"]",
+          "describePath": [],
+          "title": "两域同构：同 paperId 库详情面板与脉络侧板渲染同作者文本",
+          "markers": [],
+          "line": 85,
+          "assertions": [
+            "expect(libAuthors).toContain('张三丰')",
+            "expect(sideAuthors).toContainText('张三丰', { timeout: 10_000 })",
+            "expect(sideAuthors).toHaveText(libAuthors ?? '')",
+            "expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })"
+          ]
+        },
+        {
+          "key": "[\"抽屉滚动承载：长摘要展开→.lib-dr 内容超高（scrollHeight>clientHeight）\"]",
+          "describePath": [],
+          "title": "抽屉滚动承载：长摘要展开→.lib-dr 内容超高（scrollHeight>clientHeight）",
+          "markers": [],
+          "line": 109,
+          "assertions": [
+            "expect(win.locator('.lib-drawer').getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })"
+          ]
+        },
+        {
+          "key": "[\"键值行在场：YEAR-MO/VENUE 行在抽屉渲染（DrKeyVals 拆件回归锁）\"]",
+          "describePath": [],
+          "title": "键值行在场：YEAR-MO/VENUE 行在抽屉渲染（DrKeyVals 拆件回归锁）",
+          "markers": [],
+          "line": 128,
+          "assertions": [
+            "expect(drawer.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })",
+            "expect(drawer.locator('.lib-fld', { hasText: 'YEAR-MO' })).toContainText('2024')",
+            "expect(drawer.locator('.lib-fld', { hasText: 'VENUE' })).toContainText(VENUE_A)"
+          ]
+        }
+      ]
+    },
     "tests/e2e/library-explorer.spec.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -3710,6 +3765,65 @@
             "expect(route, 'R5 route 非空卫').not.toBe('')",
             "expect(['band', 'detour'], `R5 实测 route=${route}（绕行族——中卡拦直连）`).toContain(route)",
             "expect( closure.open, `R5 竖直段 x 全∈锚∪槽位集（开放值=坐标集外逃逸——INV-SLOTGRID-02）锚=${JSON.stringify(closure.anchorXs)} 槽=${JSON.stringify(closure.slots)}` ).toEqual([])"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/lineage-side-info.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"选中文献节点→信息区渲染真实文本（作者/摘要/标签）+机构禁用位在场\"]",
+          "describePath": [],
+          "title": "选中文献节点→信息区渲染真实文本（作者/摘要/标签）+机构禁用位在场",
+          "markers": [],
+          "line": 75,
+          "assertions": [
+            "expect(win.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('paper-info-authors')).toContainText('张三丰')",
+            "expect(win.getByTestId('paper-info-abstract')).toContainText('信息区摘要锚句起首')",
+            "expect(tagsRow).toBeVisible()",
+            "expect(tagsRow).toContainText('水处理')",
+            "expect(tagsRow).toContainText('膜分离')",
+            "expect(win.getByText('机构信息待数据库升级后开放')).toBeVisible()"
+          ]
+        },
+        {
+          "key": "[\"无标签文献→标签行整行省略（空态机检）\"]",
+          "describePath": [],
+          "title": "无标签文献→标签行整行省略（空态机检）",
+          "markers": [],
+          "line": 95,
+          "assertions": [
+            "expect(win.getByTestId('paper-info-authors')).toContainText('王五', { timeout: 10_000 })",
+            "expect(win.getByTestId('lineage-side-tags')).toHaveCount(0)"
+          ]
+        },
+        {
+          "key": "[\"信息区随笔记区同滚动承载（内容超高+头部操作行不滚）\"]",
+          "describePath": [],
+          "title": "信息区随笔记区同滚动承载（内容超高+头部操作行不滚）",
+          "markers": [],
+          "line": 108,
+          "assertions": [
+            "expect(win.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })",
+            "expect(await scroll.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)",
+            "expect(jumpsAfter!.y).toBe(jumpsBefore!.y)"
+          ]
+        },
+        {
+          "key": "[\"无真 PDF 场图片提取失败→strip 省略+重试微钮在场（I4 降级不挡主件）\"]",
+          "describePath": [],
+          "title": "无真 PDF 场图片提取失败→strip 省略+重试微钮在场（I4 降级不挡主件）",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect(win.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByTestId('paper-info-strip')).toHaveCount(0)",
+            "expect(win.getByTestId('paper-info-authors')).toContainText('张三丰')"
           ]
         }
       ]
@@ -11803,6 +11917,349 @@
             "expect(evil.headers.get('Access-Control-Allow-Origin')).toBeNull()",
             "expect(fileOrigin.status).toBe(404)",
             "expect(fileOrigin.headers.get('Access-Control-Allow-Origin')).toBe('null')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/PaperImageExtractor.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I1 注册表命中复用零双载/miss 自建毕 destroy（仅自建——零悬挂）；worker 模块级自置\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I1 注册表命中复用零双载/miss 自建毕 destroy（仅自建——零悬挂）；worker 模块级自置",
+          "markers": [],
+          "line": 98,
+          "assertions": [
+            "expect(gwo.workerSrc).toBe('worker-stub-url')",
+            "expect(mod.paperIdFromFileUrl('app-file://xyz')).toBe('xyz')",
+            "expect(() => mod.paperIdFromFileUrl('https://evil.example/x')).toThrow('非受管协议 URL')",
+            "expect(getDocument).toHaveBeenCalledTimes(1)",
+            "expect(mod.getPaperImages('A')?.status).toBe('extracting')",
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'ready', images: ['f1', 'f2'] })",
+            "expect(self.destroy).toHaveBeenCalledTimes(1)",
+            "expect(mod.getPaperImages('B')?.status).toBe('ready')",
+            "expect(getDocument).toHaveBeenCalledTimes(1)",
+            "expect(reg.destroy).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I2 切换零泄漏：extracting(A 自建)→SELECT(B)=A 销毁标 error(stale)、B 独立完成\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I2 切换零泄漏：extracting(A 自建)→SELECT(B)=A 销毁标 error(stale)、B 独立完成",
+          "markers": [],
+          "line": 124,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(taskDestroy).toHaveBeenCalledTimes(1)",
+            "expect(mod.getPaperImages('A')?.status).toBe('error')",
+            "expect(mod.getPaperImages('B')?.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I3 partial：部分页失败=成功帧+failedPages 徽注（失败不扩散）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I3 partial：部分页失败=成功帧+failedPages 徽注（失败不扩散）",
+          "markers": [],
+          "line": 141,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'partial', images: ['f1', 'f3'], failedPages: 1 })"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I4 全失败=error（strip 省略承载面——降级不挡主件）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I4 全失败=error（strip 省略承载面——降级不挡主件）",
+          "markers": [],
+          "line": 150,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', images: [] })"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I5 LRU 超容：淘汰最旧完成态；extracting/当前选中永不作淘汰受害方\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I5 LRU 超容：淘汰最旧完成态；extracting/当前选中永不作淘汰受害方",
+          "markers": [],
+          "line": 159,
+          "assertions": [
+            "expect(mod.getPaperImages(`p${i}`)?.status).toBe('ready')",
+            "expect(mod.getPaperImages('p21')?.status).toBe('extracting')",
+            "expect(mod.getPaperImages('p1')).toBeUndefined()",
+            "expect(mod.getPaperImages('p21')?.status).toBe('extracting')",
+            "expect(mod.getPaperImages('p21')).toMatchObject({ status: 'ready', images: ['f1'] })",
+            "expect(mod.getPaperImages('p2')?.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I6 in-flight×LRU：完成回调判定键在册——已逐→直接释放不入 cache（零泄漏）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I6 in-flight×LRU：完成回调判定键在册——已逐→直接释放不入 cache（零泄漏）",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toBeUndefined()",
+            "expect(mod.getPaperImages('A')).toBeUndefined()",
+            "expect(taskDestroy).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I7 UNMOUNT 两策：自建→destroy+error(stale)；注册表借出→续跑+stale 查证后写缓存\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I7 UNMOUNT 两策：自建→destroy+error(stale)；注册表借出→续跑+stale 查证后写缓存",
+          "markers": [],
+          "line": 200,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(taskDestroy).toHaveBeenCalledTimes(1)",
+            "expect(mod.getPaperImages('A')?.status).toBe('error')",
+            "expect(mod.getPaperImages('B')?.status).toBe('extracting')",
+            "expect(mod.getPaperImages('B')).toBeUndefined()",
+            "expect(reg.destroy).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I8 error→SELECT 维持（独立重试微钮）/ready→SELECT 幂等：均零迁移\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I8 error→SELECT 维持（独立重试微钮）/ready→SELECT 幂等：均零迁移",
+          "markers": [],
+          "line": 227,
+          "assertions": [
+            "expect(mod.getPaperImages('A')?.status).toBe('error')",
+            "expect(mod.getPaperImages('A')?.status).toBe('error')",
+            "expect(getDocument).toHaveBeenCalledTimes(1)",
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')",
+            "expect(getDocument).toHaveBeenCalledTimes(2)",
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')",
+            "expect(getDocument).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I9 [回炉 A1·k1-B1] task-pending 中切换→destroy 致 promise reject：stale 条目保持+task.destroy 恰 1 次\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I9 [回炉 A1·k1-B1] task-pending 中切换→destroy 致 promise reject：stale 条目保持+task.destroy 恰 1 次",
+          "markers": [],
+          "line": 246,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(taskDestroy).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I10 [回炉 A2·d1-W1] ready 落定后 finally 清理窗内切换：完成态不覆写 error(stale)\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I10 [回炉 A2·d1-W1] ready 落定后 finally 清理窗内切换：完成态不覆写 error(stale)",
+          "markers": [],
+          "line": 266,
+          "assertions": [
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')",
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')",
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I11 [回炉 B·d1-W2] 真失败入 catch→慢 destroy 挂起窗内切换：stale 保持（不抹为无 stale）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I11 [回炉 B·d1-W2] 真失败入 catch→慢 destroy 挂起窗内切换：stale 保持（不抹为无 stale）",
+          "markers": [],
+          "line": 283,
+          "assertions": [
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(mod.getPaperImages('A')).toMatchObject({ status: 'error', stale: true })",
+            "expect(mod.getPaperImages('B')?.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8\",\"I12 [回炉 A·d1-W1] 完成后 LRU 逐出+UNMOUNT：completed 早退不复活 error(stale)（缓存驻留无关）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a PaperImageExtractor —— M2 状态机 I1-I8"
+          ],
+          "title": "I12 [回炉 A·d1-W1] 完成后 LRU 逐出+UNMOUNT：completed 早退不复活 error(stale)（缓存驻留无关）",
+          "markers": [],
+          "line": 303,
+          "assertions": [
+            "expect(mod.getPaperImages('A')?.status).toBe('ready')",
+            "expect(mod.getPaperImages('A')).toBeUndefined()",
+            "expect(mod.getPaperImages('A')).toBeUndefined()",
+            "expect(mod.getPaperImages('A')).toBeUndefined()"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/PaperInfoSection.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"ready：strip 在场 2 图（dataURL 横滚条）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "ready：strip 在场 2 图（dataURL 横滚条）",
+          "markers": [],
+          "line": 81,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"paper-info-strip\"]')).not.toBeNull()",
+            "expect(host?.querySelectorAll('.pi-strip img').length).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"partial：failedPages=3 徽注在场（计数锚）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "partial：failedPages=3 徽注在场（计数锚）",
+          "markers": [],
+          "line": 87,
+          "assertions": [
+            "expect(host?.textContent).toContain('3 页提取失败')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"空省略：authors=[]→作者块缺席；abstract=\\\"\\\"→摘要块与 toggle 均缺席\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "空省略：authors=[]→作者块缺席；abstract=\"\"→摘要块与 toggle 均缺席",
+          "markers": [],
+          "line": 92,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"paper-info-authors\"]')).toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"paper-info-abstract\"]')).toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"paper-info-abstract-toggle\"]')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"images 缺席→strip 与降级行均缺席（C2-② 借出弃置瞬态非 error 面）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "images 缺席→strip 与降级行均缺席（C2-② 借出弃置瞬态非 error 面）",
+          "markers": [],
+          "line": 99,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"paper-info-strip\"]')).toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"paper-info-strip-retry\"]')).toBeNull()",
+            "expect(host?.textContent).not.toContain('文中图片提取失败')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"error：降级行+重试微钮在场；点击→retryPaperImages(pId 派生单源, fileUrl) 恒等锚\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "error：降级行+重试微钮在场；点击→retryPaperImages(pId 派生单源, fileUrl) 恒等锚",
+          "markers": [],
+          "line": 106,
+          "assertions": [
+            "expect(host?.textContent).toContain('文中图片提取失败')",
+            "expect(btn).not.toBeNull()",
+            "expect(retryPaperImages).toHaveBeenCalledTimes(1)",
+            "expect(retryPaperImages).toHaveBeenCalledWith('p-1', 'app-file://p-1')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）\",\"M3：toggle 展开/收起往返（class open）；key={data.id} 换篇重挂载→expanded 复位\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3b r2] PaperInfoSection 纯件（props 注入零 IPC）"
+          ],
+          "title": "M3：toggle 展开/收起往返（class open）；key={data.id} 换篇重挂载→expanded 复位",
+          "markers": [],
+          "line": 118,
+          "assertions": [
+            "expect(abs()?.classList.contains('open')).toBe(false)",
+            "expect(abs()?.classList.contains('open')).toBe(true)",
+            "expect(abs()?.classList.contains('open')).toBe(false)",
+            "expect(abs()?.classList.contains('open')).toBe(true)",
+            "expect(abs()?.classList.contains('open')).toBe(false)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/SidePaperInfo.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）\",\"M1 error 面：「信息加载失败」行+重试钮在场（aria-label=重试）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）"
+          ],
+          "title": "M1 error 面：「信息加载失败」行+重试钮在场（aria-label=重试）",
+          "markers": [],
+          "line": 83,
+          "assertions": [
+            "expect(host?.textContent).toContain('信息加载失败')",
+            "expect(btn).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）\",\"M1 重试钮点击→store.retry 被调（参数=paperId）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）"
+          ],
+          "title": "M1 重试钮点击→store.retry 被调（参数=paperId）",
+          "markers": [],
+          "line": 91,
+          "assertions": [
+            "expect(storeState.retry).toHaveBeenCalledTimes(1)",
+            "expect(storeState.retry).toHaveBeenCalledWith('paper-1')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）\",\"extracting 态：strip 与降级行双缺席（借出弃置瞬态非 error 面——C2-②）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）"
+          ],
+          "title": "extracting 态：strip 与降级行双缺席（借出弃置瞬态非 error 面——C2-②）",
+          "markers": [],
+          "line": 103,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"paper-info-section\"]')).not.toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"paper-info-strip\"]')).toBeNull()",
+            "expect(host?.querySelector('[data-testid=\"paper-info-strip-retry\"]')).toBeNull()",
+            "expect(host?.textContent).not.toContain('文中图片提取失败')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）\",\"重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）"
+          ],
+          "title": "重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）",
+          "markers": [],
+          "line": 111,
+          "assertions": [
+            "expect(host?.textContent).toContain('文中图片提取失败')",
+            "expect(host?.textContent).not.toContain('文中图片提取失败')",
+            "expect(host?.querySelector('[data-testid=\"paper-info-section\"]')).not.toBeNull()"
           ]
         }
       ]
@@ -21092,7 +21549,7 @@
           ],
           "title": "空选中态=「点击卡片查看详情」占位（P-16 常驻栏位形态）",
           "markers": [],
-          "line": 76,
+          "line": 78,
           "assertions": [
             "expect(host?.textContent).toContain('点击卡片查看详情')"
           ]
@@ -21104,7 +21561,7 @@
           ],
           "title": "详情域收编：完整题名/期刊缩写/IF/被引/年月真文本；星标态禁用呈现",
           "markers": [],
-          "line": 81,
+          "line": 83,
           "assertions": [
             "expect(text).toContain('流域韧性评估综述')",
             "expect(text).toContain('Water Res.')",
@@ -21122,7 +21579,7 @@
           ],
           "title": "可选省略：期刊/IF/被引缺席=整行省略（无「引 —」占位）；core 徽章退役零渲染",
           "markers": [],
-          "line": 101,
+          "line": 103,
           "assertions": [
             "expect(text).not.toContain('引 —')",
             "expect(text).not.toContain('被引')",
@@ -21138,7 +21595,7 @@
           ],
           "title": "底部注记=编辑操作提要（[F-UIRES-03 C3] 双击跳转子句随卡双击链退役删——入口=卡面「去阅读器」钮；改月子句随改月链退役删 INV-107；[A1b] 标签编辑域随私有域退役删）",
           "markers": [],
-          "line": 117,
+          "line": 119,
           "assertions": [
             "expect(host?.textContent).toContain('编辑模式：调序 / 画线 / 调线')",
             "expect(host?.textContent).not.toContain('双击卡片跳转阅读器')",
@@ -21152,7 +21609,7 @@
           ],
           "title": "主题节点空态沿承（无笔记面文案保活）",
           "markers": [],
-          "line": 129,
+          "line": 131,
           "assertions": [
             "expect(host?.textContent).toContain('主题节点无笔记')"
           ]
@@ -21164,7 +21621,7 @@
           ],
           "title": "CSS：详情面板常驻栏位宽 252（.lg-inspector 面板容器族）",
           "markers": [],
-          "line": 139,
+          "line": 141,
           "assertions": [
             "expect(css).toMatch(/\\.lg-inspector\\s*\\{[^}]*width:\\s*252px/)"
           ]
@@ -23543,7 +24000,7 @@
           ],
           "title": "__main__ 哨兵分支：folderScope 置 undefined（全库降级——键覆盖清旧夹）+selectPaper 执行+事件后发一次",
           "markers": [],
-          "line": 76,
+          "line": 80,
           "assertions": [
             "expect(useLibraryStore.getState().query.folderScope).toEqual({ kind: 'folder', folderId: 'old-folder' })",
             "expect(plan.folderScope).toBeUndefined()",
@@ -23560,7 +24017,7 @@
           ],
           "title": "真夹分支：folderScope={kind:folder} 精确过滤+offset 归零；主题节点 paperId=null 透传（Page 侧不置选中）",
           "markers": [],
-          "line": 98,
+          "line": 102,
           "assertions": [
             "expect(plan.folderScope).toEqual({ kind: 'folder', folderId: 'e2e-folder' })",
             "expect(useLibraryStore.getState().query.folderScope).toEqual({ kind: 'folder', folderId: 'e2e-folder' })",
@@ -23575,7 +24032,7 @@
           ],
           "title": "操作行钮 title 哨兵分支两文案（MAIN_GRAPH_ID 常量判——字面量双源消除回归锁；[B5①] 迁移面沿承）",
           "markers": [],
-          "line": 108,
+          "line": 112,
           "assertions": [
             "expect(btnTitle(), '真夹节点=所在夹文案').toBe('在文献库打开所在文件夹并定位')",
             "expect(btnTitle(), '未归夹节点=全库降级文案').toBe('在文献库打开（未归文件夹——全库视图）')"
@@ -25920,7 +26377,7 @@
           "describePath": [],
           "title": "B5① 操作行：徽章行下两钮并排常驻（meta 区驻头部不随内容滚动消失）+文字真文本+载荷透传（签名沿卡面版）",
           "markers": [],
-          "line": 123,
+          "line": 125,
           "assertions": [
             "expect(jumps).not.toBeNull()",
             "expect(q('.insp-scroll .side-jumps')).toBeNull()",
@@ -25937,7 +26394,7 @@
           "describePath": [],
           "title": "B5① 主题节点：「去阅读器」零渲染+「去文献库」在场（paperId=null 透传——沿 C3 态通道支持/编排层不置选中）",
           "markers": [],
-          "line": 163,
+          "line": 165,
           "assertions": [
             "expect(q('[data-testid=\"card-goto-reader\"]')).toBeNull()",
             "expect(libBtn).not.toBeNull()",
@@ -25950,7 +26407,7 @@
           "describePath": [],
           "title": "B5① 空选中态：操作行零渲染（node=null 早退面——按钮属选中详情操作语义）",
           "markers": [],
-          "line": 185,
+          "line": 187,
           "assertions": [
             "expect(q('.side-jumps')).toBeNull()",
             "expect(q('[data-testid=\"card-goto-library\"]')).toBeNull()",
@@ -25962,7 +26419,7 @@
           "describePath": [],
           "title": "B5② Page 手柄键盘接线：ArrowRight → aria-valuenow 252→268 随动（APG separator——tabIndex 可达）",
           "markers": [],
-          "line": 195,
+          "line": 197,
           "assertions": [
             "expect(rz.getAttribute('aria-valuenow')).toBe('252')",
             "expect(rz.getAttribute('tabIndex')).toBe('0')",
@@ -25982,7 +26439,7 @@
           "describePath": [],
           "title": "文献节点三节新序：全文笔记→片段笔记→AI 评估与建议（DOM 序断标题数组；[A3] core_idea 区负锚沿承）",
           "markers": [],
-          "line": 212,
+          "line": 214,
           "assertions": [
             "expect(stubApi.ai_sensor.listByPaper).toHaveBeenCalledWith({ paperId: 'paper-A' })",
             "expect(stubApi.notes.get).toHaveBeenCalledWith({ paperId: 'paper-A' })",
@@ -26009,7 +26466,7 @@
           "describePath": [],
           "title": "主题节点：仅元信息区+空态文案；三通道零调用",
           "markers": [],
-          "line": 253,
+          "line": 255,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-idea\"]')).toBeNull()",
             "expect(host?.textContent).toContain('主题节点无笔记')",
@@ -26023,7 +26480,7 @@
           "describePath": [],
           "title": "R2-LG11 侧板浅色化：白玻璃底+边；三节 h4 accent 左缘条；条目卡白底淡描边（防回退）",
           "markers": [],
-          "line": 263,
+          "line": 265,
           "assertions": [
             "expect(rootEl.getAttribute('style')).toContain('var(--panel-a92)')",
             "expect(rootEl.getAttribute('style')).toContain('var(--border)')",
@@ -26040,7 +26497,7 @@
           "describePath": [],
           "title": "[B2] AI 双击链退役负锚：dblClick AI 条目→onJumpToPaper 不调（全应用唯一保留双击链=片段条目）",
           "markers": [],
-          "line": 290,
+          "line": 292,
           "assertions": [
             "expect(JUMP).not.toHaveBeenCalled()"
           ]
@@ -26050,7 +26507,7 @@
           "describePath": [],
           "title": "AI 条目单击不触发跳转（纯展示——防误触）",
           "markers": [],
-          "line": 298,
+          "line": 300,
           "assertions": [
             "expect(JUMP).not.toHaveBeenCalled()"
           ]
@@ -26060,7 +26517,7 @@
           "describePath": [],
           "title": "片段节：loading→error（role=alert）+重试按钮→重试成功恢复呈现（INV-02 列表型）",
           "markers": [],
-          "line": 306,
+          "line": 308,
           "assertions": [
             "expect(err?.getAttribute('role')).toBe('alert')",
             "expect(err?.textContent).toContain('片段笔记加载失败：数据库占用')",
@@ -26074,7 +26531,7 @@
           "describePath": [],
           "title": "片段节：空态文案（空数组非错误）",
           "markers": [],
-          "line": 324,
+          "line": 326,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-fragments\"]')?.textContent).toContain('暂无片段笔记')"
           ]
@@ -26084,7 +26541,7 @@
           "describePath": [],
           "title": "片段节：条目形态镜像 reader 域（kind 色点单源+1 基页码显示+引文/批注截断+title=comment||quoteText）+排序集成（page×startOffset 双维乱→DOM 序=sortByDocumentOrder 期望）",
           "markers": [],
-          "line": 330,
+          "line": 332,
           "assertions": [
             "expect(items.map((el) => el.getAttribute('data-fragment-id'))).toEqual(['f2', 'f1'])",
             "expect(dot.style.background).toBe(COLOR_SWATCH.blue)",
@@ -26102,7 +26559,7 @@
           "describePath": [],
           "title": "片段双击→onJumpToPaper 载荷钉形（anchorPage=Annotation.page 0 基直传——禁 ±1 换算；三元组透传）",
           "markers": [],
-          "line": 371,
+          "line": 373,
           "assertions": [
             "expect(JUMP).toHaveBeenCalledTimes(1)",
             "expect(JUMP).toHaveBeenCalledWith({ paperId: 'paper-A', anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' } })"
@@ -26113,7 +26570,7 @@
           "describePath": [],
           "title": "片段单击不触发跳转（双击显式语义——防误触，AI 节先例）",
           "markers": [],
-          "line": 384,
+          "line": 386,
           "assertions": [
             "expect(JUMP).not.toHaveBeenCalled()"
           ]
@@ -26123,7 +26580,7 @@
           "describePath": [],
           "title": "[RR1-C] 片段条目 Enter=键盘等价路径→同一上抛单点（载荷钉形与双击同）；Space 不触发+[RR2] e.repeat 不触发",
           "markers": [],
-          "line": 392,
+          "line": 394,
           "assertions": [
             "expect(JUMP).toHaveBeenCalledTimes(1)",
             "expect(JUMP).toHaveBeenCalledWith({ paperId: 'paper-A', anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' } })",
@@ -26136,7 +26593,7 @@
           "describePath": [],
           "title": "片段节换节点 stale 守卫：晚到的旧节点响应不覆盖新节点条目",
           "markers": [],
-          "line": 416,
+          "line": 418,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-fragments\"] [data-fragment-id=\"f-b\"]')).not.toBeNull()",
             "expect(q('[data-testid=\"lineage-side-fragments\"] [data-fragment-id=\"f-old\"]')).toBeNull()",
@@ -26148,7 +26605,7 @@
           "describePath": [],
           "title": "AI 取数失败→error+重试按钮；重试成功恢复呈现（INV-02 列表型）",
           "markers": [],
-          "line": 436,
+          "line": 438,
           "assertions": [
             "expect(err?.getAttribute('role')).toBe('alert')",
             "expect(err?.textContent).toContain('AI 评估加载失败：数据库占用')",
@@ -26162,7 +26619,7 @@
           "describePath": [],
           "title": "全文笔记取数失败→error+重试（与 AI 面独立）",
           "markers": [],
-          "line": 454,
+          "line": 456,
           "assertions": [
             "expect(err?.textContent).toContain('全文笔记加载失败：IO 失败')",
             "expect(q('[data-testid=\"lineage-side-ai-error\"]')).toBeNull()",
@@ -26174,7 +26631,7 @@
           "describePath": [],
           "title": "空数据：AI 空态+全文 null 空态+片段空态（非错误）",
           "markers": [],
-          "line": 473,
+          "line": 475,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-ai-notes\"]')?.textContent).toContain('暂无 AI 评估与建议')",
             "expect(q('[data-testid=\"lineage-side-manual-note\"]')?.textContent).toContain('暂无全文笔记')",
@@ -26186,7 +26643,7 @@
           "describePath": [],
           "title": "[RR1-A] 全文笔记节三态文案字节级：loading「全文笔记加载中…」（挂起取数期间）→落定空态「暂无全文笔记」（同例收口过渡）",
           "markers": [],
-          "line": 481,
+          "line": 483,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-manual-note\"]')?.textContent).toContain('全文笔记加载中…')",
             "expect(q('[data-testid=\"lineage-side-manual-note\"]')?.textContent).toContain('暂无全文笔记')"
@@ -26197,7 +26654,7 @@
           "describePath": [],
           "title": "[RR1-A] AI 评估与建议节三态文案字节级：loading「AI 评估加载中…」（挂起取数期间）→落定空态「暂无 AI 评估与建议」（loading=「AI 评估」短名/空态=「AI 评估与建议」全名——票面不对称保真；error 态字节级由既有「AI 取数失败」例锁定）",
           "markers": [],
-          "line": 494,
+          "line": 496,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-ai-notes\"]')?.textContent).toContain('AI 评估加载中…')",
             "expect(q('[data-testid=\"lineage-side-ai-notes\"]')?.textContent).toContain('暂无 AI 评估与建议')"
@@ -26208,7 +26665,7 @@
           "describePath": [],
           "title": "未选中节点→空态提示（[②U4/P-16] 占位文案=「点击卡片查看详情」）",
           "markers": [],
-          "line": 507,
+          "line": 509,
           "assertions": [
             "expect(host?.textContent).toContain('点击卡片查看详情')",
             "expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()"
@@ -26219,7 +26676,7 @@
           "describePath": [],
           "title": "换节点 stale 守卫（AI 面）：晚到的旧节点响应不覆盖新节点数据",
           "markers": [],
-          "line": 514,
+          "line": 516,
           "assertions": [
             "expect(q('[data-ai-note-id=\"b1\"]')).not.toBeNull()",
             "expect(q('[data-ai-note-id=\"a-old\"]')).toBeNull()",
@@ -26231,7 +26688,7 @@
           "describePath": [],
           "title": "[B2] 后置占位章退役：lineage-side-postpone 不存在+退役文案零命中（真节已替代）",
           "markers": [],
-          "line": 534,
+          "line": 536,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-postpone\"]')).toBeNull()",
             "expect(host?.textContent).not.toContain(retiredBody)",
@@ -26244,7 +26701,7 @@
           "describePath": [],
           "title": "Page 全链：单击节点→侧板挂载呈现节点+Timeline 选中视觉态兑现",
           "markers": [],
-          "line": 568,
+          "line": 570,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-panel\"]')?.textContent).toContain('节点A')",
             "expect(q('[data-node-id=\"A\"]')?.classList.contains('sel')).toBe(true)",
@@ -26256,7 +26713,7 @@
           "describePath": [],
           "title": "Page 全链：片段条目双击→requestOpenPaperAnchored 锚载荷（anchorPage 0 基直传）",
           "markers": [],
-          "line": 576,
+          "line": 578,
           "assertions": [
             "expect(requestAnchoredStub).toHaveBeenCalledWith({ paperId: 'paper-A', anchor: { quoteText: '引文-f1', prefixText: '前置', suffixText: '后置', anchorPage: 2, annotationId: 'f1' } })"
           ]
@@ -26275,7 +26732,7 @@
           ],
           "title": "insp-cap「节点详情」+骑缝编号 #NNN（[F-FOLDER-01] pubNo 分发）+星标态禁用呈现；缺省不呈现编号",
           "markers": [],
-          "line": 81,
+          "line": 83,
           "assertions": [
             "expect(cap?.textContent).toContain('节点详情')",
             "expect(cap?.textContent).toContain('·004')",
@@ -26290,7 +26747,7 @@
           ],
           "title": "[②U4] 徽章行：期刊缩写/IF/被引 N/年月/T 档（可选省略——缺席零渲染）；core 徽章退役（行 9）",
           "markers": [],
-          "line": 100,
+          "line": 102,
           "assertions": [
             "expect(badges).toEqual(['Water Res.', 'IF 11.2', '被引 17', '2023-06', 'T2'])",
             "expect(q('.badge.core')).toBeNull()"
@@ -26303,7 +26760,7 @@
           ],
           "title": "[②U4] 年月退化：month null→年单值；metrics null→期刊/IF/被引/T 档全省略（无占位）；theme 节点同年月徽章",
           "markers": [],
-          "line": 115,
+          "line": 117,
           "assertions": [
             "expect(badges).toEqual(['2023'])",
             "expect(themeBadges).toEqual(['2023-06'])"
@@ -26316,7 +26773,7 @@
           ],
           "title": "[A3 F-CONTRACTA-01 2026-10-04] 核心 idea 区随 core_idea 全退役删除（idea-cap/idea 面零渲染负锚）；[F-UIRES-03 B2] AI 评估与建议真节在场+后置占位章退役负锚（postpone 徽标零渲染）；insp-foot 提示行",
           "markers": [],
-          "line": 140,
+          "line": 142,
           "assertions": [
             "expect(q('[data-testid=\"lineage-side-idea\"]')).toBeNull()",
             "expect(q('.idea-cap')).toBeNull()",
@@ -26337,7 +26794,7 @@
           ],
           "title": "既有 testid 面全保活：meta/ai-notes/manual-note（[A3] idea 面退役出集）+[B2] fragments 面；主题节点空态零变+无后置章",
           "markers": [],
-          "line": 169,
+          "line": 171,
           "assertions": [
             "expect(q(`[data-testid=\"${tid}\"]`)).not.toBeNull()",
             "expect(q('[data-testid=\"lineage-side-idea\"]')).toBeNull()",
@@ -26354,7 +26811,7 @@
           ],
           "title": "[F-UIRES-03 B4③] 头部收起钮：onCollapse 在场→点击上抛；缺席→零渲染（Page 态归 LineagePage hook 承载）",
           "markers": [],
-          "line": 184,
+          "line": 186,
           "assertions": [
             "expect(btn).not.toBeNull()",
             "expect(btn?.getAttribute('aria-label')).toBe('收起详情面板')",
@@ -26376,7 +26833,7 @@
           ],
           "title": "主题节点（paperId null）：星标域不渲染（无文献可标——tags 判空同款先例）",
           "markers": [],
-          "line": 107,
+          "line": 109,
           "assertions": [
             "expect(card?.querySelector('.c-star')).toBeNull()"
           ]
@@ -26388,7 +26845,7 @@
           ],
           "title": "未标记：书页图标形态+title「星标」+aria-pressed=false",
           "markers": [],
-          "line": 112,
+          "line": 114,
           "assertions": [
             "expect(star).not.toBeNull()",
             "expect(star?.getAttribute('title')).toBe('星标')",
@@ -26404,7 +26861,7 @@
           ],
           "title": "已标记：高亮星形态（on class+aria-pressed=true+title「取消星标」+实心填充）",
           "markers": [],
-          "line": 122,
+          "line": 124,
           "assertions": [
             "expect(star?.classList.contains('on')).toBe(true)",
             "expect(star?.getAttribute('aria-pressed')).toBe('true')",
@@ -26419,7 +26876,7 @@
           ],
           "title": "点击：stopPropagation（卡身 onNodeClick 不触发）+onStarClick(nodeId) 上抛",
           "markers": [],
-          "line": 131,
+          "line": 133,
           "assertions": [
             "expect(onStarClick).toHaveBeenCalledTimes(1)",
             "expect(onNodeClick).not.toHaveBeenCalled()"
@@ -26432,7 +26889,7 @@
           ],
           "title": "toggle：api.papers.setStarred 逐参+节点本地 isStarred 翻转（非编辑暂存面——队列零介入）",
           "markers": [],
-          "line": 142,
+          "line": 144,
           "assertions": [
             "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-1', starred: true })",
             "expect(store.getState().nodes[0]?.isStarred).toBe(true)",
@@ -26446,7 +26903,7 @@
           ],
           "title": "失败：回滚原值（toast 面经 toast-store——断言收口在回滚行为）",
           "markers": [],
-          "line": 157,
+          "line": 159,
           "assertions": [
             "expect(store.getState().nodes[0]?.isStarred).toBe(true)"
           ]
@@ -26458,7 +26915,7 @@
           ],
           "title": "载荷面收窄：store 不做节点查表（调用面 Timeline/Panel 判 paperId——主题节点星标域不渲染=结构性 no-op）",
           "markers": [],
-          "line": 173,
+          "line": 175,
           "assertions": [
             "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-x', starred: true })"
           ]
@@ -26470,10 +26927,39 @@
           ],
           "title": "undo 快照不捕获星标（回炉 r1-R2/k3-W-1）：入栈→toggleNodeStar(true)→undo→isStarred 仍 true（星标=非撤销维度恒保现值——不与 DB 脱钩）",
           "markers": [],
-          "line": 181,
+          "line": 183,
           "assertions": [
             "expect(store.getState().nodes[0]?.isStarred).toBe(true)",
             "expect(store.getState().nodes[0]?.isStarred, 'undo 后星标保持现值（快照不回退）').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"redo 向跨格序列（回炉 r2-R15）：入栈→toggle(true)→undo→redo→isStarred 仍 true；undo 后 toggle 再 redo 同保现值（判别序列 B——变异摘 overlay 须红）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "redo 向跨格序列（回炉 r2-R15）：入栈→toggle(true)→undo→redo→isStarred 仍 true；undo 后 toggle 再 redo 同保现值（判别序列 B——变异摘 overlay 须红）",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(store.getState().nodes[0]?.isStarred, '序列 A：redo 后星标仍 true').toBe(true)",
+            "expect(store.getState().nodes[0]?.isStarred).toBe(true)",
+            "expect(store.getState().nodes[0]?.isStarred, '序列 B：undo 后星标不被 redo 回滚').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"add→star→undo→redo 边界（回炉 r2-R16/k3 角案）：回归节点 isStarred 取快照录制值（快照缺维度=缺席键，下次 graph 载入自愈——登记非修复）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "add→star→undo→redo 边界（回炉 r2-R16/k3 角案）：回归节点 isStarred 取快照录制值（快照缺维度=缺席键，下次 graph 载入自愈——登记非修复）",
+          "markers": [],
+          "line": 251,
+          "assertions": [
+            "expect(store.getState().nodes.find((n) => n.id === 'n-2')?.isStarred).toBe(true)",
+            "expect(store.getState().nodes.map((n) => n.id)).toEqual(['n-1'])",
+            "expect(store.getState().nodes.map((n) => n.id).sort()).toEqual(['n-1', 'n-2'])",
+            "expect(store.getState().nodes.find((n) => n.id === 'n-2')?.isStarred, '回归节点星标=快照录制值').toBe(true)"
           ]
         },
         {
@@ -26483,7 +26969,7 @@
           ],
           "title": "文献节点：panel-star 按态呈现（aria-pressed/title）+点击上抛 onToggleStar",
           "markers": [],
-          "line": 206,
+          "line": 280,
           "assertions": [
             "expect(star).not.toBeNull()",
             "expect(star?.getAttribute('aria-pressed')).toBe('false')",
@@ -26498,7 +26984,7 @@
           ],
           "title": "主题节点：星标域不渲染（卡面同款判空口径）",
           "markers": [],
-          "line": 226,
+          "line": 300,
           "assertions": [
             "expect(host?.querySelector('.panel-star')).toBeNull()"
           ]
@@ -30197,6 +30683,168 @@
           "line": 253,
           "assertions": [
             "expect(toastSpy).toHaveBeenCalledWith('脉络图编辑保存中，请先完成保存再操作文献归属', 'error')"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/paperInfoStore.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S1 乱序接受判据：RESOLVE(s1) 恒写缓存但不落 B 选中态；RESOLVE(s2) 才落 ready(B)\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S1 乱序接受判据：RESOLVE(s1) 恒写缓存但不落 B 选中态；RESOLVE(s2) 才落 ready(B)",
+          "markers": [],
+          "line": 91,
+          "assertions": [
+            "expect(st().view.status).toBe('loading')",
+            "expect(st().view.data).toBeUndefined()",
+            "expect(st().entries.get('A')?.status).toBe('ready')",
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().view.data?.id).toBe('B')",
+            "expect(detail).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S2 RETRY 界：仅 error 态接受；loading 态 RETRY 零效果幂等（单 in-flight）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S2 RETRY 界：仅 error 态接受；loading 态 RETRY 零效果幂等（单 in-flight）",
+          "markers": [],
+          "line": 110,
+          "assertions": [
+            "expect(st().view.status).toBe('error')",
+            "expect(st().view.status).toBe('loading')",
+            "expect(detail).toHaveBeenCalledTimes(2)",
+            "expect(st().view.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S3 切换帧零残留：ready(A)→SELECT(B) 展示即清（view 无 A 数据）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S3 切换帧零残留：ready(A)→SELECT(B) 展示即清（view 无 A 数据）",
+          "markers": [],
+          "line": 126,
+          "assertions": [
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().view.status).toBe('loading')",
+            "expect(st().view.data).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S4 卸载免疫：UNMOUNT 后 RESOLVE 写缓存但零 view 更新；重挂 HIT 缓存驻留\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S4 卸载免疫：UNMOUNT 后 RESOLVE 写缓存但零 view 更新；重挂 HIT 缓存驻留",
+          "markers": [],
+          "line": 138,
+          "assertions": [
+            "expect(st().view.status).toBe('idle')",
+            "expect(st().entries.get('A')?.status).toBe('ready')",
+            "expect(st().view.status).toBe('idle')",
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().view.data?.id).toBe('A')",
+            "expect(detail).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S5 去重：loading(A) 中同 pId 再触发=复用 in-flight（IPC 计数=1）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S5 去重：loading(A) 中同 pId 再触发=复用 in-flight（IPC 计数=1）",
+          "markers": [],
+          "line": 155,
+          "assertions": [
+            "expect(detail).toHaveBeenCalledTimes(1)",
+            "expect(st().view.status).toBe('ready')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S6 INVALIDATE：loading 中到达=落缓存即标失效+选中滚动新 seq 重取；完成态=逐出零陈旧 HIT\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S6 INVALIDATE：loading 中到达=落缓存即标失效+选中滚动新 seq 重取；完成态=逐出零陈旧 HIT",
+          "markers": [],
+          "line": 166,
+          "assertions": [
+            "expect(st().entries.get('A')?.status).toBe('loading')",
+            "expect(detail).toHaveBeenCalledTimes(2)",
+            "expect(st().view.status).toBe('loading')",
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().entries.get('A')?.status).toBe('loading')",
+            "expect(detail).toHaveBeenCalledTimes(3)",
+            "expect(st().view.status).toBe('loading')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S7 回绑令牌：loading(A,s1)→SELECT(B)→SELECT(A) 复用 s1，RESOLVE(s1) 终态必非 loading\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S7 回绑令牌：loading(A,s1)→SELECT(B)→SELECT(A) 复用 s1，RESOLVE(s1) 终态必非 loading",
+          "markers": [],
+          "line": 188,
+          "assertions": [
+            "expect(detail).toHaveBeenCalledTimes(2)",
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().view.data?.id).toBe('A')",
+            "expect(st().entries.get('B')?.status).toBe('ready')",
+            "expect(st().view.data?.id).toBe('A')"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S8 HIT：命中完成态缓存=同步 ready 无闪烁（零 IPC 零 loading 帧）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S8 HIT：命中完成态缓存=同步 ready 无闪烁（零 IPC 零 loading 帧）",
+          "markers": [],
+          "line": 207,
+          "assertions": [
+            "expect(st().view.status).toBe('ready')",
+            "expect(st().view.data?.id).toBe('A')",
+            "expect(detail).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S9 幂等/维持：ready(A)→SELECT(A) 零迁移；error(A)→SELECT(A) 维持 error（重试钮在）\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S9 幂等/维持：ready(A)→SELECT(A) 零迁移；error(A)→SELECT(A) 维持 error（重试钮在）",
+          "markers": [],
+          "line": 218,
+          "assertions": [
+            "expect(st().view.status).toBe('ready')",
+            "expect(detail).toHaveBeenCalledTimes(1)",
+            "expect(st().view.status).toBe('error')",
+            "expect(st().view.status).toBe('error')",
+            "expect(detail).toHaveBeenCalledTimes(2)"
+          ]
+        },
+        {
+          "key": "[\"F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU\",\"S10 LRU 容量 20：超容淘汰最旧完成态，当前选中与在飞永不淘汰\"]",
+          "describePath": [
+            "F-UIRES-04 批 3a paperInfoStore —— M1 状态机 S1-S9+LRU"
+          ],
+          "title": "S10 LRU 容量 20：超容淘汰最旧完成态，当前选中与在飞永不淘汰",
+          "markers": [],
+          "line": 235,
+          "assertions": [
+            "expect(st().entries.size).toBe(20)",
+            "expect(st().entries.size).toBe(20)",
+            "expect(st().entries.get('p1')).toBeUndefined()",
+            "expect(st().entries.get('p21')?.status).toBe('ready')"
           ]
         }
       ]
@@ -40782,15 +41430,15 @@
           ]
         },
         {
-          "key": "[\"B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列塌 0 修复）\",\".lib-dr-body 块含 overflow-y: auto（抽屉内容溢出滚动于本区——防叠压尾部动作区）\"]",
+          "key": "[\"B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列塌 0 修复）\",\".lib-dr 全区滚动承载（E 裁决「右侧滚动条」——原 libfix2 防叠压语义由「动作区随滚入流」承载）\"]",
           "describePath": [
             "B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列塌 0 修复）"
           ],
-          "title": ".lib-dr-body 块含 overflow-y: auto（抽屉内容溢出滚动于本区——防叠压尾部动作区）",
+          "title": ".lib-dr 全区滚动承载（E 裁决「右侧滚动条」——原 libfix2 防叠压语义由「动作区随滚入流」承载）",
           "markers": [],
           "line": 772,
           "assertions": [
-            "expect( libCss, '.lib-dr-body 需自身滚动（矮窗/大字体环境内容溢出与 .lib-dr-actions 叠压——CI Linux 字体实证）' ).toMatch(/\\.lib-dr-body\\s*\\{[^}]*overflow-y:\\s*auto;/)"
+            "expect( libCss, '[F-UIRES-04 批 3c] .lib-dr 需全区滚动（矮窗/大字体溢出与尾部动作区叠压面随全区滚动结构性消失——CI Linux 字体实证沿革）' ).toMatch(/\\.lib-dr\\s*\\{[^}]*overflow-y:\\s*auto;/)"
           ]
         }
       ]
@@ -40893,6 +41541,68 @@
           "line": 46,
           "assertions": [
             "expect(cardCount(host)).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B1 fold 基本形：出 1s 窗仍在场，再弹同文案同 kind 不叠卡\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B1 fold 基本形：出 1s 窗仍在场，再弹同文案同 kind 不叠卡",
+          "markers": [],
+          "line": 75,
+          "assertions": [
+            "expect(cardCount(host)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B2 fold 计时刷新：折叠重置全程停留计时（t=3000 折叠→6500 退场）\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B2 fold 计时刷新：折叠重置全程停留计时（t=3000 折叠→6500 退场）",
+          "markers": [],
+          "line": 90,
+          "assertions": [
+            "expect(cardCount(host)).toBe(1)",
+            "expect(cardCount(host)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B3 慢速穿插 A→B→A 全在场：末次 A 折叠恒 2 卡（无折叠=3）\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B3 慢速穿插 A→B→A 全在场：末次 A 折叠恒 2 卡（无折叠=3）",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(cardCount(host)).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B4 慢速异 kind 不折叠：error 与 success 同文案各占一卡\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B4 慢速异 kind 不折叠：error 与 success 同文案各占一卡",
+          "markers": [],
+          "line": 133,
+          "assertions": [
+            "expect(cardCount(host)).toBe(2)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B5 fold 后手动关闭再弹（>1s 窗）：新卡——用户已明确关闭后再弹=新卡\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B5 fold 后手动关闭再弹（>1s 窗）：新卡——用户已明确关闭后再弹=新卡",
+          "markers": [],
+          "line": 148,
+          "assertions": [
+            "expect(card).toBeDefined()",
+            "expect(cardCount(host)).toBe(1)"
           ]
         }
       ]
@@ -41134,6 +41844,95 @@
             "expect(btn.getAttribute('data-testid')).toBe('lineage-save-retry')",
             "expect(btn.getAttribute('data-action')).toBe('retry')"
           ]
+        }
+      ]
+    },
+    "tests/unit/renderer/uires04-b3d-button-surface.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"①侧板收起钮：collapse-btn+side-collapse-btn+syn-icon-btn 三类并挂+testid 不变+onCollapse 链在席\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "①侧板收起钮：collapse-btn+side-collapse-btn+syn-icon-btn 三类并挂+testid 不变+onCollapse 链在席",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(onCollapse).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"②nav 双钮：收起/展开两钮均 collapse-btn 双挂+语义类在席；收起→展开往返\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "②nav 双钮：收起/展开两钮均 collapse-btn 双挂+语义类在席；收起→展开往返",
+          "markers": [],
+          "line": 215,
+          "assertions": [
+            "expect(host?.querySelector('[data-testid=\"lineage-nav-collapse\"]'), '收起态收起钮退场').toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"③a 设置页 Tab 三钮：btn-std 挂载+role/aria-selected 语义零动（点击切换）\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "③a 设置页 Tab 三钮：btn-std 挂载+role/aria-selected 语义零动（点击切换）",
+          "markers": [],
+          "line": 232,
+          "assertions": [
+            "expect(tabs?.length).toBe(3)",
+            "expect(tabOf('任务')?.getAttribute('aria-selected')).toBe('true')",
+            "expect(tabOf('置顶消息')?.getAttribute('aria-selected')).toBe('false')",
+            "expect(tabOf('任务')?.getAttribute('aria-selected')).toBe('false')",
+            "expect(tabOf('置顶消息')?.getAttribute('aria-selected')).toBe('true')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"③b 一键装技能钮：btn-std 挂载+data-action 受锁锚在席\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "③b 一键装技能钮：btn-std 挂载+data-action 受锁锚在席",
+          "markers": [],
+          "line": 248,
+          "assertions": [
+            "expect(btn?.textContent).toBe('一键装技能')"
+          ]
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"③c 记忆面六钮：搜索/新建/行三钮（编辑/置顶/删除）+编辑态两钮（保存/取消编辑）均 btn-std\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "③c 记忆面六钮：搜索/新建/行三钮（编辑/置顶/删除）+编辑态两钮（保存/取消编辑）均 btn-std",
+          "markers": [],
+          "line": 256,
+          "assertions": []
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"③d 任务取消钮：queued 行取消任务钮 btn-std 挂载\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "③d 任务取消钮：queued 行取消任务钮 btn-std 挂载",
+          "markers": [],
+          "line": 274,
+          "assertions": []
+        },
+        {
+          "key": "[\"[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一\",\"③e 取消置顶钮：置顶行钮 btn-std 挂载\"]",
+          "describePath": [
+            "[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一"
+          ],
+          "title": "③e 取消置顶钮：置顶行钮 btn-std 挂载",
+          "markers": [],
+          "line": 281,
+          "assertions": []
         }
       ]
     },
@@ -53163,9 +53962,9 @@
     }
   },
   "stats": {
-    "fileCount": 358,
-    "caseCount": 3548,
-    "assertionCount": 11805,
+    "fileCount": 365,
+    "caseCount": 3602,
+    "assertionCount": 11980,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -53173,18 +53972,5 @@
     "eachExpandedRows": 367,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": [
-    {
-      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
-      "caseTitle": "readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）",
-      "reason": "回炉 r1-R9：标题随 022 链升勘正 21→22（注释级修订——断言值已随链升）",
-      "rulingLink": "archive:scripts-audits/20261015-dbcamp-db4/（主控回炉指令 r1 R9）"
-    },
-    {
-      "file": "tests/unit/renderer/tag-dnd-drop.test.tsx",
-      "assertionText": "expect(toastSpy).toHaveBeenCalledWith('标签与文献不在同一文件夹域——无法挂接', 'info')",
-      "reason": "回炉 r1-R11：域预检拒 toast 档位 info→error（与服务端 R3 同文案同档）",
-      "rulingLink": "archive:scripts-audits/20261015-dbcamp-db4/（主控回炉指令 r1 R11）"
-    }
-  ]
+  "exemptionsSnapshot": []
 }

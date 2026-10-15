@@ -94,7 +94,7 @@ export function LineageNavPane(props: {
         {/* [F-UIRES-02 批 B R4] » 字符→双 chevron SVG（title/aria-label 同源保活） */}
         <button
           type="button"
-          className="nav-expand-btn syn-icon-btn"
+          className="nav-expand-btn syn-icon-btn collapse-btn"
           data-testid="lineage-nav-expand"
           title="展开导航窗格"
           aria-label="展开导航窗格"
@@ -113,7 +113,7 @@ export function LineageNavPane(props: {
         {/* [F-UIRES-02 批 B R4] « 字符→双 chevron SVG（title/aria-label 同源保活） */}
         <button
           type="button"
-          className="nav-collapse-btn syn-icon-btn"
+          className="nav-collapse-btn syn-icon-btn collapse-btn"
           data-testid="lineage-nav-collapse"
           title="收起导航窗格"
           aria-label="收起导航窗格"

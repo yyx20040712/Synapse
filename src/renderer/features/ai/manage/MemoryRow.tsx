@@ -32,7 +32,6 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
   const updating = useAiMemoryStore((s) => s.updating)
   const isEditing = editing?.id === m.id
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
-  const btnStyle = { borderColor: 'var(--border)' }
 
   return (
     <li
@@ -80,13 +79,13 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
               }}
           />
           <div className="flex items-center gap-1.5">
+            {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS） */}
             <button
               type="button"
               aria-label="保存"
-              className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
+              className="btn-std"
               // [回炉 R2] 在途置灰（双击双发防重复改——store 防重联动画）
               disabled={updating}
-              style={btnStyle}
               onClick={() => {
                 update()
               }}
@@ -96,8 +95,7 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
             <button
               type="button"
               aria-label="取消编辑"
-              className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
-              style={{ ...btnStyle, color: 'var(--text-dim)' }}
+              className="btn-std"
               onClick={() => {
                 cancelEdit()
               }}
@@ -134,11 +132,11 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
           </p>
           {m.origin === 'manual' && (
             <div className="flex items-center gap-1.5">
+              {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS） */}
               <button
                 type="button"
                 aria-label="编辑"
-                className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
-                style={btnStyle}
+                className="btn-std"
                 onClick={() => {
                   startEdit(m)
                 }}
@@ -148,8 +146,7 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
               <button
                 type="button"
                 aria-label={m.pinned ? '取消置顶' : '置顶'}
-                className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
-                style={btnStyle}
+                className="btn-std"
                 onClick={() => {
                   setPinned(m.id, !m.pinned)
                 }}
@@ -159,8 +156,7 @@ export function MemoryRow(props: { item: AiMemoryListItem }): JSX.Element {
               <button
                 type="button"
                 aria-label="删除"
-                className="rounded border px-1.5 py-0.5 text-[10px] leading-none"
-                style={{ borderColor: 'var(--border)', color: 'var(--danger)' }}
+                className="btn-std"
                 onClick={() => {
                   remove(m.id)
                 }}

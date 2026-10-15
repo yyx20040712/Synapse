@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-15T20:57:25.794Z",
+    "generatedAt": "2026-10-15T22:15:54.515Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "b1c4d0645944c7be4a72d6f2fd61473d29f982cf679fd1a4bcd87020851e4898"
+            "sha256": "237c12e80c12234697d565c8b67811783bdd6fd0dbb673e9755c2f839c5cd68c"
         },
         {
             "path": "electron.vite.config.ts",
@@ -87,11 +87,11 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "9149db3c49b9ee23756c53b62cbfcf78a53cecec3597512ea295f82ee54bcc03"
+            "sha256": "c15c3c16279b1cd9bbca1730edc71f8be7afd9d6a627ebd15dc198f592b5c089"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "9004a101d418e0fd2f16d03fa30ccbe4078f53e82753afdb671b550ad68d69af"
+            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -1412,6 +1412,10 @@
         {
             "path": "tests/unit/renderer/ui-icons-shared.test.tsx",
             "sha256": "88fa038dcaf5f47fb6fb7eb0f01a3f4cfbbfc98a552cdf1931316b1f62619ca5"
+        },
+        {
+            "path": "tests/unit/renderer/uires04-b3d-button-surface.test.tsx",
+            "sha256": "3e5c23eef0ac7b8b3b9f5ff64d0b50bb75952c931da58107c59c1f8f78bcbffa"
         },
         {
             "path": "tests/unit/renderer/use-sidebar-pane.test.tsx",

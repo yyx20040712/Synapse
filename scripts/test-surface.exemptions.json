@@ -1,11 +1,4 @@
 {
   "version": 1,
-  "entries": [
-    {
-      "file": "tests/unit/renderer/theme.test.ts",
-      "caseTitle": ".lib-dr-body 块含 overflow-y: auto（抽屉内容溢出滚动于本区——防叠压尾部动作区）",
-      "reason": "[F-UIRES-04 批 3c r1] 主控扩权批复改写该断言：libfix2 局部承载锁→E 裁决 .lib-dr 全区滚动承载（title/message/正则三处同步，沿革保留于新 title）；旧标题用例豁免=标题改写伴生非删例——新标题用例已入 C_after（NEW 登记在案）",
-      "rulingLink": "主控 r1 扩权批复（2026-10-16 会话批示）——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-b3c/impl.report.md §r1"
-    }
-  ]
+  "entries": []
 }

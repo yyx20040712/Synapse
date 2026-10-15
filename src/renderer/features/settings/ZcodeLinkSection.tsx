@@ -117,13 +117,13 @@ export function ZcodeLinkSection(): JSX.Element {
           运行也可能显示未发现——首次运行后自愈）。
         </p>
       )}
+      {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮（视觉形态迁 CSS——busy 置灰语义由 disabled 承载） */}
       {res?.state === 'found-skill-missing' && (
         <button
           type="button"
           data-action="install"
           disabled={busy}
-          className="self-start rounded border px-2 py-0.5 text-xs"
-          style={{ borderColor: 'var(--border)', color: busy ? 'var(--text-dim)' : 'var(--accent)' }}
+          className="self-start btn-std text-xs"
           onClick={onInstall}
         >
           一键装技能

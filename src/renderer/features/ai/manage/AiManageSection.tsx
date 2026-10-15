@@ -33,6 +33,8 @@ export function AiManageSection(): JSX.Element {
   return (
     <div data-testid="ai-manage-section" className="flex flex-col gap-2">
       <div role="tablist" aria-label="AI 管理面板" className="flex gap-1">
+        {/* [F-SETSTYLE-01 批 3d] btn-std 标准文字钮——选中态经类切换承载（on）；
+            aria-selected 判断逻辑零动（语义锁=uires04-b3d-button-surface.test ③a） */}
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -40,13 +42,7 @@ export function AiManageSection(): JSX.Element {
             role="tab"
             aria-label={t.label}
             aria-selected={tab === t.key}
-            className="rounded border px-2 py-0.5 text-xs"
-            style={{
-              borderColor: 'var(--border)',
-              background: tab === t.key ? 'var(--panel)' : 'transparent',
-              color: tab === t.key ? 'var(--text)' : 'var(--text-dim)',
-              fontWeight: tab === t.key ? 500 : 400
-            }}
+            className={`btn-std text-xs${tab === t.key ? ' on' : ''}`}
             onClick={() => {
               setTab(t.key)
             }}

@@ -213,6 +213,11 @@
   --accent-hi: #3a76ab;
   --accent-deep: #234a6d;
   --btn-press-tint: rgba(11, 26, 40, 0.45);
+  /* [F-UIRES-04 批 3d D8+SETSTYLE-01] 公共钮系公共变量：.collapse-btn（收起
+     钮款）/.btn-std（标准文字钮款）radius/border 同源单源（C-4c token 锚=
+     theme.css；消费面=theme-buttons.css 公共钮系段；border 引 --line 随族） */
+  --btn-std-radius: 6px;
+  --btn-std-border: 1px solid var(--line);
   /* 文献库卡片纸渐变端点 */
   --lib-paper-hi: #fffdf9;
   --lib-paper-lo: #fdfaf3;
