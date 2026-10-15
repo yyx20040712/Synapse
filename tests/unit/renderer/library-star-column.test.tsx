@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-01 批 A U4] 星标占位列（P-9/P-10——DB 窗口前=静态禁用占位：
- * 淡色 ★ 字形、aria-hidden、零交互零 cursor 变化；布局锚稳定——F-STAR-01
- * 点亮即激活[退出条件]。无 props 开关——PaperRow 直加列）。覆盖：PaperRow
- * 行首星标 span+PaperList 表头 ★ 列；aria-hidden；无星标菜单项（不渲染禁用
- * 项=零死交互）；五列既有语义零变（INV-73——编号/题名/年月/引用/标签俱在）。
+ * [F-UIRES-01 批 A U4→F-DBCAMP-01 DB-4 / F-STAR-01 A1 点亮] 星标列
+ * （P-9 退出条件兑现：静态禁用占位→可交互——button 语义〔span role=button，
+ * 行本体=button 嵌套禁用 HTML 的合法承载〕+title 星标/取消星标+starred 态
+ * aria-pressed/on 高亮 class）。覆盖：PaperRow 行首星标交互面+PaperList 表头
+ * ★ 列（布局锚不动——票面无排序/筛选面）；五列既有语义零变（INV-73）。
+ * [locked-change]（F-DBCAMP-01 DB-4 票面指令改写——原静态禁用断言随 A1 点亮退役）
  * always-active（不经 guardedDescribe）。
  */
 import { act } from 'react'
@@ -15,7 +16,7 @@ import { PaperList } from '../../../src/renderer/features/library/PaperList'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-function makeSummary(id: string): PaperSummary {
+function makeSummary(id: string, isStarred = false): PaperSummary {
   return {
     id,
     title: `论文 ${id}`,
@@ -30,7 +31,7 @@ function makeSummary(id: string): PaperSummary {
     addedAt: 't',
     folderId: '__main__',
     impactFactor: null,
-    isStarred: false // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] paperSummarySchema 必填随链
+    isStarred
   }
 }
 
@@ -59,28 +60,33 @@ afterEach(async () => {
   host = null
 })
 
-describe('F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）', () => {
-  it('行首星标 span（.lib-r-star ★ aria-hidden）+表头 ★ 首列（.lib-c-star）——批 A 恒淡色零交互', async () => {
+describe('F-STAR-01 A1 星标列点亮（P-9 退出条件）', () => {
+  it('表头 ★ 首列（.lib-c-star）布局锚不动（aria-hidden 静态——票面无排序/筛选面）', async () => {
     await render(<PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />)
     const head = host?.querySelector('.lib-cols')
     expect(head?.querySelector('.lib-c-star'), '表头 ★ 列在场').not.toBeNull()
     expect(head?.querySelector('.lib-c-star')?.getAttribute('aria-hidden')).toBe('true')
-    const row = host?.querySelector('.lib-row')
-    const star = row?.querySelector('.lib-r-star')
-    expect(star, '行首星标 span 在场').not.toBeNull()
-    expect(star?.getAttribute('aria-hidden')).toBe('true')
-    expect(star?.textContent).toBe('★')
+  })
+
+  it('行首星标交互面：role=button+aria-pressed+title 星标/取消星标（starred 态 on 高亮 class）', async () => {
+    await render(
+      <PaperList papers={[makeSummary('p1', false), makeSummary('p2', true)]} selectedId={null} onSelect={() => undefined} />
+    )
+    const rows = Array.from(host?.querySelectorAll('.lib-row') ?? [])
+    const off = rows[0]?.querySelector('.lib-r-star')
+    expect(off?.getAttribute('role')).toBe('button')
+    expect(off?.getAttribute('aria-pressed')).toBe('false')
+    expect(off?.getAttribute('title')).toBe('星标')
+    expect(off?.classList.contains('on')).toBe(false)
+    const on = rows[1]?.querySelector('.lib-r-star')
+    expect(on?.getAttribute('aria-pressed')).toBe('true')
+    expect(on?.getAttribute('title')).toBe('取消星标')
+    expect(on?.classList.contains('on')).toBe(true)
   })
 
   it('五列既有语义零变（INV-73）：编号/题名 · 期刊/年月/引用/标签列表头俱在', async () => {
     await render(<PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />)
     const cells = Array.from(host?.querySelectorAll('.lib-cols span') ?? []).map((c) => c.textContent)
     expect(cells).toEqual(['★', '编号', '题名 · 期刊', '年月', '引用', '标签'])
-  })
-
-  it('星标零交互：无 onClick 独立钮形态（span 非按钮——P-10 菜单星标项不渲染的行内对应面）', async () => {
-    await render(<PaperList papers={[makeSummary('p1')]} selectedId={null} onSelect={() => undefined} />)
-    const star = host?.querySelector('.lib-r-star')
-    expect(star instanceof HTMLSpanElement, '星标=纯 span（无按钮交互面）').toBe(true)
   })
 })

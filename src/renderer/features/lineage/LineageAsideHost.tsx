@@ -61,6 +61,9 @@ export interface LineageAsideHostProps {
   metrics: LineagePaperMetrics | null
   onGotoLibrary(paperId: string | null, folderId: string): void
   onGotoReader(paperId: string): void
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 星标切换（SidePanel 星标域→Page 编排
+   *  lineage.store toggleNodeStar） */
+  onToggleStar?(node: { id: string; paperId: string; isStarred?: boolean }): void
 }
 
 export function LineageAsideHost(props: LineageAsideHostProps): JSX.Element {
@@ -123,6 +126,7 @@ export function LineageAsideHost(props: LineageAsideHostProps): JSX.Element {
                 onCollapse={sidebar.collapse}
                 onGotoLibrary={props.onGotoLibrary}
                 onGotoReader={props.onGotoReader}
+                onToggleStar={props.onToggleStar}
                 pubNo={props.pubNo}
                 metrics={props.metrics}
               />

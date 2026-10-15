@@ -88,7 +88,10 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
 
     // 已挂幂等=isAttached (paperId, tagId) id 键（回炉轮 1 R1——名键在跨域同名
     // tagId 下误判已挂=伪成功逃逸触发器错误面）；每篇计数限额沿 namesByPaper；
-    // 域不一致由 019 触发器 ABORT 自然抛（service 不重复预检）
+    // 域不一致由 019 触发器 ABORT 兜底（service 不重复预检，双源必漂移）。
+    // [F-DBCAMP-01 DB-4 / R3] 预检次序=NOT_FOUND→限额→attach→触发器域违约
+    // 最后兜底（既有次序天然，无重排）；触发器 RAISE 文本在此折叠为结构化
+    // CONFLICT（词表零新增——APP_ERROR_CODES 封闭枚举不动）
     async attach(req) {
       const tag = tags.findById(req.tagId)
       if (tag === undefined) {
@@ -101,7 +104,17 @@ export function createTagsService(deps: { repos: Repos }): ApiHandlers['tags'] {
       if (attached.length >= TAG_PER_PAPER_MAX) {
         throw new TagsDomainError('CONFLICT', `每篇文献最多 ${TAG_PER_PAPER_MAX} 个标签`)
       }
-      tags.attach(req.paperId, req.tagId)
+      try {
+        tags.attach(req.paperId, req.tagId)
+      } catch (e) {
+        // [R3] 019 paper_tags_domain_guard 触发器 ABORT（better-sqlite3
+        // SqliteError.message 携 RAISE 文本）→结构化域错误；其余错误原样
+        // 上抛（非域违约面不折叠不吞）
+        if (e instanceof Error && e.message.includes('paper_tags 挂接域违约')) {
+          throw new TagsDomainError('CONFLICT', '标签与文献不在同一文件夹域——无法挂接')
+        }
+        throw e
+      }
       return { ok: true as const }
     },
 

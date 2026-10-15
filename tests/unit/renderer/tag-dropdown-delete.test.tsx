@@ -110,7 +110,7 @@ afterEach(async () => {
 describe('F-UIRES-03 B1 删除链（勾选集批量删除）', () => {
   it('确认窗：勾 2 标签点删除→窗列两名清单；取消零 delete 调用+窗关', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     await renderDropdown(['t-a', 't-b'], vi.fn())
     await openPanel()
@@ -139,7 +139,7 @@ describe('F-UIRES-03 B1 删除链（勾选集批量删除）', () => {
     })
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderDropdown(['t-a', 't-b'], onFilterChange, onMutated)
     await openPanel()
     await act(async () => {
@@ -171,7 +171,7 @@ describe('F-UIRES-03 B1 删除链（勾选集批量删除）', () => {
       return { ok: true as const, data: { ok: true } }
     })
     stubApi.tags.delete.mockRejectedValueOnce(new Error('boom'))
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     const onMutated = vi.fn()
     await renderDropdown(['t-a', 't-b'], onFilterChange, onMutated)
@@ -199,7 +199,7 @@ describe('F-UIRES-03 B1 删除链（勾选集批量删除）', () => {
 describe('INV-53 死 id 顺序契约（生命周期上抛承接——B1 行编辑态新链）', () => {
   it('改名（id 稳定）：筛选零动（onFilterChange 不调用），仅 onMutated', async () => {
     currentTags = [tag('t-x', '甲', 2), tag('t-y', '乙', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     stubApi.tags.rename.mockImplementation(async ({ name }: { name: string }) => {
       currentTags = currentTags.map((t) => (t.id === 't-x' ? { ...t, name } : t))

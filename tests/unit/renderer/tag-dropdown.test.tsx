@@ -145,7 +145,7 @@ afterEach(async () => {
 describe('F-UIRES-03 B1 TagDropdown 钮与面板结构', () => {
   it('面板头=全选框（零选中 false）+「全选」+删除钮（零勾选禁用）；「已选 N」退役负锚；行=勾选框+chip+计数+编辑钮；脚=仅清空已选（说明行退役负锚）', async () => {
     currentTags = [tag('t-a', '水质', 2, '#3a5bd9'), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     await renderDropdown(['t-a'], vi.fn())
     const btn = tagButton()
@@ -186,7 +186,7 @@ describe('F-UIRES-03 B1 TagDropdown 钮与面板结构', () => {
 
   it('idle 钮（零选集）无 ×N 计数、非 accent 态；头部删除钮零勾选禁用+全选框 false', async () => {
     currentTags = [tag('t-a', '水质', 2)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderDropdown([], vi.fn())
     const btn = tagButton()
     expect(btn?.textContent).not.toContain('×')
@@ -197,7 +197,7 @@ describe('F-UIRES-03 B1 TagDropdown 钮与面板结构', () => {
   })
 
   it('空标签库：面板开=引导文案+全选框禁用（先在详情侧栏打标签——语义承接）', async () => {
-    useTagsStore.setState({ tags: [], loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: [] }, loading: false, errorByFolder: {} })
     await renderDropdown([], vi.fn())
     await openPanel()
     const panel = host?.querySelector('.lib-dd-panel')
@@ -210,7 +210,7 @@ describe('F-UIRES-03 B1 TagDropdown 钮与面板结构', () => {
 describe('F-UIRES-03 B1 toggle 即时生效（现行 P7E-06 语义零变）', () => {
   it('勾选序列：进→并集→退出→全清，载荷=选中集演化且 aria-checked 同步（面板保持开）', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     const onFilterChange = vi.fn()
     await renderDropdown([], onFilterChange)
@@ -234,7 +234,7 @@ describe('F-UIRES-03 B1 toggle 即时生效（现行 P7E-06 语义零变）', ()
 
   it('清空已选：onFilterChange([]) 一次清空', async () => {
     currentTags = [tag('t-a', '水质', 2)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     await renderDropdown(['t-a'], onFilterChange)
     await openPanel()
@@ -246,7 +246,7 @@ describe('F-UIRES-03 B1 toggle 即时生效（现行 P7E-06 语义零变）', ()
 
   it('三关闭触发：钮二次点关/外点关/Esc 关（面板离场；无行编辑态时面板即 Esc 目标）', async () => {
     currentTags = [tag('t-a', '水质', 2)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderDropdown([], vi.fn())
     await openPanel()
     expect(host?.querySelector('.lib-dd-panel')).not.toBeNull()
@@ -273,7 +273,7 @@ describe('F-UIRES-03 B1 toggle 即时生效（现行 P7E-06 语义零变）', ()
 
   it('B1 Esc 分层：行编辑态开→Esc 先退编辑（面板保持）；再 Esc 关面板', async () => {
     currentTags = [tag('t-a', '水质', 2)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderDropdown([], vi.fn())
     await openPanel()
     await act(async () => {
@@ -298,7 +298,7 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
     currentTags = Array.from({ length: 21 }, (_, i) =>
       tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
     )
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 20).map((t) => t.id)
     await renderDropdown(selected, onFilterChange)
@@ -314,7 +314,7 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
     currentTags = Array.from({ length: 20 }, (_, i) =>
       tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
     )
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 19).map((t) => t.id)
     await renderDropdown(selected, onFilterChange)
@@ -331,7 +331,7 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
     currentTags = Array.from({ length: 21 }, (_, i) =>
       tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
     )
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 20).map((t) => t.id)
     await renderDropdown(selected, onFilterChange)
@@ -348,7 +348,7 @@ describe('P7X-01 选中上限 UI 感知（添加方向守卫，移除方向永�
 describe('F-UIRES-03 B1 全选框三态与 toggle', () => {
   it('三态演化：0 选中=false → 勾 1=mixed → 勾 2=true', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderDropdown([], vi.fn())
     await openPanel()
     expect(selectAllBox()?.getAttribute('aria-checked')).toBe('false')
@@ -362,7 +362,7 @@ describe('F-UIRES-03 B1 全选框三态与 toggle', () => {
 
   it('toggle：零选中点全选=全部 id 载荷；全选中点全选=清空', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     await renderDropdown([], onFilterChange)
     await openPanel()
@@ -382,7 +382,7 @@ describe('F-UIRES-03 B1 全选框三态与 toggle', () => {
     currentTags = Array.from({ length: 21 }, (_, i) =>
       tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
     )
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     await renderDropdown([], onFilterChange)
     await openPanel()
@@ -400,7 +400,7 @@ describe('F-UIRES-03 B1 全选框三态与 toggle', () => {
     currentTags = Array.from({ length: 21 }, (_, i) =>
       tag(`t-${String(i + 1).padStart(2, '0')}`, `标签${i + 1}`, 0)
     )
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     const onFilterChange = vi.fn()
     const selected = currentTags.slice(0, 20).map((t) => t.id)
     await renderDropdown(selected, onFilterChange)
@@ -420,7 +420,7 @@ describe('色映射通道（onColorMapChange——INV-86 承接）', () => {
   it('tags 变化即重建 name→color Map 上抛', async () => {
     currentTags = [tag('t-1', '甲', 2, null), tag('t-2', '乙', 1, '#0ea5e9')]
     const onMap = vi.fn()
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     host = document.createElement('div')
     document.body.appendChild(host)
@@ -440,7 +440,7 @@ describe('色映射通道（onColorMapChange——INV-86 承接）', () => {
 describe('FilterBar 装配收敛（列序=搜索→年份→排序→标签→弹性空档——批 α 移位）', () => {
   it('点选→onChange({tagIds})；全清→onChange({tagIds: undefined})（空数组不进查询）', async () => {
     currentTags = [tag('t-a', '水质', 2), tag('t-b', '机器学习', 1)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: currentTags }))
     const onChange = vi.fn()
     const base: LibraryQuery = { sort: 'added_desc', offset: 0, limit: 50 }
@@ -456,7 +456,7 @@ describe('FilterBar 装配收敛（列序=搜索→年份→排序→标签→�
 
   it('列序锚（批 α 移位）：搜索框→年份下拉→排序下拉→标签钮（排序钮右邻）→弹性空档', async () => {
     currentTags = [tag('t-a', '水质', 2)]
-    useTagsStore.setState({ tags: currentTags, loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: { __main__: currentTags }, loading: false, errorByFolder: {} })
     await renderBar({ sort: 'added_desc', offset: 0, limit: 50 }, vi.fn())
     const bar = host?.querySelector('.lib-filter-row')
     expect(bar).not.toBeNull()

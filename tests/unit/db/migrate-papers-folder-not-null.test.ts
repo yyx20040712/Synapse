@@ -270,7 +270,7 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
     migrate(db)
     // 判别器：16/17 确已应用（否则 FK 从未被关断=复位断言恒真）
     // [F-DBCAMP-01 U3] 018 随链：终值 18
-    expect(readUserVersion(db)).toBe(21)
+    expect(readUserVersion(db)).toBe(22)
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.prepare(`DELETE FROM papers WHERE id='p-1'`).run()
@@ -304,11 +304,11 @@ describe('db/migrate —— 016 papers.folder_id NOT NULL 重建（FK-OFF 官方
   it('新库全链：user_version=17+应用清单 [1..17]+幂等重入（再跑 applied=[]）（[F-DBCAMP-01 U2] 017 随链；[F-DBCAMP-01 U3] 018 随链=18/[1..18]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(21)
+    expect(result.currentVersion).toBe(22)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
     ])
-    expect(readUserVersion(db)).toBe(21)
+    expect(readUserVersion(db)).toBe(22)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()

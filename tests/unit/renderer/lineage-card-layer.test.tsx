@@ -19,12 +19,21 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { makeApiStub } from '../../utils/api-client-mock'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
+
+// [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标 toggle 面（LineageTimeline→
+// lineage.store toggleNodeStar→api.papers.setStarred——api-client-mock 先 import）
+const {
+  papers: { setStarred }
+} = makeApiStub({
+  papers: { setStarred: vi.fn(async () => ({ ok: true as const, data: { ok: true } })) }
+})
 
 // act() 环境声明（lineage-timeline.test 同口径）
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -98,10 +107,10 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
       />
     )
     const a = cardOf('A')
-    // 星标占位：静态线框+title 提示（P-11）
+    // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标点亮：未标记=title「星标」（书页图标线框缺省形态保持）
     const star = a.querySelector('[data-testid="card-star"]')
     expect(star).not.toBeNull()
-    expect(star?.getAttribute('title')).toBe('星标功能即将开放')
+    expect(star?.getAttribute('title')).toBe('星标')
     // 标签最多 2+溢出 +N（4 标签→2 渲染+「+2」）——源=文献库标签 map（A1a）
     expect([...a.querySelectorAll('.c-tag')].map((e) => e.textContent)).toEqual(['方法', '流域'])
     expect(a.querySelector('.c-tag-more')?.textContent).toBe('+2')
@@ -181,51 +190,37 @@ describe('U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）', 
     expect(t.querySelector('.c-cited')).toBeNull()
   })
 
-  it('星标交互（A4）：browse 点击=no-op 不触发卡选中；edit 点星标区=选中卡', () => {
+  it('星标交互（A4→F-STAR-01 A3 点亮）：browse/edit 点击=toggle 星标（不触发卡选中——transitional 分派退役）', async () => {
     const onNodeClick = vi.fn()
-    useLineageViewStore.setState({ mode: 'browse' })
-    mount(<LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} onNodeClick={onNodeClick} />)
-    const star = cardOf('A').querySelector('[data-testid="card-star"]') as HTMLElement
-    act(() => {
-      star.click()
-    })
-    expect(onNodeClick).not.toHaveBeenCalled() // browse=no-op（含卡选中面——星标域优先）
-    act(() => {
-      root?.render(
-        <LineageTimeline
-          nodes={[node('A', { year: 2022, month: 9 })]}
-          edges={[]}
-          onNodeClick={onNodeClick}
-        />
-      )
-    })
-    // edit：点星标区=选中卡
-    useLineageViewStore.setState({ mode: 'edit' })
-    act(() => {
-      root?.render(
-        <LineageTimeline
-          nodes={[node('A', { year: 2022, month: 9 })]}
-          edges={[]}
-          onNodeClick={onNodeClick}
-        />
-      )
-    })
-    const starEdit = cardOf('A').querySelector('[data-testid="card-star"]') as HTMLElement
-    act(() => {
-      starEdit.click()
-    })
-    expect(onNodeClick).toHaveBeenCalledWith('A', expect.objectContaining({ stopPropagation: expect.any(Function) }))
+    for (const mode of ['browse', 'edit'] as const) {
+      useLineageViewStore.setState({ mode })
+      setStarred.mockClear()
+      onNodeClick.mockClear()
+      mount(<LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} onNodeClick={onNodeClick} />)
+      const star = cardOf('A').querySelector('[data-testid="card-star"]') as HTMLElement
+      await act(async () => {
+        star.click()
+        await Promise.resolve()
+      })
+      // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 三模式均 toggle 星标（P-11 退出条件
+      // ——edit 态「星标域点击=选中卡」分派随星标语义回归退役）
+      expect(setStarred).toHaveBeenCalledWith({ paperId: 'paper-A', starred: true })
+      expect(onNodeClick).not.toHaveBeenCalled() // 星标域优先——不触发卡选中
+    }
   })
 
-  it('T2×T3 仲裁：focus 点星标区=仅星标域 no-op（聚焦不 toggle）；点卡身=toggle', () => {
+  it('T2×T3 仲裁（A3 点亮后）：focus 点星标区=toggle 星标不触发聚焦；点卡身=聚焦 toggle', async () => {
     useLineageViewStore.setState({ mode: 'focus' })
     mount(<LineageTimeline nodes={[node('A', { year: 2022, month: 9 })]} edges={[]} />)
     const card = cardOf('A')
     const star = card.querySelector('[data-testid="card-star"]') as HTMLElement
-    act(() => {
+    setStarred.mockClear()
+    await act(async () => {
       star.click()
+      await Promise.resolve()
     })
-    expect(useLineageViewStore.getState().focusSet).toEqual([]) // 星标域 no-op——不触发聚焦
+    expect(useLineageViewStore.getState().focusSet).toEqual([]) // 星标域不触发聚焦（stopPropagation 隔离沿承）
+    expect(setStarred).toHaveBeenCalledTimes(1) // focus 同样 toggle 星标（三模式）
     act(() => {
       card.querySelector('.c-title')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true })

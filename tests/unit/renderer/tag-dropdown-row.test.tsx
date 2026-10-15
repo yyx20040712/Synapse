@@ -41,7 +41,7 @@ async function renderDropdown(
   onFilterChange: (ids: string[]) => void,
   onMutated?: () => void
 ): Promise<void> {
-  useTagsStore.setState({ tags: tagsData, loading: false, error: null })
+  useTagsStore.setState({ tagsByFolder: { __main__: tagsData }, loading: false, errorByFolder: {} })
   stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: tagsData }))
   if (root === null) {
     host = document.createElement('div')

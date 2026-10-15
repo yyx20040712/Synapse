@@ -54,7 +54,7 @@ beforeEach(() => {
   stubApi.tags.upsert.mockResolvedValue({ ok: true as const, data: { ...TAG_A, paperCount: 1 } })
   stubApi.tags.attach.mockResolvedValue({ ok: true as const, data: { ok: true } })
   stubApi.tags.rename.mockResolvedValue({ ok: true as const, data: { ok: true } })
-  useTagsStore.setState({ tags: [{ ...TAG_A, paperCount: 1 }], error: null })
+  useTagsStore.setState({ tagsByFolder: { __main__: [{ ...TAG_A, paperCount: 1 }] }, errorByFolder: {} })
 })
 
 afterEach(() => {

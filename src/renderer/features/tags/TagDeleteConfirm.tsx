@@ -24,6 +24,9 @@ export function TagDeleteConfirm(props: {
   onMutated?: () => void
   /** 收口关闭（取消/全删成功——busy 飞行中经 requestClose 守卫禁关） */
   onClose(): void
+  /** [F-DBCAMP-01 DB-4 / R1] 所在标签域（mutate 链式 refresh 显式域参——
+   *  确认窗清单恒单域=TagDropdown 所在域） */
+  folderId?: string
 }): JSX.Element {
   const guard = useBusyGuard()
   const deleteTag = useTagsStore((s) => s.deleteTag)
@@ -34,7 +37,7 @@ export function TagDeleteConfirm(props: {
     if (!guard.begin()) return
     const deleted: string[] = []
     for (const t of props.targets) {
-      const r = await deleteTag(t.id)
+      const r = await deleteTag(t.id, props.folderId)
       if (r.ok) {
         deleted.push(t.id)
       } else {

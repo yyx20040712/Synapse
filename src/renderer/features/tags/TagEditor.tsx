@@ -25,8 +25,7 @@
  * - export function TagEditor(props: { paperId; folderId; tags; onChanged }): JSX.Element
  *
  * ── 架构层 ──
- * - 挂接/移除成功后经 onChanged() 让父组件（PaperDetailPanel）重读详情；
- *   建议数据自取 tags.store（挂载时 refresh，与 TagDropdown 共享单一数据源）
+ * - 挂接/移除成功经 onChanged() 父组件重读；建议自取 tags.store（R1 域桶）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - api 失败统一 toast；busy 期间禁输入防重复提交（busy ref 同步镜像
@@ -39,7 +38,7 @@ import { ICON_PLUS, ICON_X } from '../../shared/icons'
 import { showToast } from '../../shared/ui/Toast'
 import { tagColorStyle } from '../../shared/ui-constants'
 import { useComposingCommit } from '../../shared/inline-keys'
-import { useTagsStore, TAG_OP_FAILED } from './tags.store'
+import { useTagsStore, EMPTY_TAGS, TAG_OP_FAILED } from './tags.store'
 
 export function TagEditor(props: {
   paperId: string
@@ -56,9 +55,10 @@ export function TagEditor(props: {
   const busyRef = useRef(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const composing = useComposingCommit(inputRef, () => void createAndAttach())
-  const allTags = useTagsStore((s) => s.tags)
+  // [F-DBCAMP-01 DB-4 / R1] 域分桶消费：本组件域=folderId（缺桶=稳定空数组）
+  const allTags = useTagsStore((s) => s.tagsByFolder[folderId] ?? EMPTY_TAGS)
   const refreshTags = useTagsStore((s) => s.refresh)
-  const listError = useTagsStore((s) => s.error)
+  const listError = useTagsStore((s) => s.errorByFolder[folderId] ?? null)
 
   // 建议数据源：挂载即拉；列表型失败经 store.error 暴露，在此 toast（建议区退空可用）。
   // 迁移守卫：挂载时已残留的旧失败不重播（本次挂载已触发新 refresh，结果以新为准），

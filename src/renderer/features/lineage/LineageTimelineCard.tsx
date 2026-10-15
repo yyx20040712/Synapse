@@ -3,11 +3,11 @@
  * [F-LGRAPH-01②U4] LineageTimelineCard —— 时间线文献小卡三层结构
  * （[F-LINEAGE-02 ①a] 几何 128×72；卡内 UI=mockup §3.4 二轮定案）。
  *
- * - **L1（高 18）**：星标占位（[P-11/A4] 书页图标线框——静态禁用态：browse/
- *   focus 点击=no-op+title「星标功能即将开放」（F-STAR-01 DB 窗口后启用）；
- *   edit 点星标区=选中卡——onStarClick 上抛宿主按模式分派；命中区 14×14，
- *   T2×T3 仲裁：focus 点星标=仅星标域 no-op 不触发卡身聚焦 toggle——stopProp
- *   隔离两域）→标签紧随（最多 2+溢出「+N」——[A1a 换源] 数据源=tagNames
+ * - **L1（高 18）**：星标域（[P-11→F-STAR-01 A3 点亮] 三模式均 toggle 星标
+ *   ——edit 态 transitional「选中卡」分派随星标语义回归退役；未标记=书页
+ *   图标/已标记=accent 实心星〔StarToggleSpan 单源〕；主题节点不渲染；命中区
+ *   14×14，T2×T3 仲裁：focus 点星标=星标域独立 toggle 不触发卡身聚焦
+ *   toggle——stopProp 隔离两域）→标签紧随（最多 2+溢出「+N」——[A1a 换源] 数据源=tagNames
  *   伴生 map[文献库标签域，键=paperId]；node.tags 脉络私有域退役接替面[卡
  *   渲染零消费——A1b 退役前账]）→骑缝号 ·NNN（INV-92 pubNo——右缘；[F-UIRES-03 B4①] #→·）。
  *   **核 chip 删**（退役行 9：core UI 消费面全退役——数据面留 AI 重做域；
@@ -28,29 +28,15 @@
  * - data-node-id=e2e/测试结构锚；[F-SLOTGRID-01 U1] 瀑布错位 offset prop
  *   （inline margin-left 承载）随瀑布退役删除——卡位=行容器网格（.tl-row）。
  */
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import { type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { CardAnchorDots } from './CardAnchorDots'
+import { StarToggleSpan } from './StarGlyphs'
 import type { TimelineCallbacks } from './LineageTimeline'
 
 /** L1 标签呈现上限（溢出「+N」——mockup §3.4 最多 2） */
 const TAG_LIMIT = 2
-
-/** 星标占位图标（书页线框——静态禁用态 P-11；SVG 9×10 内嵌于 14×14 命中区） */
-function StarGlyph(): JSX.Element {
-  return (
-    <svg viewBox="0 0 9 10" width="9" height="10" aria-hidden="true">
-      <path
-        d="M1 1.2h7v7.6l-3.5-2-3.5 2z"
-        fill="none"
-        stroke="var(--faint)"
-        strokeWidth="1"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 export function LineageTimelineCard(props: {
   node: LineageNode
@@ -74,9 +60,9 @@ export function LineageTimelineCard(props: {
   dim?: boolean
   /** [②U5] 右键反馈：节点菜单目标卡 accent 描边（.ctx-hlt——菜单关即撤） */
   ctx?: boolean
-  /** [F-LGRAPH-01②U4] 星标区点击（stopProp 已隔离卡身——宿主按模式分派：
-   *  edit=选中卡/browse+focus=no-op[P-11 静态禁用]） */
-  onStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
+  /** [F-STAR-01 A3 点亮] 星标区点击（stopProp 已隔离卡身——三模式均 toggle：
+   *  宿主接 lineage.store toggleNodeStar；载荷=nodeId） */
+  onStarClick?: (nodeId: string) => void
   /** [T3-P8] 卡 pointerdown（useCardDrag 拖拽会话入口——5px 阈值内=选中链）。
    *  [F-UIRES-03 C3] 月标 .c-ym 点击面（onYmClick）随改月链退役删除（INV-107）；
    *  [F-UIRES-03 B5①] 两钮回调 props（onGotoLibrary/onGotoReader）随卡面两钮
@@ -122,17 +108,19 @@ export function LineageTimelineCard(props: {
       }}
     >
       <div className="c-l1">
-        <span
-          className="c-star"
-          data-testid="card-star"
-          title="星标功能即将开放"
-          onClick={(e) => {
-            e.stopPropagation() // T2×T3：星标域优先——不触发卡身 click（聚焦/选中）
-            props.onStarClick?.(n.id, e)
-          }}
-        >
-          <StarGlyph />
-        </span>
+        {/* [F-DBCAMP-01 DB-4 / F-STAR-01 A3 点亮] 星标域（P-11 退出条件）：
+            paperId=null 主题节点不渲染（无文献可标——tags 判空同款先例）；
+            点击=三模式均 toggle（宿主接 lineage.store toggleNodeStar——edit 态
+            transitional「选中卡」分派随星标语义回归退役）；stopPropagation
+            隔离卡身选中/聚焦（T2×T3 沿承——StarToggleSpan 单源承载） */}
+        {n.paperId !== null && (
+          <StarToggleSpan
+            isStarred={n.isStarred === true}
+            className="c-star"
+            testid="card-star"
+            onActivate={() => props.onStarClick?.(n.id)}
+          />
+        )}
         {shownTags.map((t) => (
           <span className="c-tag" key={t}>
             {t}

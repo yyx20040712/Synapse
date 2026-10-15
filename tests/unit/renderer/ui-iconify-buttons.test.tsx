@@ -186,7 +186,7 @@ describe('F-UIRES-02 批 B Reader 域', () => {
 
 describe('F-UIRES-02 批 B 标签域——TagEditor', () => {
   beforeEach(() => {
-    useTagsStore.setState({ tags: [], loading: false, error: null })
+    useTagsStore.setState({ tagsByFolder: {}, loading: false, errorByFolder: {} })
     stubApi.tags.list.mockResolvedValue({ ok: true, data: [] })
   })
 

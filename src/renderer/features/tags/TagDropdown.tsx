@@ -34,7 +34,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { TAG_FILTER_MAX } from '@shared/models/paper'
 import { showToast } from '../../shared/ui/Toast'
-import { useTagsStore, type TagWithCount } from './tags.store'
+import { useTagsStore, EMPTY_TAGS, type TagWithCount } from './tags.store'
 import { TagDropdownRow } from './TagDropdownRow'
 import { TagDeleteConfirm } from './TagDeleteConfirm'
 import { type MutatedPayload } from './TagLifecycle'
@@ -49,9 +49,10 @@ export function TagDropdown(props: {
   onColorMapChange?: (map: ReadonlyMap<string, string | null>) => void
 }): JSX.Element {
   const { folderId, selectedTagIds, onFilterChange, onMutated, onColorMapChange } = props
-  const tags = useTagsStore((s) => s.tags)
+  // [F-DBCAMP-01 DB-4 / R1] 域分桶消费：本组件域=folderId（缺桶=稳定空数组）
+  const tags = useTagsStore((s) => s.tagsByFolder[folderId] ?? EMPTY_TAGS)
   const refresh = useTagsStore((s) => s.refresh)
-  const listError = useTagsStore((s) => s.error)
+  const listError = useTagsStore((s) => s.errorByFolder[folderId] ?? null)
   const [open, setOpen] = useState(false)
   // 行编辑态宿主记账（行间互斥——同时刻至多一行编辑）
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -208,6 +209,7 @@ export function TagDropdown(props: {
                     tag={t}
                     checked={selectedTagIds.includes(t.id)}
                     editing={editingId === t.id}
+                    folderId={folderId}
                     onToggle={() => toggleTag(t)}
                     onStartEdit={() => setEditingId(t.id)}
                     onEndEdit={() => {
@@ -231,6 +233,7 @@ export function TagDropdown(props: {
       {confirming !== null && (
         <TagDeleteConfirm
           targets={deleteTargets}
+          folderId={folderId}
           selectedTagIds={selectedTagIds}
           onFilterChange={onFilterChange}
           onMutated={onMutated}

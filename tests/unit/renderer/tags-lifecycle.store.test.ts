@@ -36,7 +36,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     expect(r).toEqual({ ok: true })
     expect(rename).toHaveBeenCalledWith({ tagId: 't-1', name: '新名' })
     expect(list).toHaveBeenCalledTimes(1) // 成功后链式 refresh（M3 变异锚）
-    expect(useStore.getState().tags).toEqual([{ id: 't-1', name: '新名', paperCount: 1, color: null }])
+    expect(useStore.getState().tagsByFolder['__main__']).toEqual([{ id: 't-1', name: '新名', paperCount: 1, color: null }])
   })
 
   it('mergeTags/deleteTag 成功：同样链式 refresh + {ok:true}（逐参断言）', async () => {
@@ -57,14 +57,14 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
       .fn()
       .mockResolvedValue({ ok: false as const, error: { code: 'CONFLICT', message: '标签名已被占用' } })
     const useStore = await loadStore({ tags: { list, rename } })
-    useStore.setState({ tags: [{ id: 't-1', name: '旧', paperCount: 1, color: null }] })
+    useStore.setState({ tagsByFolder: { __main__: [{ id: 't-1', name: '旧', paperCount: 1, color: null }] } })
     const r = await useStore.getState().renameTag('t-1', '占用名')
     expect(r.ok).toBe(false)
     if (!r.ok) {
       expect(r.error.code).toBe('CONFLICT')
       expect(r.error.message).toBe('标签名已被占用')
     }
-    expect(useStore.getState().tags[0]?.name).toBe('旧')
+    expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('旧')
     expect(list).not.toHaveBeenCalled() // 零 refresh（S6——用户输入问题不重拉列表）
   })
 
@@ -77,7 +77,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     const r = await useStore.getState().deleteTag('t-gone')
     expect(r.ok).toBe(false)
     expect(list).toHaveBeenCalledTimes(1) // 自愈 refresh（S7）
-    expect(useStore.getState().tags).toEqual([])
+    expect(useStore.getState().tagsByFolder['__main__']).toEqual([])
   })
 
   it('S1 rename 进行中并发 refresh：链式 refresh 为最新 seq，迟到旧响应丢弃', async () => {
@@ -97,8 +97,8 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     await mutating
     resolveOld({ ok: false, error: { code: 'DB_ERROR', message: '旧失败' } }) // seq=2 迟到失败
     await concurrent.catch(() => undefined)
-    expect(useStore.getState().tags[0]?.name).toBe('最新') // 只认最新 seq 的结果
-    expect(useStore.getState().error).toBeNull() // 迟到旧失败被 loadSeq 丢弃（不触发误导 toast）
+    expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('最新') // 只认最新 seq 的结果
+    expect(useStore.getState().errorByFolder['__main__']).toBeNull() // 迟到旧失败被 loadSeq 丢弃（不触发误导 toast）
   })
 
   it('F-TAGS-01 setTagColor 成功：setColor 逐参+链式 refresh（tags 面更新 color）', async () => {
@@ -113,7 +113,7 @@ describe('P7E-01 tags.store —— 命令型动作', () => {
     expect(r).toEqual({ ok: true })
     expect(setColor).toHaveBeenCalledWith({ tagId: 't-1', color: '#e11d48' })
     expect(list).toHaveBeenCalledTimes(1) // 成功后链式 refresh
-    expect(useStore.getState().tags[0]?.color).toBe('#e11d48')
+    expect(useStore.getState().tagsByFolder['__main__']?.[0]?.color).toBe('#e11d48')
   })
 
   it('F-TAGS-01 setTagColor NOT_FOUND：{ok:false}+自愈 refresh（S7 同构——列表陈旧）', async () => {

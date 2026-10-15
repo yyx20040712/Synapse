@@ -1,10 +1,8 @@
 /**
  * papers.queries —— papers 表列表/详情查询件。
  * 从 papers.repo 拆出的查询 SQL 常量+行形状+行映射（repo ≤300 行关卡配套，
- * 纯查询/映射无行为逻辑）；消费面=papers.repo 的 searchSummaries/
- * listSummariesByIds/detailById。ENR-01：DETAIL_SQL 三缓存列与
- * DetailRow 三字段在此维护。[F-TIME-02] reading_seconds 列已随 2026-09-19
- * 用户裁决移除（009 DROP COLUMN——008 加列沿革见迁移件头注）。
+ * 纯查询/映射无行为逻辑）。[F-TIME-02] reading_seconds 列已随 2026-09-19
+ * 用户裁决移除（009 DROP COLUMN）。
  *
  * [F-FOLDER-01] 结构改造（design-final §2.2/INV-92）：
  * - pubNo=库级全序派生（ROW_NUMBER OVER ORDER BY year/month/added_at）——
@@ -245,4 +243,59 @@ export function pubNoByIdsQuery(
        FROM papers p0 LEFT JOIN lineage_nodes ln ON ln.paper_id = p0.id
      ) WHERE id IN (${marks})`
   ).all(...ids) as Array<{ paperId: string; pubNo: number }>
+}
+
+/** file_ref 窄查询（协议层——repo 300 行拆件随迁语义零变） */
+export function fileRefByIdQuery(id: string, stmt: StmtGetter): string | null {
+  const r = stmt('SELECT file_ref FROM papers WHERE id = ?').get(id) as { file_ref: string } | undefined
+  return r === undefined ? null : r.file_ref
+}
+
+/** [F-LG14②U4] 含金量批查（venue/cited/impact——repo 300 行拆件随迁，语义零变） */
+export function listMetricsByIdsQuery(
+  ids: readonly string[],
+  stmt: StmtGetter
+): Array<{ paperId: string; venue: string; citedByCount: number | null; impactFactor: number | null }> {
+  if (ids.length === 0) return []
+  const marks = ids.map(() => '?').join(', ')
+  const rows = stmt(
+    `SELECT id, venue, cited_by_count, impact_factor FROM papers WHERE id IN (${marks})`
+  ).all(...ids) as Array<{ id: string; venue: string; cited_by_count: number | null; impact_factor: number | null }>
+  return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count, impactFactor: r.impact_factor }))
+}
+
+/** [F-DBCAMP-01 DB-4 / 设计 §5.d②] sha 引用计数（删除清理判定源——COUNT=0
+ *  即最后引用方可隔离；导入去重/快照 upsert 两路径共引面覆盖） */
+export function countBySha256Query(sha256: string, stmt: StmtGetter): number {
+  const r = stmt('SELECT COUNT(*) AS n FROM papers WHERE sha256 = ?').get(sha256) as { n: number }
+  return r.n
+}
+
+/** [F-DBCAMP-01 DB-4] 夹内文件引用清单（folders.service delete 域删级联的
+ *  文件隔离遍历源——tx 内收集、tx 提交后逐条判 count 隔离） */
+export function listFileRefsByFolderQuery(
+  folderId: string,
+  stmt: StmtGetter
+): Array<{ sha256: string; fileRef: string }> {
+  const rows = stmt('SELECT sha256, file_ref FROM papers WHERE folder_id = ?').all(folderId) as Array<{
+    sha256: string
+    file_ref: string
+  }>
+  return rows.map((r) => ({ sha256: r.sha256, fileRef: r.file_ref }))
+}
+
+/** [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标批查（graph 通道 isStarred 搭载源
+ *  ——0/1→boolean 映射单源；缺席 id 无行；空 ids=空数组；动态 IN 占位符=
+ *  唯一动态面——tagNamesByIds 例外面同型） */
+export function starredByIdsQuery(
+  ids: readonly string[],
+  stmt: StmtGetter
+): Array<{ paperId: string; isStarred: boolean }> {
+  if (ids.length === 0) return []
+  const marks = ids.map(() => '?').join(', ')
+  const rows = stmt(`SELECT id, is_starred FROM papers WHERE id IN (${marks})`).all(...ids) as Array<{
+    id: string
+    is_starred: number
+  }>
+  return rows.map((r) => ({ paperId: r.id, isStarred: r.is_starred === 1 }))
 }

@@ -46,6 +46,10 @@ export interface LibraryStore {
   setQuery(patch: Partial<LibraryQuery>): void
   selectPaper(id: string | null): void
   openPaper(id: string): void
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A1] 行星标本地态直写（无广播口径——
+   *  U2 简报裁决⑧：setStarred 非图/夹结构面，列表行本地状态即可；乐观先行
+   *  +失败回滚的编排收口=paper-star.ts togglePaperStar） */
+  patchPaperStarred(paperId: string, isStarred: boolean): void
 }
 
 export function createLibraryStoreInitialState() {
@@ -61,6 +65,19 @@ export function createLibraryStoreInitialState() {
 
 /** 列表加载失败的兜底中文消息（仅捕获到非 ApiClientError 的意外异常时使用） */
 const LIST_LOAD_FAILED = '文献列表加载失败'
+
+/** [F-DBCAMP-01 DB-4 / R1] folderScope 值级相等判别（kind+folderId 两字段——
+ *  值级变更检出后清 tagIds：旧域标签 id 残留=全局 EXISTS 过滤缺陷
+ *  〔papers.queries 的 tagIds 过滤无域限定，跨域 id 恒空集→列表假空〕） */
+function sameFolderScope(
+  a: LibraryQuery['folderScope'],
+  b: LibraryQuery['folderScope']
+): boolean {
+  if (a === b) return true
+  if (a === undefined || b === undefined) return false
+  if (a.kind !== b.kind) return false
+  return a.kind === 'folder' && b.kind === 'folder' ? a.folderId === b.folderId : true
+}
 
 export const useLibraryStore = create<LibraryStore>()((set, get) => {
   // 请求序号（模块内闭包）：只认最后一次发起的 load
@@ -85,9 +102,17 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => {
       }
     },
     // 合并筛选条件并回到第一页（offset 归零），随后用新查询自动重载；
-    // 清空选中——旧选中项可能已被新查询过滤出列表，残留会致详情与列表脱钩
+    // 清空选中——旧选中项可能已被新查询过滤出列表，残留会致详情与列表脱钩。
+    // [F-DBCAMP-01 DB-4 / R1] folderScope 值级变更→tagIds 清空（换域清残留：
+    // TagDropdown 选中态随清=selection 单源 query.tagIds）。同 patch 显式
+    // folderScope+tagIds 组合时 tagIds 强制清（现调用面分开发 patch，防误用）
     setQuery: (patch) => {
-      set({ query: { ...get().query, ...patch, offset: 0 }, selectedId: null })
+      const cur = get().query
+      const scopeChanged =
+        patch.folderScope !== undefined && !sameFolderScope(patch.folderScope, cur.folderScope)
+      const merged: LibraryQuery = { ...cur, ...patch, offset: 0 }
+      if (scopeChanged) merged.tagIds = undefined
+      set({ query: merged, selectedId: null })
       void get().load()
     },
     selectPaper: (id) => {
@@ -96,6 +121,12 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => {
     // 切 reader tab（经 open-paper-bus 事件；文档加载由 reader.store.openPaper 负责）
     openPaper: (id) => {
       requestOpenPaper(id)
+    },
+    // [F-STAR-01 A1] 星标本地态直写（不可变数组更新——undo/快照面零关涉）
+    patchPaperStarred: (paperId, isStarred) => {
+      set({
+        papers: get().papers.map((p) => (p.id === paperId ? { ...p, isStarred } : p))
+      })
     }
   }
 })

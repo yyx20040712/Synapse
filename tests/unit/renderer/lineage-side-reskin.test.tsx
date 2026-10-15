@@ -92,9 +92,9 @@ describe('[T3-P8] 检查面板重皮肤（mockup .lg-inspector 族 L675-694）',
     expect(cap?.textContent).toContain('节点详情')
     expect(cap?.textContent).toContain('·004')
     expect(q('.insp-title')?.textContent).toBe('节点A')
-    // [②U4/P-11] 星标态禁用呈现（title 行内提示）
+    // [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 星标点亮：未标记=title「星标」
     const star = q('[data-testid="panel-star"]')
-    expect(star?.getAttribute('title')).toBe('星标功能即将开放')
+    expect(star?.getAttribute('title')).toBe('星标')
   })
 
   it('[②U4] 徽章行：期刊缩写/IF/被引 N/年月/T 档（可选省略——缺席零渲染）；core 徽章退役（行 9）', async () => {

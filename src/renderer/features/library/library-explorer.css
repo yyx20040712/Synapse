@@ -115,10 +115,18 @@
   padding: 1px 6px;
 }
 
-/* ── 星标占位列（[P-9] 批 A 静态禁用——淡色字形/零交互；F-STAR-01 点亮即激活；
-   列宽对齐同步扩 INV-73——表头与行同 30px）── */
+/* ── 星标列（[F-STAR-01 A1] DB-4 点亮：span role=button 交互面+starred 态
+   accent 高亮；列宽对齐同步扩 INV-73——表头与行同 30px）── */
 .lib-c-star { width: 30px; flex: none; text-align: center; }
-.lib-r-star { width: 30px; flex: none; text-align: center; font-size: var(--fs-strong); color: var(--line); }
+.lib-r-star {
+  width: 30px; flex: none; text-align: center; font-size: var(--fs-strong);
+  color: var(--line); cursor: pointer; line-height: 1;
+}
+.lib-r-star:hover { color: var(--accent); }
+.lib-r-star.on { color: var(--accent); }
+
+/* ── [F-TAGS-02 ⑥ B] 标签拖放目标高亮（TAG MIME dragover 挂——打标落点面）── */
+.lib-row.tag-over { outline: 1.5px dashed var(--accent); outline-offset: -2px; }
 
 /* ── 导入条（ImportDropZone 收敛态——mockup .ibar 逐值：42px 横条+panel 底
    +line 下边线；drop 热区=本 div 级保持零变[R3]）── */

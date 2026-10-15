@@ -67,7 +67,7 @@ beforeEach(() => {
 describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () => {
   it('版本接续：MIGRATIONS 含 version 7 且 user_version=15（新库全量，[F-UIRES-03 C1] 015 落地后）', () => {
     expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
-    expect(readUserVersion(db)).toBe(21)
+    expect(readUserVersion(db)).toBe(22)
   })
 
   it('tags 列在场（TEXT 可空——死置保留清列归 D 批）；存量行零迁移可读且 DTO 无 tags 键（[A1b] 读面不映射）', () => {

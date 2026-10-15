@@ -27,7 +27,7 @@
  * 呈现+重试，INV-02 两型分清；动作型 toast 面=write-queue flush 内）。
  */
 import { create } from 'zustand'
-import { api, unwrap } from '../../api/client'
+import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import { MAIN_GRAPH_ID, defaultLineTypeNames } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
@@ -128,6 +128,12 @@ export interface LineageStore {
   discardSession(): void
   /** error 态重试：重发保留队列（动作在 error+新保存时自动重试） */
   retrySave(): void
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 节点星标切换（三模式均 toggle——P-11
+   *  退出条件；乐观本地翻转+失败回滚 toast；星标非图结构面：不入编辑暂存
+   *  队列/undo 栈——直写库通道 papers/set-starred）。载荷=调用面节点快照
+   *  （卡/侧板 props 节点——与 store 节点面解耦：store 未含该 id 仍可切，
+   *  本地补丁按 id 命中面） */
+  toggleNodeStar(node: { id: string; paperId: string; isStarred?: boolean }): Promise<void>
 }
 
 /** 退出拦截聚合输入（INV-22 扩面：tab dirty ∪ lineage dirty——App.tsx 组合根单点；
@@ -168,7 +174,15 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     return true
   }
 
-  /** 快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生：空=clean） */
+  /** 快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生：空=clean）。
+   *  [回炉 r1-R2] 星标=非撤销维度恒保现值：restore 前捕获现网节点 isStarred
+   *  （按 id；paperId null 不捕获），快照落地后 overlay 回贴——「编辑移动入栈
+   *  →点星标→Ctrl+Z」星标显示不回退（不与 DB 脱钩）；快照缺 id=该快照后
+   *  新增节点的撤销面，保持快照值不贴。
+   *  [回炉 r2-R16] 边界声明：redo 复活节点（add→star→undo→redo）的
+   *  isStarred 取快照录制值——录制点早于星标切换的理论窗=该键缺席，
+   *  下次 graph 载入自愈（DB 单源重灌——与 undo 泄漏同族自愈类边界，
+   *  登记非修复） */
   const restore = (snap: SessionSnapshot, pushTo: 'undo' | 'redo'): void => {
     const s = get()
     const cur: SessionSnapshot = {
@@ -177,9 +191,19 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       lineTypeNames: s.lineTypeNames,
       queue: s.queue
     }
+    const starNow = new Map(
+      s.nodes
+        .filter((n) => n.paperId !== null && n.isStarred !== undefined)
+        .map((n) => [n.id, n.isStarred!] as const)
+    )
+    const overlayStar = (nodes: LineageNode[]): LineageNode[] =>
+      nodes.map((n) =>
+        n.paperId !== null && starNow.has(n.id) ? { ...n, isStarred: starNow.get(n.id)! } : n
+      )
     if (pushTo === 'redo') {
       set({
         ...snap,
+        nodes: overlayStar(snap.nodes),
         undoStack: s.undoStack.slice(0, -1),
         redoStack: [...s.redoStack, cur],
         saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
@@ -188,6 +212,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     }
     set({
       ...snap,
+      nodes: overlayStar(snap.nodes),
       undoStack: [...s.undoStack, cur],
       redoStack: s.redoStack.slice(0, -1),
       saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
@@ -438,6 +463,27 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     retrySave() {
       void wq.flush()
+    },
+
+    // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标切换：乐观本地翻转（节点数组不可变
+    // 更新——undo 快照持旧引用零回溯污染）→api 直写；失败回滚+toast。非编辑
+    // 暂存面：不 beginUnit/不入队（星标=元数据写非图结构写——保存态零耦合）
+    async toggleNodeStar(target) {
+      const next = target.isStarred !== true
+      const prev = target.isStarred
+      set({
+        nodes: get().nodes.map((n) => (n.id === target.id ? { ...n, isStarred: next } : n))
+      })
+      try {
+        await unwrap(api.papers.setStarred({ paperId: target.paperId, starred: next }))
+      } catch (e) {
+        set({
+          nodes: get().nodes.map((n) =>
+            n.id === target.id ? { ...n, isStarred: prev } : n
+          )
+        })
+        showToast(e instanceof ApiClientError ? e.message : '星标操作失败', 'error')
+      }
     }
   }
 })

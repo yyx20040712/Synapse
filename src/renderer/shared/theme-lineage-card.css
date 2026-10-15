@@ -47,8 +47,10 @@
   align-items: center;
   gap: 3px;
   color: var(--faint);
-  cursor: default; /* P-11 静态禁用态 */
+  cursor: pointer; /* [F-STAR-01 A4] DB-4 点亮——交互 toggle */
 }
+.panel-star:hover { color: var(--accent); }
+.panel-star.on { color: var(--accent); }
 .insp-cap {
   display: flex;
   justify-content: space-between;
@@ -131,8 +133,9 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  cursor: default; /* P-11 静态禁用态（F-STAR-01 窗口后启用） */
+  cursor: pointer; /* [F-STAR-01 A3] DB-4 点亮——三模式 toggle */
 }
+.c-star:hover path { stroke: var(--accent); } /* [回炉 r1-R5 补正——delta 复审 N-1] hover 反馈落点=path stroke（StarGlyph 显式 var 内联不吃 span color——原 color 规则确死；.lib-r-star/.panel-star 对称）；.on 规则已删（fill/stroke 内联定色） */
 .c-tag {
   font-size: var(--fs-tl-idea);
   color: var(--dim);

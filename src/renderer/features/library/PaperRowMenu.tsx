@@ -14,7 +14,7 @@ import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 
 export function PaperRowMenu(props: {
-  paper: { id: string; title: string }
+  paper: { id: string; title: string; isStarred: boolean }
   anchor: { x: number; y: number }
   onClose(): void
   /** 「在阅读器中打开」（openPaper 既有通道——宿主接 store.openPaper） */
@@ -24,6 +24,9 @@ export function PaperRowMenu(props: {
   onMove(paperId: string, toFolderId: string): void
   /** [批 B] 删除执行（usePaperDelete.requestDelete 预检分流——宿主注入） */
   onDelete(paperId: string): void
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A2] 星标切换（togglePaperStar 收口链——
+   *  宿主注入；P-10「不渲染禁用项」→点亮即渲染） */
+  onToggleStar(paperId: string, starred: boolean): void
 }): JSX.Element {
   const { paper, anchor } = props
   const [expanded, setExpanded] = useState(false)
@@ -70,6 +73,21 @@ export function PaperRowMenu(props: {
           }}
         >
           在阅读器中打开
+        </button>
+        {/* [F-STAR-01 A2] 星标 toggle 项（按当前行 isStarred 定文案——本地态
+            口径：切换后菜单即关，文案快照不作跨开态） */}
+        <button
+          type="button"
+          role="menuitem"
+          data-testid="menu-toggle-star"
+          className={MENU_ITEM_STYLE}
+          style={{ color: 'var(--text)' }}
+          onClick={() => {
+            props.onClose()
+            props.onToggleStar(paper.id, !paper.isStarred)
+          }}
+        >
+          {paper.isStarred ? '取消星标' : '星标'}
         </button>
         <button
           type="button"

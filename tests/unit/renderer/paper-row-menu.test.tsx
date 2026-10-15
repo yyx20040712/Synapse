@@ -138,15 +138,15 @@ afterEach(async () => {
 // 组名数字保持基线指纹 key 稳定（test-surface describePath 入 key——组名冻结
 // 先例=api-surface-closure「55 通道 pin」）；活锚=本组首用例三项版断言
 describe('F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）', () => {
-  it('右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染', async () => {
+  it('右键行→菜单弹出：四项文本（在阅读器中打开/星标[F-STAR-01 A2 点亮——P-10 退出条件：不渲染禁用项→点亮即渲染]/移动到文件夹/删除文献[批 B 点亮]）', async () => {
     setPapers([summary('p1', '__main__')])
     await render()
     await rightClickRow('p1')
     expect(menu()).not.toBeNull()
     expect(menu()?.textContent).toContain('在阅读器中打开')
+    expect(menu()?.textContent).toContain('星标') // [F-DBCAMP-01 DB-4 A2] 未星标行文案（isStarred=false）
     expect(menu()?.textContent).toContain('移动到文件夹')
     expect(menu()?.textContent).toContain('删除文献')
-    expect(menu()?.textContent).not.toContain('星标')
   })
 
   it('命中行=按下即高亮（.hit 类挂右键行）；他行不挂', async () => {

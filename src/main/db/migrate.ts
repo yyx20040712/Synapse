@@ -34,6 +34,7 @@ import appMetaSql from './migrations/018_app_meta.sql?raw'
 import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
 import aiDomainSql from './migrations/020_ai_domain.sql?raw'
 import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
+import lineageGhostEdgesSql from './migrations/022_lineage_ghost_edges.sql?raw'
 
 export interface Migration {
   version: number
@@ -114,7 +115,11 @@ export const MIGRATIONS: readonly Migration[] = [
   // deletion_events append-only 账+deletion_log_guard 直执守卫+导出面九表
   // AFTER DELETE 触发器族+append-only 拒写防御；服务层零侵入；纯新增表+触发器
   // 无表重建，无 fkOff；新库 user_version 终值 21
-  { version: 21, name: 'deletion_events', sql: deletionEventsSql }
+  { version: 21, name: 'deletion_events', sql: deletionEventsSql },
+  // [F-DBCAMP-01 DB-4 / F1] 幽灵边存量清理（guard 先行三步：stop=1→DELETE 跨图
+  // 边→stop=0——防 021 触发器落账假删事件；判据=双端点 nodes.folder_id 不等；
+  // 纯存量 DELETE 无 DDL，无 fkOff；新库 user_version 终值 22）
+  { version: 22, name: 'lineage_ghost_edges', sql: lineageGhostEdgesSql }
 ]
 
 export interface MigrateResult {

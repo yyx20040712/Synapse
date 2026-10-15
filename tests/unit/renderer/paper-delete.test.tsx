@@ -192,7 +192,7 @@ describe('F-UIRES-01 批 B 菜单三项版（删除项点亮）', () => {
     expect(menu()?.textContent).toContain('在阅读器中打开')
     expect(menu()?.textContent).toContain('移动到文件夹')
     expect(menu()?.textContent).toContain('删除文献')
-    expect(menu()?.textContent).not.toContain('星标')
+    expect(menu()?.textContent).toContain('星标') // [F-DBCAMP-01 DB-4 A2] 星标项点亮（未星标行文案）
     // danger 色（§3.5——var(--danger)）
     const del = [...(menu()?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find(
       (b) => (b.textContent ?? '').trim() === '删除文献'

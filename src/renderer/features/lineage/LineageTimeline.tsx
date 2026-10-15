@@ -10,7 +10,6 @@
  *   （数据域纯 props 可直测）。
  */
 import { useMemo, useRef } from 'react'
-import type { MouseEvent as ReactMouseEvent } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { groupTimeline } from './lineage-timeline'
@@ -21,6 +20,7 @@ import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
 import { useLineageViewStore } from './lineage-view.store'
+import { useLineageStore } from './lineage.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useCapacityLayout } from './use-capacity-layout'
 import { useTimelinePan } from './timeline-pan'
@@ -155,14 +155,18 @@ export function LineageTimeline(props: {
     props.onNodeClick?.(nodeId, ev)
   }
 
-  // [F-LGRAPH-01②U4/A4] 星标区分派（卡内已 stopProp——星标域优先不触发卡身）：
-  // edit=选中卡（P-6）；browse/focus=no-op（P-11 静态禁用态——title 行内提示）；
-  // [F-UIRES-03 C1] 画线域=no-op（卡内子域同守「禁开详情」）
-  const handleStarClick = (nodeId: string, ev: ReactMouseEvent<HTMLElement>): void => {
-    if (viewMode !== 'edit') return
-    if (tool !== 'select') return
+  // [F-DBCAMP-01 DB-4 / F-STAR-01 A3 点亮] 星标区分派（卡内已 stopProp——星标域
+  // 优先不触发卡身）：三模式（edit/browse/focus）均 toggle 星标（P-11 退出
+  // 条件——edit 态 transitional「星标域点击=选中卡」分派随星标语义回归退役：
+  // 卡选中经卡身点击既有通道不损失）；仅拖后 click 抑制守卫沿承（T3-P8）。
+  // 载荷=props 节点快照（store 节点面解耦——见 lineage.store toggleNodeStar）
+  const handleStarClick = (nodeId: string): void => {
     if (drag.consumeClickSuppress()) return
-    props.onNodeClick?.(nodeId, ev)
+    const node = nodes.find((n) => n.id === nodeId)
+    if (node === undefined || node.paperId === null) return
+    void useLineageStore
+      .getState()
+      .toggleNodeStar({ id: node.id, paperId: node.paperId, isStarred: node.isStarred })
   }
 
   return (

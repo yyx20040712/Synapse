@@ -4,33 +4,29 @@
  * 常驻不收——点空白保持占位）+片段双击跳阅读器。
  *
  * ── 行为层（②批 A5 收编重整；[F-UIRES-03 B2] 三节新序）──
- * - **详情域收编**：完整题名/期刊缩写（venue）/IF（impactFactor）/被引
- *   （citedByCount）/年月/星标态禁用呈现（P-11——title「星标功能即将开放」）
- *   +底部注记「双击卡片跳转阅读器」（A6）。三字段可选省略（缺席整行省略
- *   ——卡 L3 同源 [②U4] metrics 扩字段，无第二数据路径）。
- * - **core 徽章退役**（行 9：core UI 消费面全退役——数据面留 AI 重做域）
- *   +「已绑定文献」域随行 9 收编：主题节点=「主题节点」域标识（无 metrics
- *   面），文献节点=期刊/IF/被引域隐式承载绑定态（不双渲染徽章）。
+ * - **详情域收编**：完整题名/期刊缩写/IF/被引/年月/星标域（[F-STAR-01 A4]
+ *   点亮=交互 toggle；主题节点零渲染）+底部注记。三字段可选省略（缺席整行
+ *   省略——卡 L3 同源，无第二数据路径）。
+ * - **core 徽章退役**（行 9）+「已绑定文献」域随行 9 收编：主题节点=
+ *   「主题节点」域标识，文献节点=期刊/IF/被引域隐式承载绑定态。
  * - **空选中态**=「点击卡片查看详情」占位（P-16）；三模式点卡联动（P-13）
  *   编排归 Page（selectedNodeId 单源）。
- * - **[F-UIRES-03 B5① v1.15 第五轮②用户裁决] 头部操作行**：「去文献库/去阅读
- *   器」两钮自卡面迁移至此（卡面 hover-only 键盘不可达挂账随迁移消解）——
- *   位置=标题/编号/徽章行下方一行两钮并排文字钮形（醒目+语义=「针对这篇文献
- *   的操作」）；驻头部区不随内容滚动消失（面板=头部固定+笔记区滚动分区）。
+ * - **[F-UIRES-03 B5① v1.15②裁决] 头部操作行**：「去文献库/去阅读器」两钮
+ *   自卡面迁移至此（hover-only 键盘不可达挂账随迁移消解）——
+ *   位置=标题/编号/徽章行下方一行两钮并排文字钮形；驻头部区不随内容滚动消失。
  *   主题节点（paperId null）沿 C3 态：「去阅读器」零渲染+「去文献库」在场
  *   （paperId=null 通道支持——编排层不置选中）；载荷签名沿卡面版。
- * - **笔记三节新序**（B2「四删三立」——node.paperId 非 null 时渲染，DOM 序
- *   即此序）：①全文笔记（LineageSideManualNote——原「人工笔记」更名）→
+ * - **笔记三节新序**（B2：node.paperId 非 null 时渲染，DOM 序即此序）：
+ *   ①全文笔记（LineageSideManualNote——原「人工笔记」更名）→
  *   ②片段笔记（LineageSideFragments——B2 新立）→③AI 评估与建议
  *   （LineageSideAiNotes——原 AI 节更名+双击链退役，纯展示；
  *   后置占位章随真节替代整删——B4 范围裁决终结）；核心想法/标签两节已在
  *   先批退役（A3/A1b）。[A1b F-CONTRACTA-01] 标签唯一源=文献库域沿承。
  * - **片段双击=跳阅读器**（N3/INV-20 单入口——B2 后全应用唯一保留双击链；
- *   AI 条目双击链退役）。跳转载荷构造单点=本组件 handleFragmentDblClick
- *   （anchorPage=Annotation.page 0 基直传——OutlineAside.locateFragment
- *   同口径，禁 ±1 换算；锚三元组与 open-paper-bus/open-paper-anchor 三方
- *   头注锚定不变）。[F-LOCATE-01] anchor 增 annotationId=Annotation.id——
- *   元素级停驻恢复（exact 层滚动目标锚）。
+ *   AI 条目双击链退役）。跳转载荷构造单点=handleFragmentDblClick
+ *   （anchorPage=Annotation.page 0 基直传，禁 ±1 换算；锚三元组与
+ *   open-paper-bus/open-paper-anchor 三方头注锚定不变）。[F-LOCATE-01]
+ *   anchor 增 annotationId=Annotation.id——元素级停驻恢复锚。
  * - 数据单源：AI 评估/片段两分节直连 window.api（quality 跨域互引红线
  *   ——reader 域组件/store 不可引；接缝声明见各分节头注）。
  */
@@ -39,6 +35,7 @@ import type { Annotation } from '@shared/models/annotation'
 import { MAIN_GRAPH_ID, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { ICON_CHEVRONS_RIGHT } from '../../shared/icons'
+import { StarToggleSpan } from './StarGlyphs'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideFragments } from './LineageSideFragments'
 import { LineageSideManualNote } from './LineageSideManualNote'
@@ -56,21 +53,6 @@ const SIDE_GLASS: CSSProperties = {
 function ymBadge(n: LineageNode): string {
   if (n.year === null) return '—'
   return n.month === null ? String(n.year) : `${n.year}-${String(n.month).padStart(2, '0')}`
-}
-
-/** [②U4] 星标态禁用图标（书页线框——卡面 StarGlyph 同形静态版） */
-function PanelStarGlyph(): JSX.Element {
-  return (
-    <svg viewBox="0 0 9 10" width="9" height="10" aria-hidden="true">
-      <path
-        d="M1 1.2h7v7.6l-3.5-2-3.5 2z"
-        fill="none"
-        stroke="var(--faint)"
-        strokeWidth="1"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
 }
 
 export function LineageSidePanel(props: {
@@ -99,6 +81,10 @@ export function LineageSidePanel(props: {
   /** [F-UIRES-03 B5①] 操作行「去阅读器」钮（paperId 在场才渲染——主题节点零渲染；
    *  编排归 Page：requestOpenPaper 单字段开篇语义） */
   onGotoReader?: (paperId: string) => void
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 星标切换（lineage.store toggleNodeStar
+   *  收口链——Page 注入；载荷=节点快照三元组）；缺席=点击 no-op（title 在场性
+   *  锚兼容——锁测直挂无回调面） */
+  onToggleStar?: (node: { id: string; paperId: string; isStarred?: boolean }) => void
 }): JSX.Element {
   const { node } = props
   if (node === null) {
@@ -116,6 +102,12 @@ export function LineageSidePanel(props: {
   /** [B5①] 操作行「去阅读器」钮的 paperId 捕获（const 局部——条件窄化可跨
    *  回调闭包传播；JSX 属性访问窄化不跨闭包 TS2345——卡面版先例沿承） */
   const readerPid = node.paperId
+
+  /** [F-STAR-01 A4] 星标切换上抛（paperPid=const 捕获——readerPid 先例同型） */
+  const paperPid = node.paperId
+  const toggleStar = (): void => {
+    if (paperPid !== null) props.onToggleStar?.({ id: node.id, paperId: paperPid, isStarred: node.isStarred })
+  }
 
   /** 片段条目双击→跳转载荷（构造单点：锚三元组透传+anchorPage 0 基直传——
    *  Annotation.page 已 0 基，禁任何 ±1 换算；OutlineAside.locateFragment 同口径） */
@@ -157,11 +149,19 @@ export function LineageSidePanel(props: {
           <span className="flex items-center gap-2">
             {/* [F-UIRES-03 B4①] 骑缝号前缀 #→·（U+00B7 MIDDLE DOT） */}
             {props.pubNo != null && <span>{`·${String(props.pubNo).padStart(3, '0')}`}</span>}
-            {/* 星标态禁用呈现（P-11——静态样式；F-STAR-01 DB 窗口后启用） */}
-            <span className="panel-star" data-testid="panel-star" title="星标功能即将开放">
-              <PanelStarGlyph />
-              星标
-            </span>
+            {/* [F-DBCAMP-01 DB-4 / F-STAR-01 A4 点亮] 星标域（P-11 退出条件）：
+                文献节点交互 toggle（卡面同款判空——主题节点零渲染）；回调缺席=
+                点击 no-op（锁测直挂无回调面——title 在场性锚兼容；
+                StarToggleSpan 单源承载交互面） */}
+            {node.paperId !== null && (
+              <StarToggleSpan
+                isStarred={node.isStarred === true}
+                className="panel-star"
+                testid="panel-star"
+                label="星标"
+                onActivate={toggleStar}
+              />
+            )}
             {/* [F-UIRES-03 B4③] 头部收起钮（回调缺席零渲染——既有消费面零污染；
                 宽度直通 width:100%=aside 行内宽覆盖 CSS 252 回退值） */}
             {props.onCollapse !== undefined && (

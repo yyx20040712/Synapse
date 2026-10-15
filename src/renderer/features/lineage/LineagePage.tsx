@@ -193,6 +193,7 @@ export function LineagePage(): JSX.Element {
           metrics={selMetrics}
           onGotoLibrary={handleCardGotoLibrary}
           onGotoReader={handleCardGotoReader}
+          onToggleStar={(node) => void useLineageStore.getState().toggleNodeStar(node)}
         />
       </div>
     </div>

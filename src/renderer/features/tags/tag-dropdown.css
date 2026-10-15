@@ -91,6 +91,8 @@
   color: var(--ink);
 }
 .lib-dd-row:hover { background: var(--panel-2); }
+/* [F-TAGS-02 ⑥ B] 拖源高亮（dragstart 挂/dragend 清——拖拽打标拖源面） */
+.lib-dd-row.dragging { opacity: 0.45; background: var(--panel-2); }
 .lib-dd-cb {
   width: 14px;
   height: 14px;

@@ -3392,9 +3392,9 @@
             "expect(row).toBeVisible({ timeout: 10_000 })",
             "expect(menu).toBeVisible()",
             "expect(menu.getByRole('menuitem', { name: '在阅读器中打开' })).toBeVisible()",
+            "expect(menu.getByRole('menuitem', { name: '星标' })).toBeVisible()",
             "expect(menu.getByRole('menuitem', { name: '移动到文件夹' })).toBeVisible()",
             "expect(menu.getByRole('menuitem', { name: '删除文献' })).toBeVisible()",
-            "expect(menu.getByRole('menuitem', { name: '星标' })).toHaveCount(0)",
             "expect(row).toHaveClass(/hit/)",
             "expect(sub).toBeVisible({ timeout: 10_000 })",
             "expect(sub.getByRole('menuitem', { name: '菜单移动夹' })).toBeVisible()",
@@ -3407,7 +3407,7 @@
           "describePath": [],
           "title": "S5b-1：删除文献保护分支——有连线弹窗三要素+确认级联（行消失+夹计数减）",
           "markers": [],
-          "line": 148,
+          "line": 149,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(navRow(win, '删除保护夹').locator('.lib-fn-ct')).toHaveText('2', { timeout: 10_000 })",
@@ -3427,7 +3427,7 @@
           "describePath": [],
           "title": "S5b-2：删除文献静默分支——无节点直删（无 Dialog 行消失）",
           "markers": [],
-          "line": 195,
+          "line": 196,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(row).toBeVisible({ timeout: 10_000 })",
@@ -3440,7 +3440,7 @@
           "describePath": [],
           "title": "S6：空文件夹态=通用「暂无文献」引导（[F-ALIGN-01 D5] 专属空态变体退役——两真文本+专属句负锚）",
           "markers": [],
-          "line": 217,
+          "line": 218,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(navRow(win, 'S6 空夹')).toBeVisible({ timeout: 10_000 })",
@@ -3881,7 +3881,7 @@
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')",
-            "expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放')",
+            "expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标')",
             "expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)",
             "expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })",
             "expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()",
@@ -3985,7 +3985,7 @@
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })",
-            "expect(root.getByTestId('card-star')).toHaveAttribute('title', '星标功能即将开放')",
+            "expect(root.getByTestId('card-star')).toHaveAttribute('title', '星标')",
             "expect(root.locator('.c-tag')).toHaveCount(2)",
             "expect(root.locator('.c-tag-more')).toHaveText('+1')",
             "expect(cardA.locator('.c-venue')).toHaveText('Water Res.')",
@@ -3997,7 +3997,7 @@
             "expect(win.getByTestId('lineage-side-panel')).toContainText('IF 11.2')",
             "expect(win.getByTestId('lineage-side-panel')).toContainText('被引 17')",
             "expect(win.getByTestId('lineage-side-panel')).toContainText('编辑模式：调序 / 画线 / 调线')",
-            "expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放')",
+            "expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标')",
             "expect(win.getByTestId('reader-aside')).toHaveCount(0)",
             "expect(cardA).toBeVisible()",
             "expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 15_000 })",
@@ -5076,6 +5076,61 @@
             "expect(base.headerH, '基线 header 高=38（T3-P2 壳层规格）').toBe(38)",
             "expect(win.getByText('界面缩放已保存')).toBeVisible()",
             "expect(headerAfter, 'header 在内容行外——豁免锁（E5：caption/顶栏保持系统观感）').toBe(38)"
+          ]
+        }
+      ]
+    },
+    "tests/e2e/star-tag-dnd.spec.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"库行星标：行首星标钮 toggle+落库+on 高亮（P-9 退出条件）\"]",
+          "describePath": [],
+          "title": "库行星标：行首星标钮 toggle+落库+on 高亮（P-9 退出条件）",
+          "markers": [],
+          "line": 43,
+          "assertions": [
+            "expect(row).toBeVisible({ timeout: 10_000 })",
+            "expect(star).toHaveAttribute('title', '星标')",
+            "expect(star).toHaveClass(/on/)",
+            "expect(star).toHaveAttribute('title', '取消星标')",
+            "expect(await summaryOf(win, 'e2e-db4-a')).toMatchObject({ isStarred: true })",
+            "expect(star).not.toHaveClass(/on/)",
+            "expect(await summaryOf(win, 'e2e-db4-a')).toMatchObject({ isStarred: false })"
+          ]
+        },
+        {
+          "key": "[\"菜单星标：右键行→「星标」项 toggle 落库（P-10 退出条件）\"]",
+          "describePath": [],
+          "title": "菜单星标：右键行→「星标」项 toggle 落库（P-10 退出条件）",
+          "markers": [],
+          "line": 61,
+          "assertions": [
+            "expect(row).toBeVisible({ timeout: 10_000 })",
+            "expect(menu).toBeVisible()",
+            "expect(menu).toBeHidden()",
+            "expect(await summaryOf(win, 'e2e-db4-a')).toMatchObject({ isStarred: true })",
+            "expect(await summaryOf(win, 'e2e-db4-a')).toMatchObject({ isStarred: false })"
+          ]
+        },
+        {
+          "key": "[\"DnD 打标：标签下拉行拖到文献行→attach 落库+行徽标刷新（B 面）\"]",
+          "describePath": [],
+          "title": "DnD 打标：标签下拉行拖到文献行→attach 落库+行徽标刷新（B 面）",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(row).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByLabel('移除标签 拖拽打标')).toBeVisible({ timeout: 10_000 })",
+            "expect(win.getByLabel('移除标签 拖拽打标')).toBeHidden({ timeout: 10_000 })",
+            "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
+            "expect(win.locator('.lib-row', { hasText: '打标丙文献' })).toBeVisible({ timeout: 10_000 })",
+            "expect(ddRow).toBeVisible({ timeout: 10_000 })",
+            "expect(tagInfo?.id ?? '').not.toBe('')",
+            "expect(row.locator('.lib-t-mini', { hasText: '拖拽打标' })).toBeVisible({ timeout: 10_000 })",
+            "expect(s?.tagNames).toContain('拖拽打标')"
           ]
         }
       ]
@@ -6188,6 +6243,54 @@
         }
       ]
     },
+    "tests/unit/db/migrate-022-ghost-edges.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理\",\"cross-graph 边清除+同图边保全+deletion_events 零行+版本 22\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理"
+          ],
+          "title": "cross-graph 边清除+同图边保全+deletion_events 零行+版本 22",
+          "markers": [],
+          "line": 50,
+          "assertions": [
+            "expect(result.currentVersion).toBe(22)",
+            "expect(readUserVersion(db)).toBe(22)",
+            "expect(edges.map((e) => e.id)).toEqual(['e-same'])",
+            "expect(db.prepare('SELECT COUNT(*) c FROM deletion_events').get()).toEqual({ c: 0 })",
+            "expect( db.prepare('SELECT COUNT(*) n, COALESCE(MAX(stop), 0) s FROM deletion_log_guard').get() ).toEqual({ n: 1, s: 0 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理\",\"节点零损：清理只动边不动节点（悬挂端点不存在——FK CASCADE 保证）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理"
+          ],
+          "title": "节点零损：清理只动边不动节点（悬挂端点不存在——FK CASCADE 保证）",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(nodes).toEqual({ c: 2 })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理\",\"新库全量直达 022（空种子——022 空跑幂等面）+deletion_events 零行\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理"
+          ],
+          "title": "新库全量直达 022（空种子——022 空跑幂等面）+deletion_events 零行",
+          "markers": [],
+          "line": 95,
+          "assertions": [
+            "expect(result.currentVersion).toBe(22)",
+            "expect(db.prepare('SELECT COUNT(*) c FROM deletion_events').get()).toEqual({ c: 0 })"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/migrate-ai-domain.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -6202,9 +6305,9 @@
           "markers": [],
           "line": 166,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -6217,8 +6320,8 @@
           "markers": [],
           "line": 179,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([20, 21])",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(result.appliedVersions).toEqual([20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6312,9 +6415,9 @@
           "markers": [],
           "line": 36,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -6327,8 +6430,8 @@
           "markers": [],
           "line": 49,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.prepare(\"SELECT title FROM papers WHERE id = 'p-1'\").get()).toEqual({ title: '文献p-1' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM app_meta').get()).toEqual({ c: 0 })"
           ]
@@ -6380,9 +6483,9 @@
           "markers": [],
           "line": 54,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
-            "expect(result.currentVersion).toBe(21)",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6409,7 +6512,7 @@
           "assertions": [
             "expect(before).toEqual({ '#3a5bd9': 2, '#3A5BD9': 1, '#c07a2a': 1, '#1e3a8a': 1 })",
             "expect(after).toEqual({ '#1e3a8a': 4, '#c07a2a': 1 })",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6422,7 +6525,7 @@
           "line": 86,
           "assertions": [
             "expect(colorCounts(db)).toEqual({ '#0f8a6d': 1 })",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6454,8 +6557,8 @@
           "markers": [],
           "line": 68,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
-            "expect(result.currentVersion).toBe(21)",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+            "expect(result.currentVersion).toBe(22)",
             "expect(paperCols).toContain('folder_id')",
             "expect(paperCols).toContain('impact_factor')",
             "expect(nodeCols).toContain('folder_id')",
@@ -6541,7 +6644,7 @@
           "markers": [],
           "line": 193,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(tag.color).toBe('#112233')",
             "expect(paper.folder_id).toBe('__main__')",
             "expect(node.folder_id).toBe('__main__')",
@@ -6575,7 +6678,7 @@
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(squatter.name).toBe('主图 (主图)')",
             "expect(mainRow.name).toBe('主图')",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6590,7 +6693,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 3')",
             "expect(row.name).toBe(sname)",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6605,7 +6708,7 @@
             "expect(() => migrate(db)).not.toThrow()",
             "expect(retreated.name).toBe('主图 (主图) 2')",
             "expect(residue.name).toBe('主图 (主图)')",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -6658,7 +6761,7 @@
           "line": 372,
           "assertions": [
             "expect(row.name).toBe('既有主图行')",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         }
       ]
@@ -6677,7 +6780,7 @@
           "markers": [],
           "line": 30,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
             "expect(nodeCols).toContain('month')",
             "expect(nodeCols).toContain('slot')",
             "expect(edgeCols).toContain('sub')"
@@ -6692,8 +6795,8 @@
           "markers": [],
           "line": 46,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(row.month).toBeNull()",
             "expect(row.slot).toBe(1)"
           ]
@@ -6844,7 +6947,7 @@
           "markers": [],
           "line": 265,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)",
             "expect(db.prepare('SELECT COUNT(*) c FROM annotations').get()).toEqual({ c: 0 })",
@@ -6874,9 +6977,9 @@
           "markers": [],
           "line": 304,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -6956,7 +7059,7 @@
           "markers": [],
           "line": 34,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers WHERE is_starred = 0').get()).toEqual({ c: 2 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-old-1'\").get()).toEqual({ is_starred: 0 })",
             "expect(db.prepare(\"SELECT is_starred FROM papers WHERE id = 'p-new'\").get()).toEqual({ is_starred: 0 })",
@@ -7005,8 +7108,8 @@
           "markers": [],
           "line": 106,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.prepare(\"SELECT title, is_starred FROM papers WHERE id = 'p-a'\").get()).toEqual({ title: '文献甲', is_starred: 0 })"
           ]
         },
@@ -7019,9 +7122,9 @@
           "markers": [],
           "line": 124,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         }
@@ -7041,8 +7144,8 @@
           "markers": [],
           "line": 18,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(db.prepare('SELECT COUNT(*) AS n FROM papers').get()).toEqual({ n: 1 })"
           ]
@@ -7057,8 +7160,8 @@
           "line": 32,
           "assertions": [
             "expect(papersColumns(db)).toContain('reading_seconds')",
-            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')"
           ]
         },
@@ -7071,8 +7174,8 @@
           "markers": [],
           "line": 44,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(papersColumns(db)).not.toContain('reading_seconds')",
             "expect(row).toBeUndefined()",
             "expect(db.prepare('SELECT COUNT(*) c FROM papers').get()).toEqual({ c: 0 })"
@@ -7197,9 +7300,9 @@
           "markers": [],
           "line": 203,
           "assertions": [
-            "expect(result.currentVersion).toBe(21)",
-            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.currentVersion).toBe(22)",
+            "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(again.appliedVersions).toEqual([])"
           ]
         },
@@ -7212,8 +7315,8 @@
           "markers": [],
           "line": 216,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21])",
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21, 22])",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.prepare(\"SELECT name, color, folder_id FROM tags WHERE id='t-1'\").get()).toEqual({ name: '必读', color: '#0ea5e9', folder_id: '__main__' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })"
           ]
@@ -7227,7 +7330,7 @@
           "markers": [],
           "line": 238,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(db.pragma('foreign_key_check')).toEqual([])",
             "expect(db.pragma('foreign_keys', { simple: true })).toBe(1)"
           ]
@@ -7248,7 +7351,7 @@
           "markers": [],
           "line": 7,
           "assertions": [
-            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])",
+            "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
             "expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))",
             "expect(readUserVersion(db)).toBe(result.currentVersion)"
           ]
@@ -9314,6 +9417,41 @@
         }
       ]
     },
+    "tests/unit/db/repos/papers-trash.repo.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers.repo 删除清理读法\",\"countBySha256：0/1 引用计数（最后引用方判定源——papers.sha256 UNIQUE 下共引行不可达，>1 分支=防御面由 service 桩测覆盖）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers.repo 删除清理读法"
+          ],
+          "title": "countBySha256：0/1 引用计数（最后引用方判定源——papers.sha256 UNIQUE 下共引行不可达，>1 分支=防御面由 service 桩测覆盖）",
+          "markers": [],
+          "line": 52,
+          "assertions": [
+            "expect(repo.countBySha256('sha-x')).toBe(0)",
+            "expect(repo.countBySha256('sha-x')).toBe(1)",
+            "expect(repo.countBySha256('sha-x')).toBe(1)",
+            "expect(repo.countBySha256('sha-x')).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers.repo 删除清理读法\",\"listFileRefsByFolder：域内 sha+file_ref 清单（隔离遍历源）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers.repo 删除清理读法"
+          ],
+          "title": "listFileRefsByFolder：域内 sha+file_ref 清单（隔离遍历源）",
+          "markers": [],
+          "line": 62,
+          "assertions": [
+            "expect(repo.listFileRefsByFolder('f-a')).toEqual([ { sha256: 'sha-1', fileRef: 'aa/bb/1.pdf' }, { sha256: 'sha-2', fileRef: 'cc/dd/2.pdf' } ])",
+            "expect(repo.listFileRefsByFolder('f-empty')).toEqual([])"
+          ]
+        }
+      ]
+    },
     "tests/unit/db/repos/papers.folder-contract.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -9821,15 +9959,15 @@
           ]
         },
         {
-          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）\"]",
+          "key": "[\"F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储\",\"readSchemaVersion=迁移链尾 user_version 22（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正）\"]",
           "describePath": [
             "F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储"
           ],
-          "title": "readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）",
+          "title": "readSchemaVersion=迁移链尾 user_version 22（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正）",
           "markers": [],
           "line": 265,
           "assertions": [
-            "expect(repo.readSchemaVersion()).toBe(21)"
+            "expect(repo.readSchemaVersion()).toBe(22)"
           ]
         }
       ]
@@ -11607,7 +11745,7 @@
           ],
           "title": "伪造 Origin（白名单外）：成功响应不带 ACAO 头（静默，非 403）",
           "markers": [],
-          "line": 129,
+          "line": 131,
           "assertions": [
             "expect(res.status).toBe(200)",
             "expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()"
@@ -11620,7 +11758,7 @@
           ],
           "title": "白名单 Origin（dev）：成功响应 ACAO=回显原值",
           "markers": [],
-          "line": 139,
+          "line": 141,
           "assertions": [
             "expect(res.status).toBe(200)",
             "expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173')"
@@ -11633,7 +11771,7 @@
           ],
           "title": "字面 'null'（file:// 页真实形态）：成功响应 ACAO='null'（回显）",
           "markers": [],
-          "line": 149,
+          "line": 151,
           "assertions": [
             "expect(res.status).toBe(200)",
             "expect(res.headers.get('Access-Control-Allow-Origin')).toBe('null')"
@@ -11646,7 +11784,7 @@
           ],
           "title": "无 Origin 头：成功响应不带 ACAO 头（非 CORS 请求）",
           "markers": [],
-          "line": 157,
+          "line": 159,
           "assertions": [
             "expect(res.status).toBe(200)",
             "expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()"
@@ -11659,7 +11797,7 @@
           ],
           "title": "errorResponse 面同接线：伪造 Origin 的 404 不带 ACAO；字面 null 的 404 回显",
           "markers": [],
-          "line": 165,
+          "line": 167,
           "assertions": [
             "expect(evil.status).toBe(404)",
             "expect(evil.headers.get('Access-Control-Allow-Origin')).toBeNull()",
@@ -18525,43 +18663,177 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）\",\"行首星标 span（.lib-r-star ★ aria-hidden）+表头 ★ 首列（.lib-c-star）——批 A 恒淡色零交互\"]",
+          "key": "[\"F-STAR-01 A1 星标列点亮（P-9 退出条件）\",\"表头 ★ 首列（.lib-c-star）布局锚不动（aria-hidden 静态——票面无排序/筛选面）\"]",
           "describePath": [
-            "F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）"
+            "F-STAR-01 A1 星标列点亮（P-9 退出条件）"
           ],
-          "title": "行首星标 span（.lib-r-star ★ aria-hidden）+表头 ★ 首列（.lib-c-star）——批 A 恒淡色零交互",
+          "title": "表头 ★ 首列（.lib-c-star）布局锚不动（aria-hidden 静态——票面无排序/筛选面）",
           "markers": [],
-          "line": 63,
+          "line": 64,
           "assertions": [
             "expect(head?.querySelector('.lib-c-star'), '表头 ★ 列在场').not.toBeNull()",
-            "expect(head?.querySelector('.lib-c-star')?.getAttribute('aria-hidden')).toBe('true')",
-            "expect(star, '行首星标 span 在场').not.toBeNull()",
-            "expect(star?.getAttribute('aria-hidden')).toBe('true')",
-            "expect(star?.textContent).toBe('★')"
+            "expect(head?.querySelector('.lib-c-star')?.getAttribute('aria-hidden')).toBe('true')"
           ]
         },
         {
-          "key": "[\"F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）\",\"五列既有语义零变（INV-73）：编号/题名 · 期刊/年月/引用/标签列表头俱在\"]",
+          "key": "[\"F-STAR-01 A1 星标列点亮（P-9 退出条件）\",\"行首星标交互面：role=button+aria-pressed+title 星标/取消星标（starred 态 on 高亮 class）\"]",
           "describePath": [
-            "F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）"
+            "F-STAR-01 A1 星标列点亮（P-9 退出条件）"
+          ],
+          "title": "行首星标交互面：role=button+aria-pressed+title 星标/取消星标（starred 态 on 高亮 class）",
+          "markers": [],
+          "line": 71,
+          "assertions": [
+            "expect(off?.getAttribute('role')).toBe('button')",
+            "expect(off?.getAttribute('aria-pressed')).toBe('false')",
+            "expect(off?.getAttribute('title')).toBe('星标')",
+            "expect(off?.classList.contains('on')).toBe(false)",
+            "expect(on?.getAttribute('aria-pressed')).toBe('true')",
+            "expect(on?.getAttribute('title')).toBe('取消星标')",
+            "expect(on?.classList.contains('on')).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A1 星标列点亮（P-9 退出条件）\",\"五列既有语义零变（INV-73）：编号/题名 · 期刊/年月/引用/标签列表头俱在\"]",
+          "describePath": [
+            "F-STAR-01 A1 星标列点亮（P-9 退出条件）"
           ],
           "title": "五列既有语义零变（INV-73）：编号/题名 · 期刊/年月/引用/标签列表头俱在",
           "markers": [],
-          "line": 75,
+          "line": 87,
           "assertions": [
             "expect(cells).toEqual(['★', '编号', '题名 · 期刊', '年月', '引用', '标签'])"
           ]
+        }
+      ]
+    },
+    "tests/unit/renderer/library-star-toggle.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-STAR-01 A1 行首星标切换\",\"点击：api.papers.setStarred 逐参+本地 isStarred 先行翻转（无广播口径——本地态）\"]",
+          "describePath": [
+            "F-STAR-01 A1 行首星标切换"
+          ],
+          "title": "点击：api.papers.setStarred 逐参+本地 isStarred 先行翻转（无广播口径——本地态）",
+          "markers": [],
+          "line": 91,
+          "assertions": [
+            "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-1', starred: true })",
+            "expect(useLibraryStore.getState().papers[0]?.isStarred).toBe(true)"
+          ]
         },
         {
-          "key": "[\"F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）\",\"星标零交互：无 onClick 独立钮形态（span 非按钮——P-10 菜单星标项不渲染的行内对应面）\"]",
+          "key": "[\"F-STAR-01 A1 行首星标切换\",\"键盘 Enter：span role=button 承载触发（不依赖真按钮元素）\"]",
           "describePath": [
-            "F-UIRES-01 U4 星标占位列（P-9 静态禁用占位）"
+            "F-STAR-01 A1 行首星标切换"
           ],
-          "title": "星标零交互：无 onClick 独立钮形态（span 非按钮——P-10 菜单星标项不渲染的行内对应面）",
+          "title": "键盘 Enter：span role=button 承载触发（不依赖真按钮元素）",
           "markers": [],
-          "line": 81,
+          "line": 104,
           "assertions": [
-            "expect(star instanceof HTMLSpanElement, '星标=纯 span（无按钮交互面）').toBe(true)"
+            "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-1', starred: false })",
+            "expect(useLibraryStore.getState().papers[0]?.isStarred).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A1 行首星标切换\",\"双击链隔离（回炉 r1-R1/d1-W-1）：双击星标域不触发行双击（onOpen 零调用——星标双写+误开阅读器双缺陷面）\"]",
+          "describePath": [
+            "F-STAR-01 A1 行首星标切换"
+          ],
+          "title": "双击链隔离（回炉 r1-R1/d1-W-1）：双击星标域不触发行双击（onOpen 零调用——星标双写+误开阅读器双缺陷面）",
+          "markers": [],
+          "line": 117,
+          "assertions": [
+            "expect(onOpen).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A1 行首星标切换\",\"失败：本地回滚原值+toast（ApiClientError.message 透传）\"]",
+          "describePath": [
+            "F-STAR-01 A1 行首星标切换"
+          ],
+          "title": "失败：本地回滚原值+toast（ApiClientError.message 透传）",
+          "markers": [],
+          "line": 134,
+          "assertions": [
+            "expect(stubApi.papers.setStarred).toHaveBeenCalledTimes(1)",
+            "expect(useLibraryStore.getState().papers[0]?.isStarred).toBe(false)",
+            "expect(toastSpy).toHaveBeenCalledWith('库忙', 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A2 PaperRowMenu 星标项\",\"未星标行：菜单项「星标」；点击上抛 onToggleStar(paperId, true) 后关菜单\"]",
+          "describePath": [
+            "F-STAR-01 A2 PaperRowMenu 星标项"
+          ],
+          "title": "未星标行：菜单项「星标」；点击上抛 onToggleStar(paperId, true) 后关菜单",
+          "markers": [],
+          "line": 154,
+          "assertions": [
+            "expect(item, '菜单星标项在场').toBeDefined()",
+            "expect(onToggleStar).toHaveBeenCalledWith('p-1', true)",
+            "expect(onClose).toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A2 PaperRowMenu 星标项\",\"已星标行：菜单项「取消星标」+onToggleStar(paperId, false)\"]",
+          "describePath": [
+            "F-STAR-01 A2 PaperRowMenu 星标项"
+          ],
+          "title": "已星标行：菜单项「取消星标」+onToggleStar(paperId, false)",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(onToggleStar).toHaveBeenCalledWith('p-1', false)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/library-store-scope-clear.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds\",\"folder→他 folder（值级变更）：tagIds 清空\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds"
+          ],
+          "title": "folder→他 folder（值级变更）：tagIds 清空",
+          "markers": [],
+          "line": 26,
+          "assertions": [
+            "expect(useStore.getState().query.tagIds).toBeUndefined()",
+            "expect(useStore.getState().query.folderScope).toEqual({ kind: 'folder', folderId: 'f-b' })"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds\",\"folder→all：清；all→folder：清\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds"
+          ],
+          "title": "folder→all：清；all→folder：清",
+          "markers": [],
+          "line": 37,
+          "assertions": [
+            "expect(useStore.getState().query.tagIds).toBeUndefined()",
+            "expect(useStore.getState().query.tagIds).toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds\",\"同值 folderScope 与无 folderScope patch：tagIds 保留\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 library.store setQuery 换域清 tagIds"
+          ],
+          "title": "同值 folderScope 与无 folderScope patch：tagIds 保留",
+          "markers": [],
+          "line": 52,
+          "assertions": [
+            "expect(useStore.getState().query.tagIds).toEqual(['t-1'])",
+            "expect(useStore.getState().query.tagIds).toEqual(['t-1'])"
           ]
         }
       ]
@@ -20576,10 +20848,10 @@
           ],
           "title": "L1 结构：星标占位（title 提示）+标签≤2+溢出「+N」+骑缝号保留；核 chip 退役（零 .mb）",
           "markers": [],
-          "line": 82,
+          "line": 91,
           "assertions": [
             "expect(star).not.toBeNull()",
-            "expect(star?.getAttribute('title')).toBe('星标功能即将开放')",
+            "expect(star?.getAttribute('title')).toBe('星标')",
             "expect([...a.querySelectorAll('.c-tag')].map((e) => e.textContent)).toEqual(['方法', '流域'])",
             "expect(a.querySelector('.c-tag-more')?.textContent).toBe('+2')",
             "expect(a.querySelector('.c-no')?.textContent).toBe('·012')",
@@ -20598,7 +20870,7 @@
           ],
           "title": "[A1a] 标签行换源：无 tagNames 键（含缺省 props）→零标签行（[A1b] 私有域已随契约退役）",
           "markers": [],
-          "line": 121,
+          "line": 130,
           "assertions": [
             "expect(cardOf('A').querySelectorAll('.c-tag')).toHaveLength(0)",
             "expect(cardOf('A').querySelector('.c-tag-more')).toBeNull()"
@@ -20611,7 +20883,7 @@
           ],
           "title": "L3 三字段真文本：期刊缩写/IF/被引 N（mono 真文本断言）",
           "markers": [],
-          "line": 135,
+          "line": 144,
           "assertions": [
             "expect(a.querySelector('.c-venue')?.textContent).toBe('Water Res.')",
             "expect(a.querySelector('.c-if')?.textContent).toBe('IF 11.2')",
@@ -20625,7 +20897,7 @@
           ],
           "title": "L3 可选省略：字段缺席整字段省略渲染（无「—」占位；主题节点 L3 全省略）",
           "markers": [],
-          "line": 149,
+          "line": 158,
           "assertions": [
             "expect(cardOf('A').querySelector('.c-venue')).toBeNull()",
             "expect(cardOf('A').querySelector('.c-if')).toBeNull()",
@@ -20642,28 +20914,29 @@
           ]
         },
         {
-          "key": "[\"U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）\",\"星标交互（A4）：browse 点击=no-op 不触发卡选中；edit 点星标区=选中卡\"]",
+          "key": "[\"U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）\",\"星标交互（A4→F-STAR-01 A3 点亮）：browse/edit 点击=toggle 星标（不触发卡选中——transitional 分派退役）\"]",
           "describePath": [
             "U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）"
           ],
-          "title": "星标交互（A4）：browse 点击=no-op 不触发卡选中；edit 点星标区=选中卡",
+          "title": "星标交互（A4→F-STAR-01 A3 点亮）：browse/edit 点击=toggle 星标（不触发卡选中——transitional 分派退役）",
           "markers": [],
-          "line": 184,
+          "line": 193,
           "assertions": [
-            "expect(onNodeClick).not.toHaveBeenCalled()",
-            "expect(onNodeClick).toHaveBeenCalledWith('A', expect.objectContaining({ stopPropagation: expect.any(Function) }))"
+            "expect(setStarred).toHaveBeenCalledWith({ paperId: 'paper-A', starred: true })",
+            "expect(onNodeClick).not.toHaveBeenCalled()"
           ]
         },
         {
-          "key": "[\"U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）\",\"T2×T3 仲裁：focus 点星标区=仅星标域 no-op（聚焦不 toggle）；点卡身=toggle\"]",
+          "key": "[\"U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）\",\"T2×T3 仲裁（A3 点亮后）：focus 点星标区=toggle 星标不触发聚焦；点卡身=聚焦 toggle\"]",
           "describePath": [
             "U4 卡片三层（L1 星标+标签/L2 题名/L3 期刊+IF+被引）"
           ],
-          "title": "T2×T3 仲裁：focus 点星标区=仅星标域 no-op（聚焦不 toggle）；点卡身=toggle",
+          "title": "T2×T3 仲裁（A3 点亮后）：focus 点星标区=toggle 星标不触发聚焦；点卡身=聚焦 toggle",
           "markers": [],
-          "line": 220,
+          "line": 212,
           "assertions": [
             "expect(useLineageViewStore.getState().focusSet).toEqual([])",
+            "expect(setStarred).toHaveBeenCalledTimes(1)",
             "expect(useLineageViewStore.getState().focusSet).toEqual(['A'])"
           ]
         },
@@ -20674,7 +20947,7 @@
           ],
           "title": "[F-UIRES-03 C3·v1.7] 卡双击退役负锚：dblclick 零动作（链已删——全应用唯一保留双击=详情面板片段条目 B2 终态）",
           "markers": [],
-          "line": 237,
+          "line": 232,
           "assertions": [
             "expect(onNodeClick).not.toHaveBeenCalled()"
           ]
@@ -20686,7 +20959,7 @@
           ],
           "title": "[F-UIRES-03 B5①] 卡面两钮退役负锚：card-jumps 零渲染+CSS 死码零残留（两钮迁 LineageSidePanel 头部操作行——v1.15 第五轮②；hover-only 键盘不可达挂账随迁移消解）",
           "markers": [],
-          "line": 257,
+          "line": 252,
           "assertions": [
             "expect(c.querySelector('.card-jumps')).toBeNull()",
             "expect(c.querySelector('[data-testid=\"card-goto-library\"]')).toBeNull()",
@@ -20701,7 +20974,7 @@
           ],
           "title": "CSS：L1 高 18/L3 高 12/题名两行截断（line-clamp 2）/星标命中区 14×14",
           "markers": [],
-          "line": 278,
+          "line": 273,
           "assertions": [
             "expect(css).toMatch(/\\.c-l1\\s*\\{[^}]*height:\\s*18px/)",
             "expect(css).toMatch(/\\.c-l3\\s*\\{[^}]*height:\\s*12px/)",
@@ -20839,7 +21112,7 @@
             "expect(text).toContain('被引 17')",
             "expect(text).toContain('2022-09')",
             "expect(star).not.toBeNull()",
-            "expect(star?.getAttribute('title')).toBe('星标功能即将开放')"
+            "expect(star?.getAttribute('title')).toBe('星标')"
           ]
         },
         {
@@ -26007,7 +26280,7 @@
             "expect(cap?.textContent).toContain('节点详情')",
             "expect(cap?.textContent).toContain('·004')",
             "expect(q('.insp-title')?.textContent).toBe('节点A')",
-            "expect(star?.getAttribute('title')).toBe('星标功能即将开放')"
+            "expect(star?.getAttribute('title')).toBe('星标')"
           ]
         },
         {
@@ -26087,6 +26360,147 @@
             "expect(btn?.getAttribute('aria-label')).toBe('收起详情面板')",
             "expect(onCollapse).toHaveBeenCalledTimes(1)",
             "expect(q('[data-testid=\"lineage-sidebar-collapse\"]')).toBeNull()"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-star-card.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-STAR-01 A3 脉络卡星标域\",\"主题节点（paperId null）：星标域不渲染（无文献可标——tags 判空同款先例）\"]",
+          "describePath": [
+            "F-STAR-01 A3 脉络卡星标域"
+          ],
+          "title": "主题节点（paperId null）：星标域不渲染（无文献可标——tags 判空同款先例）",
+          "markers": [],
+          "line": 107,
+          "assertions": [
+            "expect(card?.querySelector('.c-star')).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 脉络卡星标域\",\"未标记：书页图标形态+title「星标」+aria-pressed=false\"]",
+          "describePath": [
+            "F-STAR-01 A3 脉络卡星标域"
+          ],
+          "title": "未标记：书页图标形态+title「星标」+aria-pressed=false",
+          "markers": [],
+          "line": 112,
+          "assertions": [
+            "expect(star).not.toBeNull()",
+            "expect(star?.getAttribute('title')).toBe('星标')",
+            "expect(star?.getAttribute('aria-pressed')).toBe('false')",
+            "expect(star?.classList.contains('on')).toBe(false)",
+            "expect(star?.querySelector('svg path')?.getAttribute('fill')).toBe('none')"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 脉络卡星标域\",\"已标记：高亮星形态（on class+aria-pressed=true+title「取消星标」+实心填充）\"]",
+          "describePath": [
+            "F-STAR-01 A3 脉络卡星标域"
+          ],
+          "title": "已标记：高亮星形态（on class+aria-pressed=true+title「取消星标」+实心填充）",
+          "markers": [],
+          "line": 122,
+          "assertions": [
+            "expect(star?.classList.contains('on')).toBe(true)",
+            "expect(star?.getAttribute('aria-pressed')).toBe('true')",
+            "expect(star?.getAttribute('title')).toBe('取消星标')",
+            "expect(star?.querySelector('svg path')?.getAttribute('fill')).not.toBe('none')"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 脉络卡星标域\",\"点击：stopPropagation（卡身 onNodeClick 不触发）+onStarClick(nodeId) 上抛\"]",
+          "describePath": [
+            "F-STAR-01 A3 脉络卡星标域"
+          ],
+          "title": "点击：stopPropagation（卡身 onNodeClick 不触发）+onStarClick(nodeId) 上抛",
+          "markers": [],
+          "line": 131,
+          "assertions": [
+            "expect(onStarClick).toHaveBeenCalledTimes(1)",
+            "expect(onNodeClick).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"toggle：api.papers.setStarred 逐参+节点本地 isStarred 翻转（非编辑暂存面——队列零介入）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "toggle：api.papers.setStarred 逐参+节点本地 isStarred 翻转（非编辑暂存面——队列零介入）",
+          "markers": [],
+          "line": 142,
+          "assertions": [
+            "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-1', starred: true })",
+            "expect(store.getState().nodes[0]?.isStarred).toBe(true)",
+            "expect(store.getState().queue).toHaveLength(0)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"失败：回滚原值（toast 面经 toast-store——断言收口在回滚行为）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "失败：回滚原值（toast 面经 toast-store——断言收口在回滚行为）",
+          "markers": [],
+          "line": 157,
+          "assertions": [
+            "expect(store.getState().nodes[0]?.isStarred).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"载荷面收窄：store 不做节点查表（调用面 Timeline/Panel 判 paperId——主题节点星标域不渲染=结构性 no-op）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "载荷面收窄：store 不做节点查表（调用面 Timeline/Panel 判 paperId——主题节点星标域不渲染=结构性 no-op）",
+          "markers": [],
+          "line": 173,
+          "assertions": [
+            "expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-x', starred: true })"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A3 lineage.store toggleNodeStar\",\"undo 快照不捕获星标（回炉 r1-R2/k3-W-1）：入栈→toggleNodeStar(true)→undo→isStarred 仍 true（星标=非撤销维度恒保现值——不与 DB 脱钩）\"]",
+          "describePath": [
+            "F-STAR-01 A3 lineage.store toggleNodeStar"
+          ],
+          "title": "undo 快照不捕获星标（回炉 r1-R2/k3-W-1）：入栈→toggleNodeStar(true)→undo→isStarred 仍 true（星标=非撤销维度恒保现值——不与 DB 脱钩）",
+          "markers": [],
+          "line": 181,
+          "assertions": [
+            "expect(store.getState().nodes[0]?.isStarred).toBe(true)",
+            "expect(store.getState().nodes[0]?.isStarred, 'undo 后星标保持现值（快照不回退）').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A4 LineageSidePanel 星标域\",\"文献节点：panel-star 按态呈现（aria-pressed/title）+点击上抛 onToggleStar\"]",
+          "describePath": [
+            "F-STAR-01 A4 LineageSidePanel 星标域"
+          ],
+          "title": "文献节点：panel-star 按态呈现（aria-pressed/title）+点击上抛 onToggleStar",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(star).not.toBeNull()",
+            "expect(star?.getAttribute('aria-pressed')).toBe('false')",
+            "expect(star?.getAttribute('title')).toBe('星标')",
+            "expect(onToggleStar).toHaveBeenCalledWith({ id: 'n-1', paperId: 'p-1', isStarred: false })"
+          ]
+        },
+        {
+          "key": "[\"F-STAR-01 A4 LineageSidePanel 星标域\",\"主题节点：星标域不渲染（卡面同款判空口径）\"]",
+          "describePath": [
+            "F-STAR-01 A4 LineageSidePanel 星标域"
+          ],
+          "title": "主题节点：星标域不渲染（卡面同款判空口径）",
+          "markers": [],
+          "line": 226,
+          "assertions": [
+            "expect(host?.querySelector('.panel-star')).toBeNull()"
           ]
         }
       ]
@@ -29005,7 +29419,7 @@
             "expect(menu()?.textContent).toContain('在阅读器中打开')",
             "expect(menu()?.textContent).toContain('移动到文件夹')",
             "expect(menu()?.textContent).toContain('删除文献')",
-            "expect(menu()?.textContent).not.toContain('星标')",
+            "expect(menu()?.textContent).toContain('星标')",
             "expect(del?.style.color).toBe('var(--danger)')"
           ]
         },
@@ -29690,19 +30104,19 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）\",\"右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染\"]",
+          "key": "[\"F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）\",\"右键行→菜单弹出：四项文本（在阅读器中打开/星标[F-STAR-01 A2 点亮——P-10 退出条件：不渲染禁用项→点亮即渲染]/移动到文件夹/删除文献[批 B 点亮]）\"]",
           "describePath": [
             "F-UIRES-01 U4 PaperRowMenu 两项版（P-10/P-12）"
           ],
-          "title": "右键行→菜单弹出：三项文本（在阅读器中打开/移动到文件夹/删除文献[批 B 点亮]）+星标零渲染",
+          "title": "右键行→菜单弹出：四项文本（在阅读器中打开/星标[F-STAR-01 A2 点亮——P-10 退出条件：不渲染禁用项→点亮即渲染]/移动到文件夹/删除文献[批 B 点亮]）",
           "markers": [],
           "line": 141,
           "assertions": [
             "expect(menu()).not.toBeNull()",
             "expect(menu()?.textContent).toContain('在阅读器中打开')",
+            "expect(menu()?.textContent).toContain('星标')",
             "expect(menu()?.textContent).toContain('移动到文件夹')",
-            "expect(menu()?.textContent).toContain('删除文献')",
-            "expect(menu()?.textContent).not.toContain('星标')"
+            "expect(menu()?.textContent).toContain('删除文献')"
           ]
         },
         {
@@ -35445,6 +35859,93 @@
         }
       ]
     },
+    "tests/unit/renderer/tag-dnd-drop.test.tsx": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 拖源（TagDropdownRow dragstart）\",\"dragstart：设双 MIME（tagId+域 folderId——renderer 判域用）+行内 dragging 高亮\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 拖源（TagDropdownRow dragstart）"
+          ],
+          "title": "dragstart：设双 MIME（tagId+域 folderId——renderer 判域用）+行内 dragging 高亮",
+          "markers": [],
+          "line": 118,
+          "assertions": [
+            "expect(dtOf(ev).setData).toHaveBeenCalledWith(TAG_DRAG_MIME, 't-1')",
+            "expect(dtOf(ev).setData).toHaveBeenCalledWith(TAG_DRAG_FOLDER_MIME, 'f-a')"
+          ]
+        },
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 落点（PaperRow drop 面）\",\"dragover：仅 TAG MIME preventDefault+目标高亮（PAPER MIME/Files 互斥不响应）\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 落点（PaperRow drop 面）"
+          ],
+          "title": "dragover：仅 TAG MIME preventDefault+目标高亮（PAPER MIME/Files 互斥不响应）",
+          "markers": [],
+          "line": 146,
+          "assertions": [
+            "expect(evTag.defaultPrevented).toBe(true)",
+            "expect(row().classList.contains('tag-over'), 'drop 目标高亮').toBe(true)",
+            "expect(evPaper.defaultPrevented).toBe(false)",
+            "expect(evFiles.defaultPrevented).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 落点（PaperRow drop 面）\",\"drop：api.tags.attach 逐参+行 tagNames 刷新链（library load 同链）\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 落点（PaperRow drop 面）"
+          ],
+          "title": "drop：api.tags.attach 逐参+行 tagNames 刷新链（library load 同链）",
+          "markers": [],
+          "line": 168,
+          "assertions": [
+            "expect(ev.defaultPrevented).toBe(true)",
+            "expect(stubApi.tags.attach).toHaveBeenCalledWith({ paperId: 'p-1', tagId: 't-1' })",
+            "expect(stubApi.library.list).toHaveBeenCalled()",
+            "expect(row().classList.contains('tag-over'), 'drop 后高亮即清').toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 落点（PaperRow drop 面）\",\"域一致性预检：tag 域≠paper.folderId →toast 拒绝零请求（all-scope 跨域行混列）\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 落点（PaperRow drop 面）"
+          ],
+          "title": "域一致性预检：tag 域≠paper.folderId →toast 拒绝零请求（all-scope 跨域行混列）",
+          "markers": [],
+          "line": 188,
+          "assertions": [
+            "expect(stubApi.tags.attach).not.toHaveBeenCalled()",
+            "expect(toastSpy).toHaveBeenCalledWith('标签与文献不在同一文件夹域——无法挂接', 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 落点（PaperRow drop 面）\",\"attach 失败：toast 服务端文案（R3 映射面透传）\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 落点（PaperRow drop 面）"
+          ],
+          "title": "attach 失败：toast 服务端文案（R3 映射面透传）",
+          "markers": [],
+          "line": 206,
+          "assertions": [
+            "expect(toastSpy).toHaveBeenCalledWith('每篇文献最多 6 个标签', 'error')"
+          ]
+        },
+        {
+          "key": "[\"F-TAGS-02 ⑥ B 落点（PaperRow drop 面）\",\"busy 拒收：导入中 drop 零请求\"]",
+          "describePath": [
+            "F-TAGS-02 ⑥ B 落点（PaperRow drop 面）"
+          ],
+          "title": "busy 拒收：导入中 drop 零请求",
+          "markers": [],
+          "line": 227,
+          "assertions": [
+            "expect(stubApi.tags.attach).not.toHaveBeenCalled()"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/tag-dropdown-delete.test.tsx": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -36562,7 +37063,7 @@
             "expect(r).toEqual({ ok: true })",
             "expect(rename).toHaveBeenCalledWith({ tagId: 't-1', name: '新名' })",
             "expect(list).toHaveBeenCalledTimes(1)",
-            "expect(useStore.getState().tags).toEqual([{ id: 't-1', name: '新名', paperCount: 1, color: null }])"
+            "expect(useStore.getState().tagsByFolder['__main__']).toEqual([{ id: 't-1', name: '新名', paperCount: 1, color: null }])"
           ]
         },
         {
@@ -36593,7 +37094,7 @@
             "expect(r.ok).toBe(false)",
             "expect(r.error.code).toBe('CONFLICT')",
             "expect(r.error.message).toBe('标签名已被占用')",
-            "expect(useStore.getState().tags[0]?.name).toBe('旧')",
+            "expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('旧')",
             "expect(list).not.toHaveBeenCalled()"
           ]
         },
@@ -36608,7 +37109,7 @@
           "assertions": [
             "expect(r.ok).toBe(false)",
             "expect(list).toHaveBeenCalledTimes(1)",
-            "expect(useStore.getState().tags).toEqual([])"
+            "expect(useStore.getState().tagsByFolder['__main__']).toEqual([])"
           ]
         },
         {
@@ -36620,8 +37121,8 @@
           "markers": [],
           "line": 83,
           "assertions": [
-            "expect(useStore.getState().tags[0]?.name).toBe('最新')",
-            "expect(useStore.getState().error).toBeNull()"
+            "expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('最新')",
+            "expect(useStore.getState().errorByFolder['__main__']).toBeNull()"
           ]
         },
         {
@@ -36636,7 +37137,7 @@
             "expect(r).toEqual({ ok: true })",
             "expect(setColor).toHaveBeenCalledWith({ tagId: 't-1', color: '#e11d48' })",
             "expect(list).toHaveBeenCalledTimes(1)",
-            "expect(useStore.getState().tags[0]?.color).toBe('#e11d48')"
+            "expect(useStore.getState().tagsByFolder['__main__']?.[0]?.color).toBe('#e11d48')"
           ]
         },
         {
@@ -36655,6 +37156,68 @@
         }
       ]
     },
+    "tests/unit/renderer/tags-store-domains.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 tags.store 域分桶\",\"双域 refresh：两桶并存互不覆写（FilterBar 域 vs detail.folderId 域双挂载）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 tags.store 域分桶"
+          ],
+          "title": "双域 refresh：两桶并存互不覆写（FilterBar 域 vs detail.folderId 域双挂载）",
+          "markers": [],
+          "line": 26,
+          "assertions": [
+            "expect(useStore.getState().tagsByFolder['f-a']).toHaveLength(1)",
+            "expect(useStore.getState().tagsByFolder['f-a']?.[0]?.name).toBe('标签-f-a')",
+            "expect(useStore.getState().tagsByFolder['f-b']?.[0]?.name).toBe('标签-f-b')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 tags.store 域分桶\",\"分桶 stale-guard：迟到的旧域响应只落本桶且不覆写本桶最新（他桶零波及）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 tags.store 域分桶"
+          ],
+          "title": "分桶 stale-guard：迟到的旧域响应只落本桶且不覆写本桶最新（他桶零波及）",
+          "markers": [],
+          "line": 39,
+          "assertions": [
+            "expect(useStore.getState().tagsByFolder['f-a']?.[0]?.name).toBe('A桶新')",
+            "expect(useStore.getState().tagsByFolder['f-b']?.[0]?.name).toBe('B桶')",
+            "expect(useStore.getState().errorByFolder['f-b']).toBeNull()",
+            "expect(useStore.getState().errorByFolder['f-a']).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 tags.store 域分桶\",\"error 分桶：A 域失败只写 A 桶 error（B 域 error 面零污染）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 tags.store 域分桶"
+          ],
+          "title": "error 分桶：A 域失败只写 A 桶 error（B 域 error 面零污染）",
+          "markers": [],
+          "line": 58,
+          "assertions": [
+            "expect(useStore.getState().errorByFolder['f-a']).toBe('A 域挂了')",
+            "expect(useStore.getState().errorByFolder['f-b']).toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 R1 tags.store 域分桶\",\"mutate 链式 refresh 显式域参：renameTag(tagId, name, folderId) 刷新该域桶\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 R1 tags.store 域分桶"
+          ],
+          "title": "mutate 链式 refresh 显式域参：renameTag(tagId, name, folderId) 刷新该域桶",
+          "markers": [],
+          "line": 71,
+          "assertions": [
+            "expect(rename).toHaveBeenCalledWith({ tagId: 't-1', name: '新名' })",
+            "expect(list).toHaveBeenLastCalledWith({ folderId: 'f-detail' })"
+          ]
+        }
+      ]
+    },
     "tests/unit/renderer/tags.store.test.ts": {
       "ticketIds": [
         "SR-TAG-03"
@@ -36663,15 +37226,15 @@
       "hardSkipSites": [],
       "cases": [
         {
-          "key": "[\"tags.store —— 刷新\",\"refresh：写入 tags 数组，loading 翻转复位\"]",
+          "key": "[\"tags.store —— 刷新\",\"refresh：写入该域桶，loading 翻转复位\"]",
           "describePath": [
             "tags.store —— 刷新"
           ],
-          "title": "refresh：写入 tags 数组，loading 翻转复位",
+          "title": "refresh：写入该域桶，loading 翻转复位",
           "markers": [],
-          "line": 16,
+          "line": 19,
           "assertions": [
-            "expect(useStore.getState().tags).toHaveLength(2)",
+            "expect(useStore.getState().tagsByFolder['__main__']).toHaveLength(2)",
             "expect(useStore.getState().loading).toBe(false)",
             "expect(list).toHaveBeenCalledWith({ folderId: '__main__' })"
           ]
@@ -36683,35 +37246,35 @@
           ],
           "title": "refresh 失败：保留旧数据且不抛（错误由 toast 层处理）",
           "markers": [],
-          "line": 31,
+          "line": 34,
           "assertions": [
-            "expect(useStore.getState().tags[0]?.name).toBe('旧')"
+            "expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('旧')"
           ]
         },
         {
-          "key": "[\"tags.store —— 刷新\",\"refresh 失败：error 暴露失败信息供消费方 toast；下次 refresh 成功清空\"]",
+          "key": "[\"tags.store —— 刷新\",\"refresh 失败：分桶 error 暴露失败信息供消费方 toast；下次 refresh 成功清空\"]",
           "describePath": [
             "tags.store —— 刷新"
           ],
-          "title": "refresh 失败：error 暴露失败信息供消费方 toast；下次 refresh 成功清空",
+          "title": "refresh 失败：分桶 error 暴露失败信息供消费方 toast；下次 refresh 成功清空",
           "markers": [],
-          "line": 39,
+          "line": 42,
           "assertions": [
-            "expect(useStore.getState().error).toBe('数据库暂不可用')",
-            "expect(useStore.getState().error).toBeNull()"
+            "expect(useStore.getState().errorByFolder['__main__']).toBe('数据库暂不可用')",
+            "expect(useStore.getState().errorByFolder['__main__']).toBeNull()"
           ]
         },
         {
-          "key": "[\"tags.store —— 刷新\",\"并发 refresh：迟到的旧失败不污染最新结果（双挂载竞态）\"]",
+          "key": "[\"tags.store —— 刷新\",\"并发 refresh：迟到的旧失败不污染最新结果（同桶竞态——分桶 stale-guard）\"]",
           "describePath": [
             "tags.store —— 刷新"
           ],
-          "title": "并发 refresh：迟到的旧失败不污染最新结果（双挂载竞态）",
+          "title": "并发 refresh：迟到的旧失败不污染最新结果（同桶竞态——分桶 stale-guard）",
           "markers": [],
-          "line": 50,
+          "line": 53,
           "assertions": [
-            "expect(useStore.getState().tags[0]?.name).toBe('新')",
-            "expect(useStore.getState().error).toBeNull()"
+            "expect(useStore.getState().tagsByFolder['__main__']?.[0]?.name).toBe('新')",
+            "expect(useStore.getState().errorByFolder['__main__']).toBeNull()"
           ]
         }
       ]
@@ -46088,6 +46651,64 @@
         }
       ]
     },
+    "tests/unit/services/file-store-trash.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 file-store.moveToTrash\",\"隔离后源不可读+目标字节一致（真断言——目标路径经 root 拼接核对）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 file-store.moveToTrash"
+          ],
+          "title": "隔离后源不可读+目标字节一致（真断言——目标路径经 root 拼接核对）",
+          "markers": [],
+          "line": 26,
+          "assertions": [
+            "expect(fs.readFileBytes(stored.fileRef)).rejects.toThrow()",
+            "expect(new Uint8Array(trashed)).toEqual(PDF)",
+            "expect(stat(join(root, stored.fileRef))).rejects.toThrow()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 file-store.moveToTrash\",\"同 sha 二次隔离幂等：目标已在=覆写语义不炸\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 file-store.moveToTrash"
+          ],
+          "title": "同 sha 二次隔离幂等：目标已在=覆写语义不炸",
+          "markers": [],
+          "line": 37,
+          "assertions": [
+            "expect(again.fileRef).toBe(stored.fileRef)",
+            "expect(fs.readFileBytes(stored.fileRef)).rejects.toThrow()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 file-store.moveToTrash\",\"源不存在：IO_ERROR（FileStoreError.code——非致命捕获面在 service）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 file-store.moveToTrash"
+          ],
+          "title": "源不存在：IO_ERROR（FileStoreError.code——非致命捕获面在 service）",
+          "markers": [],
+          "line": 48,
+          "assertions": [
+            "expect((err as { code?: string }).code).toBe('IO_ERROR')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 file-store.moveToTrash\",\"非法 fileRef：前缀守卫拒绝（../ 穿越）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 file-store.moveToTrash"
+          ],
+          "title": "非法 fileRef：前缀守卫拒绝（../ 穿越）",
+          "markers": [],
+          "line": 54,
+          "assertions": [
+            "expect((err as { code?: string }).code).toBe('IO_ERROR')"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/file-store.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -46315,6 +46936,78 @@
             "expect(count('lineage_edges')).toBe(1)",
             "expect(foldersChanged).not.toHaveBeenCalled()",
             "expect(lineageChanged).not.toHaveBeenCalled()"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/folders-delete-trash.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 folders/delete 文件清理钩子\",\"域删：tx 提交后逐 sha 隔离（fileRef 来自域读法）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 folders/delete 文件清理钩子"
+          ],
+          "title": "域删：tx 提交后逐 sha 隔离（fileRef 来自域读法）",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(r.ok).toBe(true)",
+            "expect(moveToTrash.mock.calls.map((c) => c[0]).sort()).toEqual(['aa/bb/1.pdf', 'cc/dd/2.pdf'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 folders/delete 文件清理钩子\",\"同 sha 两篇：去重单次隔离\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 folders/delete 文件清理钩子"
+          ],
+          "title": "同 sha 两篇：去重单次隔离",
+          "markers": [],
+          "line": 79,
+          "assertions": [
+            "expect(moveToTrash).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 folders/delete 文件清理钩子\",\"跨夹共引：countBySha256>0 不隔离（夹 B 行仍在）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 folders/delete 文件清理钩子"
+          ],
+          "title": "跨夹共引：countBySha256>0 不隔离（夹 B 行仍在）",
+          "markers": [],
+          "line": 94,
+          "assertions": [
+            "expect(ops.countBySha256).toHaveBeenCalledWith('sha-x')",
+            "expect(moveToTrash).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 folders/delete 文件清理钩子\",\"隔离失败非致命：删除成功+双播照发+console.warn\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 folders/delete 文件清理钩子"
+          ],
+          "title": "隔离失败非致命：删除成功+双播照发+console.warn",
+          "markers": [],
+          "line": 107,
+          "assertions": [
+            "expect(r.ok).toBe(true)",
+            "expect(sendFoldersChanged).toHaveBeenCalledTimes(1)",
+            "expect(sendLineageChanged).toHaveBeenCalledTimes(1)",
+            "expect(warn).toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 folders/delete 文件清理钩子\",\"空夹：零隔离调用\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 folders/delete 文件清理钩子"
+          ],
+          "title": "空夹：零隔离调用",
+          "markers": [],
+          "line": 125,
+          "assertions": [
+            "expect(moveToTrash).not.toHaveBeenCalled()"
           ]
         }
       ]
@@ -46560,7 +47253,7 @@
           ],
           "title": "list 透传 listWithCounts",
           "markers": [],
-          "line": 67,
+          "line": 71,
           "assertions": [
             "expect(svc.list({})).resolves.toEqual([{ id: 'f-1', name: '图一', position: 0, paperCount: 0 }])"
           ]
@@ -46572,7 +47265,7 @@
           ],
           "title": "create：trim 空 INVALID_REQUEST→同名 CONFLICT→成功落库+folders.changed（主图名保留——先退让在迁移面）",
           "markers": [],
-          "line": 73,
+          "line": 77,
           "assertions": [
             "expect(svc.create({ name: ' ' })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
             "expect(svc.create({ name: '占用' })).rejects.toMatchObject({ code: 'CONFLICT' })",
@@ -46589,7 +47282,7 @@
           ],
           "title": "rename：trim 空→NOT_FOUND→他名 CONFLICT→成功+folders.changed（图名 1:1 跟随=S3 数据源）",
           "markers": [],
-          "line": 85,
+          "line": 89,
           "assertions": [
             "expect(svc.rename({ id: 'f-1', name: ' ' })).rejects.toMatchObject({ code: 'INVALID_REQUEST' })",
             "expect(svc.rename({ id: 'f-ghost', name: 'x' })).rejects.toMatchObject({ code: 'NOT_FOUND' })",
@@ -46606,7 +47299,7 @@
           ],
           "title": "[回炉码 4] 主图禁删：id=__main__ → CONFLICT 特例域错误（存量脉络承载锚——级联灭主图全部节点/边）",
           "markers": [],
-          "line": 97,
+          "line": 101,
           "assertions": [
             "expect(svc.delete({ id: '__main__' })).rejects.toMatchObject({ code: 'CONFLICT' })",
             "expect(svc.delete({ id: '__main__' })).rejects.toThrow('主图不可删除')",
@@ -46622,7 +47315,7 @@
           ],
           "title": "delete：NOT_FOUND→[F-ALIGN-01 D4] 域删级联事务序（夹内文献逐 remove→folders.remove）+双广播（S4 回退依据）",
           "markers": [],
-          "line": 107,
+          "line": 111,
           "assertions": [
             "expect(svc.delete({ id: 'f-ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })",
             "expect(svc.delete({ id: 'f-1' })).resolves.toEqual({ ok: true })",
@@ -46645,7 +47338,7 @@
           ],
           "title": "lineagePending=true：create/rename/delete 全拒（CONFLICT 中文）+零库副作用+零广播",
           "markers": [],
-          "line": 130,
+          "line": 134,
           "assertions": [
             "expect(svc.create({ name: '新图' })).rejects.toMatchObject({ code: 'CONFLICT' })",
             "expect(svc.rename({ id: 'f-1', name: '新名' })).rejects.toMatchObject({ code: 'CONFLICT' })",
@@ -46818,11 +47511,11 @@
           ]
         },
         {
-          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"schema_newer：伪造 schema_version=22 卷（buildEnvelope 直调）→拒收\"]",
+          "key": "[\"F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）\",\"schema_newer：伪造 schema_version=23 卷（buildEnvelope 直调）→拒收\"]",
           "describePath": [
             "F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并（双库演练）"
           ],
-          "title": "schema_newer：伪造 schema_version=22 卷（buildEnvelope 直调）→拒收",
+          "title": "schema_newer：伪造 schema_version=23 卷（buildEnvelope 直调）→拒收",
           "markers": [],
           "line": 423,
           "assertions": [
@@ -47673,7 +48366,7 @@
           "markers": [],
           "line": 167,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(repo.listGraph().edges[0]!.via).toBeUndefined()"
           ]
         }
@@ -47887,6 +48580,78 @@
         }
       ]
     },
+    "tests/unit/services/lineage-starred.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载\",\"文献节点携带 isStarred（true/false 两态——papers.is_starred 单源）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载"
+          ],
+          "title": "文献节点携带 isStarred（true/false 两态——papers.is_starred 单源）",
+          "markers": [],
+          "line": 45,
+          "assertions": [
+            "expect(n1?.isStarred).toBe(true)",
+            "expect(n2?.isStarred).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载\",\"主题节点（paperId null——DDL 窗口期防御）：不携带 isStarred 键（papers 行缺席节点经 FK 不可存在）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载"
+          ],
+          "title": "主题节点（paperId null——DDL 窗口期防御）：不携带 isStarred 键（papers 行缺席节点经 FK 不可存在）",
+          "markers": [],
+          "line": 55,
+          "assertions": [
+            "expect(theme !== undefined && 'isStarred' in theme).toBe(false)",
+            "expect(g.nodes.find((n) => n.paperId === 'p-1')?.isStarred).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载\",\"批量单语句：graph() 单次调用 starred 一次且传全量文献 id（禁 N+1）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载"
+          ],
+          "title": "批量单语句：graph() 单次调用 starred 一次且传全量文献 id（禁 N+1）",
+          "markers": [],
+          "line": 67,
+          "assertions": [
+            "expect(starredSpy).toHaveBeenCalledTimes(1)",
+            "expect(starredSpy).toHaveBeenCalledWith(['p-1', 'p-2'])"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载\",\"starred 注入缺席（旧装配兼容）：零搭载零炸（isStarred 键全图缺省）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 A3 lineage graph isStarred 搭载"
+          ],
+          "title": "starred 注入缺席（旧装配兼容）：零搭载零炸（isStarred 键全图缺省）",
+          "markers": [],
+          "line": 76,
+          "assertions": [
+            "expect(g.nodes.find((n) => n.paperId === 'p-1') !== undefined).toBe(true)",
+            "expect(g.nodes.every((n) => !('isStarred' in n))).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 A3 papers.repo starredByIds（批查读法）\",\"窄查询：命中行带布尔映射，缺席 id 无行；空 ids=空数组\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 A3 papers.repo starredByIds（批查读法）"
+          ],
+          "title": "窄查询：命中行带布尔映射，缺席 id 无行；空 ids=空数组",
+          "markers": [],
+          "line": 86,
+          "assertions": [
+            "expect(papersRepo.starredByIds([])).toEqual([])",
+            "expect(rows).toEqual([ { paperId: 'p-1', isStarred: true }, { paperId: 'p-2', isStarred: false } ])"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/lineage-tags.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -47902,7 +48667,7 @@
           "line": 68,
           "assertions": [
             "expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)",
-            "expect(readUserVersion(db)).toBe(21)"
+            "expect(readUserVersion(db)).toBe(22)"
           ]
         },
         {
@@ -48163,7 +48928,7 @@
           "markers": [],
           "line": 194,
           "assertions": [
-            "expect(readUserVersion(db)).toBe(21)",
+            "expect(readUserVersion(db)).toBe(22)",
             "expect(edge!.dashed).toBe(false)",
             "expect(edge!.color).toBe(LINE_TYPE_COLORS[0])"
           ]
@@ -48505,6 +49270,82 @@
           "line": 49,
           "assertions": [
             "expect(svc.remove({ noteId: 'ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })"
+          ]
+        }
+      ]
+    },
+    "tests/unit/services/papers-delete-trash.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers/delete 文件清理钩子\",\"最后引用方：removed 成功且 countBySha256=0 → moveToTrash（fileRef=删除前行）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers/delete 文件清理钩子"
+          ],
+          "title": "最后引用方：removed 成功且 countBySha256=0 → moveToTrash（fileRef=删除前行）",
+          "markers": [],
+          "line": 65,
+          "assertions": [
+            "expect(r.ok).toBe(true)",
+            "expect(moveToTrash).toHaveBeenCalledTimes(1)",
+            "expect(moveToTrash).toHaveBeenCalledWith('ab/cd/aaa.pdf')",
+            "expect(ops.countBySha256).toHaveBeenCalledWith('sha-aaa')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers/delete 文件清理钩子\",\"共引存在：countBySha256>0 → 不隔离\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers/delete 文件清理钩子"
+          ],
+          "title": "共引存在：countBySha256>0 → 不隔离",
+          "markers": [],
+          "line": 76,
+          "assertions": [
+            "expect(moveToTrash).not.toHaveBeenCalled()"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers/delete 文件清理钩子\",\"隔离失败非致命：删除仍成功+双播照发+console.warn 记录\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers/delete 文件清理钩子"
+          ],
+          "title": "隔离失败非致命：删除仍成功+双播照发+console.warn 记录",
+          "markers": [],
+          "line": 84,
+          "assertions": [
+            "expect(r.ok).toBe(true)",
+            "expect(sendFoldersChanged).toHaveBeenCalledTimes(1)",
+            "expect(sendLineageChanged).toHaveBeenCalledTimes(1)",
+            "expect(warn).toHaveBeenCalledTimes(1)",
+            "expect(warn.mock.calls[0]?.[0]).toContain('ab/cd/aaa.pdf')"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers/delete 文件清理钩子\",\"fileStore 缺席（旧装配兼容）：零炸零调用\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers/delete 文件清理钩子"
+          ],
+          "title": "fileStore 缺席（旧装配兼容）：零炸零调用",
+          "markers": [],
+          "line": 99,
+          "assertions": [
+            "expect(r.ok).toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 papers/delete 文件清理钩子\",\"幽灵 id：NOT_FOUND 且零事务零隔离\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 papers/delete 文件清理钩子"
+          ],
+          "title": "幽灵 id：NOT_FOUND 且零事务零隔离",
+          "markers": [],
+          "line": 106,
+          "assertions": [
+            "expect(svc.delete({ paperId: 'ghost' })).rejects.toThrow('文献不存在')",
+            "expect(moveToTrash).not.toHaveBeenCalled()",
+            "expect(withTransaction).not.toHaveBeenCalled()"
           ]
         }
       ]
@@ -49442,6 +50283,50 @@
         }
       ]
     },
+    "tests/unit/services/tags-attach-domain-map.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射\",\"019 触发器 ABORT（message 含「paper_tags 挂接域违约」）→CONFLICT 结构化域错误\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射"
+          ],
+          "title": "019 触发器 ABORT（message 含「paper_tags 挂接域违约」）→CONFLICT 结构化域错误",
+          "markers": [],
+          "line": 38,
+          "assertions": [
+            "expect(svc.attach({ paperId: 'p-1', tagId: 't-1' })).rejects.toMatchObject({ code: 'CONFLICT', message: '标签与文献不在同一文件夹域——无法挂接' })",
+            "expect(ops.attach).toHaveBeenCalledTimes(1)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射\",\"非域违约 SqliteError：透传原样（不折叠不吞——IO/其他约束面保留）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射"
+          ],
+          "title": "非域违约 SqliteError：透传原样（不折叠不吞——IO/其他约束面保留）",
+          "markers": [],
+          "line": 52,
+          "assertions": [
+            "expect(err).toBe(raw)"
+          ]
+        },
+        {
+          "key": "[\"F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射\",\"正常路径零映射介入：attach 直落 ok（回归面）\"]",
+          "describePath": [
+            "F-DBCAMP-01 DB-4 / R3 tags.service attach 触发器域违约映射"
+          ],
+          "title": "正常路径零映射介入：attach 直落 ok（回归面）",
+          "markers": [],
+          "line": 62,
+          "assertions": [
+            "expect(svc.attach({ paperId: 'p-1', tagId: 't-1' })).resolves.toEqual({ ok: true })"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/tags-color.service.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -49647,7 +50532,7 @@
           "line": 208,
           "assertions": [
             "expect(svc.attach({ paperId: 'p-b', tagId: tagB.id })).resolves.toEqual({ ok: true })",
-            "expect(svc.attach({ paperId: 'p-b', tagId: tagA.id })).rejects.toThrow(/挂接域违约/)",
+            "expect(svc.attach({ paperId: 'p-b', tagId: tagA.id })).rejects.toMatchObject({ code: 'CONFLICT', message: '标签与文献不在同一文件夹域——无法挂接' })",
             "expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })"
           ]
         }
@@ -52278,9 +53163,9 @@
     }
   },
   "stats": {
-    "fileCount": 345,
-    "caseCount": 3489,
-    "assertionCount": 11654,
+    "fileCount": 358,
+    "caseCount": 3548,
+    "assertionCount": 11805,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -52288,5 +53173,18 @@
     "eachExpandedRows": 367,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": []
+  "exemptionsSnapshot": [
+    {
+      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
+      "caseTitle": "readSchemaVersion=迁移链尾 user_version 21（schema_version 字段源）",
+      "reason": "回炉 r1-R9：标题随 022 链升勘正 21→22（注释级修订——断言值已随链升）",
+      "rulingLink": "archive:scripts-audits/20261015-dbcamp-db4/（主控回炉指令 r1 R9）"
+    },
+    {
+      "file": "tests/unit/renderer/tag-dnd-drop.test.tsx",
+      "assertionText": "expect(toastSpy).toHaveBeenCalledWith('标签与文献不在同一文件夹域——无法挂接', 'info')",
+      "reason": "回炉 r1-R11：域预检拒 toast 档位 info→error（与服务端 R3 同文案同档）",
+      "rulingLink": "archive:scripts-audits/20261015-dbcamp-db4/（主控回炉指令 r1 R11）"
+    }
+  ]
 }

@@ -21,7 +21,7 @@
  * （e2e 断言锚——[F-SLOTGRID-01 U3] DragCandidates 的框查询消费随候选阵列
  * 算术化退役，属性承载断言定位面沿承）。
  */
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { TimelineYearGroup } from './lineage-timeline'
@@ -77,8 +77,8 @@ export function TimelineYears(props: {
   /** [②U7/P-18] 聚焦 dim 激活（集非空）——非聚焦卡挂 .dim（0.3/hover 0.6） */
   dimUnfocused?: boolean
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
-  /** [F-LGRAPH-01②U4] 星标区点击（宿主模式分派——edit=选中/browse+focus=no-op） */
-  onCardStarClick?: (nodeId: string, ev: ReactMouseEvent<HTMLElement>) => void
+  /** [F-STAR-01 A3 点亮] 星标区点击（三模式均 toggle——宿主 toggleNodeStar） */
+  onCardStarClick?: (nodeId: string) => void
   onCardPointerDown?: (nodeId: string, ev: ReactPointerEvent<HTMLElement>) => void
   /** [F-UIRES-03 B5①] 卡面两钮传 props 随迁移退役删除（消费面=SidePanel 操作行） */
 } & Pick<TimelineCallbacks, 'onNodeContextMenu'>): JSX.Element {

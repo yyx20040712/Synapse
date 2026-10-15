@@ -226,8 +226,13 @@ describe('F-TAGS-02 attach 域不一致 → 019 触发器 SqliteError 透传（�
     await expect(svc.attach({ paperId: 'p-b', tagId: tagB.id })).resolves.toEqual({ ok: true })
     // 跨域同名 tagId（A 域「同名X」挂 p-b）：幂等判据必须是 (paperId, tagId) id 键
     // ——名键会把 namesByPaper=['同名X'] 误判为已挂→伪 ok:true；正确面=INSERT
-    // 走到触发器 ABORT（域违约 SqliteError 透传）
-    await expect(svc.attach({ paperId: 'p-b', tagId: tagA.id })).rejects.toThrow(/挂接域违约/)
+    // 走到触发器 ABORT。[F-DBCAMP-01 DB-4/R3] service 面现折叠为结构化
+    // CONFLICT（原 SqliteError 透传契约随 R3 吸收退役——repo 直测面 198/204
+    // 行仍锁 RAISE 原文）
+    await expect(svc.attach({ paperId: 'p-b', tagId: tagA.id })).rejects.toMatchObject({
+      code: 'CONFLICT',
+      message: '标签与文献不在同一文件夹域——无法挂接'
+    })
     expect(db.prepare('SELECT COUNT(*) c FROM paper_tags').get()).toEqual({ c: 1 })
     db.close()
   })

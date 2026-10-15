@@ -30,8 +30,9 @@
  * ── 生命周期层 ──
  * - P7E-07 已兑现：智能排序（引用数排序）——ORDER_BY 映射扩展（加值向后兼容）
  * - [F-UIRES-01 批 B] 已兑现：删除文献（papers/delete 通道+级联=DDL 承担；
- *   弹窗分流在 renderer usePaperDelete/PaperDeleteDialog；文件清理=设计稿外
- *   挂账——PDF 驻留 userData，非本批范围）
+ *   弹窗分流在 renderer usePaperDelete/PaperDeleteDialog）；[F-DBCAMP-01 DB-4]
+ *   文件清理已落地（设计 §5.d②——最后引用方 moveToTrash 隔离 .trash/，见
+ *   delete 行为注与 INV-133）
  *
  * ── 文化层 ──
  * - NOT_FOUND 场景抛 DomainError（F-DEDUP-01 单源 re-export 保持既有导出面）
@@ -65,6 +66,12 @@ function lineageSavePending(): DomainError {
 
 /** [F-FOLDER-01] library/papers 两 service 共用依赖形状（三项注入可选缺省=
  * 闸常开/事件静默——既有单测装配兼容（paperMetrics 先例）；生产装配恒真值） */
+/** [F-DBCAMP-01 DB-4 / 设计 §5.d②] 受管文件隔离出口（file-store.moveToTrash
+ *  注入面——结构性最小类型，可选缺省=旧单测装配兼容，生产装配恒真值） */
+export interface PaperFileTrash {
+  moveToTrash(fileRef: string): Promise<void>
+}
+
 export interface LibraryServiceDeps {
   repos: Repos
   /** INV-91 S1 队列闸判定源（bootstrap 注入——写操作入口拒绝） */
@@ -73,6 +80,8 @@ export interface LibraryServiceDeps {
   sendFoldersChanged?: () => void
   /** lineage.changed 事件出口（moveFolder 后图结构失效） */
   sendLineageChanged?: () => void
+  /** [F-DBCAMP-01 DB-4] papers/delete 文件隔离出口（最后引用方判定后调） */
+  fileStore?: PaperFileTrash
 }
 
 export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['library'] {
@@ -190,6 +199,7 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
   const pending = deps.lineagePending ?? (() => false)
   const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
   const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
+  const fileStore = deps.fileStore
 
   return {
     async moveFolder(req) {
@@ -259,14 +269,31 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
     },
 
     // [F-UIRES-01 批 B] §2.4 删除（静默/保护两分支同一数据效果——差异仅弹窗
-    // 与否，弹窗面在 renderer；事务内重验=零比对直删见上注释）
+    // 与否，弹窗面在 renderer；事务内重验=零比对直删见上注释）；
+    // [F-DBCAMP-01 DB-4 / 设计 §5.d②] 事务提交且 removed 成功后文件隔离：
+    // sha 引用计数=0（最后引用方——共引判定覆盖导入去重/快照 upsert 两路径）
+    // →file-store.moveToTrash（await+try/catch 非致命——失败 console.warn 不
+    // 阻断删除返回；孤儿文件=既定边界，GC=后续票）。[回炉 r1-R7] TOCTOU 边界：
+    // COUNT 判定-移动窗的单线程串行假设——并发导入同 sha 理论窗=登记边界
+    // （INV-133 注），importGate 互斥=后续票候选
     async delete(req) {
       if (pending()) throw lineageSavePending()
-      if (papers.findById(req.paperId) === null) throw paperNotFound(req.paperId)
+      const paper = papers.findById(req.paperId)
+      if (paper === null) throw paperNotFound(req.paperId)
       // [RR1-3/d1-N1] removed===false=并发窗口已被删——如实 NOT_FOUND 非假成功
       //（findById 前置后单进程同步序不可达，防御面）
       const removed = deps.repos.withTransaction(() => papers.remove(req.paperId))
       if (!removed) throw paperNotFound(req.paperId)
+      if (fileStore !== undefined && papers.countBySha256(paper.sha256) === 0) {
+        try {
+          await fileStore.moveToTrash(paper.file_ref)
+        } catch (e) {
+          console.warn(
+            `[papers.delete] 受管文件隔离失败（孤儿文件=既定边界）：${paper.file_ref}`,
+            e instanceof Error ? e.message : String(e)
+          )
+        }
+      }
       sendFoldersChanged()
       sendLineageChanged()
       return { ok: true as const }

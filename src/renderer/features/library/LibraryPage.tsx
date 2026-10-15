@@ -41,6 +41,7 @@ import { PaperRowMenu } from './PaperRowMenu'
 import { useLibraryDnd } from './library-dnd.store'
 import { useLibraryStore } from './library.store'
 import { movePaperToFolder } from './paper-move'
+import { togglePaperStar } from './paper-star'
 import { useCascadeGuard } from './useCascadeGuard'
 import { usePaperDeleteFlow, type PaperDeletePrompt } from './usePaperDelete'
 // 文献库皮肤（lib-* 类挂载点——feature 树全件共享；T3-P3 核心域+
@@ -155,6 +156,7 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
           onOpen={openPaper}
           onMove={(paperId, toFolderId) => void movePaperToFolder(paperId, toFolderId)}
           onDelete={(paperId) => void requestDelete(paperId)}
+          onToggleStar={(paperId, starred) => void togglePaperStar(paperId, starred)}
         />
       )}
       {deleteDialog !== null && (

@@ -107,7 +107,8 @@ describe('protocol/app-file —— handler ACAO 接线（SR-SEC-01）', () => {
         throw new Error('unit 桩不实现')
       },
       resolveManagedPath: () => abs,
-      readFileBytes: async () => bytes
+      readFileBytes: async () => bytes,
+      moveToTrash: async () => undefined
     }
     return { lookupHit: async () => 'ab/cd/test.pdf', store }
   }
@@ -123,7 +124,8 @@ describe('protocol/app-file —— handler ACAO 接线（SR-SEC-01）', () => {
     resolveManagedPath: () => {
       throw new Error('unit 桩不实现')
     },
-    readFileBytes: async () => new Uint8Array()
+    readFileBytes: async () => new Uint8Array(),
+    moveToTrash: async () => undefined
   }
 
   it('伪造 Origin（白名单外）：成功响应不带 ACAO 头（静默，非 403）', async () => {

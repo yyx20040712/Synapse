@@ -567,7 +567,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // ⑤侧板三节新序（DOM 序）+分节分色+真实文本（question 组分节×组内 role
     //    标签×QUESTION_COLOR 分色单源）
     await expect(win.getByTestId('lineage-side-meta')).toHaveAttribute('data-binding', 'paper')
-    await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放') // [②U4/行 9] 已绑定文献徽章随 core UI 消费面退役——星标禁用呈现承接
+    await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标') // [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 星标点亮（未标记文案——原「即将开放」禁用态随 DB-4 退役）
     // [A3 F-CONTRACTA-01 2026-10-04] core_idea 侧板渲染面随全退役删除——
     // 面板无 idea 区（负锚；原「脉络甲的核心 idea」文本锚消亡）
     await expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)
@@ -1073,7 +1073,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
-    await expect(root.getByTestId('card-star')).toHaveAttribute('title', '星标功能即将开放')
+    await expect(root.getByTestId('card-star')).toHaveAttribute('title', '星标') // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标点亮（未标记文案）
     await expect(root.locator('.c-tag')).toHaveCount(2)
     await expect(root.locator('.c-tag-more')).toHaveText('+1')
     await expect(cardA.locator('.c-venue')).toHaveText('Water Res.')
@@ -1088,7 +1088,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // [F-UIRES-03 C3·v1.7] insp-foot 双击子句退役删（改月子句第一段已删——
     // INV-107）；卡双击跳转链退役→负锚（dblclick 不跳）+两钮新入口承载
     await expect(win.getByTestId('lineage-side-panel')).toContainText('编辑模式：调序 / 画线 / 调线')
-    await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标功能即将开放')
+    await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标') // [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 点亮（未标记文案）
     await cardA.dblclick()
     await win.waitForTimeout(500) // 负向观察窗（错实现下跳转链 ~100ms 内切视图）
     await expect(win.getByTestId('reader-aside')).toHaveCount(0)

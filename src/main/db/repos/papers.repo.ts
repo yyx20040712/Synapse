@@ -36,12 +36,17 @@ import type Database from 'better-sqlite3'
 import type { SqliteDb } from '../connection'
 import {
   buildFilters,
+  countBySha256Query,
   DETAIL_SQL,
+  fileRefByIdQuery,
   folderIdOfQuery,
+  listMetricsByIdsQuery,
+  listFileRefsByFolderQuery,
   LIST_SQL,
   ORDER_BY,
   patchFragments,
   pubNoByIdsQuery,
+  starredByIdsQuery,
   tagsOfPaper,
   toSummary,
   type DetailRow,
@@ -121,6 +126,11 @@ export interface PapersRepo {
   pubNoByIds(ids: string[]): Array<{ paperId: string; pubNo: number }>
   /** [F-ALIGN-01 D4] 夹内文献 id 清单（folders.service delete 域删级联遍历源） */
   listIdsByFolder(folderId: string): string[]
+  /** [F-DBCAMP-01 DB-4] 三读法=queries 件单源（sha 引用计数/夹内文件引用清单/星标批查） */
+  countBySha256(sha256: string): number
+  listFileRefsByFolder(folderId: string): Array<{ sha256: string; fileRef: string }>
+  /** [F-STAR-01 A3] 星标批查（graph isStarred 搭载源——pubNoByIds 同型） */
+  starredByIds(ids: readonly string[]): Array<{ paperId: string; isStarred: boolean }>
   /** [F-UIRES-01 批 B] 删行（级联=DDL 承担——清单见头注行为层）；changes>0 */
   remove(id: string): boolean
 }
@@ -174,9 +184,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       return r === undefined ? null : r
     },
     fileRefById(id) {
-      const r = stmt('SELECT file_ref FROM papers WHERE id = ?').get(id) as
-        | { file_ref: string } | undefined
-      return r === undefined ? null : r.file_ref
+      return fileRefByIdQuery(id, stmt)
     },
     updateMeta(id, patch) {
       const f = patchFragments(patch)
@@ -219,13 +227,7 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
       return rows.map((r) => r.id)
     },
     listMetricsByIds(ids) {
-      if (ids.length === 0) return []
-      const marks = ids.map(() => '?').join(', ')
-      const rows = stmt(
-        `SELECT id, venue, cited_by_count, impact_factor FROM papers WHERE id IN (${marks})`
-      ).all(...ids) as Array<{ id: string; venue: string; cited_by_count: number | null; impact_factor: number | null }>
-      // [F-LGRAPH-01②U4] +impact_factor（papers 既有列[迁移 012]透传——零新 DB 面）
-      return rows.map((r) => ({ paperId: r.id, venue: r.venue, citedByCount: r.cited_by_count, impactFactor: r.impact_factor }))
+      return listMetricsByIdsQuery(ids, stmt)
     },
     // [F-FOLDER-01] 单归属直写（moveFolder 第 1 步；updated_at 语义同 meta 写）
     setFolderId(id, folderId) {
@@ -247,6 +249,16 @@ export function createPapersRepo(db: SqliteDb): PapersRepo {
     listIdsByFolder(folderId) {
       const rows = stmt('SELECT id FROM papers WHERE folder_id = ?').all(folderId) as Array<{ id: string }>
       return rows.map((r) => r.id)
+    },
+    // [F-DBCAMP-01 DB-4] 删除清理三读法=queries 件单源（repo 300 行拆件面）
+    countBySha256(sha256) {
+      return countBySha256Query(sha256, stmt)
+    },
+    listFileRefsByFolder(folderId) {
+      return listFileRefsByFolderQuery(folderId, stmt)
+    },
+    starredByIds(ids) {
+      return starredByIdsQuery(ids, stmt)
     },
     remove(id) {
       return stmt('DELETE FROM papers WHERE id = ?').run(id).changes > 0

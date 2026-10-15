@@ -12,7 +12,7 @@ export type AppErrorCode =
   | 'NOT_IMPLEMENTED' // 工单未完成（骨架期受控占位）
   | 'INVALID_REQUEST' // 请求未通过 zod 校验
   | 'NOT_FOUND' // 目标资源不存在
-  | 'CONFLICT' // 唯一性冲突（如重复标签）
+  | 'CONFLICT' // 唯一性冲突（如重复标签）；含跨域挂接冲突（019 触发器域违约映射——F-DBCAMP-01 DB-4/R3）
   | 'DUPLICATE_FILE' // 相同 sha256 的 PDF 已存在
   | 'UNSUPPORTED_FILE' // 非 PDF 或损坏文件
   | 'IO_ERROR' // 本地文件读写失败

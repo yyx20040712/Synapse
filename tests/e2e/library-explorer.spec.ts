@@ -12,8 +12,8 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
  * - S4：drop 徽标文本「移入」+导入条「导入到：〈名〉」（合成内部拖拽经
  *   dispatchEvent——HTML5 DnD 手势 e2e 不可原生模拟，合成事件驱动 React
  *   合成 onDragStart/onDragOver/onDrop 同链）；
- * - S5a：行右键菜单「在阅读器中打开/移动到文件夹/删除文献」三项版（批 B
- *   删除项点亮；星标项 DB 窗口点亮不渲染）+子面移动执行（[F-ALIGN-01 D5]
+ * - S5a：行右键菜单「在阅读器中打开/星标[F-STAR-01 A2 点亮]/移动到文件夹/删除
+ *   文献」四项版+子面移动执行（[F-ALIGN-01 D5]
  *   「移出」尾项零残留负锚）；
  * - S5b（批 B）：删除两分支——保护弹窗三要素（「删除文献？」+「同时移除其
  *   节点与全部连线」+图名+连线数）/静默直删（无 Dialog）；
@@ -125,11 +125,12 @@ test('S5a：行右键菜单三项版（删除项批 B 点亮+星标项不渲染�
   await row.click({ button: 'right' })
   const menu = win.getByTestId('paper-row-menu')
   await expect(menu).toBeVisible()
-  // 三项版（S5a 锚——批 B 删除项点亮；星标项 DB 窗口点亮，不渲染）
+  // 四项版（S5a 锚——批 B 删除项点亮；[F-DBCAMP-01 DB-4 / F-STAR-01 A2]
+  // 星标项点亮即渲染——P-10 退出条件，原「不渲染」负锚随点亮退役）
   await expect(menu.getByRole('menuitem', { name: '在阅读器中打开' })).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: '星标' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: '移动到文件夹' })).toBeVisible()
   await expect(menu.getByRole('menuitem', { name: '删除文献' })).toBeVisible()
-  await expect(menu.getByRole('menuitem', { name: '星标' })).toHaveCount(0)
   // 命中行=按下即高亮
   await expect(row).toHaveClass(/hit/)
 

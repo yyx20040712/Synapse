@@ -28,6 +28,7 @@ import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import { MAIN_GRAPH_ID } from '../../shared/models/lineage'
 import type { Repos } from '../db/repos'
 import { DomainError } from './shared/domain-error'
+import type { PaperFileTrash } from './library.service'
 
 /** 域错误载体（基类一行继承=F-DEDUP-01 单源） */
 class FoldersDomainError extends DomainError {}
@@ -47,6 +48,8 @@ export interface FoldersServiceDeps {
   sendFoldersChanged: () => void
   /** lineage.changed 事件出口（图结构级联变——delete 后脉络页回退 S4） */
   sendLineageChanged: () => void
+  /** [F-DBCAMP-01 DB-4 / 设计 §5.d②] 域删文件隔离出口（可选缺省=旧装配兼容） */
+  fileStore?: PaperFileTrash
 }
 
 export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['folders'] {
@@ -104,13 +107,36 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
       // [F-ALIGN-01 D4] 域删级联（INV-NEW-3）：事务内先删夹内全部文献（papers.remove
       // 的 DDL 级联链：paper_tags/annotations/notes/ai_notes/lineage_nodes→edges
       // 二跳+FTS 触发器自清）→再删夹行；确认弹窗计数面（paperCount/nodeCount/
-      // edgeCount）=renderer 经 folders.list+lineage.graph(folderId) 派生，不经本通道
+      // edgeCount）=renderer 经 folders.list+lineage.graph(folderId) 派生，不经本通道；
+      // [F-DBCAMP-01 DB-4 / 设计 §5.d②] tx 内收集夹内文件引用（listFileRefsByFolder
+      // 新读法），tx 提交后逐 sha 同判定隔离（同 sha 去重单次；countBySha256>0
+      // =他夹共引不动；失败 console.warn 非致命）。[回炉 r1-R7] TOCTOU 边界：
+      // 判定-移动窗单线程串行假设——并发导入同 sha 理论窗=登记边界（INV-133
+      // 注），importGate 互斥=后续票候选
+      let refs: Array<{ sha256: string; fileRef: string }> = []
       deps.repos.withTransaction(() => {
+        refs = deps.repos.papers.listFileRefsByFolder(req.id)
         for (const id of deps.repos.papers.listIdsByFolder(req.id)) {
           deps.repos.papers.remove(id)
         }
         folders.remove(req.id)
       })
+      if (deps.fileStore !== undefined) {
+        const seen = new Set<string>()
+        for (const r of refs) {
+          if (seen.has(r.sha256)) continue
+          seen.add(r.sha256)
+          if (deps.repos.papers.countBySha256(r.sha256) > 0) continue
+          try {
+            await deps.fileStore.moveToTrash(r.fileRef)
+          } catch (e) {
+            console.warn(
+              `[folders.delete] 受管文件隔离失败（孤儿文件=既定边界）：${r.fileRef}`,
+              e instanceof Error ? e.message : String(e)
+            )
+          }
+        }
+      }
       deps.sendFoldersChanged()
       deps.sendLineageChanged()
       return { ok: true as const }

@@ -97,7 +97,10 @@ export interface LineageService {
    *   数据源；边=双端点均入图才保留）+pubNos（库级派生编号 INV-92——图内
    *   节点号与库号同源单一真相源；主题节点无键）。
    *   [A1a] +tagNames（文献库标签伴生 map——键=paperId 值=名序标签名组；
-   *   主题节点/无标签文献无键；卡标签行换源读链） */
+   *   主题节点/无标签文献无键；卡标签行换源读链）。
+   *   [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 文献节点搭载 isStarred（papers.
+   *   is_starred〔迁移 017〕批查单语句——tagNames 同路；主题节点/papers 行
+   *   缺席节点不携带该键；卡标记区数据源） */
   graph(folderId?: string): {
     nodes: LineageNode[]
     edges: LineageEdge[]
@@ -134,6 +137,10 @@ export interface LineageServiceDeps {
    *  换源读链；可选缺省=空面（既有单测装配兼容），生产装配接
    *  repos.tags.tagNamesByIds） */
   tagNames?: (paperIds: string[]) => Array<{ paperId: string; name: string }>
+  /** [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标批查（graph 通道文献节点 isStarred
+   *  搭载源；可选缺省=零搭载（既有单测装配兼容），生产装配接
+   *  repos.papers.starredByIds——批查单语句禁 N+1 同锚） */
+  starred?: (paperIds: string[]) => Array<{ paperId: string; isStarred: boolean }>
 }
 
 /**
@@ -330,10 +337,19 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
         if (list === undefined) tagNames[r.paperId] = [r.name]
         else list.push(r.name)
       }
+      // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] isStarred 搭载（papers.is_starred 批查
+      // →文献节点挂键；主题节点/papers 行缺席节点不携带——卡面判 paperId 渲染）
+      const starredRows = deps.starred?.(paperIds) ?? []
+      const starredBy = new Map(starredRows.map((r) => [r.paperId, r.isStarred]))
       // T3-P5 INV-75：nodes=排序契约序（唯一纯函数 lineageOrder 单源——消费方
       // 不得重排）；lineTypes=恒四组（repo 补齐+枚举序）
+      const nodes = lineageOrder(scopedNodes).map((n) =>
+        n.paperId !== null && starredBy.has(n.paperId)
+          ? { ...n, isStarred: starredBy.get(n.paperId)! }
+          : n
+      )
       return {
-        nodes: lineageOrder(scopedNodes),
+        nodes,
         edges: scopedEdges,
         paperMetrics,
         lineTypeNames: deps.repo.getLineTypeNames(),

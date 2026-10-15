@@ -40,11 +40,11 @@ async function renderEditor(
   storeTags: Array<{ id: string; name: string; paperCount: number; color?: string | null }> = []
 ): Promise<void> {
   useTagsStore.setState({
-    tags: storeTags.map((t) => ({ id: t.id, name: t.name, paperCount: t.paperCount, color: t.color ?? null })),
+    tagsByFolder: { __main__: storeTags.map((t) => ({ id: t.id, name: t.name, paperCount: t.paperCount, color: t.color ?? null })) },
     loading: false,
-    error: null
+    errorByFolder: {}
   })
-  stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: useTagsStore.getState().tags }))
+  stubApi.tags.list.mockImplementation(async () => ({ ok: true as const, data: useTagsStore.getState().tagsByFolder['__main__'] }))
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)

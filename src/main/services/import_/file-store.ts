@@ -10,7 +10,7 @@
  * 测试：tests/unit/services/file-store.test.ts（去重/穿越攻击向量/非 PDF 拒绝）。
  */
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, rename, stat } from 'node:fs/promises'
 import { isAbsolute, resolve, sep, win32 } from 'node:path'
 import { atomicWriteFile } from '../shared/atomic-write'
 import { DomainError } from '../shared/domain-error'
@@ -32,9 +32,21 @@ export interface FileStore {
   storePdfFromBytes(bytes: Uint8Array, fileName: string): Promise<StoredFile>
   resolveManagedPath(fileRef: string): string
   readFileBytes(fileRef: string): Promise<Uint8Array>
+  /**
+   * [F-DBCAMP-01 DB-4 / 设计 §5.d②] 受管 PDF 隔离：files/<a>/<b>/<sha>.pdf →
+   * files/.trash/<a>/<b>/<sha>.pdf（mkdir recursive+rename）。目标已在=覆写
+   * 语义（同 sha 二次隔离幂等）。失败抛 FileStoreError(IO_ERROR)——调用侧
+   * （papers/folders delete）非致命捕获（孤儿文件=既定边界）。purge 不在
+   * 本面（用户手动清理）。
+   */
+  moveToTrash(fileRef: string): Promise<void>
 }
 
 const PDF_MAGIC = '%PDF-'
+
+/** 隔离区目录名（受管根下隐藏目录——resolveManagedPath 正常解析不含此前缀：
+ *  papers.file_ref 恒 store() 产物，.trash 路径不参与受管解析） */
+const TRASH_DIR = '.trash'
 
 export function createFileStore(rootDir: string): FileStore {
   const root = resolve(rootDir)
@@ -97,6 +109,23 @@ export function createFileStore(rootDir: string): FileStore {
     },
     storePdfFromBytes: (bytes, fileName) => store(bytes, fileName),
     resolveManagedPath,
+    // [F-DBCAMP-01 DB-4] 隔离：前缀守卫复用 resolveManagedPath（file_ref 合法性
+    // 单源——非法引用在移动前即拒）；dest=受管根内 .trash 同桶路径
+    moveToTrash: async (fileRef) => {
+      const src = resolveManagedPath(fileRef)
+      const dest = resolve(root, TRASH_DIR, fileRef)
+      // [回炉 r1-R6] mkdir 与 rename 同入 try——「失败抛 FileStoreError(IO_ERROR)」
+      // 契约全覆盖（mkdir EACCES/ENOSPC 原生 Error 违契面封堵）
+      try {
+        await mkdir(dirname(dest), { recursive: true })
+        await rename(src, dest)
+      } catch (e) {
+        throw new FileStoreError(
+          'IO_ERROR',
+          `移入隔离区失败：${basename(dest)}（${e instanceof Error ? e.message : String(e)}）`
+        )
+      }
+    },
     readFileBytes: async (fileRef) => {
       const path = resolveManagedPath(fileRef)
       try {

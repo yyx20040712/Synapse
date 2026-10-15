@@ -92,10 +92,10 @@ describe('U4 详情面板（A5/P-16/P-20）', () => {
     expect(text).toContain('IF 11.2')
     expect(text).toContain('被引 17')
     expect(text).toContain('2022-09')
-    // 星标态禁用呈现（P-11——静态禁用+即将开放提示）
+    // [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 星标点亮（P-11 退出条件）：未标记=title「星标」
     const star = host?.querySelector('[data-testid="panel-star"]')
     expect(star).not.toBeNull()
-    expect(star?.getAttribute('title')).toBe('星标功能即将开放')
+    expect(star?.getAttribute('title')).toBe('星标')
   })
 
   it('可选省略：期刊/IF/被引缺席=整行省略（无「引 —」占位）；core 徽章退役零渲染', () => {

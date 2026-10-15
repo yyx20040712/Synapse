@@ -166,12 +166,14 @@ export interface ServiceBundle {
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
-  // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）
+  // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）；
+  // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）
   const folderDeps = {
     repos: deps.repos,
     lineagePending: deps.lineagePending ?? (() => false),
     sendFoldersChanged: deps.sendFoldersChanged ?? (() => undefined),
-    sendLineageChanged: deps.sendLineageChanged ?? (() => undefined)
+    sendLineageChanged: deps.sendLineageChanged ?? (() => undefined),
+    fileStore: deps.fileStore
   }
   const corpusExport = createCorpusExportService({
     repos: deps.repos,
@@ -237,7 +239,10 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       // [F-FOLDER-01] pubNos 装配（INV-92 库级窗口——pubNoByIds 单源）
       pubNos: (ids) => deps.repos.papers.pubNoByIds(ids),
       // [A1a] 文献库标签伴生 map 装配（tags.tagNamesByIds 单源——卡标签行换源）
-      tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids)
+      tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids),
+      // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标批查（papers.starredByIds 单源
+      // ——文献节点 isStarred 搭载，卡标记区数据源）
+      starred: (ids) => deps.repos.papers.starredByIds(ids)
     }),
     aiSessions: createAiSessionsService({ repos: deps.repos }),
     aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),

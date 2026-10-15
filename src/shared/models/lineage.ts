@@ -137,6 +137,11 @@ export const lineageNodeSchema = z
     /** [T3-P5] 月内序承载（D-P5-10 实现层列——无用户序号语义；P8 槽位重排
      *  =slot 值重排）。null=防御面兜底（service 新写恒赋值；迁移回填后存量行有序） */
     slot: z.number().int().min(0).nullable(),
+    /** [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标搭载（卡标记区数据源——papers.
+     *  is_starred〔迁移 017〕graph 装配时搭载；**非 DB 列**：lineage_nodes 表
+     *  无此列，repo 读面不映射、写面结构性无载荷——可选缺省=未搭载态（repo
+     *  直读节点/主题节点/papers 行缺席节点）。切换通道=papers/set-starred） */
+    isStarred: z.boolean().optional(),
     createdAt: z.string(),
     updatedAt: z.string()
   })

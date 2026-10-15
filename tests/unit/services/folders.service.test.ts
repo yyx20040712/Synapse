@@ -34,10 +34,14 @@ function stubRepos(
     findById: vi.fn((id: string) => (id === 'f-ghost' ? null : f(id, '图')))
   }
   // [F-ALIGN-01 D4] 域删级联桩面：papers.listIdsByFolder 恒返注入清单（真实
-  // 语义=夹内文献 id 集）；remove 逐 id 调用（DDL 级联=真库面）
+  // 语义=夹内文献 id 集）；remove 逐 id 调用（DDL 级联=真库面）；
+  // [F-DBCAMP-01 DB-4] 文件隔离两读法桩面（恒空/0——本件锁编排序与广播，
+  // 隔离行为面=folders-delete-trash.service.test.ts）
   const paperOps = {
     listIdsByFolder: vi.fn(() => paperIds),
-    remove: vi.fn(() => true)
+    remove: vi.fn(() => true),
+    listFileRefsByFolder: vi.fn(() => []),
+    countBySha256: vi.fn(() => 0)
   }
   const merged = { ...folderOps, ...over } as Record<string, unknown>
   return {
