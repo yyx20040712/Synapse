@@ -8,15 +8,15 @@
  *   enrich 态映射色：failed=signal「增强失败」/pending=faint「待增强」/
  *   done=ok「已入库」/manual=ok「手动维护」[自裁：manual 沿 done 色档]）
  *   +.lib-dr-title 14px/600/1.6 行高
- * - 四格指标=DrMetrics 拆件（引用/通读/标注/笔记——真文本）
- * - 键值行：YEAR-MO（年份+脉络框括注——lineage 命中时）/VENUE/DOI（link 色）
- * - 「标 签」节=TagEditor 驻留（key=detail.id 重挂竞态守卫不动）——onChanged
- *   除 bump reloadKey 重拉详情外，追加 library.store.load 列表刷新
+ * - [F-UIRES-04 批 3c] 重排（§4.5 E 裁决布局——滚动承载 .lib-dr 全区）：
+ *   .lib-dr-head→DrMetrics（现状原位）→「标 签」节【上移，TagEditor 驻留
+ *   key=detail.id 重挂竞态守卫+onChanged 双刷新链逐字零改，仅位置自 body
+ *   中部上移】→论文元数据区=DrPaperInfo（新——内嵌 PaperInfoSection，库域
+ *   detail props 直注入零 paperInfoStore）→DrKeyVals（新拆件：YEAR-MO/
+ *   VENUE/DOI 三键值行零变搬移含 IF 灰字段）→DrActions 九钮【下移随内容滚
+ *   ——用户字面顺序，挂载参数零改】→MetaEditDialog（不动）
+ * - onChanged 除 bump reloadKey 重拉详情外，追加 library.store.load 列表刷新
  *   （F-LIBUI-01 ③：表格标签列不滞旧——FilterBar onMutated 同一条刷新链）
- * - 「关 联」节已退役（F-LIBUI-01 ⑤：脉络行+AI 评估行删，节位留待
- *   F-FOLDER-01 改造为文件夹行——显示归属+移动入口）
- * - 动作面九钮全保、按钮文本零改（受锁 paper-detail-export/clip/cited/
- *   notes-off 断言面）：「去阅读器写笔记」=primary（首行跨两列），其余 ghost
  * - 空态/加载态/错误行/「详情刷新失败」降级语义原样保面（DiamondRule 库域
  *   退役——简文案居中，settings 域消费保留）
  *
@@ -24,8 +24,8 @@
  * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
  *
  * ── 架构层 ──
- * - 改动面：本文件+DrMetrics.tsx（拆件）/library.css（皮肤段）；
- *   usePaperDetailActions hook 面零触碰（busy 门+toast 收口不动）
+ * - 改动面：本文件+DrKeyVals/DrPaperInfo（3c 拆件）/DrMetrics（前批拆件）
+ *   /library.css（皮肤段）；usePaperDetailActions hook 面零触碰
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - notes feature 剩 notes.store.ts；编辑面唯一归阅读器侧栏（C-03/04）
@@ -33,13 +33,15 @@
  *   新件全绿（tests/unit/renderer/）
  */
 import { useEffect, useState } from 'react'
-import type { EnrichStatus, PaperDetail } from '@shared/models/paper'
+import type { EnrichStatus } from '@shared/models/paper'
 import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { TagEditor } from '../tags/TagEditor'
 import { DrActions } from './DrActions'
+import { DrKeyVals } from './DrKeyVals'
 import { DrMetrics } from './DrMetrics'
+import { DrPaperInfo } from './DrPaperInfo'
 import { MetaEditDialog } from './MetaEditDialog'
 import { useLibraryStore } from './library.store'
 import { usePaperDetailActions } from './usePaperDetailActions'
@@ -55,20 +57,6 @@ const DR_STATUS: Record<EnrichStatus, { text: string; cls: string }> = {
 /** 短号：id 前 8 位+…（≤8 位整串——mono 规格表语汇） */
 function shortId(id: string): string {
   return id.length > 8 ? `${id.slice(0, 8)}…` : id
-}
-
-/** [F-UIRES-03 B4②] YEAR-MO 值四分支：无脉络=年份单值；命中=「2023（脉络框：
- * 2023-06）」式——month 补零（6→06）/month null=仅年无月段（「未定月」措辞
- * 退役）/lineage.year null=「未定年」+月段省略（措辞沿用） */
-function yearMoText(detail: PaperDetail): string {
-  const y = detail.year === null ? '—' : String(detail.year)
-  if (detail.lineage === undefined) return y
-  const ly = detail.lineage.year === null ? '未定年' : String(detail.lineage.year)
-  const mo =
-    detail.lineage.year === null || detail.lineage.month === null
-      ? ''
-      : `-${String(detail.lineage.month).padStart(2, '0')}`
-  return `${y}（脉络框：${ly}${mo}）`
 }
 
 export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element {
@@ -158,30 +146,11 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       </div>
       <DrMetrics detail={detail} />
       <div className="lib-dr-body">
-        <div className="lib-fld">
-          <span className="lib-fld-k">YEAR-MO</span>
-          <span className="lib-fld-v">{yearMoText(detail)}</span>
-        </div>
-        <div className="lib-fld">
-          <span className="lib-fld-k">VENUE</span>
-          <span className="lib-fld-v">
-            {detail.venue === '' ? '—' : detail.venue}
-            {/* [F-FOLDER-02·D] IF 灰字随期刊名显示（D1 手动字段——色档与主值分离） */}
-            {detail.impactFactor !== null && (
-              <span style={{ color: 'var(--text-dim)' }}>{` · IF ${detail.impactFactor}`}</span>
-            )}
-          </span>
-        </div>
-        <div className="lib-fld">
-          <span className="lib-fld-k">DOI</span>
-          <span className={`lib-fld-v${detail.doi !== null ? ' link' : ''}`}>
-            {detail.doi ?? '—'}
-          </span>
-        </div>
         <div className="lib-dr-sec">标 签</div>
         {/* key=会话身份：切文献强制重挂——TagEditor 有状态（input/busy），换文献
             延续旧实例会让 Enter 落进旧 detail 上下文窗口（tag-lifecycle e2e 实证）。
-            F-LIBUI-01 ③：onChanged=重拉详情+library 列表刷新（表格标签列不滞旧） */}
+            F-LIBUI-01 ③：onChanged=重拉详情+library 列表刷新（表格标签列不滞旧）。
+            [F-UIRES-04 批 3c] 标签节自 body 中部上移（§4.5 E 裁决——守卫/刷新链零改） */}
         <TagEditor
           key={detail.id}
           paperId={detail.id}
@@ -192,6 +161,11 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
             void loadLibrary()
           }}
         />
+        {/* 论文元数据区（新）：DrPaperInfo 内嵌 PaperInfoSection（作者/摘要/
+            strip/机构禁用位——M2 扇出归连接件，M1=宿主既有 detail 链） */}
+        <DrPaperInfo detail={detail} />
+        {/* 键值行拆件（YEAR-MO/VENUE/DOI 含 IF 灰字段——零变搬移） */}
+        <DrKeyVals detail={detail} />
       </div>
       <DrActions
         detail={detail}

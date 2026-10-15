@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-15T18:58:44.678Z",
+    "generatedAt": "2026-10-15T20:57:25.794Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "8e9dcf539657495ca5745700aab73773ed2aef6ed2e8e3508944532e5a9cafaa"
+            "sha256": "b1c4d0645944c7be4a72d6f2fd61473d29f982cf679fd1a4bcd87020851e4898"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+            "sha256": "9004a101d418e0fd2f16d03fa30ccbe4078f53e82753afdb671b550ad68d69af"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -364,6 +364,10 @@
         {
             "path": "tests/e2e/library-density.spec.ts",
             "sha256": "3080d00595ee506350548711a1de0b20f1d1add130766e4ccc08fb0d2f54cdef"
+        },
+        {
+            "path": "tests/e2e/library-detail-info.spec.ts",
+            "sha256": "2f8f4c204a5b45c295493d0811138e92ae62c5a42b8b63b09413767b9dda88fd"
         },
         {
             "path": "tests/e2e/library-explorer.spec.ts",
@@ -744,6 +748,10 @@
         {
             "path": "tests/unit/renderer/PaperInfoSection.test.tsx",
             "sha256": "ba4db94e28d8c6423ac2a30d7f5be3197b48d2886bfeb8292234d7f2d691761b"
+        },
+        {
+            "path": "tests/unit/renderer/SidePaperInfo.test.tsx",
+            "sha256": "3990034d15d9790261a5b718ba6576e3b56599cb7021465361645e6dfb506273"
         },
         {
             "path": "tests/unit/renderer/ai-manage-tabs.test.tsx",
@@ -1387,7 +1395,7 @@
         },
         {
             "path": "tests/unit/renderer/theme.test.ts",
-            "sha256": "907f9ef9a893fa97b9df98fc5f3228c9a61443f498c00419ff2747927305ba1e"
+            "sha256": "2f755f30c766ef4bbbae5f61a6088ad2067f08367ff340fe56b0391b4857e6e1"
         },
         {
             "path": "tests/unit/renderer/timeline-nav-sync.test.tsx",

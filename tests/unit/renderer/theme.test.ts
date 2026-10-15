@@ -769,10 +769,10 @@ describe('B案首修批 20261003-libfix1——窄窗收缩契约锁（标题列�
     ).toMatch(/\.lib-r-tags\s*\{[^}]*min-width:\s*0;/)
   })
 
-  it('.lib-dr-body 块含 overflow-y: auto（抽屉内容溢出滚动于本区——防叠压尾部动作区）', () => {
+  it('.lib-dr 全区滚动承载（E 裁决「右侧滚动条」——原 libfix2 防叠压语义由「动作区随滚入流」承载）', () => {
     expect(
       libCss,
-      '.lib-dr-body 需自身滚动（矮窗/大字体环境内容溢出与 .lib-dr-actions 叠压——CI Linux 字体实证）'
-    ).toMatch(/\.lib-dr-body\s*\{[^}]*overflow-y:\s*auto;/)
+      '[F-UIRES-04 批 3c] .lib-dr 需全区滚动（矮窗/大字体溢出与尾部动作区叠压面随全区滚动结构性消失——CI Linux 字体实证沿革）'
+    ).toMatch(/\.lib-dr\s*\{[^}]*overflow-y:\s*auto;/)
   })
 })
