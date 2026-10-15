@@ -68,13 +68,14 @@ export default tseslint.config(
               message: 'renderer 禁止直接 import main/preload 源码，只经 window.api（架构规则 §三）'
             },
             {
-              // INV-16：pdfjs-dist 运行时 import 白名单四文件（PdfDocProvider/
+              // INV-16：pdfjs-dist 运行时 import 白名单五文件（PdfDocProvider/
               // PdfPageCanvas/TextLayer/CorpusExtractor——2026-08-28 F-01 随
-              // PdfCanvas 拆分迁移，类型再导出单点随之迁移）——本条对白名单外
-              // renderer 文件生效；白名单 override 块在下方重申完整 patterns
-              // （flat config 同规则后块覆盖，无法只豁免一条）
+              // PdfCanvas 拆分迁移，类型再导出单点随之迁移；PaperImageExtractor
+              // ——2026-10-15 F-UIRES-04 批 3a 扩容第五件，shared 中立件）——本条
+              // 对白名单外 renderer 文件生效；白名单 override 块在下方重申完整
+              // patterns（flat config 同规则后块覆盖，无法只豁免一条）
               group: ['pdfjs-dist', 'pdfjs-dist/**'],
-              message: 'pdfjs-dist 只许白名单四文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor，INV-16——白名单变更=[locked-change]）'
+              message: 'pdfjs-dist 只许白名单五文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/PaperImageExtractor，INV-16——白名单变更=[locked-change]）'
             }
           ]
         }
@@ -82,14 +83,16 @@ export default tseslint.config(
     }
   },
   {
-    // INV-16 白名单 override：四文件重申 renderer 全部禁令但不含 pdfjs 条目
+    // INV-16 白名单 override：五文件重申 renderer 全部禁令但不含 pdfjs 条目
     // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口；
-    // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx）
+    // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx；
+    // F-UIRES-04 批 3a：+shared/PaperImageExtractor.ts 第五件）
     files: [
       'src/renderer/features/reader/state/PdfDocProvider.tsx',
       'src/renderer/features/reader/view/PdfPageCanvas.tsx',
       'src/renderer/features/reader/view/TextLayer.tsx',
-      'src/renderer/features/reader/state/CorpusExtractor.ts'
+      'src/renderer/features/reader/state/CorpusExtractor.ts',
+      'src/renderer/shared/PaperImageExtractor.ts'
     ],
     rules: {
       'no-restricted-imports': [

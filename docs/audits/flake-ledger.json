@@ -218,6 +218,12 @@
       "status": "observing",
       "first_seen": "2026-10-15",
       "resolution": "首现 observing（同窗 2 红按 FLK-04 先例归组记 count 1——裁决部维持）；挂起/超时族跨例第三例（E5 场景二 case 20+S5a case 21+本例）环境级候选线索增强；再现即触立案线（跨场次第二现=立案排查）。再现时首取 error-context 快照+对照本判别链。"
+    },
+    {
+      "spec": "tests/e2e/corpus-export.spec.ts",
+      "case": "AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建（:31）",
+      "count": 1,
+      "fingerprint": "挂起/超时型（90s test timeout exceeded——首跑 1.5m 无断言差值输出+连带 Worker teardown 90000ms exceeded 拖红 job 退出码；同 run retry #1 绿 4.0s）。首现=2026-10-15 CI windows-latest run 38739035324 attempt1（bec8aad3 治理纯文档批零因果——上一 run 4ba78737 绿；本地零跑面）。分类=非确定失败单现 observing（同用例 2 次触发立案线）；族注记=挂起/超时族第四例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+本案）且为该族 CI 面首例（前三例均本地 VMware——跨环境形态注，环境级线索待第五例再评估）。error-context=CI test-results 产物（corpus-export-AI-语料导出全链…-fa3da 目录）。再现即触立案线。"
     }
   ]
 }

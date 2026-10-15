@@ -29,13 +29,16 @@
  *   anchor 增 annotationId=Annotation.id——元素级停驻恢复锚。
  * - 数据单源：AI 评估/片段两分节直连 window.api（quality 跨域互引红线
  *   ——reader 域组件/store 不可引；接缝声明见各分节头注）。
+ * - [F-UIRES-04 批 3a] 拆件瘦身：骑缝行/星标/收起钮→SideCapRow、徽章行→
+ *   SideBadges（行为零变搬移，e2e 锚 testid 一字不动；主题节点分支/编排
+ *   留宿主——设计书 §4.2 弃候选二理由沿承）。
  */
 import type { CSSProperties } from 'react'
 import type { Annotation } from '@shared/models/annotation'
 import { MAIN_GRAPH_ID, type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
-import { ICON_CHEVRONS_RIGHT } from '../../shared/icons'
-import { StarToggleSpan } from './StarGlyphs'
+import { SideBadges } from './SideBadges'
+import { SideCapRow } from './SideCapRow'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideFragments } from './LineageSideFragments'
 import { LineageSideManualNote } from './LineageSideManualNote'
@@ -47,12 +50,6 @@ const SIDE_GLASS: CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 12,
   boxShadow: 'var(--shadow-2)'
-}
-
-/** 年月徽章文本（YYYY-MM 补零/null 退化） */
-function ymBadge(n: LineageNode): string {
-  if (n.year === null) return '—'
-  return n.month === null ? String(n.year) : `${n.year}-${String(n.month).padStart(2, '0')}`
 }
 
 export function LineageSidePanel(props: {
@@ -103,12 +100,6 @@ export function LineageSidePanel(props: {
    *  回调闭包传播；JSX 属性访问窄化不跨闭包 TS2345——卡面版先例沿承） */
   const readerPid = node.paperId
 
-  /** [F-STAR-01 A4] 星标切换上抛（paperPid=const 捕获——readerPid 先例同型） */
-  const paperPid = node.paperId
-  const toggleStar = (): void => {
-    if (paperPid !== null) props.onToggleStar?.({ id: node.id, paperId: paperPid, isStarred: node.isStarred })
-  }
-
   /** 片段条目双击→跳转载荷（构造单点：锚三元组透传+anchorPage 0 基直传——
    *  Annotation.page 已 0 基，禁任何 ±1 换算；OutlineAside.locateFragment 同口径） */
   const handleFragmentDblClick = (a: Annotation): void => {
@@ -125,13 +116,6 @@ export function LineageSidePanel(props: {
     })
   }
 
-  // [②U4] 详情域徽章：期刊/IF/被引/年月/T 档（可选省略——缺席零渲染）
-  const m = props.metrics ?? null
-  const venue = m !== null && m.venue != null && m.venue !== '' ? m.venue : null
-  const impact = m !== null && m.impactFactor != null ? m.impactFactor : null
-  const cited = m !== null && m.citedByCount != null ? m.citedByCount : null
-  const tier = node.paperId !== null ? (m?.venueTier ?? null) : null
-
   return (
     <div
       data-testid="lineage-side-panel"
@@ -144,48 +128,11 @@ export function LineageSidePanel(props: {
         data-testid="lineage-side-meta"
         data-binding={node.paperId === null ? 'theme' : 'paper'}
       >
-        <div className="insp-cap">
-          <span>节点详情</span>
-          <span className="flex items-center gap-2">
-            {/* [F-UIRES-03 B4①] 骑缝号前缀 #→·（U+00B7 MIDDLE DOT） */}
-            {props.pubNo != null && <span>{`·${String(props.pubNo).padStart(3, '0')}`}</span>}
-            {/* [F-DBCAMP-01 DB-4 / F-STAR-01 A4 点亮] 星标域（P-11 退出条件）：
-                文献节点交互 toggle（卡面同款判空——主题节点零渲染）；回调缺席=
-                点击 no-op（锁测直挂无回调面——title 在场性锚兼容；
-                StarToggleSpan 单源承载交互面） */}
-            {node.paperId !== null && (
-              <StarToggleSpan
-                isStarred={node.isStarred === true}
-                className="panel-star"
-                testid="panel-star"
-                label="星标"
-                onActivate={toggleStar}
-              />
-            )}
-            {/* [F-UIRES-03 B4③] 头部收起钮（回调缺席零渲染——既有消费面零污染；
-                宽度直通 width:100%=aside 行内宽覆盖 CSS 252 回退值） */}
-            {props.onCollapse !== undefined && (
-              <button
-                type="button"
-                className="side-collapse-btn syn-icon-btn"
-                data-testid="lineage-sidebar-collapse"
-                title="收起详情面板"
-                aria-label="收起详情面板"
-                onClick={props.onCollapse}
-              >
-                {ICON_CHEVRONS_RIGHT}
-              </button>
-            )}
-          </span>
-        </div>
+        {/* [F-UIRES-04 批 3a] 骑缝行/星标/收起钮（原 insp-cap 块零变搬移→SideCapRow） */}
+        <SideCapRow node={node} pubNo={props.pubNo} onCollapse={props.onCollapse} onToggleStar={props.onToggleStar} />
         <div className="insp-title">{node.title}</div>
-        <div className="badges">
-          {venue !== null && <span className="badge plain">{venue}</span>}
-          {impact !== null && <span className="badge plain">{`IF ${impact}`}</span>}
-          {cited !== null && <span className="badge plain">{`被引 ${cited}`}</span>}
-          <span className="badge plain">{ymBadge(node)}</span>
-          {tier !== null && <span className="badge plain">{tier}</span>}
-        </div>
+        {/* [②U4] 详情域徽章：期刊/IF/被引/年月/T 档（原 badges 块零变搬移→SideBadges） */}
+        <SideBadges node={node} metrics={props.metrics} />
         {/* [F-UIRES-03 B5① v1.15 第五轮②] 头部操作行（两钮自卡面迁移——徽章行
             下两钮并排文字钮形；常驻非 hover；testid 沿卡面版不改名=迁移面 e2e
             改写最小。哨兵单源：title 判=MAIN_GRAPH_ID 常量——与 LineagePage

@@ -7,11 +7,11 @@
         },
         {
             "path": "docs/defense-lifecycle.md",
-            "sha256": "75864c667570af6062abf5a6ef94d8076f515a93b05c8f279b16d59c881bb24d"
+            "sha256": "25095d535ea3c43c9ded88117bac85ce20aafafdecb1938a82bef17e1b8f2148"
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "03657186778a70f6d4db740c8755c88161578579b9c1ab864ced0b10a5173484"
+            "sha256": "9f51508ff29bbfbc3faaa8780642bd01305efac812fc7f6fa054efd318ccde4f"
         },
         {
             "path": "electron.vite.config.ts",
@@ -19,7 +19,7 @@
         },
         {
             "path": "eslint.config.js",
-            "sha256": "e03d96adb62374ddf14c97ab4ee0cb923d9ce0ee4aacb1a30e84d9334aa495d8"
+            "sha256": "fe45076003dcf79ea6dc22aecb3c1f3c33b8ef77d40634c19ecace15b81abc43"
         },
         {
             "path": "playwright.config.ts",
@@ -734,6 +734,10 @@
             "sha256": "519e40acdb77d9d5774d6b3860e91cb22a44e4e52a85d30c4f1a535250f77f6b"
         },
         {
+            "path": "tests/unit/renderer/PaperImageExtractor.test.ts",
+            "sha256": "e758cac641e6ff33e4a287c4a4b95f5ef2aa88b215acc010b83e63ed52c3eed1"
+        },
+        {
             "path": "tests/unit/renderer/ai-manage-tabs.test.tsx",
             "sha256": "7b2b9c3a0e2957d4af07c4c64a9649eb3e62a43b8aade110ec87205fb08caff4"
         },
@@ -1188,6 +1192,10 @@
         {
             "path": "tests/unit/renderer/paper-row-menu.test.tsx",
             "sha256": "2a1d95bb4e82488671fcf477fbdb0244ae3603f747607652275b6197fe8363be"
+        },
+        {
+            "path": "tests/unit/renderer/paperInfoStore.test.ts",
+            "sha256": "af0be3b908f81e15449b3d75da30d93fb80f786c677f0f37281ef5b511712d4a"
         },
         {
             "path": "tests/unit/renderer/pdf-item-geometry.test.tsx",
