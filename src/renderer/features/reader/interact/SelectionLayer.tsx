@@ -46,6 +46,12 @@
  * selectionchange 门（自写回声抑制——canonical signature 精确匹配）/mouseup
  * enforce×2+endSession；visual 与 full 共读 window selection（共用单源）。
  *
+ * **F-VISFB-53 闪烁收口（闸①拆件前置）**：事件接线段（selectionchange/
+ * mousedown/mouseup/keydown 四监听+evaluate/scheduler/dragCtl 组装）整体迁
+ * selection-events.ts（wireSelectionEvents——249/250 行临界拆件，零行为变更）；
+ * 本件保留=组件态+save 域+渲染。闪烁根治面（统一快慢 effective boundary+
+ * 同签名禁重复 paint）在 selection-evaluate.ts 域件——见其头注 F-VISFB-53 段。
+ *
  * ── 接口层 ── / ── 架构层 ──
  * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再导出
  *   （实现在 selection-geometry）；锚定根=选区所在页盒内 .textLayer 动态获取；
@@ -54,19 +60,17 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载
  *   收起退订。测试：selection-layer/paint/item-chain.test+selection-layer-f52
- *   （F-VISFB-52 接线面）。
+ *   （F-VISFB-52 接线面）+selection-flicker.test（F-VISFB-53 闪烁收口面）。
  */
 import { useEffect, useRef, useState } from 'react'
 import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
 import { api, unwrap, ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
 import { pushUndo } from '../state/annotation-undo'
-import { createEvaluate, clearAffinityShortcut, markAffinityShortcutFlushed, type PaintSelection, type PendingSelection } from './selection-evaluate'
+import type { PaintSelection, PendingSelection } from './selection-evaluate'
 import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
-import { createVisualScheduler, closestPageRoot } from './selection-geometry'
-import { releaseAffinity } from './release-affinity'
-import { createSelectionDragController } from './selection-drag-controller'
+import { wireSelectionEvents, type SelectionEventsHandle } from './selection-events'
 import { useReaderStore } from '../state/reader.store'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
@@ -74,14 +78,6 @@ export { closestPageRoot, pageIndexOf } from './selection-geometry'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const SAVE_FAILED = '标注保存失败'
-
-/** selectionchange settle 窗口（毫秒）：工具条防抖（F-A6-c 起视觉路已 rAF 对齐
- *  60Hz——200ms 窗仅剩 settle 语义：拖选中停顿出条+程序化选选的 pending 落地） */
-const SELECTION_DEBOUNCE_MS = 200
-
-/** F-12 工具条误触发阈值（px）：位移小于此值=单击/双击（含选词）不出条
- * （用户令「一点就出选项条」；无 mousedown 记录的程序化/键盘选区不设限） */
-const DRAG_SELECT_THRESHOLD_PX = 3
 
 export function SelectionLayer(props: {
   pageRoot: HTMLElement | null
@@ -97,100 +93,16 @@ export function SelectionLayer(props: {
   const color = useReaderStore((s) => s.tabs[s.activeId ?? '']?.color ?? 'yellow')
   const setColor = useReaderStore((s) => s.setColor)
   const toolbarRef = useRef<HTMLDivElement | null>(null)
+  // [F-VISFB-53] 事件接线域件句柄（save 侧失效口消费——闸①拆件后 effect 外可达）
+  const eventsRef = useRef<SelectionEventsHandle | null>(null)
 
   useEffect(() => {
     if (pageRoot === null) return
-
-    // [F-A6-b2] evaluate 域件（selection-evaluate.ts——四守卫+产链双路+G2 门）
-    const evaluate = createEvaluate({ pageRoot, paperId, setPaint, setPending })
-
-    // [B1 回炉→F-A6-c rAF 对齐] selectionchange 双路调度：视觉路=首事件即排
-    // rAF+帧内合帧去重（60Hz 上限——D2a 5Hz 步进根治）；工具条评估=防抖
-    // 200ms（弹出语义零变）；cancel 清双句柄（INV-14）
-    const scheduler = createVisualScheduler({
-      onVisual: () => evaluate.visual(),
-      onSettled: () => evaluate.full(false),
-      windowMs: SELECTION_DEBOUNCE_MS
-    })
-    // [F-VISFB-52] 指针授权拖选控制器（selection-drag-controller.ts——门=true
-    // 自写回声抑制不转发，防自身写回环）
-    const dragCtl = createSelectionDragController({ pageRoot })
-    const onSelectionChange = (): void => {
-      if (!dragCtl.onSelectionChange()) scheduler.handler()
-    }
-    // F-12：记录最近一次 mousedown 落点（NaN=无记录——程序化事件/未捕获）
-    let downX = Number.NaN
-    let downY = Number.NaN
-    const onMouseDown = (e: MouseEvent): void => {
-      ;[downX, downY] = [e.clientX, e.clientY]
-      // [F-RDR-01 B] 新拖选会话硬释放 S5 短路窗（释放条件②——TTL 到期为①兜底）
-      clearAffinityShortcut()
-      dragCtl.onMouseDown(e)
-    }
-
-    const onMouseUp = (e: MouseEvent): void => {
-      // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
-      if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
-      // [F-VISFB-52] 终局钳制核查（F-12 早退路径前置——shift+click 面覆盖）
-      dragCtl.enforce()
-      scheduler.cancel()
-      // F-12：位移过小=单击/双击误触不出条（自绘层留待防抖路径随选区坍缩清除）
-      let dragged = false
-      if (Number.isFinite(downX)) {
-        const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
-        downX = downY = Number.NaN
-        if (moved < DRAG_SELECT_THRESHOLD_PX) {
-          setPending(null)
-          dragCtl.endSession()
-          return
-        }
-        dragged = true
-      }
-      // [F-A12] 浅探 affinity：真划选且释放点在 focus 行上方间隙、更近上一视觉行
-      // → focus 重定向上一行行尾（锚定侧原样）；full 同帧消费已重定向选区（时间
-      // 线=release-affinity.ts 头注——排队 selectionchange 由 visual 幂等吸收）
-      if (dragged) {
-        const sel = window.getSelection()
-        if (sel !== null && sel.rangeCount > 0 && !sel.isCollapsed) {
-          const anchorRoot = closestPageRoot(sel.anchorNode)
-          if (anchorRoot !== null && closestPageRoot(sel.focusNode) === anchorRoot) {
-            const textLayer = anchorRoot.querySelector('.textLayer') as HTMLElement | null
-            if (textLayer !== null) {
-              const target = releaseAffinity(textLayer, sel, e.clientX, e.clientY)
-              if (target !== null) {
-                // 前置 rangeCount>0 且非坍缩守卫蕴含 anchorNode 必在
-                sel.setBaseAndExtent(sel.anchorNode!, sel.anchorOffset, target.node, target.offset)
-              }
-            }
-          }
-        }
-      }
-      // [F-VISFB-52] affinity 写后再核一把（幂等——防重定向目标落对侧栏）
-      dragCtl.enforce()
-      // [F-RDR-01 B] S4 正确帧标记：full(true) 同帧渲染正确选区视觉后，其后异步
-      // 排队的 selectionchange→visual 在 TTL 窗内直接丢弃（S5 弹错源消除）
-      markAffinityShortcutFlushed()
-      evaluate.full(true)
-      dragCtl.endSession()
-    }
-    const onKeyDown = (e: KeyboardEvent): void => {
-      // INV-37（F-A4 修订）：Escape 只清组件态；自绘层随**选区**真清除而消失
-      if (e.key === 'Escape') setPending(null)
-    }
-
-    document.addEventListener('selectionchange', onSelectionChange)
-    document.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('mouseup', onMouseUp)
-    document.addEventListener('keydown', onKeyDown)
+    const events = wireSelectionEvents({ pageRoot, paperId, setPaint, setPending, toolbarRef })
+    eventsRef.current = events
     return () => {
-      document.removeEventListener('selectionchange', onSelectionChange)
-      document.removeEventListener('mousedown', onMouseDown)
-      document.removeEventListener('mouseup', onMouseUp)
-      document.removeEventListener('keydown', onKeyDown)
-      scheduler.cancel()
-      dragCtl.dispose()
-      setPending(null)
-      setPaint(null)
+      eventsRef.current = null
+      events.dispose()
     }
     // 依赖=挂载盒+文献（F-02：page 不再参与——锚定根动态；挂载盒引用变化已覆盖锚定页切换重挂清理）
   }, [pageRoot, paperId])
@@ -218,6 +130,8 @@ export function SelectionLayer(props: {
       // 自绘层随本次 removeAllRanges 同步清除（不等防抖）
       setPaint(null)
       window.getSelection()?.removeAllRanges()
+      // [F-VISFB-53] 保存清选区=签名缓存失效（同段再选不被旧签名吞——B4 锚）
+      eventsRef.current?.invalidate()
     } catch (e) {
       // 保存失败：tab 灰点置位（失败残留可见——TABS-03 两写面之一）
       useReaderStore.getState().markTabDirty(paperId)

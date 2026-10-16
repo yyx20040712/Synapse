@@ -27,6 +27,8 @@
  * ── 接口层 ──
  * - export interface SelectionAnchor
  * - export function selectionToAnchor(root, selection): SelectionAnchor | null
+ * - export function rangeToAnchor(root, range): SelectionAnchor | null
+ *   [F-VISFB-53——selection-evaluate 统一快慢 eff 边界消费面]
  * - export function verifyQuote(root, selector): number | null
  * - export function verifyQuoteItem(items, selector): number | null [F-A8 门0]
  *   （items 参数=结构最小面 {str:string}——消费方传 PdfTextItem[] 结构兼容；
@@ -180,15 +182,17 @@ const CONTEXT_CHARS = 32
 /**
  * 用户划选 → 页内锚定。选区任一边界在 root 之外（跨页/页外）返回 null，
  * 由调用方提示"仅支持单页内标注"。quote 为空（纯元素/零宽选择）同样返回 null。
+ * [F-VISFB-53] range 形入口拆面：selection-evaluate 统一快慢 effective
+ * boundary——settle/mouseup 全量锚定消费 eff 边界 Range（与 visual 快路径
+ * 同一吸附链）；Selection 形入口=薄委托（行为零变）。
  */
-export function selectionToAnchor(
+export function rangeToAnchor(
   root: HTMLElement,
-  selection: Selection
+  range: Range
 ): SelectionAnchor | null {
-  if (selection.rangeCount === 0 || selection.isCollapsed) {
+  if (range.collapsed) {
     return null
   }
-  const range = selection.getRangeAt(0)
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) {
     return null
   }
@@ -230,6 +234,17 @@ export function selectionToAnchor(
     suffix: text.slice(end, Math.min(total, end + CONTEXT_CHARS)),
     rects: rectsBetweenPoints(first, last, pixelBoxOf(root))
   }
+}
+
+/** selectionToAnchor=Selection 形入口（range 形单源=rangeToAnchor——F-VISFB-53 拆面） */
+export function selectionToAnchor(
+  root: HTMLElement,
+  selection: Selection
+): SelectionAnchor | null {
+  if (selection.rangeCount === 0 || selection.isCollapsed) {
+    return null
+  }
+  return rangeToAnchor(root, selection.getRangeAt(0))
 }
 
 /**

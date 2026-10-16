@@ -52,6 +52,19 @@
  * - AnnotationLayer 重锚主链自 F-A8 门 2 起已项几何族（存量 rects S3b 回退
  *   +显式回退层语义=INV-58/档 2 登记）；本行旧「票外边界」自述随 G2 消除
  *   （设计书 §2.6 交互点 5）
+ * - **[F-VISFB-53] 闪烁收口（统一快慢 effective boundary+同签名禁重复
+ *   paint——W-4 三面）**：①统一=effectiveRangeOf（snapVisualBoundary 末行
+ *   下方吸附+docOrderPair——visual 与 settle/mouseup 全量共用单源）——全量
+ *   锚定经 rangeToAnchor（anchor-serialize 拆面）消费 eff 边界 Range，
+ *   quote/paint/anchor 三通道同源；无标记命中形态 eff=raw 行为零变。乱序
+ *   transform 形态下 raw 边界经 snapBlankBoundary('end') 栏分流可解到次行
+ *   行首（丢行）=双几何交替源（d1 归因实证）。②同签名禁重复 paint=visual/
+ *   settle 两路各自记录 canonical signature（52 号四元组域单源导出面
+ *   canonicalSignatureOf/Equals）；同签名重复 selectionchange 零 paint 零
+ *   校准重排；分路径缓存=同帧覆盖语义保持（full 首见恒执行——zoom 差分
+ *   形态覆盖快帧）；fromMouseUp=true 恒执行（终局权威：跨页/G2 toast 门与
+ *   工具条单一出口）。③失效点=save 清选区+mousedown 新会话（invalidate——
+ *   52 回炉 B-1 纪隔离同精神，跨会话旧签名零残留）
  *
  * ── 接口层 ── / ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - export function createEvaluate(ctx)：工厂返回 {visual, full} 双路径闭包
@@ -74,7 +87,7 @@
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { showToast } from '../../../shared/ui/Toast'
-import { probeTextLength, selectionToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
+import { probeTextLength, rangeToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from '../anchors/annotation-anchor'
 import { bandsForTextNodes, type RowBand } from '../anchors/annotation-resolve'
 import { calibrateBandsWithSpans } from '../anchors/annotation-band-calibrate'
@@ -83,6 +96,7 @@ import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from '../anc
 import type { ItemSelectionGeometry } from '../anchors/pdf-item-geometry'
 import { usePageItemsStore } from '../anchors/page-items.store'
 import { useReaderStore } from '../state/reader.store'
+import { canonicalSignatureEquals, canonicalSignatureOf, type CanonicalSignature } from './selection-drag-controller'
 import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
 
 /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
@@ -156,6 +170,29 @@ export interface PaintSelection {
   bands: RowBand[]
 }
 
+/** [F-VISFB-53] 统一快慢 effective boundary 的 eff 边界 Range（两路共用单源）：
+ *  snapVisualBoundary 末行下方吸附（双侧，null=原始边界 fallback）→
+ *  docOrderPair 文档序定序 → Range。visual 快路径与 settle/mouseup 全量锚定
+ *  同消费本函数——快慢边界同源=闪烁根治主面（d1 归因：回退 DOM 家族+校准
+ *  时机双几何交替——乱序 transform 形态下 raw 边界把行尾解到次行行首） */
+function effectiveRangeOf(sel: Selection): Range {
+  const aSnap = snapVisualBoundary(sel.anchorNode!, sel.anchorOffset, 'anchor')
+  const fSnap = snapVisualBoundary(sel.focusNode!, sel.focusOffset, 'focus')
+  const effAnchor = aSnap ?? { node: sel.anchorNode!, offset: sel.anchorOffset }
+  const effFocus = fSnap ?? { node: sel.focusNode!, offset: sel.focusOffset }
+  const [startB, endB] = docOrderPair(effAnchor, effFocus)
+  const range = document.createRange()
+  range.setStart(startB.node, startB.offset)
+  range.setEnd(endB.node, endB.offset)
+  return range
+}
+
+/** [回炉轮1 W2] 签名缓存槽位：真实签名 | 空选区 null | 未评估哨兵（三分） */
+type SignatureSlot = CanonicalSignature | null | typeof UNEVALUATED
+
+/** [回炉轮1 W2] 未评估哨兵（模块级唯一符号——恒不等任何真实签名含 null） */
+const UNEVALUATED: unique symbol = Symbol('f-visfb-53-unevaluated')
+
 /** 待确认的划选（锚定结果+选区所在页 0 基+工具条挂载盒本地落点） */
 export interface PendingSelection {
   anchor: SelectionAnchor
@@ -209,28 +246,52 @@ function itemChainFor(pageNo: number, paperId: string, start: number, end: numbe
 }
 
 /** [F-A6-c] evaluate 双路径句柄：visual=拖选期快路径（rAF 帧点消费——项几何链
- *  直取 INV-58 后半）；full=settle/mouseup 全量（保存与最终视觉的单一权威） */
+ *  直取 INV-58 后半）；full=settle/mouseup 全量（保存与最终视觉的单一权威）；
+ *  invalidate=[F-VISFB-53] 签名缓存失效（save 清选区/mousedown 新会话——跨
+ *  会话域零残留） */
 export interface EvaluateHandle {
   visual(): void
   full(fromMouseUp: boolean): void
+  invalidate(): void
 }
 
 /** evaluate 工厂：评估选区（动态锚定根）——快路径+四守卫+产链双路+G2 门+工具条落点 */
 export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
   const { pageRoot, paperId, setPaint, setPending } = ctx
 
+  // [F-VISFB-53] 同签名禁重复 paint（W-4）：visual/settle 两路各自记录已评估的
+  // canonical signature（52 号四元组域单源）；同签名重复到达的 selectionchange
+  // 零 paint 零校准重排。分路径缓存=同帧覆盖语义保持（zoom 差分形态 full 首见
+  // 恒执行覆盖快帧）；fromMouseUp=true 恒执行（终局权威——跨页/G2 toast 门
+  // 与工具条落地的单一出口）。
+  // [回炉轮1 W2] 未评估哨兵（模块级唯一——永不等于任何真实签名含 null）：
+  // null 双义修复——「尚未评估」与「空选区签名 null」分离，invalidate 后到达
+  // 的空选区事件走守卫路径正常清 paint/pending（旧帧/旧工具条残留窗消除）
+  let lastVisualSig: SignatureSlot = UNEVALUATED
+  let lastFullSig: SignatureSlot = UNEVALUATED
+
+  /** 命中判定：哨兵恒不命中（空选区 null 与未评估区分） */
+  function absorbed(slot: SignatureSlot, sig: CanonicalSignature | null): boolean {
+    return slot !== UNEVALUATED && canonicalSignatureEquals(slot, sig)
+  }
+
   /** [F-A6-c] 快路径：项几何链直取。四道守卫前置（裁决 2-§5①）→轻量 probe→
    *  page-items.store 直读→项几何→setPaint；失败（probe/页项/对账/计算/退化
-   *  区间）回退=全量视觉评估（evaluateCore(false,true)——DOM 量测回退链在位，
-   *  不动 pending）。守卫与 G2 命中均 setPaint(null)（跨页/G2 拖选期静默——
-   *  toast 门=fromMouseUp 属全量路，S5/G2 既有形态）。
-   *  [F-RDR-01] 插桩序（终裁修正 1）：B 守卫在前（S5 短路——TTL 窗内直接
-   *  return 保留 S4 帧，零绘制）→四道守卫→A 吸附在后（末行下方 eff 边界
-   *  替换原始边界进几何计算） */
+   * 区间）回退=全量视觉评估（evaluateCore(false,true)——DOM 量测回退链在位，
+   * 不动 pending）。守卫与 G2 命中均 setPaint(null)（跨页/G2 拖选期静默——
+   * toast 门=fromMouseUp 属全量路，S5/G2 既有形态）。
+   * [F-RDR-01] 插桩序（终裁修正 1）：B 守卫在前（S5 短路——TTL 窗内直接
+   * return 保留 S4 帧，零绘制）→四道守卫→A 吸附在后（末行下方 eff 边界
+   * 替换原始边界进几何计算） */
   function visual(): void {
     // [F-RDR-01 B] S5 冗余重绘短路：TTL 窗（=S4 帧保持期）内直接丢弃——
     // 窗内 A 不执行=设计意图（S4 正确帧无需重算）
     if (shouldSkipVisual()) return
+    // [F-VISFB-53] 同签名禁重复 paint：echo/重复事件同签名零重排
+    // （[回炉轮1 W2] absorbed 哨兵判定——空选区 null 与未评估分离）
+    const sig = canonicalSignatureOf(window.getSelection())
+    if (absorbed(lastVisualSig, sig)) return
+    lastVisualSig = sig
     const sel = window.getSelection()
     // 守卫 (i)：sel 空/rangeCount 0/坍缩
     if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
@@ -259,18 +320,14 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       setPaint(null)
       return
     }
-    // [F-RDR-01 A] 拖选期视觉边界末行下方吸附：eff 边界替换原始边界进几何计算
-    // （空守卫 fallback=原始边界——null ?? 合并；双侧同钳位目标，方向对称由
-    // docOrderPair 文档序定序承担）
-    const aSnap = snapVisualBoundary(sel.anchorNode!, sel.anchorOffset, 'anchor')
-    const fSnap = snapVisualBoundary(sel.focusNode!, sel.focusOffset, 'focus')
-    const effAnchor = aSnap ?? { node: sel.anchorNode!, offset: sel.anchorOffset }
-    const effFocus = fSnap ?? { node: sel.focusNode!, offset: sel.focusOffset }
-    const [startB, endB] = docOrderPair(effAnchor, effFocus)
+    // [F-RDR-01 A→F-VISFB-53] eff 边界（末行下方吸附+文档序定序——快慢共用
+    // 单源 effectiveRangeOf）：替换原始边界进几何计算（空守卫 fallback=原始
+    // 边界；双侧同钳位目标，方向对称由 docOrderPair 承担）
+    const effRange = effectiveRangeOf(sel)
     // 轻量偏移 probe（Range.toString ×2 O(页文本)——join/quote/prefix/suffix
     // 切片与 rectsBetweenPoints/medianFontSize 全量几何量测链全省）
-    const lead = probeTextLength(textLayer, startB.node, startB.offset, 'start')
-    const tail = lead === null ? null : probeTextLength(textLayer, endB.node, endB.offset, 'end')
+    const lead = probeTextLength(textLayer, effRange.startContainer, effRange.startOffset, 'start')
+    const tail = lead === null ? null : probeTextLength(textLayer, effRange.endContainer, effRange.endOffset, 'end')
     const entry = usePageItemsStore.getState().pages[pageNo + 1]
     let item: ItemSelectionGeometry | null = null
     if (lead !== null && tail !== null && entry !== undefined) {
@@ -310,9 +367,30 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
   }
 
-  /** 全量（settle/mouseup 路——现行逻辑零变，visualOnly 仅剩快路径回退一个活调用方） */
+  /** 全量（settle/mouseup 路——现行逻辑零变，visualOnly 仅剩快路径回退一个活调用方）。
+   *  [F-VISFB-53] settle 路（fromMouseUp=false）同签名幂等；mouseup 终局
+   *  （fromMouseUp=true）恒执行 */
   function full(fromMouseUp: boolean): void {
+    const sig = canonicalSignatureOf(window.getSelection())
+    if (!fromMouseUp && absorbed(lastFullSig, sig)) return
+    lastFullSig = sig
+    // [回炉轮1 B→微回炉 W-1] 终局与 settle 两路完成后均同步 visual 签名缓存：
+    // full 产物=该签名的权威渲染——mouseup 的 releaseAffinity/enforce 改写使终局
+    // 签名 A≠拖选期 visual 已评估的 R 时（终局面），以及 S5 窗内改选 B 被
+    // shouldSkipVisual 吞而 settle full(false) 完成 B 渲染时（settle 面，W-1），
+    // 后续窗外同签名 echo 在 visual 路命中吸收（否则快路径重画覆盖权威帧、
+    // settle 路又被 lastFullSig 吸收无法纠正）。复审论证无害：lastFullSig 本就
+    // 独立记录、同步不致 full 首见自吸收（sig 读取在 absorbed 判定之后）
+    lastVisualSig = sig
     evaluateCore(fromMouseUp, false)
+  }
+
+  /** [F-VISFB-53] 签名缓存失效：save 清选区时刻（SelectionLayer.save）与
+   *  mousedown 新会话（selection-events——52 回炉 B-1 纪隔离同精神）；
+   *  [回炉轮1 W2] 置未评估哨兵（非 null——invalidate 后空选区事件不被吞） */
+  function invalidate(): void {
+    lastVisualSig = UNEVALUATED
+    lastFullSig = UNEVALUATED
   }
 
   function evaluateCore(fromMouseUp: boolean, visualOnly: boolean): void {
@@ -335,7 +413,11 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     // 两边界同盒（同为 null=页外选区——静默收起，与页列无关）
     const pageNo = anchorRoot === null ? null : pageIndexOf(anchorRoot)
     const textLayer = anchorRoot?.querySelector('.textLayer') as HTMLElement | null
-    const anchor = pageNo === null || textLayer === null ? null : selectionToAnchor(textLayer, sel)
+    // [F-VISFB-53] 统一快慢 effective boundary：全量锚定消费 eff 边界 Range
+    // （effectiveRangeOf——与 visual 快路径同一吸附链）→ quote/paint/anchor
+    // 三通道同源（双栏哨兵面）；无标记命中形态 eff=raw 边界（行为零变）
+    const effRange = pageNo === null || textLayer === null ? null : effectiveRangeOf(sel)
+    const anchor = effRange === null || textLayer === null ? null : rangeToAnchor(textLayer, effRange)
     // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义
     if (anchor === null || textLayer === null) {
       if (!visualOnly) setPending(null)
@@ -385,5 +467,5 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     setPending({ anchor: { ...anchor, rects: item.rects }, pageNo: pageNo!, x, y })
   }
 
-  return { visual, full }
+  return { visual, full, invalidate }
 }

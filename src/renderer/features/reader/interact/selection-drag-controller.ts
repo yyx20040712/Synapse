@@ -39,6 +39,10 @@
  * - export function createSelectionDragController({ pageRoot }) →
  *   { onMouseDown, enforce, endSession, onSelectionChange, dispose }；
  *   onSelectionChange 返回 true=自写回声（SelectionLayer 门不转发调度器）。
+ * - [F-VISFB-53] export CanonicalSignature/canonicalSignatureOf/
+ *   canonicalSignatureEquals——canonical signature 四元组单源面（53 号
+ *   selection-evaluate 同签名禁重复 paint 消费；本件 echo 判据同源——
+ *   禁第二套签名的落法）
  *
  * ── 架构层 ──
  * - 依赖单向：本件→anchors/annotation-anchor（collectSpans）/anchors/
@@ -104,12 +108,28 @@ interface DragSession {
   writes: number
 }
 
-/** 自写回声签名（canonical：节点同一性+偏移精确四元组——探针 E1/E2 逐字回声） */
-interface OwnWrite {
-  anchorNode: Node
+/** 自写回声签名（canonical：节点同一性+偏移精确四元组——探针 E1/E2 逐字回声）。
+ *  [F-VISFB-53] 起导出为 canonical signature 单源面（selection-evaluate 同签名
+ *  禁重复 paint 消费——主控裁决禁第二套签名；null 域=rangeCount 0/无选区） */
+export interface CanonicalSignature {
+  anchorNode: Node | null
   anchorOffset: number
-  focusNode: Node
+  focusNode: Node | null
   focusOffset: number
+}
+
+/** [F-VISFB-53] canonical signature 读取（rangeCount 0 → null 域） */
+export function canonicalSignatureOf(sel: Selection | null): CanonicalSignature | null {
+  if (sel === null || sel.rangeCount === 0) {
+    return null
+  }
+  return { anchorNode: sel.anchorNode, anchorOffset: sel.anchorOffset, focusNode: sel.focusNode, focusOffset: sel.focusOffset }
+}
+
+/** [F-VISFB-53] canonical signature 精确相等（52 号 echo 判据同式——节点同一性
+ *  +偏移四元组；null 域与任何签名（含 null）按恒等比较） */
+export function canonicalSignatureEquals(a: CanonicalSignature | null, b: CanonicalSignature | null): boolean {
+  return a?.anchorNode === b?.anchorNode && a?.anchorOffset === b?.anchorOffset && a?.focusNode === b?.focusNode && a?.focusOffset === b?.focusOffset
 }
 
 /** 边界点（与 setBaseAndExtent 入参同构） */
@@ -121,7 +141,7 @@ interface DragBoundary {
 export function createSelectionDragController(opts: { pageRoot: HTMLElement }): SelectionDragHandle {
   const { pageRoot } = opts
   let session: DragSession | null = null
-  let ownWrite: OwnWrite | null = null
+  let ownWrite: CanonicalSignature | null = null
 
   /** 行盒量测：collectSpans 文本节点→boxOf 视口盒→textLayer 本地 LineBox */
   function measure(textLayer: HTMLElement): { items: DragItem[]; ox: number; oy: number } {
@@ -226,7 +246,6 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     ownWrite = { anchorNode, anchorOffset, focusNode, focusOffset }
     s.writes += 1
   }
-
   /** mousemove：只写 ref（pointer+写窗重开——用户输入事件；归一化事件无
    *  伴随 move，CAP 判别面即在此） */
   const onMouseMove = (e: MouseEvent): void => {
@@ -283,14 +302,9 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     },
     onSelectionChange(): boolean {
       const sel = window.getSelection()
-      if (
-        sel !== null &&
-        ownWrite !== null &&
-        sel.anchorNode === ownWrite.anchorNode &&
-        sel.anchorOffset === ownWrite.anchorOffset &&
-        sel.focusNode === ownWrite.focusNode &&
-        sel.focusOffset === ownWrite.focusOffset
-      ) {
+      // [F-VISFB-53] 判据经 canonicalSignatureEquals 单源（与 53 号 paint 幂等
+      // 同一四元组域——主控裁决禁第二套签名；语义=52 号 echo 精确匹配逐字同）
+      if (sel !== null && ownWrite !== null && canonicalSignatureEquals(canonicalSignatureOf(sel), ownWrite)) {
         // [回炉 B-1] 一次性消费：首个精确匹配=本写的 echo，抑制后签名即失效
         //——外部后续到达同形态选区（含终局态回放）不再被吞（转发调度器）
         ownWrite = null

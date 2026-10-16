@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T20:11:42.821Z",
+    "generatedAt": "2026-10-16T20:15:32.090Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1920,6 +1920,14 @@
         {
             "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
             "sha256": "0ce70550a984e83a05449124ed1b2e71a764c4bf96703876669255d7e70b5861"
+        },
+        {
+            "path": "tests/unit/renderer/selection-flicker.test.tsx",
+            "sha256": "9a9a9535d27dedfb4ca901f9bb93600c29e9c008ba67df1c0c5b3dd6d718719c"
+        },
+        {
+            "path": "tests/e2e/selection-twocol.spec.ts",
+            "sha256": "ad004fceb1d483f8cc79d2bdc2b2e4f0d4986cf64cb0bdd9e81d6cf0c5c2b2d0"
         }
     ]
 }
