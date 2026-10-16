@@ -15,13 +15,14 @@
 import { useEffect } from 'react'
 import type { LineageEdge } from '@shared/models/lineage'
 import type { RoutedPath } from './lineage-routing'
-import { contentScale, toContentPt } from './timeline-zoom'
+import { clientToOwnPt } from './timeline-zoom'
 import type { useEdgeEdit } from './use-edge-edit'
 import { EdgeHandles } from './EdgeHandles'
 
 type EditApi = ReturnType<typeof useEdgeEdit>
 
-/** [RR5] hover 扫描半径（内容坐标——编辑态命中层 stroke 8 半宽对齐） */
+/** [RR5] hover 扫描半径（own 域 px——编辑态命中层 stroke 8 半宽对齐；
+ *  [F-VISFB-31] 指针换算÷s_eff=own 域与 path.pts 同系） */
 const SCAN_HOVER_R = 4
 
 /** [F-VISFB-23] browse 态悬停载荷（edgeId+真实 label+指针 client 域坐标） */
@@ -60,7 +61,7 @@ export function EdgeHitLayer(props: {
     const onMove = (ev: PointerEvent | MouseEvent): void => {
       const content = props.hostRef.current?.parentElement
       if (!(content instanceof HTMLElement)) return
-      const p = toContentPt(content.getBoundingClientRect(), ev.clientX, ev.clientY, contentScale())
+      const p = clientToOwnPt(content.getBoundingClientRect(), ev.clientX, ev.clientY)
       let bestId: string | null = null
       let bestD = SCAN_HOVER_R
       for (const path of props.paths) {
@@ -119,7 +120,7 @@ export function EdgeHitLayer(props: {
         clear()
         return
       }
-      const p = toContentPt(content.getBoundingClientRect(), pt.x, pt.y, contentScale())
+      const p = clientToOwnPt(content.getBoundingClientRect(), pt.x, pt.y)
       let bestId: string | null = null
       let bestD = SCAN_HOVER_R
       for (const path of props.paths) {
@@ -191,7 +192,7 @@ export function EdgeHitLayer(props: {
               const content = props.hostRef.current?.parentElement
               if (!(content instanceof HTMLElement)) return
               const base = content.getBoundingClientRect()
-              edit.onEdgeHitDbl(p.edgeId, toContentPt(base, ev.clientX, ev.clientY))
+              edit.onEdgeHitDbl(p.edgeId, clientToOwnPt(base, ev.clientX, ev.clientY))
             }}
             onPointerDown={(ev) => {
               if (props.editEnabled !== true) return
@@ -200,7 +201,7 @@ export function EdgeHitLayer(props: {
               else if (ev.button === 0 && edit.state.phase === 'selected' && edit.state.edgeId === p.edgeId) {
                 const content = props.hostRef.current?.parentElement
                 if (content instanceof HTMLElement) {
-                  edit.onSegDown(toContentPt(content.getBoundingClientRect(), ev.clientX, ev.clientY), 0)
+                  edit.onSegDown(clientToOwnPt(content.getBoundingClientRect(), ev.clientX, ev.clientY), 0)
                 }
               }
             }}

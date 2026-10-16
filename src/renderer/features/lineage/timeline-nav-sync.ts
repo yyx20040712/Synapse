@@ -8,8 +8,10 @@
 import { useEffect } from 'react'
 import type { RefObject } from 'react'
 import { useLineageViewStore } from './lineage-view.store'
+import { effectiveScale } from './timeline-zoom'
 
-/** 视口上段判定偏移（月标带高度量级——首框顶部不完全出视口即仍当前） */
+/** 视口上段判定偏移（own px——月标带高度量级，首框顶部不完全出视口即仍当前；
+ *  [F-VISFB-31] client 判定域×s_eff 换算——旧直加=u≠1 档偏移缩窄 1/s_eff 倍） */
 const ACTIVE_TOP_OFFSET = 60
 
 export function useTimelineNavSync(
@@ -41,7 +43,7 @@ export function useTimelineNavSync(
       const frames = sc.querySelectorAll<HTMLElement>('[data-frame-key]')
       let active: string | null = null
       for (const f of frames) {
-        if (f.getBoundingClientRect().bottom > scTop + ACTIVE_TOP_OFFSET) {
+        if (f.getBoundingClientRect().bottom > scTop + ACTIVE_TOP_OFFSET * effectiveScale()) {
           active = f.dataset.frameKey ?? null
           break
         }

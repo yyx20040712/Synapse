@@ -10,6 +10,10 @@
  * [F-UIRES-03 C3] 改月弹层互斥闸随改月链退役删除
  * （INV-107）；源框物理域判定（overSourceFrame/PULL_BAND_PX）收窄语义=
  * 纯回弹护栏+同框下拉带（stretch 保留面）——非改月判定面（呈报主控处置）。
+ * [F-VISFB-31] 会话坐标族整体 own 域（00A 三域律 client=origin+C×s_eff）：
+ * 抓取偏移/拖影/包含块补偿/framePointer/pullPx/激活阈全部 ÷s_eff 或 ×s_eff
+ * 换算（旧 ÷z B 域×offsetLeft/px 常量 C 域混算=u≠1 档错位——接缝①+同族
+ * 自查面：下拉带/跟随量/激活阈）。
  *
  * ── 态空间（宪法状态纪律）──
  * drag ∈ {idle, pending(按下未过 5px), dragging, settle(飞行过渡期——
@@ -30,7 +34,7 @@ import { frameKeyOf } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
 import { srcGroupIdsOf } from './card-drag-geometry'
 import { insertIndexFromGrid } from './card-drag-grid'
-import { contentScale } from './timeline-zoom'
+import { clientToOwnPt, effectiveScale } from './timeline-zoom'
 
 export type DragPhase = 'idle' | 'pending' | 'dragging' | 'settle'
 
@@ -71,17 +75,18 @@ interface DragSession {
   srcIds: string[]
   sx: number
   sy: number
-  /** [②U7] 抓取偏移=**内容坐标**（拖影 absolute——视口偏移/z） */
+  /** [②U7→F-VISFB-31] 抓取偏移=**own 域**（÷s_eff——拖影 absolute 视口偏移） */
   ox: number
   oy: number
   moved: boolean
-  /** [②U7] 拖影位置=内容坐标（flight job 同域传递） */
+  /** [②U7→F-VISFB-31] 拖影位置=own 域（flight job 同域传递） */
   ghost: { x: number; y: number }
   /** [C3 甲案] 包含块原点补偿：卡 offsetParent=.month-frame（frame padding
-   *  box 原点）的**内容坐标**——inline left/top 写入=ghost−frameOrigin（ghost
-   * 数学保持内容域，渲染定位域=frame；激活帧由「内容坐标 ghost − 流内
-   * offsetLeft/Top」两已知量导出，不读 frame 过渡期 rect——根除 frame 原点
-   * 双计，INV-96 族） */
+   *  box 原点）的**own 域坐标**——inline left/top 写入=ghost−frameOrigin（ghost
+   *  数学保持 own 域，渲染定位域=frame；激活帧由「own 域 ghost − 流内
+   *  offsetLeft/Top」两已知量导出，不读 frame 过渡期 rect——根除 frame 原点
+   *  双计，INV-96 族；[F-VISFB-31] 旧实现 ghost=÷z（B 域）×offsetLeft（C 域）
+   *  混算=u≠1 档抓取错位（00A 接缝①），两侧统一 own 域修复） */
   frameOrigin: { x: number; y: number }
   insertIdx: number
   /** [②U6] 原始槽位（回弹基准——源框外松手飞行落点） */
@@ -108,35 +113,36 @@ interface DragSession {
 /** [②U6] 源框物理域命中=框内 ∪ 底缘 82px 下拉带（x 带内——腾新行面）。
  *  实时 rect 单源供两处：onMove 槽相位（淡化/插位）与 onUp 落位判定
  *  （松手时框已撑高，指针在撑高框内=落位组末，语义自洽）；extend 判定
- *  本身改读冻结基准（onMove 内联——见 frameBottom0 注） */
+ *  本身改读冻结基准（onMove 内联——见 frameBottom0 注）。
+ *  [F-VISFB-31] 带高换算：PULL_BAND_PX=own px 常量，client 判定域须 ×s_eff
+ *  （旧直加 client 坐标=带在 u≠1 档缩窄 1/u 倍——B/C 混算同族自查面） */
 const overSourceFrame = (frameEl: HTMLDivElement | null, x: number, y: number): boolean => {
   if (frameEl === null) return false
   const fr = frameEl.getBoundingClientRect()
   if (x >= fr.left && x <= fr.right && y >= fr.top && y <= fr.bottom) return true
-  return x >= fr.left && x <= fr.right && y > fr.bottom && y <= fr.bottom + PULL_BAND_PX
+  return x >= fr.left && x <= fr.right && y > fr.bottom && y <= fr.bottom + PULL_BAND_PX * effectiveScale()
 }
 
-/** [②U7] 视口点→内容坐标（z 逆变换；base=内容层 rect——判定时点取值） */
-const toContent = (content: HTMLElement, clientX: number, clientY: number): { x: number; y: number } => {
-  const base = content.getBoundingClientRect()
-  const z = contentScale()
-  return { x: (clientX - base.left) / z, y: (clientY - base.top) / z }
-}
+/** [②U7→F-VISFB-31] 视口点→own 域（÷s_eff；base=内容层 rect——判定时点取值；
+ *  会话坐标族全部 own 域——与 offsetLeft/px 常量/CSS 写入同域，混算接缝①修复） */
+const toOwn = (content: HTMLElement, clientX: number, clientY: number): { x: number; y: number } =>
+  clientToOwnPt(content.getBoundingClientRect(), clientX, clientY)
 
 /**
  * [F-SLOTGRID-01 U3] 指针→月框 padding-box 坐标（INV-111 命中系——预裁决 D2）：
- * frame gBCR 相对差÷z（zoom 正交——内容坐标同系）后减 computed border 布局宽
- * （border 内缘起算=padding-box 原点；border 客户域宽=bl·z 故除后再减）。
+ * frame gBCR 相对差÷s_eff（[F-VISFB-31] own 域——capacity 常量族/CARD_W 同系）
+ * 后减 computed border 布局宽（border 内缘起算=padding-box 原点；computed
+ * border=own px 与÷s_eff 结果同域直减）。
  * 框原点拖拽全程不动（框只向下生长）——逐 move 实读无缓存需求；jsdom
  * computed border 缺省空串→parseFloat NaN→0（零边框约定与单测桩同系）。
  */
 const framePointer = (frameEl: HTMLDivElement, clientX: number, clientY: number): { x: number; y: number } => {
   const fr = frameEl.getBoundingClientRect()
-  const z = contentScale()
+  const sEff = effectiveScale()
   const cs = getComputedStyle(frameEl)
   const bl = Number.parseFloat(cs.borderLeftWidth) || 0
   const bt = Number.parseFloat(cs.borderTopWidth) || 0
-  return { x: (clientX - fr.left) / z - bl, y: (clientY - fr.top) / z - bt }
+  return { x: (clientX - fr.left) / sEff - bl, y: (clientY - fr.top) / sEff - bt }
 }
 
 export function useDragSession(args: {
@@ -181,28 +187,29 @@ export function useDragSession(args: {
       if (s === null) return
       const content = contentRef.current
       if (!s.moved) {
-        if (Math.hypot(e.clientX - s.sx, e.clientY - s.sy) < DRAG_THRESHOLD) return
+        // [F-VISFB-31] 激活阈=own px（client 位移÷s_eff——mockup 像素=内容 own 域）
+        if (Math.hypot(e.clientX - s.sx, e.clientY - s.sy) / effectiveScale() < DRAG_THRESHOLD) return
         s.moved = true
         const card = findCard(s.nodeId)
         if (card !== null && content !== null) {
           const r = card.getBoundingClientRect()
-          // [②U7] 拖影=absolute+内容坐标（transform 祖先劫持 fixed）：
-          // 起点/偏移经 z 逆变换（z=1 时与旧视口系同值）；偏移锚=pointerdown
+          // [②U7→F-VISFB-31] 拖影=absolute+own 域（transform 祖先劫持 fixed）：
+          // 起点/偏移经 ÷s_eff（s_eff=1 时与旧视口系同值）；偏移锚=pointerdown
           // 坐标 s.sx/s.sy（激活帧 e=首个 move 事件——非按点位）
-          s.ox = (s.sx - r.left) / contentScale()
-          s.oy = (s.sy - r.top) / contentScale()
-          const ghostContent = toContent(content, r.left, r.top)
-          s.ghost = ghostContent
+          s.ox = (s.sx - r.left) / effectiveScale()
+          s.oy = (s.sy - r.top) / effectiveScale()
+          const ghostOwn = toOwn(content, r.left, r.top)
+          s.ghost = ghostOwn
           // [C3 甲案] 包含块补偿：offsetLeft/Top=流内位（相对 frame padding
-          // box——inline left:0 同基准）；frameOrigin=两已知量差（激活帧卡
-          // inline=gFrame → 渲染位=原位零跳；move 帧 left=ghost−frameOrigin）
+          // box——inline left:0 同基准）；frameOrigin=两已知量差（own 域同系——
+          // 激活帧卡 inline=gFrame → 渲染位=原位零跳；move 帧 left=ghost−frameOrigin）
           const gFrame = { x: card.offsetLeft, y: card.offsetTop }
-          s.frameOrigin = { x: ghostContent.x - gFrame.x, y: ghostContent.y - gFrame.y }
+          s.frameOrigin = { x: ghostOwn.x - gFrame.x, y: ghostOwn.y - gFrame.y }
           s.marginLeft0 = card.style.marginLeft
           card.style.position = 'absolute'
           card.style.left = `${gFrame.x}px`
           card.style.top = `${gFrame.y}px`
-          card.style.width = `${r.width / contentScale()}px`
+          card.style.width = `${r.width / effectiveScale()}px`
           // [回炉 R1/B-1] absolute 盒 left 定位 margin edge——压 0 后 left=视觉
           // 位（无双计）；[回炉 R8/d1-B1] 同步禁断过渡（基类 margin-left
           // .25s 在场——不禁断则 82→0 启动 0.25s 过渡=拖起 +82px 滑移）
@@ -225,9 +232,10 @@ export function useDragSession(args: {
           s.frameRight0 = fr.right
         })
       }
-      // [②U7] 指针→内容坐标−内容域抓取偏移（z 判定时点取值——缩放正交）；
-      // [C3 甲案] inline 写入=ghost−frameOrigin（渲染定位域=frame padding box）
-      const p = content !== null ? toContent(content, e.clientX, e.clientY) : { x: e.clientX, y: e.clientY }
+      // [②U7→F-VISFB-31] 指针→own 域−own 域抓取偏移（s_eff 判定时点取值——
+      // 缩放正交）；[C3 甲案] inline 写入=ghost−frameOrigin（渲染定位域=frame
+      // padding box——写入值=own px 与 CSS 写入系一致）
+      const p = content !== null ? toOwn(content, e.clientX, e.clientY) : { x: e.clientX, y: e.clientY }
       s.ghost = { x: p.x - s.ox, y: p.y - s.oy }
       const card = findCard(s.nodeId)
       if (card !== null) {
@@ -241,11 +249,13 @@ export function useDragSession(args: {
       //  量、PULL_BAND_PX 封顶（框底逐 move 跟随一小段后恒驻 82）；extend 触发
       //  =越缘即真（去旧 +82 上限——超上限再拖两段 stretch 保持+框底单调，
       //  视检 C6「框底跟随一小段」）；x 带语义与 overSourceFrame 实时域
-      //  （INV-98 触发带——回弹/落位判定）沿承零改
+      //  （INV-98 触发带——回弹/落位判定）沿承零改。
+      //  [F-VISFB-31] 越缘量÷s_eff=own px（--lg-pull 消费域=内容 own 域 CSS——
+      //  旧 client 量直写=u≠1 档视觉跟随量失真 u 倍+封顶提前）
       const inPullBand =
         e.clientX >= s.frameLeft0 && e.clientX <= s.frameRight0 && e.clientY > s.frameBottom0
       const pullPx = inPullBand
-        ? Math.min(e.clientY - s.frameBottom0, PULL_BAND_PX)
+        ? Math.min((e.clientY - s.frameBottom0) / effectiveScale(), PULL_BAND_PX)
         : 0
       const extend = inPullBand
       const over = overSourceFrame(s.frameEl, e.clientX, e.clientY)

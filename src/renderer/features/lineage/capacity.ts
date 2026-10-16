@@ -8,6 +8,10 @@
  * preflight 全局 box-sizing，卡 width/min-height 即边框盒值）；行隙=列隙=72
  * （节距 200×144）；错位 o=100（2026-10-08 用户呈裁点 1 定值）；框内容
  * 左 12/顶 18。坐标系=月框内容坐标（px）。
+ * [F-VISFB-31] 坐标系精化=own 域（00A 三域律 C 域）：W/px/py 一切入参与
+ * 本件常量族同系 own px——client 域输入须经 ÷s_eff（消费面换算单源=
+ * timeline-zoom.ts clientToOwn 族；uiScale/z 双正交，computed width 读数
+ * 天然 own 域）。
  *
  * W 状态机（§5.2-1）：measured（W>0 有限——网格分行）/unmeasured（W≤0/
  * NaN/±∞——capacities 返回 ∞，消费方降级=全部卡入首行单行渲染，DOM 序

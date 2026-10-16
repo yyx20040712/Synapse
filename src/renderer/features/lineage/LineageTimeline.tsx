@@ -13,7 +13,7 @@
  */
 import { useMemo, useRef } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models/lineage'
-import type { LineagePaperMetrics } from '@shared/ipc/schemas'
+import { UI_SCALE, type LineagePaperMetrics } from '@shared/ipc/schemas'
 import { groupTimeline } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
 import { TimelineYears } from './TimelineYears'
@@ -22,6 +22,7 @@ import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
 import { useLineageViewStore } from './lineage-view.store'
+import { useSettingsStore } from '../settings/settings.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useCapacityLayout } from './use-capacity-layout'
 import { useTimelinePan } from './timeline-pan'
@@ -68,10 +69,16 @@ export function LineageTimeline(props: {
   // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
-  // [F-UIRES-03 C2·P2/P5] 缩放系数（高亮 r=6/z zoom 补偿——屏幕域直径恒 12）
+  // [F-UIRES-03 C2·P2/P5] 缩放系数（高亮 r=6/s_eff 补偿——屏幕域直径恒 12）
   // +点两卡链锚（迁 view.store——.link-src 消费源；dragging 相位=会话源锚沿承）
   const zoomScale = useLineageViewStore((s) => s.zoom)
   const drawAnchor = useLineageViewStore((s) => s.anchor)
+  // [F-VISFB-31] uiScale 入量测/路由重算键（00A §四：每档布局真实重排）——
+  // 订阅 settings 单源（App 同法），W 量测/spacer 量测/当前月对齐/路由快照
+  // 四键共入；数值面=高亮补偿与 EdgeOverlay 重算键消费
+  const uiScaleTier = useSettingsStore((s) => s.settings?.uiScale ?? 'small')
+  const uiScaleNum = UI_SCALE[uiScaleTier]
+  const layoutKey = useMemo(() => [groups, uiScaleTier] as const, [groups, uiScaleTier])
 
   // 滚动容器 ref 两面：content=.tl-content（W 量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
@@ -94,12 +101,14 @@ export function LineageTimeline(props: {
     onRouteRecalc: () => bumpRouteRef.current()
   })
   // [F-SLOTGRID-01 U1] W 量测+布局变更信号（机制本体=use-capacity-layout.ts
-  // 拆件——组件 250 行红线；unmeasured 降级/rAF 合并细节见该件头注）
-  const layout = useCapacityLayout({ contentRef, recomputeKey: groups })
+  // 拆件——组件 250 行红线；unmeasured 降级/rAF 合并细节见该件头注；
+  // [F-VISFB-31] recomputeKey 含 uiScale——档变重读 W+bump routeEpoch）
+  const layout = useCapacityLayout({ contentRef, recomputeKey: layoutKey })
   const { frameW, routeEpoch } = layout
   bumpRouteRef.current = layout.bumpRoute
-  // [F-LGRAPH-01①U4] 导航窗格联动：索引点击定位+当前月上报（重算键=渲染组）
-  useTimelineNavSync(timelineRef, groups)
+  // [F-LGRAPH-01①U4] 导航窗格联动：索引点击定位+当前月上报（重算键=渲染组
+  // +uiScale——档变重排后当前月重对齐）
+  useTimelineNavSync(timelineRef, layoutKey)
   // [F-LGRAPH-01①U5] 平移小手：browse/focus 拖空白=滚动跟随（edit 不平移）
   const pan = useTimelinePan({
     enabled: viewMode === 'browse' || viewMode === 'focus',
@@ -107,8 +116,10 @@ export function LineageTimeline(props: {
   })
   // [②U7] 缩放：ctrl+滚轮（P-4 三模式均生效——滚动容器非被动监听）+内容层
   // transform+sizer（scale 不改布局盒——sizer 按 z 放大自然尺寸供滚动域）+
-  // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件
-  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: groups })
+  // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件；
+  // [F-VISFB-31] 量测键含 uiScale（自然尺寸=own px 随档重排——jsdom 无 RO
+  // 兜底路径同键覆盖）
+  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: layoutKey })
   // [F-VISFB-22 P2 闸②] 根容器类名+卡点击/星标分派=timeline-interactions 拆件
   //（行为零变——分派序与守卫逐句保形迁驻）
   const timelineCls = timelineClassOf(viewMode, pan.panning)
@@ -159,13 +170,15 @@ export function LineageTimeline(props: {
             brightIds={brightIds}
             editEnabled={viewMode === 'edit' && tool === 'select'}
             browseScan={viewMode === 'browse'}
+            uiScale={uiScaleNum}
           />
           {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
-              吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch） */}
+              吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch）；
+              [F-VISFB-31] zoom=effectiveScale（z×uiScale——高亮 r 补偿双因子） */}
           <DrawLayers
             state={draw.state}
             hint={draw.hint}
-            zoom={zoomScale}
+            zoom={zoomScale * uiScaleNum}
             color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid}
           />
           <TimelineYears

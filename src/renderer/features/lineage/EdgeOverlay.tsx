@@ -56,6 +56,10 @@ export function EdgeOverlay(props: {
   editEnabled?: boolean
   /** [F-VISFB-23 N2] browse 态激活线名扫描（rAF 节流 hover→tooltip——宿主注入） */
   browseScan?: boolean
+  /** [F-VISFB-31] uiScale 数值（UI_SCALE 档位映射——重算键专用：uiScale 变更
+   *  时 W 未必变（布局可同宽），快照÷s_eff 因子仍须重算+调线域卡 rect 重采集；
+   *  数值本体不消费（buildSnapshot/换算器判定时点自读 effectiveScale）） */
+  uiScale?: number
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [paths, setPaths] = useState<RoutedPath[]>([])
@@ -77,10 +81,11 @@ export function EdgeOverlay(props: {
   const pathsRef = useRef<RoutedPath[]>([])
   pathsRef.current = paths
   // [RR8] 调线域重采集键（布局/路由变化信号——卡 rect/换算器刷新闸；状态
-  // only 渲染[拖拽 move/悬停]不重采集）
+  // only 渲染[拖拽 move/悬停]不重采集）；[F-VISFB-31] uiScale 入键（own 域
+  // 采集因子随档重读）
   const editRecomputeKey = useMemo(
-    () => [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths] as const,
-    [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths]
+    () => [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale] as const,
+    [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale]
   )
   const edit = useEdgeEdit({ enabled: props.editEnabled === true, pathsRef, hostRef: svgRef, recomputeKey: editRecomputeKey })
   // 端点在场的边才路由（写过渡态悬空边不渲染——nodes=防御消费面）
@@ -137,7 +142,9 @@ export function EdgeOverlay(props: {
       if (raf !== 0) cancelAnimationFrame(raf)
       ro?.disconnect()
     }
-  }, [live, props.shiftedIds, props.groups, props.routeEpoch])
+    // [F-VISFB-31] uiScale 入重算键：W 不变时快照÷s_eff 因子仍须重算
+    //（00A §四——各档布局真实重排，RO 面覆盖 W 变更；同宽形由此键兜底）
+  }, [live, props.shiftedIds, props.groups, props.routeEpoch, props.uiScale])
 
   /** [②U5] 菜单动作收口（store 单口——一动作=一编辑单元沿 store 各方法） */
   const selEdge =

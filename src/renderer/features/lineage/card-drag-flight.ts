@@ -23,17 +23,17 @@
  * style，同步改值不启过渡（transitionend 永不触发，e2e 探针实证）；双 rAF
  * 保证起点先入样式变更事件后再赋目标。
  */
-import { contentScale } from './timeline-zoom'
+import { effectiveScale } from './timeline-zoom'
 
 /** settle 飞行过渡（.32s cubic-bezier(.22,.9,.26,1)——mockup L993 逐值） */
 export const SETTLE_TRANSITION =
   'left .32s cubic-bezier(.22,.9,.26,1), top .32s cubic-bezier(.22,.9,.26,1)'
 
 /** 飞行任务（拖拽松手径——finish=settle 落定收口）。
- *  [②U7] 坐标域=**内容坐标**（拖影——transform 祖先会劫持 fixed 定位，缩放
- *  正交：全部 left/top/宽经内容域承载）。
+ *  [②U7→F-VISFB-31] 坐标域=**own 域**（拖影——transform 祖先会劫持 fixed 定位，
+ *  缩放正交：全部 left/top/宽经 own 域承载，与 card-drag-session 会话域一致）。
  *  [C3 甲案] hostOffset=包含块原点补偿（卡 offsetParent=.month-frame 的
- *  frameOrigin 内容坐标）：inline 写入=内容坐标−hostOffset（渲染定位域=
+ *  frameOrigin own 域坐标）：inline 写入=own 域−hostOffset（渲染定位域=
  *  frame padding box）。缺省 {0,0}=内容层直挂场景（单测视口恒等同形） */
 export interface FlightJob {
   nodeId: string
@@ -45,12 +45,12 @@ export interface FlightJob {
   finish: () => void
 }
 
-/** 视口 rect→内容坐标（z 逆变换——contentEl=内容层[变换祖先后代基准]） */
+/** [F-VISFB-31] 视口 rect→own 域（÷s_eff——contentEl=内容层[变换祖先后代基准]） */
 function toContentBase(contentEl: HTMLElement | null, r: { left: number; top: number; width: number }): { left: number; top: number; width: number } {
   if (contentEl === null) return { left: r.left, top: r.top, width: r.width }
   const base = contentEl.getBoundingClientRect()
-  const z = contentScale()
-  return { left: (r.left - base.left) / z, top: (r.top - base.top) / z, width: r.width / z }
+  const sEff = effectiveScale()
+  return { left: (r.left - base.left) / sEff, top: (r.top - base.top) / sEff, width: r.width / sEff }
 }
 
 export function startFlight(card: HTMLElement | null, job: FlightJob, contentEl: HTMLElement | null = null): void {

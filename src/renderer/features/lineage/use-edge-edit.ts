@@ -37,7 +37,7 @@ import {
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
 import { runDocDragSession } from './edge-drag-session'
 import { useLineageStore } from './lineage.store'
-import { contentScale, toContentPt } from './timeline-zoom'
+import { clientToOwnPt, clientToOwnRect } from './timeline-zoom'
 import type { EdgeMenuTarget } from './EdgeMenu'
 
 export type EdgeEditState =
@@ -96,25 +96,26 @@ export function useEdgeEdit(args: {
   onVertexContext(idx: number, clientX: number, clientY: number): void
   onEndDown(end: 'from' | 'to', button: number): void
   onSegDown(pt: Pt, button: number): void
-  /** 视口→内容坐标注入（EdgeOverlay 挂载置入——z 逆变换 timeline-zoom 单源） */
+  /** 视口→own 域坐标注入（EdgeOverlay 挂载置入——÷s_eff timeline-zoom 单源） */
   setPointConverter(fn: (clientX: number, clientY: number) => Pt): void
 } {
   const [state, setState] = useState<EdgeEditState>({ phase: 'idle' })
   const [menu, setMenu] = useState<EdgeMenuTarget | null>(null)
   // [②U5] 内容坐标卡 rect（锚/磁吸/穿卡判定源）+视口→内容换算器（host 承载）
   // [RR8] deps 收敛：采集键=布局/路由变化（原无 deps 逐渲染采集——会话期
-  // 每次 move 重查全卡 rect）；换算器 z 走默认参判定时点取值（缩放后不滞留）
+  // 每次 move 重查全卡 rect）；换算器 z/u 走默认参判定时点取值（缩放后不滞留）
+  // [F-VISFB-31] 采集/换算÷s_eff=own 域——与路由快照（pathsRef pts）及
+  // SNAP_R/PAD 常量族同系（旧 ÷z 与 own 域路由 pts 混算=u≠1 档调线错位）
   const cardsRef = useRef<Array<{ nodeId: string; rect: Rect }>>([])
   useEffect(() => {
     const content = args.hostRef.current?.parentElement
     if (!(content instanceof HTMLElement)) return
     const base = content.getBoundingClientRect()
-    const z = contentScale()
     cardsRef.current = Array.from(content.querySelectorAll<HTMLElement>('.tl-card[data-node-id]')).map((el) => {
       const r = el.getBoundingClientRect()
-      return { nodeId: el.dataset.nodeId ?? '', rect: { x: (r.left - base.left) / z, y: (r.top - base.top) / z, w: r.width / z, h: r.height / z } }
+      return { nodeId: el.dataset.nodeId ?? '', rect: clientToOwnRect(r, base) }
     })
-    setPointConverter((cx, cy) => toContentPt(base, cx, cy))
+    setPointConverter((cx, cy) => clientToOwnPt(base, cx, cy))
   }, [args.hostRef, args.recomputeKey])
   const stateRef = useRef(state)
   stateRef.current = state
@@ -241,7 +242,7 @@ export function useEdgeEdit(args: {
       // segment 面（下方 move 内判定）
       const onMove = (ev: PointerEvent | MouseEvent): void => {
         const cards = cardsRef.current
-        // 落点=内容坐标（EdgeOverlay 注入换算器——z 逆变换）
+        // 落点=own 域（EdgeOverlay 注入换算器——÷s_eff）
         const target = ptHook.current(ev.clientX, ev.clientY)
         let work = dragVertex({ anchorA: pl.anchorA, anchorB: pl.anchorB, via: startVia }, idx, target)
         // 磁吸（先横后竖取近）

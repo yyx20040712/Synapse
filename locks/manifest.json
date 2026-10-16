@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T23:49:38.050Z",
+    "generatedAt": "2026-10-16T23:49:53.525Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1216,6 +1216,10 @@
         {
             "path": "tests/unit/renderer/lineage-view-store.test.ts",
             "sha256": "03f3fcb1b56818ede65bdf4129b13aaa7e1c0a5fa2337b2dfd51773c58d9a147"
+        },
+        {
+            "path": "tests/unit/renderer/lineage-visfb31-ownscale.test.tsx",
+            "sha256": "0c730c4c8c9da7af77a251f8911b08355edcc50f909a381232786ae214af27cb"
         },
         {
             "path": "tests/unit/renderer/lineage-write-queue.test.ts",

@@ -61,16 +61,16 @@
  *   （他指 move/up/pointercancel 不驱动不收尾不取消本会话——首指 up 正常
  *   收尾；pid 缺省=鼠标/jsdom MouseEvent 型放行）
  *
- * 坐标域：内容坐标（指针 clientXY−content rect 原点；缩放正交——轮 2 缩放经
- * 逆变换，本批直接内容坐标）。纯几何单源复用 routing/anchors（anchorPoint+
- * Pt/Rect）。jsdom/测试经 DOM rect mock 驱动。
+ * 坐标域：own 域（指针 clientXY−content rect 原点后 ÷s_eff——[F-VISFB-31]
+ * 00A 三域律；缩放正交。指针与卡 rect 同律换算=域内自洽保持）。纯几何单源
+ * 复用 routing/anchors（anchorPoint+Pt/Rect）。jsdom/测试经 DOM rect mock 驱动。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { RefObject } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
 import { anchorPoint, selectAnchor, type Pt, type Rect, type Side } from './routing/anchors'
-import { contentScale, toContentPt as zoomToContentPt, toContentRect } from './timeline-zoom'
+import { clientToOwnPt, clientToOwnRect } from './timeline-zoom'
 import { showToast } from '../../shared/ui/toast-store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
@@ -99,23 +99,24 @@ export interface DrawLineState {
   fromEff: DrawAnchor | null
 }
 
-/** 卡 rect 采集（.tl-card[data-node-id] getBoundingClientRect→内容坐标；
- *  [②U7] 经逆变换换算（z≠1 时视口 rect 含 transform 缩放——坐标域正交） */
+/** 卡 rect 采集（.tl-card[data-node-id] getBoundingClientRect→own 域；
+ *  [②U7→F-VISFB-31] 经 ÷s_eff 换算（视口 rect 含 z·u 双缩放——own 域与
+ *  DRAW_SNAP_R/预览 SVG 用户单位同系；指针与 rect 同律换算=域内自洽保持
+ *  〔00A B↔B 自消律的 C↔C 承接——单侧回退 ÷z 即破〕） */
 function cardRects(content: HTMLElement): Array<{ nodeId: string; rect: Rect }> {
   const base = content.getBoundingClientRect()
-  const z = contentScale()
   const out: Array<{ nodeId: string; rect: Rect }> = []
   for (const el of Array.from(content.querySelectorAll<HTMLElement>('.tl-card[data-node-id]'))) {
     const r = el.getBoundingClientRect()
-    out.push({ nodeId: el.dataset.nodeId ?? '', rect: toContentRect(r, base, z) })
+    out.push({ nodeId: el.dataset.nodeId ?? '', rect: clientToOwnRect(r, base) })
   }
   return out
 }
 
-/** 指针→内容坐标（[②U7] 逆变换——除以 z） */
+/** 指针→own 域（[②U7→F-VISFB-31] ÷s_eff——与 cardRects 同律） */
 function toContentPt(content: HTMLElement, clientX: number, clientY: number): Pt {
   const base = content.getBoundingClientRect()
-  return zoomToContentPt(base, clientX, clientY)
+  return clientToOwnPt(base, clientX, clientY)
 }
 
 /** 全图 12 锚最近命中（≤DRAW_SNAP_R）——[side,slot] 遍历取距离最近者 */
