@@ -265,4 +265,54 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     expect(sel().focusNode).toBe(f.textOf('L2'))
     expect(sel().focusOffset).toBe(8)
   })
+
+  it('⑪ 回声签名一次性消费+会话边界清零（回炉 B-1）：endSession 后外部 T 与旧自写态 S 均不得抑制', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L1'), 20, 15)
+    move(250, 39)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    // 自写 S=（L1,0,L2,8）在场
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    ctl.endSession()
+    // 外部 T（异形态）：不得抑制（false=转发）
+    sel().setBaseAndExtent(f.textOf('L2'), 0, f.textOf('R3'), 5)
+    expect(ctl.onSelectionChange()).toBe(false)
+    expect(sel().focusNode).toBe(f.textOf('R3'))
+    // 外部再选旧自写态 S（与残留签名精确匹配）：不得抑制——终局选区对调度器可见
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('L2'), 8)
+    expect(ctl.onSelectionChange()).toBe(false)
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+  })
+
+  it('⑫ 相邻 drag epoch 签名域隔离（回炉 B-1）：第二纪授权 mousedown 后外部到达旧纪自写态 S 不得抑制', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L1'), 20, 15)
+    move(250, 39)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    ctl.endSession()
+    // 第二纪：授权 mousedown（新 drag epoch=新签名域，未自写）
+    down(ctl, f.spanOf('L1'), 20, 15)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('L2'), 8)
+    expect(ctl.onSelectionChange()).toBe(false)
+    // S 本就合规（锚栏内）→ 不被改写
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    expect(sel().focusOffset).toBe(8)
+  })
+
+  it('⑬ 写窗交错（回炉 W-1）：写→mousemove→写…8 轮各重开窗，每窗恰 1 写、全程 8 写>CAP（epoch 随真实移动无界=设计语义）', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L1'), 20, 15)
+    move(250, 39)
+    for (let i = 0; i < 8; i += 1) {
+      sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+      ctl.onSelectionChange()
+      expect(sel().focusNode).toBe(f.textOf('L2'))
+      move(250, 39)
+    }
+  })
 })

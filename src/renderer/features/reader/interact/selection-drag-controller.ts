@@ -15,11 +15,15 @@
  * - S1：mousemove → 仅写 session.pointer+重开写窗（禁 setState/禁选区写
  *   ——闪烁与性能面归 53 票）；selectionchange → 自写回声（canonical
  *   signature：anchor/focus 节点同一性+偏移四元组精确相等——归一化探针
- *   E1/E2/E4 实证 Chromium 对文本形态写逐字回声零归一化）→ 抑制不转发
+ *   E1/E2/E4 实证 Chromium 对文本形态写逐字回声零归一化；**一次性消费+
+ *   会话/纪边界清零**〔回炉 B-1〕——首个精确匹配即失效，endSession/
+ *   dispose/onMouseDown 均清，外部后续同形态选区不被吞）→ 抑制不转发
  *   （防自身写回环）；其余 → 违例检测（focus/anchor 边界行盒 ∈ 对侧栏）→
  *   越栏边界投影回锚栏（focus 按 pointer——§0-4 鼠标位置+栏布局判定；anchor
  *   按锚盒自身 y/侧——shift+click 旧锚跨栏形态）→ setBaseAndExtent 写（限写
- *   WRITE_RETRY_CAP/超出接受浏览器终态——归一化振荡有界退出）→ 转发调度器。
+ *   =每 mousemove 写窗 ≤WRITE_RETRY_CAP——用户输入重开预算、纯振荡有界，
+ *   epoch 全程随真实移动无界=设计语义〔回炉 W-1 显式化〕；超出接受浏览器
+ *   终态——归一化振荡有界退出）→ 转发调度器。
  *   转发后 rAF 帧点 evaluate.visual 与 mouseup 的 evaluate.full 同读 window
  *   selection=visual-full-mouseup 共用 effective selection 单源（禁两套几何）。
  * - 投影语义：pointer y 落行带→该行（带间隙取阅读序下带）；px ≥ 锚栏 x1 →
@@ -57,9 +61,11 @@ import { collectSpans } from '../anchors/annotation-anchor'
 import { boxOf } from '../anchors/anchor-blank-snap'
 import { authorizeColumnSpan, detectColumnLayout, type ColumnId, type ColumnLayout, type LineBox } from './selection-column-layout'
 
-/** 归一化振荡重试上限（B4 有界退出）：单用户输入窗（mousemove 重开）内连续
- *  自写 ≤3；超出=接受浏览器终态不再写。探针 E1-E5 实证 Chromium 对文本
- *  形态写零归一化（振荡不可达）——本值=防御深度（浏览器行为演化保险） */
+/** 归一化振荡重试上限（B4 有界退出；回炉 W-1 语义显式化）：限写=**每
+ *  mousemove 写窗** ≤3——用户输入事件重开预算（归一化事件无伴随 move〔探针
+ *  E10 实证〕故纯振荡有界）；drag epoch 全程写数随真实移动无界=设计语义
+ *  （主控裁决接受）。探针 E1-E5 实证 Chromium 对文本形态写零归一化（振荡
+ *  不可达）——本值=防御深度（浏览器行为演化保险） */
 const WRITE_RETRY_CAP = 3
 
 /** 控制器句柄（SelectionLayer 接线消费——头注接口层） */
@@ -236,6 +242,8 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
       if (e.button !== 0 || !(e.target instanceof Element)) return
       const textLayer = e.target.closest('.textLayer')
       if (textLayer === null || !pageRoot.contains(textLayer)) return
+      // [回炉 B-1] 新 drag epoch=新签名域：授权/未授权两径均清旧纪自写签名
+      ownWrite = null
       const { items, ox, oy } = measure(textLayer as HTMLElement)
       const layout: ColumnLayout = detectColumnLayout(items.map((it) => it.box))
       const px = e.clientX - ox
@@ -271,6 +279,7 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     enforce,
     endSession(): void {
       session = null
+      ownWrite = null
     },
     onSelectionChange(): boolean {
       const sel = window.getSelection()
@@ -282,6 +291,9 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
         sel.focusNode === ownWrite.focusNode &&
         sel.focusOffset === ownWrite.focusOffset
       ) {
+        // [回炉 B-1] 一次性消费：首个精确匹配=本写的 echo，抑制后签名即失效
+        //——外部后续到达同形态选区（含终局态回放）不再被吞（转发调度器）
+        ownWrite = null
         return true
       }
       if (session !== null) enforce()
@@ -290,6 +302,7 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     dispose(): void {
       document.removeEventListener('mousemove', onMouseMove)
       session = null
+      ownWrite = null
     }
   }
 }
