@@ -419,7 +419,7 @@
         },
         {
             "path": "tests/e2e/reader-text.spec.ts",
-            "sha256": "59067493ba272a115b50f2523f4d1dc441881775f94e1fecf170220566d71f3c"
+            "sha256": "0b0386b1624494732214a899165d08c8e56114c78aaa716dfc47c7ea0b748432"
         },
         {
             "path": "tests/e2e/reading-time-replay.spec.ts",

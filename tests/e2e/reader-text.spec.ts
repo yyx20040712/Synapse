@@ -608,6 +608,10 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await expect(panel.locator('[data-fragment-id]')).toHaveCount(1)
   const body = panel.getByLabel('笔记正文')
   await body.fill('e2e 总评内容')
+  // [F-VISFB-11] 节拍 1.5s→600s（shared 常量单源）：e2e 真实计时器等不到防抖到期
+  // ——改锁显式保存链（saveNow 点击→四态钮 clean「已保存」；节拍数学=单测 fake
+  // timers 域）；exact=true 防子串误中「已保存/保存中」（:1223 同坑注记）
+  await panel.getByRole('button', { name: '保存', exact: true }).click()
   await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
 
   // 片段单击 → C-05 定位服务：同页 exact → 标注元素滚动+locate-flash 闪烁
