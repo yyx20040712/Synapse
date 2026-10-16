@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T17:03:45.719Z",
+    "generatedAt": "2026-10-16T17:19:32.750Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -818,6 +818,10 @@
             "sha256": "60a05f8e51921c5af73b223ffec487d95e67ae432ba0acf1627d7ded4c26e86c"
         },
         {
+            "path": "tests/unit/renderer/annotation-draft-rework.test.tsx",
+            "sha256": "40f759f95a9ef0e668d6f8a8db6b6439456236bca33d632b17f82272e94bc688"
+        },
+        {
             "path": "tests/unit/renderer/annotation-editor-ux.test.tsx",
             "sha256": "e61720541a783c6517c763353549ddea66e56d4423d0891747985da5c1749b31"
         },
@@ -1339,7 +1343,7 @@
         },
         {
             "path": "tests/unit/renderer/selection-drag-controller.test.ts",
-            "sha256": "5aeac964b3084f8e3712decbe076a51959f0d185576af0797b050a570553e232"
+            "sha256": "1c6908b53094f92293673db4a817dd4642969c116ce0fa367c731ea3a0101a9a"
         },
         {
             "path": "tests/unit/renderer/selection-drag-fixture.test.ts",
