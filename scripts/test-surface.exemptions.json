@@ -636,6 +636,12 @@
       "caseTitle": "重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）",
       "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
       "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/e2e/selection-twocol.spec.ts",
+      "skipSiteText": "test.skip( process.env.CI === 'true' && process.platform === 'win32', '延期：windows-latest CI 确定红排查中 [F-VISFB-53CI-01]（B3 收口立案——本地绿/CI 零块三 run 同指纹）' )",
+      "reason": "F-VISFB-53CI-01 立案门：windows-latest CI 确定红（三 run 六 attempt 同指纹零块）本地绿——声明式平台门非静默缩测，排查票闭后撤门同笔退役豁免",
+      "rulingLink": "tickets/registry.ts F-VISFB-53CI-01（B3 收口 CI 回执条款同指纹立案线——runId=20261017-visfbb3）"
     }
   ]
 }

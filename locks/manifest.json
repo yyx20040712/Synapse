@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T22:11:28.366Z",
+    "generatedAt": "2026-10-16T22:26:09.986Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "1c1473dc0be3a81cd44d2a9e0521918f0ff2f7504d4a8094bac842491a0d4fe0"
+            "sha256": "36622b2f5bdb920d818128743d5db95a32ad280e25f459a33aff3148b9b797c5"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -1923,7 +1923,7 @@
         },
         {
             "path": "tests/e2e/selection-twocol.spec.ts",
-            "sha256": "e04f14edd0d260ae75dd37de2063a2379fa6273f8bc735c2a429a2b1363812b9"
+            "sha256": "58a255d2f877e540a7e408ad6975fa1c8c501e5ff85936079a2544476ca7dc0e"
         },
         {
             "path": "tests/unit/renderer/FigureExtractor.test.ts",
