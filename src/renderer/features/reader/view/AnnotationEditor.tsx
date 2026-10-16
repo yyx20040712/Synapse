@@ -44,12 +44,15 @@ export function AnnotationEditor(props: {
   /**
    * [F-VISFB-12] 取消先 flush（H2/H3/H4）：无待存（clean/saved——含值已回退
    * lastSaved）或 busy（在途手动保存/删除承接，卸载注册面兜底）→同步收层
-   * （零跳变，锁定 Escape 同步锚）；有待存→await flush 立存后再收层（失败
-   * 也收层：草稿入注册表，重挂载恢复可重试）。
+   * （零跳变，锁定 Escape 同步锚）；有待存→await flush 立存后再收层。
    * [回炉轮 1 B-2] busy 分支显式入注册表（failed=false——在途手动写结果
    * 未知，重挂载按 dirty+timer 自动重试=S5 同语义）；手动写成功时 saveComment
    * 的 W3 等值清自理；值==服务器值（无待存）零注册。
-   * [回炉轮 1 B-1] H4 路径显式接 flush 终态（INV-141：fulfilled≠已落库）。
+   * [回炉轮 2 B-1] 实质查态（INV-141：fulfilled≠已落库，state 驱动运行时
+   * 分支）：flush 终态 failed=**不收层**——停留编辑器呈现保存失败态
+   * （saveState='failed' 标记+写路径 toast 已发）；逃生径=删除钮/切目标
+   * fire-first（H6 注册表承接）。通道②卸载注册仍真——真正卸载径（路由/
+   * 切目标/删除）的 failed 条目兜底（saveState='failed'→attempted 自动）。
    */
   function requestCancel(): void {
     if (busy || saveState === 'clean' || saveState === 'saved') {
@@ -60,13 +63,9 @@ export function AnnotationEditor(props: {
       return
     }
     void draft.flush().then((finalState) => {
-      // [B-1] 显式查态：failed 分支的呈现=三通道——①toast+markTabDirty（写
-      // 路径 onAutosave 链内建，本组件此前不可见）②卸载注册 failed 条目
-      // （hook saveState='failed'→attempted 自动入表）③重挂载恢复 failed 态
-      // 可重试。本消费点对 failed 不另起动作（行为不变），收层语义=await 后
-      // 无条件 onCancel（主控裁决 d 保持）
       if (finalState === 'failed') {
-        // 失败面经上述三通道呈现；收层继续
+        // failed=不收层：停留编辑器呈现保存失败态；二次 Escape=再 flush 重试
+        return
       }
       onCancel()
     })

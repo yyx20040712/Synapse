@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T17:22:02.964Z",
+    "generatedAt": "2026-10-16T17:25:16.287Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -815,11 +815,11 @@
         },
         {
             "path": "tests/unit/renderer/annotation-draft-flush.test.tsx",
-            "sha256": "60a05f8e51921c5af73b223ffec487d95e67ae432ba0acf1627d7ded4c26e86c"
+            "sha256": "e63fc234ae3742cc730d00840abb79804b172747fa687a421ebf2be82e6439ff"
         },
         {
             "path": "tests/unit/renderer/annotation-draft-rework.test.tsx",
-            "sha256": "40f759f95a9ef0e668d6f8a8db6b6439456236bca33d632b17f82272e94bc688"
+            "sha256": "897b5e1a4df4e73f89837800b96b13d97f7b1851affdc01895b4f7eb2e700b00"
         },
         {
             "path": "tests/unit/renderer/annotation-editor-ux.test.tsx",

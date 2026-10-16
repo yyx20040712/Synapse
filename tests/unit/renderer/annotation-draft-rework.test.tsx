@@ -163,6 +163,36 @@ function renderEditor(
   return { onAutosave, onCancel }
 }
 
+/** [回炉轮 2 W] race 挂载器：setBusy/setEditing 回灌 props 重渲染（删除在途 busy=true 真实回灌面） */
+function mountPopupsRace(annotation: Annotation): { setEditingSpy: ReturnType<typeof vi.fn> } {
+  const props: Parameters<typeof AnnotationPopups>[0] = {
+    menu: null,
+    editing: { annotation, rect: RECT },
+    busy: false,
+    setMenu: vi.fn(),
+    setEditing: vi.fn(),
+    setBusy: vi.fn(),
+    onChanged: vi.fn()
+  }
+  const rerender = (): void => {
+    act(() => {
+      root!.render(<AnnotationPopups {...props} />)
+    })
+  }
+  const setEditingSpy = props.setEditing as unknown as ReturnType<typeof vi.fn>
+  props.setBusy = (v: boolean): void => {
+    props.busy = v
+    rerender()
+  }
+  props.setEditing = (v: typeof props.editing): void => {
+    setEditingSpy(v)
+    props.editing = v
+    rerender()
+  }
+  rerender()
+  return { setEditingSpy }
+}
+
 describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/StrictMode', () => {
   it('S2-busy（B-2）：busy 在途手动写+Escape 同步收层 → 草稿显式入注册表 → 重挂载 dirty+timer 自动重试', async () => {
     const a = annoOf('f12r-b1')
@@ -189,29 +219,40 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     expect(onAutosave).toHaveBeenLastCalledWith('x')
   })
 
-  it('S2-failed（B-1）：flush 失败 → onCancel 仍被调 → 注册表 failed=true 条目在场 → 重挂载恢复 failed 态', async () => {
+  it('S2-failed（B-1 实质查态）：flush 失败 → onCancel 不被调（停留编辑器呈现 failed 态）→ 二次 Escape 再 flush 重试仍失败仍留 → 真卸载后注册表 failed 条目在场', async () => {
     const a = annoOf('f12r-b2')
     const d1 = deferred<boolean>()
-    const onAutosave = vi.fn(() => d1.promise)
+    const d2 = deferred<boolean>()
+    const onAutosave = vi.fn(() => (onAutosave.mock.calls.length === 1 ? d1.promise : d2.promise))
     const { onCancel } = renderEditor(a, { onAutosave })
     typeInto(textarea(), 'f')
     act(() => {
       buttonByLabel('取消').click()
     })
+    expect(onAutosave).toHaveBeenCalledTimes(1)
     await act(async () => {
       d1.resolve(false)
       await vi.advanceTimersByTimeAsync(0)
     })
-    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(savedFlag()?.textContent).toBe('保存失败')
+    expect(host!.querySelector('[data-testid="annotation-editor"]')).not.toBeNull()
+    act(() => {
+      textarea().dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+      )
+    })
+    expect(onAutosave).toHaveBeenCalledTimes(2)
+    await act(async () => {
+      d2.resolve(false)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(savedFlag()?.textContent).toBe('保存失败')
     act(() => {
       root?.render(<div />)
     })
-    const entry = takeAnnotationDraft(a.id)
-    expect(entry).toEqual({ comment: 'f', failed: true })
-    saveAnnotationDraft(a.id, entry!.comment, entry!.failed)
-    renderEditor(a)
-    expect(textarea().value).toBe('f')
-    expect(savedFlag()?.textContent).toBe('保存失败')
+    expect(takeAnnotationDraft(a.id)).toEqual({ comment: 'f', failed: true })
   })
 
   it('S8（W-1 删除失败序列）：删除 API 失败后在途写判废静默丢弃，目标仍活新写 live 自愈', async () => {
@@ -271,6 +312,69 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     expect(mocks.storeUpdateAnnotation).toHaveBeenCalledTimes(1)
     expect(mocks.storeUpdateAnnotation.mock.calls[0]![0].comment).toBe('x2')
     expect(savedFlag()?.textContent).toBe('已保存')
+    confirmSpy.mockRestore()
+  })
+
+  it('W（删除在途×Escape）：busy 分支重建条目→删除成功墓碑清+拒后续 save；删除失败条目留存重挂载恢复', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    // 主例：删除成功——Escape 于删除在途重建条目，成功后墓碑清+拒后续
+    const a1 = annoOf('f12r-w1')
+    const delD1 = deferred<{ ok: boolean; data: null }>()
+    mocks.apiDelete.mockImplementation(() => delD1.promise)
+    const { setEditingSpy: setEditing1 } = await mountPopupsRace(a1)
+    typeInto(textarea(), 'x')
+    act(() => {
+      buttonByLabel('删除').click()
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    act(() => {
+      textarea().dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+      )
+    })
+    expect(setEditing1).toHaveBeenCalledWith(null)
+    const rebuilt = takeAnnotationDraft(a1.id)
+    expect(rebuilt).toEqual({ comment: 'x', failed: false })
+    saveAnnotationDraft(a1.id, rebuilt!.comment, rebuilt!.failed)
+    await act(async () => {
+      delD1.resolve({ ok: true, data: null })
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(takeAnnotationDraft(a1.id)).toBeNull()
+    saveAnnotationDraft(a1.id, 'late', true)
+    expect(takeAnnotationDraft(a1.id)).toBeNull()
+    // 姊妹子例：删除失败——条目留存（annotation 活→重挂载恢复=正确语义）；
+    // 先清主例残迹（removeAnnotation 已按 a1 合法调用——跨子例隔离）
+    mocks.storeRemoveAnnotation.mockClear()
+    const a2 = annoOf('f12r-w2')
+    const delD2 = deferred<{ ok: boolean; data: null }>()
+    mocks.apiDelete.mockImplementation(() => delD2.promise)
+    const { setEditingSpy: setEditing2 } = await mountPopupsRace(a2)
+    typeInto(textarea(), 'y')
+    act(() => {
+      buttonByLabel('删除').click()
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    act(() => {
+      textarea().dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+      )
+    })
+    expect(setEditing2).toHaveBeenCalledWith(null)
+    const kept = takeAnnotationDraft(a2.id)
+    expect(kept).toEqual({ comment: 'y', failed: false })
+    await act(async () => {
+      delD2.reject(new Error('delete failed'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(mocks.storeRemoveAnnotation).not.toHaveBeenCalled()
+    saveAnnotationDraft(a2.id, kept!.comment, kept!.failed)
+    renderEditor(a2)
+    expect(textarea().value).toBe('y')
     confirmSpy.mockRestore()
   })
 

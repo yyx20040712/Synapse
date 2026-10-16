@@ -249,7 +249,7 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
-  it('Escape 同路径：flush 在途不收层；resolve false 也收层且草稿入注册表可重试', async () => {
+  it('Escape 同路径：flush 在途不收层；resolve false 不收层（B-1 实质查态）→ 真卸载后草稿入注册表可重试', async () => {
     const a = annoOf('f12-e3')
     const d1 = deferred<boolean>()
     const onAutosave = vi.fn(() => d1.promise)
@@ -266,7 +266,11 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
       d1.resolve(false)
       await vi.advanceTimersByTimeAsync(0)
     })
-    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(savedFlag()?.textContent).toBe('保存失败')
+    act(() => {
+      root?.render(<div />)
+    })
     renderEditor(a)
     expect(textarea().value).toBe('b')
     expect(savedFlag()?.textContent).toBe('保存失败')
