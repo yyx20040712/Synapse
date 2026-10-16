@@ -33,7 +33,7 @@ import { type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { CardAnchorDots } from './CardAnchorDots'
 import { StarToggleSpan } from './StarGlyphs'
-import type { TimelineCallbacks } from './LineageTimeline'
+import type { TimelineCallbacks } from './timeline-interactions'
 
 /** L1 标签呈现上限（溢出「+N」——mockup §3.4 最多 2） */
 const TAG_LIMIT = 2

@@ -8,6 +8,8 @@
  *   分行见 TimelineYears/capacity.ts）；瀑布不动点迭代（timeline-waterfall）
  *   随本批退役删除。工具条 sticky 驻渲染树——本件触 store 仅限 view.store
  *   （数据域纯 props 可直测）。
+ * - [F-VISFB-22 P2 闸②] 交互域拆件=timeline-interactions.ts（回调契约
+ *   TimelineCallbacks+聚焦三派生+根容器类名+卡点击/星标分派——行为零变）。
  */
 import { useMemo, useRef } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models/lineage'
@@ -19,30 +21,13 @@ import { LineageToolbar } from './LineageToolbar'
 import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
-import { focusBrightSet } from './focus-bright'
 import { useLineageViewStore } from './lineage-view.store'
-import { useLineageStore } from './lineage.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useCapacityLayout } from './use-capacity-layout'
 import { useTimelinePan } from './timeline-pan'
 import { useTimelineZoom } from './timeline-zoom-hook'
 import { ZoomBadge } from './ZoomBadge'
-
-/** [T3-P7B] 03 编辑层/04 侧板消费的节点交互回调（全可选——缺省即纯只读） */
-export interface TimelineCallbacks {
-  /** 单击选中（04 侧板消费面上抛；事件透传=拾取定位面） */
-  onNodeClick?: (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
-  /** 右键节点开菜单（03 节点菜单锚点） */
-  onNodeContextMenu?: (nodeId: string, position: { x: number; y: number }) => void
-  /** [F-UIRES-03 B5①] 卡面两钮回调（onCardGotoLibrary/Reader）随迁移退役删除
-   *  （消费面=SidePanel 操作行经 Page 直连——Board→Timeline→Years 传链同删） */
-  /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
-   *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报）。
-   *  [F-UIRES-03 C3] 改月回调 prop 随改月链退役删除（INV-107）；
-   *  卡双击链（onNodeDblClick）随 v1.7 双击退役删除（全应用唯一保留双击=
-   *  详情面板片段条目——B2 终态） */
-  onReorderMonthSlots?: (nodeIds: string[]) => void
-}
+import { createTimelineCardHandlers, timelineClassOf, useTimelineFocusSets, type TimelineCallbacks } from './timeline-interactions'
 
 /** [F-ALIGN-01] 工具条 props 面随建点入口退役删除（TimelineToolbarProps
  *  唯一成员=onAddNode 对话框开关——工具组其余控件直连双 store，容器零注入） */
@@ -78,12 +63,8 @@ export function LineageTimeline(props: {
   // [F-LGRAPH-01①U3] 模式态单源=lineage-view.store（三模式栏 LineageModeBar
   // 写路径）
   const viewMode = useLineageViewStore((s) => s.mode)
-  // P-8 聚焦集（selector 取稳定数组引用——派生 Set 经 memo 防新引用死循环）
-  const focusSet = useLineageViewStore((s) => s.focusSet)
-  const focusIds = useMemo(() => new Set(focusSet), [focusSet])
-  // [F-VISFB-21 C4] bright=focus∪双向一度邻接（判定集单源=focus-bright 纯函数
-  // ——卡 dim/边 dim 两消费面共用；accent 边框仍=focusIds 本集 P-8 沿承）
-  const brightIds = useMemo(() => focusBrightSet(edges, focusSet), [edges, focusSet])
+  // [F-VISFB-22 P2 闸②] 聚焦三派生=timeline-interactions 拆件（行为零变）
+  const { focusIds, brightIds, dimActive } = useTimelineFocusSets(edges)
   // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
@@ -128,50 +109,18 @@ export function LineageTimeline(props: {
   // transform+sizer（scale 不改布局盒——sizer 按 z 放大自然尺寸供滚动域）+
   // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件
   const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: groups })
-  // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空；[F-VISFB-21 C4] dim 判定集=非 bright 卡/两端均非 bright 的边（0.3 沿承）
-  const dimActive = viewMode === 'focus' && focusSet.length > 0
-
-  // [U5] 模式类：仅 browse/focus 挂（CSS 光标域消费）；edit 态由 .editing 承载
-  //（[回炉 R13] mode-edit 零消费类清理——挂类即须有 CSS 消费）
-  const modeCls = viewMode === 'browse' || viewMode === 'focus' ? `mode-${viewMode}` : ''
-  const timelineCls = [
-    'timeline',
-    modeCls,
-    pan.panning ? 'panning' : '', // [U5] 平移中 grabbing
-    viewMode === 'edit' ? 'editing' : ''
-  ]
-    .filter((c) => c !== '')
-    .join(' ')
-
-  const handleCardClick = (nodeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }): void => {
-    if (drag.consumeClickSuppress()) return // [T3-P8] 拖后 click 抑制（一次性）
-    if (draw.consumeClickSuppress()) return // [②U3] 画线收尾后 click 抑制（防误选）
-    // [F-UIRES-03 C1] 画线域点卡=点两卡连边链路由（anchor 维——useDrawLine），
-    // **禁开详情**（裁决 11a：draw-X+点卡 A=anchor picked 非选中）；回 select
-    // 后详情正常开（负锚见 lineage-c1-clickchain）
-    if (tool !== 'select') {
-      draw.handleCardClick(nodeId)
-      return
-    }
-    // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
-    // 照常转发——toggle 与详情面板联动并行不冲突）
-    if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
-    props.onNodeClick?.(nodeId, ev)
-  }
-
-  // [F-DBCAMP-01 DB-4 / F-STAR-01 A3 点亮] 星标区分派（卡内已 stopProp——星标域
-  // 优先不触发卡身）：三模式（edit/browse/focus）均 toggle 星标（P-11 退出
-  // 条件——edit 态 transitional「星标域点击=选中卡」分派随星标语义回归退役：
-  // 卡选中经卡身点击既有通道不损失）；仅拖后 click 抑制守卫沿承（T3-P8）。
-  // 载荷=props 节点快照（store 节点面解耦——见 lineage.store toggleNodeStar）
-  const handleStarClick = (nodeId: string): void => {
-    if (drag.consumeClickSuppress()) return
-    const node = nodes.find((n) => n.id === nodeId)
-    if (node === undefined || node.paperId === null) return
-    void useLineageStore
-      .getState()
-      .toggleNodeStar({ id: node.id, paperId: node.paperId, isStarred: node.isStarred })
-  }
+  // [F-VISFB-22 P2 闸②] 根容器类名+卡点击/星标分派=timeline-interactions 拆件
+  //（行为零变——分派序与守卫逐句保形迁驻）
+  const timelineCls = timelineClassOf(viewMode, pan.panning)
+  const handlers = createTimelineCardHandlers({
+    nodes,
+    tool,
+    viewMode,
+    consumeDragClick: drag.consumeClickSuppress,
+    consumeDrawClick: draw.consumeClickSuppress,
+    pickCard: draw.handleCardClick,
+    onNodeClick: props.onNodeClick
+  })
 
   return (
     <div
@@ -231,8 +180,8 @@ export function LineageTimeline(props: {
             linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : drawAnchor}
             dragSlot={drag.slot}
             dimUnfocused={dimActive}
-            onCardClick={handleCardClick}
-            onCardStarClick={handleStarClick}
+            onCardClick={handlers.onCardClick}
+            onCardStarClick={handlers.onCardStarClick}
             onCardPointerDown={drag.handleCardPointerDown}
             onNodeContextMenu={props.onNodeContextMenu}
           />

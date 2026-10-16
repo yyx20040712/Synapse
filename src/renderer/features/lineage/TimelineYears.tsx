@@ -31,7 +31,7 @@ import { partitionRows, positionOf } from './capacity'
 import { LineageTimelineCard } from './LineageTimelineCard'
 import { DragCandidates } from './drag-slot-candidates'
 import type { DragSlotPreview } from './useCardDrag'
-import type { TimelineCallbacks } from './LineageTimeline'
+import type { TimelineCallbacks } from './timeline-interactions'
 
 export function TimelineYears(props: {
   groups: TimelineYearGroup[]
