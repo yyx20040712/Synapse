@@ -192,15 +192,44 @@
 }
 .lib-t-more { font-size: var(--fs-micro); color: var(--faint); align-self: center; white-space: nowrap; }
 
-/* ── 规格表抽屉（316px——mockup .drawer/.dr-* 逐值；状态行/加载/错误态随驻）── */
+/* ── 规格表抽屉（mockup .drawer/.dr-* 逐值；状态行/加载/错误态随驻；宽=
+   变量载体——[F-VISFB-41] --lib-drawer-w 页根单点写，缺省 316 视觉零变；
+   左缘 border 迁 .lib-sep::after 承载）── */
 .lib-drawer {
-  width: 316px;
-  border-left: 1px solid var(--line);
+  width: var(--lib-drawer-w, 316px);
   background: var(--panel);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   flex: none;
+}
+
+/* ── [F-VISFB-41] 双侧栏分隔条（拖拽热区 7px：中央 1px ::after 线=原 fnav
+   右缘/drawer 左缘 border 迁此承载〔消双线〕；hover/focus=accent 线+焦点
+   环；键盘=APG separator〔aria 三件+tabIndex，渲染驻 LibraryPage〕。
+   中列保底由 hook 动态钳（LIB_MIDDLE_FLOOR_PX——INV-73 塌列面动态闸）── */
+.lib-sep {
+  flex: none;
+  width: 7px;
+  position: relative;
+  cursor: col-resize;
+}
+.lib-sep::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.lib-sep:hover::after,
+.lib-sep:focus-visible::after {
+  background: var(--accent);
+}
+.lib-sep:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 /* [F-UIRES-04 批 3c] 滚动承载上移 .lib-dr 全区（E 裁决「右侧滚动条」——
    head 不吸顶=字面默认随内容滚，视检轮用户定；原 .lib-dr-body 局部承载

@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T20:11:17.870Z",
+    "generatedAt": "2026-10-16T20:11:42.821Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -855,7 +855,7 @@
         },
         {
             "path": "tests/unit/renderer/app-shell.test.tsx",
-            "sha256": "e662fd246165ccdbd20734a7178401003c3def6b4fcdb4b4a3859607aa6e62ca"
+            "sha256": "8bd14a1d18b681652b317d14dc5dcbc67d4a646d907515c5cc30b7ee4a0ba778"
         },
         {
             "path": "tests/unit/renderer/band-calibration.test.tsx",
@@ -1916,6 +1916,10 @@
         {
             "path": "tests/unit/renderer/reader-notes-panel-visfb13.test.tsx",
             "sha256": "e9226df7d92d20812c01c2cb010a83b75b4c8981719cec8d609c4b1585fcbed9"
+        },
+        {
+            "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
+            "sha256": "0ce70550a984e83a05449124ed1b2e71a764c4bf96703876669255d7e70b5861"
         }
     ]
 }

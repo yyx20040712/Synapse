@@ -413,10 +413,15 @@ describe('T3-P2 旧面负锚——F-UI-03/nav 族零残留（方案切换=删除
     expect(Array.from(stale).map((e) => e.className), '旧 nav 族元素零残留').toEqual([])
     expect(document.querySelector('button[aria-label="收起导航栏"]'), '收起钮退役').toBeNull()
     expect(document.querySelector('button[aria-label="展开导航栏"]'), '展开钮退役').toBeNull()
+    // [F-VISFB-41 主控接缝裁决] 负锚收窄至 main 外：壳层 SplitPane 复活面=
+    // app-content-row 内 main 之外的 separator；main 内页级 role=separator
+    // （阅读器侧栏 SplitPane+41 号库栏拖宽把手）不属旧面复活（原意保持——
+    // 「唯一 SplitPane=阅读器侧栏，在 main 内」注释随 41 号扩为页内把手族）
+    const seps = document.querySelectorAll('.app-content-row [role="separator"]')
     expect(
-      document.querySelector('.app-content-row [role="separator"]'),
-      '壳层不再包 SplitPane（唯一 SplitPane=阅读器侧栏，在 main 内）'
-    ).toBeNull()
+      Array.from(seps).filter((el) => el.closest('main') === null),
+      '壳层不再包 SplitPane（main 外零 separator；页内把手=41 号库栏）'
+    ).toEqual([])
     expect(document.querySelector('button[aria-label="切换课题"]'), 'WorkspaceSwitcher 顶栏用法退役').toBeNull()
   })
 })

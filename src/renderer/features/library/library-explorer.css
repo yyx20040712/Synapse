@@ -4,12 +4,13 @@
    FolderNav 左栏/星标占位列/导入条/行拖拽与命中高亮（标签下拉 dd 族随
    F-UIRES-03 B1 分域拆往 tags/tag-dropdown.css）。由 LibraryPage.tsx import。══ */
 
-/* ── FolderNav 左栏 224px（mockup .fnav 族逐值）── */
+/* ── FolderNav 左栏（mockup .fnav 族逐值；宽=变量载体——[F-VISFB-41]
+   --lib-fnav-w 页根单点写，缺省 224 视觉零变；右缘 border 迁 .lib-sep::after
+   承载〔拖宽热区中央线〕）── */
 .lib-fnav {
-  width: 224px;
+  width: var(--lib-fnav-w, 224px);
   flex: none;
   background: var(--panel-2);
-  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   min-height: 0;
