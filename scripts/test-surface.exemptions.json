@@ -54,6 +54,318 @@
       "caseTitle": "load 写入；edit 标 dirty；1.5s 内防抖后保存一次",
       "reason": "F-VISFB-11 节拍 1500ms→600s：标题随节拍语义改写（「防抖窗口后保存一次」在 cur 面）——用例体窗口派生化断言同强度",
       "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-3（600s 共享常量单源）"
+    },
+    {
+      "file": "tests/unit/db/migrate-022-ghost-edges.test.ts",
+      "caseTitle": "cross-graph 边清除+同图边保全+deletion_events 零行+版本 22",
+      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（22→23——断言面同位保位，非删测）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-022-ghost-edges.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-ai-domain.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-ai-domain.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-ai-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-ai-domain.test.ts",
+      "caseTitle": "M1 019 基线库→应用 020：applied=[20]+终值 20（升级链增量恰一跳）",
+      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（22→23——断言面同位保位，非删测）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "caseTitle": "新库：全量应用到 15（015 起=15 终值；[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18）",
+      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（22→23——断言面同位保位，非删测）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.currentVersion).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "assertionText": "expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
+      "caseTitle": "readSchemaVersion=迁移链尾 user_version 22（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正）",
+      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（22→23——断言面同位保位，非删测）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/services/import-snapshot.service.test.ts",
+      "caseTitle": "schema_newer：伪造 schema_version=23 卷（buildEnvelope 直调）→拒收",
+      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（伪卷 23→24——断言面同位保位，非删测）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/services/lineage-edge-via.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/unit/services/lineage-u8-linetype.test.ts",
+      "assertionText": "expect(readUserVersion(db)).toBe(22)",
+      "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
     }
   ]
 }
