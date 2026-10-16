@@ -22,7 +22,7 @@
  * （e2e 断言锚——[F-SLOTGRID-01 U3] DragCandidates 的框查询消费随候选阵列
  * 算术化退役，属性承载断言定位面沿承）。
  */
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { TimelineYearGroup } from './lineage-timeline'
@@ -30,6 +30,7 @@ import { frameKeyOf } from './lineage-timeline'
 import { partitionRows, positionOf } from './capacity'
 import { LineageTimelineCard } from './LineageTimelineCard'
 import { DragCandidates } from './drag-slot-candidates'
+import { PULL_BAND_PX } from './card-drag-session'
 import type { DragSlotPreview } from './useCardDrag'
 import type { TimelineCallbacks } from './timeline-interactions'
 
@@ -130,11 +131,20 @@ export function TimelineYears(props: {
                 kids = m.nodes.map((n) => renderCard(n, false))
               }
               // [②U6] 框底缘下拉态（拖过底缘=stretch 框高动画腾新行——.38s 曲线
-              // CSS 承载）；候选槽族（faded 多预览）挂源框内
+              // CSS 承载）；候选槽族（faded 多预览）挂源框内。
+              // [F-VISFB-22 C6] 框底连续跟随：inline --lg-pull=会话 pullPx
+              //（未拉伸底缘起越过量，PULL_BAND_PX 封顶）→ theme-lineage.css
+              // stretch 规则 calc(12px+var) 消费（94=12+82 值耦合解除——CSS
+              // 变量化落法，INV-100 在档可选项）；缺省回落=旧全量 82px。
+              //（--lg-pull=运行时注入动态量——check-quality C-4c DYNAMIC_TOKENS
+              // 白名单在册，双向互指）
               const stretching = isSrc && slot !== null && slot.active && slot.extend === true
               const frameCls = ['month-frame', stretching ? 'stretch' : '']
                 .filter((c) => c !== '')
                 .join(' ')
+              const pullStyle = stretching
+                ? ({ '--lg-pull': `${slot?.pullPx ?? PULL_BAND_PX}px` } as CSSProperties)
+                : undefined
               return (
                 <div
                   className={m.month === null ? 'tl-month unknown' : 'tl-month'}
@@ -146,6 +156,7 @@ export function TimelineYears(props: {
                   <div
                     className={frameCls}
                     data-frame-key={key}
+                    style={pullStyle}
                   >
                     <span className="month-tag">
                       {m.month === null

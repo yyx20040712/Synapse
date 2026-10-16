@@ -43,16 +43,26 @@ export interface DragSlotPreview {
   active: boolean
   /** 指针在源月框内（框外槽淡化 .35） */
   overFrame: boolean
-  /** [②U6] 框底缘下拉态（拖过底缘 x 带内=框高动画下拉腾新行+插位组末） */
+  /** [②U6] 框底缘下拉态（拖过底缘 x 带内=框高动画下拉腾新行+插位组末）
+   *  [F-VISFB-22 C6] 触发=越未拉伸底缘即真（去旧 +82 上限——超上限再拖
+   *  stretch 保持、框底单调不回落） */
   extend?: boolean
+  /** [F-VISFB-22 C6] 连续跟随量（px——x 带内指针越未拉伸底缘 frameBottom0
+   *  量，PULL_BAND_PX 封顶；0=未越缘/带外。消费面=TimelineYears 写入框
+   *  inline --lg-pull → CSS calc(12px+var) 逐 move 跟随） */
+  pullPx?: number
 }
 
 /** 激活阈值（px——mockup L944 同值） */
 const DRAG_THRESHOLD = 5
 
 /** [②U6] 源框底缘下拉带高（px——mockup §3.5）：overSourceFrame 实时判定与
- *  [lnfix2] 冻结基准判定两处共用单源 */
-const PULL_BAND_PX = 82
+ *  [lnfix2] 冻结基准判定两处共用单源。
+ *  [F-VISFB-22 C6] 双角色：①触发带语义沿承（INV-98 实时域——overSourceFrame
+ *  带上限不动）；②连续跟随封顶（pullPx 钳制上限+CSS 增量单源——TimelineYears
+ *  消费写入 --lg-pull，theme-lineage.css 只知基准 12px+变量，INV-100 的
+ *  94=12+82 值耦合由此解除） */
+export const PULL_BAND_PX = 82
 
 interface DragSession {
   nodeId: string
@@ -77,8 +87,11 @@ interface DragSession {
   /** [②U6] 原始槽位（回弹基准——源框外松手飞行落点） */
   srcIdx: number
   overFrame: boolean
-  /** [②U6] 框底缘下拉态（冻结基准下拉带内——见 frameBottom0） */
+  /** [②U6] 框底缘下拉态（冻结基准下拉带内——见 frameBottom0）
+   *  [F-VISFB-22 C6] 触发沿连续语义（y>frameBottom0 即真，无上限） */
   extend: boolean
+  /** [F-VISFB-22 C6] 连续跟随量（冻结基准底缘起越过量，PULL_BAND_PX 封顶） */
+  pullPx: number
   /** [lnfix2] 冻结基准（pointerdown 抓取帧同步取值+激活后 rAF 校准一次）
    *  ——extend 判定源。实时 rect 会被占位槽腾行（+92）与 stretch padding
    *  （+94）推高（k1 断点 A/B——下拉带几何不可达+挂置即振荡），读实时则
@@ -197,7 +210,7 @@ export function useDragSession(args: {
           card.style.transition = 'none'
           // [INV-140] 四键+left/top 存续前提=节点保育（TimelineYears foster row 同父调和——跨父 remount 即灭）
         }
-        setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false })
+        setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false, pullPx: 0 })
         setPhase('dragging')
         // [lnfix2] 稳态校准（激活后 rAF 一帧——主控裁决 b 面）：占位槽首帧
         // 渲染后复取源框底缘/x 带（grab 基准=拖前布局，高卡离流缩框的边界
@@ -223,15 +236,25 @@ export function useDragSession(args: {
       }
       // [lnfix2] extend 判定读冻结基准（grab 帧+校准值）：实时 rect 被占位槽
       //  腾行/stretch padding 推高（k1 断点 A/B——下拉带几何不可达+挂载即
-      //  振荡），冻结后带可达且挂载不反噬判定；over（槽淡化/插位）沿实时单源
-      const extend =
-        e.clientX >= s.frameLeft0 &&
-        e.clientX <= s.frameRight0 &&
-        e.clientY > s.frameBottom0 &&
-        e.clientY <= s.frameBottom0 + PULL_BAND_PX
+      //  振荡），冻结后带可达且挂载不反噬判定；over（槽淡化/插位）沿实时单源。
+      //  [F-VISFB-22 C6] 连续跟随：pullPx=x 带内指针越未拉伸底缘（frameBottom0）
+      //  量、PULL_BAND_PX 封顶（框底逐 move 跟随一小段后恒驻 82）；extend 触发
+      //  =越缘即真（去旧 +82 上限——超上限再拖两段 stretch 保持+框底单调，
+      //  视检 C6「框底跟随一小段」）；x 带语义与 overSourceFrame 实时域
+      //  （INV-98 触发带——回弹/落位判定）沿承零改
+      const inPullBand =
+        e.clientX >= s.frameLeft0 && e.clientX <= s.frameRight0 && e.clientY > s.frameBottom0
+      const pullPx = inPullBand
+        ? Math.min(e.clientY - s.frameBottom0, PULL_BAND_PX)
+        : 0
+      const extend = inPullBand
       const over = overSourceFrame(s.frameEl, e.clientX, e.clientY)
       let nextIdx = s.insertIdx
-      if (over && s.frameEl !== null) {
+      // [F-VISFB-22 C6] extend 分派门=over||extend：越缘跨入 move 单帧内实时
+      // rect 尚未撑高（over 陈旧）不该压回插位——组末语义随触发即立（冻结
+      // 基准权威）；overSourceFrame 本体（INV-98 回弹/落位/淡化域）零改，
+      // overFrame 仍沿实时（次帧自校正）
+      if ((over || extend) && s.frameEl !== null) {
         // [F-SLOTGRID-01 U3] 落点=含源网格算术（INV-111 消费面——设计 §5.5/
         //  预裁决 D1/D3）：rowCounts 含源卡（srcIds 全长），判定面不随占位槽
         //  腾位漂移（推挤滞回结构性消除——旧 rect 逐帧实测法随本批退役）；
@@ -244,12 +267,13 @@ export function useDragSession(args: {
           nextIdx = insertIndexFromGrid(p.x, p.y, w, s.srcIds.length, s.srcIdx)
         }
       }
-      if (over !== s.overFrame || nextIdx !== s.insertIdx || extend !== s.extend) {
+      if (over !== s.overFrame || nextIdx !== s.insertIdx || extend !== s.extend || pullPx !== s.pullPx) {
         s.overFrame = over
         s.insertIdx = nextIdx
         s.extend = extend
+        s.pullPx = pullPx
         setSlot((prev) =>
-          prev === null ? prev : { ...prev, overFrame: over, insertIdx: nextIdx, extend }
+          prev === null ? prev : { ...prev, overFrame: over, insertIdx: nextIdx, extend, pullPx }
         )
       }
     }
@@ -335,6 +359,7 @@ export function useDragSession(args: {
       srcIdx: srcIds.indexOf(nodeId),
       overFrame: true,
       extend: false,
+      pullPx: 0,
       frameBottom0: fr0.bottom,
       frameLeft0: fr0.left,
       frameRight0: fr0.right,

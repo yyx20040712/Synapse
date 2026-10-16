@@ -369,7 +369,9 @@ for (const sp of SENTINEL_SCAN_FILES) {
 // DYNAMIC_TOKENS=C-4c 白名单单源——注入点代码侧注释回指本常量名（双向互指辅链）：
 //   --ui-scale     → App.tsx:136（documentElement.style.setProperty 动态注入）
 //   --scale-factor → TextLayer.tsx:151（textLayer 容器 style 键动态注入）
-const DYNAMIC_TOKENS = ['--ui-scale', '--scale-factor']
+//   --lg-pull      → TimelineYears.tsx pullStyle（month-frame inline style 键
+//                    动态注入——[F-VISFB-22 C6] 框底连续跟随量，会话侧逐 move 写入）
+const DYNAMIC_TOKENS = ['--ui-scale', '--scale-factor', '--lg-pull']
 const VAR_REF_RE = /var\(\s*(--[\w-]+)/g
 const varRefFiles = walk(join(root, 'src'), (p) => /\.(css|ts|tsx)$/.test(p))
 const varRefMap = new Map() // 引用名 → Set<相对路径>

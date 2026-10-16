@@ -136,12 +136,21 @@
   transition: opacity .2s;
 }
 .drag-slot.faded { opacity: .35; }
+/* [F-VISFB-22 C5] 候选槽提层：cand 族 z3（卡 z2 之上/连线命中层 z4 与拖卡
+   z99 之下）——真实浏览器探针实证 faded 候选恒被流内卡整面覆盖（含源保守
+   语义下候选 cell 与其余卡 cell 1:1 重合，elementFromPoint 5/5 命中卡）
+   =「候选槽不显示」病灶；实态槽占空位不被覆盖，基类零提层 */
+.drag-slot.cand { z-index: 3; }
 /* [F-UIRES-03 C3] 月标 chip（.c-ym）+改月飞行框高亮（.month-frame.flash）
    随改月链退役删除（INV-107——改月唯一入口=MetaEditDialog） */
 /* [F-LGRAPH-01②U6] 框底缘下拉：拖过底缘=padding-bottom 增高腾新行（height
    auto 不可插值——padding 变化承载 .38s 同曲线下拉动画；mockup §3.5 承载面
-   申报：现行 height .38s 过渡字段保留不拆） */
-.month-frame.stretch { padding-bottom: 94px; }
+   申报：现行 height .38s 过渡字段保留不拆）。
+   [F-VISFB-22 C6] 94=12+82 值耦合改 CSS 变量化（INV-100 在档可选项落法）：
+   增量=--lg-pull（会话侧逐 move 连续写入——未拉伸底缘起跟随量，
+   PULL_BAND_PX=82 封顶单源在 card-drag-session.ts；CSS 只知基准 12px+变量，
+   字面 94 退役）；缺省 82px=var 缺席兜底（旧全量语义） */
+.month-frame.stretch { padding-bottom: calc(12px + var(--lg-pull, 82px)); }
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
