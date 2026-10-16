@@ -86,11 +86,8 @@ function isPngBytes(bytes: Uint8Array): boolean {
 
 export function createFigureStoreService(deps: FigureStoreDeps): FigureStoreService {
   const { repos, fileStore } = deps
-  // fail-fast 守卫：Repos.figures 可选键（受锁测试字面量闭合）在装配面缺席=
-  // 装配序缺陷显性化（readSyncKey 缺席 throw 同型——非 null 静默态）
-  if (repos.figures === undefined) {
-    throw new Error('figures repo 缺席：装配序缺陷（createRepos 恒供值——本库为派生图表资产合同面）')
-  }
+  // 〔F-VISFB-43 条件⑤收编〕Repos.figures 转必选——42 时代的缺席 fail-fast
+  // 守卫随可选键退役删除（类型面单源）
   const figures = repos.figures
 
   function requirePaper(paperId: string): void {

@@ -130,6 +130,19 @@ const stubAiCascadeDefault = {
 }
 stubState.api.ai_cascade = stubAiCascadeDefault as unknown as Record<string, unknown>
 
+// [F-VISFB-43] 同上习语缺省桩单点扩（图表提取管线消费面新依赖——DrPaperInfo/
+// SidePaperInfo 挂载即 figures.list）：恒 ok 空清单+job null（消费面=strip 省略
+// 终态，无 pending 泄漏）；测试需自定义清单时经 makeApiStub({ figures: … })
+// 覆盖（Object.assign 同键后写者胜）。begin/store/complete/pending=提取桥面
+// （figure-bridge.test 自带 mock），挂载链测试不触——不桩。
+const stubFiguresDefault = {
+  list: vi.fn(async () => ({ ok: true as const, data: { figures: [], job: null } })),
+  // 桥件挂载沿（App 级测试挂 App 即触发 pending 查询）：恒空单——begin/store/
+  // complete 不触（figure-bridge.test 自带 mock 面）
+  pending: vi.fn(async () => ({ ok: true as const, data: { jobs: [] } }))
+}
+stubState.api.figures = stubFiguresDefault as unknown as Record<string, unknown>
+
 /** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
 export function makeApiStub<T extends object>(shape: T): T {
   Object.assign(stubState.api, shape)

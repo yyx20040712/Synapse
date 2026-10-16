@@ -14,6 +14,7 @@ import { ToastHost } from '../shared/ui/Toast'
 import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
+import { useFigureExtractionBridge } from '../shared/figures/useFigureExtractionBridge'
 import { useSettingsStore } from '../features/settings/settings.store'
 import { useLibraryStore } from '../features/library/library.store'
 import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
@@ -74,6 +75,9 @@ export function App(): JSX.Element {
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
+  // [F-VISFB-43] 图表提取桥（pending jobs 驱动单点：挂载沿+importProgress
+  // done 事件沿——串行逐篇提取回存；与视图路由零耦合）
+  useFigureExtractionBridge()
   // R1-WS2：课题清单驻留（列表型失败在 store 内写 error，不抛——挂载安全）；
   // [F-WS-02] dirty 聚合值直注 WorkspacesPage（弹层/设置节退役——禁跨域
   // store 互引，ADR-0018）

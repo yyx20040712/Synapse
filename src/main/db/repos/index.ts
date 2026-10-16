@@ -63,9 +63,9 @@ export interface Repos {
   importSnapshot: ImportSnapshotRepo
   /** [F-VISFB-42] 派生图表资产仓储（figure_jobs+paper_figures——消费=
    *  figure-store.service+协议查表+import-snapshot 恢复重提挂点）。
-   *  可选键=受锁测试面 Repos 字面量闭合（enrich/import 两测试逐键构造不涉
-   *  派生面——生产 createRepos 恒供值，figure-store 工厂 fail-fast 守卫兜） */
-  figures?: FigureRepo
+   *  [F-VISFB-43 主控六条件⑤] 可选键收编必选（43 服务面入 ServiceBundle
+   *  ——受锁 enrich/import 两测试字面量随补 figures 桩） */
+  figures: FigureRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */

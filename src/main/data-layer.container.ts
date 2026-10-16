@@ -88,9 +88,10 @@ export function createDataLayerContainer(deps: DataLayerContainerDeps): DataLaye
     services: liveProxy(() => requireCurrent().services),
     fileStore: liveProxy(() => requireCurrent().fileStore),
     papersFileRef: async (paperId) => requireCurrent().repos.papers.fileRefById(paperId),
-    // [F-VISFB-42] figures=Repos 可选键（受锁测试字面量闭合）——真库装配恒在
+    // [F-VISFB-42] figure 查表（〔F-VISFB-43 条件⑤〕Repos.figures 已转必选——
+    // 可选链随收编退役）
     figureFileRef: async (paperId, figureId) =>
-      requireCurrent().repos.figures?.fileRefByFigure(paperId, figureId) ?? null,
+      requireCurrent().repos.figures.fileRefByFigure(paperId, figureId),
     assembleInto: async (dataDir) => {
       current = await deps.assemble(dataDir)
     },

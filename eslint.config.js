@@ -70,12 +70,13 @@ export default tseslint.config(
             {
               // INV-16：pdfjs-dist 运行时 import 白名单五文件（PdfDocProvider/
               // PdfPageCanvas/TextLayer/CorpusExtractor——2026-08-28 F-01 随
-              // PdfCanvas 拆分迁移，类型再导出单点随之迁移；PaperImageExtractor
-              // ——2026-10-15 F-UIRES-04 批 3a 扩容第五件，shared 中立件）——本条
-              // 对白名单外 renderer 文件生效；白名单 override 块在下方重申完整
-              // patterns（flat config 同规则后块覆盖，无法只豁免一条）
+              // PdfCanvas 拆分迁移，类型再导出单点随之迁移；FigureExtractor
+              // ——第五席 2026-10-15 F-UIRES-04 批 3a PaperImageExtractor 扩容，
+              // 2026-10-17 F-VISFB-43 随旧件退役换名=shared/figures/FigureExtractor）
+              // ——本条对白名单外 renderer 文件生效；白名单 override 块在下方重申
+              // 完整 patterns（flat config 同规则后块覆盖，无法只豁免一条）
               group: ['pdfjs-dist', 'pdfjs-dist/**'],
-              message: 'pdfjs-dist 只许白名单五文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/PaperImageExtractor，INV-16——白名单变更=[locked-change]）'
+              message: 'pdfjs-dist 只许白名单五文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/FigureExtractor，INV-16——白名单变更=[locked-change]）'
             }
           ]
         }
@@ -86,13 +87,14 @@ export default tseslint.config(
     // INV-16 白名单 override：五文件重申 renderer 全部禁令但不含 pdfjs 条目
     // （与上方 renderer 块的其余 patterns 保持同步维护——漂移即防线破口；
     // F-01 拆分迁移：PdfCanvas.tsx → PdfDocProvider.tsx + PdfPageCanvas.tsx；
-    // F-UIRES-04 批 3a：+shared/PaperImageExtractor.ts 第五件）
+    // 第五席沿革：F-UIRES-04 批 3a +shared/PaperImageExtractor.ts →
+    // F-VISFB-43 换名 shared/figures/FigureExtractor.ts（旧件原子退役））
     files: [
       'src/renderer/features/reader/state/PdfDocProvider.tsx',
       'src/renderer/features/reader/view/PdfPageCanvas.tsx',
       'src/renderer/features/reader/view/TextLayer.tsx',
       'src/renderer/features/reader/state/CorpusExtractor.ts',
-      'src/renderer/shared/PaperImageExtractor.ts'
+      'src/renderer/shared/figures/FigureExtractor.ts'
     ],
     rules: {
       'no-restricted-imports': [

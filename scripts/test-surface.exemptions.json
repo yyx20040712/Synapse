@@ -378,6 +378,264 @@
       "assertionText": "expect( document.querySelector('.app-content-row [role=\"separator\"]'), '壳层不再包 SplitPane（唯一 SplitPane=阅读器侧栏，在 main 内）' ).toBeNull()",
       "reason": "F-VISFB-41 库栏拖宽把手（页内 role=separator）与壳层负锚接缝冲突——主控接缝裁决收窄至 main 外（filter closest('main')===null 集合 toEqual([])，守卫力≥原——门一 N7 独立复核）；值改写非删测",
       "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-41（主控集成窗接缝裁决——B3 批集成笔 a3629c9d）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "通道总数=81（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面，域 21 不变）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域枚举 pin：恰 21 域（[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_audit 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_cascade 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_memory 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_messages 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_sensor 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_sessions 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 ai_tasks 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 enrich 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 export_ 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 folders 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 import_ 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 library 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 lineage 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 notes 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 papers 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 reader 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 settings 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 snapshot 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 system 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 tags 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "域 workspaces 方法集 pin",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/contracts/api-surface-closure.test.ts",
+      "caseTitle": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
+      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
+    },
+    {
+      "file": "tests/e2e/library-detail-info.spec.ts",
+      "assertionText": "expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })",
+      "reason": "F-VISFB-43 主控集成窗 e2e 适配：旧 M2 提取失败降级面（重试微钮）随管线退役——零 figures→strip 省略+重试钮 toHaveCount(0)（标题/断言随语义改写，I4「降级不挡主件」锚保持）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（executor 自裁④移交清单——主控集成笔）"
+    },
+    {
+      "file": "tests/e2e/lineage-side-info.spec.ts",
+      "caseTitle": "无真 PDF 场图片提取失败→strip 省略+重试微钮在场（I4 降级不挡主件）",
+      "reason": "F-VISFB-43 主控集成窗 e2e 适配：旧 M2 提取失败降级面（重试微钮）随管线退役——零 figures→strip 省略+重试钮 toHaveCount(0)（标题/断言随语义改写，I4「降级不挡主件」锚保持）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（executor 自裁④移交清单——主控集成笔）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperImageExtractor.test.ts",
+      "fileScope": true,
+      "reason": "F-VISFB-43 原子退役：PaperImageExtractor 及其测试整件删除（F-LGRAPH-01「先删不加=中间态」先例——新管线落地与旧方案删除同票；消费面轮询/重试面一并退役）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（任务书明示 FILE 级 test-surface 豁免=主控集成域登记）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "ready：strip 在场 2 图（dataURL 横滚条）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "partial：failedPages=3 徽注在场（计数锚）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "空省略：authors=[]→作者块缺席；abstract=\"\"→摘要块与 toggle 均缺席",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "images 缺席→strip 与降级行均缺席（C2-② 借出弃置瞬态非 error 面）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "error：降级行+重试微钮在场；点击→retryPaperImages(pId 派生单源, fileUrl) 恒等锚",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
+      "caseTitle": "M3：toggle 展开/收起往返（class open）；key={data.id} 换篇重挂载→expanded 复位",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
+      "caseTitle": "M1 error 面：「信息加载失败」行+重试钮在场（aria-label=重试）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
+      "caseTitle": "M1 重试钮点击→store.retry 被调（参数=paperId）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
+      "caseTitle": "extracting 态：strip 与降级行双缺席（借出弃置瞬态非 error 面——C2-②）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
+    },
+    {
+      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
+      "caseTitle": "重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）",
+      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
     }
   ]
 }

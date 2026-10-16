@@ -154,6 +154,43 @@ const VALID: Record<string, unknown[]> = {
     { paperId: 'p1', page: 3 }
   ],
   trueAckSchema: [{ ok: true }],
+  // [F-VISFB-43] figures 域（图表提取管线——renderer 提取+IPC 回存）
+  figureItemSchema: [{ figureId: 'fig-1', page: 1, width: 308, height: 209 }],
+  figureJobViewSchema: [
+    { status: 'ready', excess: 0, failedCount: 0 },
+    { status: 'pending', excess: 0, failedCount: 0 },
+    { status: 'failed', excess: 0, failedCount: 0 }
+  ],
+  figuresListResSchema: [
+    { figures: [], job: null },
+    { figures: [{ figureId: 'fig-1', page: 1, width: 308, height: 209 }], job: { status: 'ready', excess: 1, failedCount: 2 } }
+  ],
+  figuresPendingItemSchema: [{ paperId: 'p1', sha256: 'sha-1' }],
+  figuresPendingResSchema: [{ jobs: [] }, { jobs: [{ paperId: 'p1', sha256: 'sha-1' }] }],
+  figuresBeginResSchema: [null, { token: 't1', sha256: 'sha-1' }],
+  figureStoreReqSchema: [
+    {
+      token: 't1',
+      digest: 'a'.repeat(64),
+      bytes: new Uint8Array([0x89, 0x50]),
+      page: 1,
+      width: 308,
+      height: 209,
+      ctmX: 10,
+      ctmY: 20,
+      ctmW: 74,
+      ctmH: 50
+    }
+  ],
+  figureStoreResSchema: [
+    { stored: true, figureId: 'fig-1', reason: null },
+    { stored: false, figureId: null, reason: '图表资产须为 PNG 编码' }
+  ],
+  figuresCompleteReqSchema: [
+    { token: 't1', excess: 0, failed: 0 },
+    { token: 't1', excess: 2, failed: 3 }
+  ],
+  figuresCompleteResSchema: [{ status: 'ready' }, { status: 'failed' }],
   // [F-ALIGN-01 D3] 导入三通道 Req 必携 targetFolderId（INV-NEW-2 主锚契约面）
   importPathsReqSchema: [{ paths: ['C:/a.pdf'], targetFolderId: 'f1' }],
   importTargetReqSchema: [{ targetFolderId: 'f1' }],
@@ -289,6 +326,16 @@ const SCHEMA_NAMES = [
   'exportResSchema',
   'exportSelectionReqSchema',
   'extractRequestEventSchema',
+  'figureItemSchema',
+  'figureJobViewSchema',
+  'figureStoreReqSchema',
+  'figureStoreResSchema',
+  'figuresBeginResSchema',
+  'figuresCompleteReqSchema',
+  'figuresCompleteResSchema',
+  'figuresListResSchema',
+  'figuresPendingItemSchema',
+  'figuresPendingResSchema',
   'importPathsReqSchema',
   'importProgressEventSchema',
   'importResultSchema',

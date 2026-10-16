@@ -18,6 +18,8 @@ import { createSettingsIpc } from './settings'
 import { createSystemIpc } from './system'
 import { createFoldersIpc } from './folders'
 import { createPapersIpc } from './papers'
+// [F-VISFB-43] 图表提取管线域（5 通道——契约=shared/ipc/schemas.ts figures 段）
+import { createFiguresIpc } from './figures'
 // [F-DBCAMP-01 DB-2 U2] AI 域六件（13 通道——契约=shared/ipc/ai-schemas.ts）
 import { createAiSessionsIpc } from './ai_sessions'
 import { createAiMessagesIpc } from './ai_messages'
@@ -43,6 +45,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     system: createSystemIpc(deps),
     folders: createFoldersIpc(deps),
     papers: createPapersIpc(deps),
+    figures: createFiguresIpc(deps),
     ai_sessions: createAiSessionsIpc(deps),
     ai_messages: createAiMessagesIpc(deps),
     ai_memory: createAiMemoryIpc(deps),

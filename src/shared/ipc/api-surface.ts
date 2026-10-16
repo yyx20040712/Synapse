@@ -162,6 +162,16 @@ export const API_SURFACE = {
     delete: { channel: 'papers/delete', Req: S.paperDeleteReqSchema, Res: S.trueAckSchema },
     setStarred: { channel: 'papers/set-starred', Req: S.paperSetStarredReqSchema, Res: S.trueAckSchema }
   },
+  // figures 域（[F-VISFB-43] 图表提取管线——renderer 提取桥消费面+信息区清单面；
+  // 五通道 list/pending/begin/store/complete；零新事件通道——桥触发沿复用
+  // importProgress done 事件，图结构/资产变更不广播〔消费面挂载拉取即足〕）
+  figures: {
+    list: { channel: 'figures/list', Req: S.paperIdReqSchema, Res: S.figuresListResSchema },
+    pending: { channel: 'figures/pending', Req: S.voidReqSchema, Res: S.figuresPendingResSchema },
+    begin: { channel: 'figures/begin', Req: S.paperIdReqSchema, Res: S.figuresBeginResSchema },
+    store: { channel: 'figures/store', Req: S.figureStoreReqSchema, Res: S.figureStoreResSchema },
+    complete: { channel: 'figures/complete', Req: S.figuresCompleteReqSchema, Res: S.figuresCompleteResSchema }
+  },
   // [F-DBCAMP-01 DB-2 U2] AI 域六域 13 通道（契约=ipc/ai-schemas.ts，U1 落）。域 key
   // 与通道前缀解耦先例=ai_sensor 域含 zcode-link/*：audit 通道 ai-tasks/list-audit
   // 域归属 ai_audit（挂账②锚点）；ai-memory/delete Res=trueAckSchema（S 复用直引

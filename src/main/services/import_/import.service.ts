@@ -114,16 +114,22 @@ export function createImportService(deps: {
    *  （侧栏计数）+lineage.changed（图结构）双播（S3/S4 联动数据源） */
   sendFoldersChanged?: () => void
   sendLineageChanged?: () => void
+  /** [F-VISFB-43] 导入完成→图表提取建单挂点（可选缺省=静默——受锁单测装配
+   *  兼容；生产=services/index 接 figureTasks.enqueue——幂等建 pending 单）。
+   *  仅 imported>0 触发（全重复/全失败零建单） */
+  onImported?: (paperIds: string[]) => void
 }): ImportService {
   const { repos, fileStore, extractMeta, gate, onProgress } = deps
   const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
   const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
+  const onImported = deps.onImported ?? (() => undefined)
 
   /** [F-ALIGN-01 D3] 落夹产物广播（imported>0 才播——取消/全重复零播） */
   const reportMutated = (result: ImportResult): void => {
     if (result.imported.length > 0) {
       sendFoldersChanged()
       sendLineageChanged()
+      onImported(result.imported.map((s) => s.id))
     }
   }
 

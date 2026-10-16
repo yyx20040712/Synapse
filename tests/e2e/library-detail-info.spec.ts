@@ -98,10 +98,11 @@ test('两域同构：同 paperId 库详情面板与脉络侧板渲染同作者�
   const sideAuthors = win.getByTestId('paper-info-authors')
   await expect(sideAuthors).toContainText('张三丰', { timeout: 10_000 })
   await expect(sideAuthors).toHaveText(libAuthors ?? '')
-  // [r2 d1-W3] 跨页同篇切换终态断言：库面板卸载（unmountPaperImages）→脉络
-  // 侧板同篇重 select 的 M2 幂等/重启语义——seed 无真 PDF→自建提取失败→error
-  // 降级面（strip 省略+重试微钮在场——I8），错误链不因跨页切换丢失
-  await expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })
+  // [r2 d1-W3→F-VISFB-43 换源] 跨页同篇切换终态断言：seed 无真 PDF→零 figures
+  // （无导入事件无 job→figures.list 空）→strip 省略+重试微钮随管线退役——
+  // 降级终态不因跨页切换丢失（I4 语义沿承：主件作者文本两面板一致）
+  await expect(win.getByTestId('paper-info-strip-retry')).toHaveCount(0)
+  await expect(win.getByTestId('paper-info-strip')).toHaveCount(0)
 
   await app.close()
 })

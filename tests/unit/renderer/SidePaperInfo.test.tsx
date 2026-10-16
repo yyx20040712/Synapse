@@ -1,22 +1,18 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-04 批 3c] SidePaperInfo 连接件单测（F-PINFO-01 顺带补锁——v196
- * §1-1 三断言：M1 error 面/重试观察链/extracting 省略面；消费面测试盲区
- * 3b 批零覆盖）。jsdom 零 IPC：paperInfoStore 面与 M2 面（PaperImageExtractor）
- * 均模块级 mock（最小面——store 直调 getState 桩；PaperInfoSection 用真件
- * 经 mock 后的提取面渲染）。
- * - ①M1 error 面=「信息加载失败」行+重试钮在场；②重试钮点击→store.retry
- *   被调（参数=paperId）；③extracting 态→strip 与降级行双缺席（C2-② 瞬态
- *   非 error 面）；④重试观察链最小锁=mock getPaperImages 首返 error 引用、
- *   advanceTimers(250) 后返 extracting 新引用→断言下传 PaperInfoSection 的
- *   images 更新（250ms 轮询捕捉 error→extracting 转移——I8 通道）。
- * - always-active（不经 guardedDescribe——三屋结构性缺位教训 K3 沿承）。
+ * [F-VISFB-43 U7] SidePaperInfo 连接件单测（换源版：图表清单=figures.list IPC
+ * 单发拉取——零轮询零提取调用；M1 面沿承 3c）。jsdom：paperInfoStore 模块级
+ * mock+api-client-mock 工厂（figures.list 桩）。always-active（K3 沿承）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PaperDetail } from '../../../src/shared/models/paper'
+import { makeApiStub } from '../../utils/api-client-mock'
 import { makeDetail } from '../../utils/factories'
+
+const listFigures = vi.fn()
+makeApiStub({ figures: { list: listFigures } })
 
 /** store 桩（模块级单例——view 直改后重挂即生效；getState 返回同引用） */
 const storeState = {
@@ -31,21 +27,9 @@ vi.mock('../../../src/renderer/shared/paperInfoStore', () => ({
     { getState: () => storeState }
   )
 }))
-/** M2 桩（PaperInfoSection 的 retryPaperImages/paperIdFromFileUrl 一并覆盖） */
-vi.mock('../../../src/renderer/shared/PaperImageExtractor', () => ({
-  selectPaperImages: vi.fn(),
-  getPaperImages: vi.fn(),
-  unmountPaperImages: vi.fn(),
-  paperIdFromFileUrl: (u: string) => u.slice('app-file://'.length),
-  retryPaperImages: vi.fn()
-}))
-import { getPaperImages } from '../../../src/renderer/shared/PaperImageExtractor'
 import { SidePaperInfo } from '../../../src/renderer/features/lineage/SidePaperInfo'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-const EXTRACTING = { status: 'extracting' as const, images: [], failedPages: 0 }
-const ERROR_ENTRY = { status: 'error' as const, images: [], failedPages: 0 }
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -66,7 +50,16 @@ function setView(view: typeof storeState.view): void {
 beforeEach(() => {
   vi.clearAllMocks()
   storeState.view = { status: 'ready', data: makeDetail() }
-  vi.mocked(getPaperImages).mockReturnValue(EXTRACTING)
+  listFigures.mockResolvedValue({
+    ok: true,
+    data: {
+      figures: [
+        { figureId: 'fig-a', page: 3, width: 308, height: 209 },
+        { figureId: 'fig-b', page: 7, width: 481, height: 300 }
+      ],
+      job: { status: 'ready', excess: 0, failedCount: 0 }
+    }
+  })
 })
 
 afterEach(() => {
@@ -76,10 +69,9 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
-  vi.useRealTimers()
 })
 
-describe('[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 mock）', () => {
+describe('[F-VISFB-43 U7] SidePaperInfo 连接件（store mock+figures.list 桩）', () => {
   it('M1 error 面：「信息加载失败」行+重试钮在场（aria-label=重试）', () => {
     setView({ status: 'error', error: 'IPC 崩' })
     mount('paper-1')
@@ -100,25 +92,76 @@ describe('[F-UIRES-04 批 3c F-PINFO-01] SidePaperInfo 连接件（store/M2 双 
     expect(storeState.retry).toHaveBeenCalledWith('paper-1')
   })
 
-  it('extracting 态：strip 与降级行双缺席（借出弃置瞬态非 error 面——C2-②）', () => {
+  it('图表清单拉取：figures.list 以 paperId 调用→strip 2 图（app-file 协议 src）', async () => {
     mount('paper-1')
-    expect(host?.querySelector('[data-testid="paper-info-section"]')).not.toBeNull()
-    expect(host?.querySelector('[data-testid="paper-info-strip"]')).toBeNull()
-    expect(host?.querySelector('[data-testid="paper-info-strip-retry"]')).toBeNull()
-    expect(host?.textContent).not.toContain('文中图片提取失败')
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(listFigures).toHaveBeenCalledWith({ paperId: 'paper-1' })
+    const imgs = host?.querySelectorAll('.pi-strip img')
+    expect(imgs?.length).toBe(2)
+    expect(imgs?.[0]?.getAttribute('src')).toBe('app-file://paper-1/figures/fig-a')
   })
 
-  it('重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）', () => {
-    vi.useFakeTimers()
-    vi.mocked(getPaperImages).mockReturnValueOnce(ERROR_ENTRY).mockReturnValue(EXTRACTING)
+  it('零资产（figures=[]）：strip 省略且零降级重试行（断网/无提取不现场渲染）', async () => {
+    listFigures.mockResolvedValue({ ok: true, data: { figures: [], job: null } })
     mount('paper-1')
-    // 扇出帧（layout effect）快照=error 引用→PaperInfoSection 降级行在场
-    expect(host?.textContent).toContain('文中图片提取失败')
-    // 轮询 250ms：error 续轮（I8 通道）捕捉 retryPaperImages 拉起的 extracting 转移
-    act(() => {
-      vi.advanceTimersByTime(250)
+    await act(async () => {
+      await Promise.resolve()
     })
-    expect(host?.textContent).not.toContain('文中图片提取失败')
+    expect(host?.querySelector('[data-testid="paper-info-strip"]')).toBeNull()
+    expect(host?.querySelector('[data-testid="paper-info-strip-retry"]')).toBeNull()
+  })
+
+  it('拉取失败静默：Result err→strip 省略不抛（派生面子件不挡主件）', async () => {
+    listFigures.mockResolvedValue({ ok: false, error: { code: 'NOT_FOUND', message: '文献不存在' } })
+    mount('paper-1')
+    await act(async () => {
+      await Promise.resolve()
+    })
     expect(host?.querySelector('[data-testid="paper-info-section"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="paper-info-strip"]')).toBeNull()
+  })
+
+  it('〔回炉轮2 条件⒝〕换篇 deferred 首帧锚：新拉取挂起期间零旧 strip img 在场（新 paperId 拼旧 figureId 破图帧不可达）', async () => {
+    mount('paper-1')
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(host?.querySelectorAll('.pi-strip img').length).toBe(2)
+    let release: (() => void) | null = null
+    listFigures.mockReturnValueOnce(
+      new Promise((r) => {
+        release = () => r({ ok: true, data: { figures: [{ figureId: 'fig-n', page: 2, width: 100, height: 100 }], job: null } })
+      })
+    )
+    setView({ status: 'ready', data: makeDetail({ id: 'paper-2' } as Partial<PaperDetail>) })
+    act(() => {
+      root?.render(<SidePaperInfo paperId="paper-2" />)
+    })
+    expect(host?.querySelectorAll('.pi-strip img').length).toBe(0)
+    await act(async () => {
+      release?.()
+      await Promise.resolve()
+    })
+    const img = host?.querySelector('.pi-strip img')
+    expect(img?.getAttribute('src')).toBe('app-file://paper-2/figures/fig-n')
+  })
+
+  it('换篇重拉：paperId 变→figures.list 以新 id 再调且 strip 换源', async () => {
+    mount('paper-1')
+    await act(async () => {
+      await Promise.resolve()
+    })
+    setView({ status: 'ready', data: makeDetail({ id: 'paper-2' } as Partial<PaperDetail>) })
+    act(() => {
+      root?.render(<SidePaperInfo paperId="paper-2" />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(listFigures).toHaveBeenCalledWith({ paperId: 'paper-2' })
+    const imgs = host?.querySelectorAll('.pi-strip img')
+    expect(imgs?.[0]?.getAttribute('src')).toBe('app-file://paper-2/figures/fig-a')
   })
 })

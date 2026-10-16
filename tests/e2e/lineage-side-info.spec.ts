@@ -131,16 +131,17 @@ test('信息区随笔记区同滚动承载（内容超高+头部操作行不滚�
   await app.close()
 })
 
-test('无真 PDF 场图片提取失败→strip 省略+重试微钮在场（I4 降级不挡主件）', async () => {
+test('无真 PDF 场零 figures→strip 省略+重试微钮退役（F-VISFB-43 换源降级不挡主件）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uires04-b3b-'))
   await bootstrapMigrations(userData)
   await seedFixture(userData)
   const { app, win } = await openPanelOn(userData, A.title)
   await expect(win.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })
 
-  // M2 自建提取失败（seed 只种 papers 行不落 PDF 文件→app-file 404）→error：
-  // strip 省略+重试微钮在场；主件（作者文本）不受降级影响
-  await expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })
+  // [F-VISFB-43] 旧 M2 自建提取失败面（重试微钮）随管线原子退役——新管线
+  // 提取=导入事件驱动（seed 只种 papers 行无导入无 job→figures.list 空）→
+  // strip 省略；I4 语义保持：降级不挡主件（作者文本照常渲染）
+  await expect(win.getByTestId('paper-info-strip-retry')).toHaveCount(0)
   await expect(win.getByTestId('paper-info-strip')).toHaveCount(0)
   await expect(win.getByTestId('paper-info-authors')).toContainText('张三丰')
 

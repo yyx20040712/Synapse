@@ -21,10 +21,12 @@
  *
  * ── 架构层 ──
  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
- *   CorpusExtractor/PaperImageExtractor 五件——ESLint no-restricted-imports 机器锚，
- *   白名单变更=[locked-change]；PaperImageExtractor=F-UIRES-04 批 3a 扩容第五件）
- * - [F-UIRES-04 批 3a] pdfDoc 句柄注册表接线（INV-135 句柄三则——生命周期归本
- *   组件：加载成功注册/清理注销至 shared/PaperImageExtractor，提取件仅可销毁自建句柄）
+ *   CorpusExtractor/FigureExtractor 五件——ESLint no-restricted-imports 机器锚，
+ *   白名单变更=[locked-change]；[F-VISFB-43] 第五件随 PaperImageExtractor 退役
+ *   换名=shared/figures/FigureExtractor.ts——XObject 提取管线自建文档句柄）
+ * - [F-VISFB-43] 旧句柄注册表接线（register/unregister 至 PaperImageExtractor
+ *   ——INV-135 句柄三则载体）随旧件原子退役删除：提取管线不共享 reader 句柄
+ *   （提取桥自建 getDocument 毕销毁——CorpusExtractor 同型）
  * - worker ?url 配方（dev=dev-server 地址、构建后=产物内文件 URL，均在 CSP
  *   worker-src 'self' 内——spike 实证）；与 CorpusExtractor 的 worker 配置同值幂等
  *
@@ -34,7 +36,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-import { paperIdFromFileUrl, registerPaperDoc, unregisterPaperDoc } from '../../../shared/PaperImageExtractor'
 
 // worker 本地打包（ADR-0002 硬约束：禁 CDN）；?url 在 dev 是 dev-server 地址、
 // 构建后是产物内文件 URL，两者都在 CSP worker-src 'self' 范围内（spike 实证）
@@ -71,9 +72,6 @@ export function PdfDocProvider(props: {
   // worker 侧资源）→ 异步加载新文档
   useEffect(() => {
     let cancelled = false
-    // [F-UIRES-04 批 3a] 注册表键=app-file://<paperId> 派生；同句柄守卫注销
-    const paperId = paperIdFromFileUrl(fileUrl)
-    let registered: PDFDocumentProxy | null = null
     setDoc(null)
     // isEvalSupported: false——CSP 禁 unsafe-eval，显式关掉 pdfjs 的 eval 快路径
     const task = getDocument({ url: fileUrl, isEvalSupported: false })
@@ -83,7 +81,6 @@ export function PdfDocProvider(props: {
           // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
           onDocInfoRef.current?.({ numPages: loaded.numPages })
           onDocReadyRef.current?.(loaded)
-          registerPaperDoc(paperId, loaded); registered = loaded
           setDoc(loaded)
         }
       })
@@ -94,7 +91,6 @@ export function PdfDocProvider(props: {
       })
     return () => {
       cancelled = true
-      if (registered !== null) unregisterPaperDoc(paperId, registered)
       // loadingTask 拥有 document：destroy 对"加载中"是中止、对"已加载"是销毁
       void task.destroy().catch(() => undefined)
     }

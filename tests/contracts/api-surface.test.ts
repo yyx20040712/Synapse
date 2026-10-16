@@ -50,6 +50,7 @@ describe('contracts/api-surface —— 接线表完整性（防契约漂移）',
       system: unimplementedObject('SAMPLE-IPC', 'x'),
       folders: unimplementedObject('SAMPLE-IPC', 'x'),
       papers: unimplementedObject('SAMPLE-IPC', 'x'),
+      figures: unimplementedObject('SAMPLE-IPC', 'x'), // [F-VISFB-43] 图表提取管线域（类型闭合随接线表增域）
       // [F-DBCAMP-01 DB-2 U2] AI 域六域（13 通道——契约=ipc/ai-schemas.ts）
       ai_sessions: unimplementedObject('SAMPLE-IPC', 'x'),
       ai_messages: unimplementedObject('SAMPLE-IPC', 'x'),

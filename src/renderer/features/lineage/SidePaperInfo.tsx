@@ -1,28 +1,24 @@
 /**
- * [F-UIRES-04 批 3b] SidePaperInfo —— 侧板论文信息区连接件（§4.11 M1×M2
- * 解耦字面：宿主统一扇出点，M1 不代理 M2；宿主零 hooks——两机生命周期归本件）。
- * - M1（paperInfoStore）：mount/paperId 变更→select(paperId)；卸载→
- *   unmount()+unmountPaperImages()（两机统一 UNMOUNT 扇出）。
- * - M2：M1 ready 且 data.id===paperId（防切换帧陈旧 view 错配）才扇出
- *   selectPaperImages——触发=信息区可见（§4.8）；[C2-①] 禁挂阅读器文档
- *   就绪链（本批无阅读器面改动）。
- * - M2 反应性=轮询 hook（250ms getPaperImages 快照入本地 state；settle 完成
- *   态〔ready/partial〕即停；**error 态续轮=I8 重试反应性通道**——INV-B 禁
- *   回调 props 所迫：信息区组件内直调 retryPaperImages 拉起的 error→
- *   extracting 转移无被动感知面；M2 订阅面升级后续票回收）；卸载/paperId
- *   变更即停。[C2-②] entry undefined→strip 省略（非 error 面）。
- * - 渲染分派：loading→骨架行；error→「信息加载失败」+M1 重试钮（直调
- *   store.retry——按钮属连接件非信息区，INV-B 不涉；console 细节随 error
- *   §4.11 文案口径）；ready→PaperInfoSection——陈旧帧 S3 零残留=layout
- *   effect paint 前归位（entry/select 同步链）+key 换篇重挂载（摘要展开
- *   态跨篇不复位——expanded 随重挂载复位）。
- * - [INV-139] 与库域 DrPaperInfo（文献库抽屉连接件——DrPaperInfo.tsx 头注
- *   互指）不同页互斥挂载：同刻至多一连接件在场扇出 M2（unmountPaperImages
- *   全局单点+currentPId 单值语义安全）；同窗并存需求出现时先升级 F-M2SUB-01
- *   订阅面（禁先破互斥）。
+ * [F-VISFB-43 U7] SidePaperInfo —— 侧板论文信息区连接件（换源版：图表清单=
+ * figures.list IPC 单发拉取——**零轮询零提取调用**；[F-UIRES-04 批 3b] M1
+ * paperInfoStore 面沿承：宿主统一扇出点，M1 不代理图表面；宿主零 hooks——
+ * 两机生命周期归本件）。
+ * - M1（paperInfoStore）：mount/paperId 变更→select(paperId)；卸载→unmount()
+ *   （旧 M2 unmountPaperImages 扇出随 PaperImageExtractor 退役删除）。
+ * - 图表面：mount/paperId 变更→figures.list 单发拉取（挂载即取——提取管线
+ *   为导入驱动后台任务，消费面不触发〔断网/无提取不现场渲染〕）；失败/缺席
+ *   静默省略 strip（派生面子件不挡主件——M1 error 面独立呈现）；cancelled
+ *   守卫防换篇陈旧帧。
+ * - 渲染分派：loading→骨架行；error→「信息加载失败」+M1 重试钮（按钮属连接
+ *   件非信息区，INV-136 不涉）；ready→PaperInfoSection——key 换篇重挂载
+ *   （摘要展开态跨篇复位）。
+ * - [INV-139 改写素材] 旧「M2 单消费在场互斥」前提随提取面退役消解：两连接
+ *   件（本件/库域 DrPaperInfo）均为无状态清单读者（单发 IPC 无会话驻留），
+ *   同窗并存无互斥义务——主控回写 INV-139 行。
  */
 import { useEffect, useLayoutEffect, useState } from 'react'
-import { getPaperImages, selectPaperImages, unmountPaperImages, type PaperImageEntry } from '../../shared/PaperImageExtractor'
+import { api } from '../../api/client'
+import type { FigureItem } from '@shared/ipc/schemas'
 import { usePaperInfoStore } from '../../shared/paperInfoStore'
 import { PaperInfoSection } from '../../shared/PaperInfoSection'
 import { RetryButton } from '../../shared/ui/RetryButton'
@@ -30,42 +26,36 @@ import { RetryButton } from '../../shared/ui/RetryButton'
 export function SidePaperInfo(props: { paperId: string }): JSX.Element | null {
   const { paperId } = props
   const view = usePaperInfoStore((s) => s.view)
-  const [entry, setEntry] = useState<PaperImageEntry | undefined>(undefined)
+  const [snap, setSnap] = useState<{ id: string; figures: readonly FigureItem[] } | null>(null)
+  const figures = snap !== null && snap.id === paperId ? snap.figures : undefined
   const m1Ready = view.status === 'ready' && view.data?.id === paperId
-  const fileUrl = m1Ready && view.data !== undefined ? view.data.fileUrl : undefined
   // M1 生命周期扇出（select/unmount——模块级 store getState 直调，渲染面只读 view；
   //   layout effect=paint 前同步归位〔双源互证陈旧帧治·r2 R-帧修①〕；cleanup 语义不变）
   useLayoutEffect(() => {
     usePaperInfoStore.getState().select(paperId)
     return () => {
       usePaperInfoStore.getState().unmount()
-      unmountPaperImages()
     }
   }, [paperId])
   // M1 error 细节随 console（UI 短文案——§4.11 文案口径）
   useEffect(() => {
     if (view.status === 'error') console.error('[SidePaperInfo] 论文信息加载失败：', view.error)
   }, [view])
-  // M2 扇出（M1 ready 后——触发=信息区可见；data.id 校验防陈旧错配；
-  //   layout effect=entry 与 M1 ready commit 同帧归位·r2 R-帧修①）
-  useLayoutEffect(() => {
-    if (fileUrl === undefined) return
-    selectPaperImages(paperId, fileUrl)
-    setEntry(getPaperImages(paperId))
-  }, [paperId, fileUrl])
-  // M2 反应性轮询（settle 完成态停；error 续轮=重试转移覆盖）
+  // [F-VISFB-43] 图表清单单发拉取（零轮询零提取调用；失败=不落 snap——strip 省略静默）。
+  // 〔回炉轮1 W-4〕换篇陈旧帧治=snapshot+render 期派生重置（DrPaperInfo 同型）：
+  // figures 仅当 snap.id===paperId 才下传——paperId 变更 commit 帧即零 strip
   useEffect(() => {
-    if (fileUrl === undefined) return
-    if (entry !== undefined && (entry.status === 'ready' || entry.status === 'partial')) return
-    const pId = paperId
-    const timer = setInterval(() => {
-      const snap = getPaperImages(pId)
-      if (snap !== undefined) setEntry((prev) => (prev === snap ? prev : snap))
-    }, 250)
+    let cancelled = false
+    void api.figures.list({ paperId }).then(
+      (r) => {
+        if (!cancelled && r.ok) setSnap({ id: paperId, figures: r.data.figures })
+      },
+      () => undefined
+    )
     return () => {
-      clearInterval(timer)
+      cancelled = true
     }
-  }, [paperId, fileUrl, entry])
+  }, [paperId])
   if (view.status === 'loading') {
     return (
       <p className="m-0" data-testid="paper-info-loading" style={{ color: 'var(--text-dim)' }}>
@@ -92,5 +82,5 @@ export function SidePaperInfo(props: { paperId: string }): JSX.Element | null {
     )
   }
   if (!m1Ready || view.data === undefined) return null
-  return <PaperInfoSection data={view.data} images={entry} key={view.data.id} />
+  return <PaperInfoSection data={view.data} figures={figures} key={view.data.id} />
 }

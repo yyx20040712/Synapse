@@ -76,6 +76,7 @@ import {
   type SnapshotImportService
 } from './snapshot/import-snapshot.service'
 import { createFigureStoreService } from './figure-store.service'
+import { createFigureTaskService, type FigureTaskService } from './figure-tasks.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -167,14 +168,21 @@ export interface ServiceBundle {
   /** [F-DBCAMP-01 DB-3 U3] 快照导入合并面（六闸+防复活+A7 行级+拒收可见性
    *  ——snapshot 域第 6 通道 importFromFile 消费） */
   snapshotImport: SnapshotImportService
+  /** [F-VISFB-43] 图表提取管线域（figures 五通道——App 提取桥+信息区清单面；
+   *  主控六条件⑤：可选键收编必选〔42 时代零 ServiceBundle 键的接线欠账〕） */
+  figures: FigureTaskService
 }
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
   // [F-VISFB-42] 派生图表资产合同服务（提取会话状态机+资产守卫）——folders/
-  //  papers delete 清理出口注入（folderDeps.figureAssets）；本批零 IPC 零
-  //  ServiceBundle 键（renderer 提取面=43 票接线时入包）
+  //  papers delete 清理出口注入（folderDeps.figureAssets）；[F-VISFB-43] 任务
+  //  编排服务消费+figures 域 IPC 入包
   const figureStore = createFigureStoreService({ repos: deps.repos, fileStore: deps.fileStore })
+  // [F-VISFB-43] 图表提取任务编排（会话令牌/代际守卫/failed 聚合——串行化
+  // 前提头注单源在 figure-tasks.service）；service 实例生命周期=课题容器
+  // （workspace 切换重建=旧会话全灭）
+  const figureTasks = createFigureTaskService({ repos: deps.repos, figureStore })
   // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）；
   // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）；
   // [F-IMPORTGATE-01] +importGate（两 delete 互斥面——folderDeps 恒真值注入）
@@ -219,9 +227,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       gate: deps.importGate,
       onProgress: deps.sendProgress,
       // [F-ALIGN-01 D3] 单跳落夹双播出口（原 renderer 后挂接链的 moveFolder
-      // 广播面吸收——folderDeps 同源注入）
+      //  广播面吸收——folderDeps 同源注入）
       sendFoldersChanged: deps.sendFoldersChanged,
-      sendLineageChanged: deps.sendLineageChanged
+      sendLineageChanged: deps.sendLineageChanged,
+      // [F-VISFB-43] 导入完成→图表提取建单（幂等 enqueue——已有 job 不覆写）
+      onImported: (ids) => figureTasks.enqueue(ids)
     }),
     enrich: createEnrichService({
       repos: deps.repos,
@@ -264,7 +274,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiMemoryManual: createAiMemoryManualService({ repos: deps.repos }),
     aiCascade: createAiCascadeService({ repos: deps.repos }),
     snapshot: createExportSnapshotService({ repos: deps.repos }),
-    snapshotImport: createImportSnapshotService({ repos: deps.repos })
+    snapshotImport: createImportSnapshotService({ repos: deps.repos }),
+    figures: figureTasks
   }
 }
 

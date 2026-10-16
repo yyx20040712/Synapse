@@ -74,6 +74,8 @@ export interface FigureRepo {
   fileRefByFigure(paperId: string, figureId: string): string | null
   /** 清该篇全部资产行（重提取/恢复重提用；返回删除行数） */
   removeByPaper(paperId: string): number
+  /** [F-VISFB-43] pending 单 paperId 集（rowid 序=导入建单序——桥件批序消费） */
+  listPendingPaperIds(): string[]
   /** 快照恢复重提：在场 paper 集重置 pending+figure 行清空（存在性守卫在 SQL 面） */
   resetJobsForPapers(paperIds: readonly string[]): void
 }
@@ -113,6 +115,10 @@ export function createFigureRepo(db: SqliteDb): FigureRepo {
     'SELECT file_ref FROM paper_figures WHERE paper_id = ? AND figure_id = ?'
   )
   const removeStmt = db.prepare('DELETE FROM paper_figures WHERE paper_id = ?')
+  // [F-VISFB-43] pending 集读（rowid 序=导入建单序）
+  const listPendingStmt = db.prepare(
+    'SELECT paper_id FROM figure_jobs WHERE status = \'pending\' ORDER BY rowid'
+  )
   // 存在性守卫：SELECT 无行=零插入（防复活跳过的 paper 本地已删——FK 违约面
   // 结构性避开）；在场行经 ON CONFLICT 重置（不双写不抛）
   const resetJobStmt = db.prepare(
@@ -201,6 +207,10 @@ export function createFigureRepo(db: SqliteDb): FigureRepo {
 
     removeByPaper(paperId): number {
       return removeStmt.run(paperId).changes
+    },
+
+    listPendingPaperIds(): string[] {
+      return (listPendingStmt.all() as { paper_id: string }[]).map((r) => r.paper_id)
     },
 
     resetJobsForPapers(paperIds): void {

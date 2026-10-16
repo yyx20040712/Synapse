@@ -645,3 +645,71 @@ export type WindowStateEvent = z.infer<typeof windowStateEventSchema>
 
 export const windowControlResSchema = z.object({ ok: z.literal(true), maximized: z.boolean() }).strict()
 export type WindowControlRes = z.infer<typeof windowControlResSchema>
+
+// ── figures（[F-VISFB-43] 图表提取管线——renderer 提取+IPC 回存；蓝本=00B）──
+/** 消费面清单项（协议 URL 由 renderer 拼 app-file://<paperId>/figures/<figureId>） */
+export const figureItemSchema = z
+  .object({
+    figureId: z.string().min(1),
+    page: z.number().int().min(1),
+    width: z.number().int().min(1),
+    height: z.number().int().min(1)
+  })
+  .strict()
+export type FigureItem = z.infer<typeof figureItemSchema>
+
+/** job 三态视图（缺席=null——「从未提取」与「提取过零资产」可区分，failed≠empty） */
+export const figureJobViewSchema = z
+  .object({
+    status: z.enum(['pending', 'ready', 'failed']),
+    excess: z.number().int().min(0),
+    failedCount: z.number().int().min(0)
+  })
+  .strict()
+export type FigureJobView = z.infer<typeof figureJobViewSchema>
+
+export const figuresListResSchema = z
+  .object({ figures: z.array(figureItemSchema), job: figureJobViewSchema.nullable() })
+  .strict()
+export type FiguresListRes = z.infer<typeof figuresListResSchema>
+
+/** 桥件提取输入（pending 单集——App 提取桥启动/事件沿重拉） */
+export const figuresPendingItemSchema = z
+  .object({ paperId: z.string().min(1), sha256: z.string().min(1) })
+  .strict()
+export const figuresPendingResSchema = z.object({ jobs: z.array(figuresPendingItemSchema) }).strict()
+export type FiguresPendingRes = z.infer<typeof figuresPendingResSchema>
+
+/** 会话开单（null=非 pending/无单——桥件跳过该篇） */
+export const figuresBeginResSchema = z
+  .object({ token: z.string().min(1), sha256: z.string().min(1) })
+  .strict()
+  .nullable()
+export type FiguresBeginRes = z.infer<typeof figuresBeginResSchema>
+
+/** 逐资产分笔回存（bytes=PNG；digest=sha256(bytes) hex64——42 storeFigure 守卫对齐） */
+export const figureStoreReqSchema = z
+  .object({
+    token: z.string().min(1),
+    digest: z.string().length(64),
+    bytes: z.instanceof(Uint8Array),
+    page: z.number().int().min(1),
+    width: z.number().int().min(1),
+    height: z.number().int().min(1),
+    ctmX: z.number(),
+    ctmY: z.number(),
+    ctmW: z.number().min(1e-6),
+    ctmH: z.number().min(1e-6)
+  })
+  .strict()
+export const figureStoreResSchema = z
+  .object({ stored: z.boolean(), figureId: z.string().nullable(), reason: z.string().nullable() })
+  .strict()
+export type FigureStoreRes = z.infer<typeof figureStoreResSchema>
+
+/** 会话终结（failed=renderer 侧失败计数——与服务端聚合相加后落账） */
+export const figuresCompleteReqSchema = z
+  .object({ token: z.string().min(1), excess: z.number().int().min(0), failed: z.number().int().min(0) })
+  .strict()
+export const figuresCompleteResSchema = z.object({ status: z.enum(['ready', 'failed']) }).strict()
+export type FiguresCompleteRes = z.infer<typeof figuresCompleteResSchema>
