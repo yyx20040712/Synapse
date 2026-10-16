@@ -27,8 +27,9 @@ import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle } from './edge-overla
 import { isEdgeDimmed } from './focus-bright'
 import { publish } from './anchor-occupancy'
 import { useEdgeEdit } from './use-edge-edit'
-import { EdgeHitLayer } from './EdgeHitLayer'
+import { EdgeHitLayer, type BrowseEdgeHover } from './EdgeHitLayer'
 import { EdgeMenuHost } from './EdgeMenuHost'
+import { EdgeTooltip } from './EdgeTooltip'
 import { useLineageStore } from './lineage.store'
 
 export function EdgeOverlay(props: {
@@ -53,6 +54,8 @@ export function EdgeOverlay(props: {
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
   /** [F-LGRAPH-01②U5] 调线编辑态使能（edit 模式+select 工具——宿主注入） */
   editEnabled?: boolean
+  /** [F-VISFB-23 N2] browse 态激活线名扫描（rAF 节流 hover→tooltip——宿主注入） */
+  browseScan?: boolean
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [paths, setPaths] = useState<RoutedPath[]>([])
@@ -65,6 +68,10 @@ export function EdgeOverlay(props: {
     (id: string, entering: boolean): void => setHoveredEdgeId((cur) => (entering ? id : cur === id ? null : cur)),
     []
   )
+  // [F-VISFB-23 N2] browse 悬停态（线名 tooltip 数据源=真实 label——空串渲染
+  // 门在 JSX：空线名零展示面）
+  const [browseHover, setBrowseHover] = useState<BrowseEdgeHover | null>(null)
+  const handleBrowseHover = useCallback((h: BrowseEdgeHover | null): void => setBrowseHover(h), [])
   const focused = props.focusDim === true
   // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
   const pathsRef = useRef<RoutedPath[]>([])
@@ -204,7 +211,13 @@ export function EdgeOverlay(props: {
       onEdgeHitClick={props.onEdgeHitClick}
       onHoverChange={handleHoverChange}
       hoverScan={focused}
+      browseScan={props.browseScan === true}
+      onBrowseHover={handleBrowseHover}
     />
+    {/* [F-VISFB-23 N2] browse 线名 tooltip（portal 出内容层——fixed 视口基准） */}
+    {browseHover !== null && browseHover.label !== '' && (
+      <EdgeTooltip label={browseHover.label} x={browseHover.x} y={browseHover.y} />
+    )}
     {/* [F-ALIGN-01] 画布空白菜单随「建点入口…」唯一菜单项退役删除（组空
         =菜单项区一并处置，禁留空壳组；线/顶点两态菜单不动） */}
     {/* [②U5] 调线菜单宿主（线/顶点两态——动作收口拆件 EdgeMenuHost）；

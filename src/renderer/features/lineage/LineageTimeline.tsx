@@ -158,6 +158,7 @@ export function LineageTimeline(props: {
             focusDim={dimActive}
             brightIds={brightIds}
             editEnabled={viewMode === 'edit' && tool === 'select'}
+            browseScan={viewMode === 'browse'}
           />
           {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
               吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch） */}

@@ -199,6 +199,25 @@
   pointer-events: none;
 }
 .tl-edge-hits .edge-handle { pointer-events: all; }
+/* [F-VISFB-23 N2] browse 态边名 tooltip：portal 挂 document.body（fixed 视口
+   基准，先例=EdgeMenuHost R14）；pointer-events:none=INV-97 零指针截获义务；
+   超长线名单行省略 */
+.tl-edge-tooltip {
+  position: fixed;
+  z-index: var(--z-pop);
+  pointer-events: none;
+  max-width: 280px;
+  padding: 3px 8px;
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: var(--shadow-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* [F-VISFB-21 N1] 图例样式族随视检反馈删除——零残留（实/虚两态自明于
    卡面连线，图例=死指示；删除注记=本条，选择器零在场） */
 /* [F-SLOTGRID-01 U1] 测量冻结规则（tl-measure 族 transition:none——瀑布
