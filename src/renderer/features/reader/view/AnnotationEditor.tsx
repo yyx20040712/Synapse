@@ -7,8 +7,13 @@
  * key 由父级按 annotation.id 传（换条编辑必经卸载重挂，comment 状态不串）。
  *
  * [F-A11] 笔记编辑 UX 双缺：①自动保存反馈+②撤销/重做——草稿逻辑（值栈/
- * 防抖/保存状态机）驻 use-annotation-draft.ts 域 hook（250 行关卡拆件——
- * 状态机表与跨格注记随逻辑迁驻该件头注；本件留 JSX 接线）。
+ *   防抖/保存状态机）驻 use-annotation-draft.ts 域 hook（250 行关卡拆件——
+ *   状态机表与跨格注记随逻辑迁驻该件头注；本件留 JSX 接线）。
+ * [F-VISFB-12] 取消/Escape 先 flush（H2/H3/H4）：clean/saved 无待存与 busy
+ *   在途手动写承接两路同步收层（零跳变）；dirty/failed/saving 路径 await
+ *   draft.flush 立存后再 onCancel（写挂起期间不收层；失败也收层——草稿经
+ *   卸载注册入注册表，重挂载恢复 failed 态可重试）。UI 反馈不阻塞面=写经
+ *   onAutosave（AnnotationPopups）置 busy 全钮禁用。
  */
 import { useEffect, useRef } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
@@ -27,13 +32,30 @@ export function AnnotationEditor(props: {
 }): JSX.Element {
   const { annotation, rect, busy, onCancel, onSave, onDelete, onAutosave } = props
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const draft = useAnnotationDraft(annotation.comment, onAutosave)
+  const draft = useAnnotationDraft(annotation.id, annotation.comment, onAutosave)
   const { comment, saveState } = draft
 
   // 打开即聚焦批注输入（Escape 收起=键盘可退出，见 textarea onKeyDown）
   useEffect(() => {
     textareaRef.current?.focus()
   }, [])
+
+  /**
+   * [F-VISFB-12] 取消先 flush（H2/H3/H4）：无待存（clean/saved——含值已回退
+   * lastSaved）或 busy（在途手动保存/删除承接，卸载注册面兜底）→同步收层
+   * （零跳变，锁定 Escape 同步锚）；有待存→await flush 立存后再收层（失败
+   * 也收层：草稿入注册表，重挂载恢复可重试——INV-141 查态由 flush 终态经
+   * 注册表呈现）
+   */
+  function requestCancel(): void {
+    if (busy || saveState === 'clean' || saveState === 'saved') {
+      onCancel()
+      return
+    }
+    void draft.flush().then(() => {
+      onCancel()
+    })
+  }
 
   return (
     <div
@@ -87,7 +109,7 @@ export function AnnotationEditor(props: {
             return
           }
           if (e.key === 'Escape') {
-            onCancel()
+            requestCancel()
             return
           }
           // 受控组件原生 undo 栈不可靠（F-A11）——拦截接值栈；metaKey=macOS Cmd 对位
@@ -182,7 +204,7 @@ export function AnnotationEditor(props: {
           disabled={busy}
           title="取消"
           aria-label="取消"
-          onClick={onCancel}
+          onClick={requestCancel}
         >
           {ICON_X}
           <span className="sr-only">取消</span>

@@ -46,6 +46,7 @@ import { mergeRects } from '../anchors/annotation-merge'
 import { rectStyle } from '../anchors/annotation-style'
 import { PAGE_LAYER_Z } from '../state/page-layer-z'
 import { useReaderStore } from '../state/reader.store'
+import { flushAnnotationDraft } from '../interact/annotation-draft-registry'
 import { AnnotationPopups, type PopupTarget } from './AnnotationPopups'
 
 /** 重锚后的显示矩形（id → { rects, bands }；缺项回退存量 rects） */
@@ -138,6 +139,12 @@ export function AnnotationLayer(props: {
                 if (selectionMode) return
                 // 点击他条=切目标（菜单接管收起编辑器）；反向同步侧栏高亮（C-05）
                 useReaderStore.getState().notifyNoteHighlight(a.id)
+                // [F-VISFB-12] 切目标先 flush（H6）：上一编辑目标的未落盘草稿
+                // 经注册表句柄 fire-first 发起立存（不阻塞菜单即开——菜单开合
+                // 即时反馈，写后台完成；失败由卸载注册表承接重挂载重试）
+                if (editing !== null && editing.annotation.id !== a.id) {
+                  void flushAnnotationDraft(editing.annotation.id)
+                }
                 setMenu({ annotation: a, rect: r })
                 setEditing(null)
               }}

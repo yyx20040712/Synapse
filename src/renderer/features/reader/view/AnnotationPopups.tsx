@@ -17,6 +17,12 @@
  *   （api 链+store 同步+pushUndo 会话单 entry；不收层不 onChanged；busy 毫秒级
  *   串行互斥 [W-A 门二]；失败 markTabDirty+toast 返 false）——编辑器内 800ms
  *   停顿触发，反馈标记「已保存/保存失败」在编辑器本件。
+ * - [F-VISFB-12] 写侧守卫（W1/W2/W3，notes.store 代际先例）：save/autosave
+ *   派发前查目标存活性（墓碑=已删零写）；结果到达 isWriteLive 判废（删除发起
+ *   后到达的迟到写零 store 同步——防复活）；成功等值清注册表条目
+ *   （annotationDraftSaved）。删除链：confirm 后即 discardAnnotationDraft
+ *   （草稿出表+代际自增），api 成功先 markAnnotationDeleted 打墓碑——此后
+ *   卸载注册/迟到写/重挂载恢复全拒（删除跳过 flush 且防迟到写复活）。
  *
  * ── 接口层 ──
  * - export function AnnotationPopups(props: { menu: PopupTarget | null;
@@ -35,6 +41,13 @@ import { pushUndo } from '../state/annotation-undo'
 import { AnnotationEditor } from './AnnotationEditor'
 import { AnnotationMenu } from './AnnotationMenu'
 import { useReaderStore } from '../state/reader.store'
+import {
+  annotationDraftSaved,
+  annotationWriteGen,
+  discardAnnotationDraft,
+  isAnnotationWriteLive,
+  markAnnotationDeleted
+} from '../interact/annotation-draft-registry'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const UPDATE_FAILED = '标注保存失败'
@@ -81,12 +94,22 @@ export function AnnotationPopups(props: {
     if (busy) {
       return
     }
+    // [F-VISFB-12] W1：目标已删零写（删除跳过 flush 面）
+    const gen = annotationWriteGen(a.id)
+    if (!isAnnotationWriteLive(a.id, gen)) {
+      return
+    }
     setBusy(true)
     try {
       const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
       const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
+      // [F-VISFB-12] W2：迟到写判废——删除发起后代际已变，零 store 同步（防复活）
+      if (!isAnnotationWriteLive(a.id, gen)) {
+        return
+      }
       useReaderStore.getState().updateAnnotation(saved)
       pushUndo(a.paperId, { kind: 'comment-edit', before: a })
+      annotationDraftSaved(a.id, comment)
       useReaderStore.getState().clearTabDirty(a.paperId)
       setEditing(null)
       onChanged()
@@ -114,15 +137,26 @@ export function AnnotationPopups(props: {
       // busy 只来自手动保存（将存同值）或删除（编辑器将收层）——乐观 true 无观测面
       return true
     }
+    // [F-VISFB-12] W1：目标已删零写（卸载 flush/收口面写经此处拦截——删除跳过 flush）
+    const gen = annotationWriteGen(a.id)
+    if (!isAnnotationWriteLive(a.id, gen)) {
+      return false
+    }
     setBusy(true)
     try {
       const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
       const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
+      // [F-VISFB-12] W2：迟到写判废——删除发起后代际已变，零 store 同步零 pushUndo（防复活）
+      if (!isAnnotationWriteLive(a.id, gen)) {
+        return false
+      }
       useReaderStore.getState().updateAnnotation(saved)
       if (pushedSessionRef.current !== a.id) {
         pushUndo(a.paperId, { kind: 'comment-edit', before: a })
         pushedSessionRef.current = a.id
       }
+      // [F-VISFB-12] W3：成功等值清注册表条目（后台立存落库后不留过期恢复面）
+      annotationDraftSaved(a.id, comment)
       useReaderStore.getState().clearTabDirty(a.paperId)
       return true
     } catch (e) {
@@ -151,9 +185,14 @@ export function AnnotationPopups(props: {
     if (busy || !window.confirm(DELETE_CONFIRM)) {
       return
     }
+    // [F-VISFB-12] 删除发起即收口：草稿出注册表+写代际自增（此后到达的在途写
+    // 按 isWriteLive 判废；编辑器卸载清理的入表被墓碑拒——删除跳过 flush）
+    discardAnnotationDraft(a.id)
     setBusy(true)
     try {
       await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
+      // [F-VISFB-12] R7：删除成功打墓碑——save 拒入/take 恒 null/写全判废（不复活已删目标）
+      markAnnotationDeleted(a.id)
       useReaderStore.getState().removeAnnotation(a.id)
       pushUndo(a.paperId, { kind: 'delete', annotation: a })
       useReaderStore.getState().clearTabDirty(a.paperId)
