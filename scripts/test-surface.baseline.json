@@ -21196,22 +21196,24 @@
           ]
         },
         {
-          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常\"]",
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"跨行源卡保育（A 案）[F-DRAGREMOUNT-01]：激活帧节点保育（同父 keyed 调和）+ghost inline 全键存续（left/top/position/marginLeft）→驻原行非末行 odd→后续 move 节点恒稳+settle 清场照常\"]",
           "describePath": [
             "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
           ],
-          "title": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+          "title": "跨行源卡保育（A 案）[F-DRAGREMOUNT-01]：激活帧节点保育（同父 keyed 调和）+ghost inline 全键存续（left/top/position/marginLeft）→驻原行非末行 odd→后续 move 节点恒稳+settle 清场照常",
           "markers": [],
           "line": 492,
           "assertions": [
             "expect(rows.length, '布防卫：两行网格在场').toBe(2)",
             "expect(rows[1]!.classList.contains('odd'), '布防卫：行 1=奇行').toBe(true)",
-            "expect(post).not.toBe(pre)",
-            "expect(post.style.left, '激活帧 inline 未及新节点（left）').toBe('')",
-            "expect(post.style.top, '激活帧 inline 未及新节点（top）').toBe('')",
+            "expect(post).toBe(pre)",
+            "expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')",
+            "expect(post.style.marginLeft, 'R2 敏感面：marginLeft 压 0 跨行存续（12 号理想面）').toBe('0px')",
+            "expect(post.style.left, '激活帧 inline 已落同一节点（left）').not.toBe('')",
+            "expect(post.style.top, '激活帧 inline 已落同一节点（top）').not.toBe('')",
             "expect(post.classList.contains('dragging'), '离流定位由 .dragging CSS 类承载').toBe(true)",
-            "expect(tailRow).toBe(rows[1])",
-            "expect(tailRow!.classList.contains('odd'), '尾挂行=末行奇行（激活帧行为）').toBe(true)",
+            "expect(tailRow).toBe(rows[0])",
+            "expect(tailRow!.classList.contains('odd'), '保育行=原行非末行奇行（激活帧行为）').toBe(false)",
             "expect(post2).toBe(post)",
             "expect(post2.style.left, '后续 move 补写 left（会话对 remount 健在）').not.toBe('')",
             "expect(post2.style.top, '后续 move 补写 top').not.toBe('')",
@@ -21219,6 +21221,31 @@
             "expect(reorder).toHaveBeenCalledTimes(1)",
             "expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C', 'D'])",
             "expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)"
+          ]
+        },
+        {
+          "key": "[\"[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留\",\"中行源卡保育 [F-DRAGREMOUNT-01]：非首非末行源卡（行 1 odd）拖起=节点保育+ghost inline 四键全锁（position/width/marginLeft/transition）→驻保育行（fosterRow=1 判别面）→框内松手零位移 settle（零写+inline 清空）\"]",
+          "describePath": [
+            "[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/取消径/抑制残留"
+          ],
+          "title": "中行源卡保育 [F-DRAGREMOUNT-01]：非首非末行源卡（行 1 odd）拖起=节点保育+ghost inline 四键全锁（position/width/marginLeft/transition）→驻保育行（fosterRow=1 判别面）→框内松手零位移 settle（零写+inline 清空）",
+          "markers": [],
+          "line": 547,
+          "assertions": [
+            "expect(rows.length, '布防卫：三行网格在场').toBe(3)",
+            "expect(rows[1]!.classList.contains('odd'), '布防卫：行 1=奇行').toBe(true)",
+            "expect(rows[1]!.contains(cardOf('D')), '布防卫：D=行 1 中行源卡').toBe(true)",
+            "expect(post).toBe(pre)",
+            "expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')",
+            "expect(post.style.width, 'ghost inline 全键存续（width——内容域定宽）').toBe('128px')",
+            "expect(post.style.marginLeft, 'ghost inline 全键存续（marginLeft 压 0）').toBe('0px')",
+            "expect(post.style.transition, 'ghost inline 全键存续（transition 禁断）').toBe('none')",
+            "expect(post.style.left, '激活帧 inline 已落同一节点（left）').not.toBe('')",
+            "expect(post.style.top, '激活帧 inline 已落同一节点（top）').not.toBe('')",
+            "expect(tailRow).toBe(rows[1])",
+            "expect(tailRow!.classList.contains('odd'), '保育行=行 1 奇行（fosterRow=1 判别面）').toBe(true)",
+            "expect(reorder).not.toHaveBeenCalled()",
+            "expect(cardOf('D').getAttribute('style') === null || cardOf('D').getAttribute('style') === '').toBe(true)"
           ]
         }
       ]
@@ -41550,7 +41577,7 @@
           ],
           "title": "B1 fold 基本形：出 1s 窗仍在场，再弹同文案同 kind 不叠卡",
           "markers": [],
-          "line": 75,
+          "line": 76,
           "assertions": [
             "expect(cardCount(host)).toBe(1)"
           ]
@@ -41562,7 +41589,7 @@
           ],
           "title": "B2 fold 计时刷新：折叠重置全程停留计时（t=3000 折叠→6500 退场）",
           "markers": [],
-          "line": 90,
+          "line": 91,
           "assertions": [
             "expect(cardCount(host)).toBe(1)",
             "expect(cardCount(host)).toBe(0)"
@@ -41575,7 +41602,7 @@
           ],
           "title": "B3 慢速穿插 A→B→A 全在场：末次 A 折叠恒 2 卡（无折叠=3）",
           "markers": [],
-          "line": 112,
+          "line": 113,
           "assertions": [
             "expect(cardCount(host)).toBe(2)"
           ]
@@ -41587,7 +41614,7 @@
           ],
           "title": "B4 慢速异 kind 不折叠：error 与 success 同文案各占一卡",
           "markers": [],
-          "line": 133,
+          "line": 134,
           "assertions": [
             "expect(cardCount(host)).toBe(2)"
           ]
@@ -41599,9 +41626,49 @@
           ],
           "title": "B5 fold 后手动关闭再弹（>1s 窗）：新卡——用户已明确关闭后再弹=新卡",
           "markers": [],
-          "line": 148,
+          "line": 149,
           "assertions": [
             "expect(card).toBeDefined()",
+            "expect(cardCount(host)).toBe(1)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B6 error kind fold 计时刷新：t=5000 折叠→9500 在场→11100 退场\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B6 error kind fold 计时刷新：t=5000 折叠→9500 在场→11100 退场",
+          "markers": [],
+          "line": 178,
+          "assertions": [
+            "expect(cardCount(host)).toBe(1)",
+            "expect(cardCount(host)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B7 窗内 fold 先于 1s 窗：t=600 窗内折叠→3900 在场（次序颠倒即红）\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B7 窗内 fold 先于 1s 窗：t=600 窗内折叠→3900 在场（次序颠倒即红）",
+          "markers": [],
+          "line": 200,
+          "assertions": [
+            "expect(cardCount(host)).toBe(1)",
+            "expect(cardCount(host)).toBe(0)"
+          ]
+        },
+        {
+          "key": "[\"SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]\",\"B8 fold 后 1s 内 ×关再弹被窗拦：1800 重弹=0 卡、2400 出窗=1 卡\"]",
+          "describePath": [
+            "SR-UI-03 Toast —— 在场折叠族（fold，INV-134）[F-E2EFLK-04]"
+          ],
+          "title": "B8 fold 后 1s 内 ×关再弹被窗拦：1800 重弹=0 卡、2400 出窗=1 卡",
+          "markers": [],
+          "line": 222,
+          "assertions": [
+            "expect(card).toBeDefined()",
+            "expect(cardCount(host)).toBe(0)",
             "expect(cardCount(host)).toBe(1)"
           ]
         }
@@ -54190,8 +54257,8 @@
   },
   "stats": {
     "fileCount": 366,
-    "caseCount": 3616,
-    "assertionCount": 12032,
+    "caseCount": 3620,
+    "assertionCount": 12055,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -54199,5 +54266,47 @@
     "eachExpandedRows": 367,
     "unresolvableCount": 0
   },
-  "exemptionsSnapshot": []
+  "exemptionsSnapshot": [
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "assertionText": "expect(post).not.toBe(pre)",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "assertionText": "expect(post.style.left, '激活帧 inline 未及新节点（left）').toBe('')",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "assertionText": "expect(post.style.top, '激活帧 inline 未及新节点（top）').toBe('')",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "assertionText": "expect(tailRow).toBe(rows[1])",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
+      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
+      "assertionText": "expect(tailRow!.classList.contains('odd'), '尾挂行=末行奇行（激活帧行为）').toBe(true)",
+      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
+      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
+    }
+  ]
 }

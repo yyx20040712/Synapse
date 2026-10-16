@@ -1,46 +1,4 @@
 {
   "version": 1,
-  "entries": [
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "assertionText": "expect(post).not.toBe(pre)",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "assertionText": "expect(post.style.left, '激活帧 inline 未及新节点（left）').toBe('')",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "assertionText": "expect(post.style.top, '激活帧 inline 未及新节点（top）').toBe('')",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "assertionText": "expect(tailRow).toBe(rows[1])",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-card-drag.test.tsx",
-      "caseTitle": "跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常",
-      "assertionText": "expect(tailRow!.classList.contains('odd'), '尾挂行=末行奇行（激活帧行为）').toBe(true)",
-      "reason": "F-DRAGREMOUNT-01 方案 A 落地（用户裁决 2026-10-08 拍板，v166 §2-1）：B 案现状锁定例翻转为 A 案理想锁——拖卡跨父 remount 修复为 keyed 同父保育，旧断言（remount 形态+末行驻留）随机制消亡按票面义务同步翻转；新题/新断言已入 C_after（NEW 登记）",
-      "rulingLink": "用户裁决 2026-10-08 方案 A（docs/prompts/2026-10-08_loop-handoff-v166-morning-rulings.md §2-1）+票面 tickets/registry.ts F-DRAGREMOUNT-01 行翻转义务——实录档=/home/yyx/synapse-archive/scripts-audits/20261016-dragremount01/02-impl.report.md"
-    }
-  ]
+  "entries": []
 }
