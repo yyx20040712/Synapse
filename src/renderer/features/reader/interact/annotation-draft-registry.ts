@@ -15,7 +15,9 @@
  * - 写侧守卫（防迟到写复活，notes.store 代际先例）：annotationWriteGen 派发前
  *   捕获代际；isAnnotationWriteLive 结果到达时判定（代际变∨墓碑=目标已删判废，
  *   零 store 同步）；annotationDraftSaved 写成功等值清条目（后台写落库后注册表
- *   不留过期恢复面）。
+ *   不留过期恢复面）。边界声明：删除 API 失败窄窗内到达的单发成功写按判废静默
+ *   丢弃（服务器已有该值，本地 store 陈旧至下次事件自愈——13/14 票若需补偿
+ *   再立项）。
  * - 删除侧：discardAnnotationDraft 删除发起即条目出表+代际自增；markAnnotationDeleted
  *   删除成功打墓碑（幂等）——此后 save 拒入/take 恒 null/写全判废（不复活已删目标）。
  *

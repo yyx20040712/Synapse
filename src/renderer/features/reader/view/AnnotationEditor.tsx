@@ -20,6 +20,7 @@ import type { Annotation, AnnotationRect } from '@shared/models/annotation'
 import { ICON_REDO, ICON_SAVE, ICON_TRASH, ICON_UNDO, ICON_X } from '../../../shared/icons'
 import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
 import { useAnnotationDraft } from '../interact/use-annotation-draft'
+import { saveAnnotationDraft } from '../interact/annotation-draft-registry'
 
 export function AnnotationEditor(props: {
   annotation: Annotation
@@ -44,15 +45,29 @@ export function AnnotationEditor(props: {
    * [F-VISFB-12] 取消先 flush（H2/H3/H4）：无待存（clean/saved——含值已回退
    * lastSaved）或 busy（在途手动保存/删除承接，卸载注册面兜底）→同步收层
    * （零跳变，锁定 Escape 同步锚）；有待存→await flush 立存后再收层（失败
-   * 也收层：草稿入注册表，重挂载恢复可重试——INV-141 查态由 flush 终态经
-   * 注册表呈现）
+   * 也收层：草稿入注册表，重挂载恢复可重试）。
+   * [回炉轮 1 B-2] busy 分支显式入注册表（failed=false——在途手动写结果
+   * 未知，重挂载按 dirty+timer 自动重试=S5 同语义）；手动写成功时 saveComment
+   * 的 W3 等值清自理；值==服务器值（无待存）零注册。
+   * [回炉轮 1 B-1] H4 路径显式接 flush 终态（INV-141：fulfilled≠已落库）。
    */
   function requestCancel(): void {
     if (busy || saveState === 'clean' || saveState === 'saved') {
+      if (busy && comment !== annotation.comment) {
+        saveAnnotationDraft(annotation.id, comment, false)
+      }
       onCancel()
       return
     }
-    void draft.flush().then(() => {
+    void draft.flush().then((finalState) => {
+      // [B-1] 显式查态：failed 分支的呈现=三通道——①toast+markTabDirty（写
+      // 路径 onAutosave 链内建，本组件此前不可见）②卸载注册 failed 条目
+      // （hook saveState='failed'→attempted 自动入表）③重挂载恢复 failed 态
+      // 可重试。本消费点对 failed 不另起动作（行为不变），收层语义=await 后
+      // 无条件 onCancel（主控裁决 d 保持）
+      if (finalState === 'failed') {
+        // 失败面经上述三通道呈现；收层继续
+      }
       onCancel()
     })
   }
