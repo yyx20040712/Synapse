@@ -366,6 +366,18 @@
       "assertionText": "expect(readUserVersion(db)).toBe(22)",
       "reason": "F-VISFB-42 023 落链随链更新：链尾断言值 22→23（主控收口随链——值改写非删测，判别力同位）",
       "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
+    },
+    {
+      "file": "tests/e2e/reader-text.spec.ts",
+      "assertionText": "expect(panel.getByRole('button', { name: '保存', exact: true })).toBeVisible()",
+      "reason": "F-VISFB-13 aria-label 恒设后 dirty 态 accessible name=「立即保存」（aria-label 压过 sr-only 内容文本）——exact 锚随名换源保存→立即保存（:614 点击面同笔），语义等价锁定：dirty 未达成即红、saved 态名=「已保存」不误中",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-13/§0-2（主控集成窗 e2e 实跑拦下换源面——B3 批集成笔 aeccb55f）"
+    },
+    {
+      "file": "tests/unit/renderer/app-shell.test.tsx",
+      "assertionText": "expect( document.querySelector('.app-content-row [role=\"separator\"]'), '壳层不再包 SplitPane（唯一 SplitPane=阅读器侧栏，在 main 内）' ).toBeNull()",
+      "reason": "F-VISFB-41 库栏拖宽把手（页内 role=separator）与壳层负锚接缝冲突——主控接缝裁决收窄至 main 外（filter closest('main')===null 集合 toEqual([])，守卫力≥原——门一 N7 独立复核）；值改写非删测",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-41（主控集成窗接缝裁决——B3 批集成笔 a3629c9d）"
     }
   ]
 }

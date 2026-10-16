@@ -14,7 +14,8 @@
  *  - 终局：工具条在场（settle/mouseup 全量锚定成功）。
  *
  * 真鼠标链（F-CIFLK-01 条款）：拖拽面全部先 scrollIntoViewIfNeeded 锚定。
- * deps=标注链（划选保存/渲染）——skipIfPending 形态同 reader-text.spec。
+ * 依赖（标注链 SR-RDR/LIB 六票）均已 done 且 0C fixture 在仓——always-active
+ * 直跑（K3 新测试纪律：零 skipIfPending 位——主控集成窗裁决移除死闸）。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
@@ -22,16 +23,8 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { isTicketDone } from '../../tickets/registry'
 import { createTwoColumnPdf, PDF_TWOCOL_LEFT, PDF_TWOCOL_RIGHT } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
-
-const DEPS = ['SR-RDR-02', 'SR-LIB-01', 'SR-LIB-02', 'SR-RDR-04', 'SR-RDR-05', 'SR-RDR-06'] as const
-
-function skipIfPending(deps: readonly string[]): void {
-  const pending = deps.filter((d) => !isTicketDone(d))
-  test.skip(pending.length > 0, `延期：依赖工单未完成 [${pending.join(', ')}]`)
-}
 
 /** selection-rects 变化观察器（空帧判别面）：每次子树变化记录当时块数 */
 async function installFrameObserver(win: Page): Promise<void> {
@@ -82,7 +75,6 @@ async function collectPauseSamples(win: Page, samples: number, intervalMs: numbe
 }
 
 test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条', async () => {
-  skipIfPending(DEPS)
   const userData = await mkdtemp(join(tmpdir(), 'synapse-sel53-'))
   await bootstrapMigrations(userData)
 
