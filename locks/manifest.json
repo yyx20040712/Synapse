@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "76440e04b29ac356bc3cfd97212de7dc0005972beaeb573fd9d636e0c12e30f3"
+            "sha256": "9786dcd6d8d06dff6ea43900a8bd0992c9a49daf4c076ac24af83359fd3824ac"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+            "sha256": "9ec5fbb8482d125e59af534efb753f8419166a5df179f406322b9f526280d422"
         },
         {
             "path": "scripts/test-surface/extract.mjs",

@@ -1,4 +1,59 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(await win.locator('.tl-legend').textContent()).toContain('实线')",
+      "reason": "F-VISFB-21 N1 图例删除：正锚随图例退役，原位换 .tl-legend toHaveCount(0) 负锚（判别力 W-2 红证补档）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7（图例零残留——断言随批退役）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(win.locator('.timeline .tl-legend')).toBeVisible()",
+      "reason": "F-VISFB-21 N1 图例删除：视口恒可见锚随图例退役（与上条同族）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(cardA).toHaveClass(/dim/)",
+      "reason": "F-VISFB-21 C4：T13 由两卡（聚焦+dim）改三卡夹具（甲邻接常亮/乙 dim）——旧 cardA dim 断言被三卡 bright/dim 断言组取代（判别力保位）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21（C4 bright=focus∪双向一度邻接）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
+      "caseTitle": "全流：armed→pointerdown 近锚（A 右中 ±6）→dragging 预览线→pointerup 落 B 近锚→建边+入撤销栈+tool 回 select",
+      "reason": "F-VISFB-21 C2 语义改写：用例体不变断言同强度，标题与 tool 断言随新语义（draw-solid 保持）改写——新标题在 cur 面（NEW 行在档）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21（§2.4 旧文偏差翻案）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
+      "assertionText": "expect(onNodeClick).toHaveBeenCalledTimes(1)",
+      "reason": "F-VISFB-21 C2 后 RR4 旗释放观测面改锚链：第二次卡点击由「选中」变「达锚链」——onNodeClick 断言换 anchor==='B' 直证（判别力增强）",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "图例两型真文本挂滚动容器 .timeline（U8 重整：实线/虚线）",
+      "reason": "F-VISFB-21 N1 图例删除：图例渲染用例随组件退役，换 .tl-legend toHaveCount(0) 零残留负锚",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位",
+      "reason": "F-VISFB-21 N1：CSS 锁用例标题含图例视口级定位段——图例 CSS 随删除退役，用例改写（其余 CSS 锁面沿承），旧标题整串退役",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-rr17-drawline-multipointer.test.tsx",
+      "assertionText": "expect(useLineageViewStore.getState().tool).toBe('select')",
+      "reason": "F-VISFB-21 C2 语义改写：同行为锁换新语义断言（tool==='draw-solid'）——RR17 phase 闸九断言其余不动",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21"
+    },
+    {
+      "file": "tests/unit/renderer/notes.store.test.ts",
+      "caseTitle": "load 写入；edit 标 dirty；1.5s 内防抖后保存一次",
+      "reason": "F-VISFB-11 节拍 1500ms→600s：标题随节拍语义改写（「防抖窗口后保存一次」在 cur 面）——用例体窗口派生化断言同强度",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-3（600s 共享常量单源）"
+    }
+  ]
 }
