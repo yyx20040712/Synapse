@@ -224,6 +224,15 @@
       "case": "AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建（:31）",
       "count": 1,
       "fingerprint": "挂起/超时型（90s test timeout exceeded——首跑 1.5m 无断言差值输出+连带 Worker teardown 90000ms exceeded 拖红 job 退出码；同 run retry #1 绿 4.0s）。首现=2026-10-15 CI windows-latest run 38739035324 attempt1（bec8aad3 治理纯文档批零因果——上一 run 4ba78737 绿；本地零跑面）。分类=非确定失败单现 observing（同用例 2 次触发立案线）；族注记=挂起/超时族第四例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+本案）且为该族 CI 面首例（前三例均本地 VMware——跨环境形态注，环境级线索待第五例再评估）。error-context=CI test-results 产物（corpus-export-AI-语料导出全链…-fa3da 目录）。再现即触立案线。"
+    },
+    {
+      "spec": "tests/e2e/ai-tasks-card.spec.ts",
+      "case": "E2 任务卡六态与取消：queued 取消→已取消；running 执行中无取消钮；终态三态文案（:33）",
+      "count": 1,
+      "fingerprint": "挂起/worker-teardown 型（90s test timeout exceeded 于 E2 六态用例，随后 Worker teardown timeout 90000ms——同 worker 10 例〔E1①②③/E3/E4/E5×3/E7/E2〕连带未跑判红，连带≠独立红；attempt2〔--failed 复跑〕e2e 全绿含 E2，10m51s）。首现=2026-10-16 05:20Z CI windows-latest run 38855228730 attempt1 @aa5dc4ce（B6 候补收口 push 笔——批次零 src/e2e 改动〔纯 unit 测试面+docs〕，静态解耦；前置 run 38847967569 绿=跨 run 非确定；其余六段 attempt1 全绿含 vitest 3495+指纹门）。分类=非确定失败单现 observing（同用例 2 次触发立案线）。error-context=CI test-results 产物。",
+      "status": "observing",
+      "first_seen": "2026-10-16",
+      "resolution": "首现 observing（复跑绿不销项——失败指纹在档）；挂起/超时族跨例第五例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+corpus-export CI 首例+本案）且为该族 CI 面第二例——两 CI 例集中 2026-10-15/16 窗（corpus-export fa3da+本案），环境级线索按族注记口径维持、族内 CI 面第二现即触该族 CI 专项排查候选呈报；本用例再现即触立案线（跨场次第二现=立案排查，首取 error-context 快照+对照 corpus-export 例判别形态）。"
     }
   ]
 }
