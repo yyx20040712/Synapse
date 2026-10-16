@@ -101,7 +101,7 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     expect(useReaderStore.getState().activeId).toBe('p-2')
   })
 
-  it('点击关闭叉 → closeTab（该 tab 移除；点击 tab 体不误触关闭）', () => {
+  it('点击关闭叉 → closeTab（该 tab 移除；点击 tab 体不误触关闭）', async () => {
     mountWith({
       tabs: { 'p-1': makeTab('p-1', { fileName: '甲.pdf' }), 'p-2': makeTab('p-2') },
       order: ['p-1', 'p-2'],
@@ -111,8 +111,10 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     expect(closeBtn).not.toBeNull()
     // 关闭叉退出 roving 焦点环（键盘 Tab 序不进 tablist；Arrow 不因 button 焦点失效）
     expect(closeBtn?.tabIndex).toBe(-1)
-    act(() => {
+    // [F-VISFB-14] 关闭叉=requestCloseTab 异步收口（clean 直通——微任务链排空后落地）
+    await act(async () => {
       closeBtn?.click()
+      for (let i = 0; i < 10; i++) await Promise.resolve()
     })
     const s = useReaderStore.getState()
     expect(s.tabs['p-1']).toBeUndefined()
@@ -197,7 +199,7 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     expect(document.activeElement).toBe(items[0])
   })
 
-  it('焦点残留守卫：聚焦的 tab 被鼠标关闭后，tablist 仍恰有一项 tabIndex=0（不退出 Tab 序）', () => {
+  it('焦点残留守卫：聚焦的 tab 被鼠标关闭后，tablist 仍恰有一项 tabIndex=0（不退出 Tab 序）', async () => {
     mountWith({
       tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') },
       order: ['p-1', 'p-2'],
@@ -207,8 +209,9 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     items[1]?.focus()
     // focusedId=p-2 已写入；经关闭叉（鼠标路径）关掉 p-2
     const closeBtn = host?.querySelectorAll<HTMLButtonElement>('[aria-label^="关闭"]')[1]
-    act(() => {
+    await act(async () => {
       closeBtn?.click()
+      for (let i = 0; i < 10; i++) await Promise.resolve()
     })
     // focusedId 残留指向已关 tab——守卫必须回退激活项，roving 不变量保持
     const remaining = tabItems()
@@ -216,7 +219,7 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     expect(remaining[0]?.tabIndex).toBe(0)
   })
 
-  it('Delete 键关闭：纯键盘路径（关闭叉已退出 Tab 序的替代通道）', () => {
+  it('Delete 键关闭：纯键盘路径（关闭叉已退出 Tab 序的替代通道）', async () => {
     mountWith({
       tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') },
       order: ['p-1', 'p-2'],
@@ -224,8 +227,9 @@ guardedDescribe('SR2-TABS-02', 'TabBar —— 多标签栏（展示面+回调接
     })
     const items = tabItems()
     items[1]?.focus()
-    act(() => {
+    await act(async () => {
       items[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      for (let i = 0; i < 10; i++) await Promise.resolve()
     })
     const s = useReaderStore.getState()
     expect(s.tabs['p-2']).toBeUndefined()

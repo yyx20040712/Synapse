@@ -192,7 +192,7 @@ guardedDescribe('SR2-TABS-03', 'TabBar —— 灰点渲染与关闭脏 tab 确�
     expect(dirtyDots()).toHaveLength(0)
   })
 
-  it('关闭确认：dirty tab 取消不放行（confirm false→不关）；确认放行', () => {
+  it('关闭确认：dirty tab 取消不放行（confirm false→不关）；确认放行', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     mountWith({
       tabs: { 'p-1': makeTab('p-1', { fileName: '甲.pdf' }), 'p-2': makeTab('p-2') },
@@ -202,29 +202,34 @@ guardedDescribe('SR2-TABS-03', 'TabBar —— 灰点渲染与关闭脏 tab 确�
     act(() => {
       useReaderStore.getState().markTabDirty('p-1')
     })
-    act(() => {
+    // [F-VISFB-14] 关闭叉=requestCloseTab 异步收口（flush-first——annotations 面
+    // 无自动存路径→confirmCloseDirty 显式放弃；微任务链排空后断言）
+    await act(async () => {
       closeButtons()[0]?.click()
+      for (let i = 0; i < 12; i++) await Promise.resolve()
     })
     // 取消：p-1 未被关闭
     expect(confirmSpy).toHaveBeenCalledTimes(1)
     expect(useReaderStore.getState().tabs['p-1']).toBeDefined()
     // 确认：关闭落地
     confirmSpy.mockReturnValue(true)
-    act(() => {
+    await act(async () => {
       closeButtons()[0]?.click()
+      for (let i = 0; i < 12; i++) await Promise.resolve()
     })
     expect(useReaderStore.getState().tabs['p-1']).toBeUndefined()
   })
 
-  it('关闭确认：clean tab 直接关（不弹窗）', () => {
+  it('关闭确认：clean tab 直接关（不弹窗）', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     mountWith({
       tabs: { 'p-1': makeTab('p-1'), 'p-2': makeTab('p-2') },
       order: ['p-1', 'p-2'],
       activeId: 'p-1'
     })
-    act(() => {
+    await act(async () => {
       closeButtons()[0]?.click()
+      for (let i = 0; i < 12; i++) await Promise.resolve()
     })
     expect(confirmSpy).not.toHaveBeenCalled()
     expect(useReaderStore.getState().tabs['p-1']).toBeUndefined()

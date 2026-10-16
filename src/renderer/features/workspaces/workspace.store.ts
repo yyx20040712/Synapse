@@ -131,6 +131,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {
     },
     switchTo: async (id, { dirty }) => {
       if (id === get().currentId) return false
+      // [F-VISFB-14 d1 W4① 维持现状申报] 课题切换弃改路径（confirm→discardAll
+      // →reload）本票不动——flush-first 翻案面收敛于关 tab/退出握手，不扩大
+      // 到 workspace 切换（reload 语义=全新 stores，discard 即弃改收口正道）
       if (dirty && !window.confirm(SWITCH_DIRTY_TEXT)) return false
       // 弃改收口（A3/INV-35④ 显式防悬置写）：确认通过即弃置全部 notes 悬置
       // 编辑（含清防抖句柄+在途 save 代际守卫打点）——reload 前零 timer 零内存

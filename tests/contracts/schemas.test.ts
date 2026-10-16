@@ -292,6 +292,12 @@ const VALID: Record<string, unknown[]> = {
   netDiagResSchema: [[netDiagItem], []],
   openExternalReqSchema: [{ url: 'https://example.com' }],
   setQuitDirtyReqSchema: [{ dirty: false }, { dirty: true }],
+  // [F-VISFB-14] 退出握手两面（事件帧 requestId 关联+回执 stillDirty）
+  quitFlushEventSchema: [{ requestId: 'quit-flush-1' }],
+  quitFlushReportReqSchema: [
+    { requestId: 'q-1', stillDirty: true },
+    { requestId: 'q-2', stillDirty: false }
+  ],
   windowControlActionSchema: ['minimize', 'maximize-toggle', 'close', 'get-state'],
   windowControlReqSchema: [{ action: 'close' }],
   windowStateEventSchema: [{ maximized: false }],
@@ -376,6 +382,8 @@ const SCHEMA_NAMES = [
   'snapshotImportStatsSchema',
   'syncKeyInfoResSchema',
   'setQuitDirtyReqSchema',
+  'quitFlushEventSchema',
+  'quitFlushReportReqSchema',
   'tagIdReqSchema',
   'tagListReqSchema',
   'tagNameReqSchema',

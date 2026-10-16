@@ -6,6 +6,8 @@
  *   → 未通过校验抛 DomainError(code='INVALID_REQUEST')；通过 → { ok: true }
  * - setQuitDirty（TABS-04 增量）：({ dirty }) → deps.setQuitDirty 注入（bootstrap
  *   接 main-window 模块缓存）→ { ok: true }——renderer 聚合 dirty 变化沿 push 上报
+ * - reportQuitFlush（[F-VISFB-14] 退出握手增量）：({ requestId, stillDirty }) →
+ *   deps.reportQuitFlush（main-window 待答表关联 resolve）→ { ok: true }
  * - windowControl（R2-SH3 增量）：({ action }) → deps.controlWindow 透传（bootstrap
  *   闭包包主窗口）→ 回读 { ok: true, maximized }——四 action 语义单源在
  *   main-window.controlWindow
@@ -44,6 +46,12 @@ export function createSystemIpc(deps: IpcDeps): ApiHandlers['system'] {
       // 旧载荷兼容）。[回炉码 7] 必填直调（无可选链——装配缺失=调用即红，
       // typecheck+system.test 双锚）
       deps.setLineagePending(req.lineagePending ?? false)
+      return { ok: true as const }
+    },
+    // [F-VISFB-14] 退出握手 flush 回执（renderer 收帧收口后上报 stillDirty——
+    // main 侧待答表按 requestId 关联；迟到/超时后回执零命中即丢弃）
+    async reportQuitFlush(req) {
+      deps.reportQuitFlush(req.requestId, req.stillDirty)
       return { ok: true as const }
     },
     async windowControl(req) {

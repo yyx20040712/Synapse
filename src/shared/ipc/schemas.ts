@@ -643,6 +643,18 @@ export type WindowControlReq = z.infer<typeof windowControlReqSchema>
 export const windowStateEventSchema = z.object({ maximized: z.boolean() }).strict()
 export type WindowStateEvent = z.infer<typeof windowStateEventSchema>
 
+// ── [F-VISFB-14] 退出握手 flush 面（main→renderer 事件 + renderer→main 回执）──
+/** 退出握手 flush 请求事件（main→renderer 单向）：requestId=本次握手关联键
+ *  （迟到回执按 id 丢弃——超时降级后不误伤后续握手） */
+export const quitFlushEventSchema = z.object({ requestId: z.string().min(1) }).strict()
+export type QuitFlushEvent = z.infer<typeof quitFlushEventSchema>
+
+/** 退出握手 flush 回执（renderer→main invoke）：stillDirty=收口后最新 dirty
+ *  判定（INV-141：fulfilled≠已落库——收口后一律查态，非任一 promise 兑现值） */
+export const quitFlushReportReqSchema = z
+  .object({ requestId: z.string().min(1), stillDirty: z.boolean() })
+  .strict()
+
 export const windowControlResSchema = z.object({ ok: z.literal(true), maximized: z.boolean() }).strict()
 export type WindowControlRes = z.infer<typeof windowControlResSchema>
 

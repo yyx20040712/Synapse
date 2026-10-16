@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T22:26:09.986Z",
+    "generatedAt": "2026-10-16T23:49:38.050Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -199,7 +199,7 @@
         },
         {
             "path": "src/renderer/app/StatusBar.tsx",
-            "sha256": "62eee1a39321518866ffdf728abff29aeb1290a117bc98da4a3c9759ba2e29a5"
+            "sha256": "df7af667a2a92838b6b1339eaa18d309c069ae946128891ce509531185c6a73e"
         },
         {
             "path": "src/renderer/public/theme-boot.js",
@@ -227,15 +227,15 @@
         },
         {
             "path": "src/shared/ipc/api-surface.ts",
-            "sha256": "20f064618b40f530df13d4159b3cb1aa01a852adb5891a16fcb2d7da37b4a838"
+            "sha256": "d5a0e6bdc94bae171eeae224a98c61507d12d02fbfa3ff0608c2f5ce783bae25"
         },
         {
             "path": "src/shared/ipc/events.schemas.ts",
-            "sha256": "42e0c0cc2e4c8e6b31adcbc8cec90cf3edd4fb92594ac3fc74ee1fa1827320e8"
+            "sha256": "07331f3bf4d3d95920535902a70e38b4dad3c45899e6d5e226ca403bfd239c3c"
         },
         {
             "path": "src/shared/ipc/schemas.ts",
-            "sha256": "b8c7382e27d4acabd67336aa836ccb07a1593105f0f324537facd5c77ed9fd31"
+            "sha256": "242362b4a697e11c252a2b4a4a08ebfe1ccf3d92d4ec1173f7a0c560834c289c"
         },
         {
             "path": "src/shared/models/ai-domain.ts",
@@ -287,7 +287,7 @@
         },
         {
             "path": "tests/contracts/api-surface-closure.test.ts",
-            "sha256": "1c38823e113715e6044649fb75a92e9821b2088a9697049fa787da91637a3cca"
+            "sha256": "1e043eae9b10eca469b37972bbb4bc3d0f3837f6ed94757573bc58172189017f"
         },
         {
             "path": "tests/contracts/api-surface.test.ts",
@@ -311,7 +311,7 @@
         },
         {
             "path": "tests/contracts/schemas.test.ts",
-            "sha256": "5903c9982336aae73828b043c2b00675b311bda9e71e452546854a80b6b62fc4"
+            "sha256": "3f36c4df05083323b31859f30b864378d059f99cb20f7e428556c680c43cf44c"
         },
         {
             "path": "tests/e2e/ai-budget.spec.ts",
@@ -348,6 +348,10 @@
         {
             "path": "tests/e2e/export-clipboard.spec.ts",
             "sha256": "b3c828594818d4bbb38e750b4d87dc92dfc87eb3e3f6c01fdb8420f3f78cf981"
+        },
+        {
+            "path": "tests/e2e/figure-extract.spec.ts",
+            "sha256": "852a31ba4693d76b5543e7f2d5784b7896d24269e0abe9e878fcff49f8ac963a"
         },
         {
             "path": "tests/e2e/folders-crud.spec.ts",
@@ -448,6 +452,10 @@
         {
             "path": "tests/e2e/seed-paper.mjs",
             "sha256": "647cbecb0fc993e636007a2925c29210376be8716aaafe0f18b4c16ce692e7d4"
+        },
+        {
+            "path": "tests/e2e/selection-twocol.spec.ts",
+            "sha256": "58a255d2f877e540a7e408ad6975fa1c8c501e5ff85936079a2544476ca7dc0e"
         },
         {
             "path": "tests/e2e/shell-rail.spec.ts",
@@ -746,6 +754,10 @@
             "sha256": "a716e9c56e635b0b1401f9f7c7d1395d1b58b6eae8757027482f6dcca61be05c"
         },
         {
+            "path": "tests/unit/preload-quit-flush-event.test.ts",
+            "sha256": "1308d1c09b42fdbb0f8dbef83db8129783b831c53c2690d3ec635811ce9fdc5c"
+        },
+        {
             "path": "tests/unit/preload/drag-import.test.ts",
             "sha256": "b20ab14f3c14bdb37e024df07a4861f10f533c9ea35341e67c302d953824fbb6"
         },
@@ -756,6 +768,14 @@
         {
             "path": "tests/unit/protocol/app-file.protocol.test.ts",
             "sha256": "519e40acdb77d9d5774d6b3860e91cb22a44e4e52a85d30c4f1a535250f77f6b"
+        },
+        {
+            "path": "tests/unit/renderer/DrPaperInfo.test.tsx",
+            "sha256": "2d1751c440e5910c9ac1dfbb9dd5ba2fccfc676a36368aeacde93d4143d76067"
+        },
+        {
+            "path": "tests/unit/renderer/FigureExtractor.test.ts",
+            "sha256": "45cbbc29688530d1eac0435a9c57791288f00b32ed7c45938715a5c2c180074c"
         },
         {
             "path": "tests/unit/renderer/PaperInfoSection.test.tsx",
@@ -866,6 +886,10 @@
             "sha256": "a8e952b4ee2af6d3751cf727e747af64c64ff1fa148b93aa6aa590a41d4c86aa"
         },
         {
+            "path": "tests/unit/renderer/close-tab-flush.test.tsx",
+            "sha256": "2beed9515d8565f97c51078d5778aa0067d3ceb3e83f2e20da1ef7fbe7741b2d"
+        },
+        {
             "path": "tests/unit/renderer/corpus-export.test.tsx",
             "sha256": "881bc59ccbcb0ef15dac1bd3a4eb1453c0ddacdcadc68d7929648a0c57d6f9d1"
         },
@@ -880,6 +904,22 @@
         {
             "path": "tests/unit/renderer/edge-menu-blur-commit.test.tsx",
             "sha256": "e69ffc338bc28e94057b3f203356bf9d65a1119d1f74a53a29312f56478d90c3"
+        },
+        {
+            "path": "tests/unit/renderer/figure-bridge.test.tsx",
+            "sha256": "c3616062d37a4ff2d2d83ce2417c07cd27e4eaa44c34bc68069807154cfb5588"
+        },
+        {
+            "path": "tests/unit/renderer/figure-ctm.test.ts",
+            "sha256": "8e58ba2ff537d52d1ff728126dff8d2e7ddefe18531d2e18b9251178f2507517"
+        },
+        {
+            "path": "tests/unit/renderer/figure-decode.test.ts",
+            "sha256": "cf2876e67d33945c87898520e3e22c80871d9fbaa228706c9e383f7fd0505d73"
+        },
+        {
+            "path": "tests/unit/renderer/figure-negative-anchors.test.ts",
+            "sha256": "7c6fb88b9420015e26464c6566222ab41bfd4d23c15b2417d63c75b61dbc2631"
         },
         {
             "path": "tests/unit/renderer/folder-nav-edit.test.tsx",
@@ -912,6 +952,10 @@
         {
             "path": "tests/unit/renderer/keymap.test.ts",
             "sha256": "e9cf9ddb57956e898a3610ff8f6a36da32d32e4f0cd65856af1bc12fd0b7d307"
+        },
+        {
+            "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
+            "sha256": "6796f36ba844f5274f96b2a82e40f082d7901cf515aa7f5ac86ce58f1cd45b38"
         },
         {
             "path": "tests/unit/renderer/library-cards.test.tsx",
@@ -1036,6 +1080,10 @@
         {
             "path": "tests/unit/renderer/lineage-edge-edit.test.ts",
             "sha256": "2a90f5215d43330d836906d6f8c6296b63efefcfe22e85fa1193a3870475cd6e"
+        },
+        {
+            "path": "tests/unit/renderer/lineage-edge-hover-name.test.tsx",
+            "sha256": "a59e7cd68694ac7cf7cebc35ac02474504a8af7143f85182591a1484d7f18997"
         },
         {
             "path": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
@@ -1262,6 +1310,10 @@
             "sha256": "b674f67d6dfd62b16ba4b84da2ccaa9376a1cacdd834d8ecf33dcccd55c4f74e"
         },
         {
+            "path": "tests/unit/renderer/quit-flush.test.ts",
+            "sha256": "bfb75733485239d6d633ace80dabdb5e99f82106d031ac99f7a088b5e7dea4a8"
+        },
+        {
             "path": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
             "sha256": "c1e0c90a6cd5de6cd4f8a67bca764636ab3cfdef82ac5caffcf29792cf8183c8"
         },
@@ -1276,6 +1328,10 @@
         {
             "path": "tests/unit/renderer/reader-notes-panel-b3.test.tsx",
             "sha256": "69c8bf34dce461d22be7b1529083e7170f1b0e737a5490535649e04a0bb0cd2b"
+        },
+        {
+            "path": "tests/unit/renderer/reader-notes-panel-visfb13.test.tsx",
+            "sha256": "e9226df7d92d20812c01c2cb010a83b75b4c8981719cec8d609c4b1585fcbed9"
         },
         {
             "path": "tests/unit/renderer/reader-notes-panel.test.tsx",
@@ -1326,6 +1382,14 @@
             "sha256": "05ab4386ff99f4ac26ec87402cd8309c5ed7469c3b093ea8709196570ad0d7ff"
         },
         {
+            "path": "tests/unit/renderer/save-state-button.test.tsx",
+            "sha256": "52e51145775a824a9323d4401771f194c8c8365cb3d9b669c8ed225ec78aec1d"
+        },
+        {
+            "path": "tests/unit/renderer/save-status-slot.test.ts",
+            "sha256": "7786267ff126c58e98c0642a01702b0d2d47e8b444db960c3101010c391b3bab"
+        },
+        {
             "path": "tests/unit/renderer/scroll-converge.test.ts",
             "sha256": "499bcfd8eb48a90d34864be71b2d63eca89319118931372aecf3239102170a87"
         },
@@ -1348,6 +1412,10 @@
         {
             "path": "tests/unit/renderer/selection-evaluate.test.tsx",
             "sha256": "346be8db63a5efc5a71971d3271422de7bdc3e7adb4c591868c6a54f00f86a12"
+        },
+        {
+            "path": "tests/unit/renderer/selection-flicker.test.tsx",
+            "sha256": "9a9a9535d27dedfb4ca901f9bb93600c29e9c008ba67df1c0c5b3dd6d718719c"
         },
         {
             "path": "tests/unit/renderer/selection-geometry.test.ts",
@@ -1395,11 +1463,11 @@
         },
         {
             "path": "tests/unit/renderer/tab-bar.test.tsx",
-            "sha256": "4da228351a6a9861b7aa9b0739cb63e64f790f5e016f2ba11ded7a6b6a8dd4c4"
+            "sha256": "d1e468fad5a04c2a5c187b0f4c306519eff1efea4916ad29acfb2e5ca5ad57df"
         },
         {
             "path": "tests/unit/renderer/tab-dirty.test.tsx",
-            "sha256": "bb3eba73a92f5df2e95c8512276239df288985ea860d1f9b3d87442073ea1b54"
+            "sha256": "a6f700ed83840dc41b7039c79b78a701fc94b4d08d01b799bfb588af055d5cc9"
         },
         {
             "path": "tests/unit/renderer/tag-dnd-drop.test.tsx",
@@ -1606,6 +1674,10 @@
             "sha256": "ff6c0ec60e31d45a9d5040bae4d60c17e948e1701a7ab2dd5f0464ba5c3ddbef"
         },
         {
+            "path": "tests/unit/services/figure-tasks.test.ts",
+            "sha256": "a40fe8f54d798d4fa8169ba144a8f0a359905d52ce7a343a620f76607e29b244"
+        },
+        {
             "path": "tests/unit/services/figures-delete-chain.test.ts",
             "sha256": "33a2a036f5f35011c047d96159fb5351973735061fc5d24a4d1b6d3a251f5729"
         },
@@ -1640,6 +1712,10 @@
         {
             "path": "tests/unit/services/import-delete-mutex.service.test.ts",
             "sha256": "fa9b9584c3459b9729fb8fdf97b62b51cf557da88a6e371565813a2c302aaf70"
+        },
+        {
+            "path": "tests/unit/services/import-figure-enqueue.test.ts",
+            "sha256": "39dc774eea7107d07a5bfedea694eb8813738c68e5e1677507f3fc48adb4c0b2"
         },
         {
             "path": "tests/unit/services/import-snapshot.service.test.ts",
@@ -1842,6 +1918,10 @@
             "sha256": "ea341e2dd7e6217fd30651e65809ec3ecfba4e82cc69bd44d2378412c34422bb"
         },
         {
+            "path": "tests/unit/windows/quit-handshake.test.ts",
+            "sha256": "2be9c9b984a76ce86b97f86968eefe65588f9597e04dd1cc772599b36dfc060b"
+        },
+        {
             "path": "tests/unit/windows/window-control.test.ts",
             "sha256": "50aadd5845108d5c6d7347c1d065623700e555c37af8984fccab74f3ff2aa2b2"
         },
@@ -1871,7 +1951,7 @@
         },
         {
             "path": "tests/utils/ipc-deps.ts",
-            "sha256": "2f61a436a12542b044d28609032e4907d58d01a56edc420df5a8702ab4d3282d"
+            "sha256": "ee807ce952021d27d0657522c0363974115e197ce8441f1aa7b96a3e801a3391"
         },
         {
             "path": "tests/utils/live-frame.ts",
@@ -1900,66 +1980,6 @@
         {
             "path": "vitest.config.ts",
             "sha256": "af9cdb4774a2cc27d65feda4152f6af330a3d5a7511f5d897e7f95b42115c96d"
-        },
-        {
-            "path": "tests/unit/renderer/lineage-edge-hover-name.test.tsx",
-            "sha256": "a59e7cd68694ac7cf7cebc35ac02474504a8af7143f85182591a1484d7f18997"
-        },
-        {
-            "path": "tests/unit/renderer/save-state-button.test.tsx",
-            "sha256": "52e51145775a824a9323d4401771f194c8c8365cb3d9b669c8ed225ec78aec1d"
-        },
-        {
-            "path": "tests/unit/renderer/reader-notes-panel-visfb13.test.tsx",
-            "sha256": "e9226df7d92d20812c01c2cb010a83b75b4c8981719cec8d609c4b1585fcbed9"
-        },
-        {
-            "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
-            "sha256": "6796f36ba844f5274f96b2a82e40f082d7901cf515aa7f5ac86ce58f1cd45b38"
-        },
-        {
-            "path": "tests/unit/renderer/selection-flicker.test.tsx",
-            "sha256": "9a9a9535d27dedfb4ca901f9bb93600c29e9c008ba67df1c0c5b3dd6d718719c"
-        },
-        {
-            "path": "tests/e2e/selection-twocol.spec.ts",
-            "sha256": "58a255d2f877e540a7e408ad6975fa1c8c501e5ff85936079a2544476ca7dc0e"
-        },
-        {
-            "path": "tests/unit/renderer/FigureExtractor.test.ts",
-            "sha256": "45cbbc29688530d1eac0435a9c57791288f00b32ed7c45938715a5c2c180074c"
-        },
-        {
-            "path": "tests/unit/renderer/figure-bridge.test.tsx",
-            "sha256": "c3616062d37a4ff2d2d83ce2417c07cd27e4eaa44c34bc68069807154cfb5588"
-        },
-        {
-            "path": "tests/unit/renderer/figure-ctm.test.ts",
-            "sha256": "8e58ba2ff537d52d1ff728126dff8d2e7ddefe18531d2e18b9251178f2507517"
-        },
-        {
-            "path": "tests/unit/renderer/figure-decode.test.ts",
-            "sha256": "cf2876e67d33945c87898520e3e22c80871d9fbaa228706c9e383f7fd0505d73"
-        },
-        {
-            "path": "tests/unit/renderer/figure-negative-anchors.test.ts",
-            "sha256": "7c6fb88b9420015e26464c6566222ab41bfd4d23c15b2417d63c75b61dbc2631"
-        },
-        {
-            "path": "tests/unit/services/figure-tasks.test.ts",
-            "sha256": "a40fe8f54d798d4fa8169ba144a8f0a359905d52ce7a343a620f76607e29b244"
-        },
-        {
-            "path": "tests/unit/services/import-figure-enqueue.test.ts",
-            "sha256": "39dc774eea7107d07a5bfedea694eb8813738c68e5e1677507f3fc48adb4c0b2"
-        },
-        {
-            "path": "tests/unit/renderer/DrPaperInfo.test.tsx",
-            "sha256": "2d1751c440e5910c9ac1dfbb9dd5ba2fccfc676a36368aeacde93d4143d76067"
-        },
-        {
-            "path": "tests/e2e/figure-extract.spec.ts",
-            "sha256": "852a31ba4693d76b5543e7f2d5784b7896d24269e0abe9e878fcff49f8ac963a"
         }
     ]
 }

@@ -14,6 +14,7 @@ export interface IpcDepsOverrides {
   userDataDir?: string
   setQuitDirty?: (dirty: boolean) => void
   setLineagePending?: (pending: boolean) => void // 桩恒供值（IpcDeps 侧已必填——本覆盖键保持可选语义）
+  reportQuitFlush?: IpcDeps['reportQuitFlush'] // [F-VISFB-14] 退出握手回执落点（IpcDeps 必填——桩恒供值同型）
   controlWindow?: IpcDeps['controlWindow']
 }
 
@@ -61,6 +62,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
     ping: over.ping ?? (async () => ({ ok: true, latencyMs: 10 })),
     setQuitDirty: over.setQuitDirty ?? (() => {}),
     setLineagePending: over.setLineagePending ?? (() => {}),
+    reportQuitFlush: over.reportQuitFlush ?? (() => {}),
     controlWindow: over.controlWindow ?? ((_action) => ({ maximized: false }))
   }
 }

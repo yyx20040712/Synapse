@@ -34,10 +34,12 @@ function normalizeTheme(value: string | undefined): AppSettings['theme'] | undef
 
 /**
  * [T3-U1] 状态条自动保存槽 worst-of 聚合（纯函数——tab 双源分档 ∪ lineage
- * saveStatus →三态真文本；null=槽省略）。序=error > saving > saved；
- * [回炉 R2/W3 终裁分档] annoDirty=真失败→error；notePending=在途+失败混合
+ * saveStatus →三态真文本；null=槽省略）。序=failed > saving > saved；
+ * [回炉 R2/W3 终裁分档] annoDirty=真失败→failed；notePending=在途+失败混合
  * →saving；lineage dirty=[②U1] 会话暂存未落库如实呈现；干净+有 tab=saved；
  * 无 tab 空闲=null（禁假「已保存」造作信号）。
+ * [F-VISFB-14] 返回型=SaveUiState|null（StatusBar 槽位单源——INV-141⑤；
+ * lineage error 在此归一为 failed〔钮面族四态枚举，文本同为「保存失败」〕）。
  */
 function autosaveWorstOf(
   annoDirty: boolean,
@@ -45,7 +47,7 @@ function autosaveWorstOf(
   lineage: 'clean' | 'dirty' | 'saving' | 'error',
   openTabs: number
 ): AutosaveStatus {
-  if (annoDirty || lineage === 'error') return 'error'
+  if (annoDirty || lineage === 'error') return 'failed'
   if (notePending || lineage === 'saving') return 'saving'
   // [F-LGRAPH-01②U1] lineage dirty=编辑会话暂存未落库（保存语义反转：
   // autosave-first→会话暂存+点保存——「待保存」档如实呈现非假「保存中」）

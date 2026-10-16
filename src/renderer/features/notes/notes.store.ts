@@ -24,7 +24,10 @@
  *   防抖到期共用 dispatchSave；首载门控同 saveSoon——服务器基线未知不抢存，
  *   由 load 合并+补存承接）；[F-VISFB-11] 返回 Promise<void>（可等待面）；
  *   flushAll()：全量收口面——遍历 pendingEdit 快照逐篇串行 flush（退出握手
- *   14 票的地基，不用 Promise.all）；flush(paperId)：卸载面收口（切文献/面板卸载时
+ *   14 票的地基，不用 Promise.all）；[F-VISFB-14] flushNow(paperId)/
+ *   flushAllNow()：立存收口变体（关 tab/退出握手消费——INV-141①普通 dirty
+ *   转可等待立存：flush 后仍 pending 即 saveNow，防抖 timer 通道不承接
+ *   收口面〔收口后 renderer 可能即亡〕）；flush(paperId)：卸载面收口（切文献/面板卸载时
  *   调）——pending∧saving 在途：等在途完成后以 pending 合并态**立即**落盘
  *   （消费时点一的新防抖由此提前兑现）；pending∧error：立即重试落盘一次；
  *   普遍 dirty（防抖在排）：no-op——既有 timer 通道承接（不抢跑）。应用退出
@@ -97,6 +100,14 @@ export interface NotesStore {
   /** [F-VISFB-11] 全量收口面（退出握手等地基）：遍历 pendingEdit 快照逐篇
    *  串行 flush（与 discardAllPendingEdits 同型快照遍历——不用 Promise.all） */
   flushAll(): Promise<void>
+  /** [F-VISFB-14] 单篇立存收口（关 tab/退出握手消费——INV-141①普通 dirty
+   *  转可等待立存）：flush 语义+「普遍 dirty 不再留给 timer 通道」——收口
+   *  后仍 pending 即 saveNow 立即落库；gated（首载门控）保持 no-op 残留
+   *  pending（INV-141②失败格由收口方呈现）；在途让位的新在途等待到 settle */
+  flushNow(paperId: string): Promise<void>
+  /** [F-VISFB-14] 全量立存收口（退出握手消费）：遍历 pendingEdit 快照逐篇
+   *  串行 flushNow（退出后 timer 永不触发——timer 通道不承接退出面） */
+  flushAllNow(): Promise<void>
   /** 单篇弃改收口（关脏 tab 确认丢弃后调）——幂等，条目/元数据不存在亦无害 */
   discardPendingEdit(paperId: string): void
   /** 全量弃改收口（切课题确认后调）——遍历 pendingEdit 快照逐篇同收口 */
@@ -357,6 +368,33 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       // Promise.all 并发派发——14 票退出握手的逐篇可等待地基）
       for (const paperId of [...pendingEdit]) {
         await get().flush(paperId)
+      }
+    },
+
+    async flushNow(paperId) {
+      // [F-VISFB-14] 立存收口：flush（在途收敛+error 重试+clean no-op）后
+      // 仍 pending 即 saveNow 立即落库（防抖 timer 通道不承接关 tab/退出面
+      // ——收口后 renderer 可能即亡，timer 永不触发）。flush 让位的新在途
+      // （并发防抖撞上）等待到 settle 再判（在途可见性=模块闭包，本方法驻
+      // store 内单点可判）。gated：saveNow 门控 no-op→pending 残留=INV-141②
+      // 失败格，由收口方（关 tab confirm/退出握手）呈现。saveNow 派发后的
+      // 新防抖 timer（收口期再有新编辑——关 tab/退出面无并发输入）不追等，
+      // 边界申报
+      await get().flush(paperId)
+      let flight = inflight.get(paperId)
+      while (flight !== undefined) {
+        await flight
+        flight = inflight.get(paperId)
+      }
+      if (!pendingEdit.has(paperId)) return
+      await get().saveNow(paperId)
+    },
+
+    async flushAllNow() {
+      // [F-VISFB-14] 全量立存收口（退出握手）：pendingEdit 快照逐篇串行
+      // flushNow（与 flushAll 同型快照遍历；退出后 timer 永不触发——立存）
+      for (const paperId of [...pendingEdit]) {
+        await get().flushNow(paperId)
       }
     },
 

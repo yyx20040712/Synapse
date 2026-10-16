@@ -94,6 +94,30 @@ export function deriveSaveButtonView(state: SaveUiState): SaveButtonView {
   }
 }
 
+/** [F-VISFB-14] 状态条保存槽视图模型（⑤面新消费——StatusBar 槽位唯一推导
+ *  源，与四态钮视图模型同件单源；size/形态变体字段 YAGNI 未扩——槽=纯文本
+ *  无钮形态，实际需要才扩〔13 号报告§七.3〕）。text=四态真文本（与 StatusBar
+ *  既有槽文本逐字同值）；alarm=error 档挂 .sig（--signal 色）。 */
+export interface SaveStatusSlotView {
+  text: string
+  /** error 档告警色（消费方 .sig 类——T3-U1 沿承） */
+  alarm: boolean
+}
+
+const SAVE_STATUS_SLOT_TEXT: Record<SaveUiState, string> = {
+  saved: '已保存',
+  saving: '保存中…',
+  dirty: '待保存',
+  failed: '保存失败'
+}
+
+/** [F-VISFB-14] 四态→状态条槽视图推导（纯函数； StatusBar 经本函数消费
+ *  SaveUiState——槽位枚举与钮面枚举单源同型，禁组件内散落第二份映射。
+ *  lineage 侧 error 语义在 App 聚合归一为 failed〔文本同为「保存失败」〕） */
+export function deriveSaveStatusSlot(state: SaveUiState): SaveStatusSlotView {
+  return { text: SAVE_STATUS_SLOT_TEXT[state], alarm: state === 'failed' }
+}
+
 /** 周期结束失败判定（单一判定点，纯函数锁定）：saving true→false 的终点帧按
  *  savedAt 是否推进裁决（INV-04：失败不推进 savedAt）；非终点帧返回 null
  *  （不动失败态——savedAt 前进来源含合并落地，不能证明本面板周期成功） */

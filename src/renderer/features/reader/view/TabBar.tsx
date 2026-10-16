@@ -43,7 +43,7 @@ import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { ICON_X } from '../../../shared/icons'
 import { useReaderStore } from '../state/reader.store'
-import { confirmCloseDirty, isTabDirty, useNotesDrafts } from '../state/tab-dirty'
+import { isTabDirty, requestCloseTab, useNotesDrafts } from '../state/tab-dirty'
 import type { TabState } from '../state/reader.store'
 
 /** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
@@ -122,13 +122,16 @@ export function TabBar(): JSX.Element | null {
             onKeyDown={(ev) => {
               // 键盘激活（div[role=tab] 无内建行为）：Enter/Space 等价点击 tab 体；
               // Delete 关闭（关闭叉已退出 Tab 序——纯键盘用户的关闭替代路径）。
-              // 两者均经 confirmCloseDirty 守门（dirty tab 二次确认）
+              // 两者均经 requestCloseTab 守门（[F-VISFB-14] flush-first：dirty
+              // 先立存最新值，成功才关闭；失败分支=显式放弃 confirm——tab-dirty）
               if (ev.key === 'Enter' || ev.key === ' ') {
                 ev.preventDefault()
                 activateTab(id)
               } else if (ev.key === 'Delete') {
                 ev.preventDefault()
-                if (confirmCloseDirty(id)) closeTab(id)
+                void requestCloseTab(id).then((allow) => {
+                  if (allow) closeTab(id)
+                })
               }
             }}
           >
@@ -153,7 +156,11 @@ export function TabBar(): JSX.Element | null {
               className="rdr-tab-close syn-icon-btn ml-1 shrink-0 leading-none"
               onClick={(ev) => {
                 ev.stopPropagation()
-                if (confirmCloseDirty(id)) closeTab(id)
+                // [F-VISFB-14 C-A3 翻案] 关闭叉=flush-first 异步收口：dirty 先
+                // 立存最新值（重入锁挡连点第二击），净=关闭/失败=显式放弃路径
+                void requestCloseTab(id).then((allow) => {
+                  if (allow) closeTab(id)
+                })
               }}
             >
               {ICON_X}

@@ -10,11 +10,15 @@
  * 接口结构化类型，测试免依赖 electron 真体——文件内既有风格）。
  *
  * ── 行为层 ──
- * - 退出拦截状态机：
+ * - 退出拦截状态机（[F-VISFB-14] 退出握手 flush-first 升级——C-A3 翻案面）：
  *   | 态 | 含义 | 事件→迁移 |
  *   | clean | renderer 上报 dirty=false（或启动初值） | close 请求 → 直接放行（默认行为） |
- *   | dirty | 任一 tab 有未落库/未保存失败（TABS-03 聚合上报） | close 请求 → preventDefault +
- *     main 侧 showMessageBox 二次确认（「有未保存修改，确认退出？」确认/取消） |
+ *   | dirty | 任一写面未落库/失败（TABS-03∪lineage 聚合上报） | close → preventDefault +
+ *     renderer flush（quitFlush 事件→reportQuitFlush 回执；有限超时
+ *     QUIT_FLUSH_TIMEOUT_MS；flushing 重入锁=二次 close 单发） |
+ *   | dirty + flush 净 | 收口后最新判定 stillDirty=false | win.destroy() 零确认（数据已存） |
+ *   | dirty + 仍脏/超时/发送异常 | flush 失败或超时降级 | main 侧 showMessageBox 二次确认
+ *     （QUIT_CONFIRM_MESSAGE 同族——「未能自动保存…确认退出？」） |
  *   | dirty + 确认 | 用户确认退出 | win.destroy() 强制关闭（绕过 close 再拦截） |
  *   | dirty + 取消 | 用户取消 | 回 dirty 态（窗口保持） |
  * - dirty 上报通道（新 IPC，api-surface 受锁 [locked-change]）：
@@ -203,9 +207,14 @@ export function quitDirtyGuard(dirty: boolean): boolean {
   return dirty
 }
 
-/** 确认框文案单源（测试锚定同一常量——INV-11 精神） */
+/**
+ * 确认框文案单源（测试锚定同一常量——INV-11 精神）。
+ * [F-VISFB-14 d1 W4④] 同族改值：退出握手 flush-first 落地后本框只在
+ * 「自动保存失败或超时」分支出现（旧「有未保存的修改（灰点标记的标签页）」
+ * 全量弹窗路径退役——flush 成功即静默关闭零确认）。
+ */
 export const QUIT_CONFIRM_MESSAGE =
-  '有未保存的修改（灰点标记的标签页），退出后将丢失未落库部分。确认退出？'
+  '有修改未能自动保存（保存失败或超时），退出后将丢失这部分修改。确认退出？'
 
 export interface QuitGuardDeps {
   /** 确认框（模态）：resolve true=确认退出，false=取消 */
@@ -213,11 +222,30 @@ export interface QuitGuardDeps {
 }
 
 /**
- * close 事件守卫流（导出供测试与 bootstrap 装配复用）：
+ * 确认→关闭共尾（守卫流与握手降级段共用）：QUIT_CONFIRM_MESSAGE 模态确认
+ * →确认=destroy/取消=保持；对话框异常按取消处理（窗口保持可重试，避免
+ * preventDefault 后关闭路径死锁）。
+ */
+async function confirmAndMaybeDestroy(
+  win: { destroy(): void },
+  deps: QuitGuardDeps
+): Promise<void> {
+  let confirmed = false
+  try {
+    confirmed = await deps.confirmQuit(QUIT_CONFIRM_MESSAGE)
+  } catch {
+    confirmed = false
+  }
+  if (confirmed) win.destroy()
+}
+
+/**
+ * close 事件守卫流（[F-VISFB-14] 起 bootstrap 不再直接挂本函数——装配升级为
+ * handleCloseWithQuitHandshake；保留导出=受锁 quit-dirty-guard.test 的降级
+ * 路径同族锚+纯 confirm 面单测锚）：
  * clean 放行；dirty → preventDefault → 确认框 → 确认=destroy 强制关闭（destroy
  * 不再触发 close，无重入）/取消=窗口保持（dirty 缓存不迁）。确认框模态天然挡住
- * 弹出期间的重复 close（头注防重入依据）。对话框异常按取消处理：窗口保持可
- * 重试，避免 preventDefault 后关闭路径死锁。
+ * 弹出期间的重复 close（头注防重入依据）。
  */
 export async function handleCloseWithQuitGuard(
   dirty: boolean,
@@ -227,13 +255,123 @@ export async function handleCloseWithQuitGuard(
 ): Promise<void> {
   if (!quitDirtyGuard(dirty)) return
   event.preventDefault()
-  let confirmed = false
-  try {
-    confirmed = await deps.confirmQuit(QUIT_CONFIRM_MESSAGE)
-  } catch {
-    confirmed = false
+  await confirmAndMaybeDestroy(win, deps)
+}
+
+// ── [F-VISFB-14] 退出握手（flush-first 三件套）────────────────────────
+// 状态机（宪法前置，跨格序列=tests/unit/windows/quit-handshake.test.ts）：
+// clean close=放行；dirty close=preventDefault→renderer flush（有限超时）→
+// stillDirty=false=destroy 零确认／仍脏或超时或发送异常=confirm 降级（同上
+// confirmAndMaybeDestroy）→确认=destroy/取消=保持；flushing 重入锁=二次
+// close 单发（INV-141④）；迟到回执按 requestId 关联丢弃（超时后待答表除名）。
+
+/** flush 请求待答表（requestId → resolver；超时除名→迟到回执零误伤） */
+const quitFlushPending = new Map<string, (stillDirty: boolean) => void>()
+
+/** requestId 单调序（模块级——进程内唯一） */
+let quitFlushSeq = 0
+
+/** flushing 重入锁：握手中（flush 等待段）的再次 close 忽略（单发） */
+let quitFlushBusy = false
+
+/** 单次 flush 请求（requestId 与回执 promise 成对——超时除名按 id） */
+export interface QuitFlushCall {
+  requestId: string
+  result: Promise<boolean>
+}
+
+/**
+ * flush 请求工厂（bootstrap 注入 webContents.send；测试注入桩 send）：
+ * 每次调用自增 requestId 并登记待答表——回执经 reportQuitFlushResult 按 id
+ * 关联 resolve。send 同步抛错=executor 内拒绝（调用侧 catch 按未知脏降级）。
+ */
+export function createQuitFlushRequest(
+  send: (payload: { requestId: string }) => void
+): () => QuitFlushCall {
+  return () => {
+    quitFlushSeq += 1
+    const requestId = `quit-flush-${quitFlushSeq}`
+    const result = new Promise<boolean>((resolve) => {
+      quitFlushPending.set(requestId, resolve)
+      send({ requestId })
+    })
+    return { requestId, result }
   }
-  if (confirmed) win.destroy()
+}
+
+/** renderer 回执落点（IPC system/report-quit-flush → ipc-deps 注入此函数）：
+ *  待答表按 id 命中即 resolve+除名；未命中（超时已除名/未知 id）=迟到回执丢弃 */
+export function reportQuitFlushResult(requestId: string, stillDirty: boolean): void {
+  const resolve = quitFlushPending.get(requestId)
+  if (resolve === undefined) return
+  quitFlushPending.delete(requestId)
+  resolve(stillDirty)
+}
+
+/**
+ * 退出握手 flush 超时预算（提案值——主控集成窗核定）：
+ * 单用户本地 SQLite，收口序列=串行 IPC 往返+本地写（毫秒级）；5s=三个数量级
+ * 余量覆盖病态盘/AV 扫描，且不超用户感知挂起阈值（超时后 confirm 即出）。
+ */
+export const QUIT_FLUSH_TIMEOUT_MS = 5000
+
+/** 有限超时等待：超时=按仍脏降级（true）并除名（迟到回执丢弃） */
+function awaitQuitFlush(call: QuitFlushCall, timeoutMs: number): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => {
+      quitFlushPending.delete(call.requestId)
+      resolve(true)
+    }, timeoutMs)
+    call.result.then(
+      (stillDirty) => {
+        clearTimeout(timer)
+        resolve(stillDirty)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(true)
+      }
+    )
+  })
+}
+
+export interface QuitHandshakeDeps extends QuitGuardDeps {
+  /** flush 请求（createQuitFlushRequest 产出） */
+  requestQuitFlush: () => QuitFlushCall
+  /** 超时预算（测试注入；缺省 QUIT_FLUSH_TIMEOUT_MS） */
+  timeoutMs?: number
+}
+
+/**
+ * [F-VISFB-14] close 事件握手流（bootstrap 装配面）：clean 放行；dirty →
+ * preventDefault+flush（单发）→净=destroy 零确认／仍脏/超时/异常=confirm
+ * 降级（confirmAndMaybeDestroy）→确认 destroy/取消保持。flush 等待段持
+ * flushing 锁（二次 close=再 preventDefault 后忽略——不放行默认关闭）；
+ * confirm 段已释放锁（模态挡沿承）。
+ */
+export async function handleCloseWithQuitHandshake(
+  dirty: boolean,
+  event: { preventDefault(): void },
+  win: { destroy(): void },
+  deps: QuitHandshakeDeps
+): Promise<void> {
+  if (!quitDirtyGuard(dirty)) return
+  event.preventDefault()
+  if (quitFlushBusy) return
+  quitFlushBusy = true
+  let stillDirty = true
+  try {
+    stillDirty = await awaitQuitFlush(deps.requestQuitFlush(), deps.timeoutMs ?? QUIT_FLUSH_TIMEOUT_MS)
+  } catch {
+    stillDirty = true
+  } finally {
+    quitFlushBusy = false
+  }
+  if (!stillDirty) {
+    win.destroy()
+    return
+  }
+  await confirmAndMaybeDestroy(win, deps)
 }
 
 // ── 窗控（R2-SH3 frameless caption 三键——main 侧单一真源）──────────

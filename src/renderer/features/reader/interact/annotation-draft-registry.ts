@@ -91,6 +91,26 @@ export function flushAnnotationDraft(id: string): Promise<unknown> | null {
   return handle()
 }
 
+/**
+ * [F-VISFB-14] 全量 flush 句柄快照（退出握手/关 tab 收口消费）：已挂载编辑器
+ * 的句柄数组（快照——遍历期注册/注销不破坏）；clean 编辑器 flush=no-op（值
+ * 等于 lastSaved 零写发出）。消费方 await 全部句柄后查各自返回态（句柄返回
+ * use-annotation-draft 的 SaveState——'failed' 即未落库，INV-141 fulfilled≠
+ * 已落库）。
+ */
+export function allDraftFlushHandles(): AnnotationDraftFlush[] {
+  return [...flushHandles.values()]
+}
+
+/**
+ * [F-VISFB-14] 注册表未落盘残留判定（退出握手 dirty 判定输入）：已卸载编辑器
+ * 的 attempted/恢复携带草稿（drafts 表非空）——挂载期编辑器态由句柄返回值
+ * 承载，本函数只看卸载残留面。
+ */
+export function hasPendingAnnotationDrafts(): boolean {
+  return drafts.size > 0
+}
+
 /** 写派发前捕获代际（结果到达时经 isAnnotationWriteLive 判定是否判废） */
 export function annotationWriteGen(id: string): number {
   return generations.get(id) ?? 0

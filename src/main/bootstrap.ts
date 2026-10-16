@@ -62,11 +62,13 @@ import {
   bindWindowStateEvents,
   controlWindow,
   createMainWindow,
-  handleCloseWithQuitGuard,
+  createQuitFlushRequest,
+  handleCloseWithQuitHandshake,
   getQuitDirty,
   setQuitDirty,
   setLineagePending,
-  getLineagePending
+  getLineagePending,
+  reportQuitFlushResult
 } from './windows/main-window'
 import {
   clampBounds,
@@ -225,6 +227,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
       setQuitDirty,
       setLineagePending,
+      // [F-VISFB-14] 退出握手 flush 回执落点（main-window 待答表按 id 关联）
+      reportQuitFlush: reportQuitFlushResult,
       // R2-SH3：闭包直引下方 const window（TDZ 不可能触发——IPC 调用来自
       // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
       controlWindow: (action) => controlWindow(window, action),
@@ -275,11 +279,13 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     }
   })
 
-  // TABS-04 退出拦截：dirty 态 close → preventDefault+模态二次确认（确认=destroy
-  // 强制关闭——destroy 不再触发 close 无重入）。注册在 saveBounds 监听之后：
-  // 确认退出路径下窗口几何已由前一个监听保存。
+  // [F-VISFB-14] TABS-04 退出拦截升级=退出握手 flush-first：dirty 态 close →
+  // preventDefault+renderer flush（quitFlush 事件+有限超时+flushing 重入锁）→
+  // 净=destroy 零确认／仍脏/超时=模态二次确认（确认=destroy 强制关闭——destroy
+  // 不再触发 close 无重入）。注册在 saveBounds 监听之后：确认退出路径下窗口
+  // 几何已由前一个监听保存（TABS-04 沿承）。
   window.on('close', (event) => {
-    void handleCloseWithQuitGuard(getQuitDirty(), event, window, {
+    void handleCloseWithQuitHandshake(getQuitDirty(), event, window, {
       confirmQuit: (message) =>
         dialog
           .showMessageBox(window, {
@@ -291,7 +297,10 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
             cancelId: 1,
             noLink: true
           })
-          .then((r) => r.response === 0)
+          .then((r) => r.response === 0),
+      requestQuitFlush: createQuitFlushRequest((payload) => {
+        window.webContents.send(EVENT_CHANNELS.quitFlush, payload)
+      })
     })
   })
 

@@ -24,6 +24,10 @@ export interface IpcDeps {
    *  桩工厂随迁证伪（makeIpcDeps 已提供该键）；装配缺失=typecheck 红（bootstrap
    *  装配契约锚）+system.test 调用面锚 */
   setLineagePending: (pending: boolean) => void
+  /** [F-VISFB-14] 退出握手 flush 回执落点（main-window 待答表按 requestId
+   *  关联 resolve——迟到/超时后回执在表内零命中即丢弃）。必填=setLineagePending
+   *  同型（makeIpcDeps 桩工厂随迁） */
+  reportQuitFlush: (requestId: string, stillDirty: boolean) => void
   /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
   controlWindow: (action: WindowControlAction) => { maximized: boolean }
   /** P7E-04 剪贴板写口（bootstrap 装配 electron.clipboard；测试桩零 electron）。

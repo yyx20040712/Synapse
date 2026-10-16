@@ -118,8 +118,10 @@ export interface LineageStore {
   removeNode(id: string): void
   removeEdge(id: string): void
   /** [F-LGRAPH-01②U1] 批量落库（保存钮触发——saving→clean（成功+栈基线
-   *  重置）/error（失败+重试）） */
-  save(): void
+   *  重置）/error（失败+重试））。[F-VISFB-14] 返回可等待 Promise（退出握手
+   *  走 save() 正道消费，不旁路队列；flushing 中让位早退=调用方收口后查
+   *  saveStatus，INV-141 fulfilled≠已落库） */
+  save(): Promise<void>
   /** [F-LGRAPH-01②U1] 撤销/重做（快照栈；saving 锁定 no-op；Ctrl+Z/Y 接线） */
   undo(): void
   redo(): void
@@ -441,8 +443,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       wq.enqueue({ kind: 'remove-edge', id })
     },
 
-    save() {
-      void wq.flush()
+    // [F-VISFB-14] 可等待面：await wq.flush()（保存钮 fire-and-forget 调用零变；
+    // 退出握手 await 收口后查 saveStatus——error/saving 均按脏呈现）
+    async save(): Promise<void> {
+      await wq.flush()
     },
 
     undo() {

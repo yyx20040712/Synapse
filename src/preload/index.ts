@@ -22,6 +22,7 @@ import type {
   ImportProgressEvent,
   ImportResult,
   LineageChangedEvent,
+  QuitFlushEvent,
   WindowStateEvent
 } from '../shared/ipc/schemas'
 import {
@@ -29,6 +30,7 @@ import {
   importProgressEventSchema,
   foldersChangedEventSchema,
   lineageChangedEventSchema,
+  quitFlushEventSchema,
   windowStateEventSchema
 } from '../shared/ipc/events.schemas'
 import { err, type Result } from '../shared/app-error'
@@ -147,6 +149,13 @@ export function buildEvents(): PreloadEvents {
       )
       ipcRenderer.on(EVENT_CHANNELS.lineageChanged, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.lineageChanged, listener)
+    },
+    // [F-VISFB-14] 退出握手 flush 请求（requestId 帧——renderer 收帧收口后经
+    // system/report-quit-flush 回执；丢帧=main 侧有限超时降级承接）
+    onQuitFlush(cb: (e: QuitFlushEvent) => void): () => void {
+      const listener = guardedEventForwarder(EVENT_CHANNELS.quitFlush, quitFlushEventSchema, cb)
+      ipcRenderer.on(EVENT_CHANNELS.quitFlush, listener)
+      return () => ipcRenderer.removeListener(EVENT_CHANNELS.quitFlush, listener)
     }
   }
 }

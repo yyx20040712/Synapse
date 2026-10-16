@@ -133,7 +133,9 @@ export const API_SURFACE = {
     openExternal: { channel: 'system/open-external', Req: S.openExternalReqSchema, Res: S.trueAckSchema },
     setQuitDirty: { channel: 'system/set-quit-dirty', Req: S.setQuitDirtyReqSchema, Res: S.trueAckSchema },
     // R2-SH3 frameless 窗控：单通道四 action（主控预裁①——接线表/契约面最小）
-    windowControl: { channel: 'system/window-control', Req: S.windowControlReqSchema, Res: S.windowControlResSchema }
+    windowControl: { channel: 'system/window-control', Req: S.windowControlReqSchema, Res: S.windowControlResSchema },
+    // [F-VISFB-14] 退出握手 flush 回执（renderer→main；请求沿=quitFlush 事件通道）
+    reportQuitFlush: { channel: 'system/report-quit-flush', Req: S.quitFlushReportReqSchema, Res: S.trueAckSchema }
   },
   // workspaces 域（R1-WS1，ADR-0018 课题隔离）：四通道。switch 返回后 renderer
   // reload 归 R1-WS2——本域 handlers 由 bootstrap 组合注入（见 ComposedHandlerDomains）
@@ -243,7 +245,10 @@ export const EVENT_CHANNELS = {
   // 不携带数据防双真相；folders CRUD+papers.move 广播 folders.changed，
   // 图结构变更（移动/删图级联）加播 lineage.changed——S3/S4 联动数据源）
   foldersChanged: 'folders/changed/event',
-  lineageChanged: 'lineage/changed/event'
+  lineageChanged: 'lineage/changed/event',
+  // [F-VISFB-14] 退出握手 flush 请求（renderer 收帧即 runQuitFlush 收口，
+  // 经 system/report-quit-flush 回执 stillDirty——requestId 双向关联）
+  quitFlush: 'system/quit-flush/event'
 } as const
 
 /** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
@@ -253,6 +258,7 @@ export type PreloadEvents = {
   onWindowState(cb: (e: S.WindowStateEvent) => void): () => void
   onFoldersChanged(cb: (e: S.FoldersChangedEvent) => void): () => void
   onLineageChanged(cb: (e: S.LineageChangedEvent) => void): () => void
+  onQuitFlush(cb: (e: S.QuitFlushEvent) => void): () => void
 }
 
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────

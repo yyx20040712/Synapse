@@ -120,15 +120,17 @@ export function useNotesDrafts(): Record<string, boolean> {
 }
 
 /**
- * 关闭脏 tab 守门：clean 直接放行；dirty 弹 confirm（文案含文献名）——
- * 取消不放行/确认放行。TabBar 关闭叉的唯一入口。
- * 兼任弃改收口点（A3 悬置写修票/INV-35④）：守门通过（confirm 返回 true 或
- * clean 直通——两路汇合处）即 discardPendingEdit 弃置该篇 notes 悬置编辑
- * （clean 直通=no-op 幂等），确认丢弃后 ≤1.5s 防抖不得再落笔 DB。
- * **一切 tab 关闭路径必经本守门**（TabBar 双点两位在案——关闭叉与 Delete 键；
- * 未来新增关闭路径同此约束——接缝归责）。reader.store.closeOne 不直接接：
- * reader.store 无法直引 notes.store（白名单外）且反向接会成 import 环，
- * 守门内收口=单点覆盖全部关闭路径。
+ * 关闭脏 tab 守门（[F-VISFB-14] 起语义=**显式放弃路径**——confirmCloseDirty 由
+ * requestCloseTab 的 flush 失败分支调用；clean 直通短路沿承）：clean 直接
+ * 放行；dirty 弹 confirm（文案含文献名）——取消不放行/确认放行。
+ * 兼任弃改收口点（A3 悬置写修票/INV-35④/INV-50）：守门通过（confirm 返回
+ * true 或 clean 直通——两路汇合处）即 discardPendingEdit 弃置该篇 notes
+ * 悬置编辑（clean 直通=no-op 幂等），确认丢弃后 ≤1.5s 防抖不得再落笔 DB。
+ * **一切 tab 关闭路径必经守门族**（requestCloseDirty→confirmCloseDirty；
+ * TabBar 双点两位在案——关闭叉与 Delete 键；未来新增关闭路径同此约束
+ * ——接缝归责）。reader.store.closeOne 不直接接：reader.store 无法直引
+ * notes.store（白名单外）且反向接会成 import 环，守门内收口=单点覆盖全部
+ * 关闭路径。
  */
 export function confirmCloseDirty(paperId: string): boolean {
   const tab = useReaderStore.getState().tabs[paperId]
@@ -136,11 +138,45 @@ export function confirmCloseDirty(paperId: string): boolean {
   // fileName 去扩展名，fileName 亦空（tab 缺失/异常）兜底 paperId
   const fileNameTitle = tab === undefined || tab.fileName === '' ? paperId : tab.fileName.replace(/\.pdf$/i, '')
   const title = tab !== undefined && tab.title !== '' ? tab.title : fileNameTitle
-  // clean 直通短路（不弹窗）；dirty 走 confirm——两路在 allow 汇合
-  const allow = !isTabDirty(paperId, tabDirtySignals(paperId)) || window.confirm(`「${title}」有未保存的修改（灰点标记），关闭后将丢失未落库部分。确认关闭？`)
+  // clean 直通短路（不弹窗）；dirty 走 confirm——两路在 allow 汇合。
+  // [F-VISFB-14 d1 W4③] 失败分支交互文案（同族改值——flush-first 后本框只在
+  // 「自动保存失败/门控/annotations 残留」分支出现；重试径=四态钮 failed）
+  const allow = !isTabDirty(paperId, tabDirtySignals(paperId)) || window.confirm(`「${title}」有修改未能自动保存。确认关闭并放弃这部分修改？`)
   if (allow) {
     // 弃改收口：守门通过即弃置该篇悬置编辑（含在途 save 的代际守卫打点）
     useNotesStore.getState().discardPendingEdit(paperId)
   }
   return allow
+}
+
+/** [F-VISFB-14] 关 tab 异步重入锁（d1 W4②）：值=该篇关闭收口在途（连点关闭
+ *  叉第二击防护——单 flush 单收口） */
+const closingTabs = new Set<string>()
+
+/**
+ * [F-VISFB-14] 关 tab flush-first（C-A3 翻案落法——主控裁决④）：
+ * - clean → 放行（discard 幂等收口沿承——A3 语义）；
+ * - dirty → flushNow 立存最新值（INV-141①普通 dirty 转可等待立存——防抖
+ *   timer 通道不承接关 tab 面）→ 净=放行（**零弹窗**：成功才关闭）；
+ * - 仍脏（保存失败/首载门控 INV-141②/annotations 面残留）→ confirmCloseDirty
+ *   显式放弃路径：确认=discard+放行/取消=不放行（tab 保持，失败态经四态钮
+ *   failed+短文本可点重试呈现——INV-141⑤单源）；
+ * - 重入锁：本篇收口在途的第二击立即 false（不二次 flush 不弹窗）。
+ * 批注挂载编辑器不经此面（卸载注册承接——12 号；未尝试 dirty 残余=14 票
+ * D1 呈报面，见批次报告）。
+ */
+export async function requestCloseTab(paperId: string): Promise<boolean> {
+  if (closingTabs.has(paperId)) return false
+  if (!isTabDirty(paperId, tabDirtySignals(paperId))) {
+    useNotesStore.getState().discardPendingEdit(paperId)
+    return true
+  }
+  closingTabs.add(paperId)
+  try {
+    await useNotesStore.getState().flushNow(paperId)
+    if (!isTabDirty(paperId, tabDirtySignals(paperId))) return true
+    return confirmCloseDirty(paperId)
+  } finally {
+    closingTabs.delete(paperId)
+  }
 }
