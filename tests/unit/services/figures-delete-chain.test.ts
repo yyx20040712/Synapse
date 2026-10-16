@@ -111,7 +111,8 @@ describe('F-VISFB-42 papers.delete 挂点', () => {
     const figureStore = createFigureStoreService({ repos, fileStore })
     const svc = createPapersService({ repos, figureAssets: figureStore })
     figureStore.beginExtraction('p-1')
-    const bytes = new TextEncoder().encode('x')
+    // PNG 魔数前缀字节（回炉①B-1 PNG-only 守卫——合法路径夹具）
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x78])
     await figureStore.storeFigure('p-1', {
       digest: createHash('sha256').update(bytes).digest('hex'),
       bytes,

@@ -7,9 +7,14 @@
  *   文件内容寻址覆写，孤儿 digest 容忍=派生面既定边界，随篇目录硬删收口）。
  * - storeFigure 守卫序（逐条先拒后写）：①IPC 单笔 ≤FIGURE_IPC_MAX_BYTES（00B
  *   §四逐资产分笔守卫）②paper 在场（NOT_FOUND——FK 前置校验）③digest 完整性
- *   （sha256(bytes)===digest——防调用方谎报键）④去重（findByDigest 命中=幂等
- *   复用 figureId，零写）⑤每篇上限 FIGURE_MAX_PER_PAPER（渲染端截断契约的
- *   服务端防线——超限拒，excess 记档归 completeExtraction）。
+ *   （sha256(bytes)===digest——防调用方谎报键）④PNG 魔数校验〔回炉①B-1
+ *   主控收紧 PNG-only：bytes 前 8 字节须为 89 50 4E 47 0D 0A 1A 0A——00B
+ *   JPEG 条款是「许可」非「要求」，现状出口（file_ref .png 后缀/协议 MIME
+ *   image/png/白名单形态）三处钉死 PNG；JPEG 有损变体若未来立项=023 加
+ *   format 列+file_ref/MIME/白名单三处随改（[locked-change]，43 票面承载）〕
+ *   ⑤去重（findByDigest 命中=幂等复用 figureId，零写）⑥每篇上限
+ *   FIGURE_MAX_PER_PAPER（渲染端截断契约的服务端防线——超限拒，excess 记档
+ *   归 completeExtraction）。
  * - 落盘=file-store storeFigureBytes（atomicWriteFile tmp+rename 单源——INV-66
  *   族）；行入库=figure.repo insertFigure。
  * - completeExtraction：job=ready+excess/failedCount 落账（failed≠empty：ready
@@ -68,6 +73,17 @@ export interface FigureStoreDeps {
   fileStore: FigureFileStore
 }
 
+/** 〔回炉①B-1〕PNG 魔数（89 50 4E 47 0D 0A 1A 0A）——PNG-only 收紧的判定单源 */
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const
+
+function isPngBytes(bytes: Uint8Array): boolean {
+  if (bytes.length < PNG_MAGIC.length) return false
+  for (let i = 0; i < PNG_MAGIC.length; i++) {
+    if (bytes[i] !== PNG_MAGIC[i]) return false
+  }
+  return true
+}
+
 export function createFigureStoreService(deps: FigureStoreDeps): FigureStoreService {
   const { repos, fileStore } = deps
   // fail-fast 守卫：Repos.figures 可选键（受锁测试字面量闭合）在装配面缺席=
@@ -109,6 +125,12 @@ export function createFigureStoreService(deps: FigureStoreDeps): FigureStoreServ
       const actual = createHash('sha256').update(asset.bytes).digest('hex')
       if (actual !== asset.digest) {
         throw new DomainError('INVALID_REQUEST', '图表资产 digest 与字节内容不符（sha256 校验失败）')
+      }
+      // 〔回炉①B-1〕PNG 魔数校验（守卫序④——digest 之后、去重之前；短于 8 字节
+      // 同拒）；JPEG 有损变体若未来立项=023 加 format 列+file_ref/MIME/白名单
+      // 三处随改（[locked-change]，43 票面承载）
+      if (!isPngBytes(asset.bytes)) {
+        throw new DomainError('INVALID_REQUEST', '图表资产须为 PNG 编码')
       }
       const hit = figures.findByDigest(paperId, asset.digest)
       if (hit !== null) {

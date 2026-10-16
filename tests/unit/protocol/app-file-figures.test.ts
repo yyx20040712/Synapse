@@ -58,6 +58,12 @@ describe('F-VISFB-42 parseAppFigureUrl 纯函数', () => {
     }
   })
 
+  it('畸形 %-编码〔回炉②W-2〕：URIError 归 null（404 面）不外抛', () => {
+    expect(parseAppFigureUrl('app-file://p1/figures/%zz')).toBeNull()
+    expect(parseAppFigureUrl('app-file://p1/figures/f%')).toBeNull()
+    expect(parseAppFigureUrl('app-file://p1%/figures/f-2')).toBeNull()
+  })
+
   it('PDF 分支逐字节兼容：parseAppFileUrl 对 figure 形态仍 null（解析口零变）', () => {
     expect(parseAppFileUrl('app-file://p-1/figures/f-2')).toBeNull()
     expect(parseAppFileUrl('app-file://paper01')).toBe('paper01')

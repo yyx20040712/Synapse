@@ -48,8 +48,12 @@ function asset(digest: string, bytes: Uint8Array) {
   }
 }
 
+/** PNG 魔数（89 50 4E 47 0D 0A 1A 0A）——storeFigure PNG-only 守卫的夹具底座
+ *  〔回炉①B-1〕：一切合法路径字节以魔数为前缀 */
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+
 function bytesOf(n: number): Uint8Array {
-  return new Uint8Array([n])
+  return new Uint8Array([...PNG_MAGIC, n])
 }
 
 let root: string
@@ -115,8 +119,7 @@ describe('F-VISFB-42 figure-store 提取会话生命周期', () => {
     seedPaper(db, 'p-1')
     const svc = makeService()
     svc.beginExtraction('p-1')
-    const bytes = new Uint8Array(2048)
-    for (let i = 0; i < bytes.length; i++) bytes[i] = i % 251
+    const bytes = new Uint8Array([...PNG_MAGIC, ...new Array<number>(2040).fill(7)])
     const r = await svc.storeFigure('p-1', asset(sha(bytes), bytes))
     const onDisk = new Uint8Array(await readFile(join(root, r.fileRef)))
     expect(onDisk).toEqual(bytes)
@@ -141,10 +144,26 @@ describe('F-VISFB-42 figure-store storeFigure 守卫族', () => {
     const svc = makeService()
     svc.beginExtraction('p-1')
     const big = new Uint8Array(FIGURE_IPC_MAX_BYTES + 1)
+    big.set(PNG_MAGIC, 0)
     await expect(svc.storeFigure('p-1', asset(sha(big), big))).rejects.toMatchObject({
       code: 'INVALID_REQUEST'
     })
     expect(FIGURE_IPC_MAX_BYTES).toBe(4 * 1024 * 1024)
+  })
+
+  it('PNG 魔数校验〔回炉①B-1〕：非 PNG 字节拒（digest 按真实字节算过 digest 支后撞魔数支）', async () => {
+    seedPaper(db, 'p-1')
+    const svc = makeService()
+    svc.beginExtraction('p-1')
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46])
+    await expect(svc.storeFigure('p-1', asset(sha(jpeg), jpeg))).rejects.toMatchObject({
+      code: 'INVALID_REQUEST'
+    })
+    const tiny = new Uint8Array([0x89, 0x50, 0x4e])
+    await expect(svc.storeFigure('p-1', asset(sha(tiny), tiny))).rejects.toMatchObject({
+      code: 'INVALID_REQUEST'
+    })
+    expect(svc.listFigures('p-1')).toEqual([])
   })
 
   it('paper 缺席→NOT_FOUND（FK 前置校验——begin 同步抛/store 异步拒）', async () => {

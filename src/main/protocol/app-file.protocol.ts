@@ -85,12 +85,20 @@ export function parseAppFileUrl(rawUrl: string): string | null {
  * 逐字节兼容——figure 形态在 PDF 解析口仍 null）。攻击面=字符集白名单
  * （两 id 均 [A-Za-z0-9-]{1,64}）+字面 figures 段精确匹配+全串锚定
  * （末尾斜杠/三段/大小写/查询片段全拒）；%2F 解码后落合法形态=等价别名
- * （id 白名单无路径把戏面，查表键不落文件系统）。
+ * （id 白名单无路径把戏面，查表键不落文件系统）；畸形 %-编码
+ * （%zz/孤独 %——decodeURIComponent 抛 URIError）归 null〔回炉②W-2〕
+ * =404 面，不向 handler 外抛未捕获异常。
  */
 export function parseAppFigureUrl(rawUrl: string): { paperId: string; figureId: string } | null {
   const prefix = APP_FILE_URL_PREFIX
   if (!rawUrl.startsWith(prefix)) return null
-  const rest = decodeURIComponent(rawUrl.slice(prefix.length))
+  let rest: string
+  try {
+    rest = decodeURIComponent(rawUrl.slice(prefix.length))
+  } catch {
+    // 畸形 %-编码（URIError）→ null（404 面）
+    return null
+  }
   const m = rest.match(/^([A-Za-z0-9-]{1,64})\/figures\/([A-Za-z0-9-]{1,64})$/)
   if (!m) return null
   return { paperId: m[1] ?? '', figureId: m[2] ?? '' }
