@@ -29,7 +29,7 @@ import { MAIN_GRAPH_ID } from '../../shared/models/lineage'
 import type { Repos } from '../db/repos'
 import type { ImportGate } from '../import-gate'
 import { DomainError } from './shared/domain-error'
-import type { PaperFileTrash } from './library.service'
+import type { FigureAssetsCleanup, PaperFileTrash } from './library.service'
 
 /** 域错误载体（基类一行继承=F-DEDUP-01 单源） */
 class FoldersDomainError extends DomainError {}
@@ -58,6 +58,8 @@ export interface FoldersServiceDeps {
   sendLineageChanged: () => void
   /** [F-DBCAMP-01 DB-4 / 设计 §5.d②] 域删文件隔离出口（可选缺省=旧装配兼容） */
   fileStore?: PaperFileTrash
+  /** [F-VISFB-42] 域删派生图表资产清理出口（tx 后逐篇硬删——可选缺省同上） */
+  figureAssets?: FigureAssetsCleanup
   /** [F-IMPORTGATE-01 INV-133] import↔delete 互斥 gate（可选缺省=旧单测装配
    *  兼容（无互斥面），生产装配恒真值——services/index folderDeps 注入） */
   importGate?: ImportGate
@@ -132,11 +134,13 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
       // 主图/pending/findById 纯读校验后=最小侵入（拒路径不占计数，非互斥
       // 路径行为与现状逐位一致）
       let refs: Array<{ sha256: string; fileRef: string }> = []
+      let paperIds: string[] = []
       deps.importGate?.enter('delete')
       try {
         deps.repos.withTransaction(() => {
           refs = deps.repos.papers.listFileRefsByFolder(req.id)
-          for (const id of deps.repos.papers.listIdsByFolder(req.id)) {
+          paperIds = deps.repos.papers.listIdsByFolder(req.id)
+          for (const id of paperIds) {
             deps.repos.papers.remove(id)
           }
           folders.remove(req.id)
@@ -152,6 +156,21 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
             } catch (e) {
               console.warn(
                 `[folders.delete] 受管文件隔离失败（孤儿文件=既定边界）：${r.fileRef}`,
+                e instanceof Error ? e.message : String(e)
+              )
+            }
+          }
+        }
+        // [F-VISFB-42] 域删级联图表资产清理（INV-133 扩面挂点）：DB 行已随
+        // papers FK CASCADE 消亡，此处逐篇硬删磁盘目录（可重建派生物不走
+        // .trash；失败非致命 warn+照常——与文件隔离循环同构同窗）
+        if (deps.figureAssets !== undefined) {
+          for (const id of paperIds) {
+            try {
+              await deps.figureAssets.removePaperAssets(id)
+            } catch (e) {
+              console.warn(
+                `[folders.delete] 派生图表资产清理失败（孤儿目录=既定边界）：${id}`,
                 e instanceof Error ? e.message : String(e)
               )
             }

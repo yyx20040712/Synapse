@@ -8,7 +8,7 @@ describe('db/migrate —— 迁移执行器', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
     // [F-DBCAMP-01 U3] 018 起=18（受锁白名单①：版本数组随链延）
-    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    expect(result.appliedVersions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
     expect(result.currentVersion).toBe(Math.max(...MIGRATIONS.map((m) => m.version)))
     expect(readUserVersion(db)).toBe(result.currentVersion)
     db.close()

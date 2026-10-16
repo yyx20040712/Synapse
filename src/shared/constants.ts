@@ -76,3 +76,25 @@ export const AUTOSAVE_DEBOUNCE_MS = 600_000
 export const DEFAULT_WS_ID = 'default'
 /** 缺省课题显示名（meta.json 缺失/L0 合成时；引导态判据=名未改） */
 export const DEFAULT_WS_NAME = '默认课题'
+
+/**
+ * [F-VISFB-42] 派生图表资产过滤阈值与容量常量（单源——renderer 提取面〔43 票
+ * 消费〕+main 存储守卫共用）。
+ *
+ * 出处=00B 接手单（批档 20261016-visfbb0/02——XObject-only 提取管线实证）；
+ * 校准说明=语料 9 篇 OA 真件（56 资产/63 draws）：px 面积两侧余量 7%（装饰
+ * 横幅 58,682 vs 真图 64,372）、CTM 面积两侧余量 11%（3,335 vs 3,700）——
+ * 两侧余量 ≤11%，属初值：后续语料扩充再调（调值走 [locked-change]）。
+ * 负向测试锚=方标/横幅/规则线三装饰族（00B §二）。
+ */
+/** 过滤阈值①：CTM 面积下限（pt²）——60×60pt 等效（横幅 3,335 出局/真图 3,700 入局） */
+export const FIGURE_MIN_CTM_AREA_PT2 = 3_600
+/** 过滤阈值②：像素面积下限（横幅 58,682 出局/真图 64,372 入局） */
+export const FIGURE_MIN_PX_AREA = 60_000
+/** 过滤阈值③：像素最短边下限（早杀 kind=1 规则线 90px 与方标 40px） */
+export const FIGURE_MIN_PX_EDGE = 96
+/** 每篇资产上限（语料单篇上限 12 的 2× 余量；超限=截断+job 记 excess，禁静默） */
+export const FIGURE_MAX_PER_PAPER = 24
+/** 单资产 IPC 单笔字节上限（逐资产分笔守卫——语料 PNG 代理最大 2.0MB，4MB=2× 余量；
+ *  超限=拒收降载重试，非丢弃） */
+export const FIGURE_IPC_MAX_BYTES = 4 * 1024 * 1024

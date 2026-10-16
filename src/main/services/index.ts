@@ -9,7 +9,7 @@ import type { ExportCorpusEvent, ImportProgressEvent } from '../../shared/ipc/sc
 import type { PaperDetail } from '../../shared/models/paper'
 import type { Repos } from '../db/repos'
 import type { ImportGate } from '../import-gate'
-import type { FileStore } from './import_/file-store'
+import type { FileStore, FigureFileStore } from './import_/file-store'
 import { createImportService, type ImportService } from './import_/import.service'
 import { createExportService, type ExportService } from './export_/export.service'
 import {
@@ -75,6 +75,7 @@ import {
   createImportSnapshotService,
   type SnapshotImportService
 } from './snapshot/import-snapshot.service'
+import { createFigureStoreService } from './figure-store.service'
 
 export interface HttpFns {
   fetchJson: (url: string, schema: z.ZodType) => Promise<unknown>
@@ -83,7 +84,8 @@ export interface HttpFns {
 
 export interface ServiceDeps {
   repos: Repos
-  fileStore: FileStore
+  /** [F-VISFB-42] 复合型（PDF+figure 两面同根——figure-store 消费 figure 面） */
+  fileStore: FileStore & FigureFileStore
   contactEmail: () => string
   http: HttpFns
   /** 导入互斥 gate（F-D4 A 面，INV-52；[F-IMPORTGATE-01] kind 化——INV-133）：
@@ -169,6 +171,10 @@ export interface ServiceBundle {
 
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
+  // [F-VISFB-42] 派生图表资产合同服务（提取会话状态机+资产守卫）——folders/
+  //  papers delete 清理出口注入（folderDeps.figureAssets）；本批零 IPC 零
+  //  ServiceBundle 键（renderer 提取面=43 票接线时入包）
+  const figureStore = createFigureStoreService({ repos: deps.repos, fileStore: deps.fileStore })
   // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）；
   // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）；
   // [F-IMPORTGATE-01] +importGate（两 delete 互斥面——folderDeps 恒真值注入）
@@ -178,7 +184,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     sendFoldersChanged: deps.sendFoldersChanged ?? (() => undefined),
     sendLineageChanged: deps.sendLineageChanged ?? (() => undefined),
     fileStore: deps.fileStore,
-    importGate: deps.importGate
+    importGate: deps.importGate,
+    figureAssets: figureStore
   }
   const corpusExport = createCorpusExportService({
     repos: deps.repos,

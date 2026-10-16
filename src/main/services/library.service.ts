@@ -80,6 +80,14 @@ export interface PaperFileTrash {
   moveToTrash(fileRef: string): Promise<void>
 }
 
+/** [F-VISFB-42] 派生图表资产清理出口（figure-store.removePaperAssets 注入面
+ *  ——结构性最小类型，同 PaperFileTrash 先例：可选缺省=旧单测装配兼容，
+ *  生产装配恒真值）。INV-133 扩面：派生物可重建=硬删语义（非 moveToTrash
+ *  隔离），失败非致命 warn+照常同构 */
+export interface FigureAssetsCleanup {
+  removePaperAssets(paperId: string): Promise<void>
+}
+
 export interface LibraryServiceDeps {
   repos: Repos
   /** INV-91 S1 队列闸判定源（bootstrap 注入——写操作入口拒绝） */
@@ -90,6 +98,8 @@ export interface LibraryServiceDeps {
   sendLineageChanged?: () => void
   /** [F-DBCAMP-01 DB-4] papers/delete 文件隔离出口（最后引用方判定后调） */
   fileStore?: PaperFileTrash
+  /** [F-VISFB-42] papers/delete 派生图表资产清理出口（tx 提交后篇目录硬删） */
+  figureAssets?: FigureAssetsCleanup
   /** [F-IMPORTGATE-01 INV-133] import↔delete 互斥 gate（createImportGate 产物——
    *  services/index folderDeps 注入；可选缺省=旧单测装配兼容（无互斥面），
    *  生产装配恒真值——fileStore 先例） */
@@ -212,6 +222,7 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
   const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
   const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
   const fileStore = deps.fileStore
+  const figureAssets = deps.figureAssets
   const gate = deps.importGate
 
   return {
@@ -311,6 +322,19 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
           } catch (e) {
             console.warn(
               `[papers.delete] 受管文件隔离失败（孤儿文件=既定边界）：${paper.file_ref}`,
+              e instanceof Error ? e.message : String(e)
+            )
+          }
+        }
+        // [F-VISFB-42] 派生图表资产清理（INV-133 扩面挂点）：DB 行已随 papers
+        // FK CASCADE 消亡，此处只清磁盘篇目录（硬删——可重建派生物不走 .trash）；
+        // 失败非致命 warn+照常（与文件隔离同构——孤儿目录=既定边界，重提取自愈）
+        if (figureAssets !== undefined) {
+          try {
+            await figureAssets.removePaperAssets(req.paperId)
+          } catch (e) {
+            console.warn(
+              `[papers.delete] 派生图表资产清理失败（孤儿目录=既定边界）：${req.paperId}`,
               e instanceof Error ? e.message : String(e)
             )
           }

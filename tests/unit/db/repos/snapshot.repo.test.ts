@@ -262,10 +262,10 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
     db.close()
   })
 
-  it('readSchemaVersion=迁移链尾 user_version 22（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正）', () => {
+  it('readSchemaVersion=迁移链尾 user_version 23（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正；[F-VISFB-42] 023 随链）', () => {
     const db = createTestDb()
     const repo = createSnapshotRepo(db)
-    expect(repo.readSchemaVersion()).toBe(22)
+    expect(repo.readSchemaVersion()).toBe(23)
     db.close()
   })
 })

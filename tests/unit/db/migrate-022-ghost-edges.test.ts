@@ -5,7 +5,7 @@
  * 覆盖：cross-graph 边（双端点所在 nodes.folder_id 不等）迁移后清除；同图边
  * 保全；**deletion_events 0 行**（guard 直执不落账——快照导出携带假删除会致
  * 对端误删=本批最大红线；U3 探针先例同型）；guard 三态开库断言迁移后仍成立
- * （COUNT=1∧stop=0——迁移事务内置 1→清理→复位 0，崩溃自回滚）；user_version=22。
+ * （COUNT=1∧stop=0——迁移事务内置 1→清理→复位 0，崩溃自回滚）；user_version=链尾现值 23（[F-VISFB-42] 023 随链）。
  * always-active（不经 guardedDescribe）。
  */
 import { describe, expect, it } from 'vitest'
@@ -47,7 +47,7 @@ function seed(db: ReturnType<typeof openDatabase>, nodes: SeedNode[], edges: See
 }
 
 describe('F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理', () => {
-  it('cross-graph 边清除+同图边保全+deletion_events 零行+版本 22', () => {
+  it('cross-graph 边清除+同图边保全+deletion_events 零行+版本 23（[F-VISFB-42] 023 随链）', () => {
     const db = dbAt21()
     seed(
       db,
@@ -63,8 +63,8 @@ describe('F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理', () => {
       ]
     )
     const result = migrate(db)
-    expect(result.currentVersion).toBe(22)
-    expect(readUserVersion(db)).toBe(22)
+    expect(result.currentVersion).toBe(23)
+    expect(readUserVersion(db)).toBe(23)
     const edges = db.prepare('SELECT id FROM lineage_edges').all() as Array<{ id: string }>
     expect(edges.map((e) => e.id)).toEqual(['e-same'])
     // 红线：guard 直执不落账（021 AFTER DELETE 触发器被 stop=1 抑制）
@@ -95,7 +95,7 @@ describe('F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理', () => {
   it('新库全量直达 022（空种子——022 空跑幂等面）+deletion_events 零行', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(22)
+    expect(result.currentVersion).toBe(23)
     expect(db.prepare('SELECT COUNT(*) c FROM deletion_events').get()).toEqual({ c: 0 })
     db.close()
   })

@@ -20,6 +20,7 @@ import { createAiTasksRepo, type AiTasksRepo } from './ai-tasks.repo'
 import { createAiContextRepo, type AiContextRepo } from './ai-context.repo'
 import { createAiSearchRepo, type AiSearchRepo } from './ai-search.repo'
 import { createAiCascadeRepo, type AiCascadeRepo } from './ai-cascade.repo'
+import { createFigureRepo, type FigureRepo } from './figure.repo'
 
 export interface Repos {
   papers: PapersRepo
@@ -60,6 +61,11 @@ export interface Repos {
    *  水位/导入日志/拒收统计/FTS 重建——消费=import-snapshot.service；
    *  列清单单源=snapshot.repo TABLE_SPECS 导出复用） */
   importSnapshot: ImportSnapshotRepo
+  /** [F-VISFB-42] 派生图表资产仓储（figure_jobs+paper_figures——消费=
+   *  figure-store.service+协议查表+import-snapshot 恢复重提挂点）。
+   *  可选键=受锁测试面 Repos 字面量闭合（enrich/import 两测试逐键构造不涉
+   *  派生面——生产 createRepos 恒供值，figure-store 工厂 fail-fast 守卫兜） */
+  figures?: FigureRepo
   /** 跨仓储多表写入的原子边界：fn 内任一语句抛错整体回滚（better-sqlite3 同步
    *  事务）。service 层组合多表写入必须经此包裹，防"insert 成功但后续语句失败"
    *  的半写残留——并发无关，缺的是多语句原子性。 */
@@ -85,6 +91,7 @@ export function createRepos(db: SqliteDb): Repos {
     aiCascade: createAiCascadeRepo(db),
     snapshot: createSnapshotRepo(db),
     importSnapshot: createImportSnapshotRepo(db),
+    figures: createFigureRepo(db),
     withTransaction: <T>(fn: () => T): T => db.transaction(fn)()
   }
 }
@@ -107,5 +114,6 @@ export type {
   AiSearchRepo,
   AiCascadeRepo,
   SnapshotRepo,
-  ImportSnapshotRepo
+  ImportSnapshotRepo,
+  FigureRepo
 }

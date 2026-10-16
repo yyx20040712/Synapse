@@ -166,11 +166,11 @@ describe('db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+�
   it('M1 新库全链：user_version=20+应用清单 [1..20]+幂等重入（再跑 applied=[]）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(22)
+    expect(result.currentVersion).toBe(23)
     expect(result.appliedVersions).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
     ])
-    expect(readUserVersion(db)).toBe(22)
+    expect(readUserVersion(db)).toBe(23)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
     db.close()
@@ -180,8 +180,8 @@ describe('db/migrate —— 020 AI 域数据面（epoch 基建+5 新表+FTS+G2+�
     const db = openV19()
     const result = migrate(db)
     // [F-DBCAMP-01 DB-3 U1] 021 起随链：v19 库经全链 migrate 至链尾（20+21 两跳）
-    expect(result.appliedVersions).toEqual([20, 21, 22])
-    expect(readUserVersion(db)).toBe(22)
+    expect(result.appliedVersions).toEqual([20, 21, 22, 23])
+    expect(readUserVersion(db)).toBe(23)
     db.close()
   })
 

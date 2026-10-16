@@ -5,12 +5,15 @@
  * - storePdfFromPath：sha256 去重拷贝入库（<前2字符>/<次2字符>/<sha>.pdf 分桶）
  * - resolveManagedPath：file_ref → 绝对路径，强制前缀校验（目录穿越拒绝）
  * - readFileBytes：协议层读取
+ * - [F-VISFB-42] 图表资产分支：figures/<paperId>/<digest>.png 内容寻址
+ *   （storeFigureBytes 原子写/resolveFigurePath 严格形态校验/removePaperFigures
+ *   硬删整目录——派生物可重建，不走 .trash 隔离）
  *
  * 安全（§6.3）：file_ref 一律相对路径+正斜杠；解析结果必须在受管根内。
  * 测试：tests/unit/services/file-store.test.ts（去重/穿越攻击向量/非 PDF 拒绝）。
  */
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rename, stat } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat } from 'node:fs/promises'
 import { isAbsolute, resolve, sep, win32 } from 'node:path'
 import { atomicWriteFile } from '../shared/atomic-write'
 import { DomainError } from '../shared/domain-error'
@@ -42,13 +45,48 @@ export interface FileStore {
   moveToTrash(fileRef: string): Promise<void>
 }
 
+/**
+ * [F-VISFB-42] 图表资产分支接口（受管存储的派生资产面——与 FileStore 分置：
+ * 受锁协议测试桩把 FileStore 五方法形状钉死，figure 面独立接口零扰动）。
+ * createFileStore 产物=FileStore & FigureFileStore（同一受管根）。
+ */
+export interface FigureFileStore {
+  /**
+   * 派生图表资产写：figures/<paperId>/<digest>.png 内容寻址（同参已存在且
+   * 大小一致=复用不重写）；返回 fileRef。字节编码面归调用方（本件不校验
+   * PNG 魔数——载荷上界由 figure-store 守卫）。
+   */
+  storeFigureBytes(paperId: string, digest: string, bytes: Uint8Array): Promise<string>
+  /**
+   * figure file_ref 形态校验+寻址（严格 figures/<paperId>/<digest-hex64>.png
+   * 形态；越界/异形抛 FileStoreError——协议层 403 源）。PDF 分支
+   * resolveManagedPath 零变（既有 fileRef 解析零变）。
+   */
+  resolveFigurePath(fileRef: string): string
+  /**
+   * 硬删该篇全部图表资产（figures/<paperId>/ 整目录 rm——派生物可重建非用户
+   * 原始资产，不走 .trash 隔离=与受管 PDF moveToTrash 的语义差异〔INV-133
+   * 扩面申报行〕）；目录缺席=幂等成功；失败抛 FileStoreError。
+   */
+  removePaperFigures(paperId: string): Promise<void>
+}
+
 const PDF_MAGIC = '%PDF-'
 
 /** 隔离区目录名（受管根下隐藏目录——resolveManagedPath 正常解析不含此前缀：
  *  papers.file_ref 恒 store() 产物，.trash 路径不参与受管解析） */
 const TRASH_DIR = '.trash'
 
-export function createFileStore(rootDir: string): FileStore {
+/** [F-VISFB-42] 图表资产目录名（受管根下与 PDF 分桶平行的派生资产面） */
+const FIGURES_DIR = 'figures'
+
+/** figure 资产参数/路径形态单源（ASCII 寻址：paperId 字符集白名单〔parseAppFileUrl
+ *  同款〕+digest=解码位图 sha256 hex64——00B digest 单键；file_ref 三段严格形态） */
+const FIGURE_ID_RE = /^[A-Za-z0-9-]{1,64}$/
+const FIGURE_DIGEST_RE = /^[0-9a-f]{64}$/
+const FIGURE_REF_RE = /^figures\/([A-Za-z0-9-]{1,64})\/([0-9a-f]{64})\.png$/
+
+export function createFileStore(rootDir: string): FileStore & FigureFileStore {
   const root = resolve(rootDir)
 
   async function store(bytes: Uint8Array, fileName: string): Promise<StoredFile> {
@@ -88,6 +126,25 @@ export function createFileStore(rootDir: string): FileStore {
     return resolved
   }
 
+  /** [F-VISFB-42] figure file_ref 严格形态校验+受管前缀校验（三段正则单源：
+   *  ../ 段/绝对路径/后缀混入/大小写 digest 异形全拒——测试锚） */
+  function resolveFigurePath(fileRef: string): string {
+    if (typeof fileRef !== 'string' || fileRef === '') {
+      throw new FileStoreError('IO_ERROR', 'figure file_ref 不能为空')
+    }
+    if (isAbsolute(fileRef) || win32.isAbsolute(fileRef) || fileRef.includes('\\')) {
+      throw new FileStoreError('IO_ERROR', `非法 figure file_ref：${fileRef}`)
+    }
+    if (!FIGURE_REF_RE.test(fileRef)) {
+      throw new FileStoreError('IO_ERROR', `非法 figure file_ref（须 figures/<paperId>/<digest>.png）：${fileRef}`)
+    }
+    const resolved = resolve(root, fileRef)
+    if (resolved !== root && !resolved.startsWith(root + sep)) {
+      throw new FileStoreError('IO_ERROR', `路径越出受管存储：${fileRef}`)
+    }
+    return resolved
+  }
+
   return {
     storePdfFromPath: async (srcPath) => {
       let bytes: Uint8Array
@@ -109,6 +166,49 @@ export function createFileStore(rootDir: string): FileStore {
     },
     storePdfFromBytes: (bytes, fileName) => store(bytes, fileName),
     resolveManagedPath,
+    // [F-VISFB-42] 图表资产写：参数形态先守卫（paperId 白名单+digest hex64——
+    // 路径段零拼接来源），落盘=atomicWriteFile 单源（tmp+rename 同卷原子）
+    storeFigureBytes: async (paperId, digest, bytes) => {
+      if (!FIGURE_ID_RE.test(paperId)) {
+        throw new FileStoreError('IO_ERROR', `非法图表资产 paperId：${paperId}`)
+      }
+      if (!FIGURE_DIGEST_RE.test(digest)) {
+        throw new FileStoreError('IO_ERROR', '非法图表资产 digest（须 hex64 sha256）')
+      }
+      const fileRef = `${FIGURES_DIR}/${paperId}/${digest}.png`
+      const dest = resolveFigurePath(fileRef)
+      const existing = await stat(dest).catch(() => null)
+      if (existing !== null && existing.size === bytes.length) {
+        // 内容寻址复用：同路径同大小=同 digest 同内容（sha256 抗碰撞性承载）
+        return fileRef
+      }
+      try {
+        await mkdir(dirname(dest), { recursive: true })
+        await atomicWriteFile(dest, bytes, { uniqueTmp: true, cleanOnFail: true })
+      } catch (e) {
+        throw new FileStoreError(
+          'IO_ERROR',
+          `写入图表资产失败：${digest}.png（${e instanceof Error ? e.message : String(e)}）`
+        )
+      }
+      return fileRef
+    },
+    resolveFigurePath,
+    // [F-VISFB-42] 硬删：派生物可重建——不走 .trash（与受管 PDF 隔离语义差异
+    // =INV-133 扩面申报行）；目录缺席 force=true 吞 ENOENT=幂等成功
+    removePaperFigures: async (paperId) => {
+      if (!FIGURE_ID_RE.test(paperId)) {
+        throw new FileStoreError('IO_ERROR', `非法图表资产 paperId：${paperId}`)
+      }
+      try {
+        await rm(resolve(root, FIGURES_DIR, paperId), { recursive: true, force: true })
+      } catch (e) {
+        throw new FileStoreError(
+          'IO_ERROR',
+          `硬删图表资产目录失败：${paperId}（${e instanceof Error ? e.message : String(e)}）`
+        )
+      }
+    },
     // [F-DBCAMP-01 DB-4] 隔离：前缀守卫复用 resolveManagedPath（file_ref 合法性
     // 单源——非法引用在移动前即拒）；dest=受管根内 .trash 同桶路径
     moveToTrash: async (fileRef) => {

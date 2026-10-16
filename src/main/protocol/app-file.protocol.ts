@@ -2,6 +2,8 @@
  * app-file:// 自定义协议（SR-INFRA-08，已完成；SR-SEC-01 收束 ACAO）。
  *
  * 职责：renderer 获取受管 PDF 的唯一通道。URL 形如 app-file://<paperId>。
+ * [F-VISFB-42] 图表资产分支：app-file://<paperId>/figures/<figureId>——查库拿
+ * figure file_ref → resolveFigurePath 严格形态校验 → 读文件（image/png）。
  * 安全（§6.3）：id 字符集白名单（防路径把戏）→ 查库拿 file_ref → 受管前缀校验
  * → 才读文件。renderer 全程接触不到文件系统路径。
  *
@@ -21,14 +23,25 @@
  * 测试：tests/unit/protocol/app-file.protocol.test.ts（URL 解析纯函数 +
  * resolveAcao 白名单 + handler ACAO 接线桶桩）。
  */
-import { access, constants } from 'node:fs/promises'
+import { access, constants, readFile } from 'node:fs/promises'
 import type { Protocol } from 'electron'
 import { APP_FILE_SCHEME } from '../../shared/constants'
 import { APP_FILE_URL_PREFIX } from '../../shared/app-file-url'
-import type { FileStore } from '../services/import_/file-store'
+import type { FileStore, FigureFileStore } from '../services/import_/file-store'
 
 /** paperId → file_ref 的窄查询（由 bootstrap 从 papers.repo 注入） */
 export type PaperFileLookup = (paperId: string) => Promise<string | null>
+
+/** [F-VISFB-42] (paperId, figureId) → figure file_ref 的窄查询（bootstrap 经
+ *  容器从 figure.repo 注入——app-file://<paperId>/figures/<figureId> 分支） */
+export type PaperFigureLookup = (paperId: string, figureId: string) => Promise<string | null>
+
+/** [F-VISFB-42] 图表分支依赖束（查表+资产寻址——FileStore 桩形状不动，figure
+ *  面经独立 FigureFileStore 接口注入；可选缺省=未接线面 404） */
+export interface FigureBranch {
+  figureLookup: PaperFigureLookup
+  figureFiles: FigureFileStore
+}
 
 // ── SR-SEC-01：CORS Origin 白名单（单源，INV-07 耦合注记）───────────
 /** 字面 'null'：file:// 页发起 CORS 请求时浏览器序列化的 Origin 恒为此值 */
@@ -66,6 +79,23 @@ export function parseAppFileUrl(rawUrl: string): string | null {
   return m[1] ?? null
 }
 
+/**
+ * [F-VISFB-42] figure URL 解析纯函数：app-file://<paperId>/figures/<figureId>
+ * 合法返回二元组，非法返回 null。PDF 分支 parseAppFileUrl 零变（既有解析
+ * 逐字节兼容——figure 形态在 PDF 解析口仍 null）。攻击面=字符集白名单
+ * （两 id 均 [A-Za-z0-9-]{1,64}）+字面 figures 段精确匹配+全串锚定
+ * （末尾斜杠/三段/大小写/查询片段全拒）；%2F 解码后落合法形态=等价别名
+ * （id 白名单无路径把戏面，查表键不落文件系统）。
+ */
+export function parseAppFigureUrl(rawUrl: string): { paperId: string; figureId: string } | null {
+  const prefix = APP_FILE_URL_PREFIX
+  if (!rawUrl.startsWith(prefix)) return null
+  const rest = decodeURIComponent(rawUrl.slice(prefix.length))
+  const m = rest.match(/^([A-Za-z0-9-]{1,64})\/figures\/([A-Za-z0-9-]{1,64})$/)
+  if (!m) return null
+  return { paperId: m[1] ?? '', figureId: m[2] ?? '' }
+}
+
 export function registerAppFileScheme(protocol: Protocol): void {
   protocol.registerSchemesAsPrivileged([
     {
@@ -83,9 +113,40 @@ export function registerAppFileScheme(protocol: Protocol): void {
 
 export function createAppFileHandler(
   lookup: PaperFileLookup,
-  fileStore: FileStore
+  fileStore: FileStore,
+  figures?: FigureBranch
 ): (request: Request) => Promise<Response> {
   return async (request: Request) => {
+    // [F-VISFB-42] figure 分支先判（形态更特化——PDF 分支零变先序保持）；
+    // 未接线（旧装配/旧测试两参形态）=404 非致命静默
+    const figure = parseAppFigureUrl(request.url)
+    if (figure !== null) {
+      if (figures === undefined) {
+        return errorResponse(404, `图表不存在：${figure.figureId}`, request)
+      }
+      const figRef = await figures.figureLookup(figure.paperId, figure.figureId)
+      if (figRef === null) {
+        return errorResponse(404, `图表不存在：${figure.figureId}`, request)
+      }
+      let figPath: string
+      try {
+        figPath = figures.figureFiles.resolveFigurePath(figRef)
+      } catch {
+        return errorResponse(403, '文件引用越界，已拒绝', request)
+      }
+      try {
+        await access(figPath, constants.R_OK)
+      } catch {
+        return errorResponse(404, '文件不存在或不可读', request)
+      }
+      let figBytes: Uint8Array
+      try {
+        figBytes = new Uint8Array(await readFile(figPath))
+      } catch (e) {
+        return errorResponse(404, `文件读取失败：${e instanceof Error ? e.message : String(e)}`, request)
+      }
+      return bytesResponse(figBytes, 'image/png', request)
+    }
     const paperId = parseAppFileUrl(request.url)
     if (paperId === null) {
       return errorResponse(400, '非法的文件引用 URL', request)
@@ -106,15 +167,24 @@ export function createAppFileHandler(
       return errorResponse(404, '文件不存在或不可读', request)
     }
     const bytes = await fileStore.readFileBytes(fileRef)
-    // [SR-SEC-01] ACAO=白名单回显（命中才带头；undefined=静默不加）
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/pdf',
-      'Content-Length': String(bytes.byteLength)
-    }
-    const acao = resolveAcao(request.headers.get('origin'))
-    if (acao !== undefined) headers['Access-Control-Allow-Origin'] = acao
-    return new Response(new Uint8Array(bytes), { status: 200, headers })
+    return bytesResponse(bytes, 'application/pdf', request)
   }
+}
+
+/** [SR-SEC-01/F-VISFB-42] 成功响应单源：ACAO=白名单回显（命中才带头；
+ *  undefined=静默不加——PDF/figure 两分支同接线） */
+function bytesResponse(
+  bytes: Uint8Array,
+  contentType: string,
+  request: Request
+): Response {
+  const headers: Record<string, string> = {
+    'Content-Type': contentType,
+    'Content-Length': String(bytes.byteLength)
+  }
+  const acao = resolveAcao(request.headers.get('origin'))
+  if (acao !== undefined) headers['Access-Control-Allow-Origin'] = acao
+  return new Response(new Uint8Array(bytes), { status: 200, headers })
 }
 
 function errorResponse(status: number, message: string, request: Request): Response {
@@ -126,11 +196,18 @@ function errorResponse(status: number, message: string, request: Request): Respo
   return new Response(message, { status, headers })
 }
 
-/** 兼容旧 API 形态的显式注册（bootstrap 使用） */
+/** 兼容旧 API 形态的显式注册（bootstrap 使用；figureLookup 可选=旧装配兼容——
+ *  在位即组装 FigureBranch〔figureFiles=fileStore 同一受管根实例〕） */
 export function registerAppFileProtocol(
   protocol: Protocol,
   lookup: PaperFileLookup,
-  fileStore: FileStore
+  fileStore: FileStore & FigureFileStore,
+  figureLookup?: PaperFigureLookup
 ): void {
-  protocol.handle(APP_FILE_SCHEME, createAppFileHandler(lookup, fileStore))
+  protocol.handle(
+    APP_FILE_SCHEME,
+    figureLookup === undefined
+      ? createAppFileHandler(lookup, fileStore)
+      : createAppFileHandler(lookup, fileStore, { figureLookup, figureFiles: fileStore })
+  )
 }

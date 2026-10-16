@@ -184,6 +184,16 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       for (const d of payload.deletions) {
         stats.deleted += imp.deleteDirect(d.entity as ImportTable, d.id)
       }
+      // [F-VISFB-42] 派生图表资产恢复重提：快照不携带派生面（TABLE_SPECS 零增
+      // ——figure_jobs/paper_figures 不入快照），payload papers 全集 jobs 重置
+      // pending+figure 行清空=恢复后重提取（无「ready 但资产缺失」态）；防复活
+      // 跳过的 paper 本地已删=repo 侧 INSERT...SELECT 存在性守卫自然跳过；
+      // 磁盘旧资产内容寻址覆写（孤儿 digest 随篇目录硬删收口，不在此面）。
+      // figures=Repos 可选键（受锁测试字面量闭合）——缺席跳过（真库 createRepos
+      // 恒供值）
+      repos.figures?.resetJobsForPapers(
+        (payload.data.papers ?? []).map((row) => String(identityOf('papers', row)))
+      )
       imp.rebuildFts()
       imp.setRecvSeq(owner, seq)
       imp.setImportLog(owner, seq, sha)

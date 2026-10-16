@@ -29,22 +29,26 @@
 import type { SqliteDb } from './db/connection'
 import type { Repos } from './db/repos'
 import type { ServiceBundle } from './services'
-import type { FileStore } from './services/import_/file-store'
+import type { FileStore, FigureFileStore } from './services/import_/file-store'
 
 export interface DataLayer {
   db: SqliteDb
   repos: Repos
-  fileStore: FileStore
+  /** [F-VISFB-42] 复合型（PDF+figure 两面同根——registerAppFileProtocol 消费） */
+  fileStore: FileStore & FigureFileStore
   services: ServiceBundle
 }
 
 export interface DataLayerContainer {
   /** 稳定 services facade（createIpcHandlers 的 deps.services——访问即取当前课题层） */
   services: ServiceBundle
-  /** 稳定 fileStore facade（app-file 协议读受管 PDF 的活指向） */
-  fileStore: FileStore
+  /** 稳定 fileStore facade（app-file 协议读受管 PDF/图表资产的活指向） */
+  fileStore: FileStore & FigureFileStore
   /** 协议回调：paperId → file_ref（经容器间接取，switch 后指向新课题库） */
   papersFileRef: (paperId: string) => Promise<string | null>
+  /** [F-VISFB-42] 协议回调：(paperId, figureId) → figure file_ref（活指向同上
+   *  ——app-file 图表分支查表源） */
+  figureFileRef: (paperId: string, figureId: string) => Promise<string | null>
   /** 在目标目录装配新数据层并换 current 引用（不关旧库——关库归 closeCurrent） */
   assembleInto: (dataDir: string) => Promise<void>
   /** 关当前课题库句柄（幂等性由调用方保证——bootstrap shutdown 的 dbClosed 先例） */
@@ -84,6 +88,9 @@ export function createDataLayerContainer(deps: DataLayerContainerDeps): DataLaye
     services: liveProxy(() => requireCurrent().services),
     fileStore: liveProxy(() => requireCurrent().fileStore),
     papersFileRef: async (paperId) => requireCurrent().repos.papers.fileRefById(paperId),
+    // [F-VISFB-42] figures=Repos 可选键（受锁测试字面量闭合）——真库装配恒在
+    figureFileRef: async (paperId, figureId) =>
+      requireCurrent().repos.figures?.fileRefByFigure(paperId, figureId) ?? null,
     assembleInto: async (dataDir) => {
       current = await deps.assemble(dataDir)
     },

@@ -26,6 +26,9 @@
  *   红线=U2 零触 deletion_log_guard，guard 消费归 U3）。
  * - 018 头注契约沿承：snapshot_seq/sync_key 读写不经 app-meta.repo 既有 get/set
  *   （本件即 envelope 面专用通道）。
+ * - [F-VISFB-42] 派生表不入快照——恢复后重提取：figure_jobs/paper_figures
+ *   （迁移 023）恒不入 TABLE_SPECS（重建派生物，恢复经 resetJobsForPapers
+ *   重提，见 import-snapshot.service 挂点）。
  *
  * ── 文化层 ──
  * - 全语句 db.prepare 预编译+参数绑定；测试：tests/unit/db/repos/snapshot.repo.test.ts。

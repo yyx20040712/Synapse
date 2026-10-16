@@ -35,6 +35,7 @@ import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
 import aiDomainSql from './migrations/020_ai_domain.sql?raw'
 import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
 import lineageGhostEdgesSql from './migrations/022_lineage_ghost_edges.sql?raw'
+import paperFiguresSql from './migrations/023_paper_figures.sql?raw'
 
 export interface Migration {
   version: number
@@ -119,7 +120,13 @@ export const MIGRATIONS: readonly Migration[] = [
   // [F-DBCAMP-01 DB-4 / F1] 幽灵边存量清理（guard 先行三步：stop=1→DELETE 跨图
   // 边→stop=0——防 021 触发器落账假删事件；判据=双端点 nodes.folder_id 不等；
   // 纯存量 DELETE 无 DDL，无 fkOff；新库 user_version 终值 22）
-  { version: 22, name: 'lineage_ghost_edges', sql: lineageGhostEdgesSql }
+  { version: 22, name: 'lineage_ghost_edges', sql: lineageGhostEdgesSql },
+  // [F-VISFB-42] 派生图表资产合同：figure_jobs 状态表（pending→ready/failed
+  // 终态+excess 截断记档+failed_count）+paper_figures 资产表（digest 单键去重/
+  // 资产路径/像素尺寸/CTM bbox/页码）；papers 零新列；派生不入快照（恢复后
+  // 重提取）；paper_id FK CASCADE（papers 三删除路径自动清派生行）；纯新增
+  // 表无触发器，无 fkOff；新库 user_version 终值 23
+  { version: 23, name: 'paper_figures', sql: paperFiguresSql }
 ]
 
 export interface MigrateResult {

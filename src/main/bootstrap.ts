@@ -203,7 +203,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     protocol,
     // 经容器间接取（switch 后活指向当前课题库——bootstrap 内一处接线）
     (paperId) => container.papersFileRef(paperId),
-    container.fileStore // 稳定 facade：switch 热换后协议读当前课题 files/
+    container.fileStore, // 稳定 facade：switch 热换后协议读当前课题 files/
+    // [F-VISFB-42] 图表分支查表（app-file://<paperId>/figures/<figureId>）
+    (paperId, figureId) => container.figureFileRef(paperId, figureId)
   )
   // 装配对象具名化并标注 IpcAssemblyProbe（全推断类型）——漏组合
   // workspaces 在此编译期拦截（probe 头注双层闭合第①层；对象具名非新建，
