@@ -478,18 +478,18 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(cardOf('D').closest('.tl-row')?.classList.contains('odd')).toBe(true)
   })
 
-  // ── [F-SLOTGRID-01 U4·BLOCKED 裁定 B=现状锁定例] 跨行尾挂形态锁（U3 门一
-  // d1 复审 N1 补例面）：四卡 W=570.4 拖首卡（row0 源）→激活帧尾挂末行=
-  // **跨父调和 remount**（React 逐父 children 对账——同数组 keyed 调和不跨
-  // 父保育）。两段真实形态：①激活帧=新节点（激活前后引用比对）无 left/top
-  // inline+驻末行 .odd+.dragging 类在场（离流定位由 CSS 类承载）；②后续
-  // pointermove=findCard 重查新节点补写 left/top（会话对 remount 健在）+
-  // settle 清场照常（reorder 单次+inline 清空）。
-  // 〔U4 BLOCKED 裁定 B——理想断言（跨父节点保育+inline 全键存续=R2 敏感面
-  // style.marginLeft '0px' 跨行存续）红证=仓外 12 号档；修复候选=A 案 keyed
-  // 跨父保育/dragTail 恒驻独立层，晨报呈裁；本例锁现状非锁理想——修复落地
-  // 时本例①三断言（not.toBe/left/top 空）须同步翻转〕──
-  it('跨行尾挂现状锁定（B 案）：激活帧跨父 remount=新节点无 left/top+驻末行 odd（.dragging CSS 承载）→后续 move 补写 left/top+settle 清场照常', async () => {
+  // ── [F-DRAGREMOUNT-01] 跨行源卡保育（A 案理想锁——用户裁决 2026-10-08
+  // 方案 A，v166 §2-1）：四卡 W=570.4 拖首卡（row0 源卡）→激活帧拖卡驻
+  // **保育行=拖前原行**（keyed 同父调和——React 逐父 children 对账不跨父
+  // 保育，驻末行时跨行源卡必跨父 remount=激活帧 ghost inline 四键随旧节点
+  // 消亡，本票病灶）。两段理想形态：①激活帧=节点保育（激活前后引用比对）
+  // +ghost inline 全键存续（断言面=position/marginLeft/left/top——R2 敏感面
+  // style.marginLeft '0px' 跨行存续）+驻原行非末行 odd；②后续 pointermove
+  // 节点恒稳（补写 left/top 无跳变载体）+settle 清场照常（reorder 单次+
+  // inline 清空）。
+  // 〔沿革：U4 BLOCKED 裁定 B=现状锁定例（跨父 remount 形态三断言——理想
+  // 断言红证=仓外 12 号档）；A 案落地=本票翻转义务兑现，①段断言同步翻转〕──
+  it('跨行源卡保育（A 案）[F-DRAGREMOUNT-01]：激活帧节点保育（同父 keyed 调和）+ghost inline 全键存续（left/top/position/marginLeft）→驻原行非末行 odd→后续 move 节点恒稳+settle 清场照常', async () => {
     const nodes = [node('A'), node('B'), node('C'), node('D')]
     mount(nodes)
     // W 注入（奇行 settle 例同型）：570.4→N=3/M=2→[A,B,C] 行0+[D] 行1 奇行
@@ -508,18 +508,20 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     stubRect(cardOf('B'), 212, 18)
     stubRect(cardOf('C'), 412, 18)
     stubRect(cardOf('D'), 112, 162)
-    // ① 激活帧（pMove 过阈首个）：尾挂末行=跨父 remount 形态三断言
+    // ① 激活帧（pMove 过阈首个）：驻保育行=拖前原行（keyed 同父保育断言族）
     const pre = cardOf('A')
     pDown(pre, 76, 54)
     pMove(82, 58)
     const post = cardOf('A')
-    expect(post).not.toBe(pre) // 激活帧跨父调和=新 DOM 节点（React 逐父对账）
-    expect(post.style.left, '激活帧 inline 未及新节点（left）').toBe('')
-    expect(post.style.top, '激活帧 inline 未及新节点（top）').toBe('')
+    expect(post).toBe(pre) // 激活帧同父 keyed 调和=节点保育（跨父 remount 修复面）
+    expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')
+    expect(post.style.marginLeft, 'R2 敏感面：marginLeft 压 0 跨行存续（12 号理想面）').toBe('0px')
+    expect(post.style.left, '激活帧 inline 已落同一节点（left）').not.toBe('')
+    expect(post.style.top, '激活帧 inline 已落同一节点（top）').not.toBe('')
     expect(post.classList.contains('dragging'), '离流定位由 .dragging CSS 类承载').toBe(true)
     const tailRow = post.closest('.tl-row')
-    expect(tailRow).toBe(rows[1]) // 尾挂行=末行
-    expect(tailRow!.classList.contains('odd'), '尾挂行=末行奇行（激活帧行为）').toBe(true)
+    expect(tailRow).toBe(rows[0]) // 驻保育行=拖前原行（A=row0 源卡）
+    expect(tailRow!.classList.contains('odd'), '保育行=原行非末行奇行（激活帧行为）').toBe(false)
     // ② 后续 pointermove：findCard 重查新节点补写 left/top（节点此后恒稳）
     pMove(86, 60)
     const post2 = cardOf('A')
@@ -535,6 +537,58 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(reorder).toHaveBeenCalledTimes(1)
     expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C', 'D'])
     expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)
+  })
+
+  // ── [F-DRAGREMOUNT-01 R-2] 中行源卡保育（测试盲区闭合——门一 k1 C-6-2/
+  // d1 F3 双源发现）：8 卡 W=570.4→partition(8)=[3,2,3]，拖 D（srcIdx=3 落
+  // 行 1=非首非末行）——判别面=fosterRow≠0（杀 fosterRow≡0 误形态）；
+  // ①段 ghost inline 四键全锁（12 号理想面完备）；收尾=框内松手零位移
+  // settle（零写+inline 清空）。──
+  it('中行源卡保育 [F-DRAGREMOUNT-01]：非首非末行源卡（行 1 odd）拖起=节点保育+ghost inline 四键全锁（position/width/marginLeft/transition）→驻保育行（fosterRow=1 判别面）→框内松手零位移 settle（零写+inline 清空）', async () => {
+    const nodes = [node('A'), node('B'), node('C'), node('D'), node('E'), node('F'), node('G'), node('H')]
+    mount(nodes)
+    // W 注入（第 18 例同型）：570.4→N=3/M=2→partition(8)=[3,2,3]（行 1 odd [D,E]）
+    req('.month-frame').setAttribute('style', 'width: 570.4px')
+    await act(async () => {
+      root?.render(
+        <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
+      )
+    })
+    const rows = Array.from(req('.month-frame').querySelectorAll('.tl-row'))
+    expect(rows.length, '布防卫：三行网格在场').toBe(3)
+    expect(rows[1]!.classList.contains('odd'), '布防卫：行 1=奇行').toBe(true)
+    expect(rows[1]!.contains(cardOf('D')), '布防卫：D=行 1 中行源卡').toBe(true)
+    // 几何定值=网格算术位（行 0/2 x=12+200k y=18/306；行 1 odd x=112+200k
+    // y=162——D=行 1 k0 中心 176/198）
+    stubRect(req('.month-frame'), 0, 0, 600, 460)
+    stubRect(cardOf('A'), 12, 18)
+    stubRect(cardOf('B'), 212, 18)
+    stubRect(cardOf('C'), 412, 18)
+    stubRect(cardOf('D'), 112, 162)
+    stubRect(cardOf('E'), 312, 162)
+    stubRect(cardOf('F'), 12, 306)
+    stubRect(cardOf('G'), 212, 306)
+    stubRect(cardOf('H'), 412, 306)
+    // ① 激活帧：D（行 1 中行源卡）拖起=同父保育+ghost inline 四键全存续
+    const pre = cardOf('D')
+    pDown(pre, 176, 198)
+    pMove(182, 202)
+    const post = cardOf('D')
+    expect(post).toBe(pre) // 激活帧同父 keyed 调和=节点保育（中行源卡面）
+    expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')
+    expect(post.style.width, 'ghost inline 全键存续（width——内容域定宽）').toBe('128px')
+    expect(post.style.marginLeft, 'ghost inline 全键存续（marginLeft 压 0）').toBe('0px')
+    expect(post.style.transition, 'ghost inline 全键存续（transition 禁断）').toBe('none')
+    expect(post.style.left, '激活帧 inline 已落同一节点（left）').not.toBe('')
+    expect(post.style.top, '激活帧 inline 已落同一节点（top）').not.toBe('')
+    const tailRow = post.closest('.tl-row')
+    expect(tailRow).toBe(rows[1]) // 驻保育行=拖前原行（D=row1 中行源卡）
+    expect(tailRow!.classList.contains('odd'), '保育行=行 1 奇行（fosterRow=1 判别面）').toBe(true)
+    // ② 框内松手（指针=D 位→插位 3=原位）：零位移 settle——零写+inline 清空
+    pUp(182, 202)
+    fireEnd(cardOf('D'))
+    expect(reorder).not.toHaveBeenCalled()
+    expect(cardOf('D').getAttribute('style') === null || cardOf('D').getAttribute('style') === '').toBe(true)
   })
 
   // [F-SLOTGRID-01 U1] 「[回炉 R1] 瀑布错位卡拖拽无双计」用例随瀑布布局退役

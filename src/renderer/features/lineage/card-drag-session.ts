@@ -195,6 +195,7 @@ export function useDragSession(args: {
           // .25s 在场——不禁断则 82→0 启动 0.25s 过渡=拖起 +82px 滑移）
           card.style.marginLeft = '0'
           card.style.transition = 'none'
+          // [INV-140] 四键+left/top 存续前提=节点保育（TimelineYears foster row 同父调和——跨父 remount 即灭）
         }
         setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false })
         setPhase('dragging')

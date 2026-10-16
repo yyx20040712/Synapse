@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "5e80b5ad602b3296212b1b325930907906d4793b35d1198d109a78ae4c65cd1b"
+            "sha256": "70a6eee0285b6ac5c760a99690b5ec1af532c34df1912d491314e4a2d615d324"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+            "sha256": "5845f8e09316843c42135faebf846cf1cde81f6365f632e7c7b8b3bd8f584188"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -959,7 +959,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-card-drag.test.tsx",
-            "sha256": "8b44127001f8491aa860ff406e27fb338ce190ec433ec6e14e8fded268ce5230"
+            "sha256": "dd7d56a95ce183ed7cf3b6fd7beb802f219f61fe8f09631fa30c85746b8cb7c5"
         },
         {
             "path": "tests/unit/renderer/lineage-card-flight.test.ts",

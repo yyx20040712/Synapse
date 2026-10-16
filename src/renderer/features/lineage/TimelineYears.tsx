@@ -9,11 +9,12 @@
  * partitionRows 单源；W=宿主 frameW prop——unmeasured〔0〕降级全部卡入
  * 首行单行，DOM 序不变）；瀑布错位 offsets prop 链随瀑布退役删除。
  * [T3-P8] 槽位拖拽渲染：dragSlot 在场时源月组按「其余卡+拖卡@insertIdx」
- * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡尾挂 .dragging
- * **absolute 离流**（定位驻卡链 offsetParent——坐标域见 card-drag-session）
- * +框外 .faded 淡化）；!active=settle 落位（卡回流@insertIdx，
- * FLIP 飞行由 useCardDrag 命令式接管）。**占位与拖卡仍在 kids 数组原位
- * 参与分行**（占位=行内槽位；拖卡 .dragging absolute 离流不占位）。
+ * 渲染——active=拖起（.drag-slot「置 入」占位+拖卡驻原行（keyed 同父
+ * 保育——F-DRAGREMOUNT-01）.dragging **absolute 离流**（定位驻卡链
+ * offsetParent——坐标域见 card-drag-session）+框外 .faded 淡化）；
+ * !active=settle 落位（卡回流@insertIdx，FLIP 飞行由 useCardDrag
+ * 命令式接管）。**占位与拖卡仍在 kids 数组原位参与分行**（占位=行内
+ * 槽位；拖卡 .dragging absolute 离流不占位）。
  * [F-UIRES-03 C3] 改月飞行 flash 高亮+月标点击回调随改月链退役删除
  * （INV-107）；[F 项搭车] 头注「fixed 离流」陈旧句按真实机制改写
  * （absolute 非 fixed——含块=.month-frame，见 card-drag-session 头注）。
@@ -26,7 +27,7 @@ import type { LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import type { TimelineYearGroup } from './lineage-timeline'
 import { frameKeyOf } from './lineage-timeline'
-import { partitionRows } from './capacity'
+import { partitionRows, positionOf } from './capacity'
 import { LineageTimelineCard } from './LineageTimelineCard'
 import { DragCandidates } from './drag-slot-candidates'
 import type { DragSlotPreview } from './useCardDrag'
@@ -142,7 +143,7 @@ export function TimelineYears(props: {
                 }
                 kids.push(...others.slice(i).map((n) => renderCard(n, false)))
                 if (slot.active && dragged !== undefined) {
-                  kids.push(renderCard(dragged, true)) // 拖起=尾挂（.dragging fixed 离流）
+                  kids.push(renderCard(dragged, true)) // 拖起=离流拖卡（.dragging absolute——驻行=foster row 同父保育）
                 }
               } else {
                 kids = m.nodes.map((n) => renderCard(n, false))
@@ -176,19 +177,36 @@ export function TimelineYears(props: {
                         [U3 RR1-1] 拖起（active）尾挂时分区计数=在流数
                         （kids.length−1——拖卡恒数组末位不占行槽）：满末行拖起
                         不再溢出仅含 absolute 拖卡的空 .tl-row（.month-frame
-                        flex gap 72 撑高框 72px=拖起瞬间跳动）；拖卡 appended
-                        末行渲染——**并入同一 children 数组**（独立 JSX 槽位会
-                        跨槽 unmount/remount=ghost inline 全灭，R1/R2 红实锤；
-                        同列表 keyed 调和=节点保育移动）——absolute 定位与所在
-                        行无关（.tl-row static，包含块恒=.month-frame）。
-                        !active（settle 回流）路径零改（拖卡在流占位=kids 原位）。 */}
+                        flex gap 72 撑高框 72px=拖起瞬间跳动）。
+                        [F-DRAGREMOUNT-01] 拖卡驻**保育行=拖前原行**（拖卡
+                        原位索引经 positionOf 落行——拖起分区计数 N（其余
+                        N−1+占位 1）与拖前分区同计数=行数同构，原行恒在；
+                        Math.min 钳现行数学下恒不绑定〔同 W 同计数 N 下
+                        positionOf(srcIdx).row ≤ rows.length−1 恒成立〕，真实
+                        防御面=占位计数偏斜/capacity 分区数学未来分叉时钳住
+                        越界 fosterRow——否则 dragTail 零渲染出树=红证可见
+                        形）：跨父调和必 remount（React 逐父 children 对账
+                        不跨父保育——驻末行时跨行源卡必换节点=激活帧 ghost
+                        inline 四键随旧节点消亡，本票病灶）；驻原行=同父
+                        keyed 调和节点保育移动——absolute 定位与所在行无关
+                        （.tl-row static，包含块恒=.month-frame），驻原行零
+                        视觉差。!active（settle 回流）路径零改（拖卡在流
+                        占位=kids 原位）。[INV-140] 保育⇒激活帧 ghost
+                        inline 四键存续（会话侧写键段互指）。 */}
                     {(() => {
                       const dragTail =
                         isSrc && slot !== null && slot.active ? kids[kids.length - 1] ?? null : null
                       const rows = partitionRows(dragTail !== null ? kids.length - 1 : kids.length, props.frameW)
+                      const fosterRow =
+                        dragTail !== null && slot !== null
+                          ? Math.min(
+                              positionOf(m.nodes.findIndex((n) => n.id === slot.nodeId), props.frameW).row,
+                              rows.length - 1
+                            )
+                          : -1
                       return rows.map((row, r) => {
                         const children = row.map((i) => kids[i]!)
-                        if (dragTail !== null && r === rows.length - 1) children.push(dragTail)
+                        if (dragTail !== null && r === fosterRow) children.push(dragTail)
                         return (
                           <div className={r % 2 === 1 ? 'tl-row odd' : 'tl-row'} key={r}>
                             {children}
