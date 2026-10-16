@@ -83,8 +83,14 @@
 
 ## §4 CI 回执
 
-- 代码面 push 940db6a5..（收口 docs 笔前 HEAD）→ run〔收口 push 后填〕。
-- 本 docs 笔 run：〔docs-only——回执随下场开工核〕。
+- 代码面 push 959ff760..c5151bad（立票+五票集成+P1 两笔+收口面+v208 全推程）
+  → run **38972733200：completed/failure**——红面=locks 关卡（check-quality.mjs
+  +src/shared/constants.ts 受锁改未入库：probe 三红修复件滞留工作树，manifest
+  哈希已按工作树同步→本地树全绿掩蔽、CI 对提交态红=**A-1 同族第三击**，收口
+  回执条款按设计拦截）；修复笔（三件补提交+本档 §4 回填）→ run〔补笔 push 后
+  见 §4 末行〕。
+- 教训行：**终验 verify 须在净树（git status 空）跑**——脏树上的 EXIT=0 只证
+  工作树不证提交态（本批实录：10-final-verify 在脏树绿+CI 红）。
 
 ## §5 沿承挂账
 

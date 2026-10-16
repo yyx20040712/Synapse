@@ -28,6 +28,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import { SEPARATOR_KEY_STEP_PX } from '@shared/constants'
 
 /** 宽度值域（B4③ 票面：clamp 200–480；默认 252=CSS .lg-inspector 无 JS 回退同值） */
 const SIDEBAR_DEFAULT_WIDTH = 252
@@ -35,8 +36,9 @@ export const SIDEBAR_MIN_WIDTH = 200
 export const SIDEBAR_MAX_WIDTH = 480
 /** 收起窄条宽（px） */
 export const SIDEBAR_RAIL_WIDTH = 48
-/** [B5②] 键盘步进量（v1.15 第五轮③用户裁决：±16px） */
-const KEY_STEP_PX = 16
+/** [B5②] 键盘步进量（v1.15 第五轮③用户裁决：±16px）——[F-VISFB-41 B3 起]
+ * 收敛 @shared/constants SEPARATOR_KEY_STEP_PX 单源（dup-constants C-4d） */
+const KEY_STEP_PX = SEPARATOR_KEY_STEP_PX
 
 const WIDTH_KEY = 'synapse:sidebar:width'
 const COLLAPSED_KEY = 'synapse:sidebar:collapsed'
