@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-15T22:15:54.515Z",
+    "generatedAt": "2026-10-15T23:46:39.296Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "237c12e80c12234697d565c8b67811783bdd6fd0dbb673e9755c2f839c5cd68c"
+            "sha256": "5e80b5ad602b3296212b1b325930907906d4793b35d1198d109a78ae4c65cd1b"
         },
         {
             "path": "electron.vite.config.ts",
@@ -87,7 +87,7 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "c15c3c16279b1cd9bbca1730edc71f8be7afd9d6a627ebd15dc198f592b5c089"
+            "sha256": "6bba0eec414642190e3a44f8b9d7179d1a41b28f4dbf3a4cef0ddd9027d0e690"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
@@ -1572,6 +1572,10 @@
         {
             "path": "tests/unit/services/folders.service.test.ts",
             "sha256": "fc611fb522cc2eb6180fecf8baaa49a043bf0650ddf801b94a204eda9ee70f74"
+        },
+        {
+            "path": "tests/unit/services/import-delete-mutex.service.test.ts",
+            "sha256": "fa9b9584c3459b9729fb8fdf97b62b51cf557da88a6e371565813a2c302aaf70"
         },
         {
             "path": "tests/unit/services/import-snapshot.service.test.ts",

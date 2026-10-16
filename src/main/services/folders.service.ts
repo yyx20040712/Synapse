@@ -27,6 +27,7 @@
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import { MAIN_GRAPH_ID } from '../../shared/models/lineage'
 import type { Repos } from '../db/repos'
+import type { ImportGate } from '../import-gate'
 import { DomainError } from './shared/domain-error'
 import type { PaperFileTrash } from './library.service'
 
@@ -37,6 +38,13 @@ class FoldersDomainError extends DomainError {}
  *  孤儿节点/产生跨图残留；用户稍后重试：先保存编辑再操作文件夹） */
 function lineageSavePending(): FoldersDomainError {
   return new FoldersDomainError('CONFLICT', '脉络图编辑保存中，请先完成保存再操作文件夹')
+}
+
+/** [F-IMPORTGATE-01] import 互斥拒绝（INV-133 TOCTOU 窗闭合双侧 BUSY——
+ *  import in-flight 期并发域删会在其逐 sha 判定窗内移动同 sha 文件；
+ *  papers.delete importSessionInFlight 同文案单源语义） */
+function importSessionInFlight(): FoldersDomainError {
+  return new FoldersDomainError('CONFLICT', '导入进行中，请稍后再删除')
 }
 
 export interface FoldersServiceDeps {
@@ -50,6 +58,9 @@ export interface FoldersServiceDeps {
   sendLineageChanged: () => void
   /** [F-DBCAMP-01 DB-4 / 设计 §5.d②] 域删文件隔离出口（可选缺省=旧装配兼容） */
   fileStore?: PaperFileTrash
+  /** [F-IMPORTGATE-01 INV-133] import↔delete 互斥 gate（可选缺省=旧单测装配
+   *  兼容（无互斥面），生产装配恒真值——services/index folderDeps 注入） */
+  importGate?: ImportGate
 }
 
 export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['folders'] {
@@ -94,6 +105,9 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
     },
 
     async delete(req) {
+      // [F-IMPORTGATE-01 INV-133] 对称半入口闸：import in-flight 先拒（双侧 BUSY
+      // 无排队——papers.delete 同型；拒时零库副作用）
+      if (deps.importGate?.importInFlight()) throw importSessionInFlight()
       // [回炉码 4/d1-W2/k1-W1] 主图禁删：id='__main__'=存量脉络承载锚（迁移
       // 012 存量行全集）——删除将灭主图全部节点/边（DDL 级联），特例域错误
       // 拒绝；整理路径=先把文献移至其他文件夹
@@ -110,32 +124,41 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
       // edgeCount）=renderer 经 folders.list+lineage.graph(folderId) 派生，不经本通道；
       // [F-DBCAMP-01 DB-4 / 设计 §5.d②] tx 内收集夹内文件引用（listFileRefsByFolder
       // 新读法），tx 提交后逐 sha 同判定隔离（同 sha 去重单次；countBySha256>0
-      // =他夹共引不动；失败 console.warn 非致命）。[回炉 r1-R7] TOCTOU 边界：
-      // 判定-移动窗单线程串行假设——并发导入同 sha 理论窗=登记边界（INV-133
-      // 注），importGate 互斥=后续票候选
+      // =他夹共引不动；失败 console.warn 非致命）。
+      // [F-IMPORTGATE-01 已接线终态——回炉 r1-R7 登记边界清偿] importGate 互斥
+      // 双侧 BUSY：gate 段=try/finally 全裹 tx→逐 sha 隔离循环（tx 后循环全程
+      // 在 gate 段内——INV-133 TOCTOU 窗闭合，kind='delete' 持有期 import.service
+      // 入口对称拒+workspace 三入口连带拒=票面 D-3 正向预期）；enter 置于
+      // 主图/pending/findById 纯读校验后=最小侵入（拒路径不占计数，非互斥
+      // 路径行为与现状逐位一致）
       let refs: Array<{ sha256: string; fileRef: string }> = []
-      deps.repos.withTransaction(() => {
-        refs = deps.repos.papers.listFileRefsByFolder(req.id)
-        for (const id of deps.repos.papers.listIdsByFolder(req.id)) {
-          deps.repos.papers.remove(id)
-        }
-        folders.remove(req.id)
-      })
-      if (deps.fileStore !== undefined) {
-        const seen = new Set<string>()
-        for (const r of refs) {
-          if (seen.has(r.sha256)) continue
-          seen.add(r.sha256)
-          if (deps.repos.papers.countBySha256(r.sha256) > 0) continue
-          try {
-            await deps.fileStore.moveToTrash(r.fileRef)
-          } catch (e) {
-            console.warn(
-              `[folders.delete] 受管文件隔离失败（孤儿文件=既定边界）：${r.fileRef}`,
-              e instanceof Error ? e.message : String(e)
-            )
+      deps.importGate?.enter('delete')
+      try {
+        deps.repos.withTransaction(() => {
+          refs = deps.repos.papers.listFileRefsByFolder(req.id)
+          for (const id of deps.repos.papers.listIdsByFolder(req.id)) {
+            deps.repos.papers.remove(id)
+          }
+          folders.remove(req.id)
+        })
+        if (deps.fileStore !== undefined) {
+          const seen = new Set<string>()
+          for (const r of refs) {
+            if (seen.has(r.sha256)) continue
+            seen.add(r.sha256)
+            if (deps.repos.papers.countBySha256(r.sha256) > 0) continue
+            try {
+              await deps.fileStore.moveToTrash(r.fileRef)
+            } catch (e) {
+              console.warn(
+                `[folders.delete] 受管文件隔离失败（孤儿文件=既定边界）：${r.fileRef}`,
+                e instanceof Error ? e.message : String(e)
+              )
+            }
           }
         }
+      } finally {
+        deps.importGate?.exit('delete')
       }
       deps.sendFoldersChanged()
       deps.sendLineageChanged()

@@ -17,7 +17,11 @@
  *     顶层一次创建（容器 assemble 闭包之外——每层 service 重建但 gate 同一对象），
  *     workspace.service 的 create/rename/switch 三入口据计数>0 拒绝（CONFLICT 中文，
  *     拒时零库副作用）。拒绝=用户稍后重试（低频窗=大文件夹导入分钟级）；in-flight
- *     判定=main 侧计数，renderer busy 不参与（两进程面各自独立）
+ *     判定=main 侧计数，renderer busy 不参与（两进程面各自独立）。
+ *     [F-IMPORTGATE-01 INV-133] 对称半：入口先查 gate.deleteInFlight()（delete 链
+ *     持 gate 期——tx→COUNT 判定→moveToTrash 窗内并发导入会在判定后建同 sha 行）
+ *     →CONFLICT 中文拒（拒时零库副作用）；并发双 import 不受影响（gate 分计，
+ *     import kind 内部并发语义 2→1→0 保持——见 import-gate.ts 头注）
  *   ②sessionId——每次调用入口 randomUUID() 生成一次会话 id，该次调用内全部进度
  *     事件（含 scanning/done）同 id；renderer（ImportDropZone）据它做跨会话迟到过滤
  *
@@ -28,7 +32,7 @@
  *   }
  * - export function createImportService(deps: {
  *     repos: Repos; fileStore: FileStore;
- *     gate: { enter(): void; exit(): void };
+ *     gate: { enter(): void; exit(): void; deleteInFlight?(): boolean };
  *     onProgress?: (e: ImportProgressEvent) => void;
  *     sendFoldersChanged?: () => void; sendLineageChanged?: () => void
  *   }): ImportService
@@ -69,6 +73,12 @@ export interface ImportService {
  */
 class ImportDomainError extends DomainError {}
 
+/** [F-IMPORTGATE-01] 对称半拒绝（INV-133——delete 链持 gate 期并发导入会在
+ *  COUNT=0 判定后建同 sha 行=TOCTOU 危害方；用户稍后重试，拒时零库副作用） */
+function deleteInFlightBusy(): ImportDomainError {
+  return new ImportDomainError('CONFLICT', '删除进行中，请稍后再导入')
+}
+
 /** 批处理单元：源路径 + 所属集合（importFiles 一律 null=落点取调用参数
  *  targetFolderId；importFolder 的根目录文件同为 null，一级子目录文件=该夹） */
 interface BatchEntry {
@@ -93,8 +103,10 @@ export function createImportService(deps: {
   /** PDF 元数据抽取（注入便于测试；生产传 extractPdfMeta） */
   extractMeta: (bytes: Uint8Array) => Promise<PdfMetaExtraction>
   /** 导入互斥 gate（F-D4 A 面：bootstrap 顶层一次创建并注入；enter/exit 必经
-   *  finally 配对——workspace 变更三入口的互斥判定源） */
-  gate: { enter(): void; exit(): void }
+   *  finally 配对——workspace 变更三入口的互斥判定源）。[F-IMPORTGATE-01]
+   *  +deleteInFlight 可选缺省=旧单测装配兼容（无拒绝面），生产装配恒真值
+   *  （services/index 传 createImportGate 全件——kind 分计见 import-gate.ts） */
+  gate: { enter(): void; exit(): void; deleteInFlight?(): boolean }
   onProgress?: (e: ImportProgressEvent) => void
   /** [F-ALIGN-01 D3] 双失效事件出口（可选缺省=静默——单测装配兼容；
    *  生产装配恒真值——LibraryServiceDeps 先例）。单跳落夹+建节点吸收了原
@@ -279,8 +291,11 @@ export function createImportService(deps: {
 
   return {
     // 路径列表已给定，无扫描阶段；进度直接从 copying 开始。
-    // gate.enter/exit 必经 finally（F-D4 A 面——域错误上抛路径也释放互斥计数）
+    // gate.enter/exit 必经 finally（F-D4 A 面——域错误上抛路径也释放互斥计数）；
+    // [F-IMPORTGATE-01] 对称半：delete in-flight 先拒（拒时零库副作用——与
+    // workspace 三入口同型入口第一闸）
     async importFiles(paths: string[], targetFolderId: string): Promise<ImportResult> {
+      if (gate.deleteInFlight?.()) throw deleteInFlightBusy()
       gate.enter()
       try {
         const sessionId = randomUUID()
@@ -297,6 +312,8 @@ export function createImportService(deps: {
     },
 
     async importFolder(folder: string, targetFolderId: string): Promise<ImportResult> {
+      // [F-IMPORTGATE-01] 对称半：delete in-flight 先拒（importFiles 同型）
+      if (gate.deleteInFlight?.()) throw deleteInFlightBusy()
       gate.enter()
       try {
         const sessionId = randomUUID()

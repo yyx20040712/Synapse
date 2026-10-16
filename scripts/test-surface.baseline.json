@@ -48151,6 +48151,233 @@
         }
       ]
     },
+    "tests/unit/services/import-delete-mutex.service.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"gate kind 计数（import/delete 分计）\",\"delete 持有：inFlight+deleteInFlight 为真、importInFlight 恒 false；exit 归零\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "gate kind 计数（import/delete 分计）"
+          ],
+          "title": "delete 持有：inFlight+deleteInFlight 为真、importInFlight 恒 false；exit 归零",
+          "markers": [],
+          "line": 168,
+          "assertions": [
+            "expect(gate.inFlight()).toBe(true)",
+            "expect(gate.deleteInFlight()).toBe(true)",
+            "expect(gate.importInFlight()).toBe(false)",
+            "expect(gate.inFlight()).toBe(false)",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"gate kind 计数（import/delete 分计）\",\"并发双 import 语义保持：enter()×2 → 2→1→0 中间态不误释（锁定锚 kind 化零变）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "gate kind 计数（import/delete 分计）"
+          ],
+          "title": "并发双 import 语义保持：enter()×2 → 2→1→0 中间态不误释（锁定锚 kind 化零变）",
+          "markers": [],
+          "line": 179,
+          "assertions": [
+            "expect(gate.importInFlight()).toBe(true)",
+            "expect(gate.deleteInFlight()).toBe(false)",
+            "expect(gate.inFlight()).toBe(true)",
+            "expect(gate.importInFlight()).toBe(true)",
+            "expect(gate.importInFlight()).toBe(false)",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-1 双侧 BUSY 对称拒\",\"import in-flight：papers.delete 入口 CONFLICT 中文拒+零库副作用+不占 delete 计数\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-1 双侧 BUSY 对称拒"
+          ],
+          "title": "import in-flight：papers.delete 入口 CONFLICT 中文拒+零库副作用+不占 delete 计数",
+          "markers": [],
+          "line": 195,
+          "assertions": [
+            "expect(err.code).toBe('CONFLICT')",
+            "expect(err.message).toBe('导入进行中，请稍后再删除')",
+            "expect(ops.findById).not.toHaveBeenCalled()",
+            "expect(ops.remove).not.toHaveBeenCalled()",
+            "expect(ops.withTransaction).not.toHaveBeenCalled()",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-1 双侧 BUSY 对称拒\",\"import in-flight：folders.delete 入口同拒（CONFLICT+零库副作用）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-1 双侧 BUSY 对称拒"
+          ],
+          "title": "import in-flight：folders.delete 入口同拒（CONFLICT+零库副作用）",
+          "markers": [],
+          "line": 215,
+          "assertions": [
+            "expect(err.code).toBe('CONFLICT')",
+            "expect(err.message).toBe('导入进行中，请稍后再删除')",
+            "expect(ops.findById).not.toHaveBeenCalled()",
+            "expect(ops.remove).not.toHaveBeenCalled()",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-1 双侧 BUSY 对称拒\",\"优先序锁（r1-2 主控裁决）：import in-flight 期 folders.delete(MAIN_GRAPH_ID) → BUSY「导入进行中」先于主图禁删（互斥闸先于永久性域检查——workspace.service 入口第一闸先例同序）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-1 双侧 BUSY 对称拒"
+          ],
+          "title": "优先序锁（r1-2 主控裁决）：import in-flight 期 folders.delete(MAIN_GRAPH_ID) → BUSY「导入进行中」先于主图禁删（互斥闸先于永久性域检查——workspace.service 入口第一闸先例同序）",
+          "markers": [],
+          "line": 234,
+          "assertions": [
+            "expect(svc.delete({ id: MAIN_GRAPH_ID })).rejects.toThrow(/导入进行中/)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）\",\"papers.delete：挂起窗内并发 importFiles 被 BUSY 拒（窗闭合）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）"
+          ],
+          "title": "papers.delete：挂起窗内并发 importFiles 被 BUSY 拒（窗闭合）",
+          "markers": [],
+          "line": 245,
+          "assertions": [
+            "expect(moveToTrash).toHaveBeenCalledTimes(1)",
+            "expect(concurrent).rejects.toThrow('删除进行中，请稍后再导入')",
+            "expect(del).resolves.toEqual({ ok: true })",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）\",\"folders.delete：逐 sha 隔离循环挂起窗内并发 importFiles 被 BUSY 拒（窗闭合）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）"
+          ],
+          "title": "folders.delete：逐 sha 隔离循环挂起窗内并发 importFiles 被 BUSY 拒（窗闭合）",
+          "markers": [],
+          "line": 260,
+          "assertions": [
+            "expect(moveToTrash).toHaveBeenCalledTimes(1)",
+            "expect(importSvc.importFiles(['/x.pdf'], 'f-1')).rejects.toThrow( '删除进行中，请稍后再导入' )",
+            "expect(del).resolves.toEqual({ ok: true })",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）\",\"delete in-flight：import.service importFolder 入口同拒（第二入口对称）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "TOCTOU 窗闭合（moveToTrash 挂起窗=COUNT 判定后、移动完成前）"
+          ],
+          "title": "delete in-flight：import.service importFolder 入口同拒（第二入口对称）",
+          "markers": [],
+          "line": 281,
+          "assertions": [
+            "expect(importSvc.importFolder('/dir', 'f-1')).rejects.toThrow( '删除进行中，请稍后再导入' )",
+            "expect(del).resolves.toEqual({ ok: true })"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"行为零变锚（无 import 并发时两 delete 与现状逐位一致）\",\"并发双 delete 放行：papers.delete 挂起窗内 folders.delete 照常完成（delete 不建行=无 TOCTOU 危害面）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "行为零变锚（无 import 并发时两 delete 与现状逐位一致）"
+          ],
+          "title": "并发双 delete 放行：papers.delete 挂起窗内 folders.delete 照常完成（delete 不建行=无 TOCTOU 危害面）",
+          "markers": [],
+          "line": 297,
+          "assertions": [
+            "expect(foldersSvc.delete({ id: 'f-2' })).resolves.toEqual({ ok: true })",
+            "expect(del).resolves.toEqual({ ok: true })",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"行为零变锚（无 import 并发时两 delete 与现状逐位一致）\",\"并发双 import 放行（service 层零变锚，r1-M4 红证面）：importFiles 挂起窗内第二个 importFiles 照常进行（gate 分计不误拒——误查合计即互拒）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "行为零变锚（无 import 并发时两 delete 与现状逐位一致）"
+          ],
+          "title": "并发双 import 放行（service 层零变锚，r1-M4 红证面）：importFiles 挂起窗内第二个 importFiles 照常进行（gate 分计不误拒——误查合计即互拒）",
+          "markers": [],
+          "line": 315,
+          "assertions": [
+            "expect(fileStore.storePdfFromPath).toHaveBeenCalledTimes(1)",
+            "expect(second).resolves.toMatchObject({ duplicates: ['b.pdf'] })",
+            "expect(first).resolves.toMatchObject({ duplicates: ['a.pdf'] })",
+            "expect(gate.importInFlight()).toBe(false)",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）\",\"papers.delete removed===false（并发窗口防御面）：NOT_FOUND 上抛后 inFlight 归零\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）"
+          ],
+          "title": "papers.delete removed===false（并发窗口防御面）：NOT_FOUND 上抛后 inFlight 归零",
+          "markers": [],
+          "line": 353,
+          "assertions": [
+            "expect(svc.delete({ paperId: 'p-1' })).rejects.toThrow('文献不存在')",
+            "expect(gate.inFlight()).toBe(false)",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）\",\"papers.delete 隔离失败非致命：成功返回后 inFlight 归零（finally 覆盖 catch 路径）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）"
+          ],
+          "title": "papers.delete 隔离失败非致命：成功返回后 inFlight 归零（finally 覆盖 catch 路径）",
+          "markers": [],
+          "line": 362,
+          "assertions": [
+            "expect(svc.delete({ paperId: 'p-1' })).resolves.toEqual({ ok: true })",
+            "expect(gate.inFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）\",\"folders.delete 主图禁删：CONFLICT 上抛后 inFlight 归零（enter 前拒绝不漏计数）\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）"
+          ],
+          "title": "folders.delete 主图禁删：CONFLICT 上抛后 inFlight 归零（enter 前拒绝不漏计数）",
+          "markers": [],
+          "line": 380,
+          "assertions": [
+            "expect(svc.delete({ id: MAIN_GRAPH_ID })).rejects.toThrow('主图不可删除')",
+            "expect(gate.inFlight()).toBe(false)",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）\",\"D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）\",\"folders.delete 幽灵夹：NOT_FOUND 上抛后 inFlight 归零\"]",
+          "describePath": [
+            "F-IMPORTGATE-01 import↔delete 互斥（INV-133 TOCTOU 窗闭合）",
+            "D-2 finally 配对（域错误上抛/非致命路径后 gate 必释）"
+          ],
+          "title": "folders.delete 幽灵夹：NOT_FOUND 上抛后 inFlight 归零",
+          "markers": [],
+          "line": 389,
+          "assertions": [
+            "expect(svc.delete({ id: 'ghost' })).rejects.toThrow('文件夹不存在')",
+            "expect(gate.inFlight()).toBe(false)",
+            "expect(gate.deleteInFlight()).toBe(false)"
+          ]
+        }
+      ]
+    },
     "tests/unit/services/import-snapshot.service.test.ts": {
       "ticketIds": [],
       "conditionalSkipSites": [],
@@ -53962,9 +54189,9 @@
     }
   },
   "stats": {
-    "fileCount": 365,
-    "caseCount": 3602,
-    "assertionCount": 11980,
+    "fileCount": 366,
+    "caseCount": 3616,
+    "assertionCount": 12032,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,

@@ -42,6 +42,7 @@
  */
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { Repos } from '../db/repos'
+import type { ImportGate } from '../import-gate'
 import { DomainError } from './shared/domain-error'
 import { normalizeMonthSlot, nextSlotInGroup } from './lineage/lineage.write-guards'
 
@@ -64,6 +65,13 @@ function lineageSavePending(): DomainError {
   return new DomainError('CONFLICT', '脉络图编辑保存中，请先完成保存再操作文献归属')
 }
 
+/** [F-IMPORTGATE-01] import 互斥拒绝（INV-133 TOCTOU 窗闭合双侧 BUSY——
+ *  import in-flight 期并发删除会在其 COUNT 判定窗内消失/移动同 sha 文件；
+ *  用户稍后重试，拒时零库副作用） */
+function importSessionInFlight(): DomainError {
+  return new DomainError('CONFLICT', '导入进行中，请稍后再删除')
+}
+
 /** [F-FOLDER-01] library/papers 两 service 共用依赖形状（三项注入可选缺省=
  * 闸常开/事件静默——既有单测装配兼容（paperMetrics 先例）；生产装配恒真值） */
 /** [F-DBCAMP-01 DB-4 / 设计 §5.d②] 受管文件隔离出口（file-store.moveToTrash
@@ -82,6 +90,10 @@ export interface LibraryServiceDeps {
   sendLineageChanged?: () => void
   /** [F-DBCAMP-01 DB-4] papers/delete 文件隔离出口（最后引用方判定后调） */
   fileStore?: PaperFileTrash
+  /** [F-IMPORTGATE-01 INV-133] import↔delete 互斥 gate（createImportGate 产物——
+   *  services/index folderDeps 注入；可选缺省=旧单测装配兼容（无互斥面），
+   *  生产装配恒真值——fileStore 先例） */
+  importGate?: ImportGate
 }
 
 export function createLibraryService(deps: LibraryServiceDeps): ApiHandlers['library'] {
@@ -200,6 +212,7 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
   const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
   const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
   const fileStore = deps.fileStore
+  const gate = deps.importGate
 
   return {
     async moveFolder(req) {
@@ -273,26 +286,37 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
     // [F-DBCAMP-01 DB-4 / 设计 §5.d②] 事务提交且 removed 成功后文件隔离：
     // sha 引用计数=0（最后引用方——共引判定覆盖导入去重/快照 upsert 两路径）
     // →file-store.moveToTrash（await+try/catch 非致命——失败 console.warn 不
-    // 阻断删除返回；孤儿文件=既定边界，GC=后续票）。[回炉 r1-R7] TOCTOU 边界：
-    // COUNT 判定-移动窗的单线程串行假设——并发导入同 sha 理论窗=登记边界
-    // （INV-133 注），importGate 互斥=后续票候选
+    // 阻断删除返回；孤儿文件=既定边界，GC=后续票）。
+    // [F-IMPORTGATE-01 已接线终态——回炉 r1-R7 登记边界清偿] importGate 互斥
+    // 双侧 BUSY：入口先拒 import in-flight（gate 分计——kind='delete' 持有期
+    // import.service 入口对称拒，见 import_/import.service；workspace 三入口
+    // 连带被拒=票面 D-3 正向预期）；gate 段=try/finally 全裹 tx remove→COUNT
+    // 判定→await moveToTrash 窗（INV-133 TOCTOU 窗闭合——并发导入同 sha 理论
+    // 窗消除）；enter 置于 pending/findById 纯读校验后=最小侵入（拒路径零库
+    // 副作不占计数，非互斥路径行为与现状逐位一致）
     async delete(req) {
+      if (gate?.importInFlight()) throw importSessionInFlight()
       if (pending()) throw lineageSavePending()
       const paper = papers.findById(req.paperId)
       if (paper === null) throw paperNotFound(req.paperId)
-      // [RR1-3/d1-N1] removed===false=并发窗口已被删——如实 NOT_FOUND 非假成功
-      //（findById 前置后单进程同步序不可达，防御面）
-      const removed = deps.repos.withTransaction(() => papers.remove(req.paperId))
-      if (!removed) throw paperNotFound(req.paperId)
-      if (fileStore !== undefined && papers.countBySha256(paper.sha256) === 0) {
-        try {
-          await fileStore.moveToTrash(paper.file_ref)
-        } catch (e) {
-          console.warn(
-            `[papers.delete] 受管文件隔离失败（孤儿文件=既定边界）：${paper.file_ref}`,
-            e instanceof Error ? e.message : String(e)
-          )
+      gate?.enter('delete')
+      try {
+        // [RR1-3/d1-N1] removed===false=并发窗口已被删——如实 NOT_FOUND 非假成功
+        //（findById 前置后单进程同步序不可达，防御面；gate 段内上抛经 finally 释计数）
+        const removed = deps.repos.withTransaction(() => papers.remove(req.paperId))
+        if (!removed) throw paperNotFound(req.paperId)
+        if (fileStore !== undefined && papers.countBySha256(paper.sha256) === 0) {
+          try {
+            await fileStore.moveToTrash(paper.file_ref)
+          } catch (e) {
+            console.warn(
+              `[papers.delete] 受管文件隔离失败（孤儿文件=既定边界）：${paper.file_ref}`,
+              e instanceof Error ? e.message : String(e)
+            )
+          }
         }
+      } finally {
+        gate?.exit('delete')
       }
       sendFoldersChanged()
       sendLineageChanged()

@@ -8,6 +8,7 @@ import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import type { ExportCorpusEvent, ImportProgressEvent } from '../../shared/ipc/schemas'
 import type { PaperDetail } from '../../shared/models/paper'
 import type { Repos } from '../db/repos'
+import type { ImportGate } from '../import-gate'
 import type { FileStore } from './import_/file-store'
 import { createImportService, type ImportService } from './import_/import.service'
 import { createExportService, type ExportService } from './export_/export.service'
@@ -85,10 +86,12 @@ export interface ServiceDeps {
   fileStore: FileStore
   contactEmail: () => string
   http: HttpFns
-  /** 导入互斥 gate（F-D4 A 面，INV-52）：bootstrap 顶层一次创建注入——容器每层
-   *  service 重建但 gate 同一对象；import.service enter/finally exit 配对，
-   *  workspace.service 三入口据计数>0 拒绝（拒时零库副作用） */
-  importGate: { enter(): void; exit(): void }
+  /** 导入互斥 gate（F-D4 A 面，INV-52；[F-IMPORTGATE-01] kind 化——INV-133）：
+   *  bootstrap 顶层一次创建注入——容器每层 service 重建但 gate 同一对象；
+   *  import.service enter/finally exit 配对，workspace.service 三入口据
+   *  inFlight()（两 kind 合计）拒绝；papers/folders delete enter('delete')
+   *  持 gate（双侧 BUSY 互斥，拒时零库副作用） */
+  importGate: ImportGate
   /** 导入进度事件出口（main→renderer 推送），bootstrap 注入 */
   sendProgress?: (e: ImportProgressEvent) => void
   /** AI 语料导出会话事件出口（main→renderer 单向——extract-request/progress） */
@@ -167,13 +170,15 @@ export interface ServiceBundle {
 export function createServices(deps: ServiceDeps): ServiceBundle {
   const aiSensor = createAiSensorService({ rootDir: deps.aiSensorRootDir })
   // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）；
-  // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）
+  // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）；
+  // [F-IMPORTGATE-01] +importGate（两 delete 互斥面——folderDeps 恒真值注入）
   const folderDeps = {
     repos: deps.repos,
     lineagePending: deps.lineagePending ?? (() => false),
     sendFoldersChanged: deps.sendFoldersChanged ?? (() => undefined),
     sendLineageChanged: deps.sendLineageChanged ?? (() => undefined),
-    fileStore: deps.fileStore
+    fileStore: deps.fileStore,
+    importGate: deps.importGate
   }
   const corpusExport = createCorpusExportService({
     repos: deps.repos,
