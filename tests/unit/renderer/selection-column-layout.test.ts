@@ -177,4 +177,28 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     expect(withBullet.rotated).toHaveLength(0)
     expect(withBullet.columns[0]?.boxes).toContain(bullet)
   })
+
+  it('交集空回退（W1）：候选交集空/恰零宽均不立缝 → single（回退分支入锚）', () => {
+    // 带1（y 0-10 两盒）候选 {100,200}、带2（y 40-50 两盒）候选 {300,400}
+    // ——法定带数 2 达标但交集空（left=300 > right=200）→ 不立缝回退 single
+    const disjoint = detectColumnLayout([
+      { x: 0, y: 0, w: 100, h: 10 },
+      { x: 200, y: 0, w: 100, h: 10 },
+      { x: 0, y: 40, w: 300, h: 10 },
+      { x: 400, y: 40, w: 100, h: 10 }
+    ])
+    expect(disjoint.kind).toBe('single')
+    expect(disjoint.gutter).toBeNull()
+    expect(disjoint.columns).toHaveLength(1)
+    // 交集恰零宽：候选 {100,200}+{200,300} 相切 → right-left=0 不>0 → single
+    const touching = detectColumnLayout([
+      { x: 0, y: 0, w: 100, h: 10 },
+      { x: 200, y: 0, w: 100, h: 10 },
+      { x: 0, y: 40, w: 200, h: 10 },
+      { x: 300, y: 40, w: 100, h: 10 }
+    ])
+    expect(touching.kind).toBe('single')
+    expect(touching.gutter).toBeNull()
+    expect(touching.columns).toHaveLength(1)
+  })
 })
