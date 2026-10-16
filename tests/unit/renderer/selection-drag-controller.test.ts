@@ -315,4 +315,20 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
       move(250, 39)
     }
   })
+
+  it('⑭ 一次性消费（微回炉 probe A-2）：同会话内同签名第二发不再抑制', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L1'), 20, 15)
+    move(250, 39)
+    // 会话中自写 S（enforce 产生 ownWrite=S=（L1,0,L2,8））
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    // 第一发 echo（selection 恰等于 S，会话未终局）：抑制+消费
+    expect(ctl.onSelectionChange()).toBe(true)
+    // 第二发同签名 S（同会话内再次到达）：签名已消费——不再抑制（false=转发）
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('L2'), 8)
+    expect(ctl.onSelectionChange()).toBe(false)
+  })
 })

@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T17:19:32.750Z",
+    "generatedAt": "2026-10-16T17:22:02.964Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1343,7 +1343,7 @@
         },
         {
             "path": "tests/unit/renderer/selection-drag-controller.test.ts",
-            "sha256": "1c6908b53094f92293673db4a817dd4642969c116ce0fa367c731ea3a0101a9a"
+            "sha256": "c93cce6afe5e0aa2e77c7560d130fafbcb13ca0e20c0e9e57ac0a9e7040dcf49"
         },
         {
             "path": "tests/unit/renderer/selection-drag-fixture.test.ts",
