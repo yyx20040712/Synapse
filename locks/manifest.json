@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T04:57:13.717652+08:00",
+    "generatedAt": "2026-10-16T21:32:01.275Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -7,11 +7,11 @@
         },
         {
             "path": "docs/defense-lifecycle.md",
-            "sha256": "25095d535ea3c43c9ded88117bac85ce20aafafdecb1938a82bef17e1b8f2148"
+            "sha256": "f6443921c2352625253f28655a658f966ef6cd80e9d4f03ed75bb5ea18c3fd7e"
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "f1885bbbb78cb207e7ddd2080af9b3a9b8b153f44fbc36f2472336e454c6c2b5"
+            "sha256": "1dee7c8feb91059a44d6aebe4f1cf41f9a098c926731d1c770962409d7c52d21"
         },
         {
             "path": "electron.vite.config.ts",
@@ -43,7 +43,7 @@
         },
         {
             "path": "scripts/check-quality.mjs",
-            "sha256": "207e3657bba145e488c2d5129d2dc83348a06e0fa15b167365b35e1ee4f3d2cb"
+            "sha256": "2ed93186da946b2a72517a72f799b0a498f904a068592160352d3b4b03b167e8"
         },
         {
             "path": "scripts/check-test-surface.mjs",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "0102ede62cafb7f1bc5707af42b4be8c3b33fbe619acdccc9e43cbb5461f19b8"
+            "sha256": "1c1473dc0be3a81cd44d2a9e0521918f0ff2f7504d4a8094bac842491a0d4fe0"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -219,7 +219,7 @@
         },
         {
             "path": "src/shared/constants.ts",
-            "sha256": "eecd08ac17833a1d2e5fcd8fd7ebf3883385ac2112ed27299e9ba32a221ad919"
+            "sha256": "1a763f1d0ef724f3c73fa9954af05893500c6b182e329841c53578f36b57114e"
         },
         {
             "path": "src/shared/ipc/ai-schemas.ts",
