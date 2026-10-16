@@ -156,3 +156,41 @@ export function createRotatedCropPdf(text = PDF_ROTATED_CROP_TEXT): Uint8Array {
   ]
   return assemblePdf(objects)
 }
+
+/** 双栏 fixture 哨兵（0C——52 指针授权/53 闪烁收口票的 gating 前置） */
+export const PDF_TWOCOL_TITLE = 'TWOCOL TEST DOC TITLE'
+export const PDF_TWOCOL_LEFT = 'LCOL SENTINEL ALPHA'
+export const PDF_TWOCOL_RIGHT = 'RCOL SENTINEL OMEGA'
+/** 中缝几何单源（栏检测断言=中缝净空带 [left,right]，中线 mid——pt，用户空间） */
+export const PDF_TWOCOL_GUTTER = { left: 294, right: 318, mid: 306 } as const
+
+/**
+ * 双栏变体（0C：全宽标题+左右栏哨兵行——选区票双栏几何的 gating fixture）。
+ * 几何口径：612×792 页；全宽标题带基线 y=740（栏体之上）；左栏 x=54..294、
+ * 右栏 x=318..558（各宽 240pt），中缝 294..318=24pt 净空（结构上零文本交叉
+ * ——栏检测断言的单源依据）；正文 Helvetica 10、行距 16，两栏各 11 行
+ * （哨兵+ROW 01-10，行基线 700..540）。文本坐标=PDF 用户空间 y-up
+ * （getTextContent item.transform[4]/[5]）；e2e 消费经 viewport 换算。
+ * 对象布局同 createTinyPdf（1=Catalog 2=Pages 3=Page 4=Contents 5=Font）。
+ */
+export function createTwoColumnPdf(): Uint8Array {
+  const rows: string[] = [`BT /F1 18 Tf 72 740 Td (${esc(PDF_TWOCOL_TITLE)}) Tj ET`]
+  const column = (prefix: string, sentinel: string, x: number): string[] =>
+    [sentinel, ...Array.from({ length: 10 }, (_, i) => `${prefix} ROW ${String(i + 1).padStart(2, '0')}`)].map(
+      (line, i) => `BT /F1 10 Tf ${x} ${700 - i * 16} Td (${esc(line)}) Tj ET`
+    )
+  rows.push(...column('LCOL', PDF_TWOCOL_LEFT, 54))
+  rows.push(...column('RCOL', PDF_TWOCOL_RIGHT, 318))
+  const stream = rows.join('\n')
+  // /Length 是字节数（与 buildPdfObjects 同口径按 UTF-8 字节计）
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (${esc(PDF_TWOCOL_TITLE)}) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}

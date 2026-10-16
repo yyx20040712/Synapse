@@ -1815,7 +1815,7 @@
         },
         {
             "path": "tests/utils/pdf-factory.ts",
-            "sha256": "ae2e5e9c6ea4e7acd9f9a27fb9d66684f586873d7957de96544b37946bec20fb"
+            "sha256": "01e8829f4b35f0d49278718e88f1fbedc9c1af8b3a8334220ccaa8f567f45842"
         },
         {
             "path": "tickets/archive/README.md",
@@ -1836,6 +1836,10 @@
         {
             "path": "vitest.config.ts",
             "sha256": "af9cdb4774a2cc27d65feda4152f6af330a3d5a7511f5d897e7f95b42115c96d"
+        },
+        {
+            "path": "tests/unit/renderer/pdf-factory-twocol.test.ts",
+            "sha256": "1616727d7de173f8c020c2daceb4222c76f2e758f3f85345fb3a80ab41a9350e"
         }
     ]
 }
