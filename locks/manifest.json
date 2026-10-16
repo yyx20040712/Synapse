@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T19:51:42.056Z",
+    "generatedAt": "2026-10-16T20:11:17.870Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -423,7 +423,7 @@
         },
         {
             "path": "tests/e2e/reader-text.spec.ts",
-            "sha256": "0b0386b1624494732214a899165d08c8e56114c78aaa716dfc47c7ea0b748432"
+            "sha256": "bc1262ed1ee942f51ac7a2ab7061802adc475f035aa5217e0e15a0eba31fa411"
         },
         {
             "path": "tests/e2e/reading-time-replay.spec.ts",
@@ -839,7 +839,7 @@
         },
         {
             "path": "tests/unit/renderer/annotation-popups-autosave.test.tsx",
-            "sha256": "1e15a04457c978fd36c9540cfd21e543f088cf65dffde9886f721b1bf72e3853"
+            "sha256": "1a5504b8dda3417d3452f68c5ca03e33c019be65fa6ffb84ade4c3564b527bc0"
         },
         {
             "path": "tests/unit/renderer/annotation-undo.test.ts",
@@ -1463,7 +1463,7 @@
         },
         {
             "path": "tests/unit/renderer/ui-iconify-buttons.test.tsx",
-            "sha256": "691e805062b66ef70ab03d9c54ef599438cbbdc8b1564a3cc222d99933306a11"
+            "sha256": "ec63e526e247ece96e21fd4c97649ed4da16cfe51c8c5ca1b8786cc7ba04ea4e"
         },
         {
             "path": "tests/unit/renderer/ui-icons-shared.test.tsx",
@@ -1908,6 +1908,14 @@
         {
             "path": "tests/unit/renderer/lineage-edge-hover-name.test.tsx",
             "sha256": "a59e7cd68694ac7cf7cebc35ac02474504a8af7143f85182591a1484d7f18997"
+        },
+        {
+            "path": "tests/unit/renderer/save-state-button.test.tsx",
+            "sha256": "52e51145775a824a9323d4401771f194c8c8365cb3d9b669c8ed225ec78aec1d"
+        },
+        {
+            "path": "tests/unit/renderer/reader-notes-panel-visfb13.test.tsx",
+            "sha256": "e9226df7d92d20812c01c2cb010a83b75b4c8981719cec8d609c4b1585fcbed9"
         }
     ]
 }

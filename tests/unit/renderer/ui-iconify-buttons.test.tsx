@@ -173,6 +173,15 @@ describe('F-UIRES-02 批 B Reader 域', () => {
     }
     expect(host!.querySelector('[data-testid="annotation-editor-undo"]')!.textContent).toBe('撤销')
     expect(host!.querySelector('[data-testid="annotation-editor-redo"]')!.textContent).toBe('重做')
+    // [F-VISFB-13] 四态钮态语分型：clean 态钮面=「已保存」（sr-only）——输入
+    // 一字转 dirty 后钮面=「保存」，本锚按 dirty 态锚定「保存」三断言（态机
+    // 全格锚=save-state-button.test.tsx ②）；原生 setter 驱动对齐本仓既有形态
+    const ta = host!.querySelector('textarea') as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    act(() => {
+      setter?.call(ta, '脏')
+      ta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
     for (const label of ['保存', '删除', '取消']) {
       const btn = findBtnByText(label)
       expectSameLabel(btn)

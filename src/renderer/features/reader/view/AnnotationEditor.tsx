@@ -11,16 +11,29 @@
  *   状态机表与跨格注记随逻辑迁驻该件头注；本件留 JSX 接线）。
  * [F-VISFB-12] 取消/Escape 先 flush（H2/H3/H4）：clean/saved 无待存与 busy
  *   在途手动写承接两路同步收层（零跳变）；dirty/failed/saving 路径 await
- *   draft.flush 立存后再 onCancel（写挂起期间不收层；失败也收层——草稿经
- *   卸载注册入注册表，重挂载恢复 failed 态可重试）。UI 反馈不阻塞面=写经
- *   onAutosave（AnnotationPopups）置 busy 全钮禁用。
+ *   draft.flush 立存后按终态收层判定（写挂起期间不收层；终态 failed=不收层
+ *   ——停留编辑器呈现保存失败态，重试=保存钮/二次 Escape 再 flush，逃生径=
+ *   删除钮/切目标 fire-first 注册表承接；卸载注册承接面=组件真卸载〔切目标/
+ *   路由〕时的 failed 条目兜底——删除链先清册〔discard 出表+墓碑拒注册〕，
+ *   不经此兜底）。UI 反馈不阻塞面=写经 onAutosave
+ *   （AnnotationPopups）置 busy 全钮禁用。
+ * [F-VISFB-13] 四态图标与布局（§0-2 锁定裁决）：保存钮=共享 SaveStateButton
+ *   （save-status.ts 单源推导——dirty 彩色可点〔点击即存=onSave 手动保存链〕/
+ *   saved 灰禁/saving spinner 禁用/failed 红+短文本「重试」可点；busy 在途
+ *   归一 saving 格）；saved/failed 标记=图标+sr-only 态语（A4 删「已保存」
+ *   类可见字样——textContent/accessible name 双面保活）；A5 按钮重排：保存/
+ *   删除右上、取消上移——底行退役，全动作单工具行（与笔记面板两消费方一致
+ *   重排）。failed 态逃生径=删除钮/切目标 fire-first（N-1 闸，锚在
+ *   save-state-button.test.tsx ④）。
  */
 import { useEffect, useRef } from 'react'
 import type { Annotation, AnnotationRect } from '@shared/models/annotation'
-import { ICON_REDO, ICON_SAVE, ICON_TRASH, ICON_UNDO, ICON_X } from '../../../shared/icons'
+import { ICON_CHECK, ICON_REDO, ICON_RETRY, ICON_TRASH, ICON_UNDO, ICON_X } from '../../../shared/icons'
 import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
 import { useAnnotationDraft } from '../interact/use-annotation-draft'
 import { saveAnnotationDraft } from '../interact/annotation-draft-registry'
+import { SaveStateButton } from '../../../shared/ui/SaveStateButton'
+import { editorSaveUiState } from '../../../shared/save-status'
 
 export function AnnotationEditor(props: {
   annotation: Annotation
@@ -143,9 +156,12 @@ export function AnnotationEditor(props: {
           }
         }}
       />
-      {/* 工具行：撤销/重做按钮对 + 右角保存状态标记（栈空 disabled）。
-          [F-UIRES-02 批 B R5] 撤销/重做文字钮→图标+title 同源（data-testid
-          受锁锚零变）；sr-only span 保 textContent/accessible name */}
+      {/* [F-VISFB-13 A5] 单工具行：撤销/重做 + 右侧（保存/删除/取消）——底行
+          退役（保存/删除右上、取消上移，与笔记面板两消费方一致重排）。
+          [F-UIRES-02 批 B R5] 撤销/重做/删除/取消图标+title 同源（data-testid
+          受锁锚零变）；sr-only span 保 textContent/accessible name。
+          [F-VISFB-13 A4] saved/failed 标记=图标+sr-only 态语（删可见字样——
+          textContent 锚保活：'已保存'/'保存失败'）。 */}
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -176,29 +192,23 @@ export function AnnotationEditor(props: {
         {(saveState === 'saved' || saveState === 'failed') && (
           <span
             data-testid="annotation-saved-flag"
-            className="ml-auto"
+            className="ml-auto syn-status-icon"
             style={{ color: saveState === 'failed' ? 'var(--danger)' : 'var(--text-dim)' }}
           >
-            {saveState === 'failed' ? '保存失败' : '已保存'}
+            {saveState === 'failed' ? ICON_RETRY : ICON_CHECK}
+            <span className="sr-only">{saveState === 'failed' ? '保存失败' : '已保存'}</span>
           </span>
         )}
-      </div>
-      {/* [F-UIRES-02 批 B R10] 保存/删除/取消三钮图标化（紧凑弹层底部行——
-          主控已裁）；sr-only 保 textContent（受锁 annotation-menu clickButton/
-          annotation-popups-autosave find '保存' 精确匹配面） */}
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className={`${btn} syn-icon-btn`}
-          style={{ background: 'var(--accent)', color: 'var(--panel)', borderColor: 'var(--accent)' }}
-          disabled={busy}
-          title="保存"
-          aria-label="保存"
+        {/* [F-VISFB-13] 四态保存钮：状态轴=editorSaveUiState（save-status 单源），
+            动作轴=onSave 手动保存链（dirty 点击即存/failed 点击重试）；busy 在途
+            归一 saving 格。标记不在场时由保存钮承载右对齐（ml-auto） */}
+        <SaveStateButton
+          testId="annotation-editor-save"
+          state={editorSaveUiState(saveState)}
+          busy={busy}
+          className={saveState === 'saved' || saveState === 'failed' ? undefined : 'ml-auto'}
           onClick={() => onSave(comment)}
-        >
-          {ICON_SAVE}
-          <span className="sr-only">保存</span>
-        </button>
+        />
         <button
           type="button"
           className={`${btn} syn-icon-btn`}
@@ -213,7 +223,7 @@ export function AnnotationEditor(props: {
         </button>
         <button
           type="button"
-          className={`${btn} syn-icon-btn ml-auto`}
+          className={`${btn} syn-icon-btn`}
           style={{ borderColor: 'var(--border)' }}
           disabled={busy}
           title="取消"

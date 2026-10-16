@@ -8,9 +8,10 @@
  *   · 总评层：textarea（notes.store.load/edit/saveSoon 消费——**五模块
  *     编辑元数据结构与 ADR-0008 裁决不动，不坍缩不新增维度**）；本组件与库侧
  *     NotesPanel 同语义：挂载/paperId 变化即 load（动作型失败 toast+载入重试）；
- *     迟到失败比对 paperIdRef 丢弃；保存状态四态消费 deriveSaveStatus
- *     （renderer/shared/save-status.ts——单一推导点；〔B3〕detectSaveFailed
- *     周期判定随组件层判定退役，纯函数留驻由锁定测试锚定）
+ *     迟到失败比对 paperIdRef 丢弃；保存状态四态消费 deriveSaveUiState
+ *     （renderer/shared/save-status.ts——单一推导点〔F-VISFB-13 起与钮态
+ *     分型：deriveSaveStatus 文案态留驻由锁定测试锚定〕；〔B3〕
+ *     detectSaveFailed 周期判定随组件层判定退役，纯函数留驻由锁定测试锚定）
  *   · 片段层：FragmentNotesList（sortByDocumentOrder=C-01 单源序；单击→
  *     onLocate 上抛——定位语义归 C-05；highlightAnnotationId 高亮滚动=C-05
  *     标注单击反向同步消费面）
@@ -22,14 +23,16 @@
  *   退役——双源风险消除，纯函数本身留驻 save-status.ts 由锁定测试锚定）**
  * - notes 面 dirty 投影（TABS-03 既有）零改动——pending 语义自动覆盖本编辑面
  * - [F-UIRES-03 B3] 四态保存主动作钮（INV-106；钮与状态文字合一——四态唯一
- *   指示面，避免「已保存」双元素 e2e strict 冲突）：dirty=primary「保存」可点
- *   /saving=禁用 spinner「保存中」/clean=灰暗禁用「已保存」/error=danger 红描边
- *   「重试」可点；点击=saveNow（清防抖+立即落盘）；状态推导仍走 deriveSaveStatus
- *   单一推导点（钮文案=推导结果的本地映射）。[RR1 k1-W3] 状态播报通道=钮
- *   aria-live=polite（原 role=status span 随合一退役——四态迁移与钮文案一一
- *   对应，文本变化即 AT 播报；spinner 符号 aria-hidden 不入播报文本）；
+ *   指示面，避免「已保存」双元素 e2e strict 冲突）：dirty=primary 可点
+ *   /saving=禁用 spinner/clean=灰暗禁用/error=danger 红描边可点；点击=saveNow
+ *   （清防抖+立即落盘）。[F-VISFB-13] 钮本体=共享 SaveStateButton（两消费方
+ *   之一——批注弹层同件；四态图标+态语 sr-only〔A4 删「已保存」类可见字样，
+ *   textContent 锚保活〕+failed 可见短文本「重试」）；状态轴=deriveSaveUiState
+ *   （save-status.ts 单源——deriveSaveStatus 文案态与钮态分型），动作轴=saveNow
+ *   （点击即存）。[RR1 k1-W3] 状态播报通道=钮 aria-live=polite（四态迁移与
+ *   态语一一对应，文本变化即 AT 播报；spinner 符号 aria-hidden 不入播报文本）；
  *   [RR1 k1-N2] error 态无障碍名 RETRY_A11Y=可见文字「重试」开头形
- *   （WCAG 2.5.3 label-in-name，失败原因随播报）
+ *   （WCAG 2.5.3 label-in-name，失败原因随播报）——13 起随 SaveButtonView 单源
  * - [F-UIRES-03 B3] 卸载面：paperId 变化（切文献）或组件卸载（切 aside 栏/切
  *   视图）→ flush(paperId)（在途完成后 pending 立即落盘/error 立即重试一次/
  *   普遍 dirty 由模块级 timer 通道承接）；应用退出无 renderer 预卸载事件——
@@ -67,8 +70,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
 import { RetryButton } from '../../../shared/ui/RetryButton'
-import { Button } from '../../../shared/ui/Button'
-import { deriveSaveStatus } from '../../../shared/save-status'
+import { SaveStateButton } from '../../../shared/ui/SaveStateButton'
+import { deriveSaveUiState } from '../../../shared/save-status'
 import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../../notes/notes.store'
 import { FragmentNotesList } from './FragmentNotesList'
@@ -76,10 +79,6 @@ import { useActiveTab } from '../state/useActiveTab'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const LOAD_FAILED = '笔记加载失败'
-
-/** [RR1 k1-N2] error 态无障碍名单源（title/aria-label 同源喂——可见文字
- * 「重试」开头形：WCAG 2.5.3 label-in-name；兼保存失败原因随 aria-label 播报） */
-const RETRY_A11Y = '重试——上次保存失败'
 
 export function ReaderNotesPanel(props: {
   annotations: Annotation[]
@@ -146,12 +145,8 @@ export function ReaderNotesPanel(props: {
     )
   }
 
-  const status = deriveSaveStatus(saving, saveFailed, pending)
+  const status = deriveSaveUiState(saving, saveFailed, pending)
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
-  // [B3] 四态钮（INV-106）：dirty=primary「保存」可点/saving=禁用 spinner「保存中」
-  // /clean=灰暗禁用「已保存」/error=danger 红描边「重试」可点——钮面文字即四态
-  // 唯一指示（与状态文字合一；e2e getByText('已保存') 锚由钮面承载）
-  const saveLabel = saving ? '保存中' : status === '未保存' ? '保存' : status === '保存失败' ? '重试' : '已保存'
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 p-2 text-sm" data-testid="reader-notes-panel">
@@ -160,22 +155,16 @@ export function ReaderNotesPanel(props: {
         <span className="min-w-0 flex-1 truncate text-sm font-medium" style={{ color: 'var(--text-dim)' }}>
           全文笔记
         </span>
+        {/* [F-VISFB-13] 四态钮=共享 SaveStateButton（状态轴 deriveSaveUiState
+            单源；动作轴 saveNow 点击即存；A5 消费方位=保存钮 top-right 本行） */}
         {entry !== undefined && (
-          <Button
-            variant={status === '未保存' ? 'primary' : status === '保存失败' ? 'danger' : 'secondary'}
-            size="sm"
+          <SaveStateButton
+            state={status}
             className="shrink-0"
-            loading={saving}
-            disabled={status === '已保存'}
-            title={status === '保存失败' ? RETRY_A11Y : saving ? '保存中' : status === '未保存' ? '立即保存' : '已保存'}
-            ariaLabel={status === '保存失败' ? RETRY_A11Y : undefined}
-            ariaLive="polite"
             onClick={() => {
               if (paperId !== null) saveNow(paperId)
             }}
-          >
-            {saveLabel}
-          </Button>
+          />
         )}
       </div>
       <div className="relative min-h-0 flex-1 basis-24">

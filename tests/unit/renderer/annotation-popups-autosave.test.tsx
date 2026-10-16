@@ -214,7 +214,9 @@ describe('F-A11 接线 —— AnnotationPopups 自动保存（静默变体）', 
       await vi.advanceTimersByTimeAsync(800)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
-    const saveBtn = [...host!.querySelectorAll('button')].find((b) => b.textContent === '保存')!
+    // [F-VISFB-13] 保存钮定位改 testid：四态钮 saving 态态语为「保存中」
+    // （sr-only），textContent==='保存' 定位面随态语分型失效（dirty 态仍='保存'）
+    const saveBtn = host!.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!
     expect(saveBtn).toBeDefined()
     expect(saveBtn.disabled).toBe(true)
     act(() => {

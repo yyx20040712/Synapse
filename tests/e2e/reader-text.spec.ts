@@ -610,8 +610,9 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await body.fill('e2e 总评内容')
   // [F-VISFB-11] 节拍 1.5s→600s（shared 常量单源）：e2e 真实计时器等不到防抖到期
   // ——改锁显式保存链（saveNow 点击→四态钮 clean「已保存」；节拍数学=单测 fake
-  // timers 域）；exact=true 防子串误中「已保存/保存中」（:1223 同坑注记）
-  await panel.getByRole('button', { name: '保存', exact: true }).click()
+  // timers 域）；[F-VISFB-13] 恒 aria-label 后 dirty 态 accessible name=「立即保存」
+  // （exact 全串防子串误中「已保存/保存中」——:1230 同口径）
+  await panel.getByRole('button', { name: '立即保存', exact: true }).click()
   await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
 
   // 片段单击 → C-05 定位服务：同页 exact → 标注元素滚动+locate-flash 闪烁
@@ -1222,12 +1223,13 @@ test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开�
   await expect(panel).toBeVisible()
   await panel.getByLabel('笔记正文').fill('A3 悬置写输入')
   // pending 镜像在位（灰点信号即 dirty——关闭必经 confirm 弃改收口）。
-  // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点「保存」（原「未保存」状态文字
+  // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点保存钮（原「未保存」状态文字
   // 随钮面合一退役——语义等价：dirty 信号=保存钮可点）。exact 全串=判别力
-  // 口径：getByRole name 默认子串匹配，「已保存/保存中」均含「保存」即误中；
-  // exact:true 锁 dirty 态 accessible name 恰=「保存」（ariaLabel 缺席回落
-  // 可见文本）——四态钮文案唯一性锁定，dirty 未达成即红
-  await expect(panel.getByRole('button', { name: '保存', exact: true })).toBeVisible()
+  // 口径：getByRole name 默认子串匹配，「已保存/保存中/保存」均含「保存」即误中。
+  // [F-VISFB-13] SaveStateButton 恒设 aria-label=title：dirty 态 accessible name
+  // =「立即保存」（aria-label 压过 sr-only 内容文本）——exact 锚随名换源（同 :614），
+  // 语义等价锁定：dirty 未达成即红（saved 态名=「已保存」不误中）
+  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
 
   // confirm 自动接受先例（:227 注释删除弹层同款）
   win.on('dialog', (d) => {

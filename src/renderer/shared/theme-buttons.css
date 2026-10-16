@@ -105,6 +105,22 @@
   fill: none;
   stroke-width: 1.6;
 }
+/* [F-VISFB-13 A4] 行内状态图标（保存标记=icon+sr-only 态语）：非钮语境消费
+   .syn-icon-btn svg 同规格（16px+描边）——viewBox svg 无固有尺寸/描边全靠
+   语境 CSS，裸 span 下零盒隐藏（e2e 真机拦截——jsdom 存在性断言盲区） */
+.syn-status-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.syn-status-icon svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
 .syn-retry {
   padding: 3px 6px;
   border: 1px solid var(--border);
