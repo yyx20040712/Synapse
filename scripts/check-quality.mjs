@@ -115,6 +115,11 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
   ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']],
   ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']],
+  // F-VISFB-31（2026-10-17，B4）：LineageTimeline 订阅 settings.store uiScale
+  // 档（W 量测/spacer 量测/当前月对齐/路由快照四重算键——INV-144 三域律量测
+  // 面；单值订阅受控例外〔tab-dirty→notes.store 同型先例族〕，lineage 域其余
+  // 文件引用 settings 仍是红线）。
+  ['src/renderer/features/lineage/LineageTimeline.tsx', ['settings/settings.store']],
   // F-DBCAMP-01 DB-2 UI U3（2026-10-10）：AI 会话面板=三档入口共享壳（设计
   // §4.1 组件树明文 features/ai/ + 三处薄集成），五个接缝即三宿主挂面板
   // （reader 侧栏第 4 页签/settings AI 助手节/lineage 侧栏页签）与两薄包装

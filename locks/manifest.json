@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T23:49:53.525Z",
+    "generatedAt": "2026-10-16T23:51:46.313Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -43,7 +43,7 @@
         },
         {
             "path": "scripts/check-quality.mjs",
-            "sha256": "2ed93186da946b2a72517a72f799b0a498f904a068592160352d3b4b03b167e8"
+            "sha256": "219504e83ccdbde98766af9e4a093e3cf5d86b54e335e60c0c628d9bb46d10e0"
         },
         {
             "path": "scripts/check-test-surface.mjs",
