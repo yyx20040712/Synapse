@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T21:35:19.472Z",
+    "generatedAt": "2026-10-16T21:54:05.027Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1879,7 +1879,7 @@
         },
         {
             "path": "tests/utils/pdf-factory.ts",
-            "sha256": "01e8829f4b35f0d49278718e88f1fbedc9c1af8b3a8334220ccaa8f567f45842"
+            "sha256": "2b1fee4ca9597016482e80ce0c696c391db559cb4891d570b1347f0dcd8004d1"
         },
         {
             "path": "tickets/archive/README.md",
@@ -1927,7 +1927,7 @@
         },
         {
             "path": "tests/unit/renderer/FigureExtractor.test.ts",
-            "sha256": "958da9770f1a9945229000ec762dbecfcb1585d78accc81f0726684a32498bea"
+            "sha256": "45cbbc29688530d1eac0435a9c57791288f00b32ed7c45938715a5c2c180074c"
         },
         {
             "path": "tests/unit/renderer/figure-bridge.test.tsx",
@@ -1956,6 +1956,10 @@
         {
             "path": "tests/unit/renderer/DrPaperInfo.test.tsx",
             "sha256": "2d1751c440e5910c9ac1dfbb9dd5ba2fccfc676a36368aeacde93d4143d76067"
+        },
+        {
+            "path": "tests/e2e/figure-extract.spec.ts",
+            "sha256": "852a31ba4693d76b5543e7f2d5784b7896d24269e0abe9e878fcff49f8ac963a"
         }
     ]
 }

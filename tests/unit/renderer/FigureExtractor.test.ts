@@ -304,6 +304,38 @@ describe('[F-VISFB-43 U3] FigureExtractor 编排件', () => {
     expect(h.sent).toHaveLength(0)
   })
 
+  it('〔裁决部 P1-2〕worker ImageBitmap 传输面（无 kind/data）：bitmapToRgba 注入→转 RGBA 提取（真 worker 优化路径——00B §六差异）', async () => {
+    fakeClock.v = 0
+    const spec = imgOps('img_bm', 74, 50)
+    const h = buildDoc([{ fns: spec.fns, args: spec.args }])
+    const page = await h.doc.getPage(1)
+    page.objs = {
+      has: (id) => id === 'img_bm',
+      get: () => ({ width: 400, height: 300 }) as unknown
+    }
+    const deps = makeDeps(h)
+    deps.bitmapToRgba = async () => new Uint8ClampedArray(400 * 300 * 4).fill(9)
+    const summary = await extractDocFigures(h.doc, deps)
+    expect(summary).toEqual({ stored: 1, excess: 0, failed: 0 })
+    expect(h.sent[0]?.width).toBe(400)
+    expect(h.encodeCalls[0]?.scale).toBe(1)
+  })
+
+  it('〔裁决部 P1-2〕bitmap 面无转换器（deps 未注入）→per-asset 失败记项', async () => {
+    fakeClock.v = 0
+    const spec = imgOps('img_bm2', 74, 50)
+    const h = buildDoc([{ fns: spec.fns, args: spec.args }])
+    const page = await h.doc.getPage(1)
+    page.objs = {
+      has: (id) => id === 'img_bm2',
+      get: () => ({ width: 400, height: 300 }) as unknown
+    }
+    const deps = makeDeps(h)
+    const summary = await extractDocFigures(h.doc, deps)
+    expect(summary).toEqual({ stored: 0, excess: 0, failed: 1 })
+    expect(h.sent).toHaveLength(0)
+  })
+
   it('〔回炉轮1 N-1〕编码/摘要异常 per-asset 聚合：首资产 encodePng 抛→failed=1，后续资产照常提取不中止整篇', async () => {
     fakeClock.v = 0
     const a = imgOps('img_e1', 74, 50)

@@ -49,6 +49,9 @@ async function extractOne(paperId: string, token: string): Promise<void> {
       }
     })
     const summary = await extractDocFigures(doc, deps)
+    console.info(
+      `[figures] 提取完成：${paperId} stored=${String(summary.stored)} excess=${String(summary.excess)} failed=${String(summary.failed)}`
+    )
     const done = await api.figures.complete({ token, excess: summary.excess, failed: summary.failed })
     if (!done.ok) throw new Error(done.error.message)
   } catch (e) {

@@ -2,7 +2,18 @@
  * 测试基建：最小 PDF 工厂（受锁文件）。
  * 生成只含一页、Helvetica 单行文本的合法 PDF（无需外部依赖）。
  * 文本内容约定：SMART WATER TEST DOC（e2e reader-text 断言用同一字符串）。
+ * 〔F-VISFB-43 裁决部 P1-2〕+二进制流装配面（PdfObject={header,stream}——
+ * image XObject 原始字节嵌入）+createRasterFigurePdf（raster 图表 e2e fixture）。
  */
+
+/** 二进制流对象（image XObject 等——header=对象字典，stream=原始字节） */
+export interface PdfBinaryObject {
+  header: string
+  stream: Uint8Array
+}
+
+/** 工厂对象元（纯字符串对象沿用 string 形态——既有调用零改动） */
+export type PdfObject = string | PdfBinaryObject
 export const PDF_KNOWN_TEXT = 'SMART WATER TEST DOC'
 
 export function createTinyPdf(text = PDF_KNOWN_TEXT): Uint8Array {
@@ -28,13 +39,13 @@ function buildPdfObjects(text: string): string[] {
   ]
 }
 
-function assemblePdf(objects: string[]): Uint8Array {
+function assemblePdf(objects: PdfObject[]): Uint8Array {
   // xref 偏移一律按 UTF-8 字节累计（字符数在含中文时不等于字节数）
   const enc = new TextEncoder()
   const parts: Uint8Array[] = []
   let byteLen = 0
-  const push = (s: string): void => {
-    const b = enc.encode(s)
+  const push = (s: string | Uint8Array): void => {
+    const b = typeof s === 'string' ? enc.encode(s) : s
     parts.push(b)
     byteLen += b.length
   }
@@ -42,7 +53,14 @@ function assemblePdf(objects: string[]): Uint8Array {
   const offsets: number[] = []
   objects.forEach((body, i) => {
     offsets.push(byteLen)
-    push(`${i + 1} 0 obj\n${body}\nendobj\n`)
+    if (typeof body === 'string') {
+      push(`${i + 1} 0 obj\n${body}\nendobj\n`)
+    } else {
+      // 二进制流对象：stream 关键字后单换行（PDF 规范——流数据起讫按字节计）
+      push(`${i + 1} 0 obj\n${body.header}\nstream\n`)
+      push(body.stream)
+      push('\nendstream\nendobj\n')
+    }
   })
   const xrefStart = byteLen
   push(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`)
@@ -191,6 +209,48 @@ export function createTwoColumnPdf(): Uint8Array {
     `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
     `<< /Title (${esc(PDF_TWOCOL_TITLE)}) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
+/** [F-VISFB-43 裁决部 P1-2] raster 图表 fixture 哨兵（e2e 断言用同一字符串） */
+export const PDF_RASTER_TITLE = 'RASTER FIGURE E2E DOC'
+/** 内嵌图像几何单源：400×300px DeviceRGB 绘制在 300×225pt——提取三阈值全过
+ *  （pxArea=120000≥60000/pxMinEdge=300≥96/ctmArea=67500≥3600——00B 阈值面） */
+export const PDF_RASTER_FIGURE = { widthPx: 400, heightPx: 300, widthPt: 300, heightPt: 225 } as const
+
+/**
+ * raster 图表变体（F-VISFB-43 裁决部 P1-2：导入→提取→naturalWidth>0 正向
+ * e2e 的 gating fixture）。单页 612×792：内嵌一枚未压缩 DeviceRGB image
+ * XObject（400×300，8bpc，横向红梯度×纵向绿梯度——位图内容非平凡），
+ * 内容流 `q 300 0 0 225 100 100 cm /Im0 Do Q`（绘制几何=PDF_RASTER_FIGURE）。
+ * 对象布局：1=Catalog 2=Pages 3=Page 4=Contents 5=Image 6=Info（数组序=id 序）。
+ * kind 断言依据：无 SMask 的 DeviceRGB 经 pdf.js 解码=RGB_24BPP（figure-decode
+ * kind2 面）；三阈值由 figure-ctm isQualifyingFigure 判入（400×300/300×225pt）。
+ */
+export function createRasterFigurePdf(): Uint8Array {
+  const { widthPx: w, heightPx: h } = PDF_RASTER_FIGURE
+  const rgb = new Uint8Array(w * h * 3)
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const o = (y * w + x) * 3
+      rgb[o] = Math.round((x * 255) / (w - 1))
+      rgb[o + 1] = Math.round((y * 255) / (h - 1))
+      rgb[o + 2] = 160
+    }
+  }
+  const enc = new TextEncoder()
+  const content = enc.encode(`q\n${String(PDF_RASTER_FIGURE.widthPt)} 0 0 ${String(PDF_RASTER_FIGURE.heightPt)} 100 100 cm\n/Im0 Do\nQ`)
+  const objects: PdfObject[] = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>',
+    { header: `<< /Length ${String(content.length)} >>`, stream: content },
+    {
+      header: `<< /Type /XObject /Subtype /Image /Width ${String(w)} /Height ${String(h)} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length ${String(rgb.length)} >>`,
+      stream: rgb
+    },
+    `<< /Title (${PDF_RASTER_TITLE}) /Producer (synapse-test-factory) >>`
   ]
   return assemblePdf(objects)
 }

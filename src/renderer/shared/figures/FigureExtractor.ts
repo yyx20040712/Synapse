@@ -72,6 +72,10 @@ export interface ExtractDeps {
   sleep(ms: number): Promise<void>
   now(): number
   log?(message: string): void
+  /** worker ImageBitmap 传输面转 RGBA（真 worker 优化路径——00B §六「fake worker
+   *  与真环境差异」实证：Node fake worker=kind1·2 TypedArray 面，真 worker=
+   *  ImageBitmap 无 data；生产=canvas getImageData，注入便于测试） */
+  bitmapToRgba?(source: unknown, width: number, height: number): Promise<Uint8ClampedArray>
   pollIntervalMs?: number
   pollTimeoutMs?: number
   downsampleFactor?: number
@@ -89,9 +93,19 @@ const DEFAULT_POLL_TIMEOUT_MS = 10_000
 const DEFAULT_DOWNSAMPLE_FACTOR = 0.6
 const DEFAULT_MAX_ENCODE_TRIES = 4
 
-function getObj(page: FigurePageLike, id: string): DecodedImageObj | null {
-  if (page.objs.has(id)) return page.objs.get(id) as DecodedImageObj | null
-  if (page.commonObjs?.has(id) === true) return page.commonObjs.get(id) as DecodedImageObj | null
+/** 注册表条目窄化面：TypedArray 数据面（DecodedImageObj）或 bitmap 传输面 */
+export interface RegistryImage {
+  width: number
+  height: number
+  kind?: number
+  data?: Uint8ClampedArray | Uint8Array | null
+  /** pdf.js v4 传输面位图（data=null 占位+bitmap=ImageBitmap——真 worker 优化路径） */
+  bitmap?: unknown
+}
+
+function getObj(page: FigurePageLike, id: string): RegistryImage | null {
+  if (page.objs.has(id)) return page.objs.get(id) as RegistryImage | null
+  if (page.commonObjs?.has(id) === true) return page.commonObjs.get(id) as RegistryImage | null
   return null
 }
 
@@ -146,6 +160,7 @@ export async function extractDocFigures(doc: FigureDocLike, deps: ExtractDeps): 
         if (!failedObjIds.has(draw.objId)) {
           failedObjIds.add(draw.objId)
           summary.failed += 1
+          deps.log?.(`对象未落位（轮询超时）：${draw.objId}（页 ${String(draw.page)}）`)
         }
         continue
       }
@@ -154,19 +169,32 @@ export async function extractDocFigures(doc: FigureDocLike, deps: ExtractDeps): 
         if (!failedObjIds.has(draw.objId)) {
           failedObjIds.add(draw.objId)
           summary.failed += 1
+          deps.log?.(`注册表取数异常：${draw.objId}（页 ${String(draw.page)}）`)
         }
         continue
       }
+      // 数据面分派：data 在场=kind1·2 纯核解码面；缺席=worker ImageBitmap 传输面
+      const isBitmapFace = obj.data === undefined || obj.data === null
       if (!isQualifyingFigure({ ctmW: draw.ctmW, ctmH: draw.ctmH, width: obj.width, height: obj.height })) {
         continue
       }
       let rawDigest: string
+      let preparedRgba: Uint8ClampedArray | undefined
       try {
-        rawDigest = await deps.digest(rawDataView(obj))
-      } catch {
+        if (isBitmapFace) {
+          if (deps.bitmapToRgba === undefined) throw new Error('bitmap 传输面无转换器')
+          preparedRgba = await deps.bitmapToRgba(obj.bitmap ?? obj, obj.width, obj.height)
+          rawDigest = await deps.digest(
+            new Uint8Array(preparedRgba.buffer, preparedRgba.byteOffset, preparedRgba.length)
+          )
+        } else {
+          rawDigest = await deps.digest(rawDataView(obj as DecodedImageObj))
+        }
+      } catch (e) {
         if (!failedObjIds.has(draw.objId)) {
           failedObjIds.add(draw.objId)
           summary.failed += 1
+          deps.log?.(`原始摘要失败：${draw.objId}（${e instanceof Error ? e.message : String(e)}）`)
         }
         continue
       }
@@ -176,7 +204,7 @@ export async function extractDocFigures(doc: FigureDocLike, deps: ExtractDeps): 
         summary.excess += 1
         continue
       }
-      await storeOne(draw, obj, deps, summary, factor, maxTries)
+      await storeOne(draw, obj, deps, summary, factor, maxTries, preparedRgba)
     }
   }
   return summary
@@ -188,16 +216,19 @@ export async function extractDocFigures(doc: FigureDocLike, deps: ExtractDeps): 
  * sendAsset 硬错误（会话死）除外——原样上抛归桥件补账径 */
 async function storeOne(
   draw: { page: number; ctmX: number; ctmY: number; ctmW: number; ctmH: number },
-  obj: DecodedImageObj,
+  obj: RegistryImage,
   deps: ExtractDeps,
   summary: ExtractSummary,
   factor: number,
-  maxTries: number
+  maxTries: number,
+  preparedRgba?: Uint8ClampedArray
 ): Promise<void> {
   let rgba: Uint8ClampedArray
   try {
-    rgba = decodeToRgba(obj).rgba
-  } catch {
+    // bitmap 传输面已在上游转 RGBA；数据面走 kind1·2 纯核解码
+    rgba = preparedRgba ?? decodeToRgba(obj as DecodedImageObj).rgba
+  } catch (e) {
+    deps.log?.(`解码失败（页 ${String(draw.page)}）：${e instanceof Error ? e.message : String(e)}`)
     summary.failed += 1
     return
   }
@@ -313,6 +344,21 @@ export async function encodePngViaCanvas(
   return new Uint8Array(await blob.arrayBuffer())
 }
 
+/** worker ImageBitmap 传输面转 RGBA（canvas drawImage+getImageData——生产面） */
+export async function bitmapToRgbaViaCanvas(
+  source: unknown,
+  width: number,
+  height: number
+): Promise<Uint8ClampedArray> {
+  const c = document.createElement('canvas')
+  c.width = width
+  c.height = height
+  const ctx = c.getContext('2d')
+  if (ctx === null) throw new Error('canvas 2d context 获取失败')
+  ctx.drawImage(source as CanvasImageSource, 0, 0)
+  return ctx.getImageData(0, 0, width, height).data
+}
+
 /** 生产 deps 组装（桥件消费——sendAsset 由调用方经 IPC 注入） */
 export function makeProductionDeps(over: {
   ops: CtmOpCodes
@@ -326,6 +372,7 @@ export function makeProductionDeps(over: {
     sendAsset: over.sendAsset,
     sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
     now: () => Date.now(),
-    log: over.log
+    log: over.log,
+    bitmapToRgba: bitmapToRgbaViaCanvas
   }
 }
