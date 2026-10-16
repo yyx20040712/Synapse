@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T21:54:05.027Z",
+    "generatedAt": "2026-10-16T22:11:28.366Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1923,7 +1923,7 @@
         },
         {
             "path": "tests/e2e/selection-twocol.spec.ts",
-            "sha256": "0889f3c0b04d12905a7214371dcb067003ba72f442bd4541a5f59147bb0a99b4"
+            "sha256": "e04f14edd0d260ae75dd37de2063a2379fa6273f8bc735c2a429a2b1363812b9"
         },
         {
             "path": "tests/unit/renderer/FigureExtractor.test.ts",

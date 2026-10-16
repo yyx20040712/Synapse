@@ -112,16 +112,22 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
 
   // 慢拖左栏：行首起 → 逐帧步进右下（栏内）→ 停顿 300ms（>200ms settle 窗）
   // → 续拖小步 → 释放
+  // [CI 回执修复 2026-10-17] ①拖拽终点纵向钳入视口（CI windows-latest 1024×768
+  // 钳制窗——2.2×行高落点可出下缘，出视口鼠标事件不扩选=停顿前零块首现实录）；
+  // ②快照前等待首块可见（慢 runner 上 visual rAF 帧未 flush 即快照=同红面——
+  // expect 等待替代即时快照，语义不变：拖选有块才前进）
+  const vh = await win.evaluate(() => window.innerHeight)
   const sx = lb!.x + lb!.width * 0.2
   const sy = lb!.y + lb!.height / 2
   const ex = lb!.x + lb!.width * 0.8
-  const ey = lb!.y + lb!.height * 2.2
+  const ey = Math.min(lb!.y + lb!.height * 2.2, vh - 24)
   await win.mouse.move(sx, sy)
   await win.mouse.down()
   for (let i = 1; i <= 6; i += 1) {
     await win.mouse.move(sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
     await win.waitForTimeout(80)
   }
+  await expect(win.locator('[data-testid="selection-rect"]').first(), '停顿前 visual 帧块在场').toBeVisible({ timeout: 3_000 })
   const beforePause = await rectSnapshot(win)
   expect(beforePause.count, '停顿前 visual 帧块在场').toBeGreaterThanOrEqual(1)
   // [回炉轮1 W3+微回炉 W-2⒜] 停顿窗序列采样（300ms 窗 6 采样×50ms）：断言
