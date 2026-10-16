@@ -7,57 +7,54 @@
  * 挂载盒≠选区所在页仍正确；选区态状态机：无选区→页内选区→工具条操作→清；
  * 跨页/跨出页盒→不创建+toast（mouseup 时刻，INV-02 禁静默；防抖路径静默防
  * 拖选中途刷屏）；选区所在页回收/文本层重建（zoom 同机制）→选区清→层与
- * 工具条收（防悬空锚）；页外选区静默收起。确认后经
- * anchor-serialize.selectionToAnchor 生成锚定三元组→落库（保存页=选区所在页
- * 0 基动态推导）→onSaved 刷新层；保存成功 removeAllRanges+层随清。
+ * 工具条收（防悬空锚）；页外选区静默收起。确认后 selectionToAnchor→落库
+ * （保存页=0 基动态推导）→onSaved 刷新层；保存成功随清。
  *
  * **F-A4 划选视觉=自绘并集层（ADR-0019 R1 修订——取代历史原生路线，
  * 修订依据=票面 §0a 用户根治令）**：SelectionPaint（selection-paint.tsx，
  * portal 进选区所在页盒，z2 灰 0.20 在标注 multiply 层之下——R2-F-10 观感
  * 保持）渲染 evaluate 管线归并产物（与保存 rects 同源，所见即所存）；::
- * selection 转 transparent（text-layer.css）。当年删自绘两病根已解（拖选
- * 零反馈→selectionchange 200ms 防抖路径在场；accent 近不可见→观感灰在案）。
- * 层随**选区**真清除而消失（INV-37 修订：Escape 只清 pending/工具条）。
- * 工具条定位 [c 面]：视口差值÷有效 zoom（localScale）归一到挂载盒本地+
- * 滚动容器可视区夹取+选区近顶下翻转（selection-geometry 纯函数——修
- * ui-scale≠1 双重放大+偏远缺陷）。层叠序完整推演见 selection-paint.tsx 头注。
+ * selection 转 transparent（text-layer.css）。层随**选区**真清除而消失
+ * （INV-37 修订：Escape 只清 pending/工具条）。工具条定位 [c 面]：视口差值
+ * ÷有效 zoom 归一到挂载盒本地+滚动容器可视区夹取+选区近顶下翻转
+ * （selection-geometry 纯函数——修 ui-scale≠1 双重放大+偏远缺陷）。层叠序
+ * 完整推演见 selection-paint.tsx 头注。
  *
  * **F-A6-b2 rects 产链切换（R-迁移主链+DOM 量测回退双路结构）**：evaluate
- * 域整体拆 selection-evaluate.ts（组件 ≤250 行红线触发——票面预判条款；
- * 设计书 §5.1 本有此件=F-A6-c 快/慢路径宿主，本票提前拆出）：项几何链为主
- * （pdf-item-geometry——基线分组并块+归一化 pixelBoxOf(textLayer) 同盒
- * INV-37+mergeRects 终裁；bands 同源派生 C5；通道=page-items.store 单源
- * 注册表、zoom 现读/viewport 现构）；回退三因（页项缺失/偏移对账失败/计算
- * 异常）走现行 DOM 量测链原样兜底+console.warn 不静默；G2 降级门 active
- * （拖选期抑制渲染+mouseup 时刻 toast 拒绝——门一 W2 口径对齐跨页拒绝形态，
- * settle 防抖路径静默防拖选中途刷屏，INV-02）。
+ * 域整体拆 selection-evaluate.ts（组件 ≤250 行红线触发——票面预判条款）：
+ * 项几何链为主（pdf-item-geometry——基线分组并块+归一化同盒 INV-37+
+ * mergeRects 终裁；bands 同源派生 C5；通道=page-items.store 单源注册表、
+ * zoom 现读/viewport 现构）；回退三因走现行 DOM 量测链原样兜底+warn 不
+ * 静默；G2 降级门 active（拖选期抑制渲染+mouseup 时刻 toast 拒绝——INV-02）。
  * pending.anchor.rects 与 paint 同源=保存链与视觉同一来源（INV-58 前半）。
  * 详见 selection-evaluate.ts 头注。
  *
  * **F-A6-c D2 调度与快路径（rAF 对齐）**：视觉路=首事件即排 rAF+帧内合帧
  * 去重（60Hz 上限——D2a 5Hz 步进根治）+快路径 evaluateVisual（项几何链直取
- * INV-58 后半——clientRects/gCS 链尽消，gBCR/Range.gBCR 残余两项绝对量
- * 在场：详见 selection-evaluate.ts 头注+裁决表 §12）；settle 路=防抖 200ms 与 mouseup 即时
- * 全量逐字保持（cancel-before-evaluate 顺序保持）；四道守卫/跨页 toast/
- * 工具条语义零变。**AnnotationLayer 存量重锚域仍 DOM 量测域——INV-58 票外
- * 边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**。
+ * INV-58 后半——gBCR/Range.gBCR 残余两项绝对量在场：详见 selection-evaluate.ts
+ * 头注+裁决表 §12）；settle 路=防抖 200ms 与 mouseup 即时全量逐字保持；四道
+ * 守卫/跨页 toast/工具条语义零变。**AnnotationLayer 存量重锚域仍 DOM 量测域
+ * ——INV-58 票外边界，同族化/域间换算守卫=独立票（门二 seam_ruling 在档）**。
  *
  * **F-A12 划选释放点浅探 affinity（事件层重定向）**：mouseup 真划选（位移≥3px
  * ——程序化零触）且释放点在 focus 行上方间隙、更近上一视觉行 → focus 经
  * release-affinity.releaseAffinity 重定向上一行行尾（锚定侧原样）后 evaluate.full
- * 同帧照常（G2 文本位下探——锚定层零 DOM 信号，事件层手势几何裁决；完整判据/
- * 手势态表/时间线=release-affinity.ts 头注）。
+ * 同帧照常（G2 文本位下探——完整判据/时间线=release-affinity.ts 头注）。
+ *
+ * **F-VISFB-52 指针授权拖选（态空间/探针结论=selection-drag-controller.ts 头注）**：
+ * mousedown 记锚栏（authorizeColumnSpan——中缝/零栏不启动）/mousemove 只写 ref/
+ * selectionchange 门（自写回声抑制——canonical signature 精确匹配）/mouseup
+ * enforce×2+endSession；visual 与 full 共读 window selection（共用单源）。
  *
  * ── 接口层 ── / ── 架构层 ──
- * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再
- *   导出（实现在 selection-geometry——F-A4 拆件，导出面零变）。锚定根=
- *   选区所在页盒内 .textLayer 动态获取；annotation-anchor 仍是唯一 DOM
- *   遍历点；工具条/自绘层落点以选区所在页盒为参照系（N-C 防层叠污染）
+ * - props 形状不变=挂载位契约零改；closestPageRoot/pageIndexOf 经本文件再导出
+ *   （实现在 selection-geometry）；锚定根=选区所在页盒内 .textLayer 动态获取；
+ *   annotation-anchor 仍是唯一 DOM 遍历点；工具条/自绘层落点以页盒为参照系
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - mouseup 即时、防抖兜底（程序化选选不触发 mouseup）；翻页/换文献/卸载
- *   收起退订。测试：selection-layer/selection-paint.test（F-A4 三面）+
- *   selection-item-chain.test（F-A6-b2 接线面）
+ *   收起退订。测试：selection-layer/paint/item-chain.test+selection-layer-f52
+ *   （F-VISFB-52 接线面）。
  */
 import { useEffect, useRef, useState } from 'react'
 import type { Annotation, AnnotationInput, AnnotationKind } from '@shared/models/annotation'
@@ -69,6 +66,7 @@ import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
 import { createVisualScheduler, closestPageRoot } from './selection-geometry'
 import { releaseAffinity } from './release-affinity'
+import { createSelectionDragController } from './selection-drag-controller'
 import { useReaderStore } from '../state/reader.store'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
@@ -103,19 +101,23 @@ export function SelectionLayer(props: {
   useEffect(() => {
     if (pageRoot === null) return
 
-    // [F-A6-b2] evaluate 域件（selection-evaluate.ts——四守卫+项几何主链/DOM
-    // 量测回退双路+G2 门+工具条落点；本组件只供状态写口）
+    // [F-A6-b2] evaluate 域件（selection-evaluate.ts——四守卫+产链双路+G2 门）
     const evaluate = createEvaluate({ pageRoot, paperId, setPaint, setPending })
 
-    // [B1 回炉→F-A6-c rAF 对齐] selectionchange 双路调度（selection-geometry 域
-    // 工厂）：视觉路=首事件即排 rAF+帧内合帧去重（60Hz 上限——D2a 5Hz 步进根治，
-    // onVisual=快路径 evaluateVisual 项几何链直取）；工具条评估=防抖 200ms
-    // （既有弹出语义零变）；cancel 清 rAF+防抖双句柄（INV-14）
+    // [B1 回炉→F-A6-c rAF 对齐] selectionchange 双路调度：视觉路=首事件即排
+    // rAF+帧内合帧去重（60Hz 上限——D2a 5Hz 步进根治）；工具条评估=防抖
+    // 200ms（弹出语义零变）；cancel 清双句柄（INV-14）
     const scheduler = createVisualScheduler({
       onVisual: () => evaluate.visual(),
       onSettled: () => evaluate.full(false),
       windowMs: SELECTION_DEBOUNCE_MS
     })
+    // [F-VISFB-52] 指针授权拖选控制器（selection-drag-controller.ts——门=true
+    // 自写回声抑制不转发，防自身写回环）
+    const dragCtl = createSelectionDragController({ pageRoot })
+    const onSelectionChange = (): void => {
+      if (!dragCtl.onSelectionChange()) scheduler.handler()
+    }
     // F-12：记录最近一次 mousedown 落点（NaN=无记录——程序化事件/未捕获）
     let downX = Number.NaN
     let downY = Number.NaN
@@ -123,11 +125,14 @@ export function SelectionLayer(props: {
       ;[downX, downY] = [e.clientX, e.clientY]
       // [F-RDR-01 B] 新拖选会话硬释放 S5 短路窗（释放条件②——TTL 到期为①兜底）
       clearAffinityShortcut()
+      dragCtl.onMouseDown(e)
     }
 
     const onMouseUp = (e: MouseEvent): void => {
       // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
       if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
+      // [F-VISFB-52] 终局钳制核查（F-12 早退路径前置——shift+click 面覆盖）
+      dragCtl.enforce()
       scheduler.cancel()
       // F-12：位移过小=单击/双击误触不出条（自绘层留待防抖路径随选区坍缩清除）
       let dragged = false
@@ -136,15 +141,14 @@ export function SelectionLayer(props: {
         downX = downY = Number.NaN
         if (moved < DRAG_SELECT_THRESHOLD_PX) {
           setPending(null)
+          dragCtl.endSession()
           return
         }
         dragged = true
       }
-      // [F-A12] 浅探 affinity：真划选（dragged——程序化 mouseup 零触）且释放点
-      // 在 focus 行上方间隙、更近上一视觉行 → focus 重定向上一行行尾（锚定侧
-      // 原样）；随后 evaluate.full 同帧消费已重定向选区（时间线逐帧推演=
-      // release-affinity.ts 头注——mouseup→cancel→F-12 门→判定→setBaseAndExtent
-      // →evaluate.full(true)，排队的 selectionchange 由 visual 快路径幂等吸收）
+      // [F-A12] 浅探 affinity：真划选且释放点在 focus 行上方间隙、更近上一视觉行
+      // → focus 重定向上一行行尾（锚定侧原样）；full 同帧消费已重定向选区（时间
+      // 线=release-affinity.ts 头注——排队 selectionchange 由 visual 幂等吸收）
       if (dragged) {
         const sel = window.getSelection()
         if (sel !== null && sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -161,32 +165,34 @@ export function SelectionLayer(props: {
           }
         }
       }
-      // [F-RDR-01 B] S4 正确帧标记：full(true) 同帧渲染正确选区视觉后，其后
-      // 异步排队的 selectionchange→visual 在 TTL 窗内直接丢弃（S5 弹错源消除；
-      // 恒等写回时 full 亦画正确帧——mark 无条件调用，免缓存方案无 prevFocus）
+      // [F-VISFB-52] affinity 写后再核一把（幂等——防重定向目标落对侧栏）
+      dragCtl.enforce()
+      // [F-RDR-01 B] S4 正确帧标记：full(true) 同帧渲染正确选区视觉后，其后异步
+      // 排队的 selectionchange→visual 在 TTL 窗内直接丢弃（S5 弹错源消除）
       markAffinityShortcutFlushed()
       evaluate.full(true)
+      dragCtl.endSession()
     }
     const onKeyDown = (e: KeyboardEvent): void => {
       // INV-37（F-A4 修订）：Escape 只清组件态；自绘层随**选区**真清除而消失
       if (e.key === 'Escape') setPending(null)
     }
 
-    document.addEventListener('selectionchange', scheduler.handler)
+    document.addEventListener('selectionchange', onSelectionChange)
     document.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mouseup', onMouseUp)
     document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('selectionchange', scheduler.handler)
+      document.removeEventListener('selectionchange', onSelectionChange)
       document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('mouseup', onMouseUp)
       document.removeEventListener('keydown', onKeyDown)
       scheduler.cancel()
+      dragCtl.dispose()
       setPending(null)
       setPaint(null)
     }
-    // 依赖=挂载盒+文献（F-02：page 不再参与——锚定根动态；挂载盒引用变化
-    // 已覆盖锚定页切换的重挂清理语义）
+    // 依赖=挂载盒+文献（F-02：page 不再参与——锚定根动态；挂载盒引用变化已覆盖锚定页切换重挂清理）
   }, [pageRoot, paperId])
 
   /** 按当前色+kind 落库（page=选区所在页 0 基——F-02）；成功后清选区刷新 store */
