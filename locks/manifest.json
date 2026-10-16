@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T21:32:01.275Z",
+    "generatedAt": "2026-10-16T21:35:19.472Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -1915,7 +1915,7 @@
         },
         {
             "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
-            "sha256": "0ce70550a984e83a05449124ed1b2e71a764c4bf96703876669255d7e70b5861"
+            "sha256": "6796f36ba844f5274f96b2a82e40f082d7901cf515aa7f5ac86ce58f1cd45b38"
         },
         {
             "path": "tests/unit/renderer/selection-flicker.test.tsx",

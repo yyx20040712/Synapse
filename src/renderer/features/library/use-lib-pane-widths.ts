@@ -49,8 +49,9 @@
  *   LibraryPage 消费（分隔条渲染归页面件）。
  *
  * ── 生命周期层 ── / ── 文化层 ──
- * - 预留：窗口 resize 期重钳（现=挂载单趟+交互期实测；resize 中 starving 沿
- *   承既有行为，自裁申报）；不做：折叠语义（SplitPane collapsed 不引入）。
+ * - [裁决 P1-1 后] 尺寸变化再钳=ResizeObserver 页容器触发（挂载趟/启动档位
+ *   跨格/窗口 resize 三态同源单函数 reclampNow——原「resize 期不重钳」申报
+ *   缺口随之闭合）；不做：折叠语义（SplitPane collapsed 不引入）。
  * - [回炉 W3 口径注记] 三档可满足区算术：默认共存（462+224+316+14=1016 CSS
  *   像素）可满足 ⇔ 页容器 CSS 宽≥1016——含 72px rail（.app-content-row zoom
  *   内）的屏幕阈=1088×uiScale（1/1.1/1.25 档→1088/1197/1360；默认窗 1280 在
@@ -60,6 +61,7 @@
  * - 禁止 any；setState updater 纯净（持久化收口 useEffect 单点）。
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { SEPARATOR_KEY_STEP_PX } from '@shared/constants'
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
@@ -79,8 +81,9 @@ export const LIB_DRAWER_MAX_WIDTH = 460
 export const LIB_MIDDLE_FLOOR_PX = 462
 /** 双分隔条合计流宽（.lib-sep 7px×2——挂载再钳的常量面） */
 const SEP_TOTAL_PX = 14
-/** 键盘步进（use-sidebar-pane B5② ±16 用户裁决同源） */
-const KEY_STEP_PX = 16
+/** 键盘步进（use-sidebar-pane B5② ±16 用户裁决同源——[F-VISFB-41 B3 起]
+ * 收敛 @shared/constants SEPARATOR_KEY_STEP_PX 单源，dup-constants C-4d） */
+const KEY_STEP_PX = SEPARATOR_KEY_STEP_PX
 
 const FNAV_KEY = 'synapse:libpane:fnav'
 const DRAWER_KEY = 'synapse:libpane:drawer'
@@ -174,6 +177,10 @@ export function useLibPaneWidths(): LibPaneWidths {
   const [dragging, setDragging] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const sessionRef = useRef<DragSession | null>(null)
+  /** 现值镜像（渲染帧同步写——再钳在渲染流外触发〔RO 回调〕经 ref 取当帧值；
+   *  挂载趟值=state 初值=loadWidth 持久值，与原挂载钳读源等价） */
+  const widthsRef = useRef({ fnav: fnavWidth, drawer: drawerWidth })
+  widthsRef.current = { fnav: fnavWidth, drawer: drawerWidth }
 
   // 持久化单点（width 每次提交即写；updater 纯净，副作用不进 updater）
   useEffect(() => {
@@ -190,21 +197,37 @@ export function useLibPaneWidths(): LibPaneWidths {
     return mid.getBoundingClientRect().width / readUiScale()
   }
 
-  // 挂载后对持久值再钳（跨窗口尺寸会话防复活超限）：可容宽=页容器实测宽
-  // （gBCR÷uiScale 折回 CSS 域）−中列保底−对侧宽−双分隔条；顺序=fnav 先让
-  // /抽屉后保；极窄窗不可满足保底时止于各自 min（尽力语义）。单趟——读源
-  // =localStorage 持久值（非首渲染 state），依赖故空
-  useLayoutEffect(() => {
+  /** 再钳（[裁决 P1-1] 挂载趟与尺寸变化触发同源单函数）：量测页容器 CSS 宽
+   *  （gBCR÷uiScale）→顺序钳两栏现值（fnav 先让/抽屉后保；极窄止于各 min
+   *  尽力语义）；实测 0（无布局环境）跳过 */
+  const reclampNow = (): void => {
     const pg = pageRef.current
     if (pg === null) return
     const pageCss = pg.getBoundingClientRect().width / readUiScale()
     if (pageCss <= 0) return
-    const fnavLoaded = loadWidth('fnav')
-    const drawerLoaded = loadWidth('drawer')
-    const fnavAllowed = allowableWidth(fnavLoaded, pageCss, drawerLoaded, BOUNDS.fnav.min)
-    const drawerAllowed = allowableWidth(drawerLoaded, pageCss, fnavAllowed, BOUNDS.drawer.min)
-    if (fnavAllowed !== fnavLoaded) setFnavWidth(fnavAllowed)
-    if (drawerAllowed !== drawerLoaded) setDrawerWidth(drawerAllowed)
+    const cur = widthsRef.current
+    const fnavNext = allowableWidth(cur.fnav, pageCss, cur.drawer, BOUNDS.fnav.min)
+    const drawerNext = allowableWidth(cur.drawer, pageCss, fnavNext, BOUNDS.drawer.min)
+    if (fnavNext !== cur.fnav) setFnavWidth(fnavNext)
+    if (drawerNext !== cur.drawer) setDrawerWidth(drawerNext)
+  }
+
+  // 挂载趟再钳（跨窗口尺寸会话防复活超限——读源=state 初值=持久值）
+  useLayoutEffect(() => {
+    reclampNow()
+  }, [])
+
+  // [裁决 P1-1] 页容器尺寸变化再钳：ResizeObserver 触发（App 首渲染 small
+  // 兜底→设置异步返回 large 只改 --ui-scale、LibraryPage 不重挂——deps[] 挂载
+  // 趟不随档位重跑的跨格缺位由 RO 封堵；窗口 resize 同覆盖）。RO 仅作触发器，
+  // 量测仍走 gBCR÷uiScale 单源；RO 缺位环境（jsdom）静默跳过（挂载趟仍在）；
+  // 卸载 disconnect 同源清理（INV-14 族）
+  useEffect(() => {
+    const pg = pageRef.current
+    if (pg === null || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => reclampNow())
+    ro.observe(pg)
+    return () => ro.disconnect()
   }, [])
 
   // 拖拽会话：down 开启（body 副作用+document 级监听），up/cancel/卸载同源清理

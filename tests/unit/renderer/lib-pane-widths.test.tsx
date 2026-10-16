@@ -430,6 +430,37 @@ describe('F-VISFB-41 useLibPaneWidths——库页双侧栏拖宽', () => {
     expect(window.localStorage.getItem(D_KEY)).toBe('240')
     restore()
   })
+
+  it('[裁决 P1-1] 启动跨格再钳：small 档挂载零钳→设置异步回 large（--ui-scale=1.25+含 rail 页容器视觉宽 1190）不重挂→RO 触发再钳 fnav 160/抽屉 316（中列=952−160−316−14=462≥保底）', () => {
+    const instances: Array<{ cb: () => void }> = []
+    class ROStub {
+      cb: () => void
+      constructor(cb: () => void) {
+        this.cb = cb
+        instances.push(this)
+      }
+      observe(): void {}
+      disconnect(): void {}
+    }
+    ;(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = ROStub
+    try {
+      const restore = stubPageWidth(1208)
+      mount()
+      expect(text('w-fnav')).toBe('224')
+      restore()
+      document.documentElement.style.setProperty('--ui-scale', '1.25')
+      const restore2 = stubPageWidth(1190)
+      act(() => {
+        instances[0]?.cb()
+      })
+      expect(text('w-fnav')).toBe('160')
+      expect(text('w-drawer')).toBe('316')
+      expect(window.localStorage.getItem(F_KEY)).toBe('160')
+      restore2()
+    } finally {
+      delete (globalThis as unknown as { ResizeObserver?: unknown }).ResizeObserver
+    }
+  })
 })
 
 describe('F-VISFB-41 LibraryPage 接线面——双侧分隔条挂载与 CSS 载体', () => {
