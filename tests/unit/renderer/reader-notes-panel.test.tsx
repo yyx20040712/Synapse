@@ -14,6 +14,7 @@ import type { Annotation, AnnotationKind } from '../../../src/shared/models/anno
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
+import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
@@ -126,7 +127,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     expect(btn.textContent).toBe('保存')
     expect(btn.disabled).toBe(false)
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600)
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
     })
     expect(notesSave).toHaveBeenCalled()
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false)
@@ -181,7 +182,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       typeInto(body, 'A 的编辑')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600)
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
     })
     // saving 在飞时切到 B（B 载入空笔记）
     notesGet.mockResolvedValue({ ok: true, data: null })

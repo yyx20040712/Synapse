@@ -15,13 +15,16 @@
  *   保留到补存真正落库（save 成功才清），打首载标记并补存挂起编辑；无未保存
  *   编辑 → 整版落地并打首载标记（失败不打——面板禁用无输入，重试成功走合并+补存）
  * - edit(paperId, patch)（同步写草稿；并记模块级编辑时间戳、编辑序号、已触碰
- *   字段与未保存标记）；saveSoon(paperId)（防抖 1.5s，重排重置计时，只保存
+ *   字段与未保存标记）；saveSoon(paperId)（防抖 AUTOSAVE_DEBOUNCE_MS=600s
+ *   〔F-VISFB-11：单源 @shared/constants，本地副本已退役〕，重排重置计时，只保存
  *   最新内容；首载落地前挂起——从未成功载入且草稿含用户编辑时不排程，重开
  *   面板不受影响：既有草稿是完整基线非半成品，正常防抖；save 成功仅在派发
  *   后无新编辑（编辑序号守卫）时清未保存标记与触碰记录）
  * - [F-UIRES-03 B3] saveNow(paperId)：点击立即落盘——清防抖 T+同步派发（与
  *   防抖到期共用 dispatchSave；首载门控同 saveSoon——服务器基线未知不抢存，
- *   由 load 合并+补存承接）；flush(paperId)：卸载面收口（切文献/面板卸载时
+ *   由 load 合并+补存承接）；[F-VISFB-11] 返回 Promise<void>（可等待面）；
+ *   flushAll()：全量收口面——遍历 pendingEdit 快照逐篇串行 flush（退出握手
+ *   14 票的地基，不用 Promise.all）；flush(paperId)：卸载面收口（切文献/面板卸载时
  *   调）——pending∧saving 在途：等在途完成后以 pending 合并态**立即**落盘
  *   （消费时点一的新防抖由此提前兑现）；pending∧error：立即重试落盘一次；
  *   普遍 dirty（防抖在排）：no-op——既有 timer 通道承接（不抢跑）。应用退出
@@ -63,6 +66,7 @@
 import { create } from 'zustand'
 import { api, unwrap } from '../../api/client'
 import type { Note } from '@shared/models/note'
+import { AUTOSAVE_DEBOUNCE_MS } from '@shared/constants'
 
 export interface NoteDraft {
   contentMd: string
@@ -83,19 +87,21 @@ export interface NotesStore {
   load(paperId: string): Promise<void>
   edit(paperId: string, patch: { contentMd?: string }): void
   saveSoon(paperId: string): void
-  /** [F-UIRES-03 B3] 点击立即落盘：清防抖 T+同步派发（首载门控同 saveSoon） */
-  saveNow(paperId: string): void
+  /** [F-UIRES-03 B3] 点击立即落盘：清防抖 T+同步派发（首载门控同 saveSoon）。
+   *  [F-VISFB-11] 返回 Promise<void>——直通 dispatchSave 在途（退出握手/收口
+   *  面可等待落库完成）；门控命中分支=已决议空 promise，语义零改 */
+  saveNow(paperId: string): Promise<void>
   /** [F-UIRES-03 B3] 卸载面收口（切文献/面板卸载）：在途完成后 pending 立即
    *  落盘 / error 立即重试一次 / 普遍 dirty no-op（timer 通道承接） */
   flush(paperId: string): Promise<void>
+  /** [F-VISFB-11] 全量收口面（退出握手等地基）：遍历 pendingEdit 快照逐篇
+   *  串行 flush（与 discardAllPendingEdits 同型快照遍历——不用 Promise.all） */
+  flushAll(): Promise<void>
   /** 单篇弃改收口（关脏 tab 确认丢弃后调）——幂等，条目/元数据不存在亦无害 */
   discardPendingEdit(paperId: string): void
   /** 全量弃改收口（切课题确认后调）——遍历 pendingEdit 快照逐篇同收口 */
   discardAllPendingEdits(): void
 }
-
-/** 自动保存防抖窗口（毫秒） */
-const SAVE_DEBOUNCE_MS = 1500
 
 const EMPTY_DRAFT: NoteDraft = { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false }
 
@@ -312,15 +318,17 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       timers[paperId] = setTimeout(() => {
         delete timers[paperId]
         void dispatchSave(paperId)
-      }, SAVE_DEBOUNCE_MS)
+      }, AUTOSAVE_DEBOUNCE_MS)
     },
 
     saveNow(paperId) {
       // [B3 格3/格9] 点击立即落盘：清防抖 T+同步派发（dirty+点击/error+点击共用；
-      // 首载门控同 saveSoon——服务器基线未知不抢存，由 load 合并+补存承接）
-      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return
+      // 首载门控同 saveSoon——服务器基线未知不抢存，由 load 合并+补存承接）。
+      // [F-VISFB-11] 可等待面：直通 dispatchSave 返回的在途 promise；门控命中
+      // 返回已决议空 promise（门控语义零改——不派发即无在途可等）
+      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve()
       clearTimer(paperId)
-      void dispatchSave(paperId)
+      return dispatchSave(paperId)
     },
 
     async flush(paperId) {
@@ -340,6 +348,16 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       if (hadFlight === undefined && !draft.saveFailed) return
       clearTimer(paperId)
       await dispatchSave(paperId)
+    },
+
+    async flushAll() {
+      // [F-VISFB-11] 全量收口面：遍历 pendingEdit 快照逐篇串行 flush（快照防
+      // 遍历中变异——flush 成功路径会 delete pendingEdit 键，与
+      // discardAllPendingEdits 同型；串行=前篇落库完成后才处理后篇，不用
+      // Promise.all 并发派发——14 票退出握手的逐篇可等待地基）
+      for (const paperId of [...pendingEdit]) {
+        await get().flush(paperId)
+      }
     },
 
     discardPendingEdit(paperId) {

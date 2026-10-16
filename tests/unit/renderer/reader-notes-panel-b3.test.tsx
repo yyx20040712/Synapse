@@ -14,6 +14,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
+import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
@@ -119,7 +120,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
 
     // saving：禁用 spinner+「保存中」（⟳=共享 Button loading 态图标——textContent 含图标符）
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600)
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
     })
     expect(notesSave).toHaveBeenCalledTimes(1)
     expect(btn.disabled).toBe(true)
@@ -182,7 +183,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '草稿')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600) // 防抖到期：失败→error
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 防抖到期：失败→error
     })
     expect(saveButton().textContent).toBe('重试')
 
@@ -214,7 +215,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '草稿')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600) // error（无 timer、无在途）
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // error（无 timer、无在途）
     })
     expect(useNotesStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
     expect(notesSave).toHaveBeenCalledTimes(1)
@@ -253,7 +254,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '第一次')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600) // p-1 在途
+      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // p-1 在途
     })
     await act(async () => {
       typeInto(body, '第二次') // saving∧pending（缓冲）

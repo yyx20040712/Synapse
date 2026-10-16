@@ -58,6 +58,13 @@ export const TAG_COLOR_NONE_DISPLAY = '#9aa4b2'
 export const MAX_PAGE_SIZE = 200
 
 /**
+ * [F-VISFB-11] 笔记自动保存防抖窗口（毫秒）——notes.store 单源消费
+ * （视检反馈战役 §0-3 裁决：600s；dup-constants 负锚——renderer 侧不得
+ * 留本地同值副本，改值须 [locked-change]）
+ */
+export const AUTOSAVE_DEBOUNCE_MS = 600_000
+
+/**
  * [F-WS-02] 默认课题身份常量（提炼自 services/workspaces/workspace.fs.ts——
  * R4 主控裁决 2026-09-30 批准：renderer 引导态判定（INV-87 三条件之
  * id=default ∧ name=默认名）消费，TAG_COLOR_PRESETS 同居先例。fs 侧
