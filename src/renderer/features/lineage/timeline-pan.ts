@@ -3,7 +3,7 @@
  * [F-LGRAPH-01①U5] timeline-pan —— 平移小手（mockup §2.1：browse/focus 拖
  * 画布空白=滚动跟随 scrollLeft/scrollTop+grab/grabbing 光标；edit 不平移）。
  *
- * - 命中面=画布空白（排除卡身/月标/工具条/图例——这些是点选/编辑域）；
+ * - 命中面=画布空白（排除卡身/月标/工具条——这些是点选/编辑域）；
  *   指针位移反向滚动（内容随手指）；
  * - [回炉 R12] 激活阈值 5px（DRAG_THRESHOLD 同值先例——微移不滚不进
  *   grabbing 防误触）；[②U7/挂账⑦] 激活帧 re-base（阈值累积不瞬跳）；
@@ -13,9 +13,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 
-/** 平移排除面（卡/工具条/图例——点选与编辑域不触发平移）。[F-UIRES-03 C3]
- *  月标 .c-ym 死条目随改月链退役清除（该 DOM 类已删——RR1-C 终态 grep 抓出） */
-const PAN_EXCLUDE = '.tl-card, .lg-toolbar, .tl-legend, .month-tag'
+/** 平移排除面（卡/工具条/月标——点选与编辑域不触发平移）。[F-UIRES-03 C3]
+ *  月标 .c-ym 死条目随改月链退役清除（该 DOM 类已删——RR1-C 终态 grep 抓出）；
+ *  [F-VISFB-21 N1] 图例 .tl-legend 死条目随图例删除清除（DOM 类已删） */
+const PAN_EXCLUDE = '.tl-card, .lg-toolbar, .month-tag'
 /** 激活阈值 px（[R12]——DRAG_THRESHOLD 同值先例） */
 const PAN_THRESHOLD = 5
 

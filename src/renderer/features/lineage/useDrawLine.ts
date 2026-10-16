@@ -30,8 +30,10 @@
  * - dragging+pointerup 落另一卡近锚 → 建边（drawEdge：manual+dashed=
  *   (tool==='draw-dashed')+color=currentLineColor[kind] **提交时读**（C1
  *   latch delta-W4——在途 DrawPreview 跟随当前色，已落边不可变）+label=当前
- *   色行名快照 P-14）→ idle（tool 回 select——拖拽径沿承 §2.4）+入撤销栈
- *   （收尾带 armed 闸[回炉 R1③]——工具已非画线不建边）
+ *   色行名快照 P-14）→ idle（**tool 保持 draw-X 连画**——[F-VISFB-21 C2]
+ *   §2.4「建边后回 select」旧文偏差，任务书 21 票面裁 2026-10-16：与点两卡
+ *   径一致；自环/查重拒绝路径同样不拆工具；退出径=小手钮/Esc/切模式沿承）
+ *   +入撤销栈（收尾带 armed 闸[回炉 R1③]——工具已非画线不建边）
  * - [C1] armed+点卡 A（卡身 click——非近锚拖拽域）→ anchor=picked(A)（**禁开
  *   详情——裁决 11a**，路由=LineageTimeline.handleCardClick）；picked(A)+点卡
  *   B≠A→建边（dashed/color 同上 per-kind 提交读）→anchor=none+**保持 draw-X
@@ -297,7 +299,8 @@ export function useDrawLine(args: {
         if (nearCard) showToast('落点未在连接点上，未创建连线', 'error')
         // [RR1-2b] 收尾补算（取消路径）：up 后指针未动 hint 立即恢复——同卡锚
         // 取消时恢复源卡锚位（nearestAnchor 无 exclude——指示面=可起拖全域）。
-        // 建边路径不补：resetTool→armed 拆除 hint 必清（写入即被覆盖的死代码）
+        // 建边路径不补：[F-VISFB-21 C2] 建边后 armed 保持→hint 监听仍驻留，
+        // 下一 pointermove 自行恢复（此处写入=冗余）
         setHint(nearestAnchor(cards, p))
         return
       }
@@ -318,8 +321,10 @@ export function useDrawLine(args: {
         color,
         label
       })
-      // 建边后回 select（§2.4——idle(select)；拖拽径沿承，点两卡径连画见 handleCardClick）
-      useLineageViewStore.getState().resetTool()
+      // [F-VISFB-21 C2] 建边后 tool 保持 draw-X 连画（§2.4「建边后回 select」
+      // 旧文偏差——任务书 21 票面裁 2026-10-16：与点两卡径一致〔handleCardClick〕；
+      // 自环已由 excludeNodeId 排除/查重拒绝路径同样不拆工具——退出径=小手钮/
+      // Esc/切模式沿承）
     },
     [args.contentRef]
   )

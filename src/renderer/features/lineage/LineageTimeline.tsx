@@ -14,11 +14,12 @@ import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
 import { groupTimeline } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
-import { TimelineLegend, TimelineYears } from './TimelineYears'
+import { TimelineYears } from './TimelineYears'
 import { LineageToolbar } from './LineageToolbar'
 import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
+import { focusBrightSet } from './focus-bright'
 import { useLineageViewStore } from './lineage-view.store'
 import { useLineageStore } from './lineage.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
@@ -80,6 +81,9 @@ export function LineageTimeline(props: {
   // P-8 聚焦集（selector 取稳定数组引用——派生 Set 经 memo 防新引用死循环）
   const focusSet = useLineageViewStore((s) => s.focusSet)
   const focusIds = useMemo(() => new Set(focusSet), [focusSet])
+  // [F-VISFB-21 C4] bright=focus∪双向一度邻接（判定集单源=focus-bright 纯函数
+  // ——卡 dim/边 dim 两消费面共用；accent 边框仍=focusIds 本集 P-8 沿承）
+  const brightIds = useMemo(() => focusBrightSet(edges, focusSet), [edges, focusSet])
   // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
@@ -124,7 +128,7 @@ export function LineageTimeline(props: {
   // transform+sizer（scale 不改布局盒——sizer 按 z 放大自然尺寸供滚动域）+
   // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件
   const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: groups })
-  // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空（非聚焦卡+全部线 0.3）
+  // [②U7/P-18] 聚焦 dim 激活=focus 模式集非空；[F-VISFB-21 C4] dim 判定集=非 bright 卡/两端均非 bright 的边（0.3 沿承）
   const dimActive = viewMode === 'focus' && focusSet.length > 0
 
   // [U5] 模式类：仅 browse/focus 挂（CSS 光标域消费）；edit 态由 .editing 承载
@@ -203,6 +207,7 @@ export function LineageTimeline(props: {
             routeEpoch={routeEpoch}
             dimmed={drag.phase === 'dragging'}
             focusDim={dimActive}
+            brightIds={brightIds}
             editEnabled={viewMode === 'edit' && tool === 'select'}
           />
           {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
@@ -221,6 +226,7 @@ export function LineageTimeline(props: {
             selectedNodeId={props.selectedNodeId ?? null}
             ctxNodeId={props.contextNodeId ?? null}
             focusIds={focusIds}
+            brightIds={brightIds}
             frameW={frameW}
             linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : drawAnchor}
             dragSlot={drag.slot}
@@ -232,8 +238,6 @@ export function LineageTimeline(props: {
           />
         </div>
       )}
-      {/* [T3-P7A 回炉 1 W7] 图例挂滚动容器 .timeline（视口级恒可见）；非空图才渲染 */}
-      {nodes.length > 0 && <TimelineLegend />}
       {/* [②U7] spacer：绝对定位撑滚动域覆盖缩放视觉区（.timeline relative
           ——包裹盒方案会与块级 content 互撑成环，e2e 探针实证 #185） */}
       <div className="tl-zoom-spacer" data-testid="tl-zoom-spacer" style={zoom.spacerStyle} />

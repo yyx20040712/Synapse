@@ -399,7 +399,7 @@
         },
         {
             "path": "tests/e2e/lineage.spec.ts",
-            "sha256": "522b71033fe2a7add97847cf7644a7505a86cb17e1732a83e4ce2ac2dc410915"
+            "sha256": "66675952541d599fd12d0c2dbd5d858c544a5e3754bc31e99168bdd256901a82"
         },
         {
             "path": "tests/e2e/meta-year-month.spec.ts",
@@ -999,7 +999,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-drawline.test.tsx",
-            "sha256": "08ee4247f60da8424af05e06817a7c67692ba77e7642d58e90bab929121a453d"
+            "sha256": "102f8e898112ca65f6462a725dcb58ac42133637137a41daca5c4d87481175df"
         },
         {
             "path": "tests/unit/renderer/lineage-edge-edit-menu.test.tsx",
@@ -1007,7 +1007,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
-            "sha256": "774fd5dab9fa4505d5db83b75a92db9c6e91ea67e74b7ca737a2041e151df46e"
+            "sha256": "e7366493a39452999c69619c976d0ae0920ec92c908fb071025ca5ef9654fba5"
         },
         {
             "path": "tests/unit/renderer/lineage-edge-edit-ui.test.tsx",
@@ -1019,7 +1019,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-            "sha256": "833313604a8c609428c2cf43461e2bfdc4bef74457e32e8a154cc2b94434b37b"
+            "sha256": "2dc0866dc18ea963cca13e06e1c96d6775516fb6566999273251729373e4b9c0"
         },
         {
             "path": "tests/unit/renderer/lineage-manual-edit.test.tsx",
@@ -1083,7 +1083,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-rr17-drawline-multipointer.test.tsx",
-            "sha256": "7824dc8a5c73582d741155a083ead8a2de282b29cdb115b2ebd5f47425cf9e71"
+            "sha256": "f9f107a5e62f750016ede3144957e6b428d4ec74221f8a11309e4acc0828ab91"
         },
         {
             "path": "tests/unit/renderer/lineage-session-store.test.ts",
@@ -1143,7 +1143,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-zoom-dim.test.tsx",
-            "sha256": "3756c169c1a54b515d5c7ecd1f0eeb6232339739773104cf23e7679e40ab896e"
+            "sha256": "e8549941865655b30f56c5321bcc00a2ef9d4289b51c251727d1e325bdc5d8a1"
         },
         {
             "path": "tests/unit/renderer/meta-edit-dialog-enter.test.tsx",
@@ -1840,6 +1840,10 @@
         {
             "path": "tests/unit/renderer/pdf-factory-twocol.test.ts",
             "sha256": "1616727d7de173f8c020c2daceb4222c76f2e758f3f85345fb3a80ab41a9350e"
+        },
+        {
+            "path": "tests/unit/renderer/lineage-focus-bright.test.ts",
+            "sha256": "918a455eea421a080eb3dd51714aa08f39fdef8bdb4358b0986156ef4a78e5ab"
         }
     ]
 }

@@ -140,7 +140,7 @@ describe('RR17 多指针重入 phase 闸（dragging 中第二指忽略——首�
     expect(s.edges[0]!.fromNode).toBe('A') // 会话源锚未被第二指覆盖
     expect(s.edges[0]!.toNode).toBe('B')
     expect(s.undoStack).toHaveLength(1) // 一单元=一撤销步
-    expect(useLineageViewStore.getState().tool).toBe('select') // 建边后回 select
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // [F-VISFB-21 C2] 建边后保持连画（§2.4 旧文偏差——21 票面裁）
   })
 
   it('第二指 pointercancel 不取消本会话：首指继续拖+up 正常建边', () => {

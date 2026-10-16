@@ -151,12 +151,14 @@ describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermo
   }
 
   it('focus dim：线挂 .dim；hover 命中线挂 .hovered（回升类）+移开即撤', () => {
-    layout([{ x: 200, y: 66 }])
+    // [F-VISFB-21 C4] 夹具换源：focus={C}（非边端——e1=A→B 两端均非 bright
+    // 才 dim；原 focus={A} 邻接边常亮=判定集换源后的新语义，非本用例锁面）
+    layout([{ x: 200, y: 66 }], true)
     act(() => {
-      useLineageViewStore.setState({ mode: 'focus', focusSet: ['A'] })
+      useLineageViewStore.setState({ mode: 'focus', focusSet: ['C'] })
     })
     const vis = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
-    expect(vis.classList.contains('dim')).toBe(true) // 全部线 dim（P-18）
+    expect(vis.classList.contains('dim')).toBe(true) // 两端均非 bright=dim（C4）
     expect(host!.querySelector('.tl-edges')?.classList.contains('dimmed-focus')).toBe(true) // 态标记沿承
     const mid = longestSegMid(hitOf('e1').getAttribute('d') ?? '')
     docMove(mid.x, mid.y) // 指针落线身（数学命中——pointer-events 零变更不抢卡点击）

@@ -14,7 +14,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { LineageNode } from '../../../src/shared/models/lineage'
+import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
@@ -37,6 +37,11 @@ function node(id: string, patch: Partial<LineageNode> = {}): LineageNode {
     updatedAt: 't',
     ...patch
   }
+}
+
+/** [F-VISFB-21 C4] 邻接判定用边（结构面字段即可——视觉内联与本件无关） */
+function edge(id: string, from: string, to: string): LineageEdge {
+  return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
 }
 
 let root: Root | null = null
@@ -80,6 +85,40 @@ describe('U7 聚焦 dim（P-12/P-18）', () => {
     expect(cardOf('A').classList.contains('dim')).toBe(false)
     expect(cardOf('A').classList.contains('focused')).toBe(true) // ①批 P-8 沿承
     expect(host?.querySelector('.tl-edges')?.classList.contains('dimmed-focus')).toBe(true)
+  })
+
+  it('[F-VISFB-21 C4] 邻接亮：focus={A}+边 A→B → B（一度邻接）不 dim；非邻接 C dim（bright=focus∪双向一度邻接）', () => {
+    useLineageViewStore.setState({ mode: 'focus', focusSet: ['A'] })
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9 }),
+          node('B', { year: 2022, month: 9 }),
+          node('C', { year: 2022, month: 9 })
+        ]}
+        edges={[edge('e1', 'A', 'B')]}
+      />
+    )
+    expect(cardOf('A').classList.contains('dim')).toBe(false) // 聚焦卡
+    expect(cardOf('A').classList.contains('focused')).toBe(true) // accent 边框仍=focusSet 本集（P-8 沿承）
+    expect(cardOf('B').classList.contains('dim')).toBe(false) // 一度邻接=常亮（C4 判定集换源）
+    expect(cardOf('C').classList.contains('dim')).toBe(true) // 非邻接=dim 沿承
+  })
+
+  it('[F-VISFB-21 C4] 双向邻接（卡面）：边 B→A（from=B），focus={A}（to 端）→ B 亮', () => {
+    useLineageViewStore.setState({ mode: 'focus', focusSet: ['A'] })
+    mount(
+      <LineageTimeline
+        nodes={[
+          node('A', { year: 2022, month: 9 }),
+          node('B', { year: 2022, month: 9 }),
+          node('C', { year: 2022, month: 9 })
+        ]}
+        edges={[edge('e1', 'B', 'A')]}
+      />
+    )
+    expect(cardOf('B').classList.contains('dim')).toBe(false)
+    expect(cardOf('C').classList.contains('dim')).toBe(true)
   })
 
   it('集空=无 dim（focus 模式空集合法——零 dim 类）；browse 模式集残留清空后亦无 dim', () => {

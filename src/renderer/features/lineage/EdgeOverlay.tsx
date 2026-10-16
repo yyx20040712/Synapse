@@ -24,6 +24,7 @@ import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
 import { routeAll } from './lineage-routing'
 import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle } from './edge-overlay-geom'
+import { isEdgeDimmed } from './focus-bright'
 import { publish } from './anchor-occupancy'
 import { useEdgeEdit } from './use-edge-edit'
 import { EdgeHitLayer } from './EdgeHitLayer'
@@ -40,8 +41,13 @@ export function EdgeOverlay(props: {
   /** [T3-P8] 拖起态连线层淡化（mockup .dimmed opacity .18——飞行脱节已知
    *  限制的掩盖面：拖起+settle transitionend 单次重算，不帧随动） */
   dimmed?: boolean
-  /** [②U7/P-18] 聚焦 dim（全部线 0.3——含聚焦卡邻接线；集空由容器不挂） */
+  /** [②U7/P-18] 聚焦 dim 激活（根类 .dimmed-focus 态标记；集空由容器不挂）；
+   *  [F-VISFB-21 C4] 逐径 dim 判定集=brightIds——两端均非 bright 才 dim（至
+   *  少一端 bright 常亮）；缺省（独立渲染无判定集）回落全 dim 沿承 */
   focusDim?: boolean
+  /** [F-VISFB-21 C4] bright 集（focus∪双向一度邻接——宿主 LineageTimeline
+   *  自 focus-bright 单源传入；focusDim 激活时随附） */
+  brightIds?: ReadonlySet<string> | null
   /** [T3-P7B] 命中层点击（Timeline 接 composer——handler 闸与 CSS
    *  pointer-events 双闸；React MouseEvent 结构兼容 ClickEventLike） */
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
@@ -151,17 +157,20 @@ export function EdgeOverlay(props: {
         const selected = edit.state.phase !== 'idle' && edit.state.edgeId === p.edgeId
         // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）
         const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focused)
+        // [F-VISFB-21 C4] 逐径 dim 判定：两端均非 bright 才 dim（至少一端
+        // bright 常亮——判定集=brightIds；缺省回落全 dim=独立渲染防御面）
+        const dimmed = focused && (props.brightIds == null || isEdgeDimmed(e, props.brightIds))
         // [RR10] hovered 回升 0.65 并入 inline（单源 edge-overlay-geom
-        //  edgeVisualOpacity；focus dim 态恒类承载；错峰 fade 源随 lane 退役空缺）
-        const opacity = edgeVisualOpacity({ hovered, focusDim: focused })
+        //  edgeVisualOpacity；dim 态恒类承载；错峰 fade 源随 lane 退役空缺）
+        const opacity = edgeVisualOpacity({ hovered, focusDim: dimmed })
         const visual = opacity === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity }
         const cls = selected
           ? 'tl-edge selected'
           : hovered
-            ? focused
+            ? dimmed
               ? 'tl-edge dim hovered'
               : 'tl-edge hovered'
-            : focused
+            : dimmed
               ? 'tl-edge dim'
               : 'tl-edge'
         return (

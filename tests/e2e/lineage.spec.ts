@@ -213,7 +213,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 各自挂 data-edge-id（结构真渲染非空 svg）
     const edgePaths = win.locator('svg.tl-edges path.tl-edge')
     await expect(edgePaths).toHaveCount(2, { timeout: 10_000 })
-    expect(await win.locator('.tl-legend').textContent()).toContain('实线') // [②U8] 图例两型（kind 四值体系退役——形态语义）
+    // [F-VISFB-21 N1] 图例断言随图例删除退役（.tl-legend JSX/CSS 零残留）
+    await expect(win.locator('.tl-legend')).toHaveCount(0)
 
     // ②滚动容器锚（pan/zoom INV-43/44 退役→滚动定位语义）：fixture 三
     //   节点内容不满视口——先注入临时高度制造可滚面（evaluate 测试手段
@@ -260,9 +261,6 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByText('脉络乙文献')).toBeVisible()
     // [T3-P7A] 滚动后连线仍可断言（D-2 内嵌内容坐标随文档流——滚动零跟随）
     await expect(edgePaths.first()).toBeVisible()
-    // [回炉 2 ④] 图例视口级恒可见锚（W7 修复验证面——挂 .timeline 随滚动区
-    // 视口定位，滚动后仍在场）
-    await expect(win.locator('.timeline .tl-legend')).toBeVisible()
     // [回炉 1 W4] 滚动前后 y 差恒定（错位即红——路径与卡同文档流证据）
     expect(await yDiffOf()).toBeCloseTo(yDiffBefore, 1)
 
@@ -1150,6 +1148,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-save-btn')).toBeEnabled({ timeout: 10_000 })
     await win.getByTestId('lineage-save-btn').click()
     await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
+    // [F-VISFB-21 C2] 建边后画线工具保持（连画域）——手动调线域=select 工具
+    // 闸（editEnabled），回小手再进调线（退出径=小手钮，产品路径）
+    await win.getByTestId('lineage-tool-select').click()
     const hit = win.locator('.tl-edge-hit').first()
     await hit.click({ force: true })
     await expect(win.getByTestId('edge-handles')).toBeVisible({ timeout: 5_000 })
@@ -1454,10 +1455,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t13-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
+    // [F-VISFB-21 C4] 第三卡乙（2020-06 非邻接——dim 判别面）：聚焦根后
+    // bright={根,甲}（甲=一度邻接常亮），乙=两端均非 bright 的 dim 锚
     await seedLineageGraph(userData, {
       nodes: [
         { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020, month: 5, slot: 1 },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 }
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2020, month: 5, slot: 2 },
+        { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2020, month: 6, slot: 1 }
       ],
       edges: [{ from: 'e2e-lg-root', to: 'e2e-lg-a', label: '继承甲' }]
     })
@@ -1468,6 +1472,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
+    const cardB = nodeG(win, '脉络乙文献')
     await expect(root.locator('.mb')).toHaveCount(0)
     await expect(win.getByText('新建连线')).toHaveCount(0)
     await expect(win.getByText('保存中…')).toHaveCount(0)
@@ -1475,11 +1480,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-mode-focus').click()
     await root.click()
     await expect(root).toHaveClass(/focused/)
-    await expect(cardA).toHaveClass(/dim/)
+    // [F-VISFB-21 C4] bright=focus∪双向一度邻接：甲（邻接）常亮不 dim；
+    // 乙（非邻接）dim 沿承——原「甲 dim」断言随判定集换源改写
+    await expect(cardA).not.toHaveClass(/dim/)
+    await expect(cardB).toHaveClass(/dim/)
     await expect(win.locator('.tl-edges')).toHaveClass(/dimmed-focus/)
     await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
     await root.click()
-    await expect(cardA).not.toHaveClass(/dim/)
+    await expect(cardB).not.toHaveClass(/dim/)
     await win.getByTestId('lineage-mode-browse').click()
     // [F-UIRES-03 T0] zoom 段=zoomProbe 冒烟（绿路径——设计稿 §8.1.2）：原
     // Ctrl+wheel/-120 逐句（设置 1.1 档+badge+transform 断言+badge 复位）语义

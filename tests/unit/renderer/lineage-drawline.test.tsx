@@ -2,9 +2,11 @@
 /**
  * [F-LGRAPH-01②U3] 画线子态机锁定合约面——armed（工具态）→pointerdown 近锚
  * (±6)→dragging（预览线+吸附指示）→pointerup 落另一卡近锚=建边（kind=manual
- * +dashed/color=当前工具线型+label=当前色行名快照 P-14）→idle(select)+入撤销
- * 栈；pointerup 空白/同卡=取消（armed 保留）；重复端点对=toast 拒绝（§2.4
- * +mockup §3.3）。always-active 裸 describe（K3）。
+ * +dashed/color=当前工具线型+label=当前色行名快照 P-14）→idle+入撤销栈
+ * （[F-VISFB-21 C2] 建边后 tool 保持 draw-X 连画——§2.4「回 select」旧文
+ * 偏差，任务书 21 票面裁 2026-10-16，两手势一致）；pointerup 空白/同卡=取消
+ * （armed 保留）；重复端点对=toast 拒绝（§2.4+mockup §3.3）。always-active
+ * 裸 describe（K3）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -37,7 +39,8 @@ function edge(id: string, from: string, to: string): LineageEdge {
 let root: Root | null = null
 let host: HTMLDivElement | null = null
 
-/** 卡 rect mock（内容坐标域——content rect=(0,0) 基准）：A(100,100) B(100,300) */
+/** 卡 rect mock（内容坐标域——content rect=(0,0) 基准）：A(100,100) B(100,300)
+ *  C(400,100)〔F-VISFB-21 C2 连画面——第三卡槽位〕 */
 function mockGeometry(): void {
   const content = document.querySelector('.tl-content') as HTMLElement | null
   if (content === null) throw new Error('.tl-content 未渲染')
@@ -45,7 +48,7 @@ function mockGeometry(): void {
     value: () => ({ left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
     configurable: true
   })
-  const rects: Record<string, { x: number; y: number }> = { A: { x: 100, y: 100 }, B: { x: 100, y: 300 } }
+  const rects: Record<string, { x: number; y: number }> = { A: { x: 100, y: 100 }, B: { x: 100, y: 300 }, C: { x: 400, y: 100 } }
   for (const el of Array.from(content.querySelectorAll('.tl-card[data-node-id]'))) {
     const id = (el as HTMLElement).dataset.nodeId ?? ''
     const base = rects[id] ?? { x: 0, y: 0 }
@@ -62,6 +65,17 @@ function mountTimeline(onNodeClick?: (id: string) => void): void {
   root = createRoot(host)
   act(() => {
     root?.render(<LineageTimeline nodes={[node('A'), node('B')]} edges={[]} onNodeClick={onNodeClick ? (id) => onNodeClick(id) : undefined} />)
+  })
+  mockGeometry()
+}
+
+/** [F-VISFB-21 C2] 三卡挂载（连画面——A/B/C） */
+function mountTimeline3(): void {
+  host = document.createElement('div')
+  document.body.appendChild(host)
+  root = createRoot(host)
+  act(() => {
+    root?.render(<LineageTimeline nodes={[node('A'), node('B'), node('C')]} edges={[]} />)
   })
   mockGeometry()
 }
@@ -110,7 +124,7 @@ afterEach(() => {
 })
 
 describe('F-LGRAPH-01②U3 画线子态机（§2.4——armed/近锚/down/up）', () => {
-  it('全流：armed→pointerdown 近锚（A 右中 ±6）→dragging 预览线→pointerup 落 B 近锚→建边+入撤销栈+tool 回 select', async () => {
+  it('全流：armed→pointerdown 近锚（A 右中 ±6）→dragging 预览线→pointerup 落 B 近锚→建边+入撤销栈+tool 保持 draw-X（C2）', async () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid') // armed
@@ -131,7 +145,7 @@ describe('F-LGRAPH-01②U3 画线子态机（§2.4——armed/近锚/down/up）'
     expect(e.color).toBe(LINE_TYPE_COLORS[0])
     expect(e.label).toBe('主供水线') // P-14：当前色行名快照
     expect(useLineageStore.getState().undoStack).toHaveLength(1) // 一单元=一撤销步
-    expect(useLineageViewStore.getState().tool).toBe('select') // 建边后回 select
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // [F-VISFB-21 C2] 建边后保持连画（§2.4「回 select」旧文偏差——21 票面裁）
     expect(q('[data-testid="draw-preview"]')).toBeNull() // 预览线清
     expect(stubApi.lineage.upsertEdge).not.toHaveBeenCalled() // 不发 IPC（A7 暂存）
   })
@@ -399,8 +413,10 @@ describe('F-LGRAPH-01②U3 画线收尾 click 抑制（[RR4] suppress 旗同手�
     docPointer('pointerup', 100, 336) // B 左中锚建边（收尾旗置位）
     docClick(req('.tl-card[data-node-id="B"]')) // 紧邻卡 click（画布内）
     expect(onNodeClick).not.toHaveBeenCalled() // 抑制沿承（防建边误选卡）
-    docClick(req('.tl-card[data-node-id="B"]')) // 第二次卡点击=新手势放行
-    expect(onNodeClick).toHaveBeenCalledTimes(1)
+    expect(useLineageViewStore.getState().anchor).toBeNull() // 旗吞面：点击未达锚链
+    docClick(req('.tl-card[data-node-id="B"]')) // 第二次卡点击=旗已释（[F-VISFB-21 C2] 建边后仍连画域→达锚链非选中）
+    expect(onNodeClick).not.toHaveBeenCalled() // draw 域点卡=锚链（禁开详情沿承）
+    expect(useLineageViewStore.getState().anchor).toBe('B') // 旗释放直证：点击达锚链（picked B）
   })
 })
 
@@ -490,5 +506,45 @@ describe('lnfix1 画线锚点指示+容差 12+落空分层反馈（armed hint/±
     expect(q('[data-testid="draw-anchor-hint"]')).not.toBeNull()
     pointer(req('.tl-content'), 'pointerdown', 228, 136)
     expect(q('[data-testid="draw-anchor-hint"]')).toBeNull()
+  })
+})
+
+describe('F-VISFB-21 C2 拖拽径画线保持（建边后不 resetTool——两手势一致）', () => {
+  it('拖拽径建边后 tool 保持 draw-solid（不再回 select）+同 armed 直连第二边（A→B 后 B→C）', async () => {
+    mountTimeline3()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    // 第一边：A 右中锚(228,136)→B 左中锚(100,336)
+    pointer(content, 'pointerdown', 228, 136)
+    pointer(content, 'pointerup', 100, 336)
+    expect(useLineageStore.getState().edges).toHaveLength(1)
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // 建边后保持（C2 票面）
+    // 第二边：不重新 armed（同工具态直拖）B 左中锚→C 左中锚(400,136)
+    pointer(content, 'pointerdown', 100, 336)
+    expect(q('[data-testid="draw-preview"]')).not.toBeNull() // armed 仍在=可起拖（持工具的直证）
+    pointer(content, 'pointerup', 400, 136)
+    expect(useLineageStore.getState().edges).toHaveLength(2)
+    const e2 = useLineageStore.getState().edges[1]!
+    expect(e2.fromNode).toBe('B')
+    expect(e2.toNode).toBe('C')
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid') // 两边后仍连画域
+  })
+
+  it('拖拽径查重拒绝不拆工具：A→B 建边后再拖同对→toast+零新增+tool 保持 draw-solid', async () => {
+    mountTimeline3()
+    act(() => {
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    pointer(content, 'pointerdown', 228, 136)
+    pointer(content, 'pointerup', 100, 336)
+    expect(useLineageStore.getState().edges).toHaveLength(1)
+    // 同端点对重拖（无向查重）→拒绝路径同样不拆工具
+    pointer(content, 'pointerdown', 228, 136)
+    pointer(content, 'pointerup', 100, 336)
+    expect(useLineageStore.getState().edges).toHaveLength(1) // 未新增
+    expect(useLineageViewStore.getState().tool).toBe('draw-solid')
   })
 })

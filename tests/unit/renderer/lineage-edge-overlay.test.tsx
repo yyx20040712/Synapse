@@ -53,13 +53,15 @@ function stubRaf(): void {
 }
 
 /** 挂载+卡 DOM 伴生+rAF 冲洗（createRoot 首渲染清空宿主→卡注入在 render 后，
- *  rAF 队列化使快照采集读到卡 DOM——jsdom 零 rect 下产出退化几何但非空路径） */
+ *  rAF 队列化使快照采集读到卡 DOM——jsdom 零 rect 下产出退化几何但非空路径）。
+ *  [F-VISFB-21 C4] extra=可选 prop 透传（focusDim/brightIds 判定集面） */
 function mountOverlay(
   nodes: LineageNode[],
   edges: LineageEdge[],
   routeEpoch = 0,
   contentW = 0,
-  rects: Array<[string, number, number, number, number]> = []
+  rects: Array<[string, number, number, number, number]> = [],
+  extra?: { focusDim?: boolean; brightIds?: ReadonlySet<string> }
 ): void {
   stubRaf()
   host = document.createElement('div')
@@ -82,6 +84,8 @@ function mountOverlay(
         shiftedIds={new Set()}
         groups={[]}
         routeEpoch={routeEpoch}
+        focusDim={extra?.focusDim}
+        brightIds={extra?.brightIds}
       />
     )
   })
@@ -406,7 +410,23 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(vis2?.classList.contains('hovered')).toBe(false)
   })
 
-  it('图例两型真文本挂滚动容器 .timeline（U8 重整：实线/虚线）', () => {
+  it('[F-VISFB-21 C4] 聚焦边 dim 判定：两端均非 bright 才 dim（邻接边常亮——focusDim+brightIds 判定集换源）', () => {
+    mountOverlay(
+      [node('A'), node('B'), node('C'), node('D')],
+      [edge('e1', 'A', 'B'), edge('e2', 'C', 'D')],
+      0,
+      0,
+      [],
+      { focusDim: true, brightIds: new Set(['A', 'B']) }
+    )
+    // 根态标记沿承（dimmed-focus——聚焦 dim 态 e2e/单测锚）
+    expect(host?.querySelector('svg.tl-edges')?.classList.contains('dimmed-focus')).toBe(true)
+    // e1（A→B 两端 bright）常亮——不挂 .dim；e2（C→D 两端均非 bright）dim
+    expect(host?.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('dim')).toBe(false)
+    expect(host?.querySelector('path.tl-edge[data-edge-id="e2"]')?.classList.contains('dim')).toBe(true)
+  })
+
+  it('[F-VISFB-21 N1] 图例零残留：渲染树无 .tl-legend/.lc 节点（死指示删除）', () => {
     stubRaf()
     host = document.createElement('div')
     document.body.appendChild(host)
@@ -415,28 +435,19 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       root?.render(<LineageTimeline nodes={[node('A'), node('B')]} edges={[edge('e1', 'A', 'B')]} />)
     })
     flushRafs()
-    const timeline = host?.querySelector('.timeline')
-    const legend = timeline?.querySelector('.tl-legend')
-    expect(legend).not.toBeNull()
-    // 图例=.timeline 直接子元素（与 .tl-content 兄弟——视口级恒可见）
-    expect(legend?.parentElement?.classList.contains('timeline')).toBe(true)
-    const items = [...(legend?.querySelectorAll('.lc') ?? [])]
-    expect(items.map((e) => e.textContent)).toEqual(['实线', '虚线'])
-    expect(items.every((e) => e.querySelector('i') !== null)).toBe(true)
+    expect(host?.querySelector('.timeline .tl-legend')).toBeNull()
+    expect(host?.querySelector('.lc')).toBeNull()
   })
 
-  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位', () => {
+  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例族零残留', () => {
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow:\s*visible;[^}]*z-index:\s*1/)
     expect(css).toMatch(/\.tl-edges\s*\{[^}]*transition:\s*opacity var\(--dur-tint\)/)
     // [F-LGRAPH-01②U8] 四 kind 色 selector 退役负锚（视觉=inline dashed/color）
     expect(css).not.toMatch(/\.tl-edge\[data-kind/)
     expect(css).toMatch(/\.tl-edge-hit\s*\{[^}]*stroke-width:\s*8;[^}]*pointer-events:\s*none/)
-    // [回炉 1 W7] 图例挂 .timeline 视口级（right/bottom 12 对滚动容器定位）
-    expect(css).toMatch(/\.tl-legend\s*\{[^}]*position:\s*absolute;[^}]*right:\s*12px;[^}]*bottom:\s*12px;[^}]*pointer-events:\s*none/)
-    // 图例 .lc 族（i 元素 20px 线样预览）
-    expect(css).toMatch(/\.lc\s*\{[^}]*display:\s*flex;[^}]*gap:\s*4px/)
-    expect(css).toMatch(/\.lc i\s*\{[^}]*width:\s*20px;[^}]*border-top:\s*2px solid var\(--accent\)/)
-    expect(css).toMatch(/\.lc\.i2 i\s*\{[^}]*border-top-style:\s*dashed/)
+    // [F-VISFB-21 N1] 图例族（.tl-legend/.lc）CSS 零残留负锚
+    expect(css).not.toMatch(/\.tl-legend/)
+    expect(css).not.toMatch(/\.lc[\s.{]/)
   })
 
   it('CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+link-src+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B）', () => {

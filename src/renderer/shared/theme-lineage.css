@@ -190,26 +190,8 @@
   pointer-events: none;
 }
 .tl-edge-hits .edge-handle { pointer-events: all; }
-/* 图例（mockup .lc 族 L212-217 誊录——四基础型真文本；[回炉 1 W7] 挂滚动
-   容器 .timeline 视口级恒可见（内容盒随滚动移出——原内容盒位废弃）；纯指示
-   非交互 pointer-events:none；z 3=月标签层同级非交互件） */
-.tl-legend {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  gap: 9px;
-  font-size: var(--fs-tl-hint);
-  color: var(--dim);
-  align-items: center;
-  z-index: 3;
-  pointer-events: none;
-}
-.lc { display: flex; align-items: center; gap: 4px; }
-.lc i { width: 20px; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
-.lc.i2 i { border-top-style: dashed; }
-.lc.i3 i { border-top: 2px dotted var(--faint); border-color: var(--faint); }
-.lc.i4 i { border-top-style: dashed; border-color: var(--signal); }
+/* [F-VISFB-21 N1] 图例样式族随视检反馈删除——零残留（实/虚两态自明于
+   卡面连线，图例=死指示；删除注记=本条，选择器零在场） */
 /* [F-SLOTGRID-01 U1] 测量冻结规则（tl-measure 族 transition:none——瀑布
    错位迭代冻结面）随瀑布退役删除；错位=行容器网格常态渲染无过渡语义 */
 .tl-card:hover { border-color: var(--accent); }

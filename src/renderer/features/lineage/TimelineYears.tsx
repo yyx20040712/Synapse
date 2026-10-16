@@ -33,28 +33,6 @@ import { DragCandidates } from './drag-slot-candidates'
 import type { DragSlotPreview } from './useCardDrag'
 import type { TimelineCallbacks } from './LineageTimeline'
 
-/** [F-LGRAPH-01②U8] 图例两型（kind 四值体系退役——线型=实线/虚线两态，
- *  色随边内联 color；图例呈示形态语义非数据分类） */
-const LEGEND_ITEMS = [
-  { cls: 'lc', text: '实线' },
-  { cls: 'lc i2', text: '虚线' }
-] as const
-
-/** [T3-P8] 图例挂滚动容器 .timeline（视口级恒可见）——自 Timeline 下沉
- *  （组件 250 行红线拆件同族；纯展示零状态） */
-export function TimelineLegend(): JSX.Element {
-  return (
-    <div className="tl-legend">
-      {LEGEND_ITEMS.map((it) => (
-        <span className={it.cls} key={it.text}>
-          <i />
-          {it.text}
-        </span>
-      ))}
-    </div>
-  )
-}
-
 export function TimelineYears(props: {
   groups: TimelineYearGroup[]
   /** [F-FOLDER-01] 节点号单源（Timeline useMemo 一次——值=该文献 pubNo，
@@ -73,9 +51,12 @@ export function TimelineYears(props: {
   linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
   dragSlot?: DragSlotPreview | null
-  /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框） */
+  /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框——本集沿承不扩邻接） */
   focusIds?: ReadonlySet<string>
-  /** [②U7/P-18] 聚焦 dim 激活（集非空）——非聚焦卡挂 .dim（0.3/hover 0.6） */
+  /** [F-VISFB-21 C4] bright 集（focus∪双向一度邻接——dim 判定源；缺省视全
+   *  非 bright——宿主 dimUnfocused 激活时恒随附） */
+  brightIds?: ReadonlySet<string>
+  /** [②U7/P-18] 聚焦 dim 激活（集非空）——非 bright 卡挂 .dim（0.3/hover 0.6） */
   dimUnfocused?: boolean
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
   /** [F-STAR-01 A3 点亮] 星标区点击（三模式均 toggle——宿主 toggleNodeStar） */
@@ -96,7 +77,7 @@ export function TimelineYears(props: {
       selected={props.selectedNodeId === n.id}
       ctx={props.ctxNodeId === n.id}
       focused={props.focusIds?.has(n.id) === true}
-      dim={props.dimUnfocused === true && props.focusIds?.has(n.id) !== true}
+      dim={props.dimUnfocused === true && props.brightIds?.has(n.id) !== true}
       linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
