@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T00:51:05.780Z",
+    "generatedAt": "2026-10-17T01:15:54.329Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "68e14752005cbc2e14e7aea85d41fa9b30219fa5ff04e55b3c01c180b34b4dbb"
+            "sha256": "9ac0a2264590bc0e5179a2413358c00298c2ef5a17ae9660dd3917c5d4dcbba1"
         },
         {
             "path": "electron.vite.config.ts",
