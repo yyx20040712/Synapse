@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T00:43:03.155Z",
+    "generatedAt": "2026-10-17T00:51:05.780Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "e4f7bbf9dcba47152d08f43b046e95c0ef082b1e998880f64e6dcd4f41e49425"
+            "sha256": "68e14752005cbc2e14e7aea85d41fa9b30219fa5ff04e55b3c01c180b34b4dbb"
         },
         {
             "path": "electron.vite.config.ts",
@@ -427,7 +427,7 @@
         },
         {
             "path": "tests/e2e/reader-text.spec.ts",
-            "sha256": "529e7c4354e7401def1ca09d61c283160b595c5a12bd3d4f48c97c660e2bd2f7"
+            "sha256": "1fc4a1d9d9881679257cf1dca350babb5f4e956f712cd392a40f3bb9f6a860d9"
         },
         {
             "path": "tests/e2e/reading-time-replay.spec.ts",

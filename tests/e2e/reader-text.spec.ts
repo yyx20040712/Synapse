@@ -319,7 +319,7 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 
   // [F-VISFB-14 C-A3 翻案] 退出握手新合同：dirty 缓存=握手触发判定源（push 模式
   // 不变）；renderer 收口回执定性——本用例真实写面全 clean→stillDirty=false→
   // **零确认 destroy**（confirm 分支=stillDirty=true/超时降级两路=单元级
-  // quit-handshake.test 12 例全格承载，e2e 不再镜像模态分支）。若回归旧
+  // quit-handshake.test 14 例全格承载（回炉轮 1 扩——交错/工厂 send 面），e2e 不再镜像模态分支）。若回归旧
   // 「dirty 恒 confirm」行为：原生模态无处理器阻塞→窗口不销毁→下行 poll 红
   // （不挂 mock 比旧自动接受更严）。
   const aliveWindows = (): Promise<number> =>
@@ -1225,7 +1225,7 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
 
   // [F-VISFB-14 C-A3 翻案（任务书 §0-1，2026-10-17）] 关 tab 默认=flush-first
   // 立存（成功零弹窗即关；discard 仅显式放弃路径——confirmCloseDirty 失败分支，
-  // 单元级 close-tab-flush.test 9 例承载）。本用例不挂 dialog 自动接受器：
+  // 单元级 close-tab-flush 用例族承载（14 例——回炉轮 1 扩，计数勿内联易漂移）。本用例不挂 dialog 自动接受器：
   // 若回归旧「关脏 tab 恒 confirm 弃改」行为，原生模态无处理器=默认 dismiss
   // （取消）→tab 不关→下行 toHaveCount(0) 红（零弹窗断言比旧 mock-accept 更严）。
   await win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab').first().getByRole('button').click()
