@@ -18,6 +18,7 @@ import { groupTimeline } from './lineage-timeline'
 import { EdgeOverlay } from './EdgeOverlay'
 import { TimelineYears } from './TimelineYears'
 import { LineageToolbar } from './LineageToolbar'
+import { LineageFloatingNotes } from './LineageFloatingNotes'
 import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
@@ -144,43 +145,45 @@ export function LineageTimeline(props: {
           模式可见；保存/撤销/线型=工具组直连 store——[F-ALIGN-01] 建点
           钮随手动建点路径退役，容器零注入面） */}
       <LineageToolbar mode={viewMode} />
-      {nodes.length === 0 ? (
-        // 空态不短路滚动容器结构+工具条在场（D6 裁决=不引导；[RR1/d1-W2]
-        // 文案随建点路径退役去动作指向——渲染行为零改；文献入库经导入链自动入图）
-        <div className="tl-empty">暂无脉络图</div>
-      ) : (
-        <div
-          className={drawing ? 'tl-content drawing' : 'tl-content'}
-          ref={contentRef}
-          style={zoom.contentStyle}
-          onPointerDown={(e) => {
-            draw.handlePointerDown(e)
-          }}
-        >
-          {/* [T3-P7A] 连线层子组件（D-22）；[F-LGRAPH-01②U8] 命中层点击挂接
-              随弹层流退役拆除（线右键菜单=轮 2 手动调线域） */}
-          <EdgeOverlay
-            nodes={nodes}
-            edges={edges}
-            shiftedIds={EMPTY_SHIFTED}
-            groups={groups}
-            routeEpoch={routeEpoch}
-            dimmed={drag.phase === 'dragging'}
-            focusDim={dimActive}
-            brightIds={brightIds}
-            editEnabled={viewMode === 'edit' && tool === 'select'}
-            browseScan={viewMode === 'browse'}
-            uiScale={uiScaleNum}
-          />
-          {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
-              吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch）；
-              [F-VISFB-31] zoom=effectiveScale（z×uiScale——高亮 r 补偿双因子） */}
-          <DrawLayers
-            state={draw.state}
-            hint={draw.hint}
-            zoom={zoomScale * uiScaleNum}
-            color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid}
-          />
+      {/* [F-VISFB-62 R1] 空图不短路 .tl-content（笔记=图内容一部分：notes-only
+          folder 笔记层在场可见可编辑+空白右键可创建；D6 空态文案〔裁决=不引导；
+          [RR1/d1-W2] 文案随建点路径退役去动作指向——文献入库经导入链自动入图〕
+          随迁层内并存——文本查询锚不变） */}
+      <div
+        className={drawing ? 'tl-content drawing' : 'tl-content'}
+        ref={contentRef}
+        style={zoom.contentStyle}
+        onPointerDown={(e) => {
+          draw.handlePointerDown(e)
+        }}
+      >
+        {/* [T3-P7A] 连线层子组件（D-22）；[F-LGRAPH-01②U8] 命中层点击挂接
+            随弹层流退役拆除（线右键菜单=轮 2 手动调线域） */}
+        <EdgeOverlay
+          nodes={nodes}
+          edges={edges}
+          shiftedIds={EMPTY_SHIFTED}
+          groups={groups}
+          routeEpoch={routeEpoch}
+          dimmed={drag.phase === 'dragging'}
+          focusDim={dimActive}
+          brightIds={brightIds}
+          editEnabled={viewMode === 'edit' && tool === 'select'}
+          browseScan={viewMode === 'browse'}
+          uiScale={uiScaleNum}
+        />
+        {/* [②U3→F-UIRES-03 C2] 画线瞬态层装配（DrawLayers 拆件）：预览线+
+            吸附高亮（idle=hint/dragging=snap 单渲染点；色源=per-kind latch）；
+            [F-VISFB-31] zoom=effectiveScale（z×uiScale——高亮 r 补偿双因子） */}
+        <DrawLayers
+          state={draw.state}
+          hint={draw.hint}
+          zoom={zoomScale * uiScaleNum}
+          color={tool === 'draw-dashed' ? currentLineColor.dashed : currentLineColor.solid}
+        />
+        {nodes.length === 0 ? (
+          <div className="tl-empty">暂无脉络图</div>
+        ) : (
           <TimelineYears
             groups={groups}
             pubNos={pubNoByNode}
@@ -199,8 +202,11 @@ export function LineageTimeline(props: {
             onCardPointerDown={drag.handleCardPointerDown}
             onNodeContextMenu={props.onNodeContextMenu}
           />
-        </div>
-      )}
+        )}
+        {/* [F-VISFB-62] 悬浮笔记层（.tl-content 内随 zoom transform 缩放；
+            交互门=edit+select；坐标换算/菜单 portal 见组件头注） */}
+        <LineageFloatingNotes contentRef={contentRef} />
+      </div>
       {/* [②U7] spacer：绝对定位撑滚动域覆盖缩放视觉区（.timeline relative
           ——包裹盒方案会与块级 content 互撑成环，e2e 探针实证 #185） */}
       <div className="tl-zoom-spacer" data-testid="tl-zoom-spacer" style={zoom.spacerStyle} />

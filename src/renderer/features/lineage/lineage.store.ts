@@ -2,8 +2,9 @@
 /**
  * lineage.store —— 脉络图数据+读面/会话写面状态单源（store；暂存机制拆件=
  * lineage-write-queue.ts，编辑会话撤销/重做域件拆件=lineage-session-ops.ts
- * 〔F-VISFB-61——beginUnit/restore 纯移动迁出〕，本件保留数据态+读面+
- * 方法签名薄壳）。
+ * 〔F-VISFB-61——beginUnit/restore 纯移动迁出〕，悬浮笔记动作域件拆件=
+ * lineage-note-ops.ts〔F-VISFB-62——三操作纯移动迁出〕，本件保留数据态+
+ * 读面+方法签名薄壳）。
  *
  * ── 数据单源接缝声明（双向锚定：本行+LineagePage 头注）──
  * lineage/graph 取数=本 store 单点；LineagePage/LineageTimeline/03 编辑层
@@ -43,6 +44,7 @@ import type {
 } from '@shared/models/lineage'
 import { createWriteQueue } from './lineage-write-queue'
 import { createSessionOps } from './lineage-session-ops'
+import { createNoteOps } from './lineage-note-ops'
 import { useLineageViewStore } from './lineage-view.store'
 import type { LineageSaveStatus, SessionSnapshot, WriteAction } from './lineage-write-queue'
 
@@ -180,6 +182,9 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
   // [F-VISFB-61 拆件] 编辑会话撤销/重做域件（beginUnit/restore 纯移动自本件
   // ——lineage-session-ops.ts 单源；解构注入调用面名字零 churn）
   const { beginUnit, restore } = createSessionOps({ set, get })
+  // [F-VISFB-62 拆件] 悬浮笔记动作域件（三操作纯移动自本件——
+  // lineage-note-ops.ts 单源；解构注入调用面名字零 churn）
+  const { addFloatingNote, updateFloatingNote, removeFloatingNote } = createNoteOps({ get, beginUnit, enqueue: wq.enqueue })
 
   return {
     nodes: [],
@@ -406,45 +411,11 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       wq.enqueue({ kind: 'remove-edge', id })
     },
 
-    // [F-VISFB-61] 悬浮笔记三动作（beginUnit→enqueue——与边/节点写同链：
-    // 暂存+乐观+undo 栈+save 可等待）
-    addFloatingNote(x, y, content) {
-      if (!beginUnit()) return
-      wq.enqueue({
-        kind: 'upsert-floating-note',
-        input: { folderId: get().folderId, x, y, content }
-      })
-    },
-
-    updateFloatingNote(id, patch) {
-      const n = get().floatingNotes.find((f) => f.id === id)
-      if (n === undefined) throw new Error(`悬浮笔记不在图中：${id}`)
-      // [回炉 R4] 空 patch 早退：无任何键=无编辑语义——不产生编辑单元（不入队
-      // 不 dirty 不清 redoStack 不刷 updated_at）
-      if (Object.keys(patch).length === 0) return
-      if (!beginUnit()) return
-      // 全载荷合成（现值+patch 覆盖——防半更新清字段，A8 同族）
-      wq.enqueue({
-        kind: 'upsert-floating-note',
-        input: {
-          id: n.id,
-          folderId: n.folderId,
-          x: patch.x ?? n.x,
-          y: patch.y ?? n.y,
-          content: patch.content ?? n.content
-        }
-      })
-    },
-
-    removeFloatingNote(id) {
-      // [回炉 R1] 幽灵 id 抛（与 updateFloatingNote 对称——接口注释契约落地；
-      // 先检后 beginUnit=抛后零副作用：不入队不清 redoStack 不置 dirty）
-      if (get().floatingNotes.find((f) => f.id === id) === undefined) {
-        throw new Error(`悬浮笔记不在图中：${id}`)
-      }
-      if (!beginUnit()) return
-      wq.enqueue({ kind: 'remove-floating-note', id })
-    },
+    // [F-VISFB-62 拆件] 悬浮笔记三动作=note-ops 域件注入（实现迁
+    // lineage-note-ops.ts——纯移动零语义改，调用面名字零 churn）
+    addFloatingNote,
+    updateFloatingNote,
+    removeFloatingNote,
 
     // [F-VISFB-14] 可等待面：await wq.flush()（保存钮 fire-and-forget 调用零变；
     // 退出握手 await 收口后查 saveStatus——error/saving 均按脏呈现）

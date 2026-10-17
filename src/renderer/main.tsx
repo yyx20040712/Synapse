@@ -14,6 +14,7 @@ import './shared/theme-lineage.css'
 import './shared/theme-lineage-tools.css' // [F-LGRAPH-01②] 工具组/线型列表皮肤（分域拆件）
 import './shared/theme-lineage-nav.css'
 import './shared/theme-lineage-card.css' // [F-LGRAPH-01②U4] 卡三层+详情面板皮肤（分域拆件）
+import './shared/theme-lineage-notes.css' // [F-VISFB-62] 画布悬浮笔记层皮肤（分域拆件）
 
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('找不到 #root 挂载点')

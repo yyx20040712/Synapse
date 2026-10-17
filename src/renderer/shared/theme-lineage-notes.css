@@ -1,0 +1,57 @@
+/* [F-VISFB-62] 画布悬浮笔记层皮肤（族先例=theme-lineage-tools/card——token
+   沿承主件；尺寸单源=LineageFloatingNotes.tsx NOTE_W/NOTE_H 经组件 inline，
+   本件不重复数字面量） */
+/* 层：absolute 铺内容域、默认不拦交互（笔记自身 pointer-events auto 回启；
+   非 edit+select 态由组件 inline pointer-events none 让位画线/平移） */
+.tl-notes-layer {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 6;
+}
+/* 笔记本体：面板底+accent 装订描边（own 域 absolute 定位——left/top=store x/y） */
+.tl-note {
+  position: absolute;
+  pointer-events: auto;
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: var(--shadow-drag);
+  font-size: var(--fs-micro);
+  color: var(--text);
+}
+/* 书签/装订柄（tips 式——2026-10-17 用户裁决：非正文区专用拖动柄）。
+   [R6] top/height 单源=geom 件 NOTE_GRIP_H（组件 grip inline 直注——本件
+   不落高度数字面量；CSS 变量法因 C-4c 悬空引用锚弃用〔双向锚定：本行↔
+   lineage-note-geom.ts NOTE_GRIP_H 注〕） */
+.tl-note-grip {
+  position: absolute;
+  left: 8px;
+  width: 28px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  cursor: grab;
+}
+.tl-note-grip:active { cursor: grabbing; }
+/* 编辑 textarea（受控——宪法禁富文本；blur 提交/空回收=组件行为面） */
+.tl-note-input {
+  width: 100%;
+  min-height: 48px;
+  resize: vertical;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+/* 只读/未编辑态文本（browse/focus 可见不可写；编辑态未聚焦同形） */
+.tl-note-text {
+  min-height: 48px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
