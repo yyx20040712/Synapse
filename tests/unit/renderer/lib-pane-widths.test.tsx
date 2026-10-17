@@ -20,6 +20,15 @@
  * 并发守卫（会话在场第二 pointerdown 被拒+首会话正常收尾）/ W2 挂载
  * 再钳两段顺序算术（双超宽→fnav 先让/抽屉后保+SEP 14 参与+宽窗零钳
  * 不动+极窄止于各 min 尽力语义）。
+ * [F-VISFB-44 用户裁决②存值保真] 追加：大档小窗挂载（gBCR stub 页宽<
+ * 共存阈 1016）→存值不变+生效值=钳后+同窗 RO 再触发存值仍不变 / 环境
+ * 回宽（RO 触发+页宽 stub 增大）→生效值复原=基值（活体复原）/ 钳后
+ * 用户拖拽落定照常落盘。:400/:422/:434 既有「钳后值落盘」断言按裁决②
+ * 改存值保真语义；用户动作类断言（:278 复位/:291 复位钳/:372 cancel
+ * 提交）零改。〔回炉轮1 R1-R2 重组〕F-VISFB-44 三面并一条票面叙事跨格
+ * 序列用例（max-lines 500 预算约束）：大档小窗挂载存值保真→零位移 up/
+ * cancel 不提交（守卫=live≠start）→同窗 RO 零落盘→环境回宽活体复原→
+ * 用户拖窄 −100 落定落盘（新基值）→宽裕 remount 刷新保持。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -141,6 +150,24 @@ function stubPageWidth(px: number): () => void {
   return () => {
     HTMLElement.prototype.getBoundingClientRect = origGBCR
   }
+}
+
+/** [F-VISFB-44 手法] RO stub（[裁决 P1-1] 用例同型）：捕获实例回调手动
+ *  触发（observe 空实现）；restore 删全局——用例 finally 兜底防跨例污染 */
+function stubRO(): { instances: Array<{ cb: () => void }>; restore: () => void } {
+  const instances: Array<{ cb: () => void }> = []
+  class ROStub {
+    cb: () => void
+    constructor(cb: () => void) {
+      this.cb = cb
+      instances.push(this)
+    }
+    observe(): void {}
+    disconnect(): void {}
+  }
+  const g = globalThis as unknown as { ResizeObserver?: unknown }
+  g.ResizeObserver = ROStub
+  return { instances, restore: () => { delete g.ResizeObserver } }
 }
 
 beforeEach(() => {
@@ -404,8 +431,9 @@ describe('F-VISFB-41 useLibPaneWidths——库页双侧栏拖宽', () => {
     mount()
     expect(text('w-fnav')).toBe('160')
     expect(text('w-drawer')).toBe('388')
-    expect(window.localStorage.getItem(F_KEY)).toBe('160')
-    expect(window.localStorage.getItem(D_KEY)).toBe('388')
+    // [F-VISFB-44 裁决②] 存值保真：挂载自动钳零落盘（原断言 160/388=钳后落盘）
+    expect(window.localStorage.getItem(F_KEY)).toBe('340')
+    expect(window.localStorage.getItem(D_KEY)).toBe('460')
     restore()
     act(() => {
       root?.unmount()
@@ -426,8 +454,9 @@ describe('F-VISFB-41 useLibPaneWidths——库页双侧栏拖宽', () => {
     mount()
     expect(text('w-fnav')).toBe('160')
     expect(text('w-drawer')).toBe('240')
-    expect(window.localStorage.getItem(F_KEY)).toBe('160')
-    expect(window.localStorage.getItem(D_KEY)).toBe('240')
+    // [F-VISFB-44 裁决②] 存值保真：挂载自动钳零落盘（原断言 160/240=钳后落盘）
+    expect(window.localStorage.getItem(F_KEY)).toBe('340')
+    expect(window.localStorage.getItem(D_KEY)).toBe('460')
     restore()
   })
 
@@ -455,10 +484,58 @@ describe('F-VISFB-41 useLibPaneWidths——库页双侧栏拖宽', () => {
       })
       expect(text('w-fnav')).toBe('160')
       expect(text('w-drawer')).toBe('316')
-      expect(window.localStorage.getItem(F_KEY)).toBe('160')
+      // [F-VISFB-44 裁决②] 存值保真：RO 自动钳零落盘（原断言 160=钳后落盘）
+      expect(window.localStorage.getItem(F_KEY)).toBe('224')
       restore2()
     } finally {
       delete (globalThis as unknown as { ResizeObserver?: unknown }).ResizeObserver
+    }
+  })
+
+  it('[F-VISFB-44] 存值保真跨格序列（票面叙事全谱）：大档小窗挂载（952<共存阈 1016→生效 160/316+存值 340/460 不动）→零位移 up/cancel 不提交（守卫=live≠start）→同窗 RO 零落盘→页宽 1300+RO 活体复原生效=基值 340→用户拖窄 −100 落定 240 落盘（新基值）→宽裕 remount 刷新保持 240', () => {
+    const ro = stubRO()
+    try {
+      window.localStorage.setItem(F_KEY, '340')
+      window.localStorage.setItem(D_KEY, '460')
+      const restore = stubPageWidth(952)
+      mount()
+      expect(text('w-fnav')).toBe('160')
+      expect(text('w-drawer')).toBe('316')
+      expect(window.localStorage.getItem(F_KEY)).toBe('340')
+      expect(window.localStorage.getItem(D_KEY)).toBe('460')
+      ptrAct(el('sep-fnav'), 'pointerdown', 700)
+      ptrAct(document, 'pointerup', 700)
+      expect(text('w-fnav')).toBe('160')
+      expect(window.localStorage.getItem(F_KEY)).toBe('340')
+      ptrAct(el('sep-fnav'), 'pointerdown', 700)
+      ptrAct(document, 'pointercancel', 700)
+      expect(window.localStorage.getItem(F_KEY)).toBe('340')
+      act(() => {
+        ro.instances[0]?.cb()
+      })
+      expect(window.localStorage.getItem(F_KEY)).toBe('340')
+      expect(window.localStorage.getItem(D_KEY)).toBe('460')
+      restore()
+      const restore2 = stubPageWidth(1300)
+      act(() => {
+        ro.instances[0]?.cb()
+      })
+      expect(text('w-fnav')).toBe('340')
+      ptrAct(el('sep-fnav'), 'pointerdown', 700)
+      ptrAct(document, 'pointermove', 600)
+      ptrAct(document, 'pointerup', 600)
+      expect(text('w-fnav')).toBe('240')
+      expect(window.localStorage.getItem(F_KEY)).toBe('240')
+      act(() => {
+        root?.unmount()
+      })
+      mount()
+      expect(text('w-fnav')).toBe('240')
+      expect(window.localStorage.getItem(F_KEY)).toBe('240')
+      restore2()
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = origGBCR
+      ro.restore()
     }
   })
 })

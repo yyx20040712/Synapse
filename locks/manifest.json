@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T04:25:55.573Z",
+    "generatedAt": "2026-10-17T07:25:26.619Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "f2c41a7aebb05c9095a9172612dc5ee408ab7824506f95b775626a4ba97b77be"
+            "sha256": "ca6959e993095872fa2339c17ce5715dd4c4c9dc1e24f871755095989923592e"
         },
         {
             "path": "electron.vite.config.ts",
@@ -371,7 +371,7 @@
         },
         {
             "path": "tests/e2e/library-density.spec.ts",
-            "sha256": "3080d00595ee506350548711a1de0b20f1d1add130766e4ccc08fb0d2f54cdef"
+            "sha256": "fbef6b14f450bed0f8ffcff99d6762e9fa698ff8354a27e199f1c0a0168ed0b8"
         },
         {
             "path": "tests/e2e/library-detail-info.spec.ts",
@@ -963,7 +963,7 @@
         },
         {
             "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
-            "sha256": "6796f36ba844f5274f96b2a82e40f082d7901cf515aa7f5ac86ce58f1cd45b38"
+            "sha256": "2d4e37a3773bbf9415d54e0635274d674500af2873d77852b4fd385687b6b579"
         },
         {
             "path": "tests/unit/renderer/library-cards.test.tsx",

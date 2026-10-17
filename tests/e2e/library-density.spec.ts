@@ -181,6 +181,11 @@ test('文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（li
   // 行渲染在场（沿用测 1 等待形态——无 waitForTimeout）
   const rowA = win.locator('.lib-row', { hasText: 'libfix1 窄窗种子' })
   await expect(rowA).toBeVisible({ timeout: 10_000 })
+  // [F-VISFB-44 2026-10-17 重校准]纯真初态标题宽捕获（复原零变语义的自校准
+  // 基线——41 时代 1274/140 绝对线校准在「钳后不复原」几何〔fnav 卡 160〕，
+  // 双轨制回宽复原 fnav=224 后绝对线随屏宽漂移不可移植；相对锚=末态≥初态−2
+  // （亚像素取整裕量）+100 绝对底线双保险）
+  const pristineMainW = (await rowA.locator('.lib-r-main').boundingBox())?.width ?? 0
 
   // —— 窄窗 1024（CI runner 虚拟屏口径）——resize 直证（d1-W1：throw 守卫只防
   //    窗口缺失，不防 setContentSize 静默 no-op——no-op 态停 1280 默认宽会假绿）：
@@ -213,13 +218,12 @@ test('文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（li
   const readContentW = async (): Promise<number> =>
     app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getContentSize()[0] ?? 0)
   await expect.poll(readContentW).toBeGreaterThan(0)
-  const wideW = await readContentW()
-  // 真复原档（≥1274）锁视觉零变（探针基线 ≈151.6→≥140；判定线=main≥140
-  // 所需最小总宽 1273.4 上取整——k1-W-RR1-1：1260 会留 [1260,1273.4) 假红窗）
-  const wideMin = wideW >= 1274 ? 140 : 100
+  // 真复原档锁视觉零变（[F-VISFB-44] 相对锚：末态标题宽≥纯真初态−2px
+  // （回宽复原 fnav=基值——与未经历窄窗的初态零变）+≥100 绝对底线；
+  // 原 1274/140 绝对线=41「钳后不复原」几何校准，随双轨制废弃）
   await expect
     .poll(async () => (await rowA.locator('.lib-r-main').boundingBox())?.width ?? 0)
-    .toBeGreaterThanOrEqual(wideMin)
+    .toBeGreaterThanOrEqual(Math.max(100, pristineMainW - 2))
 
   await app.close()
 })

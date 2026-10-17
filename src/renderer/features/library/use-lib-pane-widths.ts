@@ -1,4 +1,4 @@
-// b3: F-VISFB-41
+// b3: F-VISFB-41+F-VISFB-44
 /**
  * [F-VISFB-41] useLibPaneWidths —— 库页双侧栏（FolderNav 左栏/详情抽屉）拖宽
  * hook（use-sidebar-pane/SplitPane 先例同族；差异=双栏单会话源+主控裁决①
@@ -23,7 +23,7 @@
  *   | 态 | 事件 | 迁移 |
  *   | idle | pointerdown(手柄, 主键) | dragging（capture 指针+body userSelect/cursor+document 级 move/up/cancel 监听） |
  *   | dragging | pointermove | dragging（live=clamp(起点±visual÷uiScale, min, maxLive)；页根变量直写——零 setState） |
- *   | dragging | pointerup/cancel | idle（副作用还原+setWidth(live) 单次提交——cancel 亦提交防 DOM/态失配） |
+ *   | dragging | pointerup/cancel | idle（副作用还原+单次提交——有位移才提交：live≠start；零位移 up/cancel=不提交〔R1 回炉轮1——零位移≠用户显式拖拽，防基值/存值被覆写；有位移 cancel 亦提交防 DOM/态失配〕） |
  *   跨格序列守卫：dragging 中卸载→副作用还原（不得泄漏 body 样式/监听）。
  * - 键盘（APG separator）：ArrowLeft/Right ±16（use-sidebar-pane B5② 用户裁决
  *   步进值同源）；方向=「箭头推手柄」（fnav 右移变宽/drawer 左移变宽——与
@@ -32,12 +32,17 @@
  * - 持久化：localStorage 'synapse:libpane:fnav'/'synapse:libpane:drawer'
  *   （'synapse:' 前缀先例=SplitPane/use-sidebar-pane——本地 UI 偏好不经
  *   settings DB，票面禁新后端表合规）；载入越界/非数回退默认；不可用静默
- *   回退=设计行为。挂载后按「页容器实测宽−保底−对侧宽−双分隔条」对持久
- *   值再钳（跨窗口尺寸会话防复活超限——顺序=fnav 先让/抽屉后保〔详情面
- *   优先，自裁申报〕；极窄窗保底不可满足时止于各自 min=尽力语义；
- *   useLayoutEffect 单趟，实测 0 跳过）。
- * - React 状态更新面=拖拽落定/键盘步进/双击复位/挂载再钳（拖拽中期零
- *   setState；React 重渲染因 style 值未变不回写直写变量——单向不冲突）。
+ *   回退=设计行为。[F-VISFB-44 用户裁决②] 双轨制：基值=唯一持久化面，
+ *   仅用户显式动作（拖拽落定/键盘步进/双击复位）更新；生效值=min(基值,
+ *   环境可容)——对外接口即生效值（接口零扩）。挂载/RO 再钳按「页容器
+ *   实测宽−保底−对侧基值−双分隔条」从基值重导生效值（跨窗口尺寸会话
+ *   防塌列——顺序=fnav 先让/抽屉后保〔详情面优先，41 自裁沿承〕；极窄
+ *   窗保底不可满足时止于各自 min=尽力语义；实测 0 跳过），钳零落盘；
+ *   环境回宽 RO 触发生效值自动复原基值（用户显式拖宽值不再被一次开窗
+ *   动作不可逆覆写）。
+ * - React 状态更新面=拖拽落定/键盘步进/双击复位（写双轨）/挂载·RO 再钳
+ *   （只写生效轨）（拖拽中期零 setState；React 重渲染因 style 值未变不
+ *   回写直写变量——单向不冲突）。
  *
  * ── 接口层 ──
  * - export function useLibPaneWidths(): LibPaneWidths（fnavWidth/drawerWidth/
@@ -51,7 +56,8 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - [裁决 P1-1 后] 尺寸变化再钳=ResizeObserver 页容器触发（挂载趟/启动档位
  *   跨格/窗口 resize 三态同源单函数 reclampNow——原「resize 期不重钳」申报
- *   缺口随之闭合）；不做：折叠语义（SplitPane collapsed 不引入）。
+ *   缺口随之闭合；[F-VISFB-44] 读源改基值 ref 重导（非增量钳）→环境回宽
+ *   活体复原生效值）；不做：折叠语义（SplitPane collapsed 不引入）。
  * - [回炉 W3 口径注记] 三档可满足区算术：默认共存（462+224+316+14=1016 CSS
  *   像素）可满足 ⇔ 页容器 CSS 宽≥1016——含 72px rail（.app-content-row zoom
  *   内）的屏幕阈=1088×uiScale（1/1.1/1.25 档→1088/1197/1360；默认窗 1280 在
@@ -172,23 +178,44 @@ export interface LibPaneWidths {
 }
 
 export function useLibPaneWidths(): LibPaneWidths {
-  const [fnavWidth, setFnavWidth] = useState(() => loadWidth('fnav'))
-  const [drawerWidth, setDrawerWidth] = useState(() => loadWidth('drawer'))
+  // [F-VISFB-44] 双轨制：基值=唯一持久化面（初值=loadWidth 载入语义零改，
+  // 仅用户显式动作更新）；生效值=渲染/消费面（初值=基值，挂载/RO 再钳重导）
+  const [fnavBase, setFnavBase] = useState(() => loadWidth('fnav'))
+  const [drawerBase, setDrawerBase] = useState(() => loadWidth('drawer'))
+  const [fnavWidth, setFnavWidth] = useState(fnavBase)
+  const [drawerWidth, setDrawerWidth] = useState(drawerBase)
   const [dragging, setDragging] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const sessionRef = useRef<DragSession | null>(null)
-  /** 现值镜像（渲染帧同步写——再钳在渲染流外触发〔RO 回调〕经 ref 取当帧值；
-   *  挂载趟值=state 初值=loadWidth 持久值，与原挂载钳读源等价） */
-  const widthsRef = useRef({ fnav: fnavWidth, drawer: drawerWidth })
-  widthsRef.current = { fnav: fnavWidth, drawer: drawerWidth }
+  /** 基值镜像（渲染帧同步写——再钳在渲染流外触发〔RO 回调〕经 ref 取当帧
+   *  基值作重导源；挂载趟值=state 初值=loadWidth 持久值） */
+  const baseRef = useRef({ fnav: fnavBase, drawer: drawerBase })
+  baseRef.current = { fnav: fnavBase, drawer: drawerBase }
+  /** 生效值镜像（再钳冗余 setState 守卫用——同帧读取当帧生效值） */
+  const effRef = useRef({ fnav: fnavWidth, drawer: drawerWidth })
+  effRef.current = { fnav: fnavWidth, drawer: drawerWidth }
 
-  // 持久化单点（width 每次提交即写；updater 纯净，副作用不进 updater）
+  // 持久化单点（[F-VISFB-44] 只挂基值变更——挂载/RO 自动钳零落盘；挂载趟
+  // 首跑写回=载入值原样（缺省写默认幂等无害）；updater 纯净，副作用不进
+  // updater）
   useEffect(() => {
-    persist(FNAV_KEY, fnavWidth)
-  }, [fnavWidth])
+    persist(FNAV_KEY, fnavBase)
+  }, [fnavBase])
   useEffect(() => {
-    persist(DRAWER_KEY, drawerWidth)
-  }, [drawerWidth])
+    persist(DRAWER_KEY, drawerBase)
+  }, [drawerBase])
+
+  /** [F-VISFB-44] 用户显式动作提交：写双轨（基值=live 落盘+生效值=live
+   *  同值——键盘/复位的环境钳后值照常落盘=用户可感知语义，与 41 现状同） */
+  const commitUser = (side: LibPaneSide, v: number): void => {
+    if (side === 'fnav') {
+      setFnavBase(v)
+      setFnavWidth(v)
+    } else {
+      setDrawerBase(v)
+      setDrawerWidth(v)
+    }
+  }
 
   /** 中列实测 CSS 宽（gBCR 屏幕域÷uiScale；无布局/目标不在场=0） */
   const measureMiddle = (): number => {
@@ -197,22 +224,24 @@ export function useLibPaneWidths(): LibPaneWidths {
     return mid.getBoundingClientRect().width / readUiScale()
   }
 
-  /** 再钳（[裁决 P1-1] 挂载趟与尺寸变化触发同源单函数）：量测页容器 CSS 宽
-   *  （gBCR÷uiScale）→顺序钳两栏现值（fnav 先让/抽屉后保；极窄止于各 min
-   *  尽力语义）；实测 0（无布局环境）跳过 */
+  /** 再钳（[裁决 P1-1] 挂载趟与尺寸变化触发同源单函数；[F-VISFB-44] 从基值
+   *  重导生效值（不读现生效值——环境回宽自动复原基值；只写生效轨，钳零
+   *  落盘）：量测页容器 CSS 宽（gBCR÷uiScale）→顺序重导两栏（fnav 先让/
+   *  抽屉后保；极窄止于各 min 尽力语义）；实测 0（无布局环境）跳过 */
   const reclampNow = (): void => {
     const pg = pageRef.current
     if (pg === null) return
     const pageCss = pg.getBoundingClientRect().width / readUiScale()
     if (pageCss <= 0) return
-    const cur = widthsRef.current
-    const fnavNext = allowableWidth(cur.fnav, pageCss, cur.drawer, BOUNDS.fnav.min)
-    const drawerNext = allowableWidth(cur.drawer, pageCss, fnavNext, BOUNDS.drawer.min)
-    if (fnavNext !== cur.fnav) setFnavWidth(fnavNext)
-    if (drawerNext !== cur.drawer) setDrawerWidth(drawerNext)
+    const base = baseRef.current
+    const eff = effRef.current
+    const fnavNext = allowableWidth(base.fnav, pageCss, base.drawer, BOUNDS.fnav.min)
+    const drawerNext = allowableWidth(base.drawer, pageCss, fnavNext, BOUNDS.drawer.min)
+    if (fnavNext !== eff.fnav) setFnavWidth(fnavNext)
+    if (drawerNext !== eff.drawer) setDrawerWidth(drawerNext)
   }
 
-  // 挂载趟再钳（跨窗口尺寸会话防复活超限——读源=state 初值=持久值）
+  // 挂载趟再钳（跨窗口尺寸会话防塌列——从基值重导生效值，零落盘）
   useLayoutEffect(() => {
     reclampNow()
   }, [])
@@ -254,9 +283,10 @@ export function useLibPaneWidths(): LibPaneWidths {
       sessionRef.current = null
       setDragging(false)
       // 单次提交（主控裁决①：React 状态只在拖拽落定更新；cancel 同提交防
-      // DOM 变量与 state/持久化失配）
-      if (s.side === 'fnav') setFnavWidth(s.live)
-      else setDrawerWidth(s.live)
+      // DOM 变量与 state/持久化失配；[F-VISFB-44] 用户显式动作写双轨；
+      // [R1 回炉轮1] 零位移 up/cancel≠用户显式拖拽——live===start（从未
+      // move 过，var/state 零触碰）跳过提交防基值/存值被覆写）
+      if (s.live !== s.start) commitUser(s.side, s.live)
     }
     document.addEventListener('pointermove', onMove)
     document.addEventListener('pointerup', finish)
@@ -309,8 +339,8 @@ export function useLibPaneWidths(): LibPaneWidths {
     }
     if (next === null) return
     ev.preventDefault()
-    if (side === 'fnav') setFnavWidth(next)
-    else setDrawerWidth(next)
+    // [F-VISFB-44] 用户显式动作写双轨
+    commitUser(side, next)
   }
 
   // [回炉 B1] 双击复位经中列保底钳（四条宽度写入路径〔拖拽 maxLive/键盘
@@ -327,8 +357,8 @@ export function useLibPaneWidths(): LibPaneWidths {
         target = allowableWidth(b.def, pageCss, other, b.min)
       }
     }
-    if (side === 'fnav') setFnavWidth(target)
-    else setDrawerWidth(target)
+    // [F-VISFB-44] 用户显式动作写双轨
+    commitUser(side, target)
   }
 
   const pageStyle = {
