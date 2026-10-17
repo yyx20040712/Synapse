@@ -15,6 +15,11 @@
  *   禁用态样式=.nav-graph-btn:disabled 沿承+浮层/挂起确认框收起=确认框
  *   不可达）——「禁」径消解在飞写 IPC 竞态半程；flush 收尾无条件 set clean
  *   与确认框「不落库」承诺冲突半程同径消解。
+ * - [F-VISFB-63 S7] dirty 跳过=ghost folder 退化态维持（S4 回退被跳过）：
+ *   图名回退「主图」显示与 folderId 实值不一致属该退化态已申报现象；恢复沿
+ *   =下次视图返回（LineagePage 挂载 clean 同步 setFolder）/手动切图/save-
+ *   discard 后交互——不实现 dirty→clean 自动恢复（主控裁决：folder 已删的
+ *   暂存图自动迁移会制造数据面惊喜，恢复沿已存在且可达）。
  */
 import { useEffect, useRef, useState } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
@@ -22,6 +27,7 @@ import { api, unwrap, apiEvents } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
 import { useLineageStore } from './lineage.store'
+import { fireLineageNoteCommit, noteDraftPending } from './lineage-note-draft'
 import { Dialog } from '../../shared/ui/Dialog'
 
 export interface NavFolder {
@@ -72,16 +78,27 @@ export function NavGraphPicker(props: {
   // 覆盖：a) 挂载在线订阅（folders.changed 后重拉落定）；b) **挂载时 store 残留
   // stale folderId**（他页已删该文件夹——首拉落定即回退；删除 UI 在库页，
   // 脉络页不在场是常态路径）
+  // [F-VISFB-63 R1] 两分支发起重载前先收口+dirty 跳过：load→status loading→
+  // LineagePage 卸载时间线子树→编辑草稿（组件态）静默消亡（互锁只护 store
+  // 数据不护组件态——loading 帧先卸载）。dirty 跳过=load 互锁语义前移（暂存
+  // 图保留，重载由下次交互承接）。边界申报：S4 跳过后暂存图挂已删 folder 域，
+  // save 时笔记 upsert 可撞 CONFLICT（d1-N6 族）——登记不修。
+  // [F-VISFB-63 S1] 跳过条件扩 pending 维：fire throw 后 pending 保真也会被
+  // 卸载型重载抹掉——「dirty ∨ 未收口草稿」均不发起（k1-W2≡d1-N2 硬化）。
   useEffect(() => {
     if (folders === null) return
     const current = useLineageStore.getState().folderId
     if (!folders.some((f) => f.id === current)) {
       changedRef.current = false
+      fireLineageNoteCommit()
+      if (useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) return
       setFolder(MAIN_GRAPH_ID) // S4：当前图失效——回退主图（setFolder 内含重取）
       return
     }
     if (!changedRef.current) return
     changedRef.current = false
+    fireLineageNoteCommit()
+    if (useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) return
     void load()
   }, [folders])
 
@@ -135,9 +152,15 @@ export function NavGraphPicker(props: {
               data-folder-id={f.id}
               className={f.id === folderId ? 'nav-graph-item on' : 'nav-graph-item'}
               onClick={() => {
+                // [F-VISFB-63] 打断收口先（62 号 R2③ 族先例）：fire commit 草稿
+                // 入队——确认分支按 fire 后最新 saveStatus 判定（getState 读现值：
+                // 闭包 dirty 是 fire 前旧值；取消=草稿已入队保留/确认弃=含草稿全弃）
+                fireLineageNoteCommit()
                 setOpen(false)
-                // [②U1] dirty 切图两分支：暂存在场先挂起确认（A2 同值重选=切图）
-                if (dirty) {
+                // [②U1] dirty 切图两分支：暂存在场先挂起确认（A2 同值重选=切图）；
+                // [F-VISFB-63 S1] pending 维扩入（未收口草稿=「未保存的修改」
+                // 同语义——取消=留页继续编辑）
+                if (dirty || useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) {
                   setPendingFolder(f.id)
                   return
                 }

@@ -162,8 +162,9 @@ export interface LineageStore {
   toggleNodeStar(node: { id: string; paperId: string; isStarred?: boolean }): Promise<void>
 }
 
-/** 退出拦截聚合输入（INV-22 扩面：tab dirty ∪ lineage dirty——App.tsx 组合根单点；
- *  [②U1] clean=库一致基线（saved 概念反转），≠clean 即脏） */
+/** 退出拦截聚合输入（INV-22 扩面：tab dirty ∪ lineage dirty ∪ noteDraft——
+ *  [F-VISFB-63] 第三源=悬浮笔记编辑草稿〔lineage-note-draft 单源〕；App.tsx
+ *  组合根单点；[②U1] clean=库一致基线（saved 概念反转），≠clean 即脏） */
 export function useLineageDirty(): boolean {
   return useLineageStore((s) => s.saveStatus !== 'clean')
 }

@@ -43,6 +43,7 @@ stubApiEvents({
 import { App } from '../../../src/renderer/app/App'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+import { setNoteDraftPending } from '../../../src/renderer/features/lineage/lineage-note-draft'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -89,6 +90,8 @@ beforeEach(() => {
   // 模块级 store 常驻：跨用例状态复位
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
   useNotesStore.setState({ noteByPaper: {} })
+  // [F-VISFB-63 R5] 注册族模块级单例复位（防 pending 跨用例泄漏）
+  setNoteDraftPending(false)
 })
 
 afterEach(() => {
@@ -98,6 +101,7 @@ afterEach(() => {
   root = null
   host?.remove()
   host = null
+  setNoteDraftPending(false)
 })
 
 describe('App 组合根 —— hook 链稳定性（P7-C 崩溃回归锁）', () => {
@@ -129,5 +133,24 @@ describe('App 组合根 —— hook 链稳定性（P7-C 崩溃回归锁）', () 
     } finally {
       errSpy.mockRestore()
     }
+  })
+
+  it('[F-VISFB-63] noteDraft 并入 quitDirty 聚合：pending 翻真 push dirty=true，收口清 push false', async () => {
+    mount(<App />)
+    await flush()
+    const before = stubApi.system.setQuitDirty.mock.calls.length
+    act(() => {
+      setNoteDraftPending(true)
+    })
+    await flush()
+    const calls = stubApi.system.setQuitDirty.mock.calls
+    expect(calls.length).toBeGreaterThan(before)
+    expect(calls[calls.length - 1]?.[0]).toEqual({ dirty: true, lineagePending: false })
+    act(() => {
+      setNoteDraftPending(false)
+    })
+    await flush()
+    const calls2 = stubApi.system.setQuitDirty.mock.calls
+    expect(calls2[calls2.length - 1]?.[0]).toEqual({ dirty: false, lineagePending: false })
   })
 })

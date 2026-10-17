@@ -8,6 +8,8 @@
  *    ②首载门控 gated 篇 no-op 残留 pending，由收口判定呈现）；
  * ② 批注全量挂载句柄 flush（并行——各编辑器独立目标；clean 编辑器 no-op；
  *    句柄返回态 'failed'/'dirty' 计入未落库——INV-141③查态非兑现值）；
+ * ②.5 [F-VISFB-63] 悬浮笔记编辑草稿 fire-first commit（入队后由 ③ 正道
+ *    落库；flushing 窗 no-op——pending 保真由 ④ 查态承接）；
  * ③ lineage saveStatus≠clean → await save()（写队列正道——不旁路队列，
  *    硬约束；flushing 中让位早退由 ④ 查态兜住）；
  * ④ 收口后最新 dirty 判定（INV-141：不把任一 Promise fulfilled 直接等同
@@ -16,7 +18,9 @@
  *    全量收口，不限开 tab 键集，与 useTabDirtyAggregate 的开 tab 限定分野）；
  *    annotations：开 tab TabState.dirty（API 失败残留——关 tab 卸载注册承接
  *    不属本判定）∨ 句柄终态未落库 ∨ 注册表未落盘残留（hasPending）；
- *    lineage：saveStatus≠clean（error/saving 均脏——saving=未知按脏）。
+ *    lineage：saveStatus≠clean（error/saving 均脏——saving=未知按脏）；
+ *    noteDraft〔F-VISFB-63〕：noteDraftPending()=未收口草稿残留（②.5 fire
+ *    no-op〔flushing 窗〕/无挂载句柄/句柄同步 throw 面——pending 保真承接）。
  */
 import { useNotesStore } from '../features/notes/notes.store'
 import { useReaderStore } from '../features/reader/state/reader.store'
@@ -25,6 +29,7 @@ import {
   allDraftFlushHandles,
   hasPendingAnnotationDrafts
 } from '../features/reader/interact/annotation-draft-registry'
+import { fireLineageNoteCommit, noteDraftPending } from '../features/lineage/lineage-note-draft'
 
 /**
  * 退出收口：执行全部写面立存并返回「收口后最新 dirty 判定」。
@@ -40,17 +45,22 @@ export async function runQuitFlush(): Promise<boolean> {
     allDraftFlushHandles().map((flush) => Promise.resolve().then(() => flush()))
   )
   const annotationHandleDirty = states.some((s) => s !== 'saved' && s !== 'clean')
+  // ②.5 [F-VISFB-63] 悬浮笔记编辑草稿 fire-first commit（挂载编辑会话收口入队
+  // ——textarea 卸载无 blur 同链〔62 号 d1 定谳〕，入队后由 ③ save 正道落库；
+  // flushing 窗 fire no-op：pending 保真由 ④ 查态承接=main confirm 降级不静默丢）
+  fireLineageNoteCommit()
   // ③ lineage 写队列正道收口（≠clean 才发起；await 后查态）
   const lineageBefore = useLineageStore.getState()
   if (lineageBefore.saveStatus !== 'clean') {
     await lineageBefore.save()
   }
-  // ④ 收口后最新 dirty 判定（查态——三面或）
+  // ④ 收口后最新 dirty 判定（查态——四面或；noteDraftPending=②.5 fire no-op
+  // 〔flushing 窗〕或无句柄时的未收口草稿残留面）
   const notes = useNotesStore.getState().noteByPaper
   const notesDirty = Object.values(notes).some((d) => d.pending || d.saveFailed)
   const reader = useReaderStore.getState()
   const tabsAnnoDirty = reader.order.some((id) => reader.tabs[id]?.dirty === true)
   const annotationDirty = annotationHandleDirty || tabsAnnoDirty || hasPendingAnnotationDrafts()
   const lineageDirty = useLineageStore.getState().saveStatus !== 'clean'
-  return notesDirty || annotationDirty || lineageDirty
+  return notesDirty || annotationDirty || lineageDirty || noteDraftPending()
 }

@@ -13,6 +13,7 @@ import { LineagePage } from '../features/lineage/LineagePage'
 import { ToastHost } from '../shared/ui/Toast'
 import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
+import { useNoteDraftPending } from '../features/lineage/lineage-note-draft'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 import { useFigureExtractionBridge } from '../shared/figures/useFigureExtractionBridge'
 import { useSettingsStore } from '../features/settings/settings.store'
@@ -58,16 +59,17 @@ function autosaveWorstOf(
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
-  // [F-VISFB-15 ①面3] 视图切换包装：离场 'reader' 先立存（语义单源=view-flush.ts）
+  // [F-VISFB-15①面3/63] 视图切换包装：离场 'reader'/'lineage' 先立存（语义单源=view-flush.ts）
   const changeView = useCallback((next: ViewId): void => switchViewWithFlush(view, next, setView), [view])
   // TABS-04：聚合 dirty（任一 tab 任一写面）变化沿 push 上报 main（close 拦截
   // 读 main 缓存）。LG-03 扩面（ADR-0014+INV-22）：图保存态≠saved 即脏——组合根
-  // 单点扩（tab ∪ lineage dirty）。两 hook 必须无条件调用（P7-C 崩溃修复
-  // 2026-08-27）：`||` 短路→hooks 数量随渲染漂移（Rules of Hooks 违规，
-  // commit 链错位崩；回归锁=app-quit-dirty.test.tsx）
+  // 单点扩（tab ∪ lineage dirty ∪ noteDraft——F-VISFB-63）。三 hook 必须无条件
+  // 调用（P7-C 崩溃修复 2026-08-27）：`||` 短路→hooks 数量随渲染漂移（Rules of
+  // Hooks 违规，commit 链错位崩；回归锁=app-quit-dirty.test.tsx）
   const tabDirty = useTabDirtyAggregate()
   const lineageDirty = useLineageDirty()
-  const quitDirty = tabDirty || lineageDirty
+  const noteDraft = useNoteDraftPending() // [F-VISFB-63] 悬浮笔记编辑草稿（lineage-note-draft 注册族）
+  const quitDirty = tabDirty || lineageDirty || noteDraft
   // [T3-U1 回炉 R2/W3 终裁] 状态条自动保存槽聚合（沿上方 dirty 聚合同源信号
   // 族扩 worst-of）：tab 双源分档（annoDirty→error/notePending→saving——
   // useTabDirtySignals facade）∪ lineage saveStatus 三态 →三态真文本注入
@@ -123,7 +125,7 @@ export function App(): JSX.Element {
     window.api.system
       .setQuitDirty({ dirty: quitDirty, lineagePending: lineageDirty })
       .catch(() => undefined)
-  }, [quitDirty, lineageDirty])
+  }, [quitDirty, lineageDirty, noteDraft])
 
   // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
   // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）

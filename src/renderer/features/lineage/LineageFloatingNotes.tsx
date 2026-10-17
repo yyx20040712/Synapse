@@ -44,6 +44,7 @@ import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 import { clampToContent, notesInteractive, NOTE_GRIP_H, NOTE_H, NOTE_W, toOwnPt } from './lineage-note-geom'
 import { useNoteDrag } from './use-note-drag'
+import { useNoteDraftBridge } from './lineage-note-draft'
 import { LineageNoteMenuPortal, type NoteMenu } from './LineageNoteMenu'
 
 export function LineageFloatingNotes(props: {
@@ -152,6 +153,9 @@ export function LineageFloatingNotes(props: {
     closeEdit(editingId, draft)
   }
   commitRef.current = commitActiveEdit
+  // [F-VISFB-63] 编辑草稿注册族桥接（flush 句柄+pending 信号——体驻
+  // lineage-note-draft.ts：组件行数红线贴线，布线 hook 化禁内联 effect）
+  useNoteDraftBridge(commitRef, editingId, draft)
 
   // 渲染序=z 序（order 末位=DOM 末位=最上；未交互笔记承 store 数组序在前）
   const display = useMemo(() => {
