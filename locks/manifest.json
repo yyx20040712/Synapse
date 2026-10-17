@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T00:20:33.215Z",
+    "generatedAt": "2026-10-17T00:24:34.555Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -427,7 +427,7 @@
         },
         {
             "path": "tests/e2e/reader-text.spec.ts",
-            "sha256": "7418bf559432eeecca84dcd6b4384bcc098a0f4df559ed9f8db58b39d69beaf4"
+            "sha256": "529e7c4354e7401def1ca09d61c283160b595c5a12bd3d4f48c97c660e2bd2f7"
         },
         {
             "path": "tests/e2e/reading-time-replay.spec.ts",

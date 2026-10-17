@@ -1208,7 +1208,8 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   await win.getByText(title).first().dblclick()
   await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
 
-  // 笔记面板输入（防抖窗内——fill 后立即关 tab，全程须 <1.5s）
+  // 笔记面板输入（flush-first 即时关闭面——fill 后立即关 tab；600s 防抖下
+  // timer 不可能自然到期，关闭语义全由 requestCloseTab 立存承接）
   const aside = win.getByTestId('reader-aside')
   await aside.getByRole('tab', { name: '笔记' }).click()
   const panel = win.getByTestId('reader-notes-panel')
@@ -1230,7 +1231,8 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   await win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab').first().getByRole('button').click()
   await expect(win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab')).toHaveCount(0)
 
-  // 跨防抖窗等待沿承（flushNow 已清 timer 立存——等待证无迟到写/代际干扰）
+  // 时序稳定等待（600s 防抖时代「跨防抖窗」语义已不成立〔门一 N-3 勘误〕：
+  // flushNow 已清 timer 立存——等待仅证立存后无迟到写/代际干扰，非跨窗证明）
   await win.waitForTimeout(2200)
 
   // 重开同文献：笔记=已存值（flush-first 落库面——旧「确认弃改→基线空串」
