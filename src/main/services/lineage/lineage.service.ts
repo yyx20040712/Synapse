@@ -45,6 +45,7 @@ import {
   validateLineageVia
 } from '../../../shared/models/lineage'
 import type {
+  FloatingNote,
   LineTypeNames,
   LineageEdge,
   LineageEdgeUpsert,
@@ -100,7 +101,9 @@ export interface LineageService {
    *   主题节点/无标签文献无键；卡标签行换源读链）。
    *   [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 文献节点搭载 isStarred（papers.
    *   is_starred〔迁移 017〕批查单语句——tagNames 同路；主题节点/papers 行
-   *   缺席节点不携带该键；卡标记区数据源） */
+   *   缺席节点不携带该键；卡标记区数据源）。
+   *   [F-VISFB-61] +floatingNotes（悬浮笔记图域行集——folderId 域隔离，
+   *   无 paper_id；装配源=floating-notes.service.notesForGraph） */
   graph(folderId?: string): {
     nodes: LineageNode[]
     edges: LineageEdge[]
@@ -108,6 +111,8 @@ export interface LineageService {
     lineTypeNames: LineTypeNames
     pubNos: Record<string, number>
     tagNames: Record<string, string[]>
+    /** [F-VISFB-61] 悬浮笔记图域行集（folderId 域隔离——62 号 UI 消费） */
+    floatingNotes: FloatingNote[]
   }
 }
 
@@ -141,6 +146,10 @@ export interface LineageServiceDeps {
    *  搭载源；可选缺省=零搭载（既有单测装配兼容），生产装配接
    *  repos.papers.starredByIds——批查单语句禁 N+1 同锚） */
   starred?: (paperIds: string[]) => Array<{ paperId: string; isStarred: boolean }>
+  /** [F-VISFB-61] 悬浮笔记图域读面（graph 通道 floatingNotes 装配——folderId
+   *  域过滤/undefined 全量并集；可选缺省=空面〔既有单测装配兼容〕，生产装配
+   *  接 floating-notes.service.notesForGraph） */
+  floatingNotes?: (folderId?: string) => FloatingNote[]
 }
 
 /**
@@ -292,6 +301,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       lineTypeNames: LineTypeNames
       pubNos: Record<string, number>
       tagNames: Record<string, string[]>
+      floatingNotes: FloatingNote[]
     } {
       const g = deps.repo.listGraph()
       // [F-FOLDER-01] 子图过滤（W4）：folderId 提供=节点按图归属过滤+边=双端点
@@ -354,7 +364,9 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
         paperMetrics,
         lineTypeNames: deps.repo.getLineTypeNames(),
         pubNos,
-        tagNames
+        tagNames,
+        // [F-VISFB-61] 悬浮笔记域读（folderId 同 nodes 子图口径——域隔离）
+        floatingNotes: deps.floatingNotes?.(folderId) ?? []
       }
     }
   }

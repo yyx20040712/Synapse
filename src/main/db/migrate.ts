@@ -36,6 +36,7 @@ import aiDomainSql from './migrations/020_ai_domain.sql?raw'
 import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
 import lineageGhostEdgesSql from './migrations/022_lineage_ghost_edges.sql?raw'
 import paperFiguresSql from './migrations/023_paper_figures.sql?raw'
+import lineageFloatingNotesSql from './migrations/024_lineage_floating_notes.sql?raw'
 
 export interface Migration {
   version: number
@@ -126,7 +127,13 @@ export const MIGRATIONS: readonly Migration[] = [
   // 资产路径/像素尺寸/CTM bbox/页码）；papers 零新列；派生不入快照（恢复后
   // 重提取）；paper_id FK CASCADE（papers 三删除路径自动清派生行）；纯新增
   // 表无触发器，无 fkOff；新库 user_version 终值 23
-  { version: 23, name: 'paper_figures', sql: paperFiguresSql }
+  { version: 23, name: 'paper_figures', sql: paperFiguresSql },
+  // [F-VISFB-61] 悬浮笔记数据面：floating_notes 画布笔记表（无 paper_id——
+  // §0-5 纯画布节点不关联文献；x/y 画布 own 域坐标）+folder_id FK CASCADE
+  // （域删级联——012/019 族域资产先例）+021 族第十表删事件触发器（快照导入
+  // 防复活数据源）；入快照导出面（TABLE_SPECS 十表）；纯新增表+索引+触发器
+  // 无表重建，无 fkOff；新库 user_version 终值 24
+  { version: 24, name: 'lineage_floating_notes', sql: lineageFloatingNotesSql }
 ]
 
 export interface MigrateResult {

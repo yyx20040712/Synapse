@@ -5,11 +5,14 @@
  *
  * ── 行为层（主路径序=[回炉 R2/R4 重排]①明文预检→decode〔②HMAC+④a 解密〕
  *    →③seq 决策表→④b 对账；拒收卷零副作用——③④ 闸全在事务外只读预检）──
- * - 闸①a 明文预检（不依赖密钥——R2 前置）：JSON.parse 失败/必填九键缺席或
- *   类型不符→struct_invalid（owner/seq 不可解析记 null 降级）；闸③前置自检
+ * - 闸①a 明文预检（不依赖密钥——R2 前置）：JSON.parse 失败/必填九键（envelope
+ *   键集恒九键——codec INV-D 教义，与表数无关〔回炉 R2 勘正：表集十表≠
+ *   envelope 键数〕）缺席或类型不符→struct_invalid（owner/seq 不可解析记
+ *   null 降级）；闸③前置自检
  *   ==本库 owner→self_reimport（先于闸①值检）；format_version!==1→version_
- *   mismatch；schema_version>本库→schema_newer；table_counts 键集≠九表→
- *   struct_invalid。验签钥=peer_sync_key:<自称 owner>，未配对→hmac_fail
+ *   mismatch；schema_version>本库→schema_newer；table_counts 键集≠十表
+ *   （[F-VISFB-61] TABLE_SPECS 九表→十表：+floating_notes）→struct_invalid。
+ *   验签钥=peer_sync_key:<自称 owner>，未配对→hmac_fail
  *   （自裁③收窄为「未配对」——十码闭表无 unknown_owner 键）。
  * - decode（codec 单源）：hmac_fail（闸②）/decrypt_fail（闸④a）。decrypt_fail
  *   恒直报〔R4：内嵌闸③评估删除——「GCM 损坏但同 sha 已 applied」卷报
@@ -46,7 +49,8 @@ import { canonicalJson, decodeEnvelope } from './envelope.codec'
 /** 无 updated_at 三表（001 实照——R-C 纯键等三分支） */
 const NO_UPDATED_AT: ReadonlySet<string> = new Set(['collections', 'tags', 'paper_tags'])
 
-const NINE_TABLES: readonly string[] = TABLE_SPECS.map((s) => s.table)
+/** [F-VISFB-61] 表集单源=TABLE_SPECS（九表→十表：+floating_notes） */
+const SNAPSHOT_TABLES: readonly string[] = TABLE_SPECS.map((s) => s.table)
 
 /** 逐表全列集（行键集校验+内容全等比较——TABLE_SPECS 单源派生） */
 const COLUMNS_OF: ReadonlyMap<string, readonly string[]> = new Map(TABLE_SPECS.map((s) => [s.table, s.columns]))
@@ -109,10 +113,12 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
     const p = payload as { data?: unknown; deletions?: unknown; pdf_refs?: unknown }
     if (p.data === null || typeof p.data !== 'object' || Array.isArray(p.data)) return 'struct_invalid'
     const data = p.data as Record<string, unknown>
-    if (JSON.stringify(Object.keys(data).sort()) !== JSON.stringify([...NINE_TABLES].sort())) return 'struct_invalid'
+    if (JSON.stringify(Object.keys(data).sort()) !== JSON.stringify([...SNAPSHOT_TABLES].sort())) {
+      return 'struct_invalid'
+    }
     if (!Array.isArray(p.deletions) || !Array.isArray(p.pdf_refs)) return 'struct_invalid'
     const out: Record<string, Array<Record<string, unknown>>> = {}
-    for (const table of NINE_TABLES) {
+    for (const table of SNAPSHOT_TABLES) {
       const rows = data[table]
       if (!Array.isArray(rows)) return 'struct_invalid'
       const cols = [...(COLUMNS_OF.get(table) ?? [])].sort()
@@ -125,12 +131,12 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       if (counts[table] !== rows.length) return 'counts_mismatch'
       out[table] = rows as Array<Record<string, unknown>>
     }
-    // [回炉 R7] deletions 身份形态：entity∈九表+id 非空；paper_tags id 恰一竖线
+    // [回炉 R7] deletions 身份形态：entity∈十表+id 非空；paper_tags id 恰一竖线
     // +两分量非空（§13.1 序列化形态）——畸形=struct_invalid 整卷拒收
     for (const d of p.deletions) {
       if (d === null || typeof d !== 'object' || Array.isArray(d)) return 'struct_invalid'
       const { entity, id } = d as Record<string, unknown>
-      if (typeof entity !== 'string' || !NINE_TABLES.includes(entity)) return 'struct_invalid'
+      if (typeof entity !== 'string' || !SNAPSHOT_TABLES.includes(entity)) return 'struct_invalid'
       if (typeof id !== 'string' || id.length === 0) return 'struct_invalid'
       if (entity === 'paper_tags') {
         const parts = id.split('|')
@@ -235,7 +241,10 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       if ((obj.schema_version as number) > repos.snapshot.readSchemaVersion()) {
         return reject('schema_newer', claimed)
       }
-      if (JSON.stringify(Object.keys(obj.table_counts as Record<string, unknown>).sort()) !== JSON.stringify([...NINE_TABLES].sort())) {
+      if (
+        JSON.stringify(Object.keys(obj.table_counts as Record<string, unknown>).sort()) !==
+        JSON.stringify([...SNAPSHOT_TABLES].sort())
+      ) {
         return reject('struct_invalid', claimed)
       }
       // 验签钥（未配对=不可验签→hmac_fail——自裁③收窄口径；owner 已过形状门）

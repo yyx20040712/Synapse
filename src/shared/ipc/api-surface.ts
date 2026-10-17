@@ -15,7 +15,12 @@ import { annotationSchema } from '../models/annotation'
 import { noteSchema } from '../models/note'
 import { tagSchema } from '../models/tag'
 import { aiNoteSchema } from '../models/ai-note'
-import { lineageNodeSchema, lineageEdgeSchema } from '../models/lineage'
+import {
+  lineageNodeSchema,
+  lineageEdgeSchema,
+  floatingNoteSchema,
+  floatingNoteUpsertSchema
+} from '../models/lineage'
 import { folderSchema } from '../models/folder'
 import * as S from './schemas'
 import * as AI from './ai-schemas'
@@ -90,6 +95,8 @@ export const API_SURFACE = {
   // [T3-P5] 6→7 通道：upsertLineTypes 图级线型整体替换（D-P5-4 弃双通道 CRUD）
   // [F-FOLDER-01] graph 入参 +folderId（图切换器子图读——W4 改写面）
   // [F-BAKRET-01] 7→6 通道：lineage/import 草稿导入退役（用户裁决 2026-09-30）
+  // [F-VISFB-61] 6→8 通道：+upsert-floating-note/+remove-floating-note
+  // （悬浮笔记数据与会话面——读面随 graph 载荷，无独立 list 通道）
   // [F-ALIGN-01 D1] 旧节点写通道退役→patch-node（脉络手动建点路径
   // 全退役——节点唯一来源=入库/移动两路 INV-NEW-1；载荷=既有节点编辑 patch，
   // 新建形态契约面结构性不可表达——设计稿 docs/design/2026-10-04_f-align01-design.md §1 D1）
@@ -103,7 +110,17 @@ export const API_SURFACE = {
       channel: 'lineage/upsert-line-types',
       Req: S.lineageUpsertLineTypesReqSchema,
       Res: S.lineageUpsertLineTypesReqSchema
-    }
+    },
+    // [F-VISFB-61] 悬浮笔记数据与会话面（B6-61）：upsert=新建（id 缺省）/
+    // 编辑（id 提供全载荷——content/x/y；未知 id=插入〔repo upsert 语义，
+    // 回炉 R3〕）；读面随 lineage/graph 载荷（无独立
+    // list 通道——folderId 域过滤在 graph 服务端）；域删级联=DDL 承担
+    upsertFloatingNote: {
+      channel: 'lineage/upsert-floating-note',
+      Req: floatingNoteUpsertSchema,
+      Res: floatingNoteSchema
+    },
+    removeFloatingNote: { channel: 'lineage/remove-floating-note', Req: S.lineageIdReqSchema, Res: S.trueAckSchema }
   },
   tags: {
     // [F-TAGS-02 / DB-1 U4] list Req=folderId 必填（域内列表——无全域并集消费面；

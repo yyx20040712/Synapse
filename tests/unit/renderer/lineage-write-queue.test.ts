@@ -77,6 +77,8 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     let host: WriteQueueHost = {
       nodes: [],
       edges: [{ id: 'e1', fromNode: 'a', toNode: 'b', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }],
+      // [F-VISFB-61] 悬浮笔记数据态（WriteQueueHost 面扩展——拆件自足性夹具随补）
+      floatingNotes: [],
       lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
       saveStatus: 'clean',
       lastWriteError: null,

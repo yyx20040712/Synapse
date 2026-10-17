@@ -26,6 +26,8 @@
  * - 编辑单元=单次拖放/加点/删点/重置走线/端点重连/画线/删线/命名提交（含
  *   线型行内改名）/线形变更——与撤销栈单元同构（一单元=一撤销步；拖放类
  *   单元由轮 2 调线/拖拽接入，store.beginUnit 为统一入口）。
+ *   [F-VISFB-61] 悬浮笔记三操作（创建/编辑/删除）入编辑单元族——快照/
+ *   队列/乐观应用/undo 栈全链同构（快照含 floatingNotes）。
  * - [T3-P8 R3] lazy 载荷：enqueue 只存 id+差异（patch=字段覆盖/override=槽位
  *   语义轴），applyAction 执行时点 fullRowInput(最新行) 合成——暂存窗内
  *   先行落地的乐观变更自然并入。[F-UIRES-03 C3] 改月语义轴（override
@@ -34,7 +36,13 @@
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import { LINE_TYPE_COLORS, lineageOrder } from '@shared/models/lineage'
-import type { LineageEdge, LineageEdgeUpsert, LineageNode } from '@shared/models/lineage'
+import type {
+  FloatingNote,
+  FloatingNoteUpsert,
+  LineageEdge,
+  LineageEdgeUpsert,
+  LineageNode
+} from '@shared/models/lineage'
 
 /**
  * [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：
@@ -72,13 +80,21 @@ export type WriteAction =
   | { kind: 'remove-edge'; id: string }
   /** [F-LGRAPH-01②U8] 图级色行名整批替换（单实体——同类合并最后写胜出） */
   | { kind: 'upsert-line-type-names'; input: string[] }
+  /** [F-VISFB-61] 悬浮笔记三操作（创建/编辑=upsert 同通道全载荷；删除）——
+   *  id 型动作（同 id upsert 合并最后写胜出；remove 异 kind 不合并——
+   *  remove-edge 同族）；isNew=本地 uuid 回写标记（无 toast 面——62 号 UI
+   *  承载反馈） */
+  | { kind: 'upsert-floating-note'; input: FloatingNoteUpsert; isNew?: boolean }
+  | { kind: 'remove-floating-note'; id: string }
 
-/** [F-LGRAPH-01②U1] 会话快照（每编辑单元前图态全量浅快照——undo/redo 载荷） */
+/** [F-LGRAPH-01②U1] 会话快照（每编辑单元前图态全量浅快照——undo/redo 载荷；
+ *  [F-VISFB-61] +floatingNotes——笔记三操作入撤销维度） */
 export interface SessionSnapshot {
   nodes: LineageNode[]
   edges: LineageEdge[]
   lineTypeNames: string[]
   queue: WriteAction[]
+  floatingNotes: FloatingNote[]
 }
 
 /** 写队列宿主最小面（zustand store 结构性满足——数据态回填+队列驻留） */
@@ -92,6 +108,8 @@ export interface WriteQueueHost {
   flushing: boolean
   undoStack: SessionSnapshot[]
   redoStack: SessionSnapshot[]
+  /** [F-VISFB-61] 悬浮笔记数据态（乐观应用/快照轴共享面） */
+  floatingNotes: FloatingNote[]
   /** 库态重取（CONFLICT 丢弃后服务器权威回填——store.load 注入） */
   load(): Promise<void>
 }
@@ -124,6 +142,11 @@ function sameTarget(a: WriteAction, b: WriteAction): boolean {
   }
   // [F-LGRAPH-01②U8] 色行名整批=单实体（图级配置）——同类恒合并
   if (a.kind === 'upsert-line-type-names' && b.kind === 'upsert-line-type-names') return true
+  // [F-VISFB-61] 悬浮笔记 upsert=id 型判等（remove 走下方 id 兜底分支；
+  // upsert×remove 异 kind 不合并——remove-edge 同族）
+  if (a.kind === 'upsert-floating-note' && b.kind === 'upsert-floating-note') {
+    return a.input.id === b.input.id
+  }
   return (a as { id: string }).id === (b as { id: string }).id
 }
 
@@ -202,6 +225,29 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       set((s) => ({ edges: s.edges.filter((e) => e.id !== action.id) }))
       return
     }
+    if (action.kind === 'upsert-floating-note') {
+      const now = new Date().toISOString()
+      const id = action.input.id ?? crypto.randomUUID()
+      const next: FloatingNote = {
+        id,
+        folderId: action.input.folderId,
+        x: action.input.x,
+        y: action.input.y,
+        content: action.input.content,
+        createdAt: now,
+        updatedAt: now
+      }
+      set((s) => ({
+        floatingNotes: s.floatingNotes.some((n) => n.id === id)
+          ? s.floatingNotes.map((n) => (n.id === id ? { ...next, createdAt: n.createdAt } : n))
+          : [...s.floatingNotes, next]
+      }))
+      return
+    }
+    if (action.kind === 'remove-floating-note') {
+      set((s) => ({ floatingNotes: s.floatingNotes.filter((n) => n.id !== action.id) }))
+      return
+    }
     set({ lineTypeNames: [...action.input] })
   }
 
@@ -211,6 +257,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
    *  [F-ALIGN-01] 节点新建形态随旧节点写通道退役删除——本面仅边新建 */
   const withLocalId = (a: WriteAction): WriteAction => {
     if (a.kind === 'upsert-edge' && a.input.id === undefined) {
+      return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
+    }
+    // [F-VISFB-61] 笔记新建同型：本地乐观 id=落库 id（无临时 id 漂移）；
+    // isNew 仅标记（无 toast 面——62 号 UI 承载反馈）
+    if (a.kind === 'upsert-floating-note' && a.input.id === undefined) {
       return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
     }
     return a
@@ -320,6 +371,20 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       // 整批替换（Res=归一后回显恰 6 行）——成功 set lineTypeNames
       const saved = await unwrap(api.lineage.upsertLineTypes(action.input))
       set({ lineTypeNames: saved })
+      return
+    }
+    if (action.kind === 'upsert-floating-note') {
+      const saved = await unwrap(api.lineage.upsertFloatingNote(action.input))
+      set((s) => ({
+        floatingNotes: s.floatingNotes.some((n) => n.id === saved.id)
+          ? s.floatingNotes.map((n) => (n.id === saved.id ? saved : n))
+          : [...s.floatingNotes, saved]
+      }))
+      return
+    }
+    if (action.kind === 'remove-floating-note') {
+      await unwrap(api.lineage.removeFloatingNote({ id: action.id }))
+      set((s) => ({ floatingNotes: s.floatingNotes.filter((n) => n.id !== action.id) }))
       return
     }
     await unwrap(api.lineage.removeEdge({ id: action.id }))

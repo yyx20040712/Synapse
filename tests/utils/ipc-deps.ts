@@ -33,6 +33,7 @@ export function makeIpcDeps(over: IpcDepsOverrides = {}): IpcDeps {
       ai_notes_import: null as never,
       zcode_link: null as never,
       lineage: null as never,
+      floatingNotes: null as never, // [F-VISFB-61] 悬浮笔记用例面键（面外桩——类型闭合随 ServiceBundle 增键）
       folders: null as never,
       papers: null as never,
       aiSessions: null as never, // [F-DBCAMP-01 DB-2 U2a] AI 域两键（面外桩）

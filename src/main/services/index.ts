@@ -38,6 +38,10 @@ import {
   createLineageService,
   type LineageService
 } from './lineage/lineage.service'
+import {
+  createFloatingNotesService,
+  type FloatingNotesService
+} from './lineage/floating-notes.service'
 import { createEnrichService } from './enrich/enrich.service'
 import {
   createCrossrefProvider,
@@ -137,6 +141,8 @@ export interface ServiceBundle {
   zcode_link: ZcodeLinkService
   /** LG-01 脉络图：service 四写方法全建（IPC 写通道注册归 LG-03） */
   lineage: LineageService
+  /** [F-VISFB-61] 悬浮笔记用例面（lineage 域两通道+graph 装配源消费） */
+  floatingNotes: FloatingNotesService
   /** [F-FOLDER-01] folders 域（CRUD 编排+事件广播+S1 闸） */
   folders: ApiHandlers['folders']
   /** [F-FOLDER-01] papers 域（move-folder 移动/移出事务序——§3.4+W2） */
@@ -183,6 +189,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
   // 前提头注单源在 figure-tasks.service）；service 实例生命周期=课题容器
   // （workspace 切换重建=旧会话全灭）
   const figureTasks = createFigureTaskService({ repos: deps.repos, figureStore })
+  // [F-VISFB-61] 悬浮笔记用例面（lineage.service graph 装配+lineage 域 IPC 消费）
+  const floatingNotesSvc = createFloatingNotesService({
+    repo: deps.repos.floatingNotes,
+    folderExists: (id) => deps.repos.folders.findById(id) !== null
+  })
   // [F-FOLDER-01] 共用依赖收口（folders/papers/library 三 service 同源注入）；
   // [F-DBCAMP-01 DB-4] +fileStore（papers/folders delete 文件隔离出口——§5.d②）；
   // [F-IMPORTGATE-01] +importGate（两 delete 互斥面——folderDeps 恒真值注入）
@@ -264,8 +275,12 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
       tagNames: (ids) => deps.repos.tags.tagNamesByIds(ids),
       // [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 星标批查（papers.starredByIds 单源
       // ——文献节点 isStarred 搭载，卡标记区数据源）
-      starred: (ids) => deps.repos.papers.starredByIds(ids)
+      starred: (ids) => deps.repos.papers.starredByIds(ids),
+      // [F-VISFB-61] graph 通道悬浮笔记装配源（folderId 域过滤/undefined 并集）
+      floatingNotes: floatingNotesSvc.notesForGraph
     }),
+    // [F-VISFB-61] 悬浮笔记用例面（单实例——graph 装配与 lineage 域 IPC 同源）
+    floatingNotes: floatingNotesSvc,
     aiSessions: createAiSessionsService({ repos: deps.repos }),
     aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),
     aiTasks: createAiTasksService({ repos: deps.repos }),

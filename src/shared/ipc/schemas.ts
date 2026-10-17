@@ -13,6 +13,7 @@ import { collectionSchema } from '../models/collection'
 import {
   lineageNodeSchema,
   lineageEdgeSchema,
+  floatingNoteSchema,
   lineTypeNamesSchema,
   lineageEdgeUpsertSchema
 } from '../models/lineage'
@@ -325,7 +326,10 @@ export const lineageGraphResSchema = z
     paperMetrics: z.record(z.string(), lineagePaperMetricsSchema),
     lineTypeNames: lineTypeNamesSchema,
     pubNos: z.record(z.string(), z.number().int()),
-    tagNames: z.record(z.string(), z.array(z.string()))
+    tagNames: z.record(z.string(), z.array(z.string())),
+    /** [F-VISFB-61] 悬浮笔记图域行集（folderId 域隔离——服务端按请求域过滤；
+     *  无 paper_id；62 号 UI 消费面） */
+    floatingNotes: z.array(floatingNoteSchema)
   })
   .strict()
 export type LineageGraphRes = z.infer<typeof lineageGraphResSchema>

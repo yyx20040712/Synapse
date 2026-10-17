@@ -8,6 +8,7 @@ import { createAnnotationsRepo, type AnnotationsRepo } from './annotations.repo'
 import { createNotesRepo, type NotesRepo } from './notes.repo'
 import { createAiNotesRepo, type AiNotesRepo } from './ai_notes.repo'
 import { createLineageRepo, type LineageRepo } from './lineage.repo'
+import { createFloatingNotesRepo, type FloatingNotesRepo } from './floating-notes.repo'
 import { createTagsRepo, type TagsRepo } from './tags.repo'
 import { createCollectionsRepo, type CollectionsRepo } from './collections.repo'
 import { createFoldersRepo, type FoldersRepo } from './folders.repo'
@@ -28,6 +29,9 @@ export interface Repos {
   notes: NotesRepo
   aiNotes: AiNotesRepo
   lineage: LineageRepo
+  /** [F-VISFB-61] 悬浮笔记数据仓储（floating_notes——迁移 024；消费=
+   *  floating-notes.service+import-snapshot 十表写面〔TABLE_SPECS 单源〕） */
+  floatingNotes: FloatingNotesRepo
   tags: TagsRepo
   collections: CollectionsRepo
   /** [F-FOLDER-01] 文件夹域 CRUD（collections 表新面——与 collections.repo
@@ -79,6 +83,7 @@ export function createRepos(db: SqliteDb): Repos {
     notes: createNotesRepo(db),
     aiNotes: createAiNotesRepo(db),
     lineage: createLineageRepo(db),
+    floatingNotes: createFloatingNotesRepo(db),
     tags: createTagsRepo(db),
     collections: createCollectionsRepo(db),
     folders: createFoldersRepo(db),
@@ -103,6 +108,7 @@ export type {
   NotesRepo,
   AiNotesRepo,
   LineageRepo,
+  FloatingNotesRepo,
   TagsRepo,
   CollectionsRepo,
   FoldersRepo,

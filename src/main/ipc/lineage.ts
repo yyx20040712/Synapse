@@ -44,6 +44,15 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
     },
     // [F-LGRAPH-01②U8] 图级色行名整批替换（恰 6 校验 schema 面单源——
     // 通道名沿承 upsert-line-types，载荷重整为 names 数组；Res=归一后回显）
-    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypeNames(req)
+    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypeNames(req),
+    // [F-VISFB-61] 悬浮笔记数据与会话面：upsert（id 缺省新建/提供更新或插入
+    // ——repo upsert 语义〔回炉 R3〕）+
+    // remove（幂等）；IPC 层零守卫（幽灵 folder 拒/有限数守卫在 service），
+    // 域错误经 toAppError 结构化中文 reason
+    upsertFloatingNote: async (req) => deps.services.floatingNotes.upsertNote(req),
+    removeFloatingNote: async (req) => {
+      deps.services.floatingNotes.removeNote(req.id)
+      return { ok: true }
+    }
   }
 }

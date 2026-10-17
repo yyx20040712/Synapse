@@ -239,7 +239,8 @@ const VALID: Record<string, unknown[]> = {
       pubNos: { p1: 3 }, // [F-FOLDER-01] 库级编号表（键=paperId）
       paperMetrics: { p1: { citedByCount: 1, venueTier: 'T1' } },
       lineTypeNames: ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'], // [F-LGRAPH-01②U8] 色行名（恰 6）
-      tagNames: { p1: ['方法', '流域'] } // [A1a] 文献库标签名组表（键=paperId，值=名序）
+      tagNames: { p1: ['方法', '流域'] }, // [A1a] 文献库标签名组表（键=paperId，值=名序）
+      floatingNotes: [] // [F-VISFB-61] 悬浮笔记图域行集（无 paper_id——62 号 UI 消费）
     }
   ],
   // [F-ALIGN-01] upsert-node 通道退役（新建形态结构性不可表达）——patch-node

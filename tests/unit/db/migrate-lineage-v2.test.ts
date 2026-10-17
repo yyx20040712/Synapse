@@ -30,7 +30,7 @@ describe('db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填�
   it('新库：全量应用到 10（[F-UIRES-03 C1] 015 起=15 终值、[F-DBCAMP-01 U1/U2/U3] 016/017/018 起=18，010 断言面不变），lineage_nodes 含 month/slot 列、lineage_edges 含 sub 列', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(23)
+    expect(result.currentVersion).toBe(24)
     const nodeCols = (db.prepare('PRAGMA table_info(lineage_nodes)').all() as Array<{ name: string }>).map(
       (c) => c.name
     )
@@ -48,8 +48,8 @@ describe('db/migrate —— 010 lineage v2（month/slot/sub+meta KV+slot 回填�
     migrate(db, MIGRATIONS.filter((m) => m.version <= 9))
     seedV9Node(db, 'legacy-1', 2019, '2026-01-01T00:00:00.000Z')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
-    expect(readUserVersion(db)).toBe(23)
+    expect(result.appliedVersions).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
+    expect(readUserVersion(db)).toBe(24)
     const row = db.prepare('SELECT month, slot FROM lineage_nodes WHERE id = ?').get('legacy-1') as {
       month: number | null
       slot: number | null

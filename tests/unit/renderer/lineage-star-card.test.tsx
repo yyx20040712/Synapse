@@ -195,7 +195,9 @@ describe('F-STAR-01 A3 lineage.store toggleNodeStar', () => {
     })
     // 编辑单元入栈（beginUnit 前快照——isStarred=false 时点）
     store.setState({
-      undoStack: [{ nodes: [before], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [] }]
+      undoStack: [
+        { nodes: [before], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [], floatingNotes: [] }
+      ]
     })
     await store.getState().toggleNodeStar({ id: 'n-1', paperId: 'p-1', isStarred: false })
     expect(store.getState().nodes[0]?.isStarred).toBe(true)
@@ -224,7 +226,8 @@ describe('F-STAR-01 A3 lineage.store toggleNodeStar', () => {
             nodes: [makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false })],
             edges: [],
             lineTypeNames: defaultLineTypeNames(),
-            queue: []
+            queue: [],
+            floatingNotes: []
           }
         ]
       })
@@ -257,7 +260,7 @@ describe('F-STAR-01 A3 lineage.store toggleNodeStar', () => {
       edges: [],
       lineTypeNames: defaultLineTypeNames(),
       queue: [],
-      undoStack: [{ nodes: [n1], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [] }],
+      undoStack: [{ nodes: [n1], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [], floatingNotes: [] }],
       redoStack: [],
       saveStatus: 'clean',
       flushing: false

@@ -14,12 +14,15 @@
  *   updated_at=导入时刻（再导入覆写刷新）。
  * - 导出读面（§13.6 canonical 行序矩阵——主控预裁：collections/tags/paper_tags
  *   无 updated_at 列〔001 实照〕，行序仅服务 canonical 确定性不承载合并语义）：
- *   papers/notes/annotations/lineage_nodes/lineage_edges/lineage_graph_meta=
- *   ORDER BY updated_at, id（graph_meta 主键=key 列，别名对齐——次序键用 key）；
- *   collections/tags=ORDER BY id；paper_tags=ORDER BY paper_id, tag_id。
+ *   papers/notes/annotations/lineage_nodes/lineage_edges/lineage_graph_meta/
+ *   floating_notes=ORDER BY updated_at, id（graph_meta 主键=key 列，别名对齐
+ *   ——次序键用 key）；collections/tags=ORDER BY id；paper_tags=ORDER BY
+ *   paper_id, tag_id。
  *   显式列清单=各表迁移终态全列（列名从 001/004/005/006/007/010/011/012/013/
- *   014/016/017/019 迁移实读对齐——[回炉 R4] 枚举勘正补 005/006/007；007
+ *   014/016/017/019/024 迁移实读对齐——[回炉 R4] 枚举勘正补 005/006/007；007
  *   lineage_nodes.tags/006 lineage_edges.kind 入导出面=「迁移终态全列」；
+ *   [F-VISFB-61] 导出面九表→十表：+floating_notes（迁移 024——无 paper_id
+ *   纯画布节点；table_counts 键集恰十键）；
  *   [DB-3 U3 回炉 R1] U3 import 写面=同全列（「出库真值/入写真值」对偶对称
  *   ——原「入落 DDL 默认」死置列预裁证伪推翻）；SELECT 禁 *）。
  * - deletion_events 读面=只读全量消费（ORDER BY seq，不剪枝——§13.1；写协议
@@ -40,7 +43,8 @@ import type { SqliteDb } from '../connection'
 /** 导出行对象=列名→值全列（repo 读面原样——canonical 序列化器单源在 codec） */
 export type SnapshotRow = Record<string, unknown>
 
-/** 导出面九表行集（键集=§13.7 九表——table_counts 恰九键的锁定语义） */
+/** 导出面十表行集（键集=§13.7 表集——table_counts 恰十键的锁定语义；
+ *  [F-VISFB-61] +floating_notes〔迁移 024〕） */
 export interface SnapshotExportRows {
   papers: SnapshotRow[]
   collections: SnapshotRow[]
@@ -51,6 +55,7 @@ export interface SnapshotExportRows {
   lineage_nodes: SnapshotRow[]
   lineage_edges: SnapshotRow[]
   lineage_graph_meta: SnapshotRow[]
+  floating_notes: SnapshotRow[]
 }
 
 export interface SnapshotDeletionEvent {
@@ -65,9 +70,10 @@ export interface PeerKeyRow {
   importedAt: string
 }
 
-/** 九表读面规格：显式列清单（迁移终态）+行序矩阵（头注行为层）。
+/** 十表读面规格：显式列清单（迁移终态）+行序矩阵（头注行为层）。
  * [F-DBCAMP-01 DB-3 U3] export 关键字放开（简报③-4：import-snapshot.repo 写面
- * 复用本单源——列集/行序双面同源禁两处漂移；读面方法零改动） */
+ * 复用本单源——列集/行序双面同源禁两处漂移；读面方法零改动）；
+ * [F-VISFB-61] 九表→十表：+floating_notes（updated_at LWW 表族） */
 export const TABLE_SPECS = [
   {
     table: 'papers',
@@ -127,6 +133,11 @@ export const TABLE_SPECS = [
     table: 'lineage_graph_meta',
     columns: ['key', 'value', 'updated_at'],
     orderBy: 'updated_at, key'
+  },
+  {
+    table: 'floating_notes',
+    columns: ['id', 'folder_id', 'x', 'y', 'content', 'created_at', 'updated_at'],
+    orderBy: 'updated_at, id'
   }
 ] as const
 
@@ -143,11 +154,11 @@ export interface SnapshotRepo {
   setPeerKey(ownerId: string, hex: string): void
   listPeerKeys(): PeerKeyRow[]
   removePeerKey(ownerId: string): boolean
-  /** 九表全行读面（canonical 行序矩阵+显式列清单——envelope payload 源） */
+  /** 十表全行读面（canonical 行序矩阵+显式列清单——envelope payload 源） */
   readExportTables(): SnapshotExportRows
   /** deletion_events 全量读（ORDER BY seq——只读消费，§13.1） */
   readDeletionEvents(): SnapshotDeletionEvent[]
-  /** PRAGMA user_version（envelope schema_version 字段源——链尾=21） */
+  /** PRAGMA user_version（envelope schema_version 字段源——链尾=24〔024 起〕） */
   readSchemaVersion(): number
 }
 

@@ -96,9 +96,10 @@ function paperRow(id: string, updatedAt: string): Record<string, unknown> {
 }
 
 describe('F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面', () => {
-  it('upsert 表序=FK 父先子后钉死（collections→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta）', () => {
+  it('upsert 表序=FK 父先子后钉死（collections→floating_notes→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta；[F-VISFB-61] floating_notes 紧随 collections——唯一 FK 父）', () => {
     expect(IMPORT_TABLE_ORDER).toEqual([
       'collections',
+      'floating_notes',
       'tags',
       'papers',
       'lineage_nodes',
@@ -280,7 +281,7 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面', (
     db.close()
   })
 
-  it('父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→九表行数对账（表序正确性的正向锚）', () => {
+  it('父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→十表行数对账（表序正确性的正向锚；[F-VISFB-61] +floating_notes）', () => {
     const { db, repo } = makeRepo()
     repo.upsertRow('collections', { id: 'c-1', name: '异源图', position: 0 })
     repo.upsertRow('tags', { id: 't-1', name: '异源标签', color: null, folder_id: '__main__' })
@@ -291,6 +292,8 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面', (
     repo.upsertRow('annotations', { id: 'a-1', paper_id: 'p-1', page: 0, kind: 'highlight', color: 'yellow', quote_text: '引文', prefix_text: '', suffix_text: '', start_offset: 0, end_offset: 0, rects_json: '[]', sort_key: '0000:01', comment: '', created_at: 't', updated_at: 't' })
     repo.upsertRow('lineage_edges', edgeRow('le-1', 'ln-1', 'ln-1'))
     repo.upsertRow('lineage_graph_meta', { key: 'k-1', value: 'v', updated_at: 't' })
+    // [F-VISFB-61] 悬浮笔记行随序落库（FK 父=collections 先行——folder_id 域资产）
+    repo.upsertRow('floating_notes', { id: 'fn-1', folder_id: 'c-1', x: 1, y: 2, content: '异源悬浮笔记', created_at: 't', updated_at: 't' })
     // 010/012 播种行在场（lineTypes '[]'@epoch/__main__——R-C 种子行面）：collections
     // /lineage_graph_meta 计数=播种 1+异源 1，余表恰 1
     const expectCount: Array<[string, number]> = [
@@ -302,7 +305,8 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面', (
       ['annotations', 1],
       ['lineage_nodes', 1],
       ['lineage_edges', 1],
-      ['lineage_graph_meta', 2]
+      ['lineage_graph_meta', 2],
+      ['floating_notes', 1]
     ]
     for (const [t, n] of expectCount) {
       expect((db.prepare(`SELECT COUNT(*) c FROM ${t}`).get() as { c: number }).c, `${t} 计数`).toBe(n)

@@ -174,7 +174,7 @@ describe('F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面'
     db.close()
   })
 
-  it('table_counts=实载行数（九键恰 §13.7 九表）+seq 语义：首导 1/构建取消零耗/commit 后再导=2', () => {
+  it('table_counts=实载行数（十键恰 §13.7 表集——[F-VISFB-61] +floating_notes）+seq 语义：首导 1/构建取消零耗/commit 后再导=2', () => {
     const { db, service } = makeFixture(() => Buffer.from('dddddddddddd', 'utf8'))
     seedData(db)
     const first = service.exportToBuffer()
@@ -188,7 +188,8 @@ describe('F-DBCAMP-01 DB-3 U2 export-snapshot.service —— 纯构建导出面'
       annotations: 1,
       lineage_nodes: 2,
       lineage_edges: 1,
-      lineage_graph_meta: 1
+      lineage_graph_meta: 1,
+      floating_notes: 0
     })
     // 取消零耗：构建不 commit，再构建仍 seq=1
     expect(service.exportToBuffer().snapshotSeq).toBe(1)

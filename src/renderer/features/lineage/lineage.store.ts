@@ -1,7 +1,9 @@
 // b3: P7-H
 /**
  * lineage.store —— 脉络图数据+读面/会话写面状态单源（store；暂存机制拆件=
- * lineage-write-queue.ts，本件保留数据态+读面+方法签名薄壳）。
+ * lineage-write-queue.ts，编辑会话撤销/重做域件拆件=lineage-session-ops.ts
+ * 〔F-VISFB-61——beginUnit/restore 纯移动迁出〕，本件保留数据态+读面+
+ * 方法签名薄壳）。
  *
  * ── 数据单源接缝声明（双向锚定：本行+LineagePage 头注）──
  * lineage/graph 取数=本 store 单点；LineagePage/LineageTimeline/03 编辑层
@@ -21,6 +23,8 @@
  * 快照入 undo 栈+redo 清）→乐观应用+入队（不发 IPC）；save()=批量落库
  * （成功 clean+栈基线重置）；undo/redo=快照栈；discardSession=dirty 切图
  * 确认分支弃暂存。拖放类单元（调线/拖拽）由轮 2 接入 beginUnit。
+ * [F-VISFB-61] 悬浮笔记三操作（创建/编辑/删除）入同一编辑单元族（快照含
+ * floatingNotes——undo/redo/save/reload 全链同构；域删级联=main 侧 DDL）。
  * [A1b] 标签编辑单元随脉络私有标签域退役删除（标签整组写 action 消亡）。
  *
  * 错误契约：load 失败不上抛——失败态驻 store.error（列表型瞬态，消费方
@@ -31,8 +35,14 @@ import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
 import { MAIN_GRAPH_ID, defaultLineTypeNames } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
-import type { LineageEdge, LineageNode, LineageViaPoint } from '@shared/models/lineage'
+import type {
+  FloatingNote,
+  LineageEdge,
+  LineageNode,
+  LineageViaPoint
+} from '@shared/models/lineage'
 import { createWriteQueue } from './lineage-write-queue'
+import { createSessionOps } from './lineage-session-ops'
 import { useLineageViewStore } from './lineage-view.store'
 import type { LineageSaveStatus, SessionSnapshot, WriteAction } from './lineage-write-queue'
 
@@ -57,6 +67,9 @@ export interface LineageStore {
   tagNames: Record<string, string[]>
   /** [F-LGRAPH-01②U8] 图级色行名（恰 6 行——graph 单读随行；工具组线型列表消费） */
   lineTypeNames: string[]
+  /** [F-VISFB-61] 悬浮笔记图域行集（graph 单读随行——folderId 域隔离；
+   *  62 号 UI 消费面；会话写走 write-queue 同族〔可等待+undo〕） */
+  floatingNotes: FloatingNote[]
   status: LineageStatus
   error: string | null
   /** [F-LGRAPH-01①U4] 当前图作用域：**恒有值**（并集退役——每图只显示自身，
@@ -117,6 +130,15 @@ export interface LineageStore {
   reparentNode(nodeId: string, newParentId: string): void
   removeNode(id: string): void
   removeEdge(id: string): void
+  /** [F-VISFB-61] 悬浮笔记创建（当前图域——folderId=store.folderId；乐观
+   *  应用+入队，不发 IPC；一单元=一撤销步）；62 号 UI 按 effective-scale
+   *  换算内容坐标后传入（store 只存取画布 own 域坐标） */
+  addFloatingNote(x: number, y: number, content: string): void
+  /** [F-VISFB-61] 编辑（content/x/y patch——全载荷合成防半更新清字段，
+   *  A8 同族；同 id 队列合并最后写胜出） */
+  updateFloatingNote(id: string, patch: Partial<Pick<FloatingNote, 'content' | 'x' | 'y'>>): void
+  /** [F-VISFB-61] 删除（乐观移除+remove 动作入队；幽灵 id 抛） */
+  removeFloatingNote(id: string): void
   /** [F-LGRAPH-01②U1] 批量落库（保存钮触发——saving→clean（成功+栈基线
    *  重置）/error（失败+重试））。[F-VISFB-14] 返回可等待 Promise（退出握手
    *  走 save() 正道消费，不旁路队列；flushing 中让位早退=调用方收口后查
@@ -151,75 +173,13 @@ const mustNode = (nodes: LineageNode[], id: string): LineageNode => {
   return n
 }
 
-/** [回炉 R20] 撤销栈深度上限（INV-23 先例=50——超深丢最旧快照） */
-const UNDO_STACK_MAX = 50
-
 export const useLineageStore = create<LineageStore>()((set, get) => {
   // 请求序号 stale-guard：新 load 取代旧 load 后，旧响应（成功/失败）丢弃
   let seq = 0
   const wq = createWriteQueue({ set, get })
-
-  /** [F-LGRAPH-01②U1] 编辑单元入口：单元前图态快照入 undo 栈+redo 栈清
-   *  （一单元=一撤销步——与 mockup §2.2 编辑单元定义同构）；
-   *  [回炉 R20] 栈深截断 50（INV-23 先例——超深丢最旧快照）；
-   *  [回炉 R5] saving（flushing）域拒绝（与 undo/redo 闸同型——INV-94
-   *  「saving 态锁定 undo/redo/编辑」实现对齐）：返回 false=调用方放弃写 */
-  const beginUnit = (): boolean => {
-    const s = get()
-    if (s.flushing) return false
-    const undoStack = [
-      ...s.undoStack,
-      { nodes: s.nodes, edges: s.edges, lineTypeNames: s.lineTypeNames, queue: s.queue }
-    ]
-    if (undoStack.length > UNDO_STACK_MAX) undoStack.splice(0, undoStack.length - UNDO_STACK_MAX)
-    set({ undoStack, redoStack: [] })
-    return true
-  }
-
-  /** 快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生：空=clean）。
-   *  [回炉 r1-R2] 星标=非撤销维度恒保现值：restore 前捕获现网节点 isStarred
-   *  （按 id；paperId null 不捕获），快照落地后 overlay 回贴——「编辑移动入栈
-   *  →点星标→Ctrl+Z」星标显示不回退（不与 DB 脱钩）；快照缺 id=该快照后
-   *  新增节点的撤销面，保持快照值不贴。
-   *  [回炉 r2-R16] 边界声明：redo 复活节点（add→star→undo→redo）的
-   *  isStarred 取快照录制值——录制点早于星标切换的理论窗=该键缺席，
-   *  下次 graph 载入自愈（DB 单源重灌——与 undo 泄漏同族自愈类边界，
-   *  登记非修复） */
-  const restore = (snap: SessionSnapshot, pushTo: 'undo' | 'redo'): void => {
-    const s = get()
-    const cur: SessionSnapshot = {
-      nodes: s.nodes,
-      edges: s.edges,
-      lineTypeNames: s.lineTypeNames,
-      queue: s.queue
-    }
-    const starNow = new Map(
-      s.nodes
-        .filter((n) => n.paperId !== null && n.isStarred !== undefined)
-        .map((n) => [n.id, n.isStarred!] as const)
-    )
-    const overlayStar = (nodes: LineageNode[]): LineageNode[] =>
-      nodes.map((n) =>
-        n.paperId !== null && starNow.has(n.id) ? { ...n, isStarred: starNow.get(n.id)! } : n
-      )
-    if (pushTo === 'redo') {
-      set({
-        ...snap,
-        nodes: overlayStar(snap.nodes),
-        undoStack: s.undoStack.slice(0, -1),
-        redoStack: [...s.redoStack, cur],
-        saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
-      })
-      return
-    }
-    set({
-      ...snap,
-      nodes: overlayStar(snap.nodes),
-      undoStack: [...s.undoStack, cur],
-      redoStack: s.redoStack.slice(0, -1),
-      saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
-    })
-  }
+  // [F-VISFB-61 拆件] 编辑会话撤销/重做域件（beginUnit/restore 纯移动自本件
+  // ——lineage-session-ops.ts 单源；解构注入调用面名字零 churn）
+  const { beginUnit, restore } = createSessionOps({ set, get })
 
   return {
     nodes: [],
@@ -228,6 +188,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     pubNos: {},
     tagNames: {},
     lineTypeNames: defaultLineTypeNames(),
+    floatingNotes: [],
     status: 'loading',
     error: null,
     folderId: MAIN_GRAPH_ID, // [F-LGRAPH-01①U4] 恒有值——主图兜底
@@ -259,6 +220,8 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           pubNos: graph.pubNos ?? {},
           tagNames: graph.tagNames ?? {},
           lineTypeNames: graph.lineTypeNames,
+          // [F-VISFB-61] 悬浮笔记随 graph 单读（?? []=旧桩装配兼容面）
+          floatingNotes: graph.floatingNotes ?? [],
           status: 'ready',
           error: null,
           // 库态新基线：自库态起栈（Word 式——mockup §2.2「再进入=自库态起栈」）
@@ -441,6 +404,46 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     removeEdge(id) {
       if (!beginUnit()) return
       wq.enqueue({ kind: 'remove-edge', id })
+    },
+
+    // [F-VISFB-61] 悬浮笔记三动作（beginUnit→enqueue——与边/节点写同链：
+    // 暂存+乐观+undo 栈+save 可等待）
+    addFloatingNote(x, y, content) {
+      if (!beginUnit()) return
+      wq.enqueue({
+        kind: 'upsert-floating-note',
+        input: { folderId: get().folderId, x, y, content }
+      })
+    },
+
+    updateFloatingNote(id, patch) {
+      const n = get().floatingNotes.find((f) => f.id === id)
+      if (n === undefined) throw new Error(`悬浮笔记不在图中：${id}`)
+      // [回炉 R4] 空 patch 早退：无任何键=无编辑语义——不产生编辑单元（不入队
+      // 不 dirty 不清 redoStack 不刷 updated_at）
+      if (Object.keys(patch).length === 0) return
+      if (!beginUnit()) return
+      // 全载荷合成（现值+patch 覆盖——防半更新清字段，A8 同族）
+      wq.enqueue({
+        kind: 'upsert-floating-note',
+        input: {
+          id: n.id,
+          folderId: n.folderId,
+          x: patch.x ?? n.x,
+          y: patch.y ?? n.y,
+          content: patch.content ?? n.content
+        }
+      })
+    },
+
+    removeFloatingNote(id) {
+      // [回炉 R1] 幽灵 id 抛（与 updateFloatingNote 对称——接口注释契约落地；
+      // 先检后 beginUnit=抛后零副作用：不入队不清 redoStack 不置 dirty）
+      if (get().floatingNotes.find((f) => f.id === id) === undefined) {
+        throw new Error(`悬浮笔记不在图中：${id}`)
+      }
+      if (!beginUnit()) return
+      wq.enqueue({ kind: 'remove-floating-note', id })
     },
 
     // [F-VISFB-14] 可等待面：await wq.flush()（保存钮 fire-and-forget 调用零变；

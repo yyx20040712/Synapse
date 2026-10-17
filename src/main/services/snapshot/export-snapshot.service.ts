@@ -7,9 +7,11 @@
  *   （36+1+64=101 字符——QR 载荷即此串，§13.9-1 b 案）。本库密钥显形仅此通道
  *   （不经对话框——用户显式打开设置页面才可见）。
  * - exportToBuffer：纯构建（无对话框——先构建后弹框编排归 IPC 层，export_.ts
- *   先例）：ensureSyncKey（幂等）→nextSnapshotSeq（空键≡0→首导=1）→读九表
- *   +deletion_events 全量+pdf_refs 派生→buildEnvelope。取消/失败零计数消耗
- *   ——commitExport 仅在落盘成功后由 IPC 层调（§13.4）。
+ *   先例）：ensureSyncKey（幂等）→nextSnapshotSeq（空键≡0→首导=1）→读十表
+ *   （[F-VISFB-61] TABLE_SPECS 九表→十表：+floating_notes——readExportTables
+ *   单源自动覆盖，本件代码零改）+deletion_events 全量+pdf_refs 派生→
+ *   buildEnvelope。取消/失败零计数消耗——commitExport 仅在落盘成功后由
+ *   IPC 层调（§13.4）。
  * - pdf_refs：按 paper_id 序；blob_id=HMAC-SHA256(blob_key, papers.sha256)——
  *   DB 权威哈希列，导出零文件读（r3-N9 v1 边界=标识计算+清单；file_ref 随卷
  *   携带供 U3 面向转移对账；blob 内容/传输=v2）。

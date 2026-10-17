@@ -97,7 +97,8 @@ function recvSeqOf(db: Db, owner: string): number | undefined {
   return row === undefined ? undefined : Number.parseInt(row.value, 10)
 }
 
-/** 最小合法 payload（九表键齐——结构可过闸④；行集由调用方注入） */
+/** 最小合法 payload（十表键齐——结构可过闸④；行集由调用方注入。
+ *  [F-VISFB-61] +floating_notes（TABLE_SPECS 九键→十表） */
 function emptyPayload(): {
   data: Record<string, Array<Record<string, unknown>>>
   deletions: Array<{ seq: number; entity: string; id: string; deleted_at: string }>
@@ -113,7 +114,8 @@ function emptyPayload(): {
       annotations: [],
       lineage_nodes: [],
       lineage_edges: [],
-      lineage_graph_meta: []
+      lineage_graph_meta: [],
+      floating_notes: []
     },
     deletions: [],
     pdf_refs: []
@@ -420,13 +422,13 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
     x.db.close()
   })
 
-  it('schema_newer：伪造 schema_version=24 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24）', () => {
+  it('schema_newer：伪造 schema_version=25 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24；[F-VISFB-61] 024 落链后随升 25）', () => {
     const x = makeSide(OWNER_X)
     const y = makeSide(OWNER_Y)
     pair(y, x)
     const forged = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 24,
+      schemaVersion: 25,
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),
@@ -581,10 +583,10 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
       outcome: 'rejected',
       reason: 'decrypt_fail'
     })
-    // ② 双错卷：schema_version=24+密文损坏→明文预检先报 schema_newer（伪卷随升）
+    // ② 双错卷：schema_version=25+密文损坏→明文预检先报 schema_newer（伪卷随升）
     const newer = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 24,
+      schemaVersion: 25,
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),

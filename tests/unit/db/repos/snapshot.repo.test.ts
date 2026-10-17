@@ -4,7 +4,7 @@
  *
  * 覆盖（简报③-3/③-8.1）：ensureSyncKey 生成 64-hex/幂等/预置值不覆写；
  * readSyncKey 缺席=显性 throw；nextSnapshotSeq 空键=1/计数写回后+1；
- * commitSnapshotSeq 落库；对端密钥 set/list/remove；九表读面行序矩阵
+ * commitSnapshotSeq 落库；对端密钥 set/list/remove；十表读面行序矩阵（[F-VISFB-61] +floating_notes）
  * （逆序夹具→断言输出有序）+列齐全（迁移终态列对位——逐表断言键集）；
  * deletion_events 全量读（级联账在场=r4 勘正前提实证面）；schema_version=21。
  */
@@ -15,8 +15,8 @@ import { APP_META_KEYS, PEER_SYNC_KEY_PREFIX } from '../../../../src/shared/mode
 
 type Db = ReturnType<typeof createTestDb>
 
-/** 导出面九表（§13.7——table_counts 键集恰九键） */
-const NINE_TABLES = [
+/** 导出面十表（§13.7 表集——table_counts 键集恰十键；[F-VISFB-61] +floating_notes） */
+const TEN_TABLES = [
   'papers',
   'collections',
   'tags',
@@ -25,7 +25,8 @@ const NINE_TABLES = [
   'annotations',
   'lineage_nodes',
   'lineage_edges',
-  'lineage_graph_meta'
+  'lineage_graph_meta',
+  'floating_notes'
 ] as const
 
 
@@ -117,7 +118,7 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
     db.close()
   })
 
-  it('九表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表）', () => {
+  it('十表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表；[F-VISFB-61] +floating_notes 同 updated_at,id 序）', () => {
     const db = createTestDb()
     seedPaper(db, 'p-b', '2026-03-01T00:00:00.000Z')
     // id 平手键：同 updated_at 且插入序与 id 序相反（p-z 先插）→断言 id 升序
@@ -191,7 +192,7 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
     db.close()
   })
 
-  it('九表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面）', () => {
+  it('十表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面；[F-VISFB-61] +floating_notes）', () => {
     const db = createTestDb()
     seedPaper(db, 'p-col', 't')
     db.prepare(`INSERT INTO collections (id, name, position) VALUES ('c-col', '列夹', 0)`).run()
@@ -214,6 +215,10 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
       `INSERT INTO lineage_edges (id, from_node, to_node, created_at, updated_at)
        VALUES ('le-col', 'ln-col', 'ln-c2', 't', 't')`
     ).run()
+    db.prepare(
+      `INSERT INTO floating_notes (id, folder_id, x, y, content, created_at, updated_at)
+       VALUES ('fn-col', 'c-col', 1, 2, '列笔记', 't', 't')`
+    ).run()
     const repo = createSnapshotRepo(db)
     const rows = repo.readExportTables()
     const firstOf: Record<string, Record<string, unknown>> = {
@@ -225,11 +230,12 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
       annotations: rows.annotations[0]!,
       lineage_nodes: rows.lineage_nodes[0]!,
       lineage_edges: rows.lineage_edges[0]!,
-      lineage_graph_meta: rows.lineage_graph_meta[0] ?? { key: 'lineTypes', value: '[]', updated_at: 't' }
+      lineage_graph_meta: rows.lineage_graph_meta[0] ?? { key: 'lineTypes', value: '[]', updated_at: 't' },
+      floating_notes: rows.floating_notes[0]!
     }
     // [回炉 R4] 列对账独立源=PRAGMA table_info 实读（消「测试列单=repo 列单」
     // 自指镜像——未来迁移加列而 TABLE_SPECS 漏列即红）
-    for (const t of NINE_TABLES) {
+    for (const t of TEN_TABLES) {
       const info = db.prepare(`PRAGMA table_info(${t})`).all() as Array<{ name: string }>
       const expected = info.map((c) => c.name).sort()
       expect(Object.keys(firstOf[t]!).sort(), `${t} 列集=迁移终态全列`).toEqual(expected)
@@ -262,10 +268,10 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
     db.close()
   })
 
-  it('readSchemaVersion=迁移链尾 user_version 23（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正；[F-VISFB-42] 023 随链）', () => {
+  it('readSchemaVersion=迁移链尾 user_version 24（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正；[F-VISFB-42] 023 随链；[F-VISFB-61] 024 随链）', () => {
     const db = createTestDb()
     const repo = createSnapshotRepo(db)
-    expect(repo.readSchemaVersion()).toBe(23)
+    expect(repo.readSchemaVersion()).toBe(24)
     db.close()
   })
 })

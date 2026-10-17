@@ -648,6 +648,54 @@
       "caseTitle": "A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线",
       "reason": "F-VISFB-14 C-A3 翻案（任务书 §0-1）：关 tab 默认=flush-first 立存（成功零弹窗即关），旧「确认弃改→基线空串」断言随翻案反转——原位改写为「flush-first 立存→重开=已存值」且判别力加严（不挂 dialog 自动接受器：若回归旧恒 confirm 行为模态阻塞→tab 不关→计数断言红）；confirm 弃改分支=单元级 close-tab-flush.test 9 例承载",
       "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-1/§5-B1段14号（runId=20261017-visfbb4）"
+    },
+    {
+      "file": "tests/unit/db/deletion-log.test.ts",
+      "caseTitle": "U1-1 对位：九表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=9+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0",
+      "reason": "F-VISFB-61 021 族第十表：题名九表→十表+计数 9→10 活性更新（floating_notes 触发器入列——断言强度只增）",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/db/deletion-log.test.ts",
+      "caseTitle": "U1-3 逐表删除断言 ×9（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值）",
+      "reason": "F-VISFB-61 同上：×9→×10+floating_notes 删事件 case 入矩阵",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/db/repos/import-snapshot.repo.test.ts",
+      "caseTitle": "upsert 表序=FK 父先子后钉死（collections→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta）",
+      "reason": "F-VISFB-61 IMPORT_TABLE_ORDER +floating_notes（紧随 collections——唯一 FK 父）题名随实序更新",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/db/repos/import-snapshot.repo.test.ts",
+      "caseTitle": "父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→九表行数对账（表序正确性的正向锚）",
+      "reason": "F-VISFB-61 九表→十表行数对账+floating_notes 异源行入序",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
+      "caseTitle": "九表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表）",
+      "reason": "F-VISFB-61 TABLE_SPECS 九表→十表题名更新（floating_notes 行序断言入格）",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
+      "caseTitle": "九表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面）",
+      "reason": "F-VISFB-61 同上十表化（floating_notes 七列 PRAGMA 对位入格）",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/services/export-snapshot.service.test.ts",
+      "caseTitle": "table_counts=实载行数（九键恰 §13.7 九表）+seq 语义：首导 1/构建取消零耗/commit 后再导=2",
+      "reason": "F-VISFB-61 table_counts 九键→十键（floating_notes:0 入期望）题名随键集更新",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/services/folders-delete-domain.test.ts",
+      "caseTitle": "删夹=域删级联零残留：papers/lineage_nodes/lineage_edges/notes/annotations/paper_tags/ai_notes 域内全灭；他夹与主图数据不动+双广播",
+      "reason": "F-VISFB-61 域资产扩展：题名枚举 +floating_notes（零残留断言入体——断言强度只增）",
+      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
     }
   ]
 }

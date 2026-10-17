@@ -63,8 +63,8 @@ describe('F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理', () => {
       ]
     )
     const result = migrate(db)
-    expect(result.currentVersion).toBe(23)
-    expect(readUserVersion(db)).toBe(23)
+    expect(result.currentVersion).toBe(24)
+    expect(readUserVersion(db)).toBe(24)
     const edges = db.prepare('SELECT id FROM lineage_edges').all() as Array<{ id: string }>
     expect(edges.map((e) => e.id)).toEqual(['e-same'])
     // 红线：guard 直执不落账（021 AFTER DELETE 触发器被 stop=1 抑制）
@@ -95,7 +95,7 @@ describe('F-DBCAMP-01 DB-4 F1 迁移 022 幽灵边清理', () => {
   it('新库全量直达 022（空种子——022 空跑幂等面）+deletion_events 零行', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(23)
+    expect(result.currentVersion).toBe(24)
     expect(db.prepare('SELECT COUNT(*) c FROM deletion_events').get()).toEqual({ c: 0 })
     db.close()
   })

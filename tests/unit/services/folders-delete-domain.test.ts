@@ -57,6 +57,9 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     db.prepare(
       "INSERT INTO ai_notes (id, paper_id, role, question, model, content_md, created_at, updated_at) VALUES ('ai-dom','p-dom-a','first-read','Q','m','内容','t','t')"
     ).run()
+    // [F-VISFB-61] 域资产扩展：悬浮笔记（folder_id REFERENCES collections
+    // ON DELETE CASCADE——012/019 族域资产先例同款；删夹全域删）
+    repos.floatingNotes.upsert({ id: 'fn-dom', folderId: folderId, x: 10, y: 20, content: '域内悬浮笔记' })
   }
 
   beforeEach(() => {
@@ -81,6 +84,8 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     seedPaper('p-keep')
     repos.papers.setFolderId('p-keep', other.id)
     repos.lineage.upsertNode({ paperId: 'p-keep', title: '幸存节点', year: 2024, x: null, y: null, folderId: other.id })
+    // [F-VISFB-61] 他夹悬浮笔记（对照面：域外笔记不受域删波及）
+    repos.floatingNotes.upsert({ id: 'fn-keep', folderId: other.id, x: 1, y: 1, content: '幸存笔记' })
     // 主图数据（对照面）
     seedPaper('p-main')
     repos.papers.setFolderId('p-main', MAIN_GRAPH_ID)
@@ -108,6 +113,9 @@ describe('F-ALIGN-01 D4 folders/delete 域删级联（INV-NEW-3——真库）',
     // 标签行随灭（原「标签定义行=库级实体保留」语义随域化退役）
     expect(count('tags')).toBe(0)
     expect(count('papers_fts', ' WHERE papers_fts MATCH ?', '"文献p-dom-a"')).toBe(0) // FTS 触发器自清
+    // [F-VISFB-61] 悬浮笔记域删级联零残留（FK CASCADE——他夹幸存对照在下方）
+    expect(count('floating_notes', ' WHERE folder_id=?', dom.id)).toBe(0)
+    expect(count('floating_notes')).toBe(1)
     // 域外对照面全保持
     expect(count('papers', ' WHERE id=?', 'p-keep')).toBe(1)
     expect(count('papers', ' WHERE id=?', 'p-main')).toBe(1)

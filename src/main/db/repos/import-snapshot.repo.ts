@@ -7,17 +7,19 @@
  * - 列清单单源=snapshot.repo 导出的 TABLE_SPECS（export 复用——列集/行序双面
  *   同源禁两处漂移）；表名/列名插值仅经该 const（d1-N7 沿承口径——无外部输入
  *   拼接面）。
- * - 九表 upsert：INSERT … ON CONFLICT(<§13.1 冲突目标>) DO UPDATE SET 全列
- *   =excluded.列（冲突替换式删除写形态禁用——隐式 DELETE 绕过 DELETE 触发器
- *   =漏账路径，quality 第 11 段负锚）。
+ * - 十表 upsert（[F-VISFB-61] 九表→十表：+floating_notes——迁移 024 域资产，
+ *   FK 父=collections）：INSERT … ON CONFLICT(<§13.1 冲突目标>) DO UPDATE
+ *   SET 全列=excluded.列（冲突替换式删除写形态禁用——隐式 DELETE 绕过
+ *   DELETE 触发器=漏账路径，quality 第 11 段负锚）。
  * - [回炉 R1] 死置列前提证伪移除：lineage_edges.kind 写面恒 'manual'
  *   （lineage.repo:199-200+014 头注）、lineage_nodes.tags 有存量写面史
  *   （INV-48）——kind/tags 与全列同入 upsert 写面（「出库真值/入写真值」对偶
  *   对称；原简报③-4「死置列红线」预裁推翻=主控简报缺陷，勘正在档）。
- * - upsert 表序（FK 父先子后——设计未约序，主控钉死）：collections→tags→
- *   papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→
- *   lineage_graph_meta。FK enforcement 开态（r4 级联点火三源互证），乱序=
- *   外键违约。
+ * - upsert 表序（FK 父先子后——设计未约序，主控钉死）：collections→
+ *   floating_notes→tags→papers→lineage_nodes→paper_tags→notes→annotations→
+ *   lineage_edges→lineage_graph_meta（[F-VISFB-61] floating_notes 紧随
+ *   collections——唯一 FK 父）。FK enforcement 开态（r4 级联点火三源互证），
+ *   乱序=外键违约。
  * - 直执删除：逐条按 (entity,id) DELETE（缺席=no-op 幂等；paper_tags 拆竖线
  *   拼接/graph_meta 按 key）；guard 置位中本地不落账（021 触发器 WHEN 守卫）。
  * - guard 两法只许 `UPDATE deletion_log_guard SET stop=?` 单行语句；禁
@@ -47,12 +49,13 @@ import {
 import type { SqliteDb } from '../connection'
 import { TABLE_SPECS } from './snapshot.repo'
 
-/** 导出面九表（TABLE_SPECS 单源派生） */
+/** 导出面十表（TABLE_SPECS 单源派生；[F-VISFB-61] +floating_notes） */
 export type ImportTable = (typeof TABLE_SPECS)[number]['table']
 
 /** upsert 表序（FK 父先子后——头注行为层） */
 export const IMPORT_TABLE_ORDER: readonly ImportTable[] = [
   'collections',
+  'floating_notes',
   'tags',
   'papers',
   'lineage_nodes',
@@ -67,6 +70,7 @@ export const IMPORT_TABLE_ORDER: readonly ImportTable[] = [
 const KEY_COLUMNS: Record<ImportTable, readonly string[]> = {
   papers: ['id'],
   collections: ['id'],
+  floating_notes: ['id'],
   tags: ['id'],
   paper_tags: ['paper_id', 'tag_id'],
   notes: ['id'],

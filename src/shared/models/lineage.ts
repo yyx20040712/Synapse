@@ -1,6 +1,7 @@
 /**
  * 脉络图（lineage）模型 —— lineage_nodes/lineage_edges 表的跨进程单源契约
- * （LG-01 交付面，已锁定）。
+ * （LG-01 交付面，已锁定）；[F-VISFB-61] +floating_notes 悬浮笔记
+ * （迁移 024——无 paper_id 纯画布节点）。
  *
  * schema 命名（主控裁决 3，[F-BAKRET-01] draft 面退役后仅存应用面）：
  * - 应用面（camelCase）：DB 行 schema（lineageNode/lineageEdge）与 upsert 输入面
@@ -258,3 +259,39 @@ export const lineageEdgeUpsertSchema = lineageEdgeSchema
   })
   .strict()
 export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>
+
+// ── 悬浮笔记（[F-VISFB-61] B6-61 数据与会话面——§0-5 裁决载体）──────────
+
+/**
+ * [F-VISFB-61] 悬浮笔记行 schema（floating_notes 表跨进程单源——迁移 024）。
+ * **无 paper_id**（§0-5 裁决负锚：纯画布节点不关联任何文献——strict 拒
+ * paperId 键，DDL 无 paper_id 列，测试双负锚锚定）；folderId=域资产
+ * （graph 域隔离消费）；x/y=画布 own 域坐标（62 号 UI 按有效缩放换算内容
+ * 坐标后存入——61 只存取不换算）；content=纯文本（textarea——明确不做
+ * Markdown 富文本）。
+ */
+export const floatingNoteSchema = z
+  .object({
+    id: z.string().min(1),
+    folderId: z.string().min(1),
+    x: z.number(),
+    y: z.number(),
+    content: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string()
+  })
+  .strict()
+export type FloatingNote = z.infer<typeof floatingNoteSchema>
+
+/** upsert 输入面：id 缺省=新建（repo 生成 uuid）；提供=更新（在场行
+ *  created_at 保留+updated_at 刷新）或插入（未知 id——repo ON CONFLICT(id)
+ *  DO UPDATE 的 INSERT 分支；upsertEdge 家族同型：service 守卫=域归属存在性
+ *  而非行 id 存在性〔回炉 R3 语义如实表述〕）。x/y 有限数守卫在 service 写面
+ *  （z.number() 放行 Infinity——k1-N5 畸形防线同族） */
+export const floatingNoteUpsertSchema = floatingNoteSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .extend({
+    id: z.string().min(1).optional()
+  })
+  .strict()
+export type FloatingNoteUpsert = z.infer<typeof floatingNoteUpsertSchema>

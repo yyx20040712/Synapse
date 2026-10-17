@@ -16,7 +16,7 @@ import { migrate } from '../../../src/main/db/migrate'
 type Db = ReturnType<typeof openDatabase>
 
 /** 导出面九表（§13.7；断言序=迭代序互不污染各自计数） */
-const NINE_TABLES = [
+const TEN_TABLES = [
   'papers',
   'collections',
   'tags',
@@ -25,7 +25,8 @@ const NINE_TABLES = [
   'annotations',
   'lineage_graph_meta',
   'lineage_nodes',
-  'lineage_edges'
+  'lineage_edges',
+  'floating_notes'
 ] as const
 
 function openFull(): Db {
@@ -155,15 +156,26 @@ function deleteCaseFor(db: Db, table: string): { seed: () => void; del: () => vo
         del: () => db.prepare(`DELETE FROM lineage_edges WHERE id='le-dl'`).run(),
         expectId: 'le-dl'
       }
+    // [F-VISFB-61] 悬浮笔记（021 族第十表——身份矩阵=OLD.id 常规表）
+    case 'floating_notes':
+      return {
+        seed: () =>
+          db.prepare(
+            `INSERT INTO floating_notes (id, folder_id, x, y, content, created_at, updated_at)
+             VALUES ('fn-dl', '__main__', 1, 2, '删事件笔记', 't', 't')`
+          ).run(),
+        del: () => db.prepare(`DELETE FROM floating_notes WHERE id='fn-dl'`).run(),
+        expectId: 'fn-dl'
+      }
     default:
       throw new Error(`未知表：${table}`)
   }
 }
 
 describe('db/deletion-log —— 021 删事件日志（九表落账/守卫两态/append-only/去重/级联超集/开库断言）', () => {
-  it('U1-1 对位：九表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=9+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0', () => {
+  it('U1-1 对位：十表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=10+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0（[F-VISFB-61] +floating_notes——021 族第十表）', () => {
     const db = openFull()
-    for (const t of NINE_TABLES) {
+    for (const t of TEN_TABLES) {
       const rows = db
         .prepare(
           "SELECT name, sql FROM sqlite_master WHERE type='trigger' AND tbl_name=? ORDER BY name"
@@ -181,7 +193,7 @@ describe('db/deletion-log —— 021 删事件日志（九表落账/守卫两态
       db.prepare("SELECT COUNT(*) c FROM sqlite_master WHERE type='trigger' AND name LIKE '%_deletion_log_%'")
         .get() as { c: number }
     ).c
-    expect(total).toBe(9)
+    expect(total).toBe(10)
     const appendOnly = (
       db
         .prepare(
@@ -219,9 +231,9 @@ describe('db/deletion-log —— 021 删事件日志（九表落账/守卫两态
     db.close()
   })
 
-  it('U1-3 逐表删除断言 ×9（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值）', () => {
+  it('U1-3 逐表删除断言 ×10（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值；[F-VISFB-61] +floating_notes）', () => {
     const db = openFull()
-    for (const t of NINE_TABLES) {
+    for (const t of TEN_TABLES) {
       const { seed, del, expectId } = deleteCaseFor(db, t)
       seed()
       del()
