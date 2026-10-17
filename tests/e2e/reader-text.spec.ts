@@ -312,37 +312,29 @@ test('P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 
   await expect(tabBar.getByRole('tab')).toHaveCount(1)
   await expect(win.getByText('P7BA-MARK').first()).toBeVisible({ timeout: 10_000 })
 
-  // —— 序列三：退出拦截（TABS-04 装配级，INV-22 收口）——
+  // —— 序列三：退出拦截（TABS-04 装配级，INV-22 收口+[F-VISFB-14] 退出握手）——
   // dirty 经通道直发（renderer 聚合效应为单元级已锚；装配级锁 main 全链：
-  // 缓存→close 守卫→模态确认→destroy）。app.evaluate 注入 electron 模块（main 为
-  // ESM 无 require）；关闭经渲染侧 window.close()（等价触发 close 事件链）。
+  // 缓存→close 守卫→握手 flush→回执→destroy）；关闭经 main 侧 close（注入
+  // electron 模块——main 为 ESM 无 require；渲染侧 window.close() 语义差异排除）。
+  // [F-VISFB-14 C-A3 翻案] 退出握手新合同：dirty 缓存=握手触发判定源（push 模式
+  // 不变）；renderer 收口回执定性——本用例真实写面全 clean→stillDirty=false→
+  // **零确认 destroy**（confirm 分支=stillDirty=true/超时降级两路=单元级
+  // quit-handshake.test 12 例全格承载，e2e 不再镜像模态分支）。若回归旧
+  // 「dirty 恒 confirm」行为：原生模态无处理器阻塞→窗口不销毁→下行 poll 红
+  // （不挂 mock 比旧自动接受更严）。
   const aliveWindows = (): Promise<number> =>
     app
       .evaluate((electron) =>
         electron.BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).length
       )
       .catch(() => -1) // -1=主进程已退出（比窗口归零更强的终局信号）
-  // dirty 经通道直发并 await 落地（void 早返回会让 window.close() 抢在 main
-  // 处理上报前到达——缓存仍 false 直通退出，装配链假阴）
-  // 关闭触发走 main 侧（注入 electron 模块；渲染侧 window.close() 的语义差异排除）
   const closeMain = (): Promise<unknown> =>
     app.evaluate((electron) => {
       electron.BrowserWindow.getAllWindows()[0]?.close()
     })
   await win.evaluate(() => window.api.system.setQuitDirty({ dirty: true }))
-  await app.evaluate((electron) => {
-    ;(electron.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
-      .showMessageBox = async () => ({ response: 1 })
-  })
   await closeMain()
-  // 取消：preventDefault 生效，窗口保持
-  await expect.poll(aliveWindows).toBe(1)
-  // 确认：destroy 强制关闭 → 窗口归零（或主进程随之退出）
-  await app.evaluate((electron) => {
-    ;(electron.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
-      .showMessageBox = async () => ({ response: 0 })
-  })
-  await closeMain()
+  // 零确认销毁：握手 preventDefault→flush 收口回执 clean→destroy（归零或主进程退出）
   await expect.poll(aliveWindows).toBeLessThan(1)
   await app.close().catch(() => undefined)
 })
@@ -1207,7 +1199,7 @@ function createCrossPagePdf(): Uint8Array {
 /** A3 悬置写修票依赖：P7-C 面板链 + tab 骨架 + 灰点关闭确认（弃改收口点） */
 const A3_DEPS = [...C_DEPS, 'SR2-TABS-01', 'SR2-TABS-02', 'SR2-TABS-03'] as const
 
-test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线', async () => {
+test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同文献→笔记=已存值', async () => {
   skipIfPending(A3_DEPS)
   const title = '智慧水务 e2e A3 悬置写文献'
   const { app } = await seedAndLaunch(title)
@@ -1222,7 +1214,6 @@ test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开�
   const panel = win.getByTestId('reader-notes-panel')
   await expect(panel).toBeVisible()
   await panel.getByLabel('笔记正文').fill('A3 悬置写输入')
-  // pending 镜像在位（灰点信号即 dirty——关闭必经 confirm 弃改收口）。
   // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点保存钮（原「未保存」状态文字
   // 随钮面合一退役——语义等价：dirty 信号=保存钮可点）。exact 全串=判别力
   // 口径：getByRole name 默认子串匹配，「已保存/保存中/保存」均含「保存」即误中。
@@ -1231,19 +1222,19 @@ test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开�
   // 语义等价锁定：dirty 未达成即红（saved 态名=「已保存」不误中）
   await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
 
-  // confirm 自动接受先例（:227 注释删除弹层同款）
-  win.on('dialog', (d) => {
-    void d.accept()
-  })
-  // 防抖窗内关脏 tab（reader 视图——TabBar 挂 ReaderPage）：确认接受=弃改收口
-  // （清 timer+内存草稿+在途 save 代际守卫）
+  // [F-VISFB-14 C-A3 翻案（任务书 §0-1，2026-10-17）] 关 tab 默认=flush-first
+  // 立存（成功零弹窗即关；discard 仅显式放弃路径——confirmCloseDirty 失败分支，
+  // 单元级 close-tab-flush.test 9 例承载）。本用例不挂 dialog 自动接受器：
+  // 若回归旧「关脏 tab 恒 confirm 弃改」行为，原生模态无处理器=默认 dismiss
+  // （取消）→tab 不关→下行 toHaveCount(0) 红（零弹窗断言比旧 mock-accept 更严）。
   await win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab').first().getByRole('button').click()
   await expect(win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab')).toHaveCount(0)
 
-  // 跨过整个防抖窗口：若 timer 未被弃改收口清掉，悬置写必已落 DB
+  // 跨防抖窗等待沿承（flushNow 已清 timer 立存——等待证无迟到写/代际干扰）
   await win.waitForTimeout(2200)
 
-  // 重开同文献：笔记=基线空串（非输入值——DB 复活面+内存合并回填面双闭）
+  // 重开同文献：笔记=已存值（flush-first 落库面——旧「确认弃改→基线空串」
+  // 断言随 C-A3 翻案反转）
   await win.getByRole('button', { name: '文献库' }).click()
   await win.getByText(title).first().dblclick()
   await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
@@ -1252,7 +1243,6 @@ test('A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开�
   // 载入完成锚（entry 未落地时 textarea 恒空串——先证 load 已整版落地再断值）
   await expect(panel2.getByText('已保存')).toBeVisible({ timeout: 10_000 })
   const body2 = panel2.getByLabel('笔记正文')
-  await expect(body2).toHaveValue('')
-  expect(await body2.inputValue()).not.toBe('A3 悬置写输入')
+  await expect(body2).toHaveValue('A3 悬置写输入')
   await app.close()
 })

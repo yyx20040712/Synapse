@@ -642,6 +642,12 @@
       "skipSiteText": "test.skip( process.env.CI === 'true' && process.platform === 'win32', '延期：windows-latest CI 确定红排查中 [F-VISFB-53CI-01]（B3 收口立案——本地绿/CI 零块三 run 同指纹）' )",
       "reason": "F-VISFB-53CI-01 立案门：windows-latest CI 确定红（三 run 六 attempt 同指纹零块）本地绿——声明式平台门非静默缩测，排查票闭后撤门同笔退役豁免",
       "rulingLink": "tickets/registry.ts F-VISFB-53CI-01（B3 收口 CI 回执条款同指纹立案线——runId=20261017-visfbb3）"
+    },
+    {
+      "file": "tests/e2e/reader-text.spec.ts",
+      "caseTitle": "A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线",
+      "reason": "F-VISFB-14 C-A3 翻案（任务书 §0-1）：关 tab 默认=flush-first 立存（成功零弹窗即关），旧「确认弃改→基线空串」断言随翻案反转——原位改写为「flush-first 立存→重开=已存值」且判别力加严（不挂 dialog 自动接受器：若回归旧恒 confirm 行为模态阻塞→tab 不关→计数断言红）；confirm 弃改分支=单元级 close-tab-flush.test 9 例承载",
+      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-1/§5-B1段14号（runId=20261017-visfbb4）"
     }
   ]
 }

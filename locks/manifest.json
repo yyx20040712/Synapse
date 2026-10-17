@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-16T23:54:30.621Z",
+    "generatedAt": "2026-10-17T00:11:39.434Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "6bdb99e1810899c66f8593659f6f590fb391f00e456b85cdd6eb6b46e857f544"
+            "sha256": "e4f7bbf9dcba47152d08f43b046e95c0ef082b1e998880f64e6dcd4f41e49425"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "36622b2f5bdb920d818128743d5db95a32ad280e25f459a33aff3148b9b797c5"
+            "sha256": "e16c27ee5c1b89e6e995ebb277c68c882dd27c1abd983c9d5b7f903f00cebfeb"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -427,7 +427,7 @@
         },
         {
             "path": "tests/e2e/reader-text.spec.ts",
-            "sha256": "bc1262ed1ee942f51ac7a2ab7061802adc475f035aa5217e0e15a0eba31fa411"
+            "sha256": "7418bf559432eeecca84dcd6b4384bcc098a0f4df559ed9f8db58b39d69beaf4"
         },
         {
             "path": "tests/e2e/reading-time-replay.spec.ts",
