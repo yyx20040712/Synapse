@@ -54,11 +54,13 @@
   全链 e2e/集中视检轮候选（**+62 皮肤**——C1 豁免理由之二，笔记柄/皮肤
   视觉复评入该轮）/图表提取算法优化候选/旧九表快照卷拒收（十键不变式
   ——单用户旧备份导入需裁宽松回读）。
-- **门一席位绑定核查（证据链增厚）**：本场 k1 三轮+裁决部均 MODEL-SELF
-  自报 `new-provider/k3$max` 与派档 kimi-third 不符（累计 k1 席四现+裁决
-  席一现）——绑定档案 `~/.zcode/agents/ops-gate1-k1.md`/org-config
-  `agent_bindings` 核验候选；若 k1 实跑 k3=max 则 k1 与裁决部同模型，
-  门一异构性独靠 d1 承载（治理面）。
+- **已裁销项（2026-10-17 用户澄清——逐字=当日账本 ruling 行）**：门一席位
+  绑定核查——k3=Kimi 最强模型名（模型键，非 ops-gate1-k3 席/源A 指代）；
+  绑定档案实读=k1 与裁决部均 `new-provider/k3$max`，与 MODEL-SELF 自报
+  逐字一致（绑定=实跑零漂移）；Kimi 家族+$max 符合宪法意图，异构性由 d1
+  （deepseek）承载维持；「kimi-third」派档标签=配额源意图，provider id
+  =new-provider 系 org-config 命名映射。§0/账本此前「与派档不符」表述
+  系命名混同误报，以本行为准。
 - **eslint 豁免 glob 补 .test.tsx**：62 号 rework 测试件有效行 461/500
   薄余量 39+44 号遗留断言两处——下次触及拆件或 [locked-change] 补豁免
   glob（用户面候选沿承）。
