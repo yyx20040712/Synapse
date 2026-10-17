@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T01:15:54.329Z",
+    "generatedAt": "2026-10-17T04:25:55.573Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "9ac0a2264590bc0e5179a2413358c00298c2ef5a17ae9660dd3917c5d4dcbba1"
+            "sha256": "f2c41a7aebb05c9095a9172612dc5ee408ab7824506f95b775626a4ba97b77be"
         },
         {
             "path": "electron.vite.config.ts",
@@ -855,7 +855,11 @@
         },
         {
             "path": "tests/unit/renderer/annotation-popups-autosave.test.tsx",
-            "sha256": "1a5504b8dda3417d3452f68c5ca03e33c019be65fa6ffb84ade4c3564b527bc0"
+            "sha256": "529a711bdd9223f017a43180cf2f35c2f6c6a69c5b1c37ad0637985cc4043878"
+        },
+        {
+            "path": "tests/unit/renderer/annotation-popups-busy.test.tsx",
+            "sha256": "436c13aec31c45ab2c7d1745e7718b34dbfeedc8a41136a9c72da76c203cec8c"
         },
         {
             "path": "tests/unit/renderer/annotation-undo.test.ts",
@@ -886,8 +890,12 @@
             "sha256": "a8e952b4ee2af6d3751cf727e747af64c64ff1fa148b93aa6aa590a41d4c86aa"
         },
         {
+            "path": "tests/unit/renderer/close-tab-flush-r1.test.tsx",
+            "sha256": "ab41e13af7884a172ad89f7cf18c84061953b974104f41fd6a8533c863270800"
+        },
+        {
             "path": "tests/unit/renderer/close-tab-flush.test.tsx",
-            "sha256": "6d6bb09033aef0965e8757ec3f7c86377cc059af2d4159af1e5ba790d6adecf7"
+            "sha256": "5c32e1b2be6ec5c26388ec8a5ffd47246f8fdf3825e2d990f6b216bba27c2a1a"
         },
         {
             "path": "tests/unit/renderer/corpus-export.test.tsx",
@@ -1315,7 +1323,7 @@
         },
         {
             "path": "tests/unit/renderer/quit-flush.test.ts",
-            "sha256": "d5fb564225efb4ae521bd2ffb0f9a7953e63cafdb52f2edffda9193f3a1b9606"
+            "sha256": "2ec406b75569fece1f9058c154565a9d4998180b0f006df38f2e8a2e088f1d65"
         },
         {
             "path": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
@@ -1552,6 +1560,10 @@
         {
             "path": "tests/unit/renderer/useDebounce.test.tsx",
             "sha256": "16970ca0ccfef4261f4718937fbad43e9d2df8fbeafe6976eab821b3c9501a6c"
+        },
+        {
+            "path": "tests/unit/renderer/view-flush.test.ts",
+            "sha256": "c69e478207919a178576746336a3281503e67d9afa2eb0a2c616dd18cb593e54"
         },
         {
             "path": "tests/unit/renderer/visual-snap-shortcut.test.tsx",

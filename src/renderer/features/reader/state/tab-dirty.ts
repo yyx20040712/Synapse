@@ -43,7 +43,8 @@
  */
 import { useReaderStore } from './reader.store'
 import { useNotesStore } from '../../notes/notes.store'
-import { discardAnnotationDraft } from '../interact/annotation-draft-registry'
+import { allDraftFlushHandles, discardAnnotationDraft, fireAllDraftFlushes } from '../interact/annotation-draft-registry'
+import type { AnnotationDraftFlush } from '../interact/annotation-draft-registry'
 import { useShallow } from 'zustand/react/shallow'
 
 /** 两写面信号包（isTabDirty 的纯函数输入） */
@@ -169,12 +170,20 @@ const closingTabs = new Set<string>()
  *   显式放弃路径：确认=discard+放行/取消=不放行（tab 保持，失败态经四态钮
  *   failed+短文本可点重试呈现——INV-141⑤单源）；
  * - 重入锁：本篇收口在途的第二击立即 false（不二次 flush 不弹窗）。
- * 批注挂载编辑器不经此面（卸载注册承接——12 号；未尝试 dirty 残余=14 票
- * D1 呈报面，见批次报告）。
+ * [F-VISFB-15 ①面2] ACTIVE tab 关闭扩面：挂载编辑器（恒属活动篇）的
+ * un-attempted dirty（<800ms 防抖窗内值——INV-141④ 不入注册表面，14 票 D1
+ * 残余面 2）在 flushNow 后 **await** 全量挂载句柄立存（clean 编辑器 no-op；
+ * 撞 busy=F-VISFB-15② 等待 settle 后真实终态）；句柄终态非 saved/clean 计入
+ * 仍脏（markTabDirty——annotations 面失败残留信号单源）→confirmCloseDirty
+ * 显式放弃路径承接；关非活动 tab 零消费（无挂载编辑器——不得被活动篇句柄
+ * 失败误入仍脏，D1 残余面 5 现状沿承）。
  */
 export async function requestCloseTab(paperId: string): Promise<boolean> {
   if (closingTabs.has(paperId)) return false
-  if (!isTabDirty(paperId, tabDirtySignals(paperId))) {
+  // [F-VISFB-15 ①面2] ACTIVE tab（挂载编辑器所在篇）clean 两写面净也须经
+  // 句柄收口（un-attempted dirty 不在两写面信号内）；非活动 tab 无挂载编辑
+  // 器——clean 直通短路沿承
+  if (!isTabDirty(paperId, tabDirtySignals(paperId)) && useReaderStore.getState().activeId !== paperId) {
     useNotesStore.getState().discardPendingEdit(paperId)
     return true
   }
@@ -186,11 +195,70 @@ export async function requestCloseTab(paperId: string): Promise<boolean> {
       // [回炉 W-4] flushNow rejection（api 同步抛/未预期异常）=收口失败——按
       // 仍脏走显式放弃路径（禁未处理 rejection；成功分支逻辑零变）
     }
+    // [F-VISFB-15 ①面2] 关 consumption 时现判活动位（flushNow 在途窗内可能
+    // 已切 tab——彼时句柄属新活动篇，面 1 挂点已承接，不在此误消费）
+    if (useReaderStore.getState().activeId === paperId) {
+      await flushMountedDraftHandles(paperId)
+    }
     if (!isTabDirty(paperId, tabDirtySignals(paperId))) return true
     return confirmCloseDirty(paperId)
   } finally {
     closingTabs.delete(paperId)
   }
+}
+
+/**
+ * [F-VISFB-15 ①面2·回炉 R1] ACTIVE tab 关闭的挂载句柄 await 收口——**复扫
+ * 收敛循环**（一次性快照在 await 窗内漏新编辑目标〔切 Y+<800ms 输入→Y
+ * un-attempted 逃逸=丢稿窗〕）：
+ * - 每轮快照全量句柄 flush（clean=no-op 零写；全 {saved,clean} 且无新句柄=
+ *   稳定止）；
+ * - 续轮条件=出现新句柄（await 窗内新编辑目标挂载——按句柄身份对累积 seen
+ *   集判新）∨本轮现 dirty/saving 终态（有待写未收敛——下轮重 flush 全量，
+ *   clean 编辑器幂等 no-op）；
+ * - failed=即停 markTabDirty（仍脏→confirmCloseDirty 显式放弃路径承接）；
+ * - 轮上限 3——达顶仍有 dirty/saving/新句柄未收敛→markTabDirty 按仍脏走
+ *   显式放弃路径（禁静默放行）；
+ * - 句柄异常/同步 throw 归 'failed' 映射（回炉 R3——Promise.resolve().then
+ *   形，quit-flush.ts:40 先例）；
+ * - [回炉2 k1 W-1] 每轮顶部 activeId 守卫：窗内切走即停（≠paperId 直返——
+ *   面1 挂点已消费离场篇；close 不越权消费新活动篇句柄、失败不误归关篇）；
+ * - 残余=末轮 await 窗内新输入（毫秒级——收口面无并发输入的工程假设内）。
+ */
+async function flushMountedDraftHandles(paperId: string): Promise<void> {
+  const seen = new Set<AnnotationDraftFlush>()
+  for (let round = 0; round < 3; round++) {
+    // [回炉2 k1 W-1] 每轮顶部重读活动位：关 A 在途窗内切 Y 时面1 挂点已在
+    // 切换刻 fire-first 消费离场篇句柄——close 路径不越权消费新活动篇句柄
+    // （已消费轮的失败仍归 A：快照时 active===A⇒句柄属 A；直返而非坠入达顶
+    // markTabDirty——在途写的落库/失败归因由写路径自身链承接）
+    if (useReaderStore.getState().activeId !== paperId) {
+      return
+    }
+    const handles = allDraftFlushHandles()
+    for (const h of handles) {
+      seen.add(h)
+    }
+    const states = await Promise.all(
+      handles.map((flush) => Promise.resolve().then(() => flush()).then((s) => s, () => 'failed'))
+    )
+    if (states.some((s) => s === 'failed')) {
+      useReaderStore.getState().markTabDirty(paperId)
+      return
+    }
+    const unsettled = states.some((s) => s === 'dirty' || s === 'saving')
+    const fresh = allDraftFlushHandles().some((h) => !seen.has(h))
+    if (!unsettled && !fresh) {
+      return
+    }
+  }
+  // [轮2补遗 W-1 收尾] post-loop 达顶归因前复检活动位：末轮 await 窗内切走
+  // （新句柄 fresh 续轮耗尽形）≠paperId 即直返——A 自身态判定承接不误归因
+  // （与轮内守卫同语义；failed 即停路径不动：快照归属正确）
+  if (useReaderStore.getState().activeId !== paperId) {
+    return
+  }
+  useReaderStore.getState().markTabDirty(paperId)
 }
 
 /**
@@ -201,12 +269,16 @@ export async function requestCloseTab(paperId: string): Promise<boolean> {
  * 失败=灰点/pending 镜像可见（不弹窗不阻断，重试径=四态钮）。
  * 重入防护=flushNow 自身在途收敛+串行（并发切回再切走时最新值经「等在途→
  * 仍 pending→saveNow 立存」链覆盖——与关 tab 族同语义；无弹窗/关闭语义，
- * 不设 UI 级锁）。批注挂载编辑器不在此面（D1 挂账——批次报告）。
+ * 不设 UI 级锁）。
+ * [F-VISFB-15 ①面1] 离场篇挂载编辑器（恒属活动篇=departing）同窗 fire-first
+ * 全量句柄立存（D1 残余面 1 收口——un-attempted dirty 不随编辑器卸载丢值；
+ * 不阻切换；失败=句柄 failed→卸载注册承接重挂载重试，12 号机制在场）。
  */
 export function switchTabFlushFirst(targetId: string): void {
   const departing = useReaderStore.getState().activeId
   if (departing !== null && departing !== targetId) {
     void useNotesStore.getState().flushNow(departing).catch(() => undefined)
+    fireAllDraftFlushes()
   }
   useReaderStore.getState().activateTab(targetId)
 }

@@ -12,13 +12,18 @@
  * 模块态隔离：notes/lineage store 逐用例复位+pendingEdit 清扫；批注注册表
  * 模块级单例——各用例互异 id+显式回收（annotation-draft-flush 先例）。
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, createElement } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { makeAnnotation, makeTab } from '../../utils/factories'
 import type { LineageNode } from '../../../src/shared/models/lineage'
+import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
 import { runQuitFlush } from '../../../src/renderer/app/quit-flush'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import {
   discardAnnotationDraft,
   registerDraftFlush,
@@ -246,5 +251,123 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
     resolveSave(noteResult('qp-12', '在途值'))
     await expect(quit).resolves.toBe(false)
     expect(settled).toBe(true)
+  })
+})
+
+/**
+ * [F-VISFB-15 回炉 R6] runQuitFlush×busy 链路（真实 AnnotationPopups 挂载——
+ * createElement 形（.ts 件禁 JSX）；静 props 消费形，写链无需 busy 重渲染）。
+ * 锁链：手动保存在途→②步句柄 flush 撞 busy→等待 settle→复判→真实写→
+ * stillDirty 真实终态（失败格=true 必含；成功格=false——失败写后编辑器 failed
+ * 态卸载入册，afterEach 卸载后 discard 显式回收防跨用例泄漏）。
+ */
+describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISFB-15 回炉 R6）', () => {
+  const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
+  let root: Root | null = null
+  let host: HTMLDivElement | null = null
+  const mountedIds: string[] = []
+  /** 失败/挂起形结果（annoWrite 原生窄型 {ok:true;data:null} 外的 Once 配置面——
+   *  别名仅放宽配置 typing，断言仍打原 mock（运行时同对象） */
+  type AnnoResult = { ok: boolean; data?: Annotation; error?: { code: string; message: string } }
+  const annoWriteR6 = mocks.annoWrite as unknown as {
+    mockImplementationOnce(fn: () => Promise<AnnoResult>): unknown
+    mockResolvedValueOnce(v: AnnoResult): unknown
+  }
+
+  afterEach(() => {
+    act(() => {
+      root?.unmount()
+    })
+    host?.remove()
+    root = null
+    host = null
+    // 卸载后回收（failed 态卸载入册面——R1 注册先于本 discard 完成）
+    for (const id of mountedIds.splice(0)) {
+      discardAnnotationDraft(id)
+    }
+  })
+
+  /** 挂载真实弹层+<800ms 窗内值输入（un-attempted 形）+手动保存在途 */
+  function mountEditorBusySave(anno: Annotation): void {
+    ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
+    mountedIds.push(anno.id)
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    act(() => {
+      root!.render(
+        createElement(AnnotationPopups, {
+          menu: null,
+          editing: { annotation: anno, rect: RECT },
+          busy: false,
+          setMenu: vi.fn(),
+          setEditing: vi.fn(),
+          setBusy: vi.fn(),
+          onChanged: vi.fn()
+        })
+      )
+    })
+    const ta = host.querySelector('textarea') as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    act(() => {
+      setter?.call(ta, 'quit 窗内值')
+      ta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const saveBtn = host.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!
+    act(() => {
+      saveBtn.click()
+    })
+  }
+
+  it('[R6 失败格] 手动保存在途→②步等待 settle→真实写失败→stillDirty=true（真实终态）', async () => {
+    const anno = { ...makeAnnotation(''), id: 'anno-r6a' }
+    let resolveManual!: (v: AnnoResult) => void
+    annoWriteR6.mockImplementationOnce(
+      () => new Promise<AnnoResult>((r) => { resolveManual = r })
+    )
+    annoWriteR6.mockResolvedValueOnce({ ok: false, error: { code: 'E', message: '写失败' } })
+    mountEditorBusySave(anno)
+    expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
+    let settled = false
+    const quit = runQuitFlush().then((d) => {
+      settled = true
+      return d
+    })
+    await drain()
+    // ②步等待 busy——未 settle 不返回（旧代码句柄乐观 'saved'→false=丢稿级面）
+    expect(settled).toBe(false)
+    resolveManual({ ok: false, error: { code: 'E', message: '手动写失败' } })
+    const stillDirty = await quit
+    expect(settled).toBe(true)
+    // settle 复判：值未落库→真实写 #2（失败）→句柄 failed 终态→仍脏
+    expect(mocks.annoWrite).toHaveBeenCalledTimes(2)
+    expect(mocks.annoWrite).toHaveBeenLastCalledWith(
+      expect.objectContaining({ annotation: expect.objectContaining({ comment: 'quit 窗内值' }) })
+    )
+    expect(stillDirty).toBe(true)
+  })
+
+  it('[R6 成功格] 手动保存同值成功→②步等待 settle→复判命中零冗余写→stillDirty=false', async () => {
+    const anno = { ...makeAnnotation(''), id: 'anno-r6b', paperId: 'paper-1' }
+    // 活动 tab 在场：手动成功经真 store updateAnnotation（活动篇 upsert）落
+    // store 现值——值复判双条件齐（lastPersisted+store 共证）
+    useReaderStore.setState({
+      tabs: { 'paper-1': makeTab('paper-1', { annotations: [anno] }) },
+      order: ['paper-1'],
+      activeId: 'paper-1'
+    })
+    let resolveManual!: (v: AnnoResult) => void
+    annoWriteR6.mockImplementationOnce(
+      () => new Promise<AnnoResult>((r) => { resolveManual = r })
+    )
+    mountEditorBusySave(anno)
+    expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
+    const quit = runQuitFlush()
+    await drain()
+    resolveManual({ ok: true, data: { ...anno, comment: 'quit 窗内值' } })
+    const stillDirty = await quit
+    // settle 复判：值+store 双命中→零冗余重写（恰 1 次）→真实终态 saved→净
+    expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
+    expect(stillDirty).toBe(false)
   })
 })

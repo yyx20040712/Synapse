@@ -29,7 +29,14 @@ const mocks = vi.hoisted(() => ({
   storeNotifyNoteHighlight: vi.fn(),
   pushUndo: vi.fn(),
   // Toast 入口 spy=共享工厂实例（下方顶层语句替换——体内经 mocks.showToast 断言）
-  showToast: undefined as unknown as ReturnType<typeof vi.fn>
+  showToast: undefined as unknown as ReturnType<typeof vi.fn>,
+  // [F-VISFB-15 回炉 R2] store tabs 投影（生产形现值注入——见 reader.store
+  // mock 处注；W-A 反向竞态格=手动保存同值成功后的 store 现值 '手动值'）
+  storeTabs: {
+    'paper-1': {
+      annotations: [{ id: 'anno-1', paperId: 'paper-1', comment: '手动值' }]
+    }
+  }
 }))
 mocks.showToast = toastSpy
 makeApiStub({ reader: { updateAnnotation: mocks.apiUpdate, deleteAnnotation: vi.fn() } })
@@ -41,7 +48,11 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
       markTabDirty: mocks.storeMarkTabDirty,
       clearTabDirty: mocks.storeClearTabDirty,
       removeAnnotation: mocks.storeRemoveAnnotation,
-      notifyNoteHighlight: mocks.storeNotifyNoteHighlight
+      notifyNoteHighlight: mocks.storeNotifyNoteHighlight,
+      // [F-VISFB-15 回炉 R2] store 现值复判面（annotation-popups-actions 值
+      // 复判读 getState().tabs）：生产形 tabs 投影注入——W-A 反向竞态格的手动
+      // 保存 '手动值' 成功后 store 现值（断言零改，仅 mock 生产保真扩展）
+      tabs: mocks.storeTabs
     })
   }
 }))

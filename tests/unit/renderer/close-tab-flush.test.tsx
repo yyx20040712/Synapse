@@ -17,21 +17,30 @@ import { makeApiStub } from '../../utils/api-client-mock'
 import { makeAnnotation, makeTab } from '../../utils/factories'
 import { requestCloseTab, switchTabFlushFirst } from '../../../src/renderer/features/reader/state/tab-dirty'
 import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
+import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { runQuitFlush } from '../../../src/renderer/app/quit-flush'
 import {
   hasPendingAnnotationDrafts,
+  registerDraftFlush,
   saveAnnotationDraft,
-  takeAnnotationDraft
+  takeAnnotationDraft,
+  unregisterDraftFlush
 } from '../../../src/renderer/features/reader/interact/annotation-draft-registry'
 import type { TabState } from '../../../src/renderer/features/reader/state/reader.store'
+import type { AnnotationRect } from '../../../src/shared/models/annotation'
 
 const mocks = vi.hoisted(() => ({
   notesGet: vi.fn(),
-  notesSave: vi.fn()
+  notesSave: vi.fn(),
+  // [F-VISFB-15 ①面2 集成用例] 批注写面（AnnotationPopups autosave 链）
+  annoUpdate: vi.fn()
 }))
-makeApiStub({ notes: { get: mocks.notesGet, save: mocks.notesSave } })
+makeApiStub({
+  notes: { get: mocks.notesGet, save: mocks.notesSave },
+  reader: { updateAnnotation: mocks.annoUpdate }
+})
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -73,6 +82,8 @@ beforeEach(() => {
   // [回炉 W-6 同型] Once 实现队列逐用例 reset（clearAllMocks 不清 once 队列）
   mocks.notesGet.mockReset()
   mocks.notesSave.mockReset()
+  // [F-VISFB-15 ①面2 集成用例] 同型 reset（annoUpdate Once/常驻实现不跨用例）
+  mocks.annoUpdate.mockReset()
   for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
     useNotesStore.getState().discardPendingEdit(k)
   }
@@ -318,6 +329,126 @@ describe('close-tab-flush —— 关 tab flush-first（F-VISFB-14）', () => {
     await expect(requestCloseTab('pw-4')).resolves.toBe(true)
     expect(confirmSpy).toHaveBeenCalledTimes(1)
     expect(useNotesStore.getState().noteByPaper['pw-4']).toBeUndefined()
+  })
+})
+
+describe('F-VISFB-15 ①面1/面2 —— 切 tab fire-first / 关 ACTIVE tab await 挂载句柄', () => {
+  it('①面1 切 tab：离场篇挂载句柄 fire-first 消费（不阻切换——activeId 同步已变）', async () => {
+    useReaderStore.setState({
+      tabs: { 'p15-e': makeTab('p15-e'), 'p15-f': makeTab('p15-f') },
+      order: ['p15-e', 'p15-f'],
+      activeId: 'p15-e'
+    })
+    const flush = vi.fn(async () => 'saved' as const)
+    registerDraftFlush('anno-p15e', flush)
+    try {
+      switchTabFlushFirst('p15-f')
+      // fire-first：切换同步完成不被写阻
+      expect(useReaderStore.getState().activeId).toBe('p15-f')
+      await drain()
+      expect(flush).toHaveBeenCalledTimes(1)
+    } finally {
+      unregisterDraftFlush('anno-p15e')
+    }
+  })
+
+  it('①面2 ACTIVE tab clean 两写面：挂载句柄 un-attempted dirty→await 立存→关闭 true 零弹窗', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    useReaderStore.setState({
+      tabs: { 'p15-a': makeTab('p15-a') },
+      order: ['p15-a'],
+      activeId: 'p15-a'
+    })
+    const flush = vi.fn(async () => 'saved' as const)
+    registerDraftFlush('anno-p15a', flush)
+    try {
+      await expect(requestCloseTab('p15-a')).resolves.toBe(true)
+      expect(flush).toHaveBeenCalledTimes(1)
+      expect(confirmSpy).not.toHaveBeenCalled()
+    } finally {
+      unregisterDraftFlush('anno-p15a')
+    }
+    confirmSpy.mockRestore()
+  })
+
+  it('①面2 句柄 failed 终态：计入仍脏（markTabDirty）→confirm 显式放弃（取消=保持）', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    useReaderStore.setState({
+      tabs: { 'p15-b': makeTab('p15-b') },
+      order: ['p15-b'],
+      activeId: 'p15-b'
+    })
+    registerDraftFlush('anno-p15b', vi.fn(async () => 'failed' as const))
+    try {
+      await expect(requestCloseTab('p15-b')).resolves.toBe(false)
+      expect(confirmSpy).toHaveBeenCalledTimes(1)
+      // 句柄失败=annotations 面失败残留信号（灰点+仍脏单源——与写路径失败分支同语义）
+      expect(useReaderStore.getState().tabs['p15-b']?.dirty).toBe(true)
+    } finally {
+      unregisterDraftFlush('anno-p15b')
+    }
+    confirmSpy.mockRestore()
+  })
+
+  it('①面2 关非活动 tab：活动篇挂载句柄不被消费不误入仍脏（clean 直通零弹窗）', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    useReaderStore.setState({
+      tabs: { 'p15-c': makeTab('p15-c'), 'p15-d': makeTab('p15-d') },
+      order: ['p15-c', 'p15-d'],
+      activeId: 'p15-c'
+    })
+    const flush = vi.fn(async () => 'failed' as const)
+    registerDraftFlush('anno-p15c', flush)
+    try {
+      await expect(requestCloseTab('p15-d')).resolves.toBe(true)
+      expect(flush).not.toHaveBeenCalled()
+      expect(confirmSpy).not.toHaveBeenCalled()
+    } finally {
+      unregisterDraftFlush('anno-p15c')
+    }
+    confirmSpy.mockRestore()
+  })
+
+  it('①面2 集成：挂载编辑器 un-attempted dirty（<800ms 窗内值）→关 ACTIVE tab→值经句柄立存', async () => {
+    const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
+    const anno = { ...makeAnnotation(''), id: 'anno-p15g', paperId: 'p15-g' }
+    useReaderStore.setState({
+      tabs: { 'p15-g': makeTab('p15-g', { annotations: [anno] }) },
+      order: ['p15-g'],
+      activeId: 'p15-g'
+    })
+    mocks.annoUpdate.mockResolvedValue({ ok: true, data: { ...anno, comment: '窗内值' } })
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    act(() => {
+      root?.render(
+        <AnnotationPopups
+          menu={null}
+          editing={{ annotation: anno, rect: RECT }}
+          busy={false}
+          setMenu={vi.fn()}
+          setEditing={vi.fn()}
+          setBusy={vi.fn()}
+          onChanged={vi.fn()}
+        />
+      )
+    })
+    const ta = host.querySelector('textarea') as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    act(() => {
+      setter?.call(ta, '窗内值')
+      ta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    // 不推进 800ms——un-attempted（防抖窗内值，两写面信号净）
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    await expect(requestCloseTab('p15-g')).resolves.toBe(true)
+    expect(mocks.annoUpdate).toHaveBeenCalledTimes(1)
+    expect(mocks.annoUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ annotation: expect.objectContaining({ comment: '窗内值' }) })
+    )
+    expect(confirmSpy).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 })
 

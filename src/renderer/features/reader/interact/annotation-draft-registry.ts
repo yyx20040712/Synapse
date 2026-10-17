@@ -103,6 +103,24 @@ export function allDraftFlushHandles(): AnnotationDraftFlush[] {
 }
 
 /**
+ * [F-VISFB-15 ①面1/3] fire-first 全量句柄立存（切 tab 离场/视图路由离场
+ * 'reader' 消费——un-attempted dirty〔<800ms 防抖窗内值，INV-141④ 不入表面〕
+ * 随组件消亡丢值的预防面）：同步发起各句柄 flush 不阻离场（零新增用户可见
+ * 等待）；失败承接=句柄 failed→卸载注册承接重挂载重试+写路径 markTabDirty
+ * 观测面；句柄异常吞接（零 unhandled rejection）。挂载编辑器恒属 ACTIVE
+ * tab（AnnotationLayer 只随活动篇渲染）——离场消费即定向，无需 paperId 键。
+ */
+export function fireAllDraftFlushes(): void {
+  for (const flush of allDraftFlushHandles()) {
+    // [回炉 R3] 同步 throw 归 rejection（Promise.resolve().then 形——quit-flush
+    // :40 先例）：零抛调用方/零阻同批后续句柄
+    void Promise.resolve()
+      .then(() => flush())
+      .catch(() => undefined)
+  }
+}
+
+/**
  * [F-VISFB-14] 注册表未落盘残留判定（退出握手 dirty 判定输入）：已卸载编辑器
  * 的 attempted/恢复携带草稿（drafts 表非空）——挂载期编辑器态由句柄返回值
  * 承载，本函数只看卸载残留面。

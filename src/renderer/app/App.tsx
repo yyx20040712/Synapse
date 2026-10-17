@@ -4,7 +4,7 @@
  * +视图切换+错误边界。F-UI-03 折叠 nav 面已退役（方案切换=删除旧方案）。
  * 各页面组件来自 features/*。[T3-P1] ErrorBoundary 拆 ./ErrorBoundary。
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, unwrap } from '../api/client'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/view/ReaderPage'
@@ -26,6 +26,7 @@ import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useViewBridges } from './useViewBridges'
+import { switchViewWithFlush } from './view-flush'
 
 /** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
@@ -57,6 +58,8 @@ function autosaveWorstOf(
 
 export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
+  // [F-VISFB-15 ①面3] 视图切换包装：离场 'reader' 先立存（语义单源=view-flush.ts）
+  const changeView = useCallback((next: ViewId): void => switchViewWithFlush(view, next, setView), [view])
   // TABS-04：聚合 dirty（任一 tab 任一写面）变化沿 push 上报 main（close 拦截
   // 读 main 缓存）。LG-03 扩面（ADR-0014+INV-22）：图保存态≠saved 即脏——组合根
   // 单点扩（tab ∪ lineage dirty）。两 hook 必须无条件调用（P7-C 崩溃修复
@@ -124,7 +127,7 @@ export function App(): JSX.Element {
 
   // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
   // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）
-  useViewBridges(setView)
+  useViewBridges(changeView)
 
   // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
   // 课题名/篇数/脉络计数/已选 0-1/主题名单源推导；[F-WS-02] 显示位=
@@ -215,7 +218,7 @@ export function App(): JSX.Element {
           系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
       <div className="app-content-row">
         {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役） */}
-        <Rail view={view} onView={setView} />
+        <Rail view={view} onView={changeView} />
         <main className="app-main min-w-0 flex-1 overflow-auto">
           <ErrorBoundary>
             {view === 'library' && <LibraryPage guideHidden={wsGuide} />}
