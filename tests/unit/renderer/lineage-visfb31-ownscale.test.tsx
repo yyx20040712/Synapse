@@ -20,6 +20,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { appSettingsSchema } from '@shared/ipc/schemas'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import {
   clientToOwnPt,
@@ -28,9 +29,11 @@ import {
   uiScaleFactor
 } from '../../../src/renderer/features/lineage/timeline-zoom'
 import { buildSnapshot } from '../../../src/renderer/features/lineage/edge-overlay-geom'
+import { startFlight, type FlightJob } from '../../../src/renderer/features/lineage/card-drag-flight'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { EdgeOverlay } from '../../../src/renderer/features/lineage/EdgeOverlay'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
+import { useSettingsStore } from '../../../src/renderer/features/settings/settings.store'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -64,13 +67,13 @@ const cardOf = (id: string): HTMLElement => req(`.tl-card[data-node-id="${id}"]`
 const reorder = vi.fn()
 const onNodeClick = vi.fn()
 
-function mount(nodes: LineageNode[]): void {
+function mount(nodes: LineageNode[], edges: LineageEdge[] = []): void {
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
     root?.render(
-      <LineageTimeline nodes={nodes} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
+      <LineageTimeline nodes={nodes} edges={edges} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
     )
   })
   act(() => {
@@ -137,6 +140,7 @@ afterEach(() => {
   host?.remove()
   host = null
   setU(null)
+  useSettingsStore.setState({ settings: null })
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -341,6 +345,16 @@ describe('[F-VISFB-31] 画线/平移/当前月域=own 域换算', () => {
 })
 
 describe('[F-VISFB-31] 路由重算键含 uiScale', () => {
+  // [R1·B-1] 夹具引用稳定化：nodes/edges/shiftedIds/groups 全部模块级常量跨渲染
+  // 复用——EdgeOverlay effect 原有依赖（live/nodes/edges/shiftedIds/groups/
+  // routeEpoch）任一引用变化都会掩盖「仅 uiScale 变更触发重算」的判别面
+  const STABLE_NODES: LineageNode[] = [node('A'), node('B', { month: 3 })]
+  const STABLE_EDGES: LineageEdge[] = [
+    { id: 'e1', fromNode: 'A', toNode: 'B', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }
+  ]
+  const STABLE_IDS: ReadonlySet<string> = new Set()
+  const STABLE_GROUPS: never[] = []
+
   it('uiScale prop bump+--ui-scale 1→1.25 → 快照重算（path d 迁移 own 域）——缺键不重算形红', () => {
     const rafs: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
@@ -351,19 +365,21 @@ describe('[F-VISFB-31] 路由重算键含 uiScale', () => {
     host.className = 'tl-content'
     document.body.appendChild(host)
     stubRect(host, 0, 0, 600, 500)
-    const a = node('A')
-    const b = node('B', { month: 3 })
-    const e: LineageEdge = {
-      id: 'e1', fromNode: 'A', toNode: 'B', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't'
-    }
     root = createRoot(host)
     const renderAt = (uiScale: number): void => {
       act(() => {
         root?.render(
-          <EdgeOverlay nodes={[a, b]} edges={[e]} shiftedIds={new Set()} groups={[]} routeEpoch={0} uiScale={uiScale} />
+          <EdgeOverlay
+            nodes={STABLE_NODES}
+            edges={STABLE_EDGES}
+            shiftedIds={STABLE_IDS}
+            groups={STABLE_GROUPS}
+            routeEpoch={0}
+            uiScale={uiScale}
+          />
         )
       })
-      for (const n of [a, b]) {
+      for (const n of STABLE_NODES) {
         const card = host?.querySelector(`.tl-card[data-node-id="${n.id}"]`)
         if (card === null) {
           const el = document.createElement('div')
@@ -390,5 +406,99 @@ describe('[F-VISFB-31] 路由重算键含 uiScale', () => {
     const d2 = req('.tl-edge').getAttribute('d')
     expect(d2).not.toBeNull()
     expect(d2).not.toBe(d1)
+  })
+
+  it('宿主 settings→uiScale prop 接线（R1·B-1③）：settings small→large+--ui-scale 1.25 → 路由快照重算（d 迁移）', () => {
+    const rafs: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+      rafs.push(cb)
+      return rafs.length
+    })
+    const nodes = [node('A'), node('B', { month: 3 })]
+    const e: LineageEdge = {
+      id: 'e1', fromNode: 'A', toNode: 'B', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't'
+    }
+    mount(nodes, [e])
+    stubRect(cardOf('A'), 100, 50, 128, 72)
+    stubRect(cardOf('B'), 100, 400, 128, 72)
+    const flush = (): void => {
+      act(() => {
+        rafs.splice(0).forEach((cb) => cb(0))
+      })
+    }
+    flush()
+    const d1 = req('.tl-edge').getAttribute('d')
+    expect(d1).not.toBeNull()
+    setU('1.25')
+    act(() => {
+      useSettingsStore.setState({
+        settings: appSettingsSchema.parse({ contactEmail: 'a@bc.co', theme: 'light', uiScale: 'large' })
+      })
+    })
+    flush()
+    const d2 = req('.tl-edge').getAttribute('d')
+    expect(d2).not.toBeNull()
+    expect(d2).not.toBe(d1)
+  })
+})
+
+describe('[F-VISFB-31·R1] 自查面补强锚（W-1——四处独立红锚）', () => {
+  it('flight 飞行目标=own 域（W-1①）：u=1.25 双 rAF 后 left=client÷1.25−ho（旧 ÷z 写 client 值红）', async () => {
+    setU('1.25')
+    const card = document.createElement('div')
+    stubRect(card, 250, 125, 128, 72)
+    const content = document.createElement('div')
+    stubRect(content, 0, 0, 10, 10)
+    const job: FlightJob = {
+      nodeId: 'A',
+      fromX: 100,
+      fromY: 50,
+      hostOffset: { x: 20, y: 10 },
+      marginLeft0: '',
+      finish: vi.fn()
+    }
+    startFlight(card, job, content)
+    expect(card.style.position).toBe('absolute')
+    expect(card.style.left).toBe('80px')
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+    expect(card.style.left).toBe('180px')
+    expect(card.style.top).toBe('90px')
+  })
+
+  it('下拉带域=own px（W-1②）：u=1.25 clientY=290（=200+72own≤带内界 302.5）松手→带内落位改写（旧 82client 带=282 带外回弹零写红）', () => {
+    const nodes = [node('A'), node('B'), node('C')]
+    mount(nodes)
+    setU('1.25')
+    stubRect(req('.month-frame'), 0, 0, 600, 200)
+    pDown(cardOf('A'), 60, 40)
+    pMove(66, 44)
+    pMove(300, 290)
+    pUp(300, 290)
+    fireEnd(cardOf('A'))
+    expect(reorder).toHaveBeenCalledTimes(1)
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+  })
+
+  it('吸附高亮 r=屏幕域 12px 承诺（W-1③）：u=1.25 hint dot r=4.8/环 r=7.2（旧 z 单因子 r=6/9 红）', () => {
+    const nodes = [node('A'), node('B')]
+    mount(nodes)
+    act(() => {
+      useLineageViewStore.setState({ tool: 'draw-solid' })
+    })
+    // 高亮补偿 prop=z×UI_SCALE[settings 档]（LineageTimeline 组合——settings
+    // 单源驱动非 CSS var）
+    act(() => {
+      useSettingsStore.setState({
+        settings: appSettingsSchema.parse({ contactEmail: 'a@bc.co', theme: 'light', uiScale: 'large' })
+      })
+    })
+    stubRect(cardOf('A'), 250, 130, 160, 90)
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 330, clientY: 130 }))
+    })
+    const dot = q('svg.draw-anchor-hint circle.snapped')
+    expect(dot).not.toBeNull()
+    expect(dot!.getAttribute('r')).toBe('4.8')
+    expect(q('svg.draw-anchor-hint circle.snapped-ring')!.getAttribute('r')).toBe('7.2')
   })
 })

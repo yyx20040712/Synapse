@@ -6,7 +6,7 @@
  * - 命中面=画布空白（排除卡身/月标/工具条——这些是点选/编辑域）；
  *   指针位移反向滚动（内容随手指）；[F-VISFB-31] client 位移÷uiScale 才是
  *   滚动 own px（滚动盒读数=own 域——渲染位移=scrollΔ×u，旧直写=u≠1 档
- *   内容跑速失真 u 倍）；激活阈同÷u 归 own px。
+ *   内容跑速失真 u 倍）；[R1·W-2] 激活阈=client 域屏幕反馈量（不换算）。
  * - [回炉 R12] 激活阈值 5px（DRAG_THRESHOLD 同值先例——微移不滚不进
  *   grabbing 防误触）；[②U7/挂账⑦] 激活帧 re-base（阈值累积不瞬跳）；
  * - 光标域=.panning 类（grabbing）挂滚动容器根——基态 grab 由模式类
@@ -58,10 +58,12 @@ export function useTimelinePan(args: {
       // [R12] 阈值闸：位移 <5px 不滚不 grabbing；首次过阈值 armed+进 grabbing
       // [②U7/挂账⑦] 激活帧 re-base 起点至当前指针——阈值累积位移不瞬跳（≤5px
       //  跳变消解：内容自激活点起随手指）
-      // [F-VISFB-31] 位移÷u=own px（阈值与滚动映射同域）
+      // [F-VISFB-31] 滚动映射=clientΔ÷u 入 own 域滚动量（正确性修复——渲染
+      // 位移=scrollΔ×u）；[R1·W-2 主控裁定] 激活阈=client 域屏幕反馈量回退
+      //（两侧同域比较不换算——阈与映射分立）
       const u = uiScaleFactor()
       if (!armedRef.current) {
-        if (Math.hypot(e.clientX - base.startX, e.clientY - base.startY) / u < PAN_THRESHOLD) return
+        if (Math.hypot(e.clientX - base.startX, e.clientY - base.startY) < PAN_THRESHOLD) return
         armedRef.current = true
         base.startX = e.clientX
         base.startY = e.clientY

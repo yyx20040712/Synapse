@@ -11,9 +11,10 @@
  * （INV-107）；源框物理域判定（overSourceFrame/PULL_BAND_PX）收窄语义=
  * 纯回弹护栏+同框下拉带（stretch 保留面）——非改月判定面（呈报主控处置）。
  * [F-VISFB-31] 会话坐标族整体 own 域（00A 三域律 client=origin+C×s_eff）：
- * 抓取偏移/拖影/包含块补偿/framePointer/pullPx/激活阈全部 ÷s_eff 或 ×s_eff
+ * 抓取偏移/拖影/包含块补偿/framePointer/pullPx/下拉带全部 ÷s_eff 或 ×s_eff
  * 换算（旧 ÷z B 域×offsetLeft/px 常量 C 域混算=u≠1 档错位——接缝①+同族
- * 自查面：下拉带/跟随量/激活阈）。
+ * 自查面：下拉带/跟随量）。[R1·W-2 主控裁定] 激活阈（DRAG_THRESHOLD）=
+ * 屏幕反馈量恒 client 域比较不换算（INV-144 补句）。
  *
  * ── 态空间（宪法状态纪律）──
  * drag ∈ {idle, pending(按下未过 5px), dragging, settle(飞行过渡期——
@@ -187,8 +188,9 @@ export function useDragSession(args: {
       if (s === null) return
       const content = contentRef.current
       if (!s.moved) {
-        // [F-VISFB-31] 激活阈=own px（client 位移÷s_eff——mockup 像素=内容 own 域）
-        if (Math.hypot(e.clientX - s.sx, e.clientY - s.sy) / effectiveScale() < DRAG_THRESHOLD) return
+        // [R1·W-2 主控裁定回退] 激活阈=client 域屏幕反馈量（点击/拖拽判别阈=
+        // 手部屏幕反馈——两侧同域比较不换算；原式沿承）
+        if (Math.hypot(e.clientX - s.sx, e.clientY - s.sy) < DRAG_THRESHOLD) return
         s.moved = true
         const card = findCard(s.nodeId)
         if (card !== null && content !== null) {
