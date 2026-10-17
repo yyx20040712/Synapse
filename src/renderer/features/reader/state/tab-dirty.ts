@@ -43,6 +43,7 @@
  */
 import { useReaderStore } from './reader.store'
 import { useNotesStore } from '../../notes/notes.store'
+import { discardAnnotationDraft } from '../interact/annotation-draft-registry'
 import { useShallow } from 'zustand/react/shallow'
 
 /** 两写面信号包（isTabDirty 的纯函数输入） */
@@ -145,6 +146,12 @@ export function confirmCloseDirty(paperId: string): boolean {
   if (allow) {
     // 弃改收口：守门通过即弃置该篇悬置编辑（含在途 save 的代际守卫打点）
     useNotesStore.getState().discardPendingEdit(paperId)
+    // [回炉 W-3] 完整弃改（INV-50 同族——主控裁定语义）：按篇清批注注册表
+    // 残留（12 号删除链「先清册」同语义；tab.annotations id 集=该篇注册键
+    // 全集——编辑目标恒出自该清单，addAnnotation 同步进表）
+    for (const a of tab?.annotations ?? []) {
+      discardAnnotationDraft(a.id)
+    }
   }
   return allow
 }
@@ -173,10 +180,33 @@ export async function requestCloseTab(paperId: string): Promise<boolean> {
   }
   closingTabs.add(paperId)
   try {
-    await useNotesStore.getState().flushNow(paperId)
+    try {
+      await useNotesStore.getState().flushNow(paperId)
+    } catch {
+      // [回炉 W-4] flushNow rejection（api 同步抛/未预期异常）=收口失败——按
+      // 仍脏走显式放弃路径（禁未处理 rejection；成功分支逻辑零变）
+    }
     if (!isTabDirty(paperId, tabDirtySignals(paperId))) return true
     return confirmCloseDirty(paperId)
   } finally {
     closingTabs.delete(paperId)
   }
+}
+
+/**
+ * [回炉 B-1] 切 tab flush-first（任务书 §0-1「切 tab/关 tab 未保存内容=立即
+ * 保存」票面明文——主控裁定：notes 域切 tab 收口≠D1 残余，D1=批注编辑器
+ * 挂载面）：激活目标 tab 前对**离场篇**定向 flushNow 立存（fire-first 不阻
+ * 切换——切换不卸 notes.store 草稿，写后台完成；含 600s 防抖在排态即写）。
+ * 失败=灰点/pending 镜像可见（不弹窗不阻断，重试径=四态钮）。
+ * 重入防护=flushNow 自身在途收敛+串行（并发切回再切走时最新值经「等在途→
+ * 仍 pending→saveNow 立存」链覆盖——与关 tab 族同语义；无弹窗/关闭语义，
+ * 不设 UI 级锁）。批注挂载编辑器不在此面（D1 挂账——批次报告）。
+ */
+export function switchTabFlushFirst(targetId: string): void {
+  const departing = useReaderStore.getState().activeId
+  if (departing !== null && departing !== targetId) {
+    void useNotesStore.getState().flushNow(departing).catch(() => undefined)
+  }
+  useReaderStore.getState().activateTab(targetId)
 }

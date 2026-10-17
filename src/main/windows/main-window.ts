@@ -308,6 +308,11 @@ export function reportQuitFlushResult(requestId: string, stillDirty: boolean): v
   resolve(stillDirty)
 }
 
+/** [回炉 W-5] 待答表余量（测试可观测面——send 抛错/超时两降级路径的表清锚） */
+export function quitFlushPendingSize(): number {
+  return quitFlushPending.size
+}
+
 /**
  * 退出握手 flush 超时预算（提案值——主控集成窗核定）：
  * 单用户本地 SQLite，收口序列=串行 IPC 往返+本地写（毫秒级）；5s=三个数量级
@@ -328,7 +333,10 @@ function awaitQuitFlush(call: QuitFlushCall, timeoutMs: number): Promise<boolean
         resolve(stillDirty)
       },
       () => {
+        // [回炉 W-5] 发送面 rejection（send 同步抛错→executor 拒绝）：与超时
+        // 分支同构除名——待答表不遗留死项（迟到回执零命中丢弃）
         clearTimeout(timer)
+        quitFlushPending.delete(call.requestId)
         resolve(true)
       }
     )
@@ -348,6 +356,9 @@ export interface QuitHandshakeDeps extends QuitGuardDeps {
  * 降级（confirmAndMaybeDestroy）→确认 destroy/取消保持。flush 等待段持
  * flushing 锁（二次 close=再 preventDefault 后忽略——不放行默认关闭）；
  * confirm 段已释放锁（模态挡沿承）。
+ * [回炉 W-1] busy 检查前置于 clean 放行：flush 在途期 renderer push
+ * dirty=false 后的二次 close 不得走 clean 早退默认关闭（穿透明手握手）——
+ * busy 态一律 preventDefault 拦下（握手完成后由收口终态或用户再关承接）。
  */
 export async function handleCloseWithQuitHandshake(
   dirty: boolean,
@@ -355,9 +366,12 @@ export async function handleCloseWithQuitHandshake(
   win: { destroy(): void },
   deps: QuitHandshakeDeps
 ): Promise<void> {
+  if (quitFlushBusy) {
+    event.preventDefault()
+    return
+  }
   if (!quitDirtyGuard(dirty)) return
   event.preventDefault()
-  if (quitFlushBusy) return
   quitFlushBusy = true
   let stillDirty = true
   try {

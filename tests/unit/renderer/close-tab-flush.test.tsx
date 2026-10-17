@@ -14,11 +14,17 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
-import { makeTab } from '../../utils/factories'
-import { requestCloseTab } from '../../../src/renderer/features/reader/state/tab-dirty'
+import { makeAnnotation, makeTab } from '../../utils/factories'
+import { requestCloseTab, switchTabFlushFirst } from '../../../src/renderer/features/reader/state/tab-dirty'
 import { TabBar } from '../../../src/renderer/features/reader/view/TabBar'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
+import { runQuitFlush } from '../../../src/renderer/app/quit-flush'
+import {
+  hasPendingAnnotationDrafts,
+  saveAnnotationDraft,
+  takeAnnotationDraft
+} from '../../../src/renderer/features/reader/interact/annotation-draft-registry'
 import type { TabState } from '../../../src/renderer/features/reader/state/reader.store'
 
 const mocks = vi.hoisted(() => ({
@@ -64,6 +70,9 @@ function closeButtons(): HTMLButtonElement[] {
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()
+  // [回炉 W-6 同型] Once 实现队列逐用例 reset（clearAllMocks 不清 once 队列）
+  mocks.notesGet.mockReset()
+  mocks.notesSave.mockReset()
   for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
     useNotesStore.getState().discardPendingEdit(k)
   }
@@ -221,7 +230,101 @@ describe('close-tab-flush —— 关 tab flush-first（F-VISFB-14）', () => {
     })
     expect(useReaderStore.getState().tabs['pc-10']).toBeUndefined()
   })
+
+  it('[回炉 B-1] 切 tab flush-first：dirty notes（600s 防抖在排态）×switchTabFlushFirst→立即写最新值+切回不丢', async () => {
+    useReaderStore.setState({
+      tabs: { 'ps-1': makeTab('ps-1'), 'ps-2': makeTab('ps-2') },
+      order: ['ps-1', 'ps-2'],
+      activeId: 'ps-1'
+    })
+    await seedDirtyNote('ps-1', '切走前最新值')
+    // 防抖在排（600s 真实 timer——本用例内永不触发；立存不得依赖 timer 通道）
+    useNotesStore.getState().saveSoon('ps-1')
+    mocks.notesSave.mockResolvedValueOnce(noteResult('ps-1', '切走前最新值'))
+    switchTabFlushFirst('ps-2')
+    expect(useReaderStore.getState().activeId).toBe('ps-2')
+    await drain()
+    expect(mocks.notesSave).toHaveBeenCalledTimes(1)
+    expect(mocks.notesSave).toHaveBeenCalledWith({ paperId: 'ps-1', contentMd: '切走前最新值' })
+    // 切回不丢：store 草稿驻留+pending 清（最新值已落库）
+    const draft = useNotesStore.getState().noteByPaper['ps-1']
+    expect(draft?.contentMd).toBe('切走前最新值')
+    expect(draft?.pending).toBe(false)
+  })
+
+  it('[回炉 B-1] TabBar 装配：点击他 tab→离场篇立存（fire-first 不阻切换）', async () => {
+    mountTabBar(
+      { 'ps-3': makeTab('ps-3', { fileName: '论文三.pdf' }), 'ps-4': makeTab('ps-4') },
+      ['ps-3', 'ps-4'],
+      'ps-3'
+    )
+    await seedDirtyNote('ps-3', '离场草稿')
+    mocks.notesSave.mockResolvedValueOnce(noteResult('ps-3', '离场草稿'))
+    await act(async () => {
+      tabItems()[1]?.click()
+      await drain()
+    })
+    expect(useReaderStore.getState().activeId).toBe('ps-4')
+    expect(mocks.notesSave).toHaveBeenCalledWith({ paperId: 'ps-3', contentMd: '离场草稿' })
+  })
+
+  it('[回炉 B-1] flushNow rejection：切换不抛不阻（unhandled 零）+灰点保留', async () => {
+    useReaderStore.setState({
+      tabs: { 'ps-5': makeTab('ps-5'), 'ps-6': makeTab('ps-6') },
+      order: ['ps-5', 'ps-6'],
+      activeId: 'ps-5'
+    })
+    await seedDirtyNote('ps-5', '会失败')
+    mocks.notesSave.mockImplementationOnce(() => {
+      throw new Error('sync boom')
+    })
+    expect(() => switchTabFlushFirst('ps-6')).not.toThrow()
+    expect(useReaderStore.getState().activeId).toBe('ps-6')
+    await drain()
+    expect(useNotesStore.getState().noteByPaper['ps-5']?.pending).toBe(true)
+  })
+
+  it('[回炉 W-3] 确认放弃=完整弃改：批注注册表残留随篇清（重挂载不复活+退出判定不残留）', async () => {
+    const anno = makeAnnotation('批注残留')
+    useReaderStore.setState({
+      tabs: { 'pw-3': makeTab('pw-3', { annotations: [anno] }) },
+      order: ['pw-3'],
+      activeId: 'pw-3'
+    })
+    saveAnnotationDraft(anno.id, '残留草稿', true)
+    expect(hasPendingAnnotationDrafts()).toBe(true)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    useReaderStore.getState().markTabDirty('pw-3')
+    await expect(requestCloseTab('pw-3')).resolves.toBe(true)
+    // 注册表按篇清空：无残留、重挂载不复活（take=null）
+    expect(hasPendingAnnotationDrafts()).toBe(false)
+    expect(takeAnnotationDraft(anno.id)).toBeNull()
+    // 真实接线尾：确认放弃后 TabBar 落 closeTab（tab 移除）→退出判定不残留
+    useReaderStore.getState().closeTab('pw-3')
+    await expect(runQuitFlush()).resolves.toBe(false)
+  })
+
+  it('[回炉 W-4] flushNow rejection→显式放弃路径（confirm 承接，不未处理 rejection）', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    useReaderStore.setState({
+      tabs: { 'pw-4': makeTab('pw-4') },
+      order: ['pw-4'],
+      activeId: 'pw-4'
+    })
+    await seedDirtyNote('pw-4', '同步抛稿')
+    mocks.notesSave.mockImplementationOnce(() => {
+      throw new Error('sync boom')
+    })
+    await expect(requestCloseTab('pw-4')).resolves.toBe(true)
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(useNotesStore.getState().noteByPaper['pw-4']).toBeUndefined()
+  })
 })
+
+/** tab 项节点（[回炉 B-1] TabBar 切换装配用例消费） */
+function tabItems(): HTMLElement[] {
+  return [...(host?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])]
+}
 
 afterEach(() => {
   act(() => {

@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-17T00:24:34.555Z",
+    "generatedAt": "2026-10-17T00:43:03.155Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -887,7 +887,7 @@
         },
         {
             "path": "tests/unit/renderer/close-tab-flush.test.tsx",
-            "sha256": "2beed9515d8565f97c51078d5778aa0067d3ceb3e83f2e20da1ef7fbe7741b2d"
+            "sha256": "6d6bb09033aef0965e8757ec3f7c86377cc059af2d4159af1e5ba790d6adecf7"
         },
         {
             "path": "tests/unit/renderer/corpus-export.test.tsx",
@@ -1315,7 +1315,7 @@
         },
         {
             "path": "tests/unit/renderer/quit-flush.test.ts",
-            "sha256": "bfb75733485239d6d633ace80dabdb5e99f82106d031ac99f7a088b5e7dea4a8"
+            "sha256": "d5fb564225efb4ae521bd2ffb0f9a7953e63cafdb52f2edffda9193f3a1b9606"
         },
         {
             "path": "tests/unit/renderer/r3-rdr-set-visual.test.tsx",
@@ -1923,7 +1923,7 @@
         },
         {
             "path": "tests/unit/windows/quit-handshake.test.ts",
-            "sha256": "2be9c9b984a76ce86b97f86968eefe65588f9597e04dd1cc772599b36dfc060b"
+            "sha256": "c8d6e08b87c5c7cb9b2d2ee5e97793ac626787f4ddf9f57b254bbf89a58f3e89"
         },
         {
             "path": "tests/unit/windows/window-control.test.ts",

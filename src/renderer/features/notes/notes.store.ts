@@ -392,9 +392,18 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
 
     async flushAllNow() {
       // [F-VISFB-14] 全量立存收口（退出握手）：pendingEdit 快照逐篇串行
-      // flushNow（与 flushAll 同型快照遍历；退出后 timer 永不触发——立存）
+      // flushNow（与 flushAll 同型快照遍历；退出后 timer 永不触发——立存）。
+      // [回炉 W-2] 纯在途面兜底：pendingEdit 无键而在途的写（弃改后残余写/
+      // 冗余 saveNow 在途）同样等待 settle——退出收口不漏任何写途，终态判定
+      // 在全部 settle 后由收口方查态（快照重取循环：settle 期新接管的在途
+      // 〔并发防抖撞上〕次轮兜住；退出面无用户输入，有界收敛）
       for (const paperId of [...pendingEdit]) {
         await get().flushNow(paperId)
+      }
+      let inflightIds = [...inflight.keys()]
+      while (inflightIds.length > 0) {
+        await Promise.all(inflightIds.map((id) => inflight.get(id)!))
+        inflightIds = [...inflight.keys()]
       }
     },
 

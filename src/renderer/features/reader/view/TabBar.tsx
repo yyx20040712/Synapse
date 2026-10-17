@@ -43,7 +43,7 @@ import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { ICON_X } from '../../../shared/icons'
 import { useReaderStore } from '../state/reader.store'
-import { isTabDirty, requestCloseTab, useNotesDrafts } from '../state/tab-dirty'
+import { isTabDirty, requestCloseTab, switchTabFlushFirst, useNotesDrafts } from '../state/tab-dirty'
 import type { TabState } from '../state/reader.store'
 
 /** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
@@ -58,7 +58,6 @@ export function TabBar(): JSX.Element | null {
   const order = useReaderStore((s) => s.order)
   const activeId = useReaderStore((s) => s.activeId)
   const tabs = useReaderStore((s) => s.tabs)
-  const activateTab = useReaderStore((s) => s.activateTab)
   const closeTab = useReaderStore((s) => s.closeTab)
   // notes 面灰点信号（TABS-03）：per-paper pending 镜像（字典订阅——dirty
   // 写频极低，细粒度化按 Rule of Three 缓议）
@@ -117,21 +116,23 @@ export function TabBar(): JSX.Element | null {
             // mockup .tab 语汇）；error 红字仍内联（条件色无类载体）
             className={`rdr-tab min-w-0 shrink-0 cursor-pointer${active ? ' rdr-tab-active' : ''}`}
             style={{ color: tab.status === 'error' ? 'var(--danger)' : undefined }}
-            onClick={() => activateTab(id)}
+            onClick={() => switchTabFlushFirst(id)}
             onFocus={() => setFocusedId(id)}
             onKeyDown={(ev) => {
               // 键盘激活（div[role=tab] 无内建行为）：Enter/Space 等价点击 tab 体；
               // Delete 关闭（关闭叉已退出 Tab 序——纯键盘用户的关闭替代路径）。
-              // 两者均经 requestCloseTab 守门（[F-VISFB-14] flush-first：dirty
-              // 先立存最新值，成功才关闭；失败分支=显式放弃 confirm——tab-dirty）
+              // 激活两径经 switchTabFlushFirst（[回炉 B-1] 离场篇 flush-first
+              // 立存）；关闭经 requestCloseTab（[F-VISFB-14] flush-first 守门）
               if (ev.key === 'Enter' || ev.key === ' ') {
                 ev.preventDefault()
-                activateTab(id)
+                switchTabFlushFirst(id)
               } else if (ev.key === 'Delete') {
                 ev.preventDefault()
-                void requestCloseTab(id).then((allow) => {
-                  if (allow) closeTab(id)
-                })
+                void requestCloseTab(id)
+                  .then((allow) => {
+                    if (allow) closeTab(id)
+                  })
+                  .catch(() => undefined)
               }
             }}
           >
@@ -158,9 +159,13 @@ export function TabBar(): JSX.Element | null {
                 ev.stopPropagation()
                 // [F-VISFB-14 C-A3 翻案] 关闭叉=flush-first 异步收口：dirty 先
                 // 立存最新值（重入锁挡连点第二击），净=关闭/失败=显式放弃路径
-                void requestCloseTab(id).then((allow) => {
-                  if (allow) closeTab(id)
-                })
+                // （[回炉 W-4] .catch 补 rejection 面——requestCloseTab 自身已
+                // 内吞 flushNow 异常，此处为接线位兜底）
+                void requestCloseTab(id)
+                  .then((allow) => {
+                    if (allow) closeTab(id)
+                  })
+                  .catch(() => undefined)
               }}
             >
               {ICON_X}

@@ -1,12 +1,14 @@
 /**
- * [F-VISFB-14] 退出握手 main 侧测试（新建，always-active）。
+ * [F-VISFB-14] 退出握手 main 侧测试（新建，always-active；回炉轮 1 增 W-1/W-5）。
  *
  * 锁链（票面三件套+d1 W4 四点之③④）：
  * - clean 放行零变；dirty → preventDefault → renderer flush（有限超时）→
  *   stillDirty=false=destroy 零确认／仍脏=confirm（QUIT_CONFIRM_MESSAGE 同族
  *   新值）→确认 destroy/取消保持；
- * - flushing 重入锁=二次 close 单发（INV-141④：requestQuitFlush 恰一次）；
+ * - flushing 重入锁=二次 close 单发（INV-141④：requestQuitFlush 恰一次）——
+ *   含 dirty→clean 跨格交错（[回炉 W-1] busy 前置 clean 放行，不穿默认关闭）；
  * - 超时降级回现状 confirm/destroy，迟到回执按 requestId 关联丢弃不误伤；
+ * - [回炉 W-5] send 抛错=rejection 同构除名（待答表零遗留）+可再起握手；
  * - IPC 回执通道 reportQuitFlush 透传（system 域装配锚）。
  */
 import { describe, expect, it, vi } from 'vitest'
@@ -15,7 +17,10 @@ import {
   QUIT_FLUSH_TIMEOUT_MS,
   createQuitFlushRequest,
   handleCloseWithQuitHandshake,
-  reportQuitFlushResult
+  quitFlushPendingSize,
+  reportQuitFlushResult,
+  setQuitDirty,
+  getQuitDirty
 } from '../../../src/main/windows/main-window'
 import { createSystemIpc } from '../../../src/main/ipc/system'
 import { makeIpcDeps } from '../../utils/ipc-deps'
@@ -132,20 +137,52 @@ describe('quit-handshake —— main 侧退出握手三件套（F-VISFB-14）', 
     const event1 = makeEvent()
     const event2 = makeEvent()
     const win = makeWin()
-    const send = vi.fn()
+    const send = vi.fn((_payload: { requestId: string }) => undefined)
     const request = createQuitFlushRequest(send)
     const requestQuitFlush = vi.fn(() => request())
     const confirmQuit = vi.fn(async () => false)
     const first = handleCloseWithQuitHandshake(true, event1, win, { confirmQuit, requestQuitFlush })
     await drainMicrotasks()
+    // 第二 close 不 await——同步前缀（busy 判定/第二笔 flush 发起）即时生效
     const second = handleCloseWithQuitHandshake(true, event2, win, { confirmQuit, requestQuitFlush })
-    await second
+    await drainMicrotasks()
+    // [回炉 W-6 m1 重构] 清理先行：send 全部回执（健康态恰一笔；变异态两笔
+    // 全清）——断言后置=失败路径也不留悬挂待答，禁 5s 超时充当红证/清理
+    for (const call of send.mock.calls) {
+      reportQuitFlushResult(call[0].requestId, false)
+    }
+    await Promise.all([first, second])
     expect(requestQuitFlush).toHaveBeenCalledTimes(1)
     expect(event2.preventDefault).toHaveBeenCalledTimes(1)
-    expect(win.destroy).not.toHaveBeenCalled()
-    reportQuitFlushResult(lastRequestId(send), false)
-    await first
     expect(win.destroy).toHaveBeenCalledTimes(1)
+    expect(quitFlushPendingSize()).toBe(0)
+  })
+
+  it('[回炉 W-1] dirty→clean 跨格：flush 在途 renderer push dirty=false→二次 close 仍拦（不穿默认关闭）+单发', async () => {
+    const event1 = makeEvent()
+    const event2 = makeEvent()
+    const win = makeWin()
+    const send = vi.fn((_payload: { requestId: string }) => undefined)
+    const request = createQuitFlushRequest(send)
+    const requestQuitFlush = vi.fn(() => request())
+    const confirmQuit = vi.fn(async () => false)
+    const first = handleCloseWithQuitHandshake(true, event1, win, { confirmQuit, requestQuitFlush })
+    await drainMicrotasks()
+    // flush 在途：renderer push dirty=false（main 缓存翻 clean——bootstrap 实配
+    // 读 getQuitDirty() 的交错模拟）
+    setQuitDirty(false)
+    expect(getQuitDirty()).toBe(false)
+    const second = handleCloseWithQuitHandshake(getQuitDirty(), event2, win, { confirmQuit, requestQuitFlush })
+    await drainMicrotasks()
+    // 清理先行（同 m1 重构形态——失败路径不留悬挂）
+    for (const call of send.mock.calls) {
+      reportQuitFlushResult(call[0].requestId, false)
+    }
+    await Promise.all([first, second])
+    expect(requestQuitFlush).toHaveBeenCalledTimes(1)
+    expect(event2.preventDefault).toHaveBeenCalledTimes(1)
+    expect(win.destroy).toHaveBeenCalledTimes(1)
+    expect(quitFlushPendingSize()).toBe(0)
   })
 
   it('requestId 关联：旧笔迟到回执不 resolve 新笔（防握手串扰）', async () => {
@@ -175,6 +212,36 @@ describe('quit-handshake —— main 侧退出握手三件套（F-VISFB-14）', 
     expect(event.preventDefault).toHaveBeenCalledTimes(1)
     expect(confirmQuit).toHaveBeenCalledTimes(1)
     expect(win.destroy).not.toHaveBeenCalled()
+  })
+
+  it('[回炉 W-5] 真实工厂 send 抛错：rejection 同构除名（待答表零遗留）+可再起握手', async () => {
+    const sendThrow = vi.fn((_payload: { requestId: string }) => {
+      throw new Error('webContents gone')
+    })
+    const throwingRequest = createQuitFlushRequest(sendThrow)
+    const event1 = makeEvent()
+    const win1 = makeWin()
+    const confirmQuit = vi.fn(async () => false)
+    await handleCloseWithQuitHandshake(true, event1, win1, { confirmQuit, requestQuitFlush: () => throwingRequest() })
+    expect(confirmQuit).toHaveBeenCalledTimes(1)
+    // 表项已由 rejection 分支除名（quitFlushPendingSize 可观测锚）
+    expect(quitFlushPendingSize()).toBe(0)
+    // 迟到回执（表项已清）：不抛不复活
+    const thrownId = sendThrow.mock.calls[0]![0].requestId
+    expect(() => reportQuitFlushResult(thrownId, false)).not.toThrow()
+    expect(quitFlushPendingSize()).toBe(0)
+    // 可再起握手：换正常工厂→收发正常（同 confirmQuit 计数+1）
+    const send = vi.fn()
+    const request2 = createQuitFlushRequest(send)
+    const event2 = makeEvent()
+    const win2 = makeWin()
+    const hs2 = handleCloseWithQuitHandshake(true, event2, win2, { confirmQuit, requestQuitFlush: () => request2() })
+    await drainMicrotasks()
+    reportQuitFlushResult(lastRequestId(send), true)
+    await hs2
+    expect(confirmQuit).toHaveBeenCalledTimes(2)
+    expect(win2.destroy).not.toHaveBeenCalled()
+    expect(quitFlushPendingSize()).toBe(0)
   })
 
   it('confirmQuit reject：按取消处理——窗口保持不抛出（W1 沿承）', async () => {

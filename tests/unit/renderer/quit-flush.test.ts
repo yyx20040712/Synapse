@@ -71,6 +71,12 @@ async function seedDirtyNote(paperId: string, content: string): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // [回炉 W-6 m6 根因修] Once 实现队列跨用例残留（clearAllMocks 只清调用不
+  // 清 once 队列——前用例未消费的 mockResolvedValueOnce 会错位消费本用例的
+  // deferred 桩→变异下 TypeError 非断言红）：notes/lineage 三桩逐用例 reset
+  mocks.notesGet.mockReset()
+  mocks.notesSave.mockReset()
+  mocks.patchNode.mockReset()
   for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
     useNotesStore.getState().discardPendingEdit(k)
   }
@@ -215,5 +221,30 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
     } finally {
       unregisterDraftFlush('anno-b11')
     }
+  })
+
+  it('[回炉 W-2] 纯在途×pendingEdit 无键（弃改后残余写）：收口等待在途 settle（不写途 destroy）', async () => {
+    mocks.notesGet.mockResolvedValueOnce(noteResult('qp-12', '基线'))
+    await useNotesStore.getState().load('qp-12')
+    let resolveSave!: (v: ReturnType<typeof noteResult>) => void
+    mocks.notesSave.mockImplementationOnce(
+      () => new Promise((r) => { resolveSave = r as typeof resolveSave })
+    )
+    useNotesStore.getState().edit('qp-12', { contentMd: '在途值' })
+    void useNotesStore.getState().saveNow('qp-12')
+    // 弃改收口（代际守卫）——pendingEdit 清空而在途写仍飞（弃改窄窗=写途
+    // DB 落地毫秒窗；INV-50「DB 落地毫秒窗票面已接受」的收口侧对应面）
+    useNotesStore.getState().discardPendingEdit('qp-12')
+    let settled = false
+    const quit = runQuitFlush().then((d) => {
+      settled = true
+      return d
+    })
+    await drain()
+    // 在途未 settle——收口不返回（旧代码此格即返回 false=写途 destroy 面）
+    expect(settled).toBe(false)
+    resolveSave(noteResult('qp-12', '在途值'))
+    await expect(quit).resolves.toBe(false)
+    expect(settled).toBe(true)
   })
 })
