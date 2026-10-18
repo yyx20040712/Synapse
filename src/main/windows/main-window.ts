@@ -212,10 +212,13 @@ export interface QuitEventSink {
   removeListener(event: string, listener: (...args: never[]) => void): void
 }
 
-/** 装配窗口最小形状：close/closed 订阅+destroy+webContents 崩溃订阅 */
+/** 装配窗口最小形状：close/closed 订阅+destroy+webContents 崩溃订阅+
+ * isDestroyed 销毁态回读（真 BrowserWindow 本有此法——结构类型补形，
+ * [64-e2e-hang]：teardown 须凭它跳过已亡窗的订阅摘除） */
 export interface QuitInterceptionWindow extends QuitEventSink {
   destroy(): void
   webContents: QuitEventSink
+  isDestroyed(): boolean
 }
 
 export interface QuitInterceptionDeps {
@@ -253,10 +256,13 @@ export function installQuitCloseInterception(
     disposed = true
     if (timer.handle !== null) clearTimeout(timer.handle)
     timer.handle = null
+    if (quitPolicy === policy) quitPolicy = null
+    // closed 回调内 teardown 的现场：窗已销毁，订阅随对象消亡，触摸即抛
+    // Object has been destroyed（64 e2e 挂起根因）
+    if (win.isDestroyed()) return
     win.removeListener('close', onClose)
     win.removeListener('closed', onClosed)
     win.webContents.removeListener('render-process-gone', onGone)
-    if (quitPolicy === policy) quitPolicy = null
   }
   const policy = createQuitClosePolicy(deps.now, {
     sendQuitFlush(requestId) {
