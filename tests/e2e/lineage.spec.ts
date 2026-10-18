@@ -248,12 +248,32 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-tool-solid').click()
     const root = nodeG(win, '脉络根文献')
     const cardB = nodeG(win, '脉络乙文献')
+    // [CI 收口修=F-CIFLK-01 锚回归] 旧 T3 滚动锚随 66 改写丢失：CI 1024×768
+    // 下 root（2020 顶段）与乙（同月分行错位后 ~780>768）**不可共视**（span≈
+    // 605>视口半高）——固定 scrollIntoView 单卡锚治不了双端拖拽。自适应双径：
+    // 已共视=直接拖（本地 1280×800 常态）；未共视=拖入底缘 20% 触发区走
+    // **本批新自动滚动**（裁定 4——画线拖拽会话内 canvas 下滚至乙入视上带
+    // 再落锚）。behavior=instant 硬化（k1-W2 先例同型）。
+    await root.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
     const rbT3 = await root.boundingBox()
-    const bbT3 = await cardB.boundingBox()
-    if (rbT3 === null || bbT3 === null) throw new Error('T3 双卡不可见')
+    if (rbT3 === null) throw new Error('T3 源卡不可见')
     await win.mouse.move(rbT3.x + rbT3.width - 2, rbT3.y + rbT3.height / 2)
     await win.mouse.down()
-    await win.mouse.move(bbT3.x + 2, bbT3.y + bbT3.height / 2, { steps: 8 })
+    const vpT3 = await win.evaluate(() => window.innerHeight)
+    const dropVisible = async (): Promise<boolean> => {
+      const b = await cardB.boundingBox()
+      return b !== null && b.y + b.height / 2 < vpT3 * 0.75
+    }
+    if (!(await dropVisible())) {
+      // 乙出视口（CI 窄窗形态）——指针驻底缘触发区：自动滚动至乙入上带
+      await win.mouse.move(rbT3.x + 4, Math.round(vpT3 - 15), { steps: 6 })
+      await expect
+        .poll(dropVisible, { timeout: 10_000, message: 'T3 自动滚动未带乙入视口上带' })
+        .toBe(true)
+    }
+    const bbT3 = await cardB.boundingBox()
+    if (bbT3 === null) throw new Error('T3 目标卡不可见')
+    await win.mouse.move(bbT3.x + 2, bbT3.y + bbT3.height / 2, { steps: 4 })
     await win.mouse.up()
     await expect(win.getByText('两节点间已存在连线')).toBeVisible({ timeout: 10_000 })
     // 拒绝不入队——会话恒 clean（行内错误零残留）+边数种子值（2 条）
