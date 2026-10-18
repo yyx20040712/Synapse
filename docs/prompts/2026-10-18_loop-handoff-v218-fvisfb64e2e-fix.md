@@ -83,9 +83,10 @@
 - run 39141915828（首 push 877b4ad7）=**failure**——e2e 步红定性=teardown 脏态
   C 框挂面（§0 追加段），非修复回归（零用例终败+134 passed）；处置=seam 批
   （416423bb/a396e764）+本笔重推。
-- 本笔 push（seam 批+v218 修订）→ 新 run **待核验**：e2e 步绿即闭账（预期
-  全绿；若 ai-budget E4 再 flaky 且 teardown 不再挂=seam 生效佐证）。**未核验
-  不得翻 done**——收口会话或下场首动作补 conclusion。
+- 本笔 push（seam 批+v218 修订）→ run **39143488473=SUCCESS 亲验闭账**
+  （e2e 步 135 passed/6.3m/零 flaky 零挂——基线 5.4m 量级回归；ai-budget E4
+  本轮首试即过）。挂起族（CI 57min/本地 120s×3/teardown 90s）全谱销项。
+  （本回填笔自身再触发的 CI run 留下场首动作按 §1-1 口径核验，非本批闭账要件。）
 
 ## §5 沿承挂账
 
