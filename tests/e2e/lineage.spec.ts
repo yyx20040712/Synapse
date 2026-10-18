@@ -272,7 +272,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       await win.evaluate(() => {
         const tl = document.querySelector('.timeline')
         if (!(tl instanceof HTMLElement)) throw new Error('T3 .timeline 不在场')
-        const card = [...tl.querySelectorAll('.tl-card')].find((c) => c.textContent?.includes('脉络乙文献'))
+        const card = Array.from(tl.querySelectorAll('.tl-card')).find((c) => c.textContent?.includes('脉络乙文献'))
         if (!(card instanceof HTMLElement)) throw new Error('T3 乙卡不在场')
         const cr = card.getBoundingClientRect()
         const tr = tl.getBoundingClientRect()
