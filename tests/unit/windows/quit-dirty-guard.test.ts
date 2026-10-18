@@ -35,6 +35,11 @@ function makeHarness() {
     },
     removeListener(): void {},
     destroy(): void {},
+    // [64-e2e-hang] QuitInterceptionWindow 补形（teardown 销毁态守卫所需）：
+    // 本 harness 无销毁路径，恒 false——纯形状补齐，零断言面
+    isDestroyed(): boolean {
+      return false
+    },
     webContents: { on(): void {}, removeListener(): void {} }
   }
   const handle = installQuitCloseInterception(win, {

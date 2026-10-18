@@ -52,25 +52,39 @@ function makeHarness(confirmResult = false, neverResolve = false): Harness {
     neverResolve ? new Promise<boolean>(() => {}) : Promise.resolve(confirmResult)
   )
   let destroys = 0
+  // [64-e2e-hang] Electron 销毁语义建模：destroy 即置 destroyed 旗标，此后
+  // removeListener/webContents 访问一律抛（真 BrowserWindow 语义——此前 fake
+  // 未建模销毁态，掩盖了 closed 回调内 teardown 触摸已亡窗的未捕获异常）
+  let destroyed = false
+  const wc = {
+    on(event: string, listener: (...args: never[]) => void): void {
+      if (event === 'render-process-gone') goneLs.push(listener as () => void)
+    },
+    removeListener(event: string): void {
+      if (destroyed) throw new Error('Object has been destroyed')
+      removed.push(`webContents:${event}`)
+    }
+  }
   const win = {
     on(event: string, listener: (...args: never[]) => void): void {
       if (event === 'close') closeLs.push(listener as CloseListener)
       else if (event === 'closed') closedLs.push(listener as () => void)
     },
     removeListener(event: string): void {
+      if (destroyed) throw new Error('Object has been destroyed')
       removed.push(event)
     },
     destroy(): void {
+      destroyed = true
       destroys += 1
       for (const l of closedLs.splice(0)) l()
     },
-    webContents: {
-      on(event: string, listener: (...args: never[]) => void): void {
-        if (event === 'render-process-gone') goneLs.push(listener as () => void)
-      },
-      removeListener(event: string): void {
-        removed.push(`webContents:${event}`)
-      }
+    get webContents(): typeof wc {
+      if (destroyed) throw new Error('Object has been destroyed')
+      return wc
+    },
+    isDestroyed(): boolean {
+      return destroyed
     }
   }
   const handle = installQuitCloseInterception(win, {
@@ -241,6 +255,9 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
       },
       removeListener(): void {},
       destroy(): void {},
+      isDestroyed(): boolean {
+        return false
+      },
       webContents: { on(): void {}, removeListener(): void {} }
     }
     const handle = installQuitCloseInterception(win, {
@@ -312,9 +329,23 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
     expect(h.destroys).toBe(1)
     // C 态窗毁不走 C→I 解冻：全程零 abort 帧（对照=取消/同步抛错路径有 abort）
     expect(h.aborts).toHaveLength(0)
-    expect(h.removed).toEqual(
-      expect.arrayContaining(['close', 'closed', 'webContents:render-process-gone'])
-    )
+    // [64-e2e-hang 修复随语义变更]：销毁态订阅随对象消亡，teardown 零触摸——
+    // removed 恒空（原 arrayContaining 三项断言基于「fake removeListener 永不抛
+    // 且照常记录」的旧建模，在 Electron 销毁语义下不再成立）
+    expect(h.removed).toEqual([])
+  })
+
+  it('[64-e2e-hang] clean 回执→destroy→closed 链全程不抛（销毁窗 teardown 零触摸）', async () => {
+    const h = harness!
+    h.fireClose()
+    // 生产链复刻：receipt(clean)→destroyWindow→win.destroy()→closed 同步回调
+    // →windowDestroyed→disposePolicy→teardown——此时窗已销毁，任何
+    // removeListener/webContents 触摸抛 Object has been destroyed（未捕获异常
+    // →Electron 原生 Error 框→e2e 无人点挂死）。修复=teardown 销毁态守卫。
+    expect(() => reportQuitFlushResult('quit-flush-1', false)).not.toThrow()
+    await drain()
+    expect(h.destroys).toBe(1)
+    expect(h.removed).toEqual([])
   })
 
   it('[回炉 W4] confirmQuit 同步抛错：按取消语义处理——窗口保持+abort 帧发出（C→I）', async () => {
@@ -327,6 +358,9 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
       },
       removeListener(): void {},
       destroy(): void {},
+      isDestroyed(): boolean {
+        return false
+      },
       webContents: { on(): void {}, removeListener(): void {} }
     }
     const handle = installQuitCloseInterception(win, {
