@@ -2035,11 +2035,11 @@
         },
         {
             "path": "tests/unit/windows/quit-dirty-guard.test.ts",
-            "sha256": "4873e97026416de8c4c31040bab1f0a2418fd3bc05f4e4ea25f266d24efcf023"
+            "sha256": "d804f44f491008eff98b3d1bb983c79718ad9353327460c859fda413ec5e6973"
         },
         {
             "path": "tests/unit/windows/quit-handshake.test.ts",
-            "sha256": "25452199b22d19632529854fc8e9072c4c4920ad31005903039ecb27b98541d1"
+            "sha256": "82f7649f48418b957f791fee3ca49115b1c1d659d8b7bb68b1e3b16274be980f"
         },
         {
             "path": "tests/unit/windows/window-control.test.ts",

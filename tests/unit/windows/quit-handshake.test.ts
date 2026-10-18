@@ -31,6 +31,7 @@ interface Harness {
   fireClose(): { preventDefault(): void }
   fireGone(): void
   destroyWin(): void
+  killWebContents(): void
   frames: { requestId: string }[]
   aborts: { requestId: string }[]
   confirms: ReturnType<typeof vi.fn>
@@ -54,15 +55,23 @@ function makeHarness(confirmResult = false, neverResolve = false): Harness {
   let destroys = 0
   // [64-e2e-hang] Electron 销毁语义建模：destroy 即置 destroyed 旗标，此后
   // removeListener/webContents 访问一律抛（真 BrowserWindow 语义——此前 fake
-  // 未建模销毁态，掩盖了 closed 回调内 teardown 触摸已亡窗的未捕获异常）
+  // 未建模销毁态，掩盖了 closed 回调内 teardown 触摸已亡窗的未捕获异常）。
+  // wc 独亡形（门二 W1）：win 活而 webContents 已亡（render-process-gone 等），
+  // killWebContents() 置 wcDead——wc 各法抛、isDestroyed() 回读真值（真
+  // WebContents 语义：isDestroyed 销毁后仍可调）
   let destroyed = false
+  let wcDead = false
   const wc = {
     on(event: string, listener: (...args: never[]) => void): void {
+      if (wcDead) throw new Error('Object has been destroyed')
       if (event === 'render-process-gone') goneLs.push(listener as () => void)
     },
     removeListener(event: string): void {
-      if (destroyed) throw new Error('Object has been destroyed')
+      if (wcDead) throw new Error('Object has been destroyed')
       removed.push(`webContents:${event}`)
+    },
+    isDestroyed(): boolean {
+      return wcDead
     }
   }
   const win = {
@@ -113,6 +122,9 @@ function makeHarness(confirmResult = false, neverResolve = false): Harness {
     },
     destroyWin() {
       win.destroy()
+    },
+    killWebContents() {
+      wcDead = true
     },
     frames,
     aborts,
@@ -258,7 +270,7 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
       isDestroyed(): boolean {
         return false
       },
-      webContents: { on(): void {}, removeListener(): void {} }
+      webContents: { on(): void {}, removeListener(): void {}, isDestroyed(): boolean { return false } }
     }
     const handle = installQuitCloseInterception(win, {
       now: () => clock,
@@ -348,6 +360,17 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
     expect(h.removed).toEqual([])
   })
 
+  it('[64-e2e-hang] wc 独亡（win 活）：dispose 零抛+win 侧订阅照拆+wc 侧跳过', () => {
+    const h = harness!
+    // 门二 W1 形：render-process-gone/行为位移下 webContents 先亡而窗仍活——
+    // teardown 直触 wc.removeListener 同抛 Object has been destroyed。三格齐：
+    // win 亡零触摸（上例）/wc 独亡 win 侧照拆（本例）/活窗全拆（既有 dispose 例）
+    h.killWebContents()
+    expect(() => h.handle.dispose()).not.toThrow()
+    expect(h.removed).toEqual(expect.arrayContaining(['close', 'closed']))
+    expect(h.removed).not.toContain('webContents:render-process-gone')
+  })
+
   it('[回炉 W4] confirmQuit 同步抛错：按取消语义处理——窗口保持+abort 帧发出（C→I）', async () => {
     const clock = 0
     const closeLs: CloseListener[] = []
@@ -361,7 +384,7 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
       isDestroyed(): boolean {
         return false
       },
-      webContents: { on(): void {}, removeListener(): void {} }
+      webContents: { on(): void {}, removeListener(): void {}, isDestroyed(): boolean { return false } }
     }
     const handle = installQuitCloseInterception(win, {
       now: () => clock,
