@@ -197,6 +197,10 @@ development Model Selection+loop-engineering references/06）；**架构与
   受锁面，manifest 落后=下次 locks:check/verify 必红；禁延至收口补登
   （2026-09-02 四波场三现实录：两 gen 脚本连续落后于并行锁操作+门二 verify 拦截）。
 - 每次 AI 改动一个逻辑单元一个 commit；提交前 `git diff --stat` 自查。
+- **多命令链判码纪律**：命令链以 grep/管道过滤输出判定通过时，须显式判命令
+  退出码（`[ $? -eq 0 ]` 或管道首命令 `${PIPESTATUS[0]}`），grep 行命中≠命令
+  绿——b8029630 带 typecheck 红提交事故实录（2026-10-18；单源=v214 §3-6③
+  +账本 ci-triage 行）。
 - staging 一律显式列文件（或先 `git status` 核对未跟踪面）——`git add -A <目录>`
   会扫入未跟踪残留（2026-08-26 scripts/audits 误扫实录）；提交后勿复打 log
   （工具已回显，超长 message 双倍上下文成本）。
@@ -235,7 +239,9 @@ development Model Selection+loop-engineering references/06）；**架构与
   1280×800 被 clampBounds——窄视口下布局容量形态与本地 1280×800 不同构：
   月框低容量区同月多卡分行+错位、卡可被推出视口；F-CIFLK-01 已清偿
   2026-10-14=T3 拖拽前 scrollIntoView 滚动锚——新 e2e 用例凡 boundingBox+
-  mouse 拖拽/点击面对视口外元素须先滚动锚定〔T5/T3 先例〕；判读沉淀=CI
+  mouse 拖拽/点击面对视口外元素须先滚动锚定〔T5/T3 先例〕；**双端拖拽（拖拽
+  源+落点双卡）在 CI 窄视口须种子级同月共视设计**（跨年 span 不可共视——单卡
+  滚动锚治不了双端；F-CIFLK-01 四修终态沉淀〔2026-10-18 v214 §6〕）；判读沉淀=CI
   再现 element-not-found 间接签名红首查视口外坐标；次生挂账 F-GEOMASSUME-01=
   窄视口卡宽 flex 压缩≠CARD_W 128——维持登记=2026-10-14 用户裁决）；**收口
   CI 回执条款已升格完成定义段（2026-10-14 用户裁决——本段不再承载）**）。

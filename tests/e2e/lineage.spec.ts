@@ -223,8 +223,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 沿承（重复加边对+边数 2 不变）。〔CI 收口四修〕root 由 2020 顶段移入
     // 同月 slot0：窄窗 1024×768 下 root↔乙跨年 span≈605>视口半高=不可共视
     // （F-CIFLK-01 分行错位推乙至 ~780）——同月三卡 [2,1] 分行内 root(行0)
-    // ↔乙(行1) span=144 恒共视=直拖径两平台统一，运行时自适应分支退役为
-    // 安全网（三现 CI 实测：带内抓取/0.75 上带阈值均被末位卡几何否决）
+    // ↔乙(行1) span=144 恒共视=直拖径两平台统一。运行时自适应补救径已删
+    // （三现 CI 实测均被末位卡几何否决——v214 §6-1 死码纪律；共视前提改由
+    // 拖拽前置断言锁死，失守即红回种子级设计）
     await seedLineageGraph(userData, {
       nodes: [
         { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2022, month: 5, slot: 0 },
@@ -252,20 +253,20 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-tool-solid').click()
     const root = nodeG(win, '脉络根文献')
     const cardB = nodeG(win, '脉络乙文献')
-    // [CI 收口修=F-CIFLK-01 锚回归] 旧 T3 滚动锚随 66 改写丢失：CI 1024×768
-    // 下 root（2020 顶段）与乙（同月分行错位后 ~780>768）**不可共视**（span≈
-    // 605>视口半高）——固定 scrollIntoView 单卡锚治不了双端拖拽。自适应双径：
-    // 已共视=直接拖（本地 1280×800 常态）；未共视=拖入底缘 20% 触发区走
-    // **本批新自动滚动**（裁定 4——画线拖拽会话内 canvas 下滚至乙入视上带
-    // 再落锚）。behavior=instant 硬化（k1-W2 先例同型）。
+    // [CI 收口修=F-CIFLK-01 锚回归+四修终态] 旧 T3 滚动锚随 66 改写丢失：CI
+    // 1024×768 下 root（2020 顶段）与乙（同月分行错位后 ~780>768）**不可共视**
+    // （span≈605>视口半高）——固定 scrollIntoView 单卡锚治不了双端拖拽；四修
+    // 终版=种子几何主修（root 移同月 slot0，span 144 恒共视=两平台统一直拖径；
+    // 运行时补偿径三现否决史=flake 台账 F-CIFLK-01 条）。behavior=instant
+    // 硬化（k1-W2 先例同型）。
     await root.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
     const rbT3 = await root.boundingBox()
     if (rbT3 === null) throw new Error('T3 源卡不可见')
     await win.mouse.move(rbT3.x + rbT3.width - 2, rbT3.y + rbT3.height / 2)
     await win.mouse.down()
-    // [CI 四修] 阈值=完整入容器即可（末位卡 max 滚恒驻底带——0.75 上带
-    // 永不可达=三现根因；带内落锚在 max 滚下安全：autoscroll 真差值恒 0
-    // 无漂移）
+    // [CI 四修] 判定阈值=完整入容器即可（0.75 上带对末位卡几何永不可达=
+    // 三现根因）。v214 §6-1：程序化滚动安全网分支删除，本判定转共视前置
+    // 锁——失守=种子被改写回归（同月共视原则），红而非自适应补救。
     const dropVisible = async (): Promise<boolean> => {
       const b = await cardB.boundingBox()
       if (b === null) return false
@@ -278,22 +279,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       return b.y >= t.top && b.y + b.height <= t.bottom
     }
     if (!(await dropVisible())) {
-      // 乙出视口（CI 窄窗形态）——程序化滚至乙驻容器中心：scroll 事件同路
-      // 重算（W-06r2 设计内——外部滚动会话中重算落点）。不取自动滚动带内
-      // 抓取：乙=末位卡 max 滚仍驻底缘触发区（0.75 上带永不可达=第二现
-      // CI 39093814719 实测）+带内落锚随帧漂移不稳；中心位=触发区外坐标稳
-      await win.evaluate(() => {
-        const tl = document.querySelector('.timeline')
-        if (!(tl instanceof HTMLElement)) throw new Error('T3 .timeline 不在场')
-        const card = Array.from(tl.querySelectorAll('.tl-card')).find((c) => c.textContent?.includes('脉络乙文献'))
-        if (!(card instanceof HTMLElement)) throw new Error('T3 乙卡不在场')
-        const cr = card.getBoundingClientRect()
-        const tr = tl.getBoundingClientRect()
-        tl.scrollTop += cr.top + cr.height / 2 - (tr.top + tr.height / 2)
-      })
-      await expect
-        .poll(dropVisible, { timeout: 10_000, message: 'T3 程序化滚动未带乙入视口上带' })
-        .toBe(true)
+      throw new Error('T3 乙卡未完整入容器——种子同月共视前提失守（F-CIFLK-01 先例：禁运行时自适应补救，回种子级共视设计）')
     }
     const bbT3 = await cardB.boundingBox()
     if (bbT3 === null) throw new Error('T3 目标卡不可见')
