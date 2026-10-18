@@ -369,16 +369,20 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 取消（response 1）：preventDefault 生效——窗口保持
     await app.evaluate((electronMod) => {
       ;(electronMod.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
-        .showMessageBox = async () => ({ response: 1 })
+            .showMessageBox = async () => ({ response: 1 })
     })
-    await closeMain()
+    // [64-e2e-hang 收尾] closeMain 的 evaluate 往返可与「握手→确认→销毁→全链
+    // 退出」竞态（进程在往返途中退出→transport 断拒「Target closed」——主控
+    // 2026-10-18 全量 e2e 实录）；两态调用一律吞拒，窗口生死断言由下方
+    // aliveWindows 轮询承载（app.close() 同型防御 383 行先例）。
+    await closeMain().catch(() => undefined)
     await expect.poll(aliveWindows).toBe(1)
     // 确认（response 0）：destroy 强制关闭——窗口归零
     await app.evaluate((electronMod) => {
       ;(electronMod.dialog as unknown as { showMessageBox: () => Promise<{ response: number }> })
-        .showMessageBox = async () => ({ response: 0 })
+            .showMessageBox = async () => ({ response: 0 })
     })
-    await closeMain()
+    await closeMain().catch(() => undefined)
     await expect.poll(aliveWindows).toBeLessThan(1)
     await app.close().catch(() => undefined)
   })
