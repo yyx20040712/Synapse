@@ -26,8 +26,10 @@
  *   本页=store error 契约唯一壳层兑现点（d1-W1 回炉语义随迁）
  *
  * ── 接口层 ──
- * - export function WorkspacesPage(props: { dirty: boolean })
- *   （dirty 聚合值经 App 组合根注入——禁跨域 store 互引）
+ * - export function WorkspacesPage(props: { dirty: boolean; onSwitched?: () => void })
+ *   （dirty 聚合值经 App 组合根注入——禁跨域 store 互引；[F-VISFB-65]
+ *   onSwitched=已确认切换回调（恢复副本弃置 release——App 注入；switchTo
+ *   真=confirm 已过+reload 已排队））
  * - export const WS_DOT_PALETTE（课题色标 6 色轮转调色板——迁自
  *   app/rail-shared；弹层退役后单一消费=本页色标片）
  *
@@ -70,7 +72,7 @@ export const WS_DOT_PALETTE: readonly string[] = [
 /** 引导态提示文案（D2：课题图标进管理页引导新建——仅三条件成立时渲染） */
 const GUIDE_HINT = '尚未选择课题（待选择）——新建一个课题即可开始使用；重命名默认课题也会解除引导'
 
-export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
+export function WorkspacesPage(props: { dirty: boolean; onSwitched?: () => void | Promise<void> }): JSX.Element {
   const items = useWorkspaceStore((s) => s.items)
   const currentId = useWorkspaceStore((s) => s.currentId)
   const error = useWorkspaceStore((s) => s.error)
@@ -108,8 +110,9 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
     if (busy) return
     setBusy(true)
     try {
-      await switchTo(id, { dirty: props.dirty })
-      // 成功即 reload（store 内触发）；取消/失败留在本页可换选或重试
+      // 成功即 reload（store 内触发）；取消/失败留在本页可换选或重试。
+      // [F-VISFB-65 回炉 R3] onConfirmed 前移（confirm 过→api.switch 前 release）
+      await switchTo(id, { dirty: props.dirty, onConfirmed: props.onSwitched })
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
     } finally {
@@ -128,7 +131,7 @@ export function WorkspacesPage(props: { dirty: boolean }): JSX.Element {
     setBusy(true)
     try {
       const id = await create(trimmed)
-      await switchTo(id, { dirty: props.dirty })
+      await switchTo(id, { dirty: props.dirty, onConfirmed: props.onSwitched }) // [F-VISFB-65 回炉 Z1] 创建即切确认面同 pick（onConfirmed 前移）
       setNewName('')
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')

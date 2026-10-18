@@ -93,6 +93,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0024 | 脉络砖砌网格布局+五态走线正统化（F-SLOTGRID-01——用户 2026-10-07 方向级四裁决+2026-10-08 呈裁落定 v1.4：砖砌交错/横纵等距 72 通道/全自动 gutter 选路 corridor 退役/F-ROUTEDET-01 并入；布局=capacity.ts 容量公式纯函数族+行容器渲染瀑布退役，走线=direct→h-slip→detour→band→overlap 五态链+坐标集封闭，拖拽=INV-111 算术落点；INV-SLOTGRID-01/02+INV-110/111/117/119 修订族；决策正文单源=docs/design/2026-10-07_f-slotgrid01-design.md v1.4，不另立 adr 正件防双源） |
 | 0025 | DB 契约战役批 DB-1 数据契约冻结（F-DBCAMP-01——016-019 四迁移+INV-121~126：folder_id NOT NULL 真重建〔fkOff 模式〕/is_starred 星标/app_meta 身份载体〔owner uuid+设备 token〕/tags 多域化〔UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6〕；**folder↔graph 契约=结构性投影不建表**〔用户 2026-10-08 裁决①「一个文件夹不允许多张脉络图，必须一一对应」——图身份≡lineage_nodes.folder_id，无独立 graphs 表；v165 探针差异④「folder↔graph 落法」就此勘正关闭〕；〔甲乙丙〕三裁决=存量归主图/移夹标签留原域/筛选上限不动；决策正文单源=docs/design/2026-10-08_f-dbcamp01-design.md v1.2+§11 终裁记录+§12 用户呈裁落定，不另立 adr 正件防双源） |
 | 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
+| 0027 | 恢复副本统一管理（F-VISFB-65——WPS 式丢稿防御前两道防线：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单一存储位+shared RECOVERY_REGISTRY 类型注册表（命名/schema/生命周期单源，为 reader 草稿族预留）+每 (工作区,类型) 单槽覆写；消费=takeOver 超越（token+epoch 双校验无空窗）；删除=release token 作用域+epoch 删除屏障；与 DB 落库解耦（重放幂等兜底）；决策正文单源=docs/adr/0027-recovery-copy-unified-management.md，设计链终态=仓外 20261019-fvisfb65-impl/65-design-final.md） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -134,6 +135,20 @@ papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage
 草稿导入通道随导入链退役删除——ADR-0022）+folders.changed/lineage.changed 双事件+
 lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
 +lineagePending（INV-91 S1 队列闸）。
+
+[F-VISFB-65]（2026-10-19）恢复副本统一管理批改（ADR-0027）：IPC 通道 +4（recovery
+域：peek/save/read/release——invoke 应答制，请求显式携带 workspaceId 受
+guardWorkspace 校验）；跨进程类型单源迁移=writeActionSchema 自 renderer
+lineage-write-queue.ts 迁 `src/shared/recovery/schemas.ts`（WriteAction 联合+载荷
++外覆层+注册表+四通道 Req/Res 同文件——renderer re-export 兼容）；错误契约演化=
+AppError 增可选 `reason?: string`（首值 'GHOST_FOLDER' 仅 floating-notes.service
+ghost-folder 拒点发射——DomainError/toAppError/ApiClientError 全链透传，Result
+信封结构化承载）；实体面=新域 src/main/services/recovery/（recovery.files.ts
+原子文件层+recovery.service.ts 编排——per-(ws,type) 串行+epoch）+
+src/renderer/features/lineage/recoveryScheduler.ts（300ms trailing 单飞行合流+
+generation 同步先行）+features/recovery/RecoveryBar.tsx（应用级确认条）；
+存储位=`<userData>/recovery/<workspaceId>/<fileName>`（工作区隔离；槽文件 0600
+——POSIX 面承诺；持久性=进程崩溃级）；不变量族 INV-156..167。
 
 [F-VISFB-64]（2026-10-18）关闭入口无条件握手批改（ADR-0026）：事件通道 6→7
 （+system/quit-flush-abort/event——C→I 解冻帧，载荷 {requestId}=epoch 水线，

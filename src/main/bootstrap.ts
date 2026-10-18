@@ -20,7 +20,7 @@
  */
 import { mkdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import {
   BrowserWindow,
   Menu,
@@ -53,6 +53,8 @@ import { createImportGate } from './import-gate'
 import { migrateLegacyUserData } from './migrate-user-data'
 import { countPapersInDir, ensureWorkspaceLayout, initWorkspaceDb } from './workspace-layout'
 import { createWorkspaceService } from './services/workspaces/workspace.service'
+import { DEFAULT_WS_ID, listWorkspaceIds } from './services/workspaces/workspace.fs'
+import { createRecoveryService } from './services/recovery/recovery.service'
 import { createIpcHandlers } from './ipc'
 import { registerIpc } from './ipc/register'
 import { registerAppFileProtocol } from './protocol/app-file.protocol'
@@ -106,6 +108,20 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
 
   // ── 课题布局（最早段：遗留迁移→指针解析→当前课题数据目录——R1-WS1）──
   const layout = await ensureWorkspaceLayout(userDataDir)
+
+  // ── [F-VISFB-65] 恢复副本服务（应用级单例——<userData>/recovery/<wsId>/ 工作
+  //    区隔离；当前课题 id 随装配/切换原子更新〔下方 assembleInto 包装点〕）。
+  //    启动扫（IPC 注册前，设计书 §1/§6）：根 ensure+孤儿目录清理+tmp 提升
+  //    ——peek 屏障在读面前完成提升，bootstrap 完成前不服务 IPC ──
+  let currentWorkspaceId = layout.currentId
+  const recoveryService = createRecoveryService({
+    recoveryRoot: join(userDataDir, 'recovery'),
+    currentWorkspaceId: () => currentWorkspaceId
+  })
+  await recoveryService.startupScan({
+    workspaceIds:
+      layout.mode === 'legacy-fresh' ? [DEFAULT_WS_ID] : await listWorkspaceIds(layout.rootDir)
+  })
 
   // ── 出网（Electron net.fetch 跟随系统代理；安全：host 白名单在 http-client 内强制）──
   const fetchLike = net.fetch as unknown as typeof globalThis.fetch
@@ -195,7 +211,12 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     // [T3-P2] 课题文献计数（main 根装配面——services 禁直连 db 的依赖倒置）
     countPapers: countPapersInDir,
     closeCurrent: () => container.closeCurrent(),
-    assembleInto: (dataDir) => container.assembleInto(dataDir)
+    assembleInto: async (dataDir) => {
+      await container.assembleInto(dataDir)
+      // [F-VISFB-65] 恢复服务根随课题装配原子切换（B-05 workspaceId 校验源——
+      // legacy-fresh 数据目录=userData，工作区 id 归一 default）
+      currentWorkspaceId = dataDir === userDataDir ? DEFAULT_WS_ID : basename(dataDir)
+    }
   })
 
   // ── 协议 / CSP / IPC ──
@@ -231,7 +252,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
       controlWindow: (action) => controlWindow(window, action),
       // P7E-04：剪贴板写口（electron.clipboard 结构兼容 deps.clipboard 注入面）
-      clipboard
+      clipboard,
+      // [F-VISFB-65] 恢复副本服务（应用级单例——recovery 域四通道消费）
+      recovery: recoveryService
     }),
     workspaces: workspaceService
   }

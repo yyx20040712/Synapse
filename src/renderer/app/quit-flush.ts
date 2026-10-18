@@ -30,6 +30,10 @@ import {
   hasPendingAnnotationDrafts
 } from '../features/reader/interact/annotation-draft-registry'
 import { fireLineageNoteCommit, noteDraftPending } from '../features/lineage/lineage-note-draft'
+import {
+  awaitRecoveryQuitSettled,
+  strongQuitRecoveryBestEffort
+} from '../features/lineage/recoveryScheduler'
 import { runQuitInternal } from './quit-closing-gate'
 
 /**
@@ -70,5 +74,14 @@ export async function runQuitFlush(): Promise<boolean> {
   const tabsAnnoDirty = reader.order.some((id) => reader.tabs[id]?.dirty === true)
   const annotationDirty = annotationHandleDirty || tabsAnnoDirty || hasPendingAnnotationDrafts()
   const lineageDirty = useLineageStore.getState().saveStatus !== 'clean'
-  return notesDirty || annotationDirty || lineageDirty || noteDraftPending()
+  const stillDirty = notesDirty || annotationDirty || lineageDirty || noteDraftPending()
+  // [F-VISFB-65] 退出窗收口（§4）：clean=flush 收口已触发 release——await 收
+  // 束（release 自带 1500ms 硬超时 fail-open）再回执；强退（flush 失败确认
+  // 退出路径）=最后 saveNow 尽力**不 release**（副本承载未落库状态）
+  if (stillDirty) {
+    strongQuitRecoveryBestEffort()
+  } else {
+    await awaitRecoveryQuitSettled()
+  }
+  return stillDirty
 }

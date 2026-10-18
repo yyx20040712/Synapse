@@ -8,6 +8,7 @@ import type { WindowControlAction } from '../../shared/ipc/schemas'
 import type { ServiceBundle } from '../services'
 import type { Dialogs } from '../dialogs'
 import type { ShellLike } from '../security/shell-guard'
+import type { RecoveryService } from '../services/recovery/recovery.service'
 
 export interface IpcDeps {
   services: ServiceBundle
@@ -31,6 +32,10 @@ export interface IpcDeps {
   reportQuitFlush: (requestId: string, stillDirty: boolean) => void
   /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
   controlWindow: (action: WindowControlAction) => { maximized: boolean }
+  /** [F-VISFB-65] 恢复副本服务（应用级单例——bootstrap 装配；课题容器外的
+   *  工作区隔离目录编排）。可选=受锁 makeIpcDeps 桩工厂零改（clipboard 同型
+   *  先例）；装配缺失时 handler 响亮抛错（接线缺陷不静默丢副本） */
+  recovery?: RecoveryService
   /** P7E-04 剪贴板写口（bootstrap 装配 electron.clipboard；测试桩零 electron）。
    *  可选=受锁 makeIpcDeps 桩工厂（tests/utils/ipc-deps.ts）零改——设必填即其
    *  返回字面量类型红；装配缺失时 export_ handler 响亮抛错（接线缺陷不静默丢写）。

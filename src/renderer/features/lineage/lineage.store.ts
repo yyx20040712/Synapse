@@ -49,7 +49,10 @@ import { createSessionOps } from './lineage-session-ops'
 import { createNoteOps } from './lineage-note-ops'
 import { useLineageViewStore } from './lineage-view.store'
 import { quitWriteBlocked } from '../../app/quit-closing-gate'
+import { markRecoveryClean, notifyRecoveryEditUnit, recoveryBlocked } from './recoveryScheduler'
+import { conflictWaitBlocked } from './conflictResolution'
 import type { LineageSaveStatus, SessionSnapshot, WriteAction } from './lineage-write-queue'
+import type { LineageRecoveryPayload } from '@shared/recovery/schemas'
 
 export type {
   LineageSaveStatus,
@@ -98,6 +101,9 @@ export interface LineageStore {
   /** 暂存动作队列（驻 state 供测试与脏态判定；flushing=save 串行派发中） */
   queue: WriteAction[]
   flushing: boolean
+  /** [F-VISFB-65 回炉 W7] CONFLICT 面收尾重拉持久标志（系统型失败提前退出
+   *  不丢——任意后续 flush 成功收尾统一消费一次） */
+  needsReload: boolean
   /** [F-LGRAPH-01②U1] 会话快照栈（每编辑单元前图态——undo/redo 载荷） */
   undoStack: SessionSnapshot[]
   redoStack: SessionSnapshot[]
@@ -187,6 +193,15 @@ export interface LineageStore {
   discardSession(): void
   /** error 态重试：重发保留队列（动作在 error+新保存时自动重试） */
   retrySave(): void
+  /** [F-VISFB-65] 恢复载入（§6）：置 dirty+两栈清+queue 恢复（重放幂等） */
+  applyRecoverySession(payload: LineageRecoveryPayload): void
+  /** [F-VISFB-65 回炉 W1] 恢复后派生面合并（paperMetrics/pubNos/tagNames 三面
+   *  单独补——恢复载荷不含派生数据；不触碰乐观图三面） */
+  applyDerivedFields(derived: {
+    paperMetrics: Record<string, LineagePaperMetrics>
+    pubNos: Record<string, number>
+    tagNames: Record<string, string[]>
+  }): void
   /** [F-DBCAMP-01 DB-4 / F-STAR-01 A3] 节点星标切换（三模式均 toggle——P-11
    *  退出条件；乐观本地翻转+失败回滚 toast；星标非图结构面：不入编辑暂存
    *  队列/undo 栈——直写库通道 papers/set-starred）。载荷=调用面节点快照
@@ -247,7 +262,11 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
   // 经 beginUnit 统一入口冻结（undo 逆写=用户动作同闸——设计 §④ 写源表）；
   // quit 收口 ②.5 fireLineageNoteCommit 经 runQuitInternal 豁免域放行
   const { beginUnit, restore } = createSessionOps({ set, get })
-  const beginUnitGated = (): boolean => (quitWriteBlocked() ? false : beginUnit())
+  // [F-VISFB-65] recovery 门（quitWriteBlocked 同型——ws-entry 屏障 frozen 期
+  // 拒编辑，§6；未装配恒放行——单测/旧路径兼容）；[F-VISFB-65 单元二]
+  // conflictWaitBlocked=modal 挂起期门（§7——flushing 守卫外的显式第二道位）
+  const beginUnitGated = (): boolean =>
+    quitWriteBlocked() || recoveryBlocked() || conflictWaitBlocked() ? false : beginUnit()
   // [F-VISFB-62 拆件] 悬浮笔记动作域件（三操作纯移动自本件——
   // lineage-note-ops.ts 单源；解构注入调用面名字零 churn）
   const { addFloatingNote, updateFloatingNote, removeFloatingNote } = createNoteOps({ get, beginUnit: beginUnitGated, enqueue: wq.enqueue })
@@ -267,6 +286,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    needsReload: false,
     undoStack: [],
     redoStack: [],
 
@@ -449,19 +469,67 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     undo() {
       const s = get()
-      // [F-VISFB-64] closing gate：undo 逆写=用户动作，入队前冻结（设计 §④）
-      if (quitWriteBlocked() || s.flushing || s.undoStack.length === 0) return
+      // [F-VISFB-64] closing gate：undo 逆写=用户动作，入队前冻结（设计 §④）；
+      // [F-VISFB-65] recovery 门同闸（屏障 frozen 期拒绝）
+      if (quitWriteBlocked() || recoveryBlocked() || s.flushing || s.undoStack.length === 0) return
       restore(s.undoStack[s.undoStack.length - 1]!, 'redo')
+      // [F-VISFB-65] undo 回基线（queue 空→clean）=clean 四源之一→release；
+      // [回炉 R4] 仍 dirty（部分撤销）→通知调度器收敛副本（撤销动作出副本）
+      if (get().saveStatus === 'clean') markRecoveryClean('clean')
+      else notifyRecoveryEditUnit()
     },
 
     redo() {
       const s = get()
-      if (quitWriteBlocked() || s.flushing || s.redoStack.length === 0) return
+      if (quitWriteBlocked() || recoveryBlocked() || s.flushing || s.redoStack.length === 0) return
       restore(s.redoStack[s.redoStack.length - 1]!, 'undo')
+      // [F-VISFB-65] redo 回基线同族（快照对称面——会话回基线即弃副本）；
+      // [回炉 R4] dirty 复来（回基线 release 后 redo）→副本须重建
+      if (get().saveStatus === 'clean') markRecoveryClean('clean')
+      else notifyRecoveryEditUnit()
     },
 
     discardSession() {
-      set({ queue: [], undoStack: [], redoStack: [], saveStatus: 'clean', lastWriteError: null })
+      // [F-VISFB-65 回炉轮2 Z8] 弃会话同时清重拉标志（会话已弃——上轮 CONFLICT
+      // 残留标志不再属于任何待收口面）
+      set({ queue: [], undoStack: [], redoStack: [], saveStatus: 'clean', lastWriteError: null, needsReload: false })
+      // [F-VISFB-65] clean 四源之一：dirty 切图弃置→release(discard)
+      markRecoveryClean('discard')
+    },
+
+    /** [F-VISFB-65 回炉 W1] 派生面合并（恢复流程 onRestored 后单独拉 graph 派生
+     *  字段注入——卡编号/标签/侧板指标不空不串域；失败容错=缺省，下次 load 自愈） */
+    applyDerivedFields(derived) {
+      set({
+        paperMetrics: derived.paperMetrics,
+        pubNos: derived.pubNos,
+        tagNames: derived.tagNames
+      })
+    },
+
+    /**
+     * [F-VISFB-65] 恢复载入（§6：read→folder 校验过→载入）：置 dirty+两栈清
+     * +queue 恢复（重放幂等=§8 表契约）；复用 dirty 挂载同步跳过语义
+     * （load 互锁——本件 load() 内 queue>0/flushing 丢弃既有面）防路由 load
+     * 覆盖恢复态。视图域隔离随切图同型（focus 清+工具复位）。
+     */
+    applyRecoverySession(payload: LineageRecoveryPayload): void {
+      set({
+        folderId: payload.folderId,
+        nodes: payload.graph.nodes,
+        edges: payload.graph.edges,
+        lineTypeNames: payload.graph.lineTypeNames,
+        floatingNotes: payload.graph.floatingNotes,
+        queue: payload.queue,
+        saveStatus: 'dirty',
+        lastWriteError: null,
+        undoStack: [],
+        redoStack: [],
+        status: 'ready',
+        error: null
+      })
+      useLineageViewStore.getState().clearFocus()
+      useLineageViewStore.getState().resetTool()
     },
 
     retrySave() {

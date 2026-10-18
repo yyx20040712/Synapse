@@ -38,11 +38,23 @@ import { showToast } from '../../shared/ui/toast-store'
 import { LINE_TYPE_COLORS, lineageOrder } from '@shared/models/lineage'
 import type {
   FloatingNote,
-  FloatingNoteUpsert,
   LineageEdge,
   LineageEdgeUpsert,
   LineageNode
 } from '@shared/models/lineage'
+// [F-VISFB-65] writeAction 类型单源迁 shared/recovery/schemas（WriteAction
+// 判别联合=恢复副本载荷 schema 元素型）；本件 re-export 兼容既有消费面
+import type { WriteAction } from '@shared/recovery/schemas'
+import { MAIN_GRAPH_ID } from '@shared/models/lineage'
+import {
+  markRecoveryClean,
+  notifyRecoveryEditUnit,
+  notifyRecoverySaveNow
+} from './recoveryScheduler'
+import { useLineageViewStore } from './lineage-view.store'
+// [F-VISFB-65 单元二] GHOST_FOLDER 降级询问（§7）：三联判据命中→flush 挂起
+// 待决（conflictResolution 模块单例——ConflictDialog 决出）
+import { requestGhostFolderDecision } from './conflictResolution'
 
 /**
  * [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：
@@ -60,33 +72,16 @@ export type LineageNodePatchBody = Partial<
   Pick<LineageNode, 'title' | 'year' | 'month' | 'slot' | 'x' | 'y'>
 >
 
-export interface LazyNodePatch {
-  kind: 'patch-node'
-  id: string
-  patch: Partial<Pick<LineageNode, 'x' | 'y'>>
-  /** 语义轴整替（后到胜出）：{slot}=月内序透写。[F-UIRES-03 C3] year/month
-   *  改月形随改月动作退役删除（INV-107） */
-  override?: { slot: number }
-}
+/** [F-VISFB-65] patch 懒载荷形（WriteAction 判别联合 patch-node 臂——shared
+ *  单源迁移后本地别名保持消费面零 churn；语义轴整替〔后到胜出〕注释随迁
+ *  shared/recovery/schemas.ts） */
+export type LazyNodePatch = Extract<WriteAction, { kind: 'patch-node' }>
 
-/** 写动作（排队单元；[F-VISFB-66 裁定 3] 旧换父标记随三入口退役删除
- *  ——N5 部分失败 toast 前缀面随之消亡；[回炉 R9] silentSave=画线动作面——
- *  flush 成功 toast 抑制（暂存提示已承载）。
- *  [F-ALIGN-01] 新建节点形态（input 全载荷）随旧节点写通道退役删除
- *  ——节点动作恒=既有节点 patch（INV-NEW-1：节点唯一来源=入库/移动两路） */
-export type WriteAction =
-  | LazyNodePatch
-  | { kind: 'remove-node'; id: string }
-  | { kind: 'upsert-edge'; input: LineageEdgeUpsert; isNew?: boolean; silentSave?: boolean }
-  | { kind: 'remove-edge'; id: string }
-  /** [F-LGRAPH-01②U8] 图级色行名整批替换（单实体——同类合并最后写胜出） */
-  | { kind: 'upsert-line-type-names'; input: string[] }
-  /** [F-VISFB-61] 悬浮笔记三操作（创建/编辑=upsert 同通道全载荷；删除）——
-   *  id 型动作（同 id upsert 合并最后写胜出；remove 异 kind 不合并——
-   *  remove-edge 同族）；isNew=本地 uuid 回写标记（无 toast 面——62 号 UI
-   *  承载反馈） */
-  | { kind: 'upsert-floating-note'; input: FloatingNoteUpsert; isNew?: boolean }
-  | { kind: 'remove-floating-note'; id: string }
+/** [F-VISFB-65] 写动作（排队单元）=shared 单源 re-export（判别联合迁移锚——
+ *  恢复副本载荷与暂存队列同型；[F-VISFB-66 裁定 3] 旧换父标记随三入口退役
+ *  删除；[回炉 R9] silentSave=画线动作面；[F-ALIGN-01] 新建节点形态随旧节点
+ *  写通道退役删除——INV-NEW-1） */
+export type { WriteAction } from '@shared/recovery/schemas'
 
 /** [F-LGRAPH-01②U1] 会话快照（每编辑单元前图态全量浅快照——undo/redo 载荷；
  *  [F-VISFB-61] +floatingNotes——笔记三操作入撤销维度） */
@@ -107,6 +102,9 @@ export interface WriteQueueHost {
   lastWriteError: string | null
   queue: WriteAction[]
   flushing: boolean
+  /** [F-VISFB-65 回炉 W7] CONFLICT 面收尾重拉持久标志（Host 面可选——受锁
+   *  测试夹具零改；lineage.store 状态面必填） */
+  needsReload?: boolean
   undoStack: SessionSnapshot[]
   redoStack: SessionSnapshot[]
   /** [F-VISFB-61] 悬浮笔记数据态（乐观应用/快照轴共享面） */
@@ -321,11 +319,18 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       return { queue, saveStatus: 'dirty' }
     })
     applyOptimistic(withId)
+    // [F-VISFB-65] 编辑单元触发面（enqueue 后——§4 调度器 300ms trailing）
+    notifyRecoveryEditUnit()
   }
 
+  /** [F-VISFB-65 回炉轮2 Z4] 重放面节点缺席=CONFLICT 丢弃语义（恢复载荷
+   *  [patch A, remove A] 重放：patch 遇 A 缺席——§8 表「节点亡=CONFLICT 丢弃」
+   *  同族收口：队首移除+toast+needsReload——旧 plain Error 抛=系统型失败
+   *  永续重试（重放死循环）封死。用户动作面守卫（lineage.store mustNode）
+   *  保持 throw 语义不变（写前防御——非重放面） */
   const nodeOf = (id: string): LineageNode => {
     const n = get().nodes.find((x) => x.id === id)
-    if (n === undefined) throw new Error(`节点不在图中：${id}`)
+    if (n === undefined) throw new ApiClientError('CONFLICT', `节点不在图中：${id}`)
     return n
   }
 
@@ -430,11 +435,24 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     set((s) => ({ edges: s.edges.filter((e) => e.id !== action.id) }))
   }
 
+  /** [F-VISFB-65 单元二] 死文件夹级作用域判定：该 folderId 的 upsert 笔记动作 */
+  const isGhostUpsertOf = (x: WriteAction, folderId: string): boolean =>
+    x.kind === 'upsert-floating-note' && x.input.folderId === folderId
+
+  /** [F-VISFB-65 单元二] remap：upsert 动作 folderId→主图（remove 不入作用域） */
+  const remapGhostUpsert = (x: WriteAction, folderId: string): WriteAction =>
+    x.kind === 'upsert-floating-note' && x.input.folderId === folderId
+      ? { ...x, input: { ...x.input, folderId: MAIN_GRAPH_ID } }
+      : x
+
   async function flush(): Promise<void> {
     if (get().flushing) return
     // error→retry 恢复路径立即翻 saving（派发可见）；save 钮触发同态
     set({ flushing: true, saveStatus: 'saving' })
-    let conflictDropped = false
+    // [F-VISFB-65 单元二] conflictTouched=CONFLICT 面收尾重拉判定（丢弃或
+    // remap 均置——终态以库态重拉收口：remap 行落主图后乐观/服务器一致面
+    // 由 load 权威回填，INV-84 修订同族）
+    let conflictTouched = false
     while (get().queue.length > 0) {
       const action = get().queue[0]!
       inflight = action // [R3] 派发中标记：enqueue 融合面排除
@@ -443,10 +461,42 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         // 按动作身份出队（非 slice(1)：flight 期间同实体动作可能被合并替换，
         // 盲切首位会误删未发送的后值——「最后写胜出」与出队的组合缺陷，测试拦出）
         set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
+        // [F-VISFB-65] 出队即存（fire-and-forget 不等回执——flush 不等恢复面）
+        notifyRecoverySaveNow()
       } catch (e) {
         if (e instanceof ApiClientError && e.code === 'CONFLICT') {
+          // [F-VISFB-65 单元二] 三联判据（B-07）：kind+code+reason 全中→死文件夹
+          // 降级询问；任一缺→现行丢弃+toast 语义零变
+          if (action.kind === 'upsert-floating-note' && e.reason === 'GHOST_FOLDER') {
+            const deadFolderId = action.input.folderId
+            const choice = await requestGhostFolderDecision(deadFolderId)
+            if (choice === 'remap-main-graph') {
+              // 保存到主图：队列中该 folderId 的全部 upsert remap 主图+乐观图态
+              // 同行 remap；当前动作未出队——续发即 remapped 版本（一询全覆盖）。
+              // [回炉 W8] 当前图矫正主图（setFolder 的 flushing 守卫使其 flush 内
+              // 不可用——语义等价直置+视图域隔离随切）：收尾 load 不拉死图空面
+              conflictTouched = true
+              set({ needsReload: true }) // [回炉 W7] 持久化
+              set((s) => ({
+                queue: s.queue.map((x) => remapGhostUpsert(x, deadFolderId)),
+                folderId: MAIN_GRAPH_ID,
+                floatingNotes: s.floatingNotes.map((n) =>
+                  n.folderId === deadFolderId ? { ...n, folderId: MAIN_GRAPH_ID } : n
+                )
+              }))
+              useLineageViewStore.getState().clearFocus()
+              continue
+            }
+            // 放弃这条修改：该 folderId 全部 upsert 一次性走既有 CONFLICT 丢弃路径
+            conflictTouched = true
+            set({ needsReload: true }) // [回炉 W7] 持久化（系统型失败提前退出不丢）
+            writeFailToast(e.message)
+            set((s) => ({ queue: s.queue.filter((x) => !isGhostUpsertOf(x, deadFolderId)) }))
+            continue
+          }
           // 拒绝型：永不成功——丢弃继续（不卡队头不误报脏），reason 透传 toast
-          conflictDropped = true
+          conflictTouched = true
+          set({ needsReload: true }) // [回炉 W7] 持久化
           writeFailToast(e.message)
           set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
           continue
@@ -462,9 +512,17 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     }
     // 成功收尾：clean+**两栈清空**（Word 式基线重置——保存后不可撤回保存前）
     set({ saveStatus: 'clean', lastWriteError: null, flushing: false, undoStack: [], redoStack: [] })
-    // [F-LGRAPH-01②U1] CONFLICT 丢弃收尾：库态重拉（乐观残值消解——服务器
-    // 权威；INV-84 修订申报：乐观写在场，被拒意图经 load 回填不在本地残留）
-    if (conflictDropped) void get().load()
+    // [F-VISFB-65] clean 四源之一：flush 全成功→release(clean)（gen 先行+drain）
+    markRecoveryClean('clean')
+    // [F-LGRAPH-01②U1] CONFLICT 收尾：库态重拉（乐观残值消解——服务器权威；
+    // INV-84 修订申报：乐观写在场，被拒意图经 load 回填不在本地残留；
+    // [F-VISFB-65 单元二] remap 分支同携——主图新行的权威回填；
+    // [回炉 W7] needsReload 持久标志并入判定（上轮 CONFLICT 后系统型失败
+    // 提前退出→重试成功的新 flush 收口补拉——幽灵乐观行不残留）
+    if (conflictTouched || get().needsReload === true) {
+      set({ needsReload: false })
+      void get().load()
+    }
   }
 
   return { enqueue, flush }

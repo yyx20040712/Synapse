@@ -297,3 +297,87 @@
 .app-statusbar .sig {
   color: var(--signal);
 }
+
+/** [F-VISFB-65 回炉 R2] 内容区列容器（.app-shell 第 2 网格子项=本容器——
+   三行模板不动：恢复条与本内容行纵向排布，条空窗 0 高不占位） */
+.app-content-zone {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* zone 内内容行承接 1fr 语义（原直挂 .app-shell 1fr 轨——flex 子项化） */
+.app-content-zone > .app-content-row {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ══ [F-VISFB-65] 恢复副本确认条（RecoveryBar——header 下应用级横条；
+   皮肤住此处：--panel-2 底+上下 1px --line+微字号；chip 态=同底无按钮组
+   常驻（degraded/pendingChip——INV-166 持久视觉态不 toast 轰炸）══ */
+.recovery-bar {
+  flex: none;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 14px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+.recovery-bar .recovery-bar-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.recovery-bar .recovery-primary {
+  font-weight: 600;
+}
+.recovery-bar-chips {
+  justify-content: flex-start;
+}
+.recovery-bar .recovery-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--signal);
+}
+
+/* ══ [F-VISFB-65 单元二] GHOST_FOLDER 降级询问 modal（ConflictDialog——
+   遮罩+居中卡；遮罩不可关=无点击通道，两钮必答）══ */
+.conflict-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--faint) 55%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.conflict-overlay [role='alertdialog'] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 20px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text);
+}
+.conflict-overlay [role='alertdialog'] > div:first-child {
+  font-weight: 600;
+  font-size: var(--fs-title);
+}
+.conflict-overlay .conflict-dialog-body {
+  margin: 0;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.conflict-overlay .conflict-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

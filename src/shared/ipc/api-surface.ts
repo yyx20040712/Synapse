@@ -22,6 +22,16 @@ import {
   floatingNoteUpsertSchema
 } from '../models/lineage'
 import { folderSchema } from '../models/folder'
+import {
+  recoveryPeekReqSchema,
+  recoveryPeekResSchema,
+  recoveryReadReqSchema,
+  recoveryReadResSchema,
+  recoveryReleaseReqSchema,
+  recoveryReleaseResSchema,
+  recoverySaveReqSchema,
+  recoverySaveResSchema
+} from '../recovery/schemas'
 import * as S from './schemas'
 import * as AI from './ai-schemas'
 
@@ -235,6 +245,15 @@ export const API_SURFACE = {
   },
   ai_cascade: {
     preview: { channel: 'ai-cascade/preview', Req: AI.aiCascadePreviewReqSchema, Res: AI.aiCascadePreviewResSchema }
+  },
+  // recovery 域（[F-VISFB-65] 恢复副本四通道——设计书 §2；全 invoke、请求显式
+  // 携 workspaceId（main 校验≠当前工作区=INVALID_REQUEST 拒）；服务=bootstrap
+  // 应用级单例（IpcDeps.recovery——工作区隔离目录编排，不入课题容器）
+  recovery: {
+    peek: { channel: 'recovery/peek', Req: recoveryPeekReqSchema, Res: recoveryPeekResSchema },
+    save: { channel: 'recovery/save', Req: recoverySaveReqSchema, Res: recoverySaveResSchema },
+    read: { channel: 'recovery/read', Req: recoveryReadReqSchema, Res: recoveryReadResSchema },
+    release: { channel: 'recovery/release', Req: recoveryReleaseReqSchema, Res: recoveryReleaseResSchema }
   },
   // snapshot 域（[F-DBCAMP-01 DB-3 U2] 快照导出面——设计书 §13.6 E2E/§13.8 U2；
   // [DB-3 U3] +importFromFile 六闸导入合并面——通道 5→6/域 21 不变）：

@@ -6,10 +6,14 @@ import type { AppErrorCode } from '../../../shared/app-error'
  */
 export class DomainError extends Error {
   readonly code: AppErrorCode
+  /** [F-VISFB-65 单元二] 结构化拒因（AppError.reason 同名透传——toAppError 出口）；
+   *  缺席=键不存在。值域首值 'GHOST_FOLDER'（floating-notes ghost-folder 拒点） */
+  readonly reason?: string
 
-  constructor(code: AppErrorCode, message: string) {
+  constructor(code: AppErrorCode, message: string, reason?: string) {
     super(message)
     this.name = new.target.name
     this.code = code
+    if (reason !== undefined) this.reason = reason
   }
 }

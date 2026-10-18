@@ -23,6 +23,7 @@ import type { RefObject } from 'react'
 import type { Pt } from './routing/anchors'
 import { clientToOwnPt } from './timeline-zoom'
 import { useLineageStore } from './lineage.store'
+import { recoveryBlocked } from './recoveryScheduler'
 import { useLineageViewStore } from './lineage-view.store'
 
 /** 笔记默认占位（own px——宽/最小高 inline 单源+创建钳制基值） */
@@ -33,10 +34,17 @@ export const NOTE_H = 96
  *  双向锚定：theme-lineage-notes.css .tl-note-grip 注） */
 export const NOTE_GRIP_H = 14
 
-/** 交互门单读（edit+select 且非 saving 才有创建菜单/拖动/编辑/删除交互面） */
+/** 交互门单读（edit+select 且非 saving 才有创建菜单/拖动/编辑/删除交互面；
+ *  [F-VISFB-65 回炉轮2 Z8] recovery 冻结门同挂——冻结期右键创建菜单不 Opening
+ *  （native 监听面与 React interactive 面同门） */
 export const notesInteractive = (): boolean => {
   const v = useLineageViewStore.getState()
-  return v.mode === 'edit' && v.tool === 'select' && useLineageStore.getState().saveStatus !== 'saving'
+  return (
+    v.mode === 'edit' &&
+    v.tool === 'select' &&
+    useLineageStore.getState().saveStatus !== 'saving' &&
+    !recoveryBlocked()
+  )
 }
 
 /** 视口点→own 域（clientToOwnPt 单源——右键创建/拖动指针两消费面） */

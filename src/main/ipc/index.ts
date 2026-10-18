@@ -29,6 +29,8 @@ import { createAiAuditIpc } from './ai_audit'
 import { createAiCascadeIpc } from './ai_cascade'
 // [F-DBCAMP-01 DB-3 U2] 快照导出域（5 通道——契约=shared/ipc/schemas.ts snapshot 段）
 import { createSnapshotIpc } from './snapshot'
+// [F-VISFB-65] 恢复副本域（4 通道——契约=shared/recovery/schemas.ts；服务=应用级单例）
+import { createRecoveryIpc } from './recovery'
 
 export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
   return {
@@ -52,6 +54,7 @@ export function createIpcHandlers(deps: IpcDeps): ApiHandlers {
     ai_tasks: createAiTasksIpc(deps),
     ai_audit: createAiAuditIpc(deps),
     ai_cascade: createAiCascadeIpc(deps),
-    snapshot: createSnapshotIpc(deps)
+    snapshot: createSnapshotIpc(deps),
+    recovery: createRecoveryIpc(deps)
   }
 }

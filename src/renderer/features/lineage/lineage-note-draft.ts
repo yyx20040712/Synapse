@@ -34,9 +34,15 @@
 import { useEffect, useSyncExternalStore, type RefObject } from 'react'
 import { useLineageStore } from './lineage.store'
 import { quitWriteBlocked } from '../../app/quit-closing-gate'
+import { notifyRecoveryDraftChange, recoveryBlocked } from './recoveryScheduler'
+import type { LineageRecoveryPayload, NoteDraftSnapshot } from '@shared/recovery/schemas'
 
 /** 未收口草稿在场标记（编辑中且 draft≠note.content） */
 let pending = false
+
+/** [F-VISFB-65] 未收口草稿内容快照（{noteId,text}|null——崩溃窗承载；编辑
+ *  组件置 pending 的同一调用点同步置/清——§5 草稿四态） */
+let draftSnapshot: NoteDraftSnapshot | null = null
 
 /** 订阅者集（App 聚合面经 useSyncExternalStore 消费） */
 const listeners = new Set<() => void>()
@@ -92,6 +98,88 @@ export function unregisterNoteDraftFlush(): void {
   flushHandle = null
 }
 
+// ── [F-VISFB-65] 内容快照+恢复再水化（§5 草稿四态——B-01/B-02/B-03）────
+
+/** 内容快照置位（编辑组件置 pending 的同一调用点同步置/清；调度器快照源消费）。
+ *  [回炉 R1] 变更沿通知调度器（300ms 合流吸收键速——B-02 接线闭合）：
+ *  等值置位零触发（防重渲染 effect 等值 run 的空转写） */
+export function setNoteDraftSnapshot(snap: NoteDraftSnapshot | null): void {
+  const same = draftSnapshot?.noteId === snap?.noteId && draftSnapshot?.text === snap?.text
+  if (same && (draftSnapshot === null) === (snap === null)) return
+  draftSnapshot = snap
+  notifyRecoveryDraftChange()
+}
+
+/** 内容快照现值（调度器 snapshot 组装消费） */
+export function noteDraftSnapshot(): NoteDraftSnapshot | null {
+  return draftSnapshot
+}
+
+/** 恢复再水化计划（noteId 不在图→新笔记草稿——N-06） */
+export interface RestoreDraftPlan {
+  noteId: string
+  text: string
+  asNewNote: boolean
+}
+
+/**
+ * 恢复去重判据（§5 commit 同步链崩溃窗）：queue 中该 noteId **最后一条**
+ * upsert-floating-note 的 input.content===draft.text→已收口，丢弃 draft 不
+ * 水化（确定性规则——INV-164）；否则按 noteId 在图与否定 asNewNote。
+ */
+export function planDraftRehydration(
+  payload: Pick<LineageRecoveryPayload, 'queue' | 'draft'> & {
+    graph: Pick<LineageRecoveryPayload['graph'], 'floatingNotes'>
+  }
+): RestoreDraftPlan | null {
+  if (payload.draft === null) return null
+  const { noteId, text } = payload.draft
+  let lastUpsertContent: string | null = null
+  for (const a of payload.queue) {
+    if (a.kind === 'upsert-floating-note' && a.input.id === noteId) {
+      lastUpsertContent = a.input.content
+    }
+  }
+  if (lastUpsertContent === text) return null // commit 窗崩溃：已收口不水化
+  const inGraph = payload.graph.floatingNotes.some((n) => n.id === noteId)
+  return { noteId, text, asNewNote: !inGraph }
+}
+
+/** 待水化计划驻留（恢复流程载入+接管完成后写入——编辑器组件消费） */
+let restoreStash: RestoreDraftPlan | null = null
+
+/** 计划就位通知订阅者（编辑器组件桥消费触发沿） */
+const restoreListeners = new Set<() => void>()
+
+/** 恢复流程写入水化计划（onRestored 回调落点） */
+export function stashRestoreDraft(plan: RestoreDraftPlan): void {
+  restoreStash = plan
+  for (const cb of restoreListeners) cb()
+}
+
+/** 消费水化计划（单次——幂等防重复水化） */
+export function consumeRestoreDraft(): RestoreDraftPlan | null {
+  const plan = restoreStash
+  restoreStash = null
+  return plan
+}
+
+/** 订阅计划就位（编辑器组件桥——stash 到达即尝试消费） */
+export function subscribeRestoreDraft(cb: () => void): () => void {
+  restoreListeners.add(cb)
+  return () => {
+    restoreListeners.delete(cb)
+  }
+}
+
+/** 编辑器恢复控制面（useNoteDraftBridge 第 4 注入——openEditor=在场笔记再水化；
+ *  createNewNote=noteId 不在图的新笔记草稿路径） */
+export interface NoteDraftRestoreCtl {
+  openEditor(noteId: string, text: string): void
+  /** [B-ADJ-1] 创建确认布尔：false=被恢复门拒（调用方保真承载待重试） */
+  createNewNote(text: string): boolean
+}
+
 /**
  * fire-first commit（三收口共用）：flushing 窗 no-op（pending 保真→quit ④
  * 查态承接=main confirm）；句柄执行即草稿转 store 暂存——清 pending 与
@@ -108,8 +196,14 @@ export function fireLineageNoteCommit(): void {
     return
   }
   // [轮2 W-r1-02] 冻结期提交会话被闸（closeEdit 整体拒绝）——草稿未转 store，
-  // pending 保真不清（quit ②.5 在同步豁免域内到达此处不受影响）
-  if (!quitWriteBlocked()) setNoteDraftPending(false)
+  // pending 保真不清（quit ②.5 在同步豁免域内到达此处不受影响）。
+  // [F-VISFB-65] 同步链「enqueue 先→清稿后」：commit 即快照清（§5）；
+  // [回炉轮2 Z2/d1-B2] recovery 冻结门同挂：句柄正常返回（closeEdit 被门拒
+  // 后未抛）不得清 pending+快照——草稿静默丢封死（冻结期副本承载恢复）
+  if (!quitWriteBlocked() && !recoveryBlocked()) {
+    setNoteDraftPending(false)
+    setNoteDraftSnapshot(null)
+  }
 }
 
 /**
@@ -123,7 +217,8 @@ export function fireLineageNoteCommit(): void {
 export function useNoteDraftBridge(
   commitRef: RefObject<() => void>,
   editingId: string | null,
-  draft: string
+  draft: string,
+  restoreCtl?: NoteDraftRestoreCtl
 ): void {
   const noteContent = useLineageStore((s) => s.floatingNotes.find((f) => f.id === editingId)?.content)
   useEffect(() => {
@@ -131,10 +226,63 @@ export function useNoteDraftBridge(
     registerNoteDraftFlush(() => commitRef.current?.())
     return () => {
       unregisterNoteDraftFlush()
-      setNoteDraftPending(false)
+      // [回炉轮2 Z2] 卸载清理挂 recovery 门：冻结期卸载（视图切换/屏障窗）
+      // 快照+pending 保真——副本承载恢复；非冻结期归零语义不变
+      if (!recoveryBlocked()) {
+        setNoteDraftPending(false)
+        setNoteDraftSnapshot(null)
+      }
     }
   }, [commitRef])
   useEffect(() => {
-    setNoteDraftPending(editingId !== null && noteContent !== undefined && draft !== noteContent)
-  }, [editingId, noteContent, draft])
+    // [d1-W1 主控亲笔；k1-B1 判等甄别] 冻结期卸载残留快照的页内再水化：
+    // 编辑会话空窗而注册族仍有内容快照——**甄别冻结遗留 vs 本帧刚收口**：
+    // 正常 blur 收口帧 content 已等于快照 text（判等跳过→正常清态，不复活
+    // 编辑器）；空稿快照无恢复价值早退；仅「正文未收口进库」的遗留才送回
+    // 编辑器（在场笔记）或新笔记草稿（图已无该行——确认建立才消费）
+    if (editingId === null && restoreCtl !== undefined) {
+      const residue = noteDraftSnapshot()
+      if (residue !== null && residue.text !== '') {
+        // [k1-N1] 空稿早退仅页内残留径（回收后零价值）；恢复径 stash 在场分支
+        // 对空稿仍 openEditor（崩溃保真语义）——两径刻意不对称，互指防误读
+        const note = useLineageStore.getState().floatingNotes.find((f) => f.id === residue.noteId)
+        if (note === undefined) {
+          // [B-ADJ-1 P0] 死 id：新建可能被恢复门拒——**确认建立才消费**（快照
+          // 保真待解冻重试，正文不丢不挂错；return 跳过下方清态）
+          if (restoreCtl.createNewNote(residue.text)) setNoteDraftSnapshot(null)
+          return
+        }
+        if (note.content !== residue.text) {
+          setNoteDraftSnapshot(null) // 消费即清（单次——ctl 每渲染新身份下防效应重入环）
+          restoreCtl.openEditor(residue.noteId, residue.text)
+          return
+        }
+        // content===text：本帧刚收口——落下方正常清态
+      }
+    }
+    const pendingNow = editingId !== null && noteContent !== undefined && draft !== noteContent
+    setNoteDraftPending(pendingNow)
+    // [F-VISFB-65] 内容快照=置 pending 的同一调用点同步置/清（B-02）
+    setNoteDraftSnapshot(pendingNow && editingId !== null ? { noteId: editingId, text: draft } : null)
+  }, [editingId, noteContent, draft, restoreCtl])
+  // [F-VISFB-65] 恢复再水化：挂载即消费+stash 到达沿（载入与接管完成后到达——
+  // gate 已开；编辑会话在场时保 stash 待收口后再消费）
+  useEffect(() => {
+    const tryConsume = (): void => {
+      if (editingId !== null || restoreCtl === undefined) return
+      const plan = consumeRestoreDraft()
+      if (plan === null) return
+      if (plan.asNewNote) {
+        // [k1-W1] 消费撞 saving/冻结拒（flush 在飞竞窗）——移交快照承载（残留
+        // 分支自带判等+确认建立才消费+解冻重试），非静默丢
+        if (!restoreCtl.createNewNote(plan.text)) {
+          setNoteDraftSnapshot({ noteId: plan.noteId, text: plan.text })
+        }
+      } else {
+        restoreCtl.openEditor(plan.noteId, plan.text)
+      }
+    }
+    tryConsume()
+    return subscribeRestoreDraft(tryConsume)
+  }, [editingId, restoreCtl])
 }

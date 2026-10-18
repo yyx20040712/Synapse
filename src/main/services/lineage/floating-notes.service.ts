@@ -47,9 +47,12 @@ export function createFloatingNotesService(deps: {
   return {
     upsertNote(input: FloatingNoteUpsert): FloatingNote {
       if (!folderExists(input.folderId)) {
+        // [F-VISFB-65 单元二] reason 发射点（全库唯一——flush 三联判据消费）：
+        // GHOST_FOLDER=死文件夹级降级询问入口
         throw new FloatingNotesDomainError(
           'CONFLICT',
-          `目标文件夹不存在：${input.folderId}（悬浮笔记须落在已存在的文件夹/主图）`
+          `目标文件夹不存在：${input.folderId}（悬浮笔记须落在已存在的文件夹/主图）`,
+          'GHOST_FOLDER'
         )
       }
       // 有限数守卫（k1-N5 同族）：z.number() 放行 Infinity/NaN——直写 REAL 列

@@ -5,11 +5,11 @@
  * 各页面组件来自 features/*。[T3-P1] ErrorBoundary 拆 ./ErrorBoundary。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, unwrap } from '../api/client'
 import { LibraryPage } from '../features/library/LibraryPage'
 import { ReaderPage } from '../features/reader/view/ReaderPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { LineagePage } from '../features/lineage/LineagePage'
+import { ConflictDialog } from '../features/lineage/ConflictDialog'
 import { ToastHost } from '../shared/ui/Toast'
 import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
 import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
@@ -28,6 +28,10 @@ import { TitleBarControls } from './TitleBarControls'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useViewBridges } from './useViewBridges'
 import { switchViewWithFlush } from './view-flush'
+// [F-VISFB-65] 恢复副本确认条组合根（app 层跨 feature 聚合）+引导态桥拆件
+import { RecoveryBarHost } from './RecoveryBarHost'
+import { useWsGuideImportBridge } from './useWsGuideImportBridge'
+import { prepareRecoveryWorkspaceSwitch } from '../features/lineage/recoveryScheduler'
 
 /** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
@@ -143,32 +147,9 @@ export function App(): JSX.Element {
   const lineageEdges = useLineageStore((s) => s.edges)
   const selectedId = useLibraryStore((s) => s.selectedId)
 
-  // [F-WS-02] 导入升格桥（D2）：导入落地→重拉课题清单→paperCount>0 打破引导
-  // 态第三条件→rail 解禁。仅引导态窗口内重拉（窗口外归 reload）；失败=禁用
-  // 保持（k1-N2 在档）。[W1 小挂账] 判定信号=无过滤计数（完成语义=「库内任一
-  // 文献」与筛选无关——裁决案 a）：libTotal>0 直拉既有路保留；=0 时以
-  // library.list 空查询探针（total=COUNT(*) 无过滤，零新契约）复核——筛选掩蔽
-  // 态不再锁死；触发沿=窗口内任一 load 收尾/挂载沿；失败=本轮放弃归自愈路径
-  const libTotal = useLibraryStore((s) => s.total)
-  const libLoading = useLibraryStore((s) => s.loading)
-  useEffect(() => {
-    if (!wsGuide || libLoading) return
-    if (libTotal > 0) {
-      void wsLoad()
-      return
-    }
-    let cancelled = false
-    try {
-      void unwrap(api.library.list({})).then((r) => {
-        if (!cancelled && r.total > 0) void wsLoad()
-      }).catch(() => undefined)
-    } catch {
-      // 探针发起失败=本轮放弃（引导态不破——自愈路径在档）
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [wsGuide, libTotal, libLoading, wsLoad])
+  // [F-WS-02] 导入升格桥（D2——[F-VISFB-65] 拆件 useWsGuideImportBridge：
+  // 纯移动零语义改，App 行数红线；语义面见该件头注）
+  useWsGuideImportBridge(wsGuide)
 
   // T3-P2 gsearch：全局 Ctrl+K 聚焦（keydown 挂 App 单点；preventDefault 防
   // 浏览器默认；v1 展示性控件——可聚焦可输入，无后端动作；提示语=受控空值
@@ -217,7 +198,11 @@ export function App(): JSX.Element {
       {/* min-height:0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
           R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——rail+main
           同入 zoom，topbar/statusbar 行外结构性豁免（E5：caption 三键/顶栏保持
-          系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0 */}
+          系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0。
+          [F-VISFB-65 回炉 R2] zone=内容区列容器（.app-shell 三行模板不动——
+          恢复条与本行纵向排布，条空窗 0 高不占位） */}
+      <div className="app-content-zone">
+      <RecoveryBarHost />
       <div className="app-content-row">
         {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役） */}
         <Rail view={view} onView={changeView} />
@@ -227,9 +212,12 @@ export function App(): JSX.Element {
             {view === 'reader' && <ReaderPage />}
             {view === 'settings' && <SettingsPage />}
             {view === 'lineage' && <LineagePage />}
-            {view === 'workspaces' && <WorkspacesPage dirty={quitDirty} />}
+            {view === 'workspaces' && (
+              <WorkspacesPage dirty={quitDirty} onSwitched={prepareRecoveryWorkspaceSwitch} />
+            )}
           </ErrorBoundary>
         </main>
+      </div>
       </div>
       {/* T3-P2 状态条 26px（等宽字仪表带——真文本槽位锁在 app-shell.test） */}
       <footer className="app-statusbar">
@@ -244,6 +232,9 @@ export function App(): JSX.Element {
         />
       </footer>
       <ToastHost />
+      {/* [F-VISFB-65 单元二] GHOST_FOLDER 降级询问（app 级——quit 交叠期任意
+          视图可见；无待决渲染 null） */}
+      <ConflictDialog />
     </div>
   )
 }

@@ -31,6 +31,11 @@ export interface AppError {
   message: string
   /** 可选调试细节（不含堆栈） */
   detail?: string
+  /** [F-VISFB-65 单元二] 结构化拒因（同 code 下的细分通道——W-12：Result 信封
+   *  =结构化数据序列化，reason 随 error 对象走不丢）。值域=受控串（新增值须
+   *  在发射点登记）：'GHOST_FOLDER'=悬浮笔记目标文件夹已删（floating-notes
+   *  ghost-folder 拒点唯一发射）。在场=串；缺席=键不存在（err() 两形同纪律） */
+  reason?: string
 }
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: AppError }
@@ -81,9 +86,13 @@ export function toAppError(e: unknown): AppError {
   }
   if (e instanceof Error) {
     // 结构化域错误（FileStoreError/HttpFetchError 等带 code 字段）：保留 code 与
-    // 面向用户的消息——前端要按码分支（取消/重试/提示差异），一律折叠 INTERNAL 会埋掉语义
+    // 面向用户的消息——前端要按码分支（取消/重试/提示差异），一律折叠 INTERNAL 会埋掉语义。
+    // [F-VISFB-65 单元二] reason（串）随域错误透传（W-12——非串丢弃防任意注入）
     const code = asAppErrorCode((e as { code?: unknown }).code)
-    if (code !== undefined) return { code, message: e.message }
+    if (code !== undefined) {
+      const reason = (e as { reason?: unknown }).reason
+      return typeof reason === 'string' ? { code, message: e.message, reason } : { code, message: e.message }
+    }
     return { code: 'INTERNAL', message: '发生未预期的内部错误', detail: e.message }
   }
   return { code: 'INTERNAL', message: '发生未预期的内部错误', detail: String(e) }

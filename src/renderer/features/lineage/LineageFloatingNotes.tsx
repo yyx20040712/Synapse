@@ -41,10 +41,13 @@ import {
 import type { FloatingNote } from '@shared/models/lineage'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
-import { clampToContent, notesInteractive, NOTE_GRIP_H, NOTE_H, NOTE_W, toOwnPt } from './lineage-note-geom'
+import { clampToContent, NOTE_GRIP_H, NOTE_H, NOTE_W } from './lineage-note-geom'
 import { useNoteDrag } from './use-note-drag'
 import { useNoteDraftBridge } from './lineage-note-draft'
+import { useNoteCreateMenu } from './use-note-create-menu'
+import { useNoteDraftRestoreCtl } from './use-note-draft-restore-ctl'
 import { quitWriteBlocked } from '../../app/quit-closing-gate'
+import { recoveryBlocked, subscribeRecoveryState } from './recoveryScheduler'
 import { LineageNoteMenuPortal, type NoteMenu } from './LineageNoteMenu'
 
 export function LineageFloatingNotes(props: {
@@ -55,11 +58,17 @@ export function LineageFloatingNotes(props: {
   const mode = useLineageViewStore((s) => s.mode)
   const tool = useLineageViewStore((s) => s.tool)
   const saving = useLineageStore((s) => s.saveStatus === 'saving') // [R4] saving 窗口让位（画线 armed 同法）
-  const interactive = mode === 'edit' && tool === 'select' && !saving
+  // [回炉 R5] recovery 门挂 interactive（ws-entry 屏障/确认条冻结期不开编辑器
+  // ——已开会话让位只读、组件态保留：解冻后重现，不静默丢）
+  const interactive = mode === 'edit' && tool === 'select' && !saving && !recoveryBlocked()
   // [S1①] saving 进入=关停在飞菜单（两态清态——防 saving 结束后陈菜单复活）
   useEffect(() => {
     if (saving) setMenu(null)
   }, [saving])
+  // [回炉 R5] 门变化沿重渲染：interactive 读调度器模块态（非 React 态）——
+  // 无订阅则开闸后闭包滞旧（点击落旧 interactive=false）——沿订阅强制刷新
+  const [, setGateTick] = useState(0)
+  useEffect(() => subscribeRecoveryState(() => setGateTick((t) => t + 1)), [])
   const [order, setOrder] = useState<string[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -73,27 +82,8 @@ export function LineageFloatingNotes(props: {
   // [R2③] 打断收口 ref（native 监听闭包跨渲染取最新会话收口函数）
   const commitRef = useRef<() => void>(() => undefined)
 
-  // 右键空白→创建菜单（native 挂 .tl-content——React 面无法向父元素注 prop；
-  // 交互门/坐标事件时点取值；命中卡/边/边编辑柄〔N2〕/笔记=他菜单域让路；
-  // 开菜单=编辑会话打断先收口〔R2③〕）
-  useEffect(() => {
-    const el = contentRef.current
-    if (el === null) return
-    const onCtx = (e: MouseEvent): void => {
-      if (!notesInteractive()) return
-      const t = e.target as HTMLElement | null
-      if (t === null || t.closest('.tl-card, .tl-note, .tl-edge-hit, .tl-edge-hits, .edge-handle') !== null) return
-      e.preventDefault()
-      commitRef.current()
-      setMenu({
-        kind: 'create',
-        anchor: { x: e.clientX, y: e.clientY },
-        ownPt: toOwnPt(contentRef, e.clientX, e.clientY)
-      })
-    }
-    el.addEventListener('contextmenu', onCtx)
-    return () => el.removeEventListener('contextmenu', onCtx)
-  }, [contentRef])
+  // 右键空白→创建菜单（[F-VISFB-65 拆件] use-note-create-menu——纯移动零语义改）
+  useNoteCreateMenu(contentRef, commitRef, setMenu)
 
   // 创建即编辑态（textarea 聚焦——effect 时点挂载已落位）
   useEffect(() => {
@@ -133,8 +123,9 @@ export function LineageFloatingNotes(props: {
   /** 会话收口单点（R2④ id 守卫读 editingIdRef 现值〔S7②〕：迟到旧闭包 blur
    *  不清新会话；空→回收；未变→零写；他径已删→静默出编辑态） */
   const closeEdit = (id: string, value: string): void => {
-    // [F-VISFB-64·轮2] closing gate：冻结期提交会话整体拒绝（保会话+pending）；②.5 收口经同步豁免域放行
-    if (editingIdRef.current !== id || quitWriteBlocked()) return
+    // [F-VISFB-64·轮2] closing gate：冻结期提交会话整体拒绝（保会话+pending）；②.5 收口经同步豁免域放行。
+    // [回炉 R5] recovery 门同款（冻结期 blur 提交拒绝——编辑态保留）
+    if (editingIdRef.current !== id || quitWriteBlocked() || recoveryBlocked()) return
     const store = useLineageStore.getState()
     const n = store.floatingNotes.find((f) => f.id === id)
     setEditingId(null)
@@ -154,9 +145,11 @@ export function LineageFloatingNotes(props: {
     closeEdit(editingId, draft)
   }
   commitRef.current = commitActiveEdit
-  // [F-VISFB-63] 编辑草稿注册族桥接（flush 句柄+pending 信号——体驻
-  // lineage-note-draft.ts：组件行数红线贴线，布线 hook 化禁内联 effect）
-  useNoteDraftBridge(commitRef, editingId, draft)
+  // [F-VISFB-65] 恢复再水化控制面（拆件 use-note-draft-restore-ctl——§5/N-06）
+  const restoreCtl = useNoteDraftRestoreCtl(contentRef, setEditingId, setDraft, raise)
+  // [F-VISFB-63] 编辑草稿注册族桥接（flush 句柄+pending 信号+内容快照+恢复
+  // 再水化——体驻 lineage-note-draft.ts：组件行数红线贴线，布线 hook 化）
+  useNoteDraftBridge(commitRef, editingId, draft, restoreCtl)
 
   // 渲染序=z 序（order 末位=DOM 末位=最上；未交互笔记承 store 数组序在前）
   const display = useMemo(() => {
@@ -221,7 +214,7 @@ export function LineageFloatingNotes(props: {
                     // [S4] 正文区点击止于 textarea（不达容器画线处理器——caret 定位不触画线链）
                     e.stopPropagation()
                   }}
-                  onChange={(e) => (quitWriteBlocked() ? undefined : setDraft(e.target.value)) /* [F-VISFB-64·回炉 W2] closing gate：草稿内容写入口（本地态先行于 pending 置真；②.5 收口同步域不受影响） */}
+                  onChange={(e) => (quitWriteBlocked() || recoveryBlocked() ? undefined : setDraft(e.target.value)) /* [F-VISFB-64·回炉 W2] closing gate：草稿内容写入口（本地态先行于 pending 置真；②.5 收口同步域不受影响）；[回炉 R5] recovery 门同款 */}
                   onBlur={() => closeEdit(n.id, draft)}
                 />
               ) : (

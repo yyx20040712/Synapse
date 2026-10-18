@@ -59,9 +59,11 @@ export interface WorkspaceStore {
   rename(id: string, name: string): Promise<void>
   /**
    * 动作型：失败上抛。返回 true=已切换（reload 已触发）；false=幂等或用户
-   * 在 dirty 确认中取消（零副作用）。
+   * 在 dirty 确认中取消（零副作用）。[F-VISFB-65 回炉 R3] onConfirmed=确认
+   * 通过后、api.switch **之前**调用并 await（恢复副本弃置 release 携旧 ws
+   * id 时 main 侧未切=guardWorkspace 放行；await 收束再 switch=零竞窗）。
    */
-  switchTo(id: string, opts: { dirty: boolean }): Promise<boolean>
+  switchTo(id: string, opts: { dirty: boolean; onConfirmed?: () => void | Promise<void> }): Promise<boolean>
 }
 
 export function createWorkspaceStoreInitialState() {
@@ -129,7 +131,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {
       await unwrap(api.workspaces.rename({ id, name }))
       set({ items: get().items.map((w) => (w.id === id ? { ...w, name } : w)) })
     },
-    switchTo: async (id, { dirty }) => {
+    switchTo: async (id, { dirty, onConfirmed }) => {
       if (id === get().currentId) return false
       // [F-VISFB-14 d1 W4① 维持现状申报] 课题切换弃改路径（confirm→discardAll
       // →reload）本票不动——flush-first 翻案面收敛于关 tab/退出握手，不扩大
@@ -139,6 +141,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {
       // 编辑（含清防抖句柄+在途 save 代际守卫打点）——reload 前零 timer 零内存
       // 草稿，切课题悬置写 renderer 面闭（clean 直达=no-op 幂等）
       useNotesStore.getState().discardAllPendingEdits()
+      // [F-VISFB-65 回炉 R3] 确认通过→恢复副本弃置收口先于 api.switch 完成
+      await onConfirmed?.()
       await unwrap(api.workspaces.switch({ id }))
       // ADR-0018：reload 出全新 stores，跨课题零 stale 态
       window.location.reload()
