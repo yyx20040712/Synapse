@@ -9,10 +9,12 @@ import { SNAP_R, type Channels } from './edge-edit'
 
 export function nearestAnchorCard(
   cards: ReadonlyArray<{ nodeId: string; rect: Rect }>,
-  p: Pt
-): { nodeId: string; pt: Pt; side: Side } | null {
-  let best: { nodeId: string; pt: Pt; side: Side } | null = null
-  let bestD = SNAP_R
+  p: Pt,
+  /** [F-VISFB-66] 解锚半径（缺省=调线磁吸 6；换端解锚传 DRAW_SNAP_R=12 own 域） */
+  r: number = SNAP_R
+): { nodeId: string; pt: Pt; side: Side; slot: number } | null {
+  let best: { nodeId: string; pt: Pt; side: Side; slot: number } | null = null
+  let bestD = r
   const sides: Side[] = ['top', 'bottom', 'left', 'right']
   for (const { nodeId, rect } of cards) {
     for (const side of sides) {
@@ -21,7 +23,7 @@ export function nearestAnchorCard(
         const d = Math.hypot(a.x - p.x, a.y - p.y)
         if (d < bestD) {
           bestD = d
-          best = { nodeId, pt: a, side }
+          best = { nodeId, pt: a, side, slot }
         }
       }
     }

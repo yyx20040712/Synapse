@@ -6,9 +6,37 @@
  * 内联——A3）。
  */
 import type { CSSProperties } from 'react'
-import type { LineageEdge } from '@shared/models/lineage'
+import { validateLineageAnchor, type LineageAnchor, type LineageEdge } from '@shared/models/lineage'
 import type { LayoutSnapshot } from './lineage-routing'
 import { effectiveScale } from './timeline-zoom'
+
+/**
+ * [F-VISFB-66] 装配自检（renderer 读侧——设计书 §D.5 N-02r2）：锚载荷形状
+ * 校验，失败=按未钉定处理+console warn（读侧降级不阻断渲染——repo 读面
+ * 容错解析已拦库内损坏，本层防御=store 直写/测试夹具旁路面）。null=清除
+ * 仅属载荷层——读模型 undefined/null 同归未钉定零 warn。
+ */
+/**
+ * [回炉 S14] 非法锚 warn once 集（**按指纹去重**=reason+序列化载荷——同一
+ * 非法锚跨渲染帧不重复告警；不同载荷各自一警）。
+ */
+const warnedAnchorFingerprints = new Set<string>()
+
+export function pinOf(anchor: LineageAnchor | null | undefined): LineageAnchor | undefined {
+  if (anchor === null || anchor === undefined) return undefined
+  const check = validateLineageAnchor(anchor)
+  if (!check.ok) {
+    const fp = `${check.reason}|${JSON.stringify(anchor)}`
+    // [定点修 N-r3-05] 指纹集上界（长会话防无界——非法锚域有限，超界重臂）
+    if (warnedAnchorFingerprints.size > 128) warnedAnchorFingerprints.clear()
+    if (!warnedAnchorFingerprints.has(fp)) {
+      warnedAnchorFingerprints.add(fp)
+      console.warn(`lineage-routing：边锚点载荷非法（${check.reason} 域违例），按未钉定处理——同一非法锚仅警一次`, anchor)
+    }
+    return undefined
+  }
+  return check.value
+}
 
 interface Box {
   x: number

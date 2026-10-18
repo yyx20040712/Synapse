@@ -64,6 +64,9 @@ function edgeRow(id: string, fromNode: string, toNode: string, over: Record<stri
     dashed: 0,
     color: '#1e3a8a',
     kind: 'tree',
+    // [F-VISFB-66] 025 锚列随链入全列行（TABLE_SPECS 迁移终态全列对偶面）
+    from_anchor: null,
+    to_anchor: null,
     ...over
   }
 }

@@ -37,6 +37,7 @@ import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
 import lineageGhostEdgesSql from './migrations/022_lineage_ghost_edges.sql?raw'
 import paperFiguresSql from './migrations/023_paper_figures.sql?raw'
 import lineageFloatingNotesSql from './migrations/024_lineage_floating_notes.sql?raw'
+import lineageEdgeAnchorsSql from './migrations/025_lineage_edge_anchors.sql?raw'
 
 export interface Migration {
   version: number
@@ -133,7 +134,12 @@ export const MIGRATIONS: readonly Migration[] = [
   // （域删级联——012/019 族域资产先例）+021 族第十表删事件触发器（快照导入
   // 防复活数据源）；入快照导出面（TABLE_SPECS 十表）；纯新增表+索引+触发器
   // 无表重建，无 fkOff；新库 user_version 终值 24
-  { version: 24, name: 'lineage_floating_notes', sql: lineageFloatingNotesSql }
+  { version: 24, name: 'lineage_floating_notes', sql: lineageFloatingNotesSql },
+  // [F-VISFB-66] 边端点钉定锚列：from_anchor/to_anchor AnchorRef JSON TEXT
+  // （NULL=未钉定=路由派生——E2 运行时回落零回填；013 头注「锚点=运行时
+  // 12 锚派生」句自本迁移起作废——锚位成端点身份一等成分）；纯 ADD COLUMN
+  // 无表重建，无 fkOff；新库 user_version 终值 25
+  { version: 25, name: 'lineage_edge_anchors', sql: lineageEdgeAnchorsSql }
 ]
 
 export interface MigrateResult {

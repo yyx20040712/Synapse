@@ -233,6 +233,15 @@
       "status": "observing",
       "first_seen": "2026-10-16",
       "resolution": "首现 observing（复跑绿不销项——失败指纹在档）；挂起/超时族跨例第五例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+corpus-export CI 首例+本案）且为该族 CI 面第二例——两 CI 例集中 2026-10-15/16 窗（corpus-export fa3da+本案），环境级线索按族注记口径维持、族内 CI 面第二现即触该族 CI 专项排查候选呈报；本用例再现即触立案线（跨场次第二现=立案排查，首取 error-context 快照+对照 corpus-export 例判别形态）。"
+    },
+    {
+      "spec": "tests/e2e/lineage.spec.ts",
+      "case": "T3 重复加边拒绝 toast（F-VISFB-66 改写后形态——拖拽径二次画同对+quit 拦截两态）本地 VMware 侧",
+      "count": 6,
+      "fingerprint": "Target page, context or browser has been closed（FLK-03 窗口状态族同指纹）：五现=深夜/清晨 automation 窗（2026-10-18 01-06 时段 runId=20261018-fvisfb66 executor 各轮+复跑绿）；第六现=白天窗 10:08 三 spec 联跑 #T3（9.2s 红）→同窗单例复跑绿（9.7s）——白天瞬态首现，FLK-03「深夜窗专属」环境归因弱化（观察登记非翻案）；〔裁决部 C-03 口径〕前五现=深夜豁免窗、第六现=首次白天同指纹；后续三次相关运行绿（单例+两轮三 spec 全量）非销项；第二次白天同指纹立即升级既有票排查并暂停环境豁免解释",
+      "status": "observing",
+      "first_seen": "2026-10-18",
+      "resolution": "observing（C-03 观察门：白天再现即升级 F-E2EFLK-01 排查优先级）；CI 面=windows-latest 另案 F-CIFLK-01 已修"
     }
   ]
 }

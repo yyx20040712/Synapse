@@ -95,9 +95,9 @@ describe('F-LGRAPH-01②U1 暂存（enqueue 不 flush——A7 单一写路径）
     expect(state().undoStack).toHaveLength(1) // 一单元=一撤销步
   })
 
-  it('[F-ALIGN-01 改写] 新建类动作乐观生成 id（画线）：linkNodes 乐观边即时在场（uuid=落库 id——无临时 id 漂移；原 addPaperNode 面随节点新建路径退役删——节点唯一来源=入库/移动两路）', () => {
+  it('[F-ALIGN-01 改写] 新建类动作乐观生成 id（画线）：drawEdge 乐观边即时在场（uuid=落库 id——无临时 id 漂移；[F-VISFB-66] 单径必携双锚；原 addPaperNode 面随节点新建路径退役删——节点唯一来源=入库/移动两路）', () => {
     useLineageStore.setState({ nodes: [node('A'), node('B')] })
-    state().linkNodes('A', 'B')
+    state().drawEdge('A', 'B', { dashed: false, color: LINE_TYPE_COLORS[0], label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     expect(state().edges).toHaveLength(1)
     expect(state().edges[0]!.fromNode).toBe('A')
     expect(state().saveStatus).toBe('dirty')
@@ -228,7 +228,7 @@ describe('F-LGRAPH-01②U1 save() 批量落库（§2.2 saving 态+行内错误�
       ok: true,
       data: { nodes: [node('A'), node('B'), node('C')], edges: [] }
     })
-    state().linkNodes('C', 'B')
+    state().drawEdge('C', 'B', { dashed: false, color: LINE_TYPE_COLORS[0], label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     expect(state().edges).toHaveLength(1) // 乐观边在场
     state().save()
     await settle(10)
@@ -264,7 +264,7 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
   it('§2.6-3 dirty 切图确认分支：discardSession 清队列+清栈+回 clean（库态随后重取覆盖）', () => {
     useLineageStore.setState({ nodes: [node('A')] })
     state().moveNode('A', 10, 10)
-    state().linkNodes('A', 'Z')
+    state().drawEdge('A', 'Z', { dashed: false, color: LINE_TYPE_COLORS[0], label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     expect(state().queue).toHaveLength(2)
     state().discardSession()
     expect(state().queue).toHaveLength(0)
@@ -354,18 +354,14 @@ describe('F-LGRAPH-01②U1 跨格序列（§2.6 拷问面）', () => {
 
   it('[回炉 R9] 画线双 toast 合一：暂存提示在场+flush 成功 toast 抑制（drawEdge 动作面）', async () => {
     useLineageStore.setState({ nodes: [node('A'), node('B')] })
-    state().drawEdge('A', 'B', { dashed: false, color: LINE_TYPE_COLORS[0], label: '主线' })
+    state().drawEdge('A', 'B', { dashed: false, color: LINE_TYPE_COLORS[0], label: '主线', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     expect(showToast).toHaveBeenCalledWith('已画线，保存后生效', 'success') // 暂存提示保留
     vi.mocked(showToast).mockClear()
     state().save()
     await settle()
     expect(state().saveStatus).toBe('clean')
     expect(showToast).not.toHaveBeenCalledWith('连线已保存', 'success') // flush 成功 toast 抑制
-    // 对照：linkNodes（其余新建边面）成功 toast 保持
-    vi.mocked(showToast).mockClear()
-    state().linkNodes('A', 'B')
-    state().save()
-    await settle()
-    expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')
+    // [F-VISFB-66] 对照面随单径收敛：drawEdge 暂存提示即时（silentSave 恒立
+    // ——原 linkNodes「成功 toast 保持」对照随入口退役删除）
   })
 })

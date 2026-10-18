@@ -340,24 +340,21 @@ describe('U5 端点重连统一（回炉 R11——空 via 归一/物化/L 重正
     expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
   })
 
-  it('R11② manual 线跨卡换端：reconnectEdge+L 重正交（新拐点落地）', () => {
+  it('[F-VISFB-66 裁定 3] manual 线跨卡换端=语义反转：清 via 重算自动路径+落端钉定锚（无视既有 via 调整）', () => {
     layout([{ x: 200, y: 66 }], true)
     click(hitOf('e1'))
     const before = useLineageStore.getState().undoStack.length
-    dragEndTo('to', 612, 266) // C 左中锚（C 于下一行——L 形）
+    dragEndTo('to', 612, 266) // C 左中锚（C 于下一行）
     const s = useLineageStore.getState()
     const e = s.edges.find((x) => x.id === 'e1')!
     expect(e.toNode).toBe('C') // 跨卡换端
-    expect(e.via).toBeDefined()
-    // L 重正交：末拐=(原末 via.x, 新锚.y)=(200,266) 追加（A(140,66)→(200,66)→(200,266)→C(612,266)）
-    expect(e.via).toEqual([
-      { x: 200, y: 66 },
-      { x: 200, y: 266 }
-    ])
+    expect(e.via).toBeUndefined() // 换端=清 via（裁定 3 反转「via 保留」——重算自动路径）
+    expect(e.toAnchor).toEqual({ side: 'left', slot: 1 }) // 落端钉定新锚（B-03r2）
+    expect(e.fromAnchor).toBeUndefined() // 固定端保持现值（legacy NULL 边仍 NULL）
     expect(s.undoStack.length).toBe(before + 1) // 一重连=一编辑单元
   })
 
-  it('R11② 自动线（空 via）跨卡换端：物化种子走 reconnectEnd（不整体跳过）+空 via 不穿透 IPC', () => {
+  it('[F-VISFB-66] 自动线（空 via）跨卡换端：换端清 via（恒自动路径）+落端钉定锚（R11 物化种子面随语义反转退役）', () => {
     layout(undefined, true)
     click(hitOf('e1'))
     // 前置：自动线直连（0 方柄）——空 via 分支在场
@@ -366,23 +363,21 @@ describe('U5 端点重连统一（回炉 R11——空 via 归一/物化/L 重正
     dragEndTo('to', 612, 266) // →C 左中锚
     const e = useLineageStore.getState().edges.find((x) => x.id === 'e1')!
     expect(e.toNode).toBe('C')
-    expect(e.via).toBeDefined()
-    expect(e.via!.length).toBeGreaterThan(0) // 物化（种子=被拖端原锚位→L 拐）
+    expect(e.via).toBeUndefined() // 清 via=自动路径（空数组禁穿透面消亡——恒 undefined）
+    expect(e.toAnchor).toEqual({ side: 'left', slot: 1 })
     expect(useLineageStore.getState().undoStack.length).toBe(before + 1)
-    // 空数组禁穿透：换端载荷 via 恒非空（或键缺省）
-    expect(e.via === undefined || e.via.length > 0).toBe(true)
   })
 
-  it('R11①② 自动线（空 via）同卡换锚：物化 via 承载新锚位（空 via 归一不落 []）', () => {
+  it('[F-VISFB-66 终裁修正] 本端卡异锚=合法换锚（端点身份变更）：同卡不换端+清 via+锚重钉（物化承载面退役）', () => {
     layout(undefined)
     click(hitOf('e1'))
     const before = useLineageStore.getState().undoStack.length
-    dragEndTo('to', 476, 30) // B 顶中锚（同卡）
+    dragEndTo('to', 476, 30) // B 顶中锚（同卡异锚——12 own 域命中）
     const e = useLineageStore.getState().edges.find((x) => x.id === 'e1')!
     expect(e.fromNode).toBe('A')
-    expect(e.toNode).toBe('B') // 同卡=不换端
-    expect(e.via).toBeDefined() // 物化（非 [] 穿透——R11①）
-    expect(e.via!.length).toBeGreaterThan(0)
+    expect(e.toNode).toBe('B') // 同卡=端点 node 不变
+    expect(e.via).toBeUndefined() // 换锚=身份变更清 via（C1a 终裁恢复）
+    expect(e.toAnchor).toEqual({ side: 'top', slot: 1 }) // 重钉命中锚
     expect(useLineageStore.getState().undoStack.length).toBe(before + 1)
   })
 
@@ -409,7 +404,7 @@ describe('U5 端点重连统一（回炉 R11——空 via 归一/物化/L 重正
     act(() => {
       document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 260, clientY: 120 }))
     })
-    // pointercancel=中断（原接 up=提交——workVia 落库缺陷）
+    // pointercancel=中断（原接 up=提交——工作 via 落库缺陷）
     act(() => {
       document.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true }))
     })

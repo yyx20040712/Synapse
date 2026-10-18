@@ -23,7 +23,7 @@ import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
 import { routeAll } from './lineage-routing'
-import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle } from './edge-overlay-geom'
+import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle, pinOf } from './edge-overlay-geom'
 import { isEdgeDimmed } from './focus-bright'
 import { publish } from './anchor-occupancy'
 import { useEdgeEdit } from './use-edge-edit'
@@ -92,14 +92,21 @@ export function EdgeOverlay(props: {
   const live = useMemo(() => {
     const ids = new Set(props.nodes.map((n) => n.id))
     const edges = props.edges.filter((e) => ids.has(e.fromNode) && ids.has(e.toNode))
-    const inputs: EdgeGeomInput[] = edges.map((e) => ({
-      edgeId: e.id,
-      sourceId: e.fromNode,
-      targetId: e.toNode,
-      // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不参与
-      // 车道分组与避让链——lane=−1 天然不入 laneRank）
-      via: e.via
-    }))
+    const inputs: EdgeGeomInput[] = edges.map((e) => {
+      // [F-VISFB-66] 端点钉定锚装配（读锚列——pinOf 自检失败按未钉定+warn）
+      const fa = pinOf(e.fromAnchor)
+      const ta = pinOf(e.toAnchor)
+      return {
+        edgeId: e.id,
+        sourceId: e.fromNode,
+        targetId: e.toNode,
+        // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不参与
+        // 车道分组与避让链——lane=−1 天然不入 laneRank）
+        via: e.via,
+        ...(fa !== undefined ? { fromAnchor: fa } : {}),
+        ...(ta !== undefined ? { toAnchor: ta } : {})
+      }
+    })
     return { edges, inputs }
   }, [props.nodes, props.edges])
   // 回炉 1 W5：paths 按.edgeId 配对（Map 查找替下标 zip）

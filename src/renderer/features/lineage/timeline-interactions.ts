@@ -72,8 +72,6 @@ export function createTimelineCardHandlers(deps: {
   consumeDragClick(): boolean
   /** [②U3] 画线收尾后 click 抑制（防误选——draw 域） */
   consumeDrawClick(): boolean
-  /** 画线域点卡=anchor picked 路由（useDrawLine.handleCardClick） */
-  pickCard(nodeId: string): void
   onNodeClick?: TimelineCallbacks['onNodeClick']
 }): {
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
@@ -86,13 +84,9 @@ export function createTimelineCardHandlers(deps: {
   ): void => {
     if (deps.consumeDragClick()) return // [T3-P8] 拖后 click 抑制（一次性）
     if (deps.consumeDrawClick()) return // [②U3] 画线收尾后 click 抑制（防误选）
-    // [F-UIRES-03 C1] 画线域点卡=点两卡连边链路由（anchor 维——useDrawLine），
-    // **禁开详情**（裁决 11a：draw-X+点卡 A=anchor picked 非选中）；回 select
-    // 后详情正常开（负锚见 lineage-c1-clickchain）
-    if (tool !== 'select') {
-      deps.pickCard(nodeId)
-      return
-    }
+    // [F-VISFB-66 裁定 2·B1a] draw 工具=纯拖拽工具：点卡=吞咽（不 pickCard、
+    // 不开详情——裁决 11a 沿承；点两卡连边链退役后唯一建边径=锚点显式拖拽）
+    if (tool !== 'select') return
     // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
     // 照常转发——toggle 与详情面板联动并行不冲突）
     if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)

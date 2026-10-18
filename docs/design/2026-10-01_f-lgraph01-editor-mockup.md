@@ -86,11 +86,23 @@ clean ──任一编辑单元──▶ dirty ──点保存──▶ saving �
 
 ### 2.4 画线子态（edit 模式，tool ∈ {select, draw-solid, draw-dashed}）
 
+[F-VISFB-66 重绘 2026-10-18——钉定模型（设计书 §A.1）+容差 ±12 own 域
+单位（±6 旧值 stale 清理）+建边后连画保持（「回 select」旧文 stale 清理）]
+
 ```
-idle ──点画线工具──▶ armed ──pointerdown 近锚(12/卡±6)──▶ dragging
-dragging ──pointerup 落另一卡近锚──▶ 建边（**继承当前线型名**——P-14）──▶ idle(select)
-dragging ──pointerup 空白/同卡──▶ 取消 ──▶ idle(armed 保留)
-armed ──切 select/切模式──▶ idle（画线中止）
+idle ──点画线工具──▶ armed ──pointerdown 近锚(12/卡 ±12 own 域单位)──▶ dragging
+  （from=按下锚 {cardId,anchor,pt} 恒定——预览起点恒 from.pt；snap=命中他卡
+   锚本身——不经路由规则选锚函数，两端钉定=所见即所得结构性成立）
+dragging ──pointerup 落他卡锚──▶ 建边（双锚钉定载荷+**继承当前线型名**——
+  P-14；查重单点=store 结果枚举 duplicate→toast）──▶ idle(**工具保持连画**)
+dragging ──pointerup 他卡非锚区──▶ toast 落点未在连接点上 ──▶ idle(工具保持)
+dragging ──pointerup 空白/源卡──▶ 静默取消 ──▶ idle(armed 保留)
+dragging ──pointercancel──▶ 取消 ──▶ idle；blur──▶ 中止 ──▶ idle
+dragging ──工具切换──▶ 松手不建边（armed 闸）；他 pointerId──▶ 忽略
+armed(点两卡链已退役——唯一建边径=锚点显式拖拽；点卡=吞咽不开详情)
+armed ──Esc──▶ idle(select)（单层直达）；──切 select/切模式/切图──▶ idle（中止）
+dragging ──Esc──▶ 取消会话（**工具保持**——R19 终裁：会话级 keydown 消费）
+dragging ──光标入容器上/下 20% 触发区──▶ 自动滚动（裁定 4——Word 式）
 ```
 
 ### 2.5 手动调线子态（edit 模式——承接 F-LINEAGE-02 design-final §2.3）

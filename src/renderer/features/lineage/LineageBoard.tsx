@@ -3,7 +3,7 @@
  * LineageBoard —— 脉络图交互编辑+自动保存+退出聚合
  *
  * ── 行为层 ──
- * - 交互编辑面（ADR-0014：手工拖拽位置/加删边/改父）：
+ * - 交互编辑面（ADR-0014：手工拖拽位置/加删边）：
  *   **[T3-P6] 节点拖拽=写 x/y 覆盖已退役**（JSON Canvas 模式随 SVG 画布
  *   方案切换退役——P8 槽位重排接缝；store moveNode 保留待重接）；
  *   **[F-ALIGN-01 2026-10-04] 加节点两型对话框随手动建点路径全退役
@@ -12,10 +12,9 @@
  *   核心想法域全退役删除**（「核心想法」语义由全文笔记 notes.contentMd 承接
  *   ——对话框组装配件随挂点消亡整件退役）；
  *   **加边**=源节点菜单
- *   「连线到…」目标选取；**删边/删节点**=节点菜单；**改父**=既有子边删除+
- *   新边添加两动作组合（UI 呈现单操作，service 两调用——树约束下改父=换父）
- *   的菜单+目标选取提示职责归 LineageBoardMenu.tsx（[F-SPLIT-01] 自本件
- *   拆出 2026-09-05，语句零改）
+ *   **删边/删节点**=节点菜单（[F-VISFB-66 裁定 2/3] 旧右键建边目标选取与
+ *   换父组合动作整体退役——换父业务由线条编辑换端承载）；菜单装配职责归
+ *   LineageBoardMenu.tsx（[F-SPLIT-01] 自本件拆出 2026-09-05）
  * - **树约束 UI 守卫**（INV-27 消费面）：加边 to 已有父/成环/自环三
  *   拒绝路径=动作型 toast 中文 reason（**树守卫宿主=LG-01 service
  *   upsertEdge 运行时守卫**（门一 W1 闭合）——本单零守卫代码只接
@@ -37,10 +36,8 @@
  *   store.ts+App.tsx（门一 N3 指名）+tab-dirty.ts stale 行三方**）；
  *   **INV-22 行随本单扩面**（renderer 聚合信号构成=tab dirty ∪
  *   lineage dirty——invariants.md 登记行扩写，门一 N2）
- * - **改父部分失败语义（门一 N5）**：改父=删旧边+加新边两 service 调用
- *   非原子——删成功+加失败=节点暂无父（**合法中间态**：森林语义兜底
- *   无数据丢失）；呈现=error 保存态+toast 指明「旧连线已移除，新连线
- *   未建立」+重试按钮重发加边（或用户手动重连）——不静默回滚不假报成功
+ * - [F-VISFB-66 裁定 3] 旧换父两调用组合的非原子部分失败语义（门一 N5）随
+ *   业务退役删除——换端=reconnectEdge 单动作（原子性由单语句承担）
  * - 状态机（编辑动作×保存态，宪法前置）：edit→saving→saved（正常）/
  *   edit→saving→error（失败：脏保持+toast+重试按钮——**禁本地乐观
  *   覆盖 savedAt**）/error→retry→saving（恢复）；跨格序列：连续编辑
@@ -82,11 +79,10 @@
  *   导入草稿入口（动作件）随草稿导入链退役删除
  *   （用户裁决 2026-09-30——ADR-0022）
  */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLineageStore } from './lineage.store'
-import { useLineageViewStore } from './lineage-view.store'
 import { LineageTimeline } from './LineageTimeline'
-import { LineageBoardMenu, type MenuTarget, type PendingLink } from './LineageBoardMenu'
+import { LineageBoardMenu, type MenuTarget } from './LineageBoardMenu'
 
 export function LineageBoard(props: {
   onSelectNode(id: string | null): void
@@ -104,31 +100,11 @@ export function LineageBoard(props: {
   const store = useLineageStore.getState
 
   const [menu, setMenu] = useState<MenuTarget | null>(null)
-  const [pendingLink, setPendingLink] = useState<PendingLink | null>(null)
 
-  // [RR1 d1-W2/k1-N6] pendingLink⇔画线域互斥（主控裁定——双向闸）：
-  // ①发起 pendingLink 时若 tool≠select→resetTool（pendingLink 完成语义
-  //   恒 select 态路由——draw 态下 Timeline 点卡走锚链，早退阻断 onNodeClick
-  //   =完成链死路+第二击建无关边）；
-  // ②tool 进入 draw-X 时清 pendingLink（effect——防「先意图后进画线」残留态）
-  const tool = useLineageViewStore((s) => s.tool)
-  useEffect(() => {
-    if (tool !== 'select') setPendingLink(null)
-  }, [tool])
-  const armPendingLink = (p: PendingLink | null): void => {
-    if (p !== null && useLineageViewStore.getState().tool !== 'select') {
-      useLineageViewStore.getState().resetTool()
-    }
-    setPendingLink(p)
-  }
-
+  // [F-VISFB-66 裁定 2/3] 旧右键目标选取模式与其互斥闸/消费段整体退役删除
+  // ——唯一建边径=锚点显式拖拽（drawEdge 单径）；旧换父业务由线条编辑换端
+  // 承载（reconnectEdge）
   const handleNodeClick = (nodeId: string): void => {
-    if (pendingLink !== null) {
-      if (pendingLink.mode === 'link') store().linkNodes(pendingLink.source, nodeId)
-      else store().reparentNode(pendingLink.source, nodeId)
-      setPendingLink(null)
-      return
-    }
     props.onSelectNode(nodeId)
   }
 
@@ -156,12 +132,9 @@ export function LineageBoard(props: {
         onReorderMonthSlots={(ids) => store().reorderMonthSlots(ids)}
       />
 
-      {/* 节点菜单+目标选取提示条（[F-SPLIT-01] 拆件——menu/pendingLink
-          state 归本件，经 set 函数回写；DOM 序=canvas 后（提示条
-          absolute top-2 z-float、菜单 fixed 锚点——视觉位不受兄弟序影响）。
-          [A3 F-CONTRACTA-01] 对话框组挂点随核心想法域全退役消亡
-          （对话框组装配件整件删除） */}
-      <LineageBoardMenu menu={menu} pendingLink={pendingLink} setMenu={setMenu} setPendingLink={armPendingLink} />
+      {/* 节点菜单（[F-SPLIT-01] 拆件——menu state 归本件，经 set 函数回写；
+          [F-VISFB-66] 目标选取提示条随右键链路退役删除） */}
+      <LineageBoardMenu menu={menu} setMenu={setMenu} />
     </div>
   )
 }

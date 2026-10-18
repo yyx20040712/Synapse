@@ -315,7 +315,6 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
         paperMetrics={{}}
         selectedNodeId={null}
         frameW={570.4}
-        linkSourceId={null}
         onCardClick={() => undefined}
       />
     )
@@ -345,7 +344,6 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
         paperMetrics={{}}
         selectedNodeId={null}
         frameW={570.4}
-        linkSourceId={null}
         dragSlot={{ srcKey: '2022|5', nodeId: 'B', insertIdx: 0, active: true, overFrame: true }}
         onCardClick={() => undefined}
       />
@@ -379,7 +377,6 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
         paperMetrics={{}}
         selectedNodeId={null}
         frameW={570.4}
-        linkSourceId={null}
         dragSlot={{ srcKey: '2022|5', nodeId: 'A', insertIdx: 0, active: true, overFrame: true }}
         onCardClick={() => undefined}
       />

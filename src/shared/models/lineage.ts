@@ -112,6 +112,54 @@ export function defaultLineTypeNames(): string[] {
 export const lineTypeNamesSchema = z.array(z.string()).length(LINE_TYPE_ROWS)
 export type LineTypeNames = z.infer<typeof lineTypeNamesSchema>
 
+// ── 边锚（[F-VISFB-66] 锚点钉定——设计书 v1.2 §D.2） ────────────────
+
+/** [F-VISFB-66] 锚四边域（卡每边 top/bottom/left/right） */
+export type LineageAnchorSide = 'top' | 'bottom' | 'left' | 'right'
+
+/**
+ * [F-VISFB-66] 用户钉定锚（AnchorRef `{side,slot}`——12 锚体系沿承：每边
+ * ¼/½/¾ 位=slot 0/1/2）。持久化形态=TEXT JSON（025 迁移两列，NULL=未钉定
+ * =路由派生〔E2 运行时回落〕）；与运行时锚 id（`cardId:t0` 形）经
+ * routing/anchors anchorIdOf/parseAnchorId 映射解耦。
+ */
+export interface LineageAnchor {
+  side: LineageAnchorSide
+  slot: 0 | 1 | 2
+}
+
+/** [F-VISFB-66] 锚 zod 形状（schema 单源——DB 行/upsert 共用派生基） */
+export const lineageAnchorSchema = z
+  .object({
+    side: z.enum(['top', 'bottom', 'left', 'right']),
+    slot: z.union([z.literal(0), z.literal(1), z.literal(2)])
+  })
+  .strict()
+
+/**
+ * [F-VISFB-66] 锚校验判别联合（设计书 §D.5——W-02）：null=清除仅属载荷层，
+ * validate 层不吃 null。失败两路处置（N-02r2）：service 写面=throw
+ * INVALID_REQUEST（对齐 via 校验先例）；renderer 装配自检失败=按未钉定
+ * 处理+console warn（读侧降级不阻断渲染）。
+ */
+export type AnchorValidation =
+  | { ok: true; value: LineageAnchor }
+  | { ok: false; reason: 'shape' | 'side' | 'slot' }
+
+export function validateLineageAnchor(a: unknown): AnchorValidation {
+  if (typeof a !== 'object' || a === null) return { ok: false, reason: 'shape' }
+  const obj = a as Record<string, unknown>
+  // 字段缺位=shape 格；字段在场值域外分归 side/slot 格（'1' 串 slot=slot 格）
+  if (!('side' in obj) || !('slot' in obj)) return { ok: false, reason: 'shape' }
+  const side = obj.side
+  if (side !== 'top' && side !== 'bottom' && side !== 'left' && side !== 'right') {
+    return { ok: false, reason: 'side' }
+  }
+  const slot = obj.slot
+  if (slot !== 0 && slot !== 1 && slot !== 2) return { ok: false, reason: 'slot' }
+  return { ok: true, value: { side, slot } }
+}
+
 // ── 应用面（camelCase——DB 行与写入口输入） ────────────────────────
 
 /** [A1b F-CONTRACTA-01 2026-10-04] 标签唯一源=文献库域（tags+paper_tags 表）：
@@ -173,6 +221,12 @@ export const lineageEdgeSchema = z
      *  数值，fromNode/toNode 承载端点卡）；不变量 ①②③校验单源=
      *  validateLineageVia（service 写面调用，违者 INVALID_REQUEST） */
     via: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
+    /** [F-VISFB-66] 端点钉定锚（读模型：undefined=未钉定〔DB NULL〕——路由
+     *  派生 E2 回落；非 null=用户钉定=AnchorUse 禁动端）。schema 面宽松
+     *  （object）——判别校验单源=validateLineageAnchor（service 写面/renderer
+     *  装配自检两路消费） */
+    fromAnchor: lineageAnchorSchema.optional(),
+    toAnchor: lineageAnchorSchema.optional(),
     createdAt: z.string(),
     updatedAt: z.string()
   })
@@ -248,14 +302,29 @@ export const lineageNodeUpsertSchema = lineageNodeSchema
   .strict()
 export type LineageNodeUpsert = z.infer<typeof lineageNodeUpsertSchema>
 
+/**
+ * [F-VISFB-66] 边 upsert 输入面锚/via 三态形（设计书 §D.2——W-01r2③：三态
+ * 仅类型层文档，不承载运行时合并语义）：
+ * - null=清除意图（载荷层——repo 全行替换写 NULL）；
+ * - undefined/缺席=enqueue 归一化等价（undefined≡缺席——write-queue 归一后
+ *   恒无 undefined 残留）；
+ * - 运行时真义=store 恒全载荷物化（§0.3 物化纪律——读乐观现值填齐全字段）
+ *   →repo 全行替换（F14：缺席=清到缺省——物化是正确性前提而非风格）。
+ */
 export const lineageEdgeUpsertSchema = lineageEdgeSchema
-  .omit({ createdAt: true, updatedAt: true })
+  .omit({ createdAt: true, updatedAt: true, via: true, fromAnchor: true, toAnchor: true })
   .extend({
     id: z.string().min(1).optional(),
     /** [F-LGRAPH-01②U8] dashed/color 可选（缺省=false/色板首色——repo 写边界
      *  归一；编辑器全载荷合成[流会话动作]恒显式携值） */
     dashed: z.boolean().optional(),
-    color: z.string().optional()
+    color: z.string().optional(),
+    /** [F-LINEAGE-02] via 三态（null=显式清除——setEdgeVia 约定迁移后承载
+     *  「回自动路由」意图；缺省=归一化等价） */
+    via: z.array(z.object({ x: z.number(), y: z.number() })).nullable().optional(),
+    /** [F-VISFB-66] 端点锚三态（null=清除=未钉定；值=钉定；缺省=归一化等价） */
+    fromAnchor: lineageAnchorSchema.nullable().optional(),
+    toAnchor: lineageAnchorSchema.nullable().optional()
   })
   .strict()
 export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>

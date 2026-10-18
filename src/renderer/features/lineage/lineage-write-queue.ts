@@ -69,14 +69,15 @@ export interface LazyNodePatch {
   override?: { slot: number }
 }
 
-/** 写动作（排队单元；reparent 的加边动作带标记——N5 部分失败 toast 前缀；
- *  [回炉 R9] silentSave=画线动作面——flush 成功 toast 抑制（暂存提示已承载）。
+/** 写动作（排队单元；[F-VISFB-66 裁定 3] 旧换父标记随三入口退役删除
+ *  ——N5 部分失败 toast 前缀面随之消亡；[回炉 R9] silentSave=画线动作面——
+ *  flush 成功 toast 抑制（暂存提示已承载）。
  *  [F-ALIGN-01] 新建节点形态（input 全载荷）随旧节点写通道退役删除
  *  ——节点动作恒=既有节点 patch（INV-NEW-1：节点唯一来源=入库/移动两路） */
 export type WriteAction =
   | LazyNodePatch
   | { kind: 'remove-node'; id: string }
-  | { kind: 'upsert-edge'; input: LineageEdgeUpsert; reparent?: boolean; isNew?: boolean; silentSave?: boolean }
+  | { kind: 'upsert-edge'; input: LineageEdgeUpsert; isNew?: boolean; silentSave?: boolean }
   | { kind: 'remove-edge'; id: string }
   /** [F-LGRAPH-01②U8] 图级色行名整批替换（单实体——同类合并最后写胜出） */
   | { kind: 'upsert-line-type-names'; input: string[] }
@@ -131,14 +132,20 @@ export interface WriteQueue {
 }
 
 /** 同实体判定（排队合并=最后写胜出）：同 kind 且目标相同（[F-ALIGN-01] 节点
- *  动作恒=patch（id 型）——按 id 判等，新建不合并分支随 input 形态退役删） */
+ *  动作恒=patch（id 型）——按 id 判等，新建不合并分支随 input 形态退役删）。
+ *  [F-VISFB-66] upsert-edge 合并键 id 化（设计书 §D.4——B-02 终裁）：由
+ *  from/to 对判等改 id 判等（与 remove-edge id 兜底、节点 patch id 判等族内
+ *  一致）；同 id 合并=后动作整替（元数据 silentSave/isNew 后值胜——与旧同
+ *  pair 合并 filter+append 同构，仅判等面收窄）。行为 diff 三格：同 id 同
+ *  pair=合并（终态同旧）；同 id 异 pair（换端序列）=旧不合并顺序应用/新合并
+ *  整替——终态一致（物化全载荷下两形态同落后值）；异 id=不合并（两态同） */
 function sameTarget(a: WriteAction, b: WriteAction): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'patch-node' && b.kind === 'patch-node') {
     return a.id === b.id
   }
   if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
-    return a.input.fromNode === b.input.fromNode && a.input.toNode === b.input.toNode
+    return a.input.id === b.input.id
   }
   // [F-LGRAPH-01②U8] 色行名整批=单实体（图级配置）——同类恒合并
   if (a.kind === 'upsert-line-type-names' && b.kind === 'upsert-line-type-names') return true
@@ -150,13 +157,9 @@ function sameTarget(a: WriteAction, b: WriteAction): boolean {
   return (a as { id: string }).id === (b as { id: string }).id
 }
 
-/** 改父失败 toast 前缀（N5：删成功+加失败=合法中间态，须指明不静默不假报成功） */
-function writeFailToast(action: WriteAction, message: string): void {
-  if ('reparent' in action && action.reparent === true) {
-    showToast(`旧连线已移除，新连线未建立：${message}`, 'error')
-  } else {
-    showToast(message, 'error')
-  }
+/** 写失败 toast（[F-VISFB-66] 旧换父前缀面随业务退役删除——统一 reason 透传） */
+function writeFailToast(message: string): void {
+  showToast(message, 'error')
 }
 
 export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
@@ -210,7 +213,13 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         label: action.input.label,
         dashed: action.input.dashed === true,
         color: action.input.color ?? LINE_TYPE_COLORS[0], // [R21] 常量单源（色板首色）
-        ...(action.input.via !== undefined && action.input.via.length > 0 ? { via: action.input.via } : {}),
+        // [F-VISFB-66] via 三态：值=入乐观行；null/缺席=未携（自动路由——读
+        // 模型 undefined 语义，与 repo NULL 归一同终态）
+        ...(action.input.via != null && action.input.via.length > 0 ? { via: action.input.via } : {}),
+        // [F-VISFB-66] 锚乐观面：值=钉定入乐观行；null/缺席=未钉定（读模型
+        // undefined 语义——repo 全行替换下 null 落 NULL 幂等）
+        ...(action.input.fromAnchor != null ? { fromAnchor: action.input.fromAnchor } : {}),
+        ...(action.input.toAnchor != null ? { toAnchor: action.input.toAnchor } : {}),
         createdAt: now,
         updatedAt: now
       }
@@ -256,36 +265,62 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
    *  isNew 标记=新建 toast 判据（id 补齐后 undefined 判据失效）。
    *  [F-ALIGN-01] 节点新建形态随旧节点写通道退役删除——本面仅边新建 */
   const withLocalId = (a: WriteAction): WriteAction => {
-    if (a.kind === 'upsert-edge' && a.input.id === undefined) {
-      return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
-    }
-    // [F-VISFB-61] 笔记新建同型：本地乐观 id=落库 id（无临时 id 漂移）；
-    // isNew 仅标记（无 toast 面——62 号 UI 承载反馈）
+    // [回炉 R20] upsert-edge 补 id 分支已不可达删除（enqueue id 必填 throw
+    // 前置——store 边动作构造层恒携本地 uuid；防御纵深二道位消失，throw=唯一闸）
+    // [F-VISFB-61] 笔记新建：本地乐观 id=落库 id（无临时 id 漂移）；isNew 仅
+    // 标记（无 toast 面——62 号 UI 承载反馈）
     if (a.kind === 'upsert-floating-note' && a.input.id === undefined) {
       return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
     }
     return a
   }
 
+  /** [F-VISFB-66] upsert-edge 载荷归一化（undefined≡缺席——设计书 §D.4-3）：
+   *  via/fromAnchor/toAnchor/dashed/color 的 undefined 键一律剥除（缺省与
+   *  undefined 在队列载荷内等价——合并整替与 flush 载荷拼装面零 undefined
+   *  残留；null=显式清除意图保留透传） */
+  const normalizeEdgeInput = (input: LineageEdgeUpsert): LineageEdgeUpsert => ({
+    id: input.id,
+    fromNode: input.fromNode,
+    toNode: input.toNode,
+    label: input.label,
+    ...(input.dashed !== undefined ? { dashed: input.dashed } : {}),
+    ...(input.color !== undefined ? { color: input.color } : {}),
+    ...(input.via !== undefined ? { via: input.via } : {}),
+    ...(input.fromAnchor !== undefined ? { fromAnchor: input.fromAnchor } : {}),
+    ...(input.toAnchor !== undefined ? { toAnchor: input.toAnchor } : {})
+  })
+
   const enqueue = (rawAction: WriteAction): void => {
-    const action = withLocalId(rawAction)
+    // [F-VISFB-66] id 必填防御（§D.4-1）：upsert-edge 缺 id=throw。不可达
+    // 推演：store 边动作构造层恒全载荷物化（一切边动作构造即携本地 uuid）
+    // +withLocalId 兜底补 id——
+    // enqueue 正常路径恒有 id；本格仅拦管线外合成动作（防御纵深）
+    if (rawAction.kind === 'upsert-edge' && rawAction.input.id === undefined) {
+      throw new Error('upsert-edge 动作缺 id（enqueue 契约：边动作构造层须物化本地 uuid）')
+    }
+    const action =
+      rawAction.kind === 'upsert-edge'
+        ? { ...rawAction, input: normalizeEdgeInput(rawAction.input) }
+        : rawAction
+    const withId = withLocalId(action)
     set((s) => {
       let queue: WriteAction[]
-      if (isLazyPatch(action)) {
+      if (isLazyPatch(withId)) {
         // [R3] 融合仅限**未派发**队列项（saving 派发窗内 flight 项保留原位）
         let hit = false
         queue = s.queue.map((x) => {
-          if (x === inflight || !isLazyPatch(x) || !sameTarget(x, action)) return x
+          if (x === inflight || !isLazyPatch(x) || !sameTarget(x, withId)) return x
           hit = true
-          return fuseLazy(x, action)
+          return fuseLazy(x, withId)
         })
-        if (!hit) queue = [...s.queue, action]
+        if (!hit) queue = [...s.queue, withId]
       } else {
-        queue = [...s.queue.filter((x) => x !== inflight && !sameTarget(x, action)), action]
+        queue = [...s.queue.filter((x) => x !== inflight && !sameTarget(x, withId)), withId]
       }
       return { queue, saveStatus: 'dirty' }
     })
-    applyOptimistic(action)
+    applyOptimistic(withId)
   }
 
   const nodeOf = (id: string): LineageNode => {
@@ -348,8 +383,12 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
           // [F-LGRAPH-01②U8] 视觉线型内联透传（缺省键不进载荷——repo 归一）
           ...(action.input.dashed !== undefined ? { dashed: action.input.dashed } : {}),
           ...(action.input.color !== undefined ? { color: action.input.color } : {}),
-          // via 透传（手动调线编辑动作置——缺省键不进载荷）
+          // via 透传（手动调线编辑动作置——缺省键不进载荷；[F-VISFB-66] null=
+          // 显式清除透传〔setEdgeVia 约定迁移〕）
           ...(action.input.via !== undefined ? { via: action.input.via } : {}),
+          // [F-VISFB-66] 端点锚透传（值=钉定/null=清除——A8 物化恒显式）
+          ...(action.input.fromAnchor !== undefined ? { fromAnchor: action.input.fromAnchor } : {}),
+          ...(action.input.toAnchor !== undefined ? { toAnchor: action.input.toAnchor } : {}),
           // label 后编辑：id 提供经 IPC 更新（缺省键不进载荷）
           ...(action.input.id !== undefined ? { id: action.input.id } : {})
         })
@@ -408,7 +447,7 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         if (e instanceof ApiClientError && e.code === 'CONFLICT') {
           // 拒绝型：永不成功——丢弃继续（不卡队头不误报脏），reason 透传 toast
           conflictDropped = true
-          writeFailToast(action, e.message)
+          writeFailToast(e.message)
           set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
           continue
         }
@@ -416,7 +455,7 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         const message = e instanceof Error ? e.message : String(e)
         inflight = null
         set({ saveStatus: 'error', lastWriteError: message, flushing: false })
-        writeFailToast(action, message)
+        writeFailToast(message)
         return
       }
       inflight = null

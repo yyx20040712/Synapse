@@ -26,7 +26,7 @@ export function EdgeHandles(props: {
   /** 穿卡警示命中段（全链段序——data-edge-warn e2e 软断言锚） */
   warnSegs: number[]
   /** reconnect 预览端（null=非 reconnect） */
-  reconnectEnd: 'from' | 'to' | null
+  draggingEnd: 'from' | 'to' | null
   onVertexDown(idx: number, button: number, pt: Pt): void
   onVertexContext(idx: number, ev: { clientX: number; clientY: number }): void
   onEndDown(end: 'from' | 'to', button: number): void
@@ -86,7 +86,7 @@ export function EdgeHandles(props: {
               props.onEndDown(end, e.button)
             }}
             style={{ pointerEvents: 'all', cursor: 'grab' }}
-            data-active={props.reconnectEnd === end ? '1' : undefined}
+            data-active={props.draggingEnd === end ? '1' : undefined}
             data-anchor={String(i)}
           />
         )

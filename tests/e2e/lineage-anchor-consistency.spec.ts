@@ -12,18 +12,13 @@
  *   |dx|≥|dy| 取横并列取横+侧内投影 ¼/½/¾ 最近并列取小序）**镜像重实现**
  *   于 in-page evaluate——禁 import anchors.ts（契约=路由行为契约）。
  *
- * ── R-零跳动（D 修复回归锁）──
+ * ── R-零跳动（[F-VISFB-66] 钉定基座改写）──
  * 画线拖拽末帧读 draw-preview line x1/y1/x2/y2（内容坐标 attribute）→up 建边
- * →断言新边 path 首末点与预览两端各距 ≤0.5px（两端零跳动——所见即所得）。
- * 场景=无先占边（AnchorUse 散开面排除）+主向竖向族几何（竖向跨月/横邻/
- * 斜跨〔竖向主向〕）：direct 锚=selectAnchor 同函数同参；h-slip 近侧
- * sideAnchor≡横向主向 selectAnchor；band 竖向定边 sideAnchor(bottom/top)
- * ≡竖向主向 selectAnchor（P5 探针 S1 实测 route=band 末锚 top¼=投影结果
- * 同参印证）——三态首末锚均与预览规则锚同源故零跳动可断。[F-SLOTGRID-01
- * U2 修订] corridor/fallback 恒右缘条款随走廊退役（INV-119 承诺域重述=
- * 坐标集封闭+overlap 确定性）：兜底态=overlap（锚=direct 判别锚——同柱对
- * x 相等时首段仍竖向=外法线，零跳动承诺维持）；散开态（多边同锚）=域外
- * 沿承。
+ * →断言新边 path 首末点与预览两端各距 ≤0.5px。钉定模型下两端零跳动=
+ * **结构性承诺**：预览起点恒=按下锚、终点=命中锚；落边双端=同两锚（持久
+ * 化钉定→装配→routeAll 直取）——同锚恒等不再依赖「预览模拟 selectAnchor
+ * 规则」的同源耦合（裁决 D 翻案：两端锚用户钉定，预览不 morph）。from 侧
+ * 恒等新增格：mid-drag 掠动后 x1 恒=按下锚。散开态（多边同锚）=域外沿承。
  *
  * ── R-锚级一致（C2 挂账销项——六态矩阵以实测 route 断言〔设计 v1.2 勘正③〕）──
  * 播种 direct 意图/h-slip/band/corridor/manual-override（via 直写两相——
@@ -133,61 +128,27 @@ async function contentOrigin(win: Page): Promise<{ left: number; top: number; z:
 }
 
 /**
- * 金标 Oracle 镜像（设计 §3.3——禁 import anchors.ts，路由规则镜像）：
- * selectAnchor 主向定边+侧内投影最近定序（并列取小序）。
+ * [F-VISFB-66] 钉定画线手势：源卡右中锚按下→move 至目标卡左中锚（两锚
+ * 均为刻意按落位——非规则锚）→返回末帧预览两端与两锚期望（own 域）。
  */
-function oracleSelectAnchor(r: { x: number; y: number; w: number; h: number }, toward: { x: number; y: number }): { x: number; y: number } {
-  const dx = toward.x - (r.x + r.w / 2)
-  const dy = toward.y - (r.y + r.h / 2)
-  const horizontal = Math.abs(dx) >= Math.abs(dy)
-  const fr = [0.25, 0.5, 0.75]
-  if (horizontal) {
-    const y0 = r.y
-    let best = 0
-    let bestD = Math.abs(toward.y - y0 - r.h * fr[0]!)
-    for (let s = 1; s <= 2; s++) {
-      const d = Math.abs(toward.y - y0 - r.h * fr[s]!)
-      if (d < bestD) {
-        best = s
-        bestD = d
-      }
-    }
-    return dx >= 0 ? { x: r.x + r.w, y: r.y + r.h * fr[best]! } : { x: r.x, y: r.y + r.h * fr[best]! }
-  }
-  let best = 0
-  let bestD = Math.abs(toward.x - r.x - r.w * fr[0]!)
-  for (let s = 1; s <= 2; s++) {
-    const d = Math.abs(toward.x - r.x - r.w * fr[s]!)
-    if (d < bestD) {
-      best = s
-      bestD = d
-    }
-  }
-  return dy >= 0 ? { x: r.x + r.w * fr[best]!, y: r.y + r.h } : { x: r.x + r.w * fr[best]!, y: r.y }
-}
-
-/** 画线手势：源卡右中锚起拖→move 至目标卡规则锚（金标镜像预定位）→返回末帧预览端点（内容坐标） */
 async function dragPreviewEnds(
   win: Page,
   srcTitle: string,
   tgtTitle: string
-): Promise<{ x1: number; y1: number; x2: number; y2: number; fromExp: { x: number; y: number }; snapExp: { x: number; y: number } }> {
+): Promise<{ x1: number; y1: number; x2: number; y2: number; fromAnchor: { x: number; y: number }; toAnchor: { x: number; y: number } }> {
   await win.getByTestId('lineage-mode-edit').click()
   await win.getByTestId('lineage-tool-solid').click()
   await win.locator('.tl-card', { hasText: srcTitle }).first().scrollIntoViewIfNeeded()
   await win.locator('.tl-card', { hasText: tgtTitle }).first().scrollIntoViewIfNeeded()
   const src = await cardContentRect(win, srcTitle)
   const tgt = await cardContentRect(win, tgtTitle)
-  const snapExp = oracleSelectAnchor(tgt, { x: src.x + src.w / 2, y: src.y + src.h / 2 })
-  const fromExp = oracleSelectAnchor(src, { x: tgt.x + tgt.w / 2, y: tgt.y + tgt.h / 2 })
+  // 按下锚=源右中；落点锚=目标左中（钉定模型：两锚即端点）
+  const fromAnchor = { x: src.x + src.w, y: src.y + src.h / 2 }
+  const toAnchor = { x: tgt.x, y: tgt.y + tgt.h / 2 }
   const o = await contentOrigin(win)
-  // 起拖=源卡右中锚近旁（12 锚全域可起拖——合法手势入口）
-  const srcAnchorScreen = { x: o.left + (src.x + src.w) * o.z - 2, y: o.top + (src.y + src.h / 2) * o.z }
-  // move 落点=目标卡规则锚（预览实时显示最终锚位——所见即所得）
-  const tgtScreen = { x: o.left + snapExp.x * o.z, y: o.top + snapExp.y * o.z }
-  await win.mouse.move(srcAnchorScreen.x, srcAnchorScreen.y)
+  await win.mouse.move(o.left + fromAnchor.x * o.z - 2, o.top + fromAnchor.y * o.z)
   await win.mouse.down()
-  await win.mouse.move(tgtScreen.x, tgtScreen.y, { steps: 8 })
+  await win.mouse.move(o.left + toAnchor.x * o.z + 3, o.top + (toAnchor.y - 2) * o.z, { steps: 8 })
   const ends = await win
     .getByTestId('draw-preview')
     .locator('line')
@@ -197,7 +158,7 @@ async function dragPreviewEnds(
       x2: Number(el.getAttribute('x2')),
       y2: Number(el.getAttribute('y2'))
     }))
-  return { ...ends, fromExp, snapExp }
+  return { ...ends, fromAnchor, toAnchor }
 }
 
 /** 收尾保存（落边 dirty→保存防 quit 拦截——lineage.spec C2b 同型） */
@@ -208,74 +169,6 @@ async function saveAndClose(win: Page, app: Awaited<ReturnType<typeof launch>>):
     await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
   }
   await app.close()
-}
-
-/**
- * 锚级一致断言体（R-锚级一致各态共用——in-page 全量取数+Node 侧断言）：
- * - 每边 data-route 非空；
- * - path 首末点（getPointAtLength 0/total——用户坐标即内容坐标）对持卡 rect：
- *   法向距 ≤1（点到边线段最近距）+沿框命中 ¼/½/¾ 位 ±1；
- * - 带桩族（band/corridor/fallback）首段方向沿命中边外法线 |sin|≤0.0349（±2°）。
- */
-async function expectAnchorConsistency(
-  win: Page,
-  edges: Array<{ fromTitle: string; toTitle: string }>,
-  tag: string
-): Promise<void> {
-  const z = await contentZ(win)
-  const data = await win.evaluate(() => {
-    const paths = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')) as SVGPathElement[]
-    return paths.map((p) => {
-      const total = p.getTotalLength()
-      const p0 = p.getPointAtLength(0)
-      const p1 = p.getPointAtLength(2)
-      const pe = p.getPointAtLength(total)
-      return {
-        route: p.dataset.route ?? '',
-        first: { x: p0.x, y: p0.y },
-        last: { x: pe.x, y: pe.y },
-        dir: { x: p1.x - p0.x, y: p1.y - p0.y }
-      }
-    })
-  })
-  expect(data.length, `${tag}：边数=播种数`).toBe(edges.length)
-  for (let i = 0; i < edges.length; i++) {
-    const e = data[i]!
-    expect(e.route, `${tag} 边${i} data-route 非空卫（缺席即红）`).not.toBe('')
-    const from = await cardContentRect(win, edges[i]!.fromTitle)
-    const to = await cardContentRect(win, edges[i]!.toTitle)
-    // [F-SLOTGRID-01 U2] 带桩族=band/detour（出桩外法线形态）；overlap=L 形
-  // 直角接入（x 相等时竖向=外法线成立，H 先形态首段横向=非外法线——域外
-  // 申报：INV-119 承诺域=坐标集封闭+overlap 确定性）
-  const stubFamily = e.route === 'band' || e.route === 'detour'
-    for (const [end, rect, label] of [
-      [e.first, from, '首点↔from 卡'],
-      [e.last, to, '末点↔to 卡']
-    ] as Array<[{ x: number; y: number }, { x: number; y: number; w: number; h: number }, string]>) {
-      // 法向：点到四边线段最近距（点在框上——12 锚体系端点恒落框）
-      const sides: Array<{ key: string; dist: number; along: number; span: number }> = [
-        { key: 'top', dist: Math.abs(end.y - rect.y), along: end.x - rect.x, span: rect.w },
-        { key: 'bottom', dist: Math.abs(end.y - (rect.y + rect.h)), along: end.x - rect.x, span: rect.w },
-        { key: 'left', dist: Math.abs(end.x - rect.x), along: end.y - rect.y, span: rect.h },
-        { key: 'right', dist: Math.abs(end.x - (rect.x + rect.w)), along: end.y - rect.y, span: rect.h }
-      ]
-      const near = sides.filter((s) => s.along >= -1 && s.along <= s.span + 1).sort((a, b) => a.dist - b.dist)[0]
-      if (near === undefined) throw new Error(`${tag} 边${i} ${label}：端点 (${end.x},${end.y}) 不在任何边段投影域（rect=${JSON.stringify(rect)} z=${z}）`)
-      expect(near.dist, `${tag} 边${i} ${label}（${e.route}）法向距 ≤1（端点恒落卡框）`).toBeLessThanOrEqual(1)
-      const fr = [0.25, 0.5, 0.75]
-      const alongBest = Math.min(...fr.map((f) => Math.abs(near.along - near.span * f)))
-      expect(alongBest, `${tag} 边${i} ${label}（${e.route}）沿框命中 ¼/½/¾ 位 ±1`).toBeLessThanOrEqual(1)
-      if (stubFamily) {
-        // 首段方向沿命中边外法线（仅首端——出桩段；±2°）
-        if (label === '首点↔from 卡') {
-          const nrm = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[near.key as 'top' | 'bottom' | 'left' | 'right']!
-          const len = Math.hypot(e.dir.x, e.dir.y)
-          const sin = Math.abs((e.dir.x * nrm.y - e.dir.y * nrm.x) / len)
-          expect(sin, `${tag} 边${i}（${e.route}）首段方向沿 ${near.key} 边外法线 |sin|≤0.0349（±2°）`).toBeLessThanOrEqual(0.0349)
-        }
-      }
-    }
-  }
 }
 
 test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）', () => {
@@ -309,12 +202,25 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     const win = await app.firstWindow()
     await openLineage(win, '竖向源卡')
     const ends = await dragPreviewEnds(win, '竖向源卡', '竖向目标卡')
-    // 预览末帧=规则锚（金标镜像——预览所见即路由所得；直连族：源卡
-    // 须滚动可见——6 卡跨三行占位链）
-    expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚（fromEff）').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚（fromEff）').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚（snap）').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚（snap）').toBeLessThanOrEqual(0.5)
+    // [F-VISFB-66] 预览末帧=两钉定锚（按下锚/命中锚——源卡须滚动可见：6 卡跨三行占位链）
+    expect(Math.abs(ends.x1 - ends.fromAnchor.x), '预览起点 x=按下锚（恒定）').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y1 - ends.fromAnchor.y), '预览起点 y=按下锚（恒定）').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.x2 - ends.toAnchor.x), '预览吸附端 x=命中锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y2 - ends.toAnchor.y), '预览吸附端 y=命中锚').toBeLessThanOrEqual(0.5)
+    // [F-VISFB-66] from 侧恒等新增格：掠离命中锚后 x1/y1 恒=按下锚（钉定端
+    // 不随 move 重算——fromEff morph 面已删）
+    const o = await contentOrigin(win)
+    const fromAnchor = ends.fromAnchor
+    await win.mouse.move(o.left + 400 * o.z, o.top + 520 * o.z, { steps: 4 })
+    const endsAfter = await win
+      .getByTestId('draw-preview')
+      .locator('line')
+      .evaluate((el) => ({ x1: Number(el.getAttribute('x1')), y1: Number(el.getAttribute('y1')) }))
+    expect(Math.abs(endsAfter.x1 - fromAnchor.x), '掠动后预览起点 x 仍=按下锚（恒定）').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(endsAfter.y1 - fromAnchor.y), '掠动后预览起点 y 仍=按下锚（恒定）').toBeLessThanOrEqual(0.5)
+    // 回目标锚再松手（掠动段=恒等观测，非落点——落点回命中锚）
+    const tgt2 = { x: o.left + ends.toAnchor.x * o.z, y: o.top + ends.toAnchor.y * o.z }
+    await win.mouse.move(tgt2.x + 3, tgt2.y - 2, { steps: 4 })
     await win.mouse.up()
     await waitForPaths(win, 1)
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
@@ -348,10 +254,10 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     const win = await app.firstWindow()
     await openLineage(win, '横邻源卡')
     const ends = await dragPreviewEnds(win, '横邻源卡', '横邻目标卡')
-    expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.x1 - ends.fromAnchor.x), '预览起点 x=按下锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y1 - ends.fromAnchor.y), '预览起点 y=按下锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.x2 - ends.toAnchor.x), '预览吸附端 x=命中锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y2 - ends.toAnchor.y), '预览吸附端 y=命中锚').toBeLessThanOrEqual(0.5)
     await win.mouse.up()
     await waitForPaths(win, 1)
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
@@ -397,10 +303,10 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     const win = await app.firstWindow()
     await openLineage(win, '斜跨源卡')
     const ends = await dragPreviewEnds(win, '斜跨源卡', '斜跨目标卡')
-    expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚').toBeLessThanOrEqual(0.5)
-    expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.x1 - ends.fromAnchor.x), '预览起点 x=按下锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y1 - ends.fromAnchor.y), '预览起点 y=按下锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.x2 - ends.toAnchor.x), '预览吸附端 x=命中锚').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(ends.y2 - ends.toAnchor.y), '预览吸附端 y=命中锚').toBeLessThanOrEqual(0.5)
     await win.mouse.up()
     await waitForPaths(win, 1)
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
@@ -418,10 +324,99 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
   })
 
   /**
-   * R-锚级一致①direct 意图：竖向对齐意图边（瀑布错位下 direct 结构性稀缺——
-   * 以实测 route 断言〔设计 v1.2 勘正③〕，zoom 三档恒等）。
+   * [F-VISFB-66] R-锚级①-⑤改写=落端钉定锚×5（等势置换：同点数同强度换
+   * 基座——豁免#8 置换说明附档）：种子边经 spec 直写锚列（better-sqlite3
+   * ——迁移 025 列），断言路径首末点=两钉定锚几何点 ±1（zoom 三档恒等）；
+   * route 实测非空卫沿承（钉定端直取仍走五态链——走线仍自动）。
    */
-  test('R-锚级一致①direct 意图：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）', async () => {
+  const seedPinned = async (
+    userData: string,
+    fromTitle: string,
+    toTitle: string,
+    fa: { side: string; slot: number },
+    ta: { side: string; slot: number }
+  ): Promise<void> => {
+    const wsDb = join(userData, 'workspaces', 'default', 'synapse.db')
+    const db = new Database(existsSync(wsDb) ? wsDb : join(userData, 'synapse.db'))
+    try {
+      const res = db
+        .prepare(
+          `UPDATE lineage_edges SET from_anchor = ?, to_anchor = ?
+           WHERE id IN (
+             SELECT e.id FROM lineage_edges e
+             JOIN lineage_nodes fn ON fn.id = e.from_node
+             JOIN lineage_nodes tn ON tn.id = e.to_node
+             WHERE fn.title = ? AND tn.title = ?
+           )`
+        )
+        .run(JSON.stringify(fa), JSON.stringify(ta), fromTitle, toTitle)
+      if (res.changes !== 1) throw new Error(`锚列直写 ${res.changes} 行（期望 1）`)
+    } finally {
+      db.close()
+    }
+  }
+
+  /**
+   * 钉定端点断言体（[回炉 R4] 恢复强度）：每案预期路由态断言+首末点=
+   * anchorPoint ±1（own 域）+带桩族（band/detour）首段沿命中边外法线
+   * |sin|≤0.0349（±2°——v1.2 随裁修正①）。
+   */
+  const expectPinnedEndpoints = async (
+    win: Page,
+    spec: Array<{
+      fromTitle: string
+      toTitle: string
+      fa: { side: string; slot: number }
+      ta: { side: string; slot: number }
+      /** 预期路由态（undefined=非空卫；数组=限定族） */
+      expectRoute?: string | string[]
+    }>,
+    tag: string
+  ): Promise<void> => {
+    const ends = await win.evaluate(() => {
+      const paths = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')) as SVGPathElement[]
+      return paths.map((p) => {
+        const total = p.getTotalLength()
+        const p0 = p.getPointAtLength(0)
+        const p1 = p.getPointAtLength(2)
+        const pe = p.getPointAtLength(total)
+        return { route: p.dataset.route ?? '', first: { x: p0.x, y: p0.y }, last: { x: pe.x, y: pe.y }, dir: { x: p1.x - p0.x, y: p1.y - p0.y } }
+      })
+    })
+    expect(ends.length, `${tag}：边数=播种数`).toBe(spec.length)
+    const ptOf = (r: { x: number; y: number; w: number; h: number }, side: string, slot: number): { x: number; y: number } => {
+      const f = [0.25, 0.5, 0.75][slot]!
+      if (side === 'top') return { x: r.x + r.w * f, y: r.y }
+      if (side === 'bottom') return { x: r.x + r.w * f, y: r.y + r.h }
+      if (side === 'left') return { x: r.x, y: r.y + r.h * f }
+      return { x: r.x + r.w, y: r.y + r.h * f }
+    }
+    for (let i = 0; i < spec.length; i++) {
+      const e = ends[i]!
+      const sp = spec[i]!
+      if (typeof sp.expectRoute === 'string') {
+        expect(e.route, `${tag} 边${i} route=${sp.expectRoute}（[回炉 R4] 预期路由态恢复）`).toBe(sp.expectRoute)
+      } else if (Array.isArray(sp.expectRoute)) {
+        expect(sp.expectRoute, `${tag} 边${i} route=${e.route}∈限定族`).toContain(e.route)
+      } else {
+        expect(e.route, `${tag} 边${i} data-route 非空卫（钉定端直取仍走五态链）`).not.toBe('')
+      }
+      const from = await cardContentRect(win, sp.fromTitle)
+      const to = await cardContentRect(win, sp.toTitle)
+      const fa = ptOf(from, sp.fa.side, sp.fa.slot)
+      const ta = ptOf(to, sp.ta.side, sp.ta.slot)
+      expect(Math.hypot(e.first.x - fa.x, e.first.y - fa.y), `${tag} 边${i}（${e.route}）首点=from 钉定锚 ±1`).toBeLessThanOrEqual(1)
+      expect(Math.hypot(e.last.x - ta.x, e.last.y - ta.y), `${tag} 边${i}（${e.route}）末点=to 钉定锚 ±1`).toBeLessThanOrEqual(1)
+      if (e.route === 'band' || e.route === 'detour') {
+        const nrm = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[sp.fa.side as 'top' | 'bottom' | 'left' | 'right']!
+        const len = Math.hypot(e.dir.x, e.dir.y)
+        const sin = Math.abs((e.dir.x * nrm.y - e.dir.y * nrm.x) / len)
+        expect(sin, `${tag} 边${i}（${e.route}）首段沿 ${sp.fa.side} 边外法线 |sin|≤0.0349（±2°）`).toBeLessThanOrEqual(0.0349)
+      }
+    }
+  }
+
+  test('R-锚级一致①（钉定基座）：直意对落端=钉定锚（zoom 1.0/0.8/1.5）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r1-'))
     await seedFixture(userData, ['af-c1-a', 'af-c1-b'], ['直意甲', '直意乙'], {
@@ -431,28 +426,29 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       ],
       edges: [{ from: 'af-c1-a', to: 'af-c1-b', label: '' }]
     })
+    await seedPinned(userData, '直意甲', '直意乙', { side: 'bottom', slot: 2 }, { side: 'top', slot: 0 })
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '直意甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    // 实测 route 登记（direct 意图在瀑布错位下实测落 band 合法——断言族按实测分派）
+    // [S15] 预期态固化：该夹具（5月→6月跨月直列+钉定 ¾→¼ 错列）真实基线=
+    // 'overlap'（钉定错列 x 不等→direct/detour 门不入；band 带封闭→兜底态。
+    // 探针实测定死——禁启动时实测自引用；变异路由器即红）
+    expect(route0, 'R1 route=overlap（固定字面值——夹具真实基线族 [S15]）').toBe('overlap')
     await zoomProbe(win, 1.0, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '直意甲', toTitle: '直意乙' }], `R1 z=1.0 route=${route0}`)
+      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=1.0')
     })
     await zoomProbe(win, 0.8, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '直意甲', toTitle: '直意乙' }], `R1 z=0.8 route=${route0}`)
+      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=0.8')
     })
     await zoomProbe(win, 1.5, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '直意甲', toTitle: '直意乙' }], `R1 z=1.5 route=${route0}`)
+      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=1.5')
     })
     await app.close()
   })
 
-  /**
-   * R-锚级一致②h-slip：同月横邻边（无桩族——端点=锚直落）。
-   */
-  test('R-锚级一致②h-slip：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）', async () => {
+  test('R-锚级一致②（钉定基座）：横邻对落端=钉定锚（zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r2-'))
     await seedFixture(userData, ['af-c2-a', 'af-c2-b'], ['横邻甲', '横邻乙'], {
@@ -462,63 +458,50 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       ],
       edges: [{ from: 'af-c2-a', to: 'af-c2-b', label: '' }]
     })
+    await seedPinned(userData, '横邻甲', '横邻乙', { side: 'right', slot: 1 }, { side: 'left', slot: 1 })
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '横邻甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R2 实测 route=h-slip（横邻缝直连——route-slots R3 型几何）').toBe('h-slip')
-    await zoomProbe(win, 1.0, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙' }], 'R2 z=1.0')
-    })
-    await zoomProbe(win, 0.8, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙' }], 'R2 z=0.8')
-    })
-    await zoomProbe(win, 1.5, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙' }], 'R2 z=1.5')
-    })
+    expect(route0, 'R2 实测 route=h-slip（横邻缝直连——[回炉 R4] 恢复预期态）').toBe('h-slip')
+    for (const z of [1.0, 0.8, 1.5]) {
+      await zoomProbe(win, z, async () => {
+        await expectPinnedEndpoints(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙', fa: { side: 'right', slot: 1 }, ta: { side: 'left', slot: 1 }, expectRoute: 'h-slip' }], `R2 z=${z}`)
+      })
+    }
     await app.close()
   })
 
-  /**
-   * R-锚级一致③band（带桩族）：障碍卡拦直连→带路由（route-slots R1 型）——
-   * 端点+首段方向沿外法线。
-   */
-  test('R-锚级一致③band：端点恒落 12 锚体系+首段外法线（zoom 三档）', async () => {
+  test('R-锚级一致③（钉定基座）：带桩族（双障夹中——band）落端=钉定锚+首段外法线（zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r3-'))
-    await seedFixture(userData, ['af-c3-a', 'af-c3-o', 'af-c3-b'], ['带桩甲', '带桩障', '带桩乙'], {
+    await seedFixture(userData, ['af-c3-a', 'af-c3-o1', 'af-c3-o2', 'af-c3-b'], ['带桩甲', '带桩障一', '带桩障二', '带桩乙'], {
       nodes: [
         { paperId: 'af-c3-a', title: '带桩甲', year: 2020, month: 5, slot: 1 },
-        { paperId: 'af-c3-o', title: '带桩障', year: 2020, month: 6, slot: 1 },
+        { paperId: 'af-c3-o1', title: '带桩障一', year: 2020, month: 6, slot: 0 },
+        { paperId: 'af-c3-o2', title: '带桩障二', year: 2020, month: 6, slot: 2 },
         { paperId: 'af-c3-b', title: '带桩乙', year: 2020, month: 7, slot: 1 }
       ],
       edges: [{ from: 'af-c3-a', to: 'af-c3-b', label: '' }]
     })
+    // 钉定：fa=b1/ta=t2（探针实证 band 可达槽对——t1 被月标注带拦）
+    await seedPinned(userData, '带桩甲', '带桩乙', { side: 'bottom', slot: 1 }, { side: 'top', slot: 2 })
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '带桩甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R3 实测 route=band（障碍拦直连散开承接——route-slots R1 型；[F-SLOTGRID-01 U2] 网格通道横移）').toBe('band')
-    await zoomProbe(win, 1.0, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙' }], 'R3 z=1.0')
-    })
-    await zoomProbe(win, 0.8, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙' }], 'R3 z=0.8')
-    })
-    await zoomProbe(win, 1.5, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙' }], 'R3 z=1.5')
-    })
+    expect(route0, 'R3 实测 route=band（[回炉 R4] 恢复预期态——钉定=b1/t2 探针实证可达槽）').toBe('band')
+    for (const z of [1.0, 0.8, 1.5]) {
+      await zoomProbe(win, z, async () => {
+        await expectPinnedEndpoints(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙', fa: { side: 'bottom', slot: 1 }, ta: { side: 'top', slot: 2 }, expectRoute: 'band' }], `R3 z=${z}`)
+      })
+    }
     await app.close()
   })
 
-  /**
-   * R-锚级一致④跨年绕行（[F-SLOTGRID-01 U2] corridor 退役→绕行族 band/
-   * detour 承接——route-slots R2 型；兜底 overlap 亦可态〔端点锚=direct
-   * 判别锚恒落 12 锚〕）。
-   */
-  test('R-锚级一致④跨年绕行：端点恒落 12 锚体系（U2 绕行族 band/detour——zoom 三档）', async () => {
+  test('R-锚级一致④（钉定基座）：跨年绕行族落端=钉定锚（zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r4-'))
     await seedFixture(userData, ['af-c4-a', 'af-c4-o', 'af-c4-b'], ['跨年甲', '跨年障', '跨年乙'], {
@@ -529,29 +512,22 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       ],
       edges: [{ from: 'af-c4-a', to: 'af-c4-b', label: '' }]
     })
+    await seedPinned(userData, '跨年甲', '跨年乙', { side: 'bottom', slot: 0 }, { side: 'top', slot: 2 })
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '跨年甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(['band', 'detour'], `R4 实测 route=${route0}（跨年绕行族——route-slots R2 型，U2 五态域）`).toContain(route0)
-    await zoomProbe(win, 1.0, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙' }], 'R4 z=1.0')
-    })
-    await zoomProbe(win, 0.8, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙' }], 'R4 z=0.8')
-    })
-    await zoomProbe(win, 1.5, async () => {
-      await expectAnchorConsistency(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙' }], 'R4 z=1.5')
-    })
+    expect(['band', 'detour'], `R4 实测 route=${route0}（跨年绕行族——[回炉 R4] 收回放宽）`).toContain(route0)
+    for (const z of [1.0, 0.8, 1.5]) {
+      await zoomProbe(win, z, async () => {
+        await expectPinnedEndpoints(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙', fa: { side: 'bottom', slot: 0 }, ta: { side: 'top', slot: 2 }, expectRoute: ['band', 'detour'] }], `R4 z=${z}`)
+      })
+    }
     await app.close()
   })
 
-  /**
-   * R-锚级一致⑤manual-override（无桩族）：via 直写两相（route-slots R4 型——
-   * 一次 launch 量几何→关→spec 直写 via→二次 launch 冷读）。
-   */
-  test('R-锚级一致⑤manual-override via 直写：端点恒落 12 锚体系（zoom 三档）', async () => {
+  test('R-锚级一致⑤（钉定基座）：manual-override via 直写+钉定锚（优先级=钉定＞主向——W-04 e2e 面）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r5-'))
     await seedFixture(userData, ['af-c5-a', 'af-c5-b'], ['手动甲', '手动乙'], {
@@ -561,52 +537,50 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       ],
       edges: [{ from: 'af-c5-a', to: 'af-c5-b', label: '' }]
     })
-    // 相位一：量两卡内容 rect（via 锚定=selectAnchor(src, via[0]) 同源——
-    // via 点取卡外左/右 ½ 电平投影位）
+    // 相位一：量两卡内容 rect
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '手动甲')
     const [ra, rb] = await Promise.all([cardContentRect(win, '手动甲'), cardContentRect(win, '手动乙')])
     await app.close()
-    // 相位二：直写 via（轴对齐两点同 y=源卡中电平；via[0].x<源中心→左 ½、
-    // via[1].x>目标中心→右 ½——route-slots R4 锚定语义同型）
+    // 相位二：直写 via+钉定锚（from=左 ½/to=右 ½——非主向规则锚=判别位）
     const wsDb = join(userData, 'workspaces', 'default', 'synapse.db')
     const db = new Database(existsSync(wsDb) ? wsDb : join(userData, 'synapse.db'))
     try {
       const res = db
         .prepare(
-          `UPDATE lineage_edges SET via = ?
+          `UPDATE lineage_edges SET via = ?, from_anchor = ?, to_anchor = ?
            WHERE id IN (
              SELECT e.id FROM lineage_edges e
              JOIN lineage_nodes fn ON fn.id = e.from_node
              JOIN lineage_nodes tn ON tn.id = e.to_node
-             WHERE fn.paper_id = 'af-c5-a' AND tn.paper_id = 'af-c5-b'
+             WHERE fn.title = '手动甲' AND tn.title = '手动乙'
            )`
         )
-        .run(JSON.stringify([
-          { x: ra.x - 60, y: ra.y + ra.h / 2 },
-          { x: rb.x + rb.w + 60, y: rb.y + rb.h / 2 }
-        ]))
-      if (res.changes !== 1) throw new Error(`R5：via 写入 ${res.changes} 行（期望 1）`)
+        .run(
+          JSON.stringify([
+            { x: ra.x - 60, y: ra.y + ra.h / 2 },
+            { x: rb.x + rb.w + 60, y: rb.y + rb.h / 2 }
+          ]),
+          JSON.stringify({ side: 'left', slot: 1 }),
+          JSON.stringify({ side: 'right', slot: 1 })
+        )
+      if (res.changes !== 1) throw new Error(`R5：via+锚写入 ${res.changes} 行（期望 1）`)
     } finally {
       db.close()
     }
-    // 相位三：二次 launch 冷读→manual-override 锚级断言（zoom 三档）
+    // 相位三：二次 launch 冷读→manual-override 钉定端点断言（zoom 三档）
     const app2 = await launch(userData)
     const win2 = await app2.firstWindow()
     await openLineage(win2, '手动甲')
     await waitForPaths(win2, 1)
     const route0 = await win2.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
     expect(route0, 'R5 实测 route=manual-override（via 冷读）').toBe('manual-override')
-    await zoomProbe(win2, 1.0, async () => {
-      await expectAnchorConsistency(win2, [{ fromTitle: '手动甲', toTitle: '手动乙' }], 'R5 z=1.0')
-    })
-    await zoomProbe(win2, 0.8, async () => {
-      await expectAnchorConsistency(win2, [{ fromTitle: '手动甲', toTitle: '手动乙' }], 'R5 z=0.8')
-    })
-    await zoomProbe(win2, 1.5, async () => {
-      await expectAnchorConsistency(win2, [{ fromTitle: '手动甲', toTitle: '手动乙' }], 'R5 z=1.5')
-    })
+    for (const z of [1.0, 0.8, 1.5]) {
+      await zoomProbe(win2, z, async () => {
+        await expectPinnedEndpoints(win2, [{ fromTitle: '手动甲', toTitle: '手动乙', fa: { side: 'left', slot: 1 }, ta: { side: 'right', slot: 1 }, expectRoute: 'manual-override' }], `R5 z=${z}`)
+      })
+    }
     await app2.close()
   })
 })
@@ -630,6 +604,25 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
       ],
       edges: [{ from: 'af-o1-a', to: 'af-o1-b', label: '' }]
     })
+    // [F-VISFB-66] 扩展：钉定锚预注册占用（§F——routeAll 阶段 0 pin→dot 高亮）
+    const wsDb0 = join(userData, 'workspaces', 'default', 'synapse.db')
+    const db0 = new Database(existsSync(wsDb0) ? wsDb0 : join(userData, 'synapse.db'))
+    try {
+      const r0 = db0
+        .prepare(
+          `UPDATE lineage_edges SET from_anchor = ?, to_anchor = ?
+           WHERE id IN (
+             SELECT e.id FROM lineage_edges e
+             JOIN lineage_nodes fn ON fn.id = e.from_node
+             JOIN lineage_nodes tn ON tn.id = e.to_node
+             WHERE fn.paper_id = 'af-o1-a' AND tn.paper_id = 'af-o1-b'
+           )`
+        )
+        .run(JSON.stringify({ side: 'bottom', slot: 1 }), JSON.stringify({ side: 'top', slot: 1 }))
+      if (r0.changes !== 1) throw new Error(`1c 钉定直写 ${r0.changes} 行（期望 1）`)
+    } finally {
+      db0.close()
+    }
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '占协甲')
@@ -679,6 +672,7 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
       // 逐锚协同（data-anchors 每锚↔dot 占用标记）+无锚不挂（集精确相等）
       expect(got, `1c 卡 ${nodeId} 占用标记集=期望（逐锚协同+无锚不挂）`).toEqual([...marks].sort())
     }
+
     // ⑤b 视觉存证（env 门控——CI 未设即跳过）
     const shotDir = process.env.SYNAPSE_SHOT_DIR
     if (shotDir !== undefined && shotDir !== '') {
@@ -694,6 +688,60 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
     if (shotDir !== undefined && shotDir !== '') {
       await win.screenshot({ path: join(shotDir, 'b1c-shot-hover.png') })
     }
+    await app.close()
+  })
+
+  /**
+   * [F-VISFB-66 §F 扩展+回炉 R14-①] 钉定注册占用直证（独立用例——基线 1c
+   * 增强断言外迁：routeAll 阶段 0 pin→dot 避让可见性）。
+   */
+  test('1c 钉定注册占用直证：钉定锚 dot（b1/t1）恒挂 data-occupied（[F-VISFB-66] 扩展）', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'anchfix-1c-pin-'))
+    await seedFixture(userData, ['af-o2-a', 'af-o2-b'], ['钉占甲', '钉占乙'], {
+      nodes: [
+        { paperId: 'af-o2-a', title: '钉占甲', year: 2020, month: 5, slot: 1 },
+        { paperId: 'af-o2-b', title: '钉占乙', year: 2020, month: 7, slot: 1 }
+      ],
+      edges: [{ from: 'af-o2-a', to: 'af-o2-b', label: '' }]
+    })
+    const wsDb = join(userData, 'workspaces', 'default', 'synapse.db')
+    const db = new Database(existsSync(wsDb) ? wsDb : join(userData, 'synapse.db'))
+    try {
+      const r0 = db
+        .prepare(
+          `UPDATE lineage_edges SET from_anchor = ?, to_anchor = ?
+           WHERE id IN (
+             SELECT e.id FROM lineage_edges e
+             JOIN lineage_nodes fn ON fn.id = e.from_node
+             JOIN lineage_nodes tn ON tn.id = e.to_node
+             WHERE fn.paper_id = 'af-o2-a' AND tn.paper_id = 'af-o2-b'
+           )`
+        )
+        .run(JSON.stringify({ side: 'bottom', slot: 1 }), JSON.stringify({ side: 'top', slot: 1 }))
+      if (r0.changes !== 1) throw new Error(`钉定直写 ${r0.changes} 行（期望 1）`)
+    } finally {
+      db.close()
+    }
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await openLineage(win, '钉占甲')
+    await waitForPaths(win, 1)
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    await expect
+      .poll(async () => await win.evaluate(() => document.querySelectorAll('.card-anchor-dot[data-occupied="1"]').length), { timeout: 10_000 })
+      .toBeGreaterThan(0)
+    const pinned = await win.evaluate(() => {
+      const out: string[] = []
+      for (const d of Array.from(document.querySelectorAll('.card-anchor-dot[data-occupied="1"]'))) {
+        const el = d as HTMLElement
+        if (el.dataset.anchorSide === 'bottom' && el.dataset.anchorSlot === '1') out.push('b1')
+        if (el.dataset.anchorSide === 'top' && el.dataset.anchorSlot === '1') out.push('t1')
+      }
+      return out.sort()
+    })
+    expect(pinned, '钉定锚 dot 占用直证（b1/t1 双在场——阶段 0 pin）').toEqual(['b1', 't1'])
     await app.close()
   })
 })

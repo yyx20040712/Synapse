@@ -36,7 +36,7 @@ export function EdgeMenuHost(props: {
       onReset={() => {
         // [回炉 R19] 自动线（via 已空）重置=no-op（零写零单元——重置目标缺席）
         if (selEdge === null || selEdge.via === undefined) return
-        useLineageStore.getState().setEdgeVia(selEdge.id, undefined)
+        useLineageStore.getState().setEdgeVia(selEdge.id, null)
       }}
       onDelete={() => {
         if (selEdge !== null) useLineageStore.getState().removeEdge(selEdge.id)
@@ -45,7 +45,8 @@ export function EdgeMenuHost(props: {
         const menu = props.target
         if (selEdge === null || menu.kind !== 'vertex' || props.handlesPl === null) return
         const out: { via: LineageViaPoint[] | undefined } = deleteVertexAlgebra(props.handlesPl, menu.idx)
-        useLineageStore.getState().setEdgeVia(selEdge.id, out.via)
+        // [F-VISFB-66] 清除=显式 null（setEdgeVia 约定迁移——undefined→null）
+        useLineageStore.getState().setEdgeVia(selEdge.id, out.via ?? null)
       }}
       onClose={props.onClose}
     />,

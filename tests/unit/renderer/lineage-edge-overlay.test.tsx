@@ -450,7 +450,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(css).not.toMatch(/\.lc[\s.{]/)
   })
 
-  it('CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+link-src+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B）', () => {
+  it('CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B；[F-VISFB-66] link-src 退役负锚化）', () => {
     // 双闸 CSS 面：view 基线 none（上行既有锁）+edit 态开 stroke（M-pointer-events 变异锚）
     expect(css).toMatch(/\.timeline\.editing \.tl-edge-hit\s*\{[^}]*pointer-events:\s*stroke;[^}]*cursor:\s*pointer/)
     // 悬停高亮：hover 线=宽 1.6→2.6+opacity 0.65（mockup §3.3）。
@@ -463,10 +463,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(css).not.toMatch(/\.tl-edge:hover/)
     // [F-LGRAPH-01②U8] linkbtn 退役负锚（「新建连线」按钮删除——画线工具替代）
     expect(css).not.toMatch(/linkbtn/)
-    // 拾取源高亮（画线/拖拽源标记沿用 .link-src——U3 画线 dragging 源卡高亮复用）
-    expect(css).toMatch(
-      /\.timeline\.editing \.tl-card\.link-src\s*\{[^}]*outline:\s*2\.4px dashed var\(--signal\);[^}]*outline-offset:\s*2px/
-    )
+    // [F-VISFB-66 W-09r2] 源侧高亮链整删负锚（.link-src 规则+复用面全灭）
+    expect(css).not.toMatch(/link-src/)
     // [R6①] 意图值升特异性真正生效（原 .acc-body .pbtn 同特异性被 .pop .pbtn
     // 源序覆盖=死声明）
     expect(css).toMatch(/\.pop \.acc-body \.pbtn\s*\{[^}]*font-size:\s*var\(--fs-tl-hint\);[^}]*padding:\s*4px 0/)

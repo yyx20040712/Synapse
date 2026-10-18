@@ -11,7 +11,7 @@
  * 框外空白候选随走廊退役删除——探针 x=43 框外逃逸形态结构性禁绝）**。
  * 确定性红线：无随机/无 Date/无三角函数。纯函数零 DOM import。
  */
-import { anchorPick, anchorPoint, sideAnchor, stubEnd, type AnchorUse, type Pt, type Rect, type Side } from './anchors'
+import { anchorPick, anchorPoint, sideAnchor, stubEnd, type AnchorUse, type PickedAnchor, type Pt, type Rect, type Side } from './anchors'
 import { PAD, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
 import { byTotalOrder, gridChannelsOf, type ChannelUse } from './detour'
@@ -102,7 +102,10 @@ export function bandSkeleton(
   chanUse: ChannelUse,
   srcId: string,
   tgtId: string,
-  edgeId: string
+  edgeId: string,
+  /** [F-VISFB-66] 钉定端（提供=直取禁动：源端取该锚/终落优先该锚——设计书 §F） */
+  fromPin?: PickedAnchor,
+  toPin?: PickedAnchor
 ): BandRoute | null {
   const sc = center(src)
   const tc = center(tgt)
@@ -117,7 +120,8 @@ export function bandSkeleton(
   const bands = down ? between : [...between].reverse()
   const sa = sideAnchor(src, down ? 'bottom' : 'top', tc)
   const sb = sideAnchor(tgt, down ? 'top' : 'bottom', sc)
-  const pa = anchorPick(srcId, src, sa.side, sa.slot, use)
+  // [F-VISFB-66] 钉定源端直取（禁动——散开不迁移钉定锚）
+  const pa = fromPin ?? anchorPick(srcId, src, sa.side, sa.slot, use)
   const A = pa.pt
   // 出桩=生效锚外法线（散开至左/右边后骨架首段不得横穿源卡）：竖边锚桩与
   // 原形共线（stripCollinear 收敛）；横边锚桩=竖转角引入点
@@ -145,6 +149,39 @@ export function bandSkeleton(
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i]!
     const by = moveYOf(band)
+    // [F-VISFB-66] 钉定终落（禁动）：toPin 提供=只试钉定锚（不经 use.has——
+    // routeAll 阶段 0 自身预注册不阻断己边；几何检查不过=本带不落降下带，
+    // 禁散开到其他槽）；全带尽=band 不可用（chain 降 overlap 兜底直取）
+    if (toPin !== undefined) {
+      const pinPt = toPin.pt
+      const pinStub = down ? pinPt.y - 10 : pinPt.y + 10
+      if (vClear(pinPt.x, by, pinStub, obstacles) && !segHitsAny({ x: pinPt.x, y: pinStub }, pinPt, thirdParty)) {
+        skel.push({ x: pinPt.x, y: by }, pinPt)
+        const pinCap = Math.floor((band.bottom - band.top - 2 * PAD) / band.s)
+        const pinPicks: Array<[string, Side, number]> = [
+          [srcId, pa.side, pa.slot],
+          [tgtId, toPin.side, toPin.slot]
+        ]
+        for (const s of pendingSlots) chanUse.commit(s.key, s.idx, edgeId)
+        return { skel, laneY: by, s: band.s, cap: pinCap, picks: pinPicks }
+      }
+      if (i === bands.length - 1) return null
+      const pinNext = bands[i + 1]!
+      const pinNextY = moveYOf(pinNext)
+      let pinMoved = false
+      for (const c of descendCandidates(snap, by, pinNextY, tgtAnchorX, curX, chanUse)) {
+        if (vClear(c.x, by, pinNextY, obstacles)) {
+          if (c.x !== curX) skel.push({ x: c.x, y: by })
+          skel.push({ x: c.x, y: pinNextY })
+          curX = c.x
+          pendingSlots.push({ key: c.key, idx: c.idx })
+          pinMoved = true
+          break
+        }
+      }
+      if (!pinMoved) return null
+      continue
+    }
     // 终落：目标 x 自本带直落（末 10px 桩区排除源/目标卡——D-L2-4 桩语义）
     for (const [side, slot] of spread) {
       if (use !== undefined && use.has(tgtId, side, slot)) continue

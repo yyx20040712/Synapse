@@ -11,7 +11,9 @@ import {
   LINE_TYPE_ROWS,
   MAIN_GRAPH_ID,
   defaultLineTypeNames,
+  validateLineageAnchor,
   type LineTypeNames,
+  type LineageAnchor,
   type LineageEdge,
   type LineageNode,
   type LineageViaPoint
@@ -57,6 +59,9 @@ export interface LineageEdgeRow {
   kind: string
   sub: string | null
   via: string | null
+  /** [F-VISFB-66] 端点钉定锚（025 迁移列——AnchorRef JSON；NULL=未钉定） */
+  from_anchor: string | null
+  to_anchor: string | null
   dashed: 0 | 1
   color: string
   created_at: string
@@ -106,6 +111,22 @@ export function toNode(row: LineageNodeRow): LineageNode {
   }
 }
 
+/**
+ * [F-VISFB-66] 锚列读面容错解析（025 列）：NULL/非法 JSON/非法形状
+ * （side 域外/slot 越界）→ undefined（未钉定语义，不炸 graph 读——via 列
+ * 容错同族：锚属渲染派生数据非用户内容，损坏降级优于整图读失败）。
+ */
+function parseAnchorTolerant(raw: string | null): LineageAnchor | undefined {
+  if (raw === null) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    const check = validateLineageAnchor(parsed)
+    return check.ok ? check.value : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function toEdge(row: LineageEdgeRow): LineageEdge {
   return {
     id: row.id,
@@ -120,6 +141,8 @@ export function toEdge(row: LineageEdgeRow): LineageEdge {
     // LINE_TYPE_COLORS」不变量在读面恒真（原仅空串归一）
     color: (LINE_TYPE_COLORS as readonly string[]).includes(row.color) ? row.color : LINE_TYPE_COLORS[0],
     via: parseViaTolerant(row.via),
+    fromAnchor: parseAnchorTolerant(row.from_anchor),
+    toAnchor: parseAnchorTolerant(row.to_anchor),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }

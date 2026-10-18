@@ -422,13 +422,13 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
     x.db.close()
   })
 
-  it('schema_newer：伪造 schema_version=25 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24；[F-VISFB-61] 024 落链后随升 25）', () => {
+  it('schema_newer：伪造 schema_version=26 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24；[F-VISFB-61] 024 落链后随升 25；[F-VISFB-66] 025 落链后随升 26）', () => {
     const x = makeSide(OWNER_X)
     const y = makeSide(OWNER_Y)
     pair(y, x)
     const forged = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 25,
+      schemaVersion: 26,
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),
@@ -583,10 +583,10 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
       outcome: 'rejected',
       reason: 'decrypt_fail'
     })
-    // ② 双错卷：schema_version=25+密文损坏→明文预检先报 schema_newer（伪卷随升）
+    // ② 双错卷：schema_version=26+密文损坏→明文预检先报 schema_newer（伪卷随升）
     const newer = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 25,
+      schemaVersion: 26,
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),

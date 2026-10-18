@@ -3,28 +3,21 @@
  * [F-LGRAPH-01②U3] useDrawLine —— 画线子态机 hook（mockup §2.4 定案；
  * [F-UIRES-03 C1] anchor 维增补+per-kind 色——设计稿 v1.9 §2 C1）。
  *
- * ── 态空间（宪法状态纪律）──
+ * ── 态空间（宪法状态纪律——[F-VISFB-66] 钉定模型 v1.2 §A.1 终裁版）──
  * armed=工具态（view.tool ∈ {draw-solid, draw-dashed}——驻 view.store，页面
- * 内持久：切 select/切模式/切图中止=resetTool 承载）× drag ∈ {idle, dragging} ×
- * {from: 源锚, cursor: 指针内容坐标, snap: 吸附指示锚, [F-ANCHFIX-01 批 1b]
- * fromEff: 有效源锚（规则锚——目标识别后预览起点 morph 至 selectAnchor
- * 规则锚；未命中目标=null 回落 from.pt。会话身份仍=from）} × [C2·P5] anchor ∈
- * {none, picked(nodeId)}（点两卡连边链第一卡——**迁驻 view.store**〔C1 驻本
- * hook 现域设计修订：escapeStep 单口须触达清锚+document 双监听注册序脆弱
- * 面禁用〕：读写经 setDrawAnchor 单口，清锚写点收敛 store 动作〔resetTool/
- * setMode/resetForMount〕——本 hook 下降沿清锚 effect 随迁退役）。
- * [F-ANCHFIX-01 批 1b] 选锚统一（用户裁决 D=统一为路由规则）：拖拽吸附锚
- * snap.pt=selectAnchor(命中卡 rect, 源卡 rect 中心).pt——同函数同参于
- * routeOne direct 态选锚（chain.ts:161-162），所见即所得（松手零跳动；
- * 探针 20261007-anchfix01-b1a 分叉率 5/6 实锤——设计书 v1.2）。目标卡识别
- * 面沿承 nearestAnchor（12 锚域识别目标卡不变）。零跳动承诺域=无先占边
- * （多边同锚 AnchorUse 散开+corridor/fallback 恒右缘=域外——预览无法模拟
- * 全图路由；INV-119 等价性精化条款+批 1c 占用槽高亮补散开可见性）。
+ * 内持久：切 select/切模式/切图中止=resetTool 承载）× drag ∈ {idle, dragging}
+ * × {from: 源锚, cursor: 指针 own 域点, snap: 吸附命中锚}。
+ * from 按下钉定 {cardId, anchor:AnchorRef, pt} **恒定**（[F-ANCHFIX-01 批 1b
+ * 规则锚 morph 面随「仅端点钉定，走线仍自动」裁定删除——裁决 D 翻案：
+ * 两端锚用户钉定，预览不 morph）；snap=nearestAnchor 命中**他卡**锚（own 域
+ * ≤DRAW_SNAP_R——snap 即所按的锚本身（不经路由规则选锚函数）；落边端点=按下锚/
+ * 命中锚=所见即所得结构性成立）。[F-VISFB-66 裁定 2] 点两卡连边链（C1/C2·P5
+ * 点两卡链锚态族与点卡路由）整体退役删除——唯一建边径=锚点显式拖拽。
  *
  * ── 迁移表（§2.4 逐条+C1 增补）──
- * - armed+pointerdown 近锚（12 锚/卡±12 内容坐标——[lnfix1] 6→12 容差放宽）
+ * - armed+pointerdown 近锚（12 锚/卡 ±12 own 单位——[lnfix1] 6→12 容差放宽）
  *   → dragging（预览线+吸附指示
- *   +源卡 .link-src 高亮[回炉 R15]）——**document 级拖拽会话**（[回炉 R1①]
+ *   ——**document 级拖拽会话**（[回炉 R1①]
  *   pointermove/up/pointercancel+window blur——use-edge-edit runDragSession
  *   先例：指针离画布仍跟随，中断=取消无残留）
  * - dragging+pointerup 落另一卡近锚 → 建边（drawEdge：manual+dashed=
@@ -35,21 +28,21 @@
  *   径一致；自环/查重拒绝路径同样不拆工具；退出径=小手钮/Esc/切模式沿承）
  *   +入撤销栈（收尾带 armed 闸[回炉 R1③]——工具已非画线不建边）
  * - [C1] armed+点卡 A（卡身 click——非近锚拖拽域）→ anchor=picked(A)（**禁开
- *   详情——裁决 11a**，路由=LineageTimeline.handleCardClick）；picked(A)+点卡
- *   B≠A→建边（dashed/color 同上 per-kind 提交读）→anchor=none+**保持 draw-X
- *   连画**（拟稿推荐③）；picked(A)+点 A→anchor=none；查重对=toast 拒绝+
- *   anchor 保持（换目标可续）
+ *   [F-VISFB-66 裁定 2] 点两卡连边链（旧锚态族）退役删除——draw 工具
+ *   =纯拖拽工具，点击卡=吞咽（B1a：不 pickCard 不开详情）
  * - dragging+pointerup 空白/同卡 → 取消 → idle（**armed 保留**——tool 不动）；
  *   [lnfix1] 落空分层反馈：落点命中他卡 rect 外扩 DRAW_SNAP_R 膨胀圈（排除源
  *   卡——同卡面沿承静默）=error toast「落点未在连接点上」；空白=静默取消
  * - [lnfix1] armed 待机锚点指示（hint 通道）：armed+idle 时 document
  *   pointermove 数学命中最近锚（≤DRAW_SNAP_R——与可起拖判定同一数学，所见即
  *   可拖）驱动 DrawAnchorHint 渲染；leading 节流 50ms（禁每 move 全卡 rect 采集）
+ * - dragging 期 **Esc/pointercancel=取消会话且工具保持**（[回炉 R19 终裁]
+ *   ——会话内一次性 keydown capture+IME 守卫+stopImmediatePropagation 封同
+ *   目标 document 监听（S4——stopPropagation 不封同目标，防全局退工具）；
+ *   原 F10「Esc 零监听」事实基础不完整〔全局 escapeStep 会退工具〕已翻案）。
  * - 切模式/切 select/切图下降沿：dragging 中止=取消（[回炉 R1②] effect 监听
- *   tool/mode/folderId 三源——会话监听同步拆除）；[C2·P5] anchor 同沿清
- *   （退出画线域=锚无残留）**承载迁 store 动作**（resetTool/setMode 内清——
- *   写点收敛；draw-X→draw-Y kind 切换不清〔toggleLineTool 不触锚〕——仍在
- *   画线域，锚跨切换续用）
+ *   tool/mode/folderId 三源——会话监听同步拆除）；旧锚维同沿清承载已随点两
+ *   卡链路退役消亡（本 hook 零锚读写）。
  * - UI 预检（现行语义沿承）：同卡近邻=自环不建；同端点对无向查重=toast 拒绝；
  *   环检测留 service 保存面（CONFLICT 丢弃+toast）
  * - 拖拽抑制：dragging 会话收尾（pointerup 落定/取消）→ 下一 click 吞（防建
@@ -69,13 +62,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { RefObject } from 'react'
 import { LINE_TYPE_COLORS } from '@shared/models/lineage'
-import { anchorPoint, selectAnchor, type Pt, type Rect, type Side } from './routing/anchors'
+import { anchorPoint, type Pt, type Rect, type Side } from './routing/anchors'
 import { clientToOwnPt, clientToOwnRect } from './timeline-zoom'
+import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 import { showToast } from '../../shared/ui/toast-store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 
-/** 吸附半径（内容坐标 px——§2.4 近锚；[lnfix1] 6→12：±6 用户实检过严） */
+/** 吸附半径（own 单位——§2.4 近锚；[lnfix1] 6→12：±6 用户实检过严） */
 export const DRAW_SNAP_R = 12
 
 /** [lnfix1] armed 待机 hint 扫描节流窗（ms——leading 即时+窗口内丢弃；禁每
@@ -85,6 +79,8 @@ const HINT_THROTTLE_MS = 50
 export interface DrawAnchor {
   nodeId: string
   pt: Pt
+  /** [F-VISFB-66] 命中锚身份（side/slot——拖拽双锚载荷源；hint/snap 同形） */
+  anchor: { side: Side; slot: number }
 }
 
 export interface DrawLineState {
@@ -92,11 +88,6 @@ export interface DrawLineState {
   from: DrawAnchor | null
   cursor: Pt | null
   snap: DrawAnchor | null
-  /** [F-ANCHFIX-01 批 1b] 有效源锚（规则锚）：目标识别后预览起点 morph 至
-   *  selectAnchor(源卡 rect, 目标卡 rect 中心)——与 snap 端同为路由规则锚；
-   *  未命中目标=null（DrawPreview 回落 from.pt）。会话身份仍=from（建边收尾
-   *  恒读 from.nodeId） */
-  fromEff: DrawAnchor | null
 }
 
 /** 卡 rect 采集（.tl-card[data-node-id] getBoundingClientRect→own 域；
@@ -136,20 +127,12 @@ function nearestAnchor(
         const d = Math.hypot(a.x - p.x, a.y - p.y)
         if (d <= bestD) {
           bestD = d
-          best = { nodeId, pt: a }
+          best = { nodeId, pt: a, anchor: { side, slot } }
         }
       }
     }
   }
   return best
-}
-
-/** 同端点对无向查重（service UNIQUE(from,to) 的 UI 预检面——现行语义沿承） */
-function hasPair(from: string, to: string): boolean {
-  const edges = useLineageStore.getState().edges
-  return edges.some(
-    (e) => (e.fromNode === from && e.toNode === to) || (e.fromNode === to && e.toNode === from)
-  )
 }
 
 export function useDrawLine(args: {
@@ -160,12 +143,10 @@ export function useDrawLine(args: {
   hint: DrawAnchor | null
   /** .tl-content pointerdown（draw 态消费；返回 true=已消费——容器不分发拖拽） */
   handlePointerDown(ev: ReactPointerEvent<HTMLDivElement>): boolean
-  /** [F-UIRES-03 C1] 点两卡连边链（卡身 click 路由——draw 态消费禁开详情） */
-  handleCardClick(nodeId: string): void
   /** dragging 收尾后的 click 抑制（一次性——防建边触发卡选中） */
   consumeClickSuppress(): boolean
 } {
-  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
+  const [state, setState] = useState<DrawLineState>({ phase: 'idle', from: null, cursor: null, snap: null })
   const [hint, setHint] = useState<DrawAnchor | null>(null)
   const suppressClickRef = useRef(false)
   const stateRef = useRef(state)
@@ -179,15 +160,11 @@ export function useDrawLine(args: {
   }
 
   const cancel = useCallback((): void => {
-    // [RR1 k1-N2] 保锚死码删除沿承：dragging 期锚恒 null（起拖即清锚——
-    // handlePointerDown 经 setDrawAnchor 置 null），取消复位无锚维
-    // （[C2·P5] anchor 迁 view.store，非本 state 域）
-    setState({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
+    setState({ phase: 'idle', from: null, cursor: null, snap: null })
   }, [])
 
   // [回炉 R1②] 下降沿清理：切模式/切 select/切图（tool/mode/folderId 任一变化）
-  // =dragging 中止（取消无残留+会话监听拆除）；[C2·P5] 退出画线域清锚迁
-  // store 动作承载（resetTool/setMode 内清——本 hook 零锚读写，写点收敛）
+  // =dragging 中止（取消无残留+会话监听拆除）
   const tool = useLineageViewStore((s) => s.tool)
   const mode = useLineageViewStore((s) => s.mode)
   const folderId = useLineageStore((s) => s.folderId)
@@ -276,8 +253,8 @@ export function useDrawLine(args: {
     (clientX: number, clientY: number): void => {
       const from = stateRef.current.from
       suppressClickRef.current = true // click 抑制（一次性）
-      setState({ phase: 'idle', from: null, cursor: null, snap: null, fromEff: null })
-      if (!armed()) return // [回炉 R1③] armed 闸：收尾时工具已非画线=不建边
+      setState({ phase: 'idle', from: null, cursor: null, snap: null })
+      if (!armed()) return // [回炉 R1③/S6=U-DL-11] armed 闸：收尾时工具已非画线=不建边
       if (from === null) return
       const content = args.contentRef.current
       if (content === null) return
@@ -305,11 +282,8 @@ export function useDrawLine(args: {
         setHint(nearestAnchor(cards, p))
         return
       }
-      // 同卡自环面已由 excludeNodeId 排除（target≠from 卡）；查重预检：
-      if (hasPair(from.nodeId, target.nodeId)) {
-        showToast('两节点间已存在连线', 'error')
-        return
-      }
+      // 同卡自环面已由 excludeNodeId 排除（target≠from 卡）；查重单点=store
+      // drawEdge 结果枚举（§C.3——duplicate 由本层 toast）
       const view = useLineageViewStore.getState()
       // [F-UIRES-03 C1] per-kind 色：kind=当前工具维，color=currentLineColor[kind]
       // **提交时读**（latch delta-W4——在途预览跟随当前色，已落边不可变）
@@ -317,47 +291,23 @@ export function useDrawLine(args: {
       const color = view.currentLineColor[kind]
       const colorIndex = LINE_TYPE_COLORS.indexOf(color as (typeof LINE_TYPE_COLORS)[number])
       const label = useLineageStore.getState().lineTypeNames[colorIndex === -1 ? 0 : colorIndex] ?? ''
-      useLineageStore.getState().drawEdge(from.nodeId, target.nodeId, {
+      const result = useLineageStore.getState().drawEdge(from.nodeId, target.nodeId, {
         dashed: kind === 'dashed',
         color,
-        label
+        label,
+        // [F-VISFB-66 裁定 ①] 双锚钉定载荷：按下锚=fromAnchor/落点锚=toAnchor
+        fromAnchor: { side: from.anchor.side, slot: from.anchor.slot as 0 | 1 | 2 },
+        toAnchor: { side: target.anchor.side, slot: target.anchor.slot as 0 | 1 | 2 }
       })
+      // [回炉 S3] 三分支：duplicate=重复文案；busy=saving 窄窗静默（连画态
+      //  立即重画即成——主控裁定，toast 噪声不值）
+      if (!result.ok && result.reason === 'duplicate') showToast('两节点间已存在连线', 'error')
       // [F-VISFB-21 C2] 建边后 tool 保持 draw-X 连画（§2.4「建边后回 select」
-      // 旧文偏差——任务书 21 票面裁 2026-10-16：与点两卡径一致〔handleCardClick〕；
-      // 自环已由 excludeNodeId 排除/查重拒绝路径同样不拆工具——退出径=小手钮/
-      // Esc/切模式沿承）
+      // 旧文偏差——任务书 21 票面裁 2026-10-16；自环已由 excludeNodeId 排除/
+      // 查重拒绝路径同样不拆工具——退出径=小手钮/Esc/切模式沿承）
     },
     [args.contentRef]
   )
-
-  /** [F-UIRES-03 C1·C2·P5] 点两卡连边链（卡身 click——容器 draw 态路由；
-   *  **禁开详情**由路由层承担裁决 11a）：none→picked(A)→点 B 建边（per-kind
-   *  提交读）→anchor=none+保持 draw-X 连画；点同卡=取消锚；查重=toast+
-   *  anchor 保持。anchor 读写=view.store 单口（迁驻） */
-  const handleCardClick = useCallback((nodeId: string): void => {
-    if (!armed()) return // 画线域外零消费（容器已闸——防御面）
-    const view = useLineageViewStore.getState()
-    const cur = view.anchor
-    if (cur === null) {
-      view.setDrawAnchor(nodeId) // draw-X+点卡 A→picked(A)
-      return
-    }
-    if (cur === nodeId) {
-      view.setDrawAnchor(null) // picked(A)+点 A→none
-      return
-    }
-    if (hasPair(cur, nodeId)) {
-      showToast('两节点间已存在连线', 'error') // 查重预检（drag 径同语义）
-      return // anchor 保持（换目标可续）
-    }
-    // per-kind 色：kind=当前工具维，color=currentLineColor[kind] 提交时读（latch）
-    const kind: 'solid' | 'dashed' = view.tool === 'draw-dashed' ? 'dashed' : 'solid'
-    const color = view.currentLineColor[kind]
-    const colorIndex = LINE_TYPE_COLORS.indexOf(color as (typeof LINE_TYPE_COLORS)[number])
-    const label = useLineageStore.getState().lineTypeNames[colorIndex === -1 ? 0 : colorIndex] ?? ''
-    useLineageStore.getState().drawEdge(cur, nodeId, { dashed: kind === 'dashed', color, label })
-    view.setDrawAnchor(null) // anchor=none；tool 不动=连画（拟稿推荐③）
-  }, [])
 
   const handlePointerDown = useCallback(
     (ev: ReactPointerEvent<HTMLDivElement>): boolean => {
@@ -375,10 +325,8 @@ export function useDrawLine(args: {
       if (hit === null) return false
       ev.preventDefault()
       ev.stopPropagation() // [回炉 R13] 消费即止泡（防 pan 等并行激活）
-      // [F-UIRES-03 C1·C2·P5] 起拖=新手势，click 链锚让位（拖拽会话自持源锚；
-      // 混手势可预期性：拖拽起=锚清，点链不复活旧锚）——store 单口写
-      useLineageViewStore.getState().setDrawAnchor(null)
-      setState({ phase: 'dragging', from: hit, cursor: p, snap: null, fromEff: null })
+      // [F-VISFB-66] from 按下钉定恒定（含锚身份——建边双锚载荷源）
+      setState({ phase: 'dragging', from: hit, cursor: p, snap: null })
       // [RR 补批 RR17] 会话指针绑定：他指事件（pointerId 异于会话主指）不
       // 驱动不收尾不取消；pid 缺省（鼠标/jsdom MouseEvent 型）放行
       const pid = ev.pointerId
@@ -388,32 +336,25 @@ export function useDrawLine(args: {
       }
       // [回炉 R1①] document 级拖拽会话（runDragSession 先例）：move/up 在
       // document 派发（指针离画布仍跟随）；pointercancel/blur=中断取消无残留
-      const move = (e: PointerEvent | MouseEvent): void => {
-        if (!sameSession(e)) return // [RR17] 他指 move 忽略
+      // [F-VISFB-66 裁定 4] 帧协议③④重算单源（move 与自动滚动 onScrollFrame
+      // 同路——幂等：光标缓存 client→own 域重算+命中→预览）
+      const recompute = (clientX: number, clientY: number): void => {
         const s = stateRef.current
         if (s.phase !== 'dragging') return
         const c = args.contentRef.current
         if (c === null) return
-        const pt = toContentPt(c, e.clientX, e.clientY)
+        const pt = toContentPt(c, clientX, clientY)
         const cards = cardRects(c)
-        // [F-ANCHFIX-01 批 1b] 目标卡识别沿承 nearestAnchor（12 锚域识别面
-        // 不变——仅取 nodeId）；吸附锚=路由规则锚 selectAnchor 同函数同参于
-        // routeOne direct 态（所见即所得——松手零跳动）；未命中=snap/fromEff
-        // 双 null（cursor 跟随沿承，预览起点回落 from.pt）
-        const hit = nearestAnchor(cards, pt, s.from?.nodeId)
-        let snap: DrawAnchor | null = null
-        let fromEff: DrawAnchor | null = null
-        if (hit !== null && s.from !== null) {
-          const srcRect = cards.find((cd) => cd.nodeId === s.from!.nodeId)?.rect
-          const tgtRect = cards.find((cd) => cd.nodeId === hit.nodeId)?.rect
-          if (srcRect !== undefined && tgtRect !== undefined) {
-            const sc: Pt = { x: srcRect.x + srcRect.w / 2, y: srcRect.y + srcRect.h / 2 }
-            const tc: Pt = { x: tgtRect.x + tgtRect.w / 2, y: tgtRect.y + tgtRect.h / 2 }
-            snap = { nodeId: hit.nodeId, pt: selectAnchor(tgtRect, sc).pt }
-            fromEff = { nodeId: s.from.nodeId, pt: selectAnchor(srcRect, tc).pt }
-          }
-        }
-        setState({ ...s, cursor: pt, snap, fromEff })
+        // snap=nearestAnchor 命中他卡锚（own 域——snap 即所按锚本身；未命中=
+        // snap null（cursor 跟随沿承）；from 恒定不重算
+        const snap = nearestAnchor(cards, pt, s.from?.nodeId)
+        setState({ ...s, cursor: pt, snap })
+      }
+      let lastClient = { x: ev.clientX, y: ev.clientY }
+      const move = (e: PointerEvent | MouseEvent): void => {
+        if (!sameSession(e)) return // [RR17] 他指 move 忽略
+        lastClient = { x: e.clientX, y: e.clientY }
+        recompute(e.clientX, e.clientY)
       }
       const up = (e: PointerEvent | MouseEvent): void => {
         if (!sameSession(e)) return // [RR17] 他指 up 不收尾本会话
@@ -425,16 +366,39 @@ export function useDrawLine(args: {
         cleanup()
         cancel() // [回炉 R1④] 中断=取消无残留（不吞后续 click）
       }
+      // [F-VISFB-66 裁定 4] 拖拽自动滚动（managed 泵——容器=.timeline 根；
+      // onScrollFrame=帧协议③④重算：滚动时光标内容域坐标随滚动偏移，rAF 帧
+      // 重算命中——getCursorClient 读缓存光标）
+      // R26：容器获取统一 closest('.timeline')（滚动容器单源）
+      const container = content.closest('.timeline') instanceof HTMLElement ? (content.closest('.timeline') as HTMLElement) : content
+      const autoScroll: AutoScrollHandle = startAutoScroll({
+        container,
+        getCursorClient: () => ({ clientX: lastClient.x, clientY: lastClient.y }), // 按下即真坐标采样（R1——恒有效）
+        onScrollFrame: () => recompute(lastClient.x, lastClient.y)
+      })
+      // [回炉 R19] 会话内一次性 Esc（capture 先于单口；IME 守卫；消费即
+      // stopPropagation 防全局退工具——取消会话且 tool 保持）
+      const onSessionEsc = (e: KeyboardEvent): void => {
+        if (e.key !== 'Escape' || e.isComposing) return
+        // [回炉 S4] stopImmediatePropagation：封同目标 document 捕获监听
+        // （stopPropagation 只断传播链，同节点后续监听仍触发）
+        e.stopImmediatePropagation()
+        cleanup()
+        cancel()
+      }
       const cleanup = (): void => {
         document.removeEventListener('pointermove', move)
         document.removeEventListener('pointerup', up)
         document.removeEventListener('pointercancel', abort)
         window.removeEventListener('blur', abort)
+        document.removeEventListener('keydown', onSessionEsc, { capture: true } as EventListenerOptions)
+        autoScroll.stop()
       }
       document.addEventListener('pointermove', move)
       document.addEventListener('pointerup', up)
       document.addEventListener('pointercancel', abort)
       window.addEventListener('blur', abort)
+      document.addEventListener('keydown', onSessionEsc, { capture: true } as EventListenerOptions)
       sessionCleanupRef.current = cleanup
       return true
     },
@@ -447,5 +411,5 @@ export function useDrawLine(args: {
     return v
   }, [])
 
-  return { state, hint, handlePointerDown, handleCardClick, consumeClickSuppress }
+  return { state, hint, handlePointerDown, consumeClickSuppress }
 }

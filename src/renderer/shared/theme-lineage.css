@@ -7,7 +7,7 @@
    字号经 --fs-tl-* token（FS_DECL 负锚禁字面量）、色值全 token、mockup
    的 .2s 过渡=--dur-lazy 同值 token 化；暗/护眼族靠 token 自动随族
    （--mini-card/--month-dash P1 已入库）。
-   [T3-P7B] 编辑交互族追加 2026-09-27（.lg- 段/.editing/.link-pick/.link-src/
+   [T3-P7B] 编辑交互族追加 2026-09-27（.lg- 段/.editing/.link-pick/
    .pop/.acc/.schip——值源=mockup L204-219/L247/L259-260/L287-311 逐值；
    .lineage-toolbar 旧族随 LineageToolbar 换装退役删除（方案切换=删旧方案）。
    （注释纪律：正文禁现「星斜杠」连写——提前终结注释会把后续规则吞进解析
@@ -288,11 +288,6 @@
 /* 拾取态（picker≠idle）：容器 crosshair+卡例外 pointer（D-P7B-2） */
 .timeline.link-pick { cursor: crosshair; }
 .timeline.link-pick .tl-card { cursor: pointer; }
-/* 拾取源高亮（mockup L247：2.4px dashed signal offset 2px）——[R1 回炉 1]
-   选择器 (0,4,0)：`.timeline.editing .tl-card` 基线 outline (0,3,0) 压栈
-   (0,2,0) 使高亮恒不可视（门一双审 B1 同中）；link-src 唯一相位在 edit 态
-   （picker 非 idle ⇒ mode=edit——composer 状态机保证），升级零语义损失 */
-.timeline.editing .tl-card.link-src { outline: 2.4px dashed var(--signal); outline-offset: 2px; }
 
 /* 线型弹层（mockup L287-296 .pop 族——position:fixed 挂视口不随滚动裁剪；
    Timeline 渲染树内固定层，钳制公式在组件层 clampPopoverPos） */

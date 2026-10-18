@@ -231,7 +231,7 @@ export function EdgeHitLayer(props: {
           snap={edit.snapLine !== null && edit.snapAt !== null ? { ...edit.snapLine, at: edit.snapAt } : null}
           activeVertexIdx={edit.activeVertexIdx}
           warnSegs={edit.warnSegs}
-          reconnectEnd={edit.state.phase === 'reconnect' ? edit.state.end : null}
+          draggingEnd={edit.state.phase === 'reconnect' ? edit.state.end : null}
           onVertexDown={edit.onVertexDown}
           onVertexContext={(idx, ev) => edit.onVertexContext(idx, ev.clientX, ev.clientY)}
           onEndDown={edit.onEndDown}

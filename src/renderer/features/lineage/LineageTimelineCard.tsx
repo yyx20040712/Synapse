@@ -50,8 +50,6 @@ export function LineageTimelineCard(props: {
    *  D 批〕） */
   tagNames?: Record<string, string[]>
   selected: boolean
-  /** [T3-P7B] 拾取源高亮（.link-src） */
-  linkSrc: boolean
   /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
   dragging?: boolean
   /** [F-LGRAPH-01①U5] P-8 聚焦视觉：仅被点卡 accent 边框 */
@@ -76,7 +74,6 @@ export function LineageTimelineCard(props: {
   const cls = [
     'tl-card',
     props.selected ? 'sel' : '',
-    props.linkSrc ? 'link-src' : '',
     props.dragging === true ? 'dragging' : '',
     props.focused === true ? 'focused' : '',
     props.dim === true ? 'dim' : '',

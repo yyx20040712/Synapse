@@ -22,7 +22,6 @@ import {
   deleteVertex,
   dragSegment,
   dragVertex,
-  reconnectEnd,
   segmentDrag,
   segmentViaIdx,
   type Channels,
@@ -210,25 +209,6 @@ describe('U5 编辑代数：删点分治（§2.3-4）', () => {
   it('删空回自动：共线单点 via 删后=undefined（回自动路由）', () => {
     const p = line(pt(0, 0), [pt(50, 0)], pt(100, 0))
     expect(deleteVertex(p, 0).via).toBeUndefined()
-  })
-})
-
-describe('U5 编辑代数：端点重连（§2.3-6 L 重正交）', () => {
-  it('换锚（新锚右侧边）：首拐插入 (V.x, A.y)——入轴=锚法线向+via 全保留', () => {
-    // 新锚 A2=(400,80)（右锚法线 +x）；首 via V=(360,200)
-    const p = line(pt(300, 200), [pt(360, 200), pt(360, 320)], pt(400, 360))
-    const out = reconnectEnd(p, 'from', pt(400, 80), 'right')
-    // 新首点=(V.x, A2.y)=(360,80)：A2→新点水平（含短桩）、新点→V 竖直
-    expect(out.via[0]).toEqual(pt(360, 80))
-    expect(out.via[1]).toEqual(pt(360, 200)) // via 全保留
-    expect(out.via[2]).toEqual(pt(360, 320))
-  })
-
-  it('同轴直达：新锚与首 via 同列（竖直锚位）=零插入', () => {
-    const p = line(pt(0, 0), [pt(300, 50)], pt(300, 400))
-    const out = reconnectEnd(p, 'from', pt(300, 10), 'bottom')
-    // A=(300,10) bottom 锚：法线竖直；A→V=(300,50) 已竖直直达
-    expect(out.via).toEqual([pt(300, 50)])
   })
 })
 

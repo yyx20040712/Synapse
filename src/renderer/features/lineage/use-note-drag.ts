@@ -19,6 +19,7 @@ import type { FloatingNote } from '@shared/models/lineage'
 import type { Pt } from './routing/anchors'
 import { useLineageStore } from './lineage.store'
 import { clampToContent, NOTE_H, NOTE_W, toOwnPt } from './lineage-note-geom'
+import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 
 interface DragState {
   id: string
@@ -31,6 +32,8 @@ interface DragState {
   h: number
   /** [S6] 会话主指 pointerId（缺省=鼠标/jsdom MouseEvent 型——全放行） */
   pid: number | undefined
+  /** [回炉 R1] 按下真坐标（自动滚动首采样——pointerdown 即有效） */
+  downClient: { x: number; y: number }
 }
 
 /** 渲染面消费形（live=钳后现位——拖动中笔记 left/top 源） */
@@ -52,6 +55,8 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
   const [state, setState] = useState<DragState | null>(null)
   const stateRef = useRef<DragState | null>(null)
   stateRef.current = state
+  /** [回炉 R1] 最近指针采样（null=未采样——模块 hasClient 闸） */
+  const lastClientRef = useRef<{ x: number; y: number } | null>(null)
   // [S1②] saving 进入=中止在飞会话（丢弃 live 回弹 store 现值——不提交）
   const saving = useLineageStore((s) => s.saveStatus === 'saving')
   useEffect(() => {
@@ -63,10 +68,14 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
   const dragging = state !== null
   useEffect(() => {
     if (!dragging) return
-    const onMove = (e: PointerEvent): void => {
+    // [F-VISFB-66 裁定 4+回炉 R1] 自动滚动（managed 泵——笔记柄拖会话共享
+    // 机制）；lastClient=**pointerdown 真坐标初始化**（R1——首个有效采样前
+    // 模块 hasClient 闸不施滚；onGripDown 已置首采样）；onScrollFrame=帧协
+    // 议③④幂等重算（光标缓存 client→钳域 live 跟随）
+    const recompute = (clientX: number, clientY: number): void => {
       const d = stateRef.current
-      if (d === null || !sameSession(e, d.pid)) return
-      const p = toOwnPt(contentRef, e.clientX, e.clientY)
+      if (d === null) return
+      const p = toOwnPt(contentRef, clientX, clientY)
       const next = clampToContent(
         contentRef,
         { x: d.start.x + (p.x - d.p0.x), y: d.start.y + (p.y - d.p0.y) },
@@ -75,10 +84,38 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
       )
       if (next.x !== d.live.x || next.y !== d.live.y) setState({ ...d, live: next })
     }
+    // R26：容器获取统一 closest('.timeline')
+    const contentEl = contentRef.current
+    const container = contentEl?.closest('.timeline') instanceof HTMLElement ? (contentEl.closest('.timeline') as HTMLElement) : null
+    const first = stateRef.current
+    const auto: AutoScrollHandle | null =
+      container !== null
+        ? startAutoScroll({
+            container,
+            // [回炉 S2] 光标真跟随：读 lastClientRef.current（downClient=首采样
+            //  初值（R1 防 (0,0)），move 持续更新——读取恒最新指针位）
+            getCursorClient: () => {
+              const cur = lastClientRef.current
+              if (cur !== null) return { clientX: cur.x, clientY: cur.y }
+              return first === null ? null : { clientX: first.downClient.x, clientY: first.downClient.y }
+            },
+            onScrollFrame: () => {
+              const cur = lastClientRef.current
+              if (cur !== null) recompute(cur.x, cur.y)
+            }
+          })
+        : null
+    const onMove = (e: PointerEvent): void => {
+      const d = stateRef.current
+      if (d === null || !sameSession(e, d.pid)) return
+      lastClientRef.current = { x: e.clientX, y: e.clientY }
+      recompute(e.clientX, e.clientY)
+    }
     const onUp = (e: PointerEvent): void => {
       if (!sameSession(e, stateRef.current?.pid)) return
       const d = stateRef.current
       stateRef.current = null
+      lastClientRef.current = null
       setState(null)
       if (d === null) return
       // [44 号先例] 零位移守卫：live!==start 才提交（同值 up 不入队不 dirty）；
@@ -94,6 +131,7 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
     // [S6] blur=中止丢弃（useDrawLine abort 同型：回弹零写无残留）
     const onAbort = (): void => {
       stateRef.current = null
+      lastClientRef.current = null
       setState(null)
     }
     document.addEventListener('pointermove', onMove)
@@ -101,6 +139,7 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
     document.addEventListener('pointercancel', onUp)
     window.addEventListener('blur', onAbort)
     return () => {
+      auto?.stop()
       document.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerup', onUp)
       document.removeEventListener('pointercancel', onUp)
@@ -119,7 +158,8 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
     const w = noteEl !== null && noteEl.offsetWidth > 0 ? noteEl.offsetWidth : NOTE_W
     const h = noteEl !== null && noteEl.offsetHeight > 0 ? noteEl.offsetHeight : NOTE_H
     const start = { x: n.x, y: n.y }
-    setState({ id: n.id, start, p0: toOwnPt(contentRef, e.clientX, e.clientY), live: start, w, h, pid: e.pointerId })
+    lastClientRef.current = { x: e.clientX, y: e.clientY } // R1：按下真坐标=首采样
+    setState({ id: n.id, start, p0: toOwnPt(contentRef, e.clientX, e.clientY), live: start, w, h, pid: e.pointerId, downClient: { x: e.clientX, y: e.clientY } })
   }
 
   return { drag: state === null ? null : { id: state.id, live: state.live }, onGripDown }

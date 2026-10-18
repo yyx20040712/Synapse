@@ -38,8 +38,8 @@ describe('F-VISFB-42 迁移 023 派生图表资产合同', () => {
   it('新库全量直达 23：两表在位+papers 零新列', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(24)
-    expect(readUserVersion(db)).toBe(24)
+    expect(result.currentVersion).toBe(25)
+    expect(readUserVersion(db)).toBe(25)
     const tables = db
       .prepare(
         `SELECT name FROM sqlite_master WHERE type = 'table'
@@ -60,7 +60,7 @@ describe('F-VISFB-42 迁移 023 派生图表资产合同', () => {
     const db = dbAt22()
     seedPaper(db, 'p-1')
     const result = migrate(db)
-    expect(result.currentVersion).toBe(24)
+    expect(result.currentVersion).toBe(25)
     expect(
       (db.prepare('SELECT COUNT(*) c FROM papers').get() as { c: number }).c
     ).toBe(1)

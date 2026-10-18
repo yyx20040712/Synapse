@@ -36,6 +36,7 @@ import type { FlightJob } from './card-drag-flight'
 import { srcGroupIdsOf } from './card-drag-geometry'
 import { insertIndexFromGrid } from './card-drag-grid'
 import { clientToOwnPt, effectiveScale } from './timeline-zoom'
+import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 
 export type DragPhase = 'idle' | 'pending' | 'dragging' | 'settle'
 
@@ -109,6 +110,8 @@ interface DragSession {
   /** [回炉 R1] 拖前 React inline marginLeft（瀑布错位）——拖起期压 0 防双计，
    *  清场恢复（React style diff 不重写未变值——须自恢复非赖重渲染） */
   marginLeft0: string
+  /** [F-VISFB-66 裁定 4] 光标缓存（自动滚动帧重算输入——§G.9 重测式） */
+  lastClient: { x: number; y: number }
 }
 
 /** [②U6] 源框物理域命中=框内 ∪ 底缘 82px 下拉带（x 带内——腾新行面）。
@@ -183,9 +186,86 @@ export function useDragSession(args: {
   // ── pointer 会话（pending/dragging 期 document 级监听）──────────────
   useEffect(() => {
     if (phase !== 'pending' && phase !== 'dragging') return
+    // [F-VISFB-66 裁定 4+回炉 R7] 自动滚动（managed:false 纯 tick——无独立泵：
+    // tick 由激活帧 rAF 顶部调后进基准数学〔见 onMove 校准段〕；onScrollFrame=
+    // 帧协议③④：滚动帧内重测内容 rect 重算 ghost 基准（W8-a 重测式——卡屏位
+    // 恒 cursor+grabOffset）
+    let auto: AutoScrollHandle | null = null
+    let raf = 0
+    const contentEl = contentRef.current
+    const container = contentEl?.closest('.timeline') instanceof HTMLElement ? (contentEl.closest('.timeline') as HTMLElement) : null
+    if (container !== null) {
+      auto = startAutoScroll(
+        {
+          container,
+          getCursorClient: () => {
+            const sc = sessionRef.current
+            return sc === null ? null : { clientX: sc.lastClient.x, clientY: sc.lastClient.y }
+          },
+          onScrollFrame: () => {
+            // [S11] 滚动帧重算=复用 move 命中路径：ghost 位置+insertIdx 槽位
+            // （静止光标滚动后插入位随内容位移更新）+overFrame 淡化态
+            const sc = sessionRef.current
+            const content = contentRef.current
+            if (sc === null || content === null) return
+            const card = findCard(sc.nodeId)
+            if (card === null) return
+            const p = toOwn(content, sc.lastClient.x, sc.lastClient.y)
+            sc.ghost = { x: p.x - sc.ox, y: p.y - sc.oy }
+            card.style.left = `${sc.ghost.x - sc.frameOrigin.x}px`
+            card.style.top = `${sc.ghost.y - sc.frameOrigin.y}px`
+            const over = overSourceFrame(sc.frameEl, sc.lastClient.x, sc.lastClient.y)
+            let nextIdx = sc.insertIdx
+            if ((over || sc.extend) && sc.frameEl !== null) {
+              if (sc.extend) nextIdx = sc.srcIds.length - 1
+              else {
+                const fp = framePointer(sc.frameEl, sc.lastClient.x, sc.lastClient.y)
+                const w = Number.parseFloat(getComputedStyle(sc.frameEl).width)
+                nextIdx = insertIndexFromGrid(fp.x, fp.y, w, sc.srcIds.length, sc.srcIdx)
+              }
+            }
+            if (over !== sc.overFrame || nextIdx !== sc.insertIdx) {
+              sc.overFrame = over
+              sc.insertIdx = nextIdx
+              setSlot((prev) =>
+                prev === null ? prev : { ...prev, overFrame: over, insertIdx: nextIdx, extend: sc.extend, pullPx: sc.pullPx }
+              )
+            }
+          }
+        },
+        { managed: false }
+      )
+      // [回炉 R7] 驻留帧循环（effect 域——pending→dragging 换 effect 不拆泵；
+      // 未激活帧空转，激活后每帧顶部 tick→（首帧）基准重测）
+      let calibrated = false
+      let lastT = performance.now()
+      const frame = (): void => {
+        const sc = sessionRef.current
+        if (sc !== null && sc.moved) {
+          const now = performance.now()
+          auto?.tick(now - lastT)
+          lastT = now
+          if (!calibrated) {
+            calibrated = true
+            const el = sc.frameEl
+            if (el !== null && el.isConnected && !sc.extend) {
+              const fr = el.getBoundingClientRect()
+              sc.frameBottom0 = fr.bottom
+              sc.frameLeft0 = fr.left
+              sc.frameRight0 = fr.right
+            }
+          }
+        } else {
+          lastT = performance.now()
+        }
+        raf = requestAnimationFrame(frame)
+      }
+      raf = requestAnimationFrame(frame)
+    }
     const onMove = (e: PointerEvent): void => {
       const s = sessionRef.current
       if (s === null) return
+      s.lastClient = { x: e.clientX, y: e.clientY }
       const content = contentRef.current
       if (!s.moved) {
         // [R1·W-2 主控裁定回退] 激活阈=client 域屏幕反馈量（点击/拖拽判别阈=
@@ -221,18 +301,8 @@ export function useDragSession(args: {
         }
         setSlot({ nodeId: s.nodeId, srcKey: s.srcKey, insertIdx: s.insertIdx, active: true, overFrame: true, extend: false, pullPx: 0 })
         setPhase('dragging')
-        // [lnfix2] 稳态校准（激活后 rAF 一帧——主控裁决 b 面）：占位槽首帧
-        // 渲染后复取源框底缘/x 带（grab 基准=拖前布局，高卡离流缩框的边界
-        // 形由此对齐）。已入带/会话已换代/框已卸载则跳过——防撑高框毒化
-        // 基准（振荡回潮）与废快照
-        requestAnimationFrame(() => {
-          const el = s.frameEl
-          if (sessionRef.current !== s || el === null || !el.isConnected || s.extend) return
-          const fr = el.getBoundingClientRect()
-          s.frameBottom0 = fr.bottom
-          s.frameLeft0 = fr.left
-          s.frameRight0 = fr.right
-        })
+        // [lnfix2+回炉 R7] 校准与滚动泵=effect 驻留帧循环（见上）——激活仅翻
+        // moved 位；首激活帧顶部 tick 后基准重测（grab 基准=占位槽首帧布局）
       }
       // [②U7→F-VISFB-31] 指针→own 域−own 域抓取偏移（s_eff 判定时点取值——
       // 缩放正交）；[C3 甲案] inline 写入=ghost−frameOrigin（渲染定位域=frame
@@ -329,6 +399,8 @@ export function useDragSession(args: {
     document.addEventListener('pointerup', onUp)
     document.addEventListener('pointercancel', onUp)
     return () => {
+      if (raf !== 0) cancelAnimationFrame(raf)
+      auto?.stop()
       document.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerup', onUp)
       document.removeEventListener('pointercancel', onUp)
@@ -375,7 +447,8 @@ export function useDragSession(args: {
       frameBottom0: fr0.bottom,
       frameLeft0: fr0.left,
       frameRight0: fr0.right,
-      marginLeft0: ''
+      marginLeft0: '',
+      lastClient: { x: ev.clientX, y: ev.clientY }
     }
     try {
       cardEl.setPointerCapture(ev.pointerId)

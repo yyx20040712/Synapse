@@ -108,7 +108,6 @@ beforeEach(() => {
   useLineageViewStore.setState({
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
     tool: 'select', currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] }, paletteFor: null,
-    anchor: null, // [RR1-2] 锚维重置（c2-esc/c1-clickchain 同型——防跨用例残留）
     zoom: 1
   })
 })
@@ -188,7 +187,7 @@ describe('F-UIRES-03 C2 P2 吸附高亮层（DrawAnchorHint 演化——12 屏�
       root?.render(<DrawAnchorHint anchor={anchor} zoom={zoom} />)
     })
   }
-  const a: DrawAnchor = { nodeId: 'A', pt: { x: 228, y: 136 } }
+  const a: DrawAnchor = { nodeId: 'A', pt: { x: 228, y: 136 }, anchor: { side: 'right', slot: 1 } }
 
   it('zoom 补偿数学：dot r=6/z（屏幕域直径恒 12）+ring r=9/z——三档 {0.8,1,1.5} 逐一核', () => {
     for (const [z, r] of [
@@ -223,19 +222,18 @@ describe('F-UIRES-03 C2 P2 吸附高亮层（DrawAnchorHint 演化——12 屏�
     expect(dot.getAttribute('cy')).toBe('136')
   })
 
-  it('dragging 近目标锚（snap 维）：circle.snapped=目标卡规则锚（[F-ANCHFIX-01 批 1b] 选锚统一=B top ½ 164,300——selectAnchor(B, A 中心)）——预览端点同源（P4）', () => {
+  it('dragging 近目标锚（snap 维）：circle.snapped=命中锚本身（[F-VISFB-66] 钉定模型=B 左中 100,336——裁决 D 翻案：snap=所按锚不经 selectAnchor）——预览端点同源（P4）', () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid')
     })
     pointer(req('.tl-content'), 'pointerdown', 228, 136) // A 右中锚起拖
-    docPointer('pointermove', 102, 336) // B 左中锚近旁→目标识别（nearestAnchor 识别面沿承）
+    docPointer('pointermove', 102, 336) // B 左中锚近旁→命中（nearestAnchor own 域 ≤12）
     const dot = req('[data-testid="draw-anchor-hint"] circle.snapped')
-    // snap=selectAnchor(B_rect, A 中心) 规则锚：dx=0/dy<0 竖向 top+投影 pos=64→½
-    // 位（旧期望=最近锚 100,336——随 D 裁决「统一为路由规则」更新）
-    expect(dot.getAttribute('cx')).toBe('164')
-    expect(dot.getAttribute('cy')).toBe('300')
-    docPointer('pointerup', 164, 300)
+    // [F-VISFB-66] snap=命中锚本身（D 裁决「统一为路由规则」翻案：两端钉定）
+    expect(dot.getAttribute('cx')).toBe('100')
+    expect(dot.getAttribute('cy')).toBe('336')
+    docPointer('pointerup', 100, 336)
   })
 
   it('DrawPreview 吸附圆点收敛删除（单渲染点=DrawAnchorHint）：dragging+snap 态 draw-preview 内 circle 零', () => {

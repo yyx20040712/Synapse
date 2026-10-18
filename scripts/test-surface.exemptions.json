@@ -696,6 +696,408 @@
       "caseTitle": "删夹=域删级联零残留：papers/lineage_nodes/lineage_edges/notes/annotations/paper_tags/ai_notes 域内全灭；他夹与主图数据不动+双广播",
       "reason": "F-VISFB-61 域资产扩展：题名枚举 +floating_notes（零残留断言入体——断言强度只增）",
       "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "assertionText": "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', dashed: false, color: '#0f8a6d' })",
+      "reason": "F-VISFB-66 单元一物化纪律扩面：applyEdgeLineStyle 载荷断言增列 via/fromAnchor/toAnchor null 归一（原位增强非删检）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §0.3/§D.2（终裁采纳清单 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "assertionText": "expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', dashed: true, color: '#c07a2a' })",
+      "reason": "F-VISFB-66 单元一物化纪律扩面：成对置回路径同增列 null 归一（原位增强非删检）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §0.3/§D.2（终裁采纳清单 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c1-clickchain.test.tsx",
+      "fileScope": true,
+      "reason": "F-VISFB-66 豁免#6：点两卡连边链整文件随链路退役删除（裁定 2——唯一建边径=锚点显式拖拽）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#6/§B.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-manual-edit.test.tsx",
+      "fileScope": true,
+      "reason": "F-VISFB-66 豁免#4：linkManualParent 孤儿测试整文件随改父业务退役删除（裁定 3——三入口死码删，store linkManualParent 无生产调用面）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#4/§C.1"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚（fromEff）').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚（fromEff）').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚（snap）').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚（snap）').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "assertionText": "expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚').toBeLessThanOrEqual(0.5)",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "caseTitle": "R-锚级一致①direct 意图：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "caseTitle": "R-锚级一致②h-slip：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "caseTitle": "R-锚级一致③band：端点恒落 12 锚体系+首段外法线（zoom 三档）",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "caseTitle": "R-锚级一致④跨年绕行：端点恒落 12 锚体系（U2 绕行族 band/detour——zoom 三档）",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
+      "caseTitle": "R-锚级一致⑤manual-override via 直写：端点恒落 12 锚体系（zoom 三档）",
+      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T1 种子节点时间线渲染真实文本→UI 连线→滚动容器锚后节点仍可断言",
+      "reason": "F-VISFB-66 豁免#1：T1 右键径用例整删（连线到…链路退役）；断言比对记录随批档（unit2-e2e-compare.md）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#1（裁定 2）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(win.getByTestId('lineage-pending-link')).toBeVisible()",
+      "reason": "F-VISFB-66 单元二 e2e 改写：右键/点两卡径断言随链路退役删除（T3 拒绝语义等价迁移=拖拽径二次画同对）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.1 T3 行（裁定 2）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(win.getByText(/该逻辑线已存在（.+），重复边被拒绝/)).toBeVisible({ timeout: 10_000 })",
+      "reason": "F-VISFB-66 单元二 e2e 改写：右键/点两卡径断言随链路退役删除（T3 拒绝语义等价迁移=拖拽径二次画同对）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.1 T3 行（裁定 2）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T12c 线型链跨格全序列（C1：展开钮/色行 per-kind/点两卡连边/连画/Esc 分层/详情不开）",
+      "reason": "F-VISFB-66 豁免#2：T12c 点两卡径用例整删；断言比对记录随批档",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#2（裁定 2）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T12d pendingLink 提示条 Esc 退出（F-ESC-01：Esc 后点卡不建边）",
+      "reason": "F-VISFB-66 豁免#3：T12d pendingLink 模式用例整删（模式态随右键链路退役）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#3（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
+      "caseTitle": "竖向布局：dragging 预览端点=selectAnchor 规则锚（snap 端=selectAnchor(目标 rect, 源中心)，起点=fromEff=selectAnchor(源 rect, 目标中心)）",
+      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
+      "caseTitle": "横向近邻布局：同断言（规则锚=主向横边+侧内投影——move 落顶中锚判别位）",
+      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
+      "caseTitle": "斜向布局：同断言（投影越界取最近槽——move 落右中锚判别位）",
+      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
+      "caseTitle": "未命中目标：snap=null+fromEff=null+预览端点=cursor（x1/y1 回落 from.pt 起拖锚）",
+      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
+      "caseTitle": "取消径 fromEff 复位：mid-drag blur 中断→重拖 fromEff 重算（无残留跨会话）",
+      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "互斥①发起 pendingLink 清工具：draw-X 态「连线到…」→tool 回 select（完成语义恒 select 态路由）+点 B 产品路径闭合",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "互斥②进画线清意图：pendingLink 激活后 tool 进 draw-X→提示条撤（防 draw 路由劫持完成链死路）",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-board.test.tsx",
+      "caseTitle": "互斥③组合格：draw-X+palette 开→发起→tool select+paletteFor null（resetTool 一并收板）+意图在场可完成",
+      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-anchors.test.tsx",
+      "caseTitle": "dragging 近目标锚（snap 维）：circle.snapped=目标卡规则锚（[F-ANCHFIX-01 批 1b] 选锚统一=B top ½ 164,300——selectAnchor(B, A 中心)）——预览端点同源（P4）",
+      "reason": "F-VISFB-66 单元二：snap=selectAnchor 规则锚断言随钉定模型改写（snap=命中锚本身——裁决 D 翻案）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1（裁定 1）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "空面 no-op：select+无板+无锚+无菜单→Esc store 零变化",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "菜单层让路：菜单 DOM 在场→Esc 单口 no-op（store 全保持——菜单自治关闭承载）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "色板层：板开（叠加锚+armed）→Esc 只关板（锚/画线保持）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "锚层：板 null+锚 picked+armed→Esc 只清锚（tool 保持=连画域不退）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "工具层：板 null+锚 null+armed→Esc 退画线（→select）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "INPUT 让路（锚在场变体）：输入焦点内 Esc=原生优先（板/锚/画线全保持）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "组合跨格序列：菜单+板+锚+armed 叠加→四连 Esc 逐层退全清（一次只关最上层）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "setDrawAnchor 写读+resetTool 清锚（工具态中止=锚无残留）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "setMode 清锚（模式切换=退出画线域）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "kind 切换（draw-X→draw-Y）锚保留（仍在画线域——C1 语义沿承）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "resetForMount 清锚（进页缺省）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "对话框层让路：role=dialog DOM 在场→Esc 单口 no-op（store 全保持——Dialog 自治 Esc 承载）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "pendingLink 让路：提示条标记 DOM 在场→Esc 单口 no-op（提示条自治 Esc 承载）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "提示条自治 Esc：pendingLink 激活→Esc→setPendingLink 恰一调 null（经 props 回写）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "提示条 IME 组词期 Esc=取消候选词非关闭（isComposing 守卫）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "提示条 INPUT 让路：输入焦点内 Esc=原生优先（提示条不关）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "提示条上层让路：对话框/菜单在场→自治监听 no-op（setPendingLink 零调）",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
+      "caseTitle": "层序跨格序列：dialog+提示条+板+锚+armed 叠加→五连 Esc 逐层各退一层",
+      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
+      "caseTitle": "R15 源卡高亮：dragging 期源卡挂 .link-src（T3-P7B 语义沿承）；收尾撤",
+      "reason": "F-VISFB-66 豁免#6 族：useDrawLine 点两卡分支族断言随 handleCardClick 退役改写（源侧高亮删除负锚化 W-09r2）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#6/§B.1（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
+      "caseTitle": "R11② manual 线跨卡换端：reconnectEdge+L 重正交（新拐点落地）",
+      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
+      "caseTitle": "R11② 自动线（空 via）跨卡换端：物化种子走 reconnectEnd（不整体跳过）+空 via 不穿透 IPC",
+      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
+      "caseTitle": "R11①② 自动线（空 via）同卡换锚：物化 via 承载新锚位（空 via 归一不落 []）",
+      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-edit.test.ts",
+      "caseTitle": "换锚（新锚右侧边）：首拐插入 (V.x, A.y)——入轴=锚法线向+via 全保留",
+      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-edit.test.ts",
+      "caseTitle": "同轴直达：新锚与首 via 同列（竖直锚位）=零插入",
+      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
+      "caseTitle": "CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+link-src+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B）",
+      "reason": "F-VISFB-66 单元二：.link-src CSS 正锚随源侧高亮链退役负锚化（W-09r2）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1（W-09r2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-rr13-noop.test.tsx",
+      "caseTitle": "负锚（短路不过火）：同卡换锚（B 左中→B 顶中）仍写入=L 重正交+一编辑单元",
+      "reason": "F-VISFB-66 单元二：同卡换锚用例随换锚合法化（终裁修正 C1a）改写——清 via+重钉锚断言",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 主控终裁（runId=20261018-fvisfb66 批档 07 号件） §二（本端卡异锚=合法换锚）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-session-store.test.ts",
+      "caseTitle": "[F-ALIGN-01 改写] 新建类动作乐观生成 id（画线）：linkNodes 乐观边即时在场（uuid=落库 id——无临时 id 漂移；原 addPaperNode 面随节点新建路径退役删——节点唯一来源=入库/移动两路）",
+      "reason": "F-VISFB-66 单元二：linkNodes 调用面随入口退役改写为 drawEdge 单径（必携双锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.3（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-session-store.test.ts",
+      "assertionText": "expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')",
+      "reason": "F-VISFB-66 单元二：linkNodes 调用面随入口退役改写为 drawEdge 单径（必携双锚）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.3（裁定 2）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "upsertEdge/removeEdge 成功回填：新边追加、删边清除",
+      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "新建边成功 toast 统一文案（U8 单基型）；label 后编辑（id 在场）不 toast",
+      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边",
+      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "linkNodes 新建（U8 单基型）+成功 toast 统一文案",
+      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-store-write.test.ts",
+      "caseTitle": "linkNodes CONFLICT（service 守卫拒绝）：动作丢弃+toast reason+保存态回落 clean",
+      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
+      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
     }
   ]
 }

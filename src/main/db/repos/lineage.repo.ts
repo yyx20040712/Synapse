@@ -132,12 +132,13 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        updated_at = excluded.updated_at`
   )
   const upsertEdgeStmt = db.prepare(
-    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, dashed, color, created_at, updated_at)
-     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @via, @dashed, @color, @now, @now)
+    `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, from_anchor, to_anchor, dashed, color, created_at, updated_at)
+     VALUES (@id, @fromNode, @toNode, @label, @kind, @sub, @via, @fromAnchor, @toAnchor, @dashed, @color, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        from_node = excluded.from_node, to_node = excluded.to_node,
        label = excluded.label, kind = excluded.kind, sub = excluded.sub,
-       via = excluded.via, dashed = excluded.dashed, color = excluded.color,
+       via = excluded.via, from_anchor = excluded.from_anchor, to_anchor = excluded.to_anchor,
+       dashed = excluded.dashed, color = excluded.color,
        updated_at = excluded.updated_at`
   )
   const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
@@ -199,9 +200,14 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
         // [F-LGRAPH-01②U8] 应用面单基型：kind 列恒 'manual'（输入面无 kind 字段）
         kind: 'manual',
         sub: null,
-        // [F-LINEAGE-02] 序列化口径 N-1：undefined/空数组→NULL（缺省=自动路由
-        // 不产出 []——diff/脏检测零噪声）；不变量校验在 service 写面（repo 薄）
+        // [F-LINEAGE-02] 序列化口径 N-1：undefined/空数组/null→NULL（缺省=自动
+        // 路由不产出 []——diff/脏检测零噪声；[F-VISFB-66] null=显式清除同落
+        // NULL——A8 物化载荷三态归一）；不变量校验在 service 写面（repo 薄）
         via: input.via != null && input.via.length > 0 ? JSON.stringify(input.via) : null,
+        // [F-VISFB-66] 端点锚序列化（025 列）：null/undefined→NULL（未钉定
+        // ——undefined≡缺席归一化在 write-queue enqueue；值→AnchorRef JSON）
+        fromAnchor: input.fromAnchor != null ? JSON.stringify(input.fromAnchor) : null,
+        toAnchor: input.toAnchor != null ? JSON.stringify(input.toAnchor) : null,
         // [F-LGRAPH-01②U8] 视觉列缺省归一（false/色板首色——A3 内联字段）
         dashed: input.dashed === true ? 1 : 0,
         color: input.color ?? LINE_TYPE_COLORS[0],

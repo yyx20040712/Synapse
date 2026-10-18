@@ -1,24 +1,10 @@
 // @vitest-environment jsdom
 /**
  * [F-ANCHFIX-01 批 1b] 选锚语义统一单测（用户裁决 D=统一为路由规则——预览
- * 吸附改 selectAnchor 同函数同参于 routeOne direct 态选锚，所见即所得：
+ * [F-VISFB-66 改写] 钉定模型（裁决 D 翻案）：两端锚用户钉定不 morph——
  * 松手零跳动；设计书 v1.2 终裁记录+§3.4 3b 行）：
  * - 选锚统一：≥3 布局（竖向/横向近邻/斜向）断言 dragging 态预览线端点=
- *   selectAnchor 规则锚（snap 端=snap.pt=selectAnchor(目标 rect, 源卡 rect
- *   中心).pt；起点=fromEff.pt=selectAnchor(源卡 rect, 目标卡 rect 中心).pt
- *   ——经 DrawPreview line x1/y1/x2/y2 黑盒观测）+DrawAnchorHint（snap 维）
- *   自动跟随规则锚（DrawLayers 零触面行为跟随锁）；
- * - 未命中目标：snap=null+fromEff=null+预览端点=cursor（x1/y1 回落 from.pt）；
- * - 防御单测（设计 §3.4 1a 残余防回潮）：zoom 单源一致性——useTimelineZoom
- *   contentStyle（inline transform）与 contentScale() 读数恒等（mock
- *   getComputedStyle 从 inline style 派生——双源恒等断言）。
- * 目标卡识别面沿承 nearestAnchor（12 锚域 DRAW_SNAP_R 内识别目标卡——识别
- * 面不变，仅吸附锚改规则锚）：用例 move 点刻意落「目标卡最近锚≠规则锚」位
- * （判别性——若实现仍用 nearestAnchor 锚位即红）。
- * helper 沿承 lineage-drawline 件 mockGeometry 模式（第 4 份复制——抽共享
- * 涉 tests/utils 受锁扩面，留主控裁决——rr1 件头注同款申报）。
- * always-active 裸 describe（K3）。
- */
+ *   snap=命中锚本身（预览终点=所按锚；起点恒按下锚 from.pt） */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,7 +16,7 @@ const stubApi = makeApiStub({
 
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { LINE_TYPE_COLORS } from '../../../src/shared/models/lineage'
-import { selectAnchor, type Rect } from '../../../src/renderer/features/lineage/routing/anchors'
+
 import { contentScale } from '../../../src/renderer/features/lineage/timeline-zoom'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -152,62 +138,57 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('F-ANCHFIX-01 批 1b 选锚统一（预览吸附=selectAnchor 路由规则——裁决 D）', () => {
-  it('竖向布局：dragging 预览端点=selectAnchor 规则锚（snap 端=selectAnchor(目标 rect, 源中心)，起点=fromEff=selectAnchor(源 rect, 目标中心)）', () => {
+describe('F-VISFB-66 钉定模型（预览端点=按下锚/命中锚——裁决 D 翻案：两端钉定不 morph）', () => {
+  it('竖向布局：snap 端=所按 B 左 ¼ 锚本身（非 selectAnchor 规则锚）+起点恒 from.pt（按下锚）', () => {
     mountTimeline([node('A'), node('B')], { A: { x: 100, y: 100 }, B: { x: 100, y: 300 } })
-    const src: Rect = { x: 100, y: 100, w: 128, h: 72 }
-    const tgt: Rect = { x: 100, y: 300, w: 128, h: 72 }
-    // 起拖=A 右中锚；move 落 B 左 ¼ 锚 (100,318)（目标卡最近锚≠规则锚——判别位）
+    // 起拖=A 右中锚 (228,136)；move 落 B 左 ¼ 锚 (100,318)——钉定模型下 snap=命中锚
     dragTo({ x: 228, y: 136 }, { x: 100, y: 318 })
-    const expSnap = selectAnchor(tgt, { x: src.x + src.w / 2, y: src.y + src.h / 2 }).pt
-    const expFrom = selectAnchor(src, { x: tgt.x + tgt.w / 2, y: tgt.y + tgt.h / 2 }).pt
     const ends = previewEnds()
-    expect(ends.x2).toBeCloseTo(expSnap.x, 6)
-    expect(ends.y2).toBeCloseTo(expSnap.y, 6)
-    expect(ends.x1).toBeCloseTo(expFrom.x, 6)
-    expect(ends.y1).toBeCloseTo(expFrom.y, 6)
-    // DrawAnchorHint（snap 维）自动跟随规则锚（DrawLayers 零触面行为跟随）
+    expect(ends.x2).toBeCloseTo(100, 6) // 命中锚=左 ¼（旧模型=规则锚 bottom ½ (164,372)——判别位）
+    expect(ends.y2).toBeCloseTo(318, 6)
+    expect(ends.x1).toBeCloseTo(228, 6) // 起点恒按下锚（fromEff morph 已删）
+    expect(ends.y1).toBeCloseTo(136, 6)
+    // DrawAnchorHint（snap 维）跟随命中锚（DrawLayers 零触面行为跟随）
     const hintDot = req('[data-testid="draw-anchor-hint"] circle.snapped')
-    expect(Number(hintDot.getAttribute('cx'))).toBeCloseTo(expSnap.x, 6)
-    expect(Number(hintDot.getAttribute('cy'))).toBeCloseTo(expSnap.y, 6)
+    expect(Number(hintDot.getAttribute('cx'))).toBeCloseTo(100, 6)
+    expect(Number(hintDot.getAttribute('cy'))).toBeCloseTo(318, 6)
+    docPointer('pointerup', 100, 318)
+    // 落边双锚载荷=按下锚/命中锚（right 1/left 0——身份直证）
+    const e = useLineageStore.getState().edges[0]!
+    expect(e.fromAnchor).toEqual({ side: 'right', slot: 1 })
+    expect(e.toAnchor).toEqual({ side: 'left', slot: 0 })
   })
 
-  it('横向近邻布局：同断言（规则锚=主向横边+侧内投影——move 落顶中锚判别位）', () => {
+  it('横向近邻布局：snap=命中顶 ½ 锚本身（非规则锚 left ¼——判别位）+起点恒按下锚', () => {
     mountTimeline([node('A'), node('B')], { A: { x: 100, y: 100 }, B: { x: 400, y: 120 } })
-    const src: Rect = { x: 100, y: 100, w: 128, h: 72 }
-    const tgt: Rect = { x: 400, y: 120, w: 128, h: 72 }
-    // move 落 B 顶 ½ 锚 (464,120) 近旁（≠规则锚 left ¼=(400,138)——判别位）
+    // move 落 B 顶 ½ 锚 (464,120) 近旁
     dragTo({ x: 228, y: 136 }, { x: 464, y: 124 })
-    const expSnap = selectAnchor(tgt, { x: src.x + src.w / 2, y: src.y + src.h / 2 }).pt
-    const expFrom = selectAnchor(src, { x: tgt.x + tgt.w / 2, y: tgt.y + tgt.h / 2 }).pt
     const ends = previewEnds()
-    expect(ends.x2).toBeCloseTo(expSnap.x, 6)
-    expect(ends.y2).toBeCloseTo(expSnap.y, 6)
-    expect(ends.x1).toBeCloseTo(expFrom.x, 6)
-    expect(ends.y1).toBeCloseTo(expFrom.y, 6)
+    expect(ends.x2).toBeCloseTo(464, 6)
+    expect(ends.y2).toBeCloseTo(120, 6)
+    expect(ends.x1).toBeCloseTo(228, 6)
+    expect(ends.y1).toBeCloseTo(136, 6)
+    docPointer('pointerup', 800, 700)
   })
 
-  it('斜向布局：同断言（投影越界取最近槽——move 落右中锚判别位）', () => {
+  it('斜向布局：snap=命中右 ½ 锚本身（非规则锚 left ¼——判别位）', () => {
     mountTimeline([node('A'), node('B')], { A: { x: 100, y: 100 }, B: { x: 320, y: 260 } })
-    const src: Rect = { x: 100, y: 100, w: 128, h: 72 }
-    const tgt: Rect = { x: 320, y: 260, w: 128, h: 72 }
-    // move 落 B 右 ½ 锚 (448,296) 近旁（≠规则锚 left ¼=(320,278)——判别位）
+    // move 落 B 右 ½ 锚 (448,296) 近旁
     dragTo({ x: 228, y: 136 }, { x: 448, y: 290 })
-    const expSnap = selectAnchor(tgt, { x: src.x + src.w / 2, y: src.y + src.h / 2 }).pt
-    const expFrom = selectAnchor(src, { x: tgt.x + tgt.w / 2, y: tgt.y + tgt.h / 2 }).pt
     const ends = previewEnds()
-    expect(ends.x2).toBeCloseTo(expSnap.x, 6)
-    expect(ends.y2).toBeCloseTo(expSnap.y, 6)
-    expect(ends.x1).toBeCloseTo(expFrom.x, 6)
-    expect(ends.y1).toBeCloseTo(expFrom.y, 6)
+    expect(ends.x2).toBeCloseTo(448, 6)
+    expect(ends.y2).toBeCloseTo(296, 6)
+    expect(ends.x1).toBeCloseTo(228, 6)
+    expect(ends.y1).toBeCloseTo(136, 6)
+    docPointer('pointerup', 800, 700)
   })
 
-  it('未命中目标：snap=null+fromEff=null+预览端点=cursor（x1/y1 回落 from.pt 起拖锚）', () => {
+  it('未命中目标：snap=null+预览端点=cursor（起点恒 from.pt 起拖锚）', () => {
     mountTimeline([node('A'), node('B')], { A: { x: 100, y: 100 }, B: { x: 100, y: 300 } })
     // move 空白位（距一切锚 >12——A/B 全域外）
     dragTo({ x: 228, y: 136 }, { x: 700, y: 600 })
     const ends = previewEnds()
-    expect(ends.x1).toBeCloseTo(228, 6) // fromEff=null→回落起拖锚 from.pt
+    expect(ends.x1).toBeCloseTo(228, 6) // 起点恒按下锚
     expect(ends.y1).toBeCloseTo(136, 6)
     expect(ends.x2).toBeCloseTo(700, 6) // snap=null→cursor 跟随沿承
     expect(ends.y2).toBeCloseTo(600, 6)
@@ -217,23 +198,20 @@ describe('F-ANCHFIX-01 批 1b 选锚统一（预览吸附=selectAnchor 路由规
     expect(useLineageStore.getState().edges).toHaveLength(0)
   })
 
-  it('取消径 fromEff 复位：mid-drag blur 中断→重拖 fromEff 重算（无残留跨会话）', () => {
+  it('from 恒定跨 move：掠过他卡锚再折返——起点全程=按下锚（无 fromEff 重算面）', () => {
     mountTimeline([node('A'), node('B')], { A: { x: 100, y: 100 }, B: { x: 100, y: 300 } })
-    const src: Rect = { x: 100, y: 100, w: 128, h: 72 }
-    const tgt: Rect = { x: 100, y: 300, w: 128, h: 72 }
     dragTo({ x: 228, y: 136 }, { x: 100, y: 318 })
     let ends = previewEnds()
-    expect(ends.x1).toBeCloseTo(164, 6) // fromEff 生效（bottom ½）
+    expect(ends.x1).toBeCloseTo(228, 6)
     act(() => {
-      window.dispatchEvent(new Event('blur')) // 中断=取消复位（fromEff 清）
+      window.dispatchEvent(new Event('blur')) // 中断=取消复位
     })
     expect(q('[data-testid="draw-preview"]')).toBeNull()
-    // 重拖第二会话：fromEff 按新会话重算（同几何=同值——证明复位后重算非残留）
+    // 重拖第二会话：同几何同值（证明会话态干净——起点=新按下锚非残留）
     dragTo({ x: 228, y: 136 }, { x: 100, y: 318 })
-    const expFrom = selectAnchor(src, { x: tgt.x + tgt.w / 2, y: tgt.y + tgt.h / 2 }).pt
     ends = previewEnds()
-    expect(ends.x1).toBeCloseTo(expFrom.x, 6)
-    expect(ends.y1).toBeCloseTo(expFrom.y, 6)
+    expect(ends.x1).toBeCloseTo(228, 6)
+    expect(ends.y1).toBeCloseTo(136, 6)
     docPointer('pointerup', 800, 700)
   })
 })

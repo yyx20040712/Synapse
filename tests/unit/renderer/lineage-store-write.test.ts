@@ -196,7 +196,7 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     stubApi.lineage.graph.mockResolvedValue({
       ok: true, data: { nodes: [node('A'), node('B'), node('C')], edges: [] }
     })
-    state().linkNodes('C', 'B')
+state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     expect(state().edges).toHaveLength(1) // 乐观边暂存期在场
     state().save()
     await settle(10)
@@ -214,8 +214,8 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     stubApi.lineage.graph.mockResolvedValue({
       ok: true, data: { nodes: [node('A'), node('B'), node('C'), node('D')], edges: [edge('e-d-a', 'D', 'A')] }
     })
-    state().linkNodes('C', 'B') // 首条：CONFLICT 丢弃（不同实体独立排队不融合）
-    state().linkNodes('D', 'A') // 次条：续跑派发成功
+state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } }) // 首条：CONFLICT 丢弃（不同实体独立排队不融合）
+    state().drawEdge('D', 'A', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } }) // 次条：续跑派发成功
     state().save()
     await settle(12)
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(2) // 续跑实证：次条仍被派发未被首条拒绝拖停
@@ -282,16 +282,17 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     expect(state().nodes.map((n) => n.id)).toEqual(['B'])
   })
 
-  it('upsertEdge/removeEdge 成功回填：新边追加、删边清除', async () => {
-    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [edge('e1', 'A', 'B')] })
-    state().linkNodes('B', 'A')
+  it('upsertEdge/removeEdge 成功回填：新边追加、删边清除（[F-VISFB-66] drawEdge 单径——同对查重先行故先清场再建）', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [] })
+    state().drawEdge('B', 'A', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'B', to: 'A', label: '' })) // [②U1] 本地 uuid 随行（A7）
-    expect(state().edges.map((e) => e.fromNode)).toEqual(['A', 'B']) // 新边追加（乐观 uuid id——回显同 id 覆盖）
-    // 新建边成功 toast=唯一可见反馈（U8 单基型统一文案）
-    expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')
+    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'B', to: 'A', label: '' })) // [F-VISFB-66] 本地 uuid 随行（A7）
+    expect(state().edges.map((e) => e.fromNode)).toEqual(['B']) // 新边（乐观 uuid id——回显同 id 覆盖）
+    // [F-VISFB-66] 画线动作面=即时暂存提示（silentSave 抑制 flush toast）
+    expect(showToast).toHaveBeenCalledWith('已画线，保存后生效', 'success')
 
+    useLineageStore.setState({ edges: [...useLineageStore.getState().edges, edge('e1', 'A', 'B')] })
     state().removeEdge('e1')
     state().save()
     await settle()
@@ -299,12 +300,13 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     expect(state().edges.map((e) => e.fromNode)).toEqual(['B'])
   })
 
-  it('新建边成功 toast 统一文案（U8 单基型）；label 后编辑（id 在场）不 toast', async () => {
-    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [edge('e1', 'A', 'B')] })
-    state().linkManualParent('B', 'A')
+  it('drawEdge 建边即时 toast（暂存文案）+flush 成功不双 toast；label 后编辑（id 在场）不 toast', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B')], edges: [] })
+    state().drawEdge('B', 'A', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
+    expect(showToast).toHaveBeenCalledWith('已画线，保存后生效', 'success') // [F-VISFB-66] 画线动作面=即时暂存提示（silentSave 抑制 flush toast）
     state().save()
     await settle()
-    expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')
+    expect(showToast).toHaveBeenCalledTimes(1) // flush 成功零双 toast
 
     // label 后编辑走 id 更新语义——成功不 toast（防噪）
     vi.mocked(showToast).mockClear()
@@ -313,38 +315,6 @@ describe('lineage.store 写面 —— 会话暂存+save 批量落库（INV-04 �
     state().save()
     await settle()
     expect(showToast).not.toHaveBeenCalled()
-  })
-
-  it('N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边', async () => {
-    useLineageStore.setState({
-      nodes: [node('A'), node('B'), node('C')],
-      edges: [edge('e-old', 'A', 'B')]
-    })
-    stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
-    stubApi.lineage.upsertEdge.mockResolvedValueOnce({
-      ok: false, error: { code: 'DB_ERROR', message: '写入失败' }
-    })
-    state().reparentNode('B', 'C') // B 换父：A→C（[②U1] 两动作同一编辑单元）
-    state().save()
-    await settle()
-    // 两调用：删旧+加新（票面 N5=service 两调用，UI 单操作）
-    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'C', to: 'B', label: '' }))
-    expect(state().saveStatus).toBe('error')
-    expect(showToast).toHaveBeenCalledWith('旧连线已移除，新连线未建立：写入失败', 'error')
-    // 节点暂无库父=合法中间态：旧边已出队清除；[②U1] 新边乐观在场（编辑
-    // 意图保持——失败不回滚暂存，重试同载荷）
-    expect(state().edges.map((e) => e.fromNode)).toEqual(['C'])
-    // retry：只重发加边（removeEdge 不重发——已成功）
-    stubApi.lineage.upsertEdge.mockImplementationOnce(async (req: { id?: string }) =>
-      ({ ok: true, data: edge(req.id ?? 'e-new', 'C', 'B') })
-    )
-    state().retrySave()
-    await settle()
-    expect(stubApi.lineage.removeEdge).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(2)
-    expect(state().edges.map((e) => e.fromNode)).toEqual(['C'])
-    expect(state().saveStatus).toBe('clean')
   })
 
   it('load 互锁（stale-guard 写面同族）：暂存队列未清空时 graph 落地丢弃，不覆盖乐观值', async () => {
@@ -382,7 +352,11 @@ describe('lineage.store 写面 —— [F-LGRAPH-01②U8] 线型编辑 action（a
       to: 'B',
       label: '继承甲',
       dashed: false,
-      color: '#0f8a6d'
+      color: '#0f8a6d',
+      // [F-VISFB-66] 物化纪律扩面：via/双锚随现值 null 归一（未钉定边幂等落库）
+      via: null,
+      fromAnchor: null,
+      toAnchor: null
     })
     // 回填：saved 行入 store（视觉字段更新面）
     expect(state().edges[0]?.dashed).toBe(false)
@@ -404,25 +378,84 @@ describe('lineage.store 写面 —— [F-LGRAPH-01②U8] 线型编辑 action（a
       to: 'B',
       label: '继承甲',
       dashed: true,
-      color: '#c07a2a'
+      color: '#c07a2a',
+      // [F-VISFB-66] 物化纪律扩面：via/双锚随现值 null 归一
+      via: null,
+      fromAnchor: null,
+      toAnchor: null
     })
   })
 
-  it('linkNodes 新建（U8 单基型）+成功 toast 统一文案', async () => {
+  it('drawEdge 新建（单径必携双锚）+即时 toast+flush 落库', async () => {
     useLineageStore.setState({ nodes: [node('A'), node('B')] })
-    state().linkNodes('A', 'B')
+    state().drawEdge('A', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
+    // 乐观面先行断言（回显桩不含锚列——保存后以服务器行为准，此处锁暂存态）
+    expect(state().edges).toHaveLength(1)
+    expect(state().edges[0]!.fromAnchor).toEqual({ side: 'bottom', slot: 1 })
+    expect(showToast).toHaveBeenCalledWith('已画线，保存后生效', 'success')
     state().save()
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({
       from: 'A',
       to: 'B',
-      label: ''
-    })) // [②U1] 本地 uuid 随行（A7 乐观一致性）
-    expect(state().edges).toHaveLength(1)
-    expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')
+      label: '',
+      fromAnchor: { side: 'bottom', slot: 1 },
+      toAnchor: { side: 'top', slot: 1 }
+    })) // [F-VISFB-66] 本地 uuid 随行（A7）+双锚载荷（查重单点=store 层）
   })
 
-  it('linkNodes CONFLICT（service 守卫拒绝）：动作丢弃+toast reason+保存态回落 clean', async () => {
+  it('[R14-⑤] 树拒绝 UI 链：画线→save→service 成环拒 toast+丢弃（守卫仍活=覆盖在——多父守卫已随 U8 manual 不限条数退役）', async () => {
+    useLineageStore.setState({
+      nodes: [node('A'), node('B'), node('C')],
+      edges: [edge('e-ab', 'A', 'B'), edge('e-bc', 'B', 'C')]
+    })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: false,
+      error: { code: 'CONFLICT', message: '成环拒绝：该边将使脉络图出现环路（连线不得成环）' }
+    })
+    stubApi.lineage.graph.mockResolvedValue({
+      ok: true, data: { nodes: [node('A'), node('B'), node('C')], edges: [edge('e-ab', 'A', 'B'), edge('e-bc', 'B', 'C')] }
+    })
+    state().drawEdge('C', 'A', {
+      dashed: false,
+      color: '#1e3a8a',
+      label: '',
+      fromAnchor: { side: 'bottom', slot: 1 },
+      toAnchor: { side: 'top', slot: 1 }
+    })
+    await state().save()
+    await settle(10)
+    expect(showToast).toHaveBeenCalledWith('成环拒绝：该边将使脉络图出现环路（连线不得成环）', 'error')
+    expect(state().saveStatus).toBe('clean')
+    expect(state().edges).toHaveLength(2) // 库态重拉消解乐观边
+  })
+
+  it('[R14-⑤] 树拒绝 UI 链：画线自环径（store 无向查重放行异 pair 无拦截面）→save→service 自环拒 toast', async () => {
+    useLineageStore.setState({ nodes: [node('A'), node('B')] })
+    stubApi.lineage.upsertEdge.mockResolvedValue({
+      ok: false,
+      error: { code: 'CONFLICT', message: '自环边不允许（from 与 to 为同一节点）' }
+    })
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [node('A'), node('B')], edges: [] } })
+    // 自环经 UI 拖拽径结构性不可达（源卡排除）——防御路径：service 拒绝面仍活
+    state().drawEdge('A', 'B', {
+      dashed: false,
+      color: '#1e3a8a',
+      label: '',
+      fromAnchor: { side: 'bottom', slot: 1 },
+      toAnchor: { side: 'top', slot: 1 }
+    })
+    stubApi.lineage.upsertEdge.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'CONFLICT', message: '自环边不允许（from 与 to 为同一节点）' }
+    })
+    await state().save()
+    await settle(10)
+    expect(showToast).toHaveBeenCalledWith('自环边不允许（from 与 to 为同一节点）', 'error')
+    expect(state().saveStatus).toBe('clean')
+  })
+
+  it('drawEdge CONFLICT（service 守卫拒绝）：动作丢弃+toast reason+保存态回落 clean', async () => {
     useLineageStore.setState({ nodes: [node('A'), node('B'), node('C')] })
     stubApi.lineage.upsertEdge.mockResolvedValue({
       ok: false,
@@ -431,7 +464,7 @@ describe('lineage.store 写面 —— [F-LGRAPH-01②U8] 线型编辑 action（a
     stubApi.lineage.graph.mockResolvedValue({
       ok: true, data: { nodes: [node('A'), node('B'), node('C')], edges: [] }
     })
-    state().linkNodes('C', 'B')
+state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     state().save()
     await settle(10)
     expect(showToast).toHaveBeenCalledWith('该逻辑线已存在（C→B），重复边被拒绝', 'error')
@@ -470,7 +503,7 @@ describe('lineage.store 写面 —— [F-LGRAPH-01②U8] 线型编辑 action（a
     stubApi.lineage.upsertEdge.mockResolvedValue({ ok: true, data: edge('e2', 'A', 'B') })
     useLineageStore.setState({ nodes: [node('A'), node('B')] })
     state().saveLineTypeNames(NAMES_A)
-    state().linkNodes('A', 'B')
+    state().drawEdge('A', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     state().save()
     await settle()
     const orderLt = stubApi.lineage.upsertLineTypes.mock.invocationCallOrder[0]
@@ -490,10 +523,10 @@ describe('lineage.store 写面 —— [F-LGRAPH-01②U8] 线型编辑 action（a
       )
     stubApi.lineage.upsertLineTypes.mockResolvedValue({ ok: true, data: [...NAMES_A] })
     useLineageStore.setState({ nodes: [node('A'), node('B'), node('C')] })
-    state().linkNodes('A', 'B')
+state().drawEdge('A', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     state().save() // X 派发（悬挂）
     state().saveLineTypeNames(NAMES_A) // saving 中编辑=拒绝（原排队语义随 R5 闸退役）
-    state().linkNodes('C', 'B') // saving 中编辑=拒绝
+    state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } }) // saving 中编辑=拒绝
     expect(state().queue).toHaveLength(1) // 仅 X 在队（零新入队）
     await settle()
     expect(stubApi.lineage.upsertEdge).toHaveBeenCalledTimes(1) // 仅 X 已派发

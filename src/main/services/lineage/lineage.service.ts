@@ -42,6 +42,7 @@ import {
   LINE_TYPE_DEFAULT_NAME,
   lineageOrder,
   lineTypeNamesSchema,
+  validateLineageAnchor,
   validateLineageVia
 } from '../../../shared/models/lineage'
 import type {
@@ -227,10 +228,27 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       // CONFLICT 丢弃——INVALID_REQUEST 走 error 队首保留；d1-W5 勘正：
       // 理论上该载荷重试永不成功，F-LGRAPH-01 ②编辑器接入时兑现校验前置
       // 再评估是否扩丢弃码集——不扩面留档）
-      if (input.via !== undefined) {
+      if (input.via !== undefined && input.via !== null) {
         const viaReason = validateLineageVia(input.via)
         if (viaReason !== null) {
           throw new LineageDomainError('INVALID_REQUEST', `边 via 路点非法：${viaReason}`)
+        }
+      }
+      // [F-VISFB-66] 端点锚校验（设计书 §D.5——N-02r2：写面非法锚=INVALID_
+      // REQUEST，对齐 via 先例；null=清除意图仅属载荷层，validate 层不吃 null
+      // ——仅值在场时校验）。类型面已收窄，运行时形状检查=防御纵深（IPC 外
+      // 直调路径/repo 直写容错读面兜底）
+      for (const [key, anchor] of [
+        ['fromAnchor', input.fromAnchor],
+        ['toAnchor', input.toAnchor]
+      ] as const) {
+        if (anchor === undefined || anchor === null) continue
+        const check = validateLineageAnchor(anchor)
+        if (!check.ok) {
+          throw new LineageDomainError(
+            'INVALID_REQUEST',
+            `边锚点非法（${key} ${check.reason} 域违例）——side 须为 top/bottom/left/right，slot 须为 0/1/2`
+          )
         }
       }
       const graph = deps.repo.listGraph()

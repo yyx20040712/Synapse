@@ -48,8 +48,6 @@ export function TimelineYears(props: {
   /** [F-SLOTGRID-01 U1] 月框内容宽（use-capacity-layout 量测；0=unmeasured
    *  降级=全部卡入首行单行——jsdom/空图同态） */
   frameW: number
-  /** [T3-P7B] 拾取源卡高亮（composer target 相位） */
-  linkSourceId: string | null
   /** [T3-P8] 拖拽槽位预览（active/settle 两相位——见头注） */
   dragSlot?: DragSlotPreview | null
   /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框——本集沿承不扩邻接） */
@@ -79,7 +77,6 @@ export function TimelineYears(props: {
       ctx={props.ctxNodeId === n.id}
       focused={props.focusIds?.has(n.id) === true}
       dim={props.dimUnfocused === true && props.brightIds?.has(n.id) !== true}
-      linkSrc={props.linkSourceId === n.id}
       dragging={dragging}
       onNodeClick={props.onCardClick}
       onNodeContextMenu={props.onNodeContextMenu}

@@ -127,7 +127,7 @@ describe('F-LGRAPH-01②U1 NavGraphPicker dirty 切图两分支（§2.2/B-2 闭�
     mount(<NavGraphPicker />)
     await settle()
     useLineageStore.getState().moveNode('A', 11, 11)
-    useLineageStore.getState().linkNodes('A', 'Z')
+    useLineageStore.getState().drawEdge('A', 'Z', { dashed: false, color: '#1e3a8a', label: '', fromAnchor: { side: 'bottom', slot: 1 }, toAnchor: { side: 'top', slot: 1 } })
     pick('f-x')
     await settle()
     const dialog = q('[role="dialog"]')

@@ -70,10 +70,8 @@ export function LineageTimeline(props: {
   // [②U3] 画线工具态（draw-*=armed——卡拖拽闸+预览线色源）
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
-  // [F-UIRES-03 C2·P2/P5] 缩放系数（高亮 r=6/s_eff 补偿——屏幕域直径恒 12）
-  // +点两卡链锚（迁 view.store——.link-src 消费源；dragging 相位=会话源锚沿承）
+  // [F-UIRES-03 C2·P2] 缩放系数（高亮 r=6/s_eff 补偿——屏幕域直径恒 12）
   const zoomScale = useLineageViewStore((s) => s.zoom)
-  const drawAnchor = useLineageViewStore((s) => s.anchor)
   // [F-VISFB-31] uiScale 入量测/路由重算键（00A §四：每档布局真实重排）——
   // 订阅 settings 单源（App 同法），W 量测/spacer 量测/当前月对齐/路由快照
   // 四键共入；数值面=高亮补偿与 EdgeOverlay 重算键消费
@@ -130,7 +128,6 @@ export function LineageTimeline(props: {
     viewMode,
     consumeDragClick: drag.consumeClickSuppress,
     consumeDrawClick: draw.consumeClickSuppress,
-    pickCard: draw.handleCardClick,
     onNodeClick: props.onNodeClick
   })
 
@@ -194,7 +191,6 @@ export function LineageTimeline(props: {
             focusIds={focusIds}
             brightIds={brightIds}
             frameW={frameW}
-            linkSourceId={draw.state.phase === 'dragging' ? draw.state.from?.nodeId ?? null : drawAnchor}
             dragSlot={drag.slot}
             dimUnfocused={dimActive}
             onCardClick={handlers.onCardClick}

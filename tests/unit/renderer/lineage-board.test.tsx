@@ -4,9 +4,8 @@
  * 不经 guardedDescribe）。
  *
  * 覆盖：单击选中 onSelectNode 上抛（04 侧板消费面预留；[T3-P6] 拖拽 x/y
- * 写面随拖拽退役）/加边全流程（源
- * 节点菜单「连线到…」+目标选取）/树拒绝三路径
- * toast（service reason 透传——守卫宿主=LG-01 service）/改父=删+加两调用/
+ * 写面随拖拽退役）/[F-VISFB-66 裁定 2/3] 加边全流程/树拒绝/改父/互斥面随
+ * 右键链路+改父退役删除（唯一建边径=拖拽——drawline/edge-edit 族承载）/
  * 删节点/删除父连线/保存失败指示+重试
  * （[T3-P6] 写触发器原=编辑 core_idea；[A3 F-CONTRACTA-01 2026-10-04]
  * core_idea 编辑对话框随全退役删除——触发器换 store.moveNode（x/y 数据面
@@ -43,7 +42,6 @@ stubApiEvents({
   onFoldersChanged: vi.fn(() => () => undefined)
 })
 
-import { showToast } from '../../../src/renderer/shared/ui/toast-store'
 import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
@@ -194,58 +192,6 @@ describe('LineageBoard —— 选中上抛（T3-P6 拖拽退役后）', () => {
 })
 
 describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点）', () => {
-  it('加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}', async () => {
-    seedLineage([node('A'), node('B')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('A')
-    clickMenu('连线到…')
-    expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
-    clickNode(nodeEl('B'))
-    useLineageStore.getState().save() // [②U1]
-    await flush()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'A', to: 'B', label: '' })) // [②U1] uuid 随行
-    expect(q('[data-testid="lineage-pending-link"]')).toBeNull() // 完成即退出选取模式
-  })
-
-  it('树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现', async () => {
-    const reasons = [
-      '多父边拒绝：节点 B 已有父节点 A（树至多一父）',
-      '成环拒绝：该边将使脉络图出现环路（v1 为树）',
-      '自环边不允许（from 与 to 为同一节点）'
-    ]
-    for (const reason of reasons) {
-      vi.mocked(showToast).mockClear()
-      stubApi.lineage.upsertEdge.mockResolvedValueOnce({
-        ok: false,
-        error: { code: 'CONFLICT', message: reason }
-      })
-      seedLineage([node('A'), node('B')])
-      mount(<LineageBoard onSelectNode={() => undefined} />)
-      openMenu('A')
-      clickMenu('连线到…')
-      clickNode(nodeEl('B'))
-      useLineageStore.getState().save() // [②U1]
-      await flush()
-      expect(showToast).toHaveBeenCalledWith(reason, 'error')
-      expect(useLineageStore.getState().saveStatus).toBe('clean') // 拒绝=动作丢弃非脏态
-      act(() => {
-        root?.unmount()
-      })
-    }
-  })
-
-  it('改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）', async () => {
-    seedLineage([node('A'), node('B'), node('C')], [edge('e-old', 'A', 'B')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('B')
-    clickMenu('改父…')
-    clickNode(nodeEl('C'))
-    useLineageStore.getState().save() // [②U1]
-    await flush()
-    expect(stubApi.lineage.removeEdge).toHaveBeenCalledWith({ id: 'e-old' })
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'C', to: 'B', label: '' })) // [②U1] uuid 随行
-  })
-
   it('删除父连线/删除节点：菜单动作→remove-edge/remove-node 载荷', async () => {
     seedLineage([node('A'), node('B')], [edge('e-1', 'A', 'B')])
     mount(<LineageBoard onSelectNode={() => undefined} />)
@@ -260,62 +206,6 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点）',
     useLineageStore.getState().save() // [②U1]
     await flush()
     expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
-  })
-})
-
-describe('LineageBoard —— [RR1 d1-W2/k1-N6] pendingLink⇔画线域互斥（发起清工具/进画线清意图）', () => {
-  // 本组直写 view.store 工具态——afterEach 复位防跨组残留（同文件他组零感知）
-  afterEach(() => {
-    act(() => {
-      useLineageViewStore.setState({ mode: 'browse', tool: 'select', paletteFor: null })
-    })
-  })
-
-  it('互斥①发起 pendingLink 清工具：draw-X 态「连线到…」→tool 回 select（完成语义恒 select 态路由）+点 B 产品路径闭合', async () => {
-    seedLineage([node('A'), node('B')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      useLineageViewStore.setState({ mode: 'edit', tool: 'draw-solid', paletteFor: null })
-    })
-    openMenu('A')
-    clickMenu('连线到…')
-    expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
-    expect(useLineageViewStore.getState().tool).toBe('select') // 发起即清工具（互斥闸）
-    clickNode(nodeEl('B')) // select 态路由=onNodeClick→pendingLink 完成
-    useLineageStore.getState().save()
-    await flush()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'A', to: 'B' }))
-  })
-
-  it('互斥②进画线清意图：pendingLink 激活后 tool 进 draw-X→提示条撤（防 draw 路由劫持完成链死路）', () => {
-    seedLineage([node('A'), node('B')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    openMenu('A')
-    clickMenu('连线到…')
-    expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
-    act(() => {
-      useLineageViewStore.getState().toggleLineTool('solid')
-    })
-    expect(q('[data-testid="lineage-pending-link"]')).toBeNull() // 进画线=清意图（互斥闸）
-    expect(useLineageViewStore.getState().tool).toBe('draw-solid')
-  })
-
-  it('互斥③组合格：draw-X+palette 开→发起→tool select+paletteFor null（resetTool 一并收板）+意图在场可完成', async () => {
-    seedLineage([node('A'), node('B')])
-    mount(<LineageBoard onSelectNode={() => undefined} />)
-    act(() => {
-      useLineageViewStore.setState({ mode: 'edit', tool: 'draw-solid', paletteFor: 'solid' })
-    })
-    openMenu('A')
-    clickMenu('连线到…')
-    const v = useLineageViewStore.getState()
-    expect(v.tool).toBe('select')
-    expect(v.paletteFor).toBeNull() // resetTool 联动收板
-    expect(q('[data-testid="lineage-pending-link"]')).not.toBeNull()
-    clickNode(nodeEl('B'))
-    useLineageStore.getState().save()
-    await flush()
-    expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith(expect.objectContaining({ from: 'A', to: 'B' }))
   })
 })
 

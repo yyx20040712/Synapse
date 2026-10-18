@@ -36,7 +36,10 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
         label: req.label ?? '',
         dashed: req.dashed, // [F-LGRAPH-01②U8] 视觉线型内联（缺省归一在 repo）
         color: req.color,
-        via: req.via // [F-LINEAGE-02] 手动调线路点透传（不变量校验在 service）
+        via: req.via, // [F-LINEAGE-02] 手动调线路点透传（不变量校验在 service）
+        // [F-VISFB-66] 端点钉定锚透传（null=显式清除——校验在 service 写面）
+        fromAnchor: req.fromAnchor,
+        toAnchor: req.toAnchor
       }),
     removeEdge: async (req) => {
       deps.services.lineage.removeEdge(req.id)

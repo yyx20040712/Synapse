@@ -21,6 +21,8 @@
  *   显式列清单=各表迁移终态全列（列名从 001/004/005/006/007/010/011/012/013/
  *   014/016/017/019/024 迁移实读对齐——[回炉 R4] 枚举勘正补 005/006/007；007
  *   lineage_nodes.tags/006 lineage_edges.kind 入导出面=「迁移终态全列」；
+ *   [F-VISFB-66] 025 lineage_edges.from_anchor/to_anchor 随链入导出面（钉定
+ *   锚=持久数据——快照保真面随迁移扩两列）；
  *   [F-VISFB-61] 导出面九表→十表：+floating_notes（迁移 024——无 paper_id
  *   纯画布节点；table_counts 键集恰十键）；
  *   [DB-3 U3 回炉 R1] U3 import 写面=同全列（「出库真值/入写真值」对偶对称
@@ -125,7 +127,8 @@ export const TABLE_SPECS = [
     table: 'lineage_edges',
     columns: [
       'id', 'from_node', 'to_node', 'label', 'created_at', 'updated_at', 'sub', 'via',
-      'dashed', 'color', 'kind'
+      'dashed', 'color', 'kind',
+      'from_anchor', 'to_anchor'
     ],
     orderBy: 'updated_at, id'
   },

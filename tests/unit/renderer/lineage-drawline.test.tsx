@@ -286,6 +286,7 @@ describe('F-LGRAPH-01②U3 画线中断收尾（回炉 R1/R13/R15——document 
     expect(useLineageStore.getState().edges).toHaveLength(0)
   })
 
+
   it('R1② 切模式下降沿中止：mid-drag setMode→预览清+document up 落目标锚不建边', async () => {
     mountTimeline()
     act(() => {
@@ -355,18 +356,17 @@ describe('F-LGRAPH-01②U3 画线中断收尾（回炉 R1/R13/R15——document 
     }
   })
 
-  it('R15 源卡高亮：dragging 期源卡挂 .link-src（T3-P7B 语义沿承）；收尾撤', async () => {
+  it('[F-VISFB-66 W-09r2] 源侧高亮删除负锚：dragging 期源卡零 .link-src（链路退役——源锚视觉=预览线起点自身）', async () => {
     mountTimeline()
     act(() => {
       useLineageViewStore.getState().toggleLineTool('solid')
     })
     const content = req('.tl-content')
     const cardA = req('.tl-card[data-node-id="A"]')
-    expect(cardA.classList.contains('link-src')).toBe(false) // 基线无
     pointer(content, 'pointerdown', 228, 136)
-    expect(cardA.classList.contains('link-src')).toBe(true) // 源卡高亮复活
+    expect(q('[data-testid="draw-preview"]')).not.toBeNull() // 会话在场（源锚视觉承载）
+    expect(cardA.classList.contains('link-src')).toBe(false) // 高亮链已删——恒不挂
     docPointer('pointerup', 800, 700) // 取消收尾
-    expect(req('.tl-card[data-node-id="A"]').classList.contains('link-src')).toBe(false)
   })
 })
 
@@ -413,10 +413,8 @@ describe('F-LGRAPH-01②U3 画线收尾 click 抑制（[RR4] suppress 旗同手�
     docPointer('pointerup', 100, 336) // B 左中锚建边（收尾旗置位）
     docClick(req('.tl-card[data-node-id="B"]')) // 紧邻卡 click（画布内）
     expect(onNodeClick).not.toHaveBeenCalled() // 抑制沿承（防建边误选卡）
-    expect(useLineageViewStore.getState().anchor).toBeNull() // 旗吞面：点击未达锚链
-    docClick(req('.tl-card[data-node-id="B"]')) // 第二次卡点击=旗已释（[F-VISFB-21 C2] 建边后仍连画域→达锚链非选中）
-    expect(onNodeClick).not.toHaveBeenCalled() // draw 域点卡=锚链（禁开详情沿承）
-    expect(useLineageViewStore.getState().anchor).toBe('B') // 旗释放直证：点击达锚链（picked B）
+    docClick(req('.tl-card[data-node-id="B"]')) // 第二次卡点击=旗已释——[F-VISFB-66 B1a] draw 域点卡=吞咽（不开详情零锚链）
+    expect(onNodeClick).not.toHaveBeenCalled()
   })
 })
 
@@ -530,6 +528,22 @@ describe('F-VISFB-21 C2 拖拽径画线保持（建边后不 resetTool——两�
     expect(e2.fromNode).toBe('B')
     expect(e2.toNode).toBe('C')
     expect(useLineageViewStore.getState().tool).toBe('draw-solid') // 两边后仍连画域
+  })
+
+  it('[回炉 S3] busy 静默 UI 格：saving 窗建边收尾=零 toast（结果 busy——连画态立即重画即成）', async () => {
+    mountTimeline3()
+    act(() => {
+      useLineageStore.setState({ flushing: true }) // saving 窗（beginUnit false→busy）
+      useLineageViewStore.getState().toggleLineTool('solid')
+    })
+    const content = req('.tl-content')
+    toastStoreSpy.mockClear() // 挂载期既有 toast 清零（收尾窗隔离）
+    pointer(content, 'pointerdown', 228, 136)
+    act(() => {
+      document.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, cancelable: true, clientX: 100, clientY: 336, button: 0 }))
+    })
+    expect(useLineageStore.getState().edges).toHaveLength(0) // busy=不建边
+    expect(toastStoreSpy).not.toHaveBeenCalled() // UI 静默（无 duplicate/toast 面——S3 判别位）
   })
 
   it('拖拽径查重拒绝不拆工具：A→B 建边后再拖同对→toast+零新增+tool 保持 draw-solid', async () => {

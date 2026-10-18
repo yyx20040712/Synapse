@@ -18,7 +18,7 @@ import { PAD, polylineClearStubs } from './avoid'
 import { ChannelUse, detourSkeleton } from './detour'
 import { buildRoundedPath, stripCollinear } from './rounding'
 import { slotAssign, type AssignEdge } from './slots'
-import type { LineageViaPoint } from '@shared/models/lineage'
+import type { LineageAnchor, LineageViaPoint } from '@shared/models/lineage'
 
 export type { Pt, Rect } from './anchors'
 
@@ -42,12 +42,17 @@ export interface LayoutSnapshot {
 export function allObstacles(snap: LayoutSnapshot): Rect[] {
   return [...snap.cards.values(), ...snap.labels, ...snap.yearHeads]
 }
-/** [F-LGRAPH-01②U8] kind/subId 随四值体系退役（路由几何不消费线型——纯结构面） */
+/** [F-LGRAPH-01②U8] kind/subId 随四值体系退役（路由几何不消费线型——纯结构面）。
+ *  [F-VISFB-66] 端点钉定锚扩面（设计书 §F）：fromAnchor/toAnchor 提供=该端
+ *  用户钉定（路由端点直取不散开；routeAll 会话内预注册占用）——缺省/undefined
+ *  =未钉定=现行派生（N-01：全 NULL 图路由输出与基线全等） */
 export interface EdgeGeomInput {
   edgeId: string
   sourceId: string
   targetId: string
   via?: LineageViaPoint[]
+  fromAnchor?: LineageAnchor
+  toAnchor?: LineageAnchor
 }
 export interface RoutedPath {
   edgeId: string
@@ -98,6 +103,16 @@ interface SkelResult {
 
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
 
+/**
+ * [F-VISFB-66] 钉定端直取（禁动——设计书 §F F1a）：anchorPoint 几何直取，
+ * 不经 pick（散开永不迁移钉定锚）；routeAll 阶段 0 已 pin 预注册（他边避让）。
+ */
+const pinnedPick = (r: Rect, a: LineageAnchor): { pt: Pt; side: Side; slot: number } => ({
+  pt: anchorPoint(r, a.side, a.slot),
+  side: a.side,
+  slot: a.slot
+})
+
 /** [F-ANCHFIX-01 批 1c] picks→anchorMarks 观测串（显示真值=线视觉落点） */
 const anchorMarksOf = (picks: ReadonlyArray<[string, Side, number]>): string =>
   picks.map(([id, side, slot]) => anchorId(id, side, slot)).join(',')
@@ -138,22 +153,27 @@ function routeOne(
   const cards = [...snap.cards.values()]
   const sc = center(src)
   const tc = center(tgt)
+  // [F-VISFB-66] 钉定端（W-04 优先级=钉定＞主向定边规则——各端独立判，混合
+  // 边成立；NULL 端 manual 派生锚不注册 AnchorUse 不散开——现行「manual-
+  // override 不 commit」沿承 N-05r2）
+  const fromPin = e.fromAnchor !== undefined ? pinnedPick(src, e.fromAnchor) : undefined
+  const toPin = e.toAnchor !== undefined ? pinnedPick(tgt, e.toAnchor) : undefined
   // manual-override：via 在场（锚=端点卡按主向定边规则定；不参与避让/车道）
   if (e.via !== undefined && e.via.length > 0) {
-    const a = selectAnchor(src, e.via[0]!)
-    const b = selectAnchor(tgt, e.via[e.via.length - 1]!)
+    const a = fromPin ?? selectAnchor(src, e.via[0]!)
+    const b = toPin ?? selectAnchor(tgt, e.via[e.via.length - 1]!)
     // [F-ANCHFIX-01 批 1c] 不 commit（散开语义零变）——anchorMarks 从
-    // selectAnchor 结果派生计入（显示真值：线视觉落在该锚）
+    // 实际取数（钉定/规则）派生计入（显示真值：线视觉落在该锚）
     return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', stubExcluded: [], anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
   }
   const commit = (picks: ReadonlyArray<[string, Side, number]>): void => {
     for (const [id, side, slot] of picks) use?.commit(id, side, slot)
   }
-  // ① direct：主向竖向对齐直连（锚 x 相等单竖段）
+  // ① direct：主向竖向对齐直连（锚 x 相等单竖段）——钉定端直取（禁动）
   const sa = selectAnchor(src, tc)
   const sb = selectAnchor(tgt, sc)
-  const pa = anchorPick(e.sourceId, src, sa.side, sa.slot, use)
-  const pb = anchorPick(e.targetId, tgt, sb.side, sb.slot, use)
+  const pa = fromPin ?? anchorPick(e.sourceId, src, sa.side, sa.slot, use)
+  const pb = toPin ?? anchorPick(e.targetId, tgt, sb.side, sb.slot, use)
   const aPt = pa.pt
   const bPt = pb.pt
   // [RR1 N12 防御] 生效锚恒竖侧才入 detour：AnchorUse 散开可迁横边锚（左/
@@ -176,12 +196,13 @@ function routeOne(
       return { edgeId: e.edgeId, skel: dt.skel, route: 'detour', stubExcluded: ends, stubs: stubsOf(e, src, tgt, dt.picks), anchorMarks: anchorMarksOf(dt.picks), detourMarks: dt.detourMarks }
     }
   }
-  // ② h-slip：近侧水平直连（x 带分离——单段直线，y 异高斜向允许）
+  // ② h-slip：近侧水平直连（x 带分离——单段直线，y 异高斜向允许）——钉定
+  //  端直取（禁动——钉定锚即端点几何，规则侧边仅未钉定端参与）
   if (src.x + src.w + 2 * PAD < tgt.x || tgt.x + tgt.w + 2 * PAD < src.x) {
     const ha = sideAnchor(src, tc.x > sc.x ? 'right' : 'left', tc)
     const hb = sideAnchor(tgt, sc.x > tc.x ? 'right' : 'left', sc)
-    const ph = anchorPick(e.sourceId, src, ha.side, ha.slot, use)
-    const qh = anchorPick(e.targetId, tgt, hb.side, hb.slot, use)
+    const ph = fromPin ?? anchorPick(e.sourceId, src, ha.side, ha.slot, use)
+    const qh = toPin ?? anchorPick(e.targetId, tgt, hb.side, hb.slot, use)
     const aH = ph.pt
     const bH = qh.pt
     if (polylineClearStubs([aH, bH], ends, obstacles)) {
@@ -194,8 +215,9 @@ function routeOne(
     }
   }
   // ④ band：通用态（x 不对齐/多带 zigzag——段全集尽或无槽 return null；
-  //  [RR1 W3] 通道槽占用经 chanUse 与 detour 跨态共享）
-  const band = bandSkeleton(src, tgt, tc.y >= sc.y, snap, obstacles, cards, use, chanUse, e.sourceId, e.targetId, e.edgeId)
+  //  [RR1 W3] 通道槽占用经 chanUse 与 detour 跨态共享；[F-VISFB-66] 钉定端
+  //  透传——源端直取/终落钉定锚优先（几何检查不过=band 不可用降 overlap 兜底））
+  const band = bandSkeleton(src, tgt, tc.y >= sc.y, snap, obstacles, cards, use, chanUse, e.sourceId, e.targetId, e.edgeId, fromPin, toPin)
   if (band !== null && polylineClearStubs(band.skel, ends, obstacles)) {
     commit(band.picks)
     return {
@@ -284,6 +306,12 @@ export function routeAll(
 ): RoutedPath[] {
   const use = new AnchorUse()
   const chanUse = new ChannelUse()
+  // [F-VISFB-66] 阶段 0 钉定预注册（§F F1a——按输入边序）：钉定锚先占集
+  //（他边未钉定端 pick 避让）；阶段 1 routeOne 钉定端直取不散开（共享同锚）
+  for (const e of edges) {
+    if (e.fromAnchor !== undefined) use.pin(e.sourceId, e.fromAnchor.side, e.fromAnchor.slot)
+    if (e.toAnchor !== undefined) use.pin(e.targetId, e.toAnchor.side, e.toAnchor.slot)
+  }
   const results = edges.map((e) => {
     const src = snap.cards.get(e.sourceId)
     const tgt = snap.cards.get(e.targetId)

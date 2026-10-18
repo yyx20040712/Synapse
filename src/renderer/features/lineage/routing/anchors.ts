@@ -46,6 +46,32 @@ export function anchorId(cardId: string, side: Side, slot: Slot): string {
   return `${cardId}:${letter}${slot}`
 }
 
+/**
+ * [F-VISFB-66] AnchorRef（side/slot）→锚 id（持久化锚与运行时锚 id 命名
+ * 解耦的映射单源——设计书 §D.2；anchorId 的对象形包装：载荷构造面消费）。
+ */
+export function anchorIdOf(cardId: string, anchor: { side: Side; slot: number }): string {
+  return anchorId(cardId, anchor.side, anchor.slot)
+}
+
+/**
+ * [F-VISFB-66] 锚 id→AnchorRef 解析（anchorIdOf 逆映射；12 格往返单源）。
+ * null=非锚 id 形（无冒号/字母域外/序越界）——调用方按未钉定处理。
+ */
+export function parseAnchorId(id: string): { cardId: string; side: Side; slot: 0 | 1 | 2 } | null {
+  // [回炉 S17] 末次冒号切分（对齐 INV-120 anchorMarks token 容忍含冒号 nodeId
+  // ——uuid 不含冒号但卡 id 域不设上限；正锚域=末段 [tblr][012]）
+  const i = id.lastIndexOf(':')
+  if (i <= 0) return null
+  const tail = id.slice(i + 1)
+  const m = /^([tblr])([012])$/.exec(tail)
+  if (m === null) return null
+  const side: Side =
+    m[1] === 't' ? 'top' : m[1] === 'b' ? 'bottom' : m[1] === 'l' ? 'left' : 'right'
+  const slot = Number(m[2]) as 0 | 1 | 2
+  return { cardId: id.slice(0, i), side, slot }
+}
+
 export interface SelectedAnchor {
   side: Side
   slot: Slot
@@ -142,6 +168,18 @@ export class AnchorUse {
   }
 
   commit(cardId: string, side: Side, slot: number): void {
+    this.used.add(this.key(cardId, side, slot))
+  }
+
+  /**
+   * [F-VISFB-66] 钉定锚预注册（设计书 §F F1a——routeAll 阶段 0 按输入边序
+   * 调用）：占用语义=commit 同集，但消费面分立——钉定端 routeOne 直取
+   * anchorPoint（不经 pick=**禁动**：散开永不迁移钉定锚）；他边未钉定端
+   * pick 避让已占锚（**避让**）；重复 pin 同锚=幂等注册（**共享**：两边钉
+   * 同锚各自直取同点）。与「仅胜出态落记」的关系：pin 承载用户主权数据
+   * （持久化锚），非几何尝试——失败态不回滚（钉定=身份成分非候选）。
+   */
+  pin(cardId: string, side: Side, slot: number): void {
     this.used.add(this.key(cardId, side, slot))
   }
 }

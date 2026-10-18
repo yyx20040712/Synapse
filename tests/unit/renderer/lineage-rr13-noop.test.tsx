@@ -149,7 +149,7 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
 
   it('③manual 线幽灵 +1 点不复现：拐点错轴边（via 末点 y≠锚轴）同锚松手——via 长度不变（原实现插 L corner +1）', () => {
     // via 末点 (300,36)：selectAnchor(B,·) 命 B 左¼锚 (412,48)——同锚松手时
-    // reconnectEnd 会插 corner (300,48)（y 错轴不齐）=幽灵 +1
+    // 拖回原位（坐标等值=零编辑单元）——对照格见下
     layout([
       { x: 200, y: 66 },
       { x: 300, y: 36 }
@@ -174,8 +174,8 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
     act(() => {
       handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 200, clientY: 66 }))
     })
-    docMove(260, 120) // 拖开（workVia 变）
-    docMove(200, 66) // 拖回原位（workVia==startVia）
+    docMove(260, 120) // 拖开（工作 via 变）
+    docMove(200, 66) // 拖回原位（工作 via 等值）
     docUp(200, 66)
     const s = useLineageStore.getState()
     expect(s.saveStatus).toBe('clean') // 零 dirty（原实现=dirty）
@@ -208,8 +208,8 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
         new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 250, clientY: 66 })
       )
     })
-    docMove(250, 46) // 拖开（水平段法向 dy=-20——workVia 变）
-    docMove(250, 66) // 拖回原位（dx=dy=0——workVia==startVia）
+    docMove(250, 46) // 拖开（水平段法向 dy=-20——工作 via 变）
+    docMove(250, 66) // 拖回原位（dx=dy=0——工作 via 等值）
     docUp(250, 66)
     const s = useLineageStore.getState()
     expect(s.saveStatus).toBe('clean') // 零 dirty（短路失效=dirty）
@@ -223,18 +223,16 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
     expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull() // 回 selected
   })
 
-  it('负锚（短路不过火）：同卡换锚（B 左中→B 顶中）仍写入=L 重正交+一编辑单元', () => {
+  it('负锚（短路不过火）：本端卡异锚（B 左中→B 顶中）仍写入=[F-VISFB-66 终裁] 合法换锚（清 via+重钉锚+一编辑单元）', () => {
     layout([{ x: 200, y: 66 }])
     click(hitOf('e1'))
     act(() => { endHandle('to').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 })) })
     docMove(476, 30) // B 顶中锚（≠拖始锚 B 左中）
     docUp(476, 30)
     const s = useLineageStore.getState()
-    expect(s.edges[0]?.toNode).toBe('B') // 同卡不换端
-    expect(s.edges[0]?.via).toEqual([
-      { x: 200, y: 66 },
-      { x: 476, y: 66 }
-    ]) // L 重正交：末拐=(新锚.x, 原末拐.y)=(476,66) 追加
+    expect(s.edges[0]?.toNode).toBe('B') // 同卡=端点 node 不变
+    expect(s.edges[0]?.via).toBeUndefined() // 换锚=端点身份变更清 via（L 重正交代数退役）
+    expect(s.edges[0]?.toAnchor).toEqual({ side: 'top', slot: 1 }) // 重钉命中锚
     expect(s.undoStack).toHaveLength(1) // 一编辑单元（真编辑不吞）
     expect(s.saveStatus).toBe('dirty')
   })

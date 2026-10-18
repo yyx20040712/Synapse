@@ -5,14 +5,16 @@
  * ── 态空间（宪法状态纪律）──
  * idle → selected（单击线）→ dragging{vertex|segment}（pointerdown 手柄/段）
  * → selected（pointerup 落定=一编辑单元 setEdgeVia）；selected → reconnect
- * （拖端点圆柄——via 保留+L 重正交预览）→ selected（换端 reconnectEdge/同卡
- * setEdgeVia）；点空白/Esc/切模式/切图=idle（收尾转移 W-5）。
+ * （拖端点圆柄——[F-VISFB-66 裁定 3] 换端=清 via 重算自动路径+重钉锚，move
+ * 期预览=直线〔固定端锚 pt→cursor/snap——L 重正交端点代数已退役
+ * 删除〕）→ selected（换端/换锚 reconnectEdge——分层表见 onEndDown）；
+ * 点空白/Esc/切模式/切图=idle（收尾转移 W-5）。
  *
  * - dragging 中断（pointercancel/指针移出画布失焦）=abort：via 回拖前定态
  *   不入撤销栈（[RR2] pointercancel 接 abort——§2.5 定案中断=不成立）；
- *   reconnect 中断=端点回原锚。
+ *   reconnect 中断=端点回原锚（不入撤销栈=无快照提交）。
  * - [RR 补批 RR13] no-op 短路对称语义（R19 先例）：reconnect 落点==拖始锚
- *   +拖放 commit via 等值（回原位）=零编辑单元（不 beginUnit 不 dirty 不入队）。
+ *   =零编辑单元（不 beginUnit 不 dirty 不入队；本端卡同锚格并入）。
  * - 自动线（无 via）拖段/加点=物化首 via（routed pts 内点）转 manual-override。
  * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=4）=dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
@@ -21,23 +23,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LineageViaPoint } from '@shared/models/lineage'
 import type { Pt, Rect, Side } from './routing/anchors'
-import { selectAnchor } from './routing/anchors'
+import { anchorPoint, selectAnchor } from './routing/anchors'
 import type { RoutedPath } from './lineage-routing'
 import {
   addPointOnSegment,
   channelSnap,
+  classifyReconnectDrop,
   crossCardSegments,
   dragVertex,
-  reconnectEnd,
   segmentDrag,
   segmentViaIdx,
   viaEquals,
   type EditPolyline
 } from './edge-edit'
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
+import { DRAW_SNAP_R } from './useDrawLine'
 import { runDocDragSession } from './edge-drag-session'
+import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 import { useLineageStore } from './lineage.store'
+import { showToast } from '../../shared/ui/toast-store'
 import { clientToOwnPt, clientToOwnRect } from './timeline-zoom'
+
+/** 分类执行面：第三卡命中 id（act.reconnect 分支——anchor 非空域）；膨胀圈
+ *  命中已迁 classifyReconnectDrop（[回炉 R16]——纯函数单源） */
+const hitNodeId = (a: { nodeId: string }): string => a.nodeId
 import type { EdgeMenuTarget } from './EdgeMenu'
 
 export type EdgeEditState =
@@ -49,7 +58,7 @@ export type EdgeEditState =
       kind: 'vertex' | 'segment'
       idx: number
       startVia: LineageViaPoint[]
-      workVia: LineageViaPoint[]
+      liveVia: LineageViaPoint[]
       startPt: Pt
       snap: { axis: 'h' | 'v'; line: number } | null
     }
@@ -57,12 +66,63 @@ export type EdgeEditState =
       phase: 'reconnect'
       edgeId: string
       end: 'from' | 'to'
+      /** 拖前 via（虚影对照——ghostPl 派生源） */
       startVia: LineageViaPoint[]
-      workVia: LineageViaPoint[]
-      anchor: { nodeId: string; pt: Pt; side: Side } | null
+      /** 解锚命中（全卡锚域 DRAW_SNAP_R——含 side/slot 身分） */
+      anchor: { nodeId: string; pt: Pt; side: Side; slot: number } | null
+      /** 指针 own 域点（未解锚=直线预览终点） */
+      cursor: Pt
     }
 
 /** 全图 12 锚命中（±SNAP_R 内容坐标——nearestAnchor 与 useDrawLine 同式；带 side） */
+
+
+/**
+ * [回炉 R16] 换端拖拽自动滚动+解锚重算装配（自 onEndDown 拆出——行数债）：
+ * 返回 {auto, onMove}——onMove=指针采样（首采样前 hasClient 闸不施滚）；
+ * onScrollFrame=帧协议③④幂等重算（直线预览 A3a 同形）。
+ */
+function attachReconnectAutoscroll(args: {
+  host: SVGSVGElement | null
+  ptHook: React.MutableRefObject<(x: number, y: number) => Pt>
+  cardsRef: React.MutableRefObject<Array<{ nodeId: string; rect: Rect }>>
+  setState: React.Dispatch<React.SetStateAction<EdgeEditState>>
+  session: { edgeId: string; end: 'from' | 'to'; startVia: LineageViaPoint[] }
+  autoRef: React.MutableRefObject<AutoScrollHandle | null>
+}): { auto: AutoScrollHandle | null; onMove: (ev: PointerEvent | MouseEvent) => void } {
+  let lastClient: { x: number; y: number } | null = null
+  const container = args.host?.closest('.timeline') instanceof HTMLElement ? (args.host.closest('.timeline') as HTMLElement) : null
+  const recompute = (clientX: number, clientY: number): void => {
+    const target = args.ptHook.current(clientX, clientY)
+    const anchor = nearestAnchorCard(args.cardsRef.current, target, DRAW_SNAP_R)
+    args.setState({
+      phase: 'reconnect',
+      edgeId: args.session.edgeId,
+      end: args.session.end,
+      startVia: args.session.startVia,
+      anchor,
+      cursor: target
+    })
+  }
+  const auto: AutoScrollHandle | null =
+    container !== null
+      ? startAutoScroll({
+          container,
+          getCursorClient: () => (lastClient === null ? null : { clientX: lastClient.x, clientY: lastClient.y }),
+          onScrollFrame: () => {
+            if (lastClient !== null) recompute(lastClient.x, lastClient.y)
+          }
+        })
+      : null
+  args.autoRef.current = auto
+  return {
+    auto,
+    onMove: (ev: PointerEvent | MouseEvent): void => {
+      lastClient = { x: ev.clientX, y: ev.clientY }
+      recompute(ev.clientX, ev.clientY)
+    }
+  }
+}
 
 export function useEdgeEdit(args: {
   enabled: boolean
@@ -79,7 +139,7 @@ export function useEdgeEdit(args: {
   warnSegs: number[]
   /** 磁吸指示线（null=无） */
   snapLine: { axis: 'h' | 'v'; line: number } | null
-  /** 手柄几何（working via——dragging/reconnect=workVia；selected=库 via） */
+  /** 手柄几何（working via——dragging/reconnect=liveVia；selected=库 via） */
   handlesPl: EditPolyline | null
   /** 拖动中虚影（拖前 via 链——前后对照） */
   ghostPl: EditPolyline | null
@@ -145,9 +205,11 @@ export function useEdgeEdit(args: {
       const first = via[0]
       const last = via[via.length - 1]
       if (first === undefined || last === undefined) return null
-      const a = selectAnchor(src.rect, first)
-      const b = selectAnchor(tgt.rect, last)
-      return { anchorA: a.pt, anchorB: b.pt, via: via.map((v) => ({ ...v })) }
+      // [回炉 R28] 端锚钉定优先：边记录锚→anchorPoint 直取（手柄位置=钉定锚）；
+      // 未钉定端沿承 selectAnchor 派生（manual 分支同优先级——chain W-04）
+      const a = e.fromAnchor !== undefined ? anchorPoint(src.rect, e.fromAnchor.side, e.fromAnchor.slot) : selectAnchor(src.rect, first).pt
+      const b = e.toAnchor !== undefined ? anchorPoint(tgt.rect, e.toAnchor.side, e.toAnchor.slot) : selectAnchor(tgt.rect, last).pt
+      return { anchorA: a, anchorB: b, via: via.map((v) => ({ ...v })) }
     },
     [store, cardsRef, args.pathsRef]
   )
@@ -259,7 +321,7 @@ export function useEdgeEdit(args: {
           kind: 'vertex',
           idx,
           startVia,
-          workVia: work.via,
+          liveVia: work.via,
           startPt: pt,
           snap: snapInfo
         })
@@ -273,8 +335,9 @@ export function useEdgeEdit(args: {
         }
         // [RR 补批 RR13] via 等值短路：拖放回原位=no-op（不 beginUnit 不 dirty
         // 不入队——R19「重置 no-op 不入栈」对称语义）
-        if (!viaEquals(s.startVia, s.workVia)) {
-          store().setEdgeVia(cur.edgeId, s.workVia.length > 0 ? s.workVia : undefined)
+        if (!viaEquals(s.startVia, s.liveVia)) {
+          // [F-VISFB-66] 清除=显式 null（setEdgeVia 约定迁移——原 undefined）
+          store().setEdgeVia(cur.edgeId, s.liveVia.length > 0 ? s.liveVia : null)
         }
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
@@ -291,51 +354,74 @@ export function useEdgeEdit(args: {
       const pl = polylineOf(cur.edgeId, e?.via)
       if (e === undefined || pl === null) return
       const startVia = pl.via
-      const onMove = (ev: PointerEvent | MouseEvent): void => {
-        const cards = cardsRef.current
-        const target = ptHook.current(ev.clientX, ev.clientY)
-        const anchor = nearestAnchorCard(cards, target)
-        let workVia = startVia
-        if (anchor !== null) {
-          const fixed = end === 'from' ? pl.anchorB : pl.anchorA
-          // [回炉 R11②] 自动线（空 via）换锚=物化种子点（被拖端原锚位）走
-          // reconnectEnd 生成 L corner（不整体跳过）；manual 线（via≥1）直接
-          // L 重正交（via 全保留）
-          const seedVia = startVia.length > 0 ? startVia : [end === 'from' ? pl.anchorA : pl.anchorB]
-          const base: EditPolyline =
-            end === 'from'
-              ? { anchorA: anchor.pt, anchorB: fixed, via: seedVia }
-              : { anchorA: fixed, anchorB: anchor.pt, via: seedVia }
-          workVia = reconnectEnd(base, end, anchor.pt, anchor.side).via
-        }
-        setState({ phase: 'reconnect', edgeId: cur.edgeId, end, startVia, workVia, anchor })
-      }
+      // [F-VISFB-66 裁定 4+回炉 R1/R16] 自动滚动（managed 泵）+解锚/直线预览
+      // 重算=attachReconnectAutoscroll 单源（null=未采样——首 move 前不施滚；
+      // 容器=closest('.timeline')——R26；解锚=全卡锚域 DRAW_SNAP_R own 域）
+      const { auto, onMove } = attachReconnectAutoscroll({
+        host: args.hostRef.current,
+        ptHook,
+        cardsRef,
+        setState,
+        session: { edgeId: cur.edgeId, end, startVia },
+        autoRef
+      })
       runDragSession(onMove, () => {
+        auto?.stop()
+        if (autoRef.current === auto) autoRef.current = null
         const s = stateRef.current
-        if (s.phase !== 'reconnect' || s.anchor === null) {
-          setState({ phase: 'selected', edgeId: cur.edgeId }) // 中断/无锚=回原锚
+        if (s.phase !== 'reconnect') {
+          setState({ phase: 'selected', edgeId: cur.edgeId }) // 中断=回原锚
           return
         }
         const edge = store().edges.find((x) => x.id === cur.edgeId)
         if (edge === undefined) return
-        // [RR 补批 RR13] 落点==拖始锚=no-op 短路（同端节点+同锚位——零编辑
-        // 单元零 dirty；manual 线 L 重正交幽灵 +1 点同径消解）
-        const home = end === 'from' ? { n: edge.fromNode, p: pl.anchorA } : { n: edge.toNode, p: pl.anchorB }
-        if (s.anchor.nodeId === home.n && s.anchor.pt.x === home.p.x && s.anchor.pt.y === home.p.y) {
-          setState({ phase: 'selected', edgeId: cur.edgeId })
+        // [回炉 R16] 落点分类=classifyReconnectDrop 纯函数单源（§C.3 终裁
+        // 修正分层表——UI 仅执行；R24=self-loop 与 duplicate toast 文案分立）
+        const ownNode = s.end === 'from' ? edge.fromNode : edge.toNode
+        const otherNode = s.end === 'from' ? edge.toNode : edge.fromNode
+        const ownHomePt = s.end === 'from' ? pl.anchorA : pl.anchorB
+        const act = classifyReconnectDrop({
+          anchorHit:
+            s.anchor === null
+              ? null
+              : { nodeId: s.anchor.nodeId, anchor: { side: s.anchor.side, slot: s.anchor.slot as 0 | 1 | 2 }, pt: s.anchor.pt },
+          cursor: s.cursor,
+          ownNode,
+          otherNode,
+          ownHomePt,
+          cards: cardsRef.current,
+          snapR: DRAW_SNAP_R
+        })
+        const finishSelected = (): void => setState({ phase: 'selected', edgeId: cur.edgeId })
+        if (act.kind === 'no-op' || act.kind === 'self-loop-silent' || act.kind === 'silent') {
+          finishSelected()
           return
         }
-        // [回炉 R11①] 收尾 via 归一：length>0?via:undefined（空数组禁穿透
-        // IPC——自动路由语义）
-        const via = s.workVia.length > 0 ? s.workVia : undefined
-        const newFrom = s.end === 'from' ? s.anchor.nodeId : edge.fromNode
-        const newTo = s.end === 'to' ? s.anchor.nodeId : edge.toNode
-        if (newFrom === edge.fromNode && newTo === edge.toNode) {
-          store().setEdgeVia(cur.edgeId, via) // 同卡换锚=锚位随 via 首点承载
-        } else {
-          store().reconnectEdge(cur.edgeId, newFrom, newTo, via)
+        if (act.kind === 'toast-blank') {
+          showToast('落点未在连接点上，未创建连线', 'error')
+          finishSelected()
+          return
         }
-        setState({ phase: 'selected', edgeId: cur.edgeId })
+        // re-anchor（本端卡异锚）=端点身份变更；reconnect（第三卡锚）=换端
+        const result =
+          act.kind === 're-anchor'
+            ? store().reconnectEdge(cur.edgeId, {
+                end: s.end,
+                from: edge.fromNode,
+                to: edge.toNode,
+                anchor: act.anchor
+              })
+            : store().reconnectEdge(cur.edgeId, {
+                end: s.end,
+                from: s.end === 'from' ? hitNodeId(s.anchor!) : edge.fromNode,
+                to: s.end === 'to' ? hitNodeId(s.anchor!) : edge.toNode,
+                anchor: act.anchor
+              })
+        if (!result.ok && result.reason !== 'busy') {
+          // [R24+S3] 三分支：duplicate=已存在；self-loop=自环；busy=静默
+          showToast(result.reason === 'self-loop' ? '不能创建自环连线' : '两节点间已存在连线', 'error')
+        }
+        finishSelected()
       })
     },
     [store, polylineOf, stateRef]
@@ -371,7 +457,7 @@ export function useEdgeEdit(args: {
         // [回炉 R3] 法向投影（水平段仅 dy/竖直段仅 dx——斜段零位移）+磁吸
         // 输入点=被拖段几何（段中点）+吸附位移=snap 点对段原位差（单源代数）
         const { via, snap } = segmentDrag(base, vi, target.x - startPt.x, target.y - startPt.y, ch)
-        setState({ phase: 'dragging', edgeId: cur.edgeId, kind: 'segment', idx: vi, startVia: pl.via, workVia: via, startPt, snap })
+        setState({ phase: 'dragging', edgeId: cur.edgeId, kind: 'segment', idx: vi, startVia: pl.via, liveVia: via, startPt, snap })
       }
       runDragSession(onMove, () => {
         const s = stateRef.current
@@ -380,7 +466,7 @@ export function useEdgeEdit(args: {
           return
         }
         // [RR 补批 RR13] via 等值短路（vertex 同式——回原位=no-op 零单元）
-        if (!viaEquals(s.startVia, s.workVia)) store().setEdgeVia(cur.edgeId, s.workVia)
+        if (!viaEquals(s.startVia, s.liveVia)) store().setEdgeVia(cur.edgeId, s.liveVia)
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },
@@ -433,6 +519,16 @@ export function useEdgeEdit(args: {
     if (!args.enabled) setState({ phase: 'idle' })
   }, [args.enabled])
 
+  // [回炉 R28] 换端拖拽自动滚动会话卸载 teardown：卸载/失能=停泵（防泄漏）
+  const autoRef = useRef<AutoScrollHandle | null>(null)
+  useEffect(
+    () => () => {
+      autoRef.current?.stop()
+      autoRef.current = null
+    },
+    []
+  )
+
   // 边消失（删除/切图）=selected 态失效防御
   // [RR8] 响应式订阅（原 deps getState().edges 渲染期直读=静态 props 挂载下
   // 边删除不触发重渲染——选中悬挂；订阅后 store 写即时驱动）
@@ -449,8 +545,8 @@ export function useEdgeEdit(args: {
       ? []
       : (() => {
           const s = stateRef.current
-          const via =
-            s.phase === 'dragging' || s.phase === 'reconnect' ? s.workVia : store().edges.find((e) => e.id === selId)?.via
+          if (s.phase === 'reconnect') return [] // 直线预览零持久化——不参与穿卡警示
+          const via = s.phase === 'dragging' ? s.liveVia : store().edges.find((e) => e.id === selId)?.via
           const pl = polylineOf(selId, via)
           if (pl === null) return []
           const e = store().edges.find((x) => x.id === selId)
@@ -466,19 +562,31 @@ export function useEdgeEdit(args: {
     state.phase === 'dragging' && state.snap !== null ? { axis: state.snap.axis, line: state.snap.line } : null
 
   // 手柄/虚影几何（render 期由 state+库 via 派生）
-  const handlesPl = (() => {
-    if (selId === null) return null
-    const s = stateRef.current
-    const via =
-      s.phase === 'dragging' || s.phase === 'reconnect' ? s.workVia : store().edges.find((e) => e.id === selId)?.via
-    return polylineOf(selId, via)
-  })()
   const ghostPl =
     state.phase === 'dragging' || state.phase === 'reconnect'
       ? polylineOf(state.edgeId, state.startVia)
       : null
+  /** [F-VISFB-66] reconnect 固定端锚 pt（虚影全链锚端——直线预览不动端） */
+  const ghostAnchorA = (): Pt | null => ghostPl?.anchorA ?? null
+  const ghostAnchorB = (): Pt | null => ghostPl?.anchorB ?? null
+  const handlesPl = (() => {
+    if (selId === null) return null
+    const s = stateRef.current
+    if (s.phase === 'reconnect') {
+      // 直线预览合成形：固定端锚 pt→cursor/snap（EdgeHandles 端柄跟手——
+      // anchorA/B 即两端点、via 空数组）
+      const fixed = s.end === 'from' ? ghostAnchorB() : ghostAnchorA()
+      const live = s.anchor?.pt ?? s.cursor
+      if (fixed === null) return null
+      return s.end === 'from'
+        ? { anchorA: live, anchorB: fixed, via: [] }
+        : { anchorA: fixed, anchorB: live, via: [] }
+    }
+    const via = s.phase === 'dragging' ? s.liveVia : store().edges.find((e) => e.id === selId)?.via
+    return polylineOf(selId, via)
+  })()
   const snapAt =
-    state.phase === 'dragging' && state.snap !== null ? (state.workVia[state.idx] ?? state.startPt) : null
+    state.phase === 'dragging' && state.snap !== null ? (state.liveVia[state.idx] ?? state.startPt) : null
   /** [回炉 R19] 磁吸实心（.magnet）仅被拖柄：dragging-vertex 拖动序号 */
   const activeVertexIdx = state.phase === 'dragging' && state.kind === 'vertex' ? state.idx : null
 

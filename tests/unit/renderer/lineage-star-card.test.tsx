@@ -98,7 +98,6 @@ describe('F-STAR-01 A3 脉络卡星标域', () => {
         no={1}
         metrics={null}
         selected={false}
-        linkSrc={false}
         onNodeClick={onNodeClick}
         onStarClick={onStarClick}
       />

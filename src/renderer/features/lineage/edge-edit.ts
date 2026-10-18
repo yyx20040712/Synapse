@@ -212,32 +212,6 @@ export function deleteVertex(p: EditPolyline, idx: number): EditPolyline {
   } as EditPolyline
 }
 
-/**
- * 端点重连（§2.3-6）：via 全保留+首/末段按新锚 L 重正交（入轴=新锚短桩法线
- * 向）；新锚侧横（left/right）⇒插入首拐 (V.x, A.y)；竖（top/bottom）⇒
- * (A.x, V.y)；同轴直达=零插入。锚位承载=via 首点（corner）——渲染锚选择
- * selectAnchor(src, via[0]) 自然命中新锚侧（LineageEdge 无锚字段——呈现层
- * 命中态不持久化，申报）。
- */
-export function reconnectEnd(
-  p: EditPolyline,
-  end: 'from' | 'to',
-  newAnchor: Pt,
-  side: Side
-): EditPolyline {
-  const via = p.via.map(dup)
-  const target = end === 'from' ? via[0] : via[via.length - 1]
-  if (target === undefined) return p
-  const horizontalSide = side === 'left' || side === 'right'
-  const corner = horizontalSide ? { x: target.x, y: newAnchor.y } : { x: newAnchor.x, y: target.y }
-  const aligned = horizontalSide ? corner.y === target.y : corner.x === target.x
-  if (!eq(corner, target) && !aligned) {
-    if (end === 'from') via.unshift(corner as LineageViaPoint)
-    else via.push(corner as LineageViaPoint)
-  }
-  return { anchorA: end === 'from' ? newAnchor : p.anchorA, anchorB: end === 'to' ? newAnchor : p.anchorB, via: via as LineageViaPoint[] }
-}
-
 /** 通道集（磁吸候选中线——内容坐标；横=行隙/框间带、竖=列缝） */
 export interface Channels {
   horizontal: number[]
@@ -300,4 +274,57 @@ export function crossCardSegments(
     if (puffed.some((r) => segHitsRect(a, b, r))) hits.push(i)
   }
   return hits
+}
+
+/**
+ * [回炉 R16] 换端落点分类纯函数（设计书 §C.3 终裁修正分层表——按卡身份分格）。
+ * 输入：解锚命中（null=未命中锚）+光标 own 点+本端/对端卡 id+本端拖前锚 pt+
+ * 全卡 rect。输出动作枚举（UI 仅执行，判定单源驻本件可直测）。
+ */
+export type ReconnectAnchorRef = { side: Side; slot: 0 | 1 | 2 }
+
+export type ReconnectDropAction =
+  /** 本端卡同锚=无操作取消（零编辑单元——RR13 短路沿承） */
+  | { kind: 'no-op' }
+  /** 本端卡异锚=合法换锚（端点身份变更——终裁修正恢复 C1a 口径） */
+  | { kind: 're-anchor'; anchor: ReconnectAnchorRef }
+  /** 对端卡任意落点=自环静默取消（store 侧 self-loop 判兜底） */
+  | { kind: 'self-loop-silent' }
+  /** 第三卡锚=合法换端 */
+  | { kind: 'reconnect'; anchor: ReconnectAnchorRef }
+  /** 第三卡非锚区=toast 落点未在连接点上+取消 */
+  | { kind: 'toast-blank' }
+  /** 本端/对端卡非锚区与空白=静默取消 */
+  | { kind: 'silent' }
+
+export function classifyReconnectDrop(args: {
+  anchorHit: { nodeId: string; anchor: ReconnectAnchorRef; pt: Pt } | null
+  cursor: Pt
+  ownNode: string
+  otherNode: string
+  ownHomePt: Pt
+  cards: ReadonlyArray<{ nodeId: string; rect: Rect }>
+  snapR: number
+}): ReconnectDropAction {
+  const { anchorHit, cursor, ownNode, otherNode, ownHomePt, cards, snapR } = args
+  if (anchorHit === null) {
+    // 非锚区分层：第三卡膨胀圈内=toast；本端/对端卡与空白=静默
+    const hitRect = (c: { rect: Rect }): boolean =>
+      cursor.x >= c.rect.x - snapR &&
+      cursor.x <= c.rect.x + c.rect.w + snapR &&
+      cursor.y >= c.rect.y - snapR &&
+      cursor.y <= c.rect.y + c.rect.h + snapR
+    const thirdCard = cards.some(
+      (c) => c.nodeId !== ownNode && c.nodeId !== otherNode && hitRect(c)
+    )
+    return thirdCard ? { kind: 'toast-blank' } : { kind: 'silent' }
+  }
+  const a = anchorHit
+  if (a.nodeId === ownNode) {
+    // 本端卡：同锚=无操作（pt 等值判——拖回原位零编辑单元）；异锚=换锚
+    if (a.pt.x === ownHomePt.x && a.pt.y === ownHomePt.y) return { kind: 'no-op' }
+    return { kind: 're-anchor', anchor: a.anchor }
+  }
+  if (a.nodeId === otherNode) return { kind: 'self-loop-silent' }
+  return { kind: 'reconnect', anchor: a.anchor }
 }

@@ -278,3 +278,62 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     expect(reorder).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('F-VISFB-66·[回炉 S10/S11] 滚动帧：tick 先于基准重测+滚动中槽位更新与松手落槽', () => {
+  it('S10 帧序：滚动帧内 tick 施滚先于 onScrollFrame 基准重算（scrollTop 观测=施加后值）', async () => {
+    const { startAutoScroll } = await import('../../../src/renderer/features/lineage/drag-autoscroll')
+    const frames: number[] = []
+    let top = 0
+    const c = document.createElement('div')
+    Object.defineProperty(c, 'clientHeight', { value: 600, configurable: true })
+    Object.defineProperty(c, 'getBoundingClientRect', {
+      value: () => ({ top: 0, bottom: 600, left: 0, right: 800, width: 800, height: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+    Object.defineProperty(c, 'scrollTop', {
+      get: () => top,
+      set: (v: number) => {
+        top = Math.max(0, Math.min(500, v))
+      },
+      configurable: true
+    })
+    const h = startAutoScroll(
+      { container: c, getCursorClient: () => ({ clientX: 100, clientY: 590 }), onScrollFrame: () => frames.push(c.scrollTop) },
+      { managed: false }
+    )
+    h.tick(100)
+    expect(top).toBeGreaterThan(0) // tick 施滚在先
+    expect(frames[0]).toBe(top) // onScrollFrame 观测=施加后值（帧序：tick→基准重算）
+    h.stop()
+  })
+
+  it('S11 滚动中松手落槽正确（行为测试）：滚动帧→insertIdx 随内容位移更新→松手 settle=滚动帧插位', async () => {
+    // [定点修 B3] 源码 grep 形退役——真实会话驱动：光标静止、内容上移（frame
+    // gBCR top 0→−130）→FRAME_EVENT（模块真监听路径）→onScrollFrame 重算
+    // 插位→pUp settle 取 s.insertIdx（滚动帧更新值非陈旧值——判别力：无
+    // 滚动帧重算则落 [A,B,C,D] 陈旧位=红）。场景=idx 1→2（插槽恒 row0——
+    // 行容器分块下断言稳定）
+    const nodes = [node('A'), node('B'), node('C'), node('D')]
+    mount(nodes)
+    await injectW(nodes, 570.4) // partition(4)=[3,1]（S2 同构）
+    stubFrame(0, 0, 600, 400)
+    pDown(cardOf('B'), 276, 54) // B=row0 cell1 中心
+    pMove(282, 58) // 激活（阈 5px）
+    pMove(150, 40) // row0 col0 右缘（center 76）→ p=1 src=1 → idx=1 → [A,B,C,D]
+    const ph0 = req('.drag-slot:not(.cand)')
+    expect(ph0.previousElementSibling?.isEqualNode(cardOf('A')), '滚动前插位=A 后 C 前').toBe(true)
+    // 滚动帧：内容上移 130px（frame gBCR top 0→−130）——光标静止 (150,40)
+    // →frame 域 y=170 跨入 row1；x=150<row1 cell0 中心 176 → p=3 src=1 →
+    // idx=2（C 后）
+    stubFrame(0, -130, 600, 400)
+    act(() => {
+      req('.timeline').dispatchEvent(new CustomEvent('synapse-autoscroll-frame'))
+    })
+    const ph1 = req('.drag-slot:not(.cand)')
+    expect(ph1.previousElementSibling?.isEqualNode(cardOf('C')), '滚动帧后插位=C 后（内容位移→插入位随帧更新）').toBe(true)
+    pUp(150, 40) // 静止光标松手——settle 取滚动帧更新后的 s.insertIdx
+    fireEnd(cardOf('B'))
+    expect(reorder).toHaveBeenCalledTimes(1)
+    expect(reorder, '落槽=滚动后插位 [A,C,B,D]（陈旧位 [A,B,C,D]=红）').toHaveBeenCalledWith(['A', 'C', 'B', 'D'])
+  })
+})

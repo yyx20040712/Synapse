@@ -3,10 +3,9 @@
  * [LG-03] LineageNodeMenu —— 节点右键菜单（Board 子组件，组件≤250 拆分预案）。
  *
  * 行为：fixed 定位于右键锚点；菜单首行=目标标识「卡「题名」● 命中」（②批
- * 右键反馈④——按下即高亮配套）；菜单项=连线到…/改父…（目标点选流沿承）/
- * 删除父连线（有入边时呈现）/删除节点（[A1b]「添加标签…」随脉络私有标签域
- * 退役删除——标签唯一源=文献库域；[A3 F-CONTRACTA-01 2026-10-04]「编辑
- * 核心想法」随核心想法域全退役删除——「核心想法」语义由全文笔记承接）。
+ * 右键反馈④——按下即高亮配套）；菜单项=删除父连线（有入边时呈现）/删除节
+ * 点（[F-VISFB-66 裁定 2/3] 旧右键建边/换父两项目随目标选取链路与换父业务
+ * 退役删除——W-09r2 写实：组件剩余=标题行+删除父连线（条件）+删除节点）。
  * [②U5] 「连接父文献…/管理人工连线…」双入口随人工父对话框退役删除（画线
  * 工具+线身右键菜单替代）。透明遮罩点击关闭；[F-UIRES-03 C2·P5] Esc 全局
  * 层序定稿=菜单层自治 Esc 补齐（原「ESC 归 Dialog 域——菜单轻量面不挂
@@ -27,8 +26,6 @@ export interface LineageNodeMenuProps {
   parentEdge: LineageEdge | null
   anchor: { x: number; y: number }
   onClose(): void
-  onLinkTo(nodeId: string): void
-  onReparent(nodeId: string): void
   onRemoveParentEdge(edgeId: string): void
   onRemoveNode(nodeId: string): void
 }
@@ -66,12 +63,6 @@ export function LineageNodeMenu(props: LineageNodeMenuProps): JSX.Element {
         <div className="px-3 py-1 text-[10px] tracking-wide" style={{ color: 'var(--faint)' }} data-testid="node-menu-title">
           {`卡「${node.title}」● 命中`}
         </div>
-        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onLinkTo(node.id)}>
-          连线到…
-        </button>
-        <button type="button" role="menuitem" className={MENU_ITEM_STYLE} style={{ color: 'var(--text)' }} onClick={() => props.onReparent(node.id)}>
-          改父…
-        </button>
         {parentEdge !== null && (
           <button
             type="button"
