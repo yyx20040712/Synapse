@@ -34,7 +34,16 @@ function runSeed(script: string, env: NodeJS.ProcessEnv): Promise<void> {
 export async function launch(userData: string, extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
   const app = await electron.launch({
     args: ['out/main/index.js'],
-    env: { ...process.env, SYNAPSE_USER_DATA: userData, ...extraEnv } as Record<string, string>
+    env: {
+      ...process.env,
+      SYNAPSE_USER_DATA: userData,
+      // [64-e2e-hang] e2e 无人值守 seam 默认开：脏态 close 的 C 确认框在 worker
+      // teardown（Playwright 自身 app.close()，无测试代码可挂桩）无人点击即挂
+      // （CI run 39141915828 实证）——测 cancel/confirm 真路径的用例单点覆盖退出：
+      // launch(userData, { SYNAPSE_E2E_QUIT_AUTOCONFIRM: '0' })（lineage T3 先例）。
+      SYNAPSE_E2E_QUIT_AUTOCONFIRM: '1',
+      ...extraEnv
+    } as Record<string, string>
   })
   // [ciatimeout-a2] _electron.launch 自建 BrowserContext 不吃 playwright.config
   // 的 use.actionTimeout（run 37101764841 实证：config 已设 60s 仍报 120 处

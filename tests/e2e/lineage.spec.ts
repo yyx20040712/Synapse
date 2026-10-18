@@ -238,7 +238,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       ]
     })
 
-    const app = await launch(userData)
+    // [64-e2e-hang] T3 测 cancel/confirm 真两态（自带 dialog 桩）——退出 e2e-env
+    // 默认 seam（SYNAPSE_E2E_QUIT_AUTOCONFIRM=1 短路 confirmQuit 使 cancel 态不可达）。
+    const app = await launch(userData, { SYNAPSE_E2E_QUIT_AUTOCONFIRM: '0' })
     const win = await app.firstWindow()
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()

@@ -351,7 +351,7 @@
         },
         {
             "path": "tests/e2e/e2e-env.ts",
-            "sha256": "40f34e1f46900c1db425b0fe60c81f5e3b5660552487194bb2e30132053256b0"
+            "sha256": "b27d503ef97af24570035feac66b0a28206591a9d7b0247673c58bd5f8fb0f4d"
         },
         {
             "path": "tests/e2e/export-clipboard.spec.ts",
@@ -423,7 +423,7 @@
         },
         {
             "path": "tests/e2e/lineage.spec.ts",
-            "sha256": "7e9288ea40e046cacdb6d174d09ce0e2d14cf67393693f8b7c2e4a60f567a832"
+            "sha256": "93b49e80092974a0207294cacbb12a40288f4eb70f2aad5ee6ad0f6f316eb165"
         },
         {
             "path": "tests/e2e/meta-year-month.spec.ts",
