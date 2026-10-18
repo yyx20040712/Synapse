@@ -293,17 +293,24 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       window.webContents.send(EVENT_CHANNELS.quitFlushAbort, payload)
     },
     confirmQuit: (message) =>
-      dialog
-        .showMessageBox(window, {
-          type: 'warning',
-          message,
-          buttons: ['确认退出', '取消'],
-          // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据）
-          defaultId: 1,
-          cancelId: 1,
-          noLink: true
-        })
-        .then((r) => r.response === 0)
+      // [64-e2e-hang·CI teardown] e2e 无人值守 seam：SYNAPSE_E2E_QUIT_AUTOCONFIRM=1
+      // 时自动确认——脏态 C 确认框在无人语境（worker teardown 的 app.close()）无
+      // 人点击即挂（CI run 39141915828 teardown 90s 超时实证）；生产不设此 env=
+      // 零行为变化（覆盖退出=e2e-env launch 传 '0'——lineage T3 cancel/confirm
+      // 两态自带 dialog 桩需真路径）。
+      process.env.SYNAPSE_E2E_QUIT_AUTOCONFIRM === '1'
+        ? Promise.resolve(true)
+        : dialog
+            .showMessageBox(window, {
+              type: 'warning',
+              message,
+              buttons: ['确认退出', '取消'],
+              // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据）
+              defaultId: 1,
+              cancelId: 1,
+              noLink: true
+            })
+            .then((r) => r.response === 0)
   })
 
   // F-SESS-01：renderer 重载/崩溃（main 存活）→中止在途语料导出会话——否则
