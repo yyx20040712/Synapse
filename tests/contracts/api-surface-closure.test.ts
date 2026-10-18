@@ -52,6 +52,7 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ]],
   ['notes', ['get', 'remove', 'save']],
   ['papers', ['delete', 'moveFolder', 'setStarred']],
+  ['recovery', ['peek', 'read', 'release', 'save']],
   ['reader', ['deleteAnnotation', 'listAnnotations', 'open', 'saveAnnotation', 'saveProgress', 'updateAnnotation']],
   ['settings', ['diagNetwork', 'get', 'set']],
   ['snapshot', ['exportToFile', 'getSyncKey', 'importFromFile', 'importPeerKey', 'listPeerKeys', 'removePeerKey']],
@@ -67,14 +68,14 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
 // 62→75 +AI 六域 13 通道；[F-FOLDER-01]
 // 56→61：+folders 四通道+papers/move-folder；[F-UIRES-01 批 B] 60→61：+papers/delete；
 // [F-BAKRET-01] 61→60：lineage/import 退役——用户裁决 2026-09-30）
-describe('contracts/api-surface-closure —— 接线表闭合性（89 通道 pin）', () => {
-  it('通道总数=89（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-VISFB-61] 87→89：+lineage/upsert-floating-note+lineage/remove-floating-note（悬浮笔记数据与会话面，域 22 不变）；[F-VISFB-14] 86→87：+system/report-quit-flush（退出握手回执）；[F-VISFB-43] 81→86：+figures 域五通道（图表提取管线）；[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面，域 21 不变）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75 +AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
-    expect(allChannels().length).toBe(89)
+describe('contracts/api-surface-closure —— 接线表闭合性（93 通道 pin）', () => {
+  it('通道总数=93（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-VISFB-65] 89→93：+recovery 域四通道（恢复副本 peek/save/read/release，域 23）；[F-VISFB-61] 87→89：+lineage/upsert-floating-note+lineage/remove-floating-note（悬浮笔记数据与会话面，域 22 不变）；[F-VISFB-14] 86→87：+system/report-quit-flush（退出握手回执）；[F-VISFB-43] 81→86：+figures 域五通道（图表提取管线）；[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75 +AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
+    expect(allChannels().length).toBe(93)
   })
 
-  it('域枚举 pin：恰 22 域（[F-VISFB-43] 21→22：+figures；[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）', () => {
+  it('域枚举 pin：恰 23 域（[F-VISFB-65] 22→23：+recovery；[F-VISFB-43] 21→22：+figures；[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）', () => {
     expect(Object.keys(API_SURFACE).sort()).toEqual(DOMAIN_PINS.map(([d]) => d).sort())
-    expect(DOMAIN_PINS).toHaveLength(22)
+    expect(DOMAIN_PINS).toHaveLength(23)
   })
 
   it.each(DOMAIN_PINS)('域 %s 方法集 pin', (domain, methods) => {
@@ -101,6 +102,7 @@ describe('contracts/api-surface-closure —— 接线表闭合性（89 通道 pi
       'notes',
       'papers',
       'reader',
+      'recovery',
       'settings',
       'snapshot',
       'system',
