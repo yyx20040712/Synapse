@@ -206,10 +206,13 @@ export function getLineagePending(): boolean {
 export const QUIT_CONFIRM_MESSAGE =
   '有修改未能自动保存（保存失败或超时），退出后将丢失这部分修改。确认退出？'
 
-/** 订阅面最小形状（结构化类型：测试免依赖 electron 真体——文件内既有风格） */
+/** 订阅面最小形状（结构化类型：测试免依赖 electron 真体——文件内既有风格；
+ * isDestroyed 销毁态回读（真 WebContents 本有此法——[64-e2e-hang 门二 W1]：
+ * teardown 摘订阅须先判对象存续，触摸已亡对象即抛 Object has been destroyed） */
 export interface QuitEventSink {
   on(event: string, listener: (...args: never[]) => void): void
   removeListener(event: string, listener: (...args: never[]) => void): void
+  isDestroyed(): boolean
 }
 
 /** 装配窗口最小形状：close/closed 订阅+destroy+webContents 崩溃订阅+
@@ -258,11 +261,16 @@ export function installQuitCloseInterception(
     timer.handle = null
     if (quitPolicy === policy) quitPolicy = null
     // closed 回调内 teardown 的现场：窗已销毁，订阅随对象消亡，触摸即抛
-    // Object has been destroyed（64 e2e 挂起根因）
-    if (win.isDestroyed()) return
-    win.removeListener('close', onClose)
-    win.removeListener('closed', onClosed)
-    win.webContents.removeListener('render-process-gone', onGone)
+    // Object has been destroyed（64 e2e 挂起根因）；win.isDestroyed 先判——
+    // win 亡时访问 win.webContents 本身即抛（短路必要）。wc 独亡形（门二 W1）：
+    // win 活而 webContents 已亡（render-process-gone 等）——win 侧照拆+wc 侧跳过
+    if (!win.isDestroyed()) {
+      win.removeListener('close', onClose)
+      win.removeListener('closed', onClosed)
+      if (!win.webContents.isDestroyed()) {
+        win.webContents.removeListener('render-process-gone', onGone)
+      }
+    }
   }
   const policy = createQuitClosePolicy(deps.now, {
     sendQuitFlush(requestId) {
