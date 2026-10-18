@@ -265,10 +265,21 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       return b !== null && b.y + b.height / 2 < vpT3 * 0.75
     }
     if (!(await dropVisible())) {
-      // 乙出视口（CI 窄窗形态）——指针驻底缘触发区：自动滚动至乙入上带
-      await win.mouse.move(rbT3.x + 4, Math.round(vpT3 - 15), { steps: 6 })
+      // 乙出视口（CI 窄窗形态）——程序化滚至乙驻容器中心：scroll 事件同路
+      // 重算（W-06r2 设计内——外部滚动会话中重算落点）。不取自动滚动带内
+      // 抓取：乙=末位卡 max 滚仍驻底缘触发区（0.75 上带永不可达=第二现
+      // CI 39093814719 实测）+带内落锚随帧漂移不稳；中心位=触发区外坐标稳
+      await win.evaluate(() => {
+        const tl = document.querySelector('.timeline')
+        if (!(tl instanceof HTMLElement)) throw new Error('T3 .timeline 不在场')
+        const card = [...tl.querySelectorAll('.tl-card')].find((c) => c.textContent?.includes('脉络乙文献'))
+        if (!(card instanceof HTMLElement)) throw new Error('T3 乙卡不在场')
+        const cr = card.getBoundingClientRect()
+        const tr = tl.getBoundingClientRect()
+        tl.scrollTop += cr.top + cr.height / 2 - (tr.top + tr.height / 2)
+      })
       await expect
-        .poll(dropVisible, { timeout: 10_000, message: 'T3 自动滚动未带乙入视口上带' })
+        .poll(dropVisible, { timeout: 10_000, message: 'T3 程序化滚动未带乙入视口上带' })
         .toBe(true)
     }
     const bbT3 = await cardB.boundingBox()
