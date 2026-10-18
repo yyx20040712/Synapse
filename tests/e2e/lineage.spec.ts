@@ -218,12 +218,16 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t3-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    // [F-UIRES-03 C3] 种子改局部载荷：甲/乙同月组（2022-05 双卡——写失败触发
-    // 段=月内拖拽调序承载，改月写通道随改月链退役 INV-107）；根/乙/边型与
-    // chainSeed 等形（重复加边/边数断言不受影响）
+    // [F-UIRES-03 C3] 种子改局部载荷：甲/乙同月组（2022-05——写失败触发段=
+    // 月内拖拽调序承载，改月写通道随改月链退役 INV-107）；根/乙/边型语义
+    // 沿承（重复加边对+边数 2 不变）。〔CI 收口四修〕root 由 2020 顶段移入
+    // 同月 slot0：窄窗 1024×768 下 root↔乙跨年 span≈605>视口半高=不可共视
+    // （F-CIFLK-01 分行错位推乙至 ~780）——同月三卡 [2,1] 分行内 root(行0)
+    // ↔乙(行1) span=144 恒共视=直拖径两平台统一，运行时自适应分支退役为
+    // 安全网（三现 CI 实测：带内抓取/0.75 上带阈值均被末位卡几何否决）
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2020 },
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2022, month: 5, slot: 0 },
         { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2022, month: 5, slot: 1 },
         { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2022, month: 5, slot: 2 }
       ],
@@ -259,10 +263,19 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     if (rbT3 === null) throw new Error('T3 源卡不可见')
     await win.mouse.move(rbT3.x + rbT3.width - 2, rbT3.y + rbT3.height / 2)
     await win.mouse.down()
-    const vpT3 = await win.evaluate(() => window.innerHeight)
+    // [CI 四修] 阈值=完整入容器即可（末位卡 max 滚恒驻底带——0.75 上带
+    // 永不可达=三现根因；带内落锚在 max 滚下安全：autoscroll 真差值恒 0
+    // 无漂移）
     const dropVisible = async (): Promise<boolean> => {
       const b = await cardB.boundingBox()
-      return b !== null && b.y + b.height / 2 < vpT3 * 0.75
+      if (b === null) return false
+      const t = await win.evaluate(() => {
+        const el = document.querySelector('.timeline')
+        if (el === null) throw new Error('.timeline 不在场')
+        const r = el.getBoundingClientRect()
+        return { top: r.top, bottom: r.bottom }
+      })
+      return b.y >= t.top && b.y + b.height <= t.bottom
     }
     if (!(await dropVisible())) {
       // 乙出视口（CI 窄窗形态）——程序化滚至乙驻容器中心：scroll 事件同路
