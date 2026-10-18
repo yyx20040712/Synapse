@@ -358,6 +358,16 @@ describe('quit-handshake —— main 侧无条件握手装配（F-VISFB-64）', 
     await drain()
     expect(h.destroys).toBe(1)
     expect(h.removed).toEqual([])
+    // teardown 无条件段（timer+quitPolicy 引用清）不论销毁态必经——timer 面由
+    // 此锚钉住；quitPolicy 残留死引用（D 态全 no-op）为良性面，不变量登记随
+    // 后续票
+    expect(vi.getTimerCount()).toBe(0)
+    // 已知测试债（d1 W1 第三针实验实录，2026-10-18）：变异针「disposed=true
+    // 后销毁态早退（跳过 timer+quitPolicy 清）」在本文件全断言面不可观测——
+    // 本例 clean 回执路径 policy 已先行 clearCurrent（receipt→clearTimer 对冲
+    // pending timer），teardown 到达时 timer.handle 已 null；quitPolicy 残留
+    // 为 D 态死引用全 no-op。锚钉 timer 终态面（终态非零即红），清理面早退针
+    // 留待不变量票（quitPolicy 清面）补可观测锚
   })
 
   it('[64-e2e-hang] wc 独亡（win 活）：dispose 零抛+win 侧订阅照拆+wc 侧跳过', () => {

@@ -2039,7 +2039,7 @@
         },
         {
             "path": "tests/unit/windows/quit-handshake.test.ts",
-            "sha256": "82f7649f48418b957f791fee3ca49115b1c1d659d8b7bb68b1e3b16274be980f"
+            "sha256": "b2dbefbd55020d999b899d6183d2fa914efa89868425d3aad2966fe1804c50c2"
         },
         {
             "path": "tests/unit/windows/window-control.test.ts",
