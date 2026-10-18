@@ -33,6 +33,16 @@
   （B0/W1/N4 PASS）+d1（B0/W1/N6 有条件放行——四条件全偿：W1 锚+针/N1 防御面
   定性=生产零外部 dispose 调用/N3 quitPolicy 读点全 ?. 空安全/N5 manifest 两笔
   各自携带实证）。
+- **追加（首 CI 回执驱动的 seam 批，416423bb+a396e764）**：push 后 CI run
+  39141915828=e2e 步红（134 passed+1 flaky+**零用例终败**——步红根因=ai-budget
+  E4 首试 90s 超时〔CI 慢机 flaky，重试过〕后 **worker teardown 的 app.close()
+  撞脏态 C 确认框无人点击→teardown 90s 挂**「error not part of any test」）——
+  C 框无人值守面在 teardown 路径现身（测试内 dialog 桩救不了 teardown）。主控
+  终裁落 **v217 §1-3 授权方向① e2e seam**：bootstrap confirmQuit 加
+  SYNAPSE_E2E_QUIT_AUTOCONFIRM=1 分流（生产不设 env=零行为变化）+e2e-env
+  launch 默认注入+lineage T3 单点退出（cancel 态真路径）+T3 closeMain 竞态吞拒
+  （f0a60714）。定向验证：T3〔seam 退出版〕9.6s 绿+export-clipboard〔seam 默认〕
+  7.4s 绿+verify EXIT=0 复验。
 
 ## §1 新会话开工序
 
@@ -44,14 +54,16 @@
 
 ## §2 待用户面（呈批）
 
-1. **C 态确认框 e2e 无人值守结构性风险**（kimi/deepseek 双源一致呈报）：
-   dirty/迟到回执→原生确认框在无人语境理论挂起。本场零目击（既有 e2e 工作流
-   clean 收尾或自带 dialog 桩——lineage T3 monkey-patch 先例）。三选项：
-   ①维持现状+新 e2e 一律自带 dialog 桩（零产品面改动，**主控推荐**）；
-   ②e2e seam env（产品面 ~3 行分支，仓外 seam 候选件在档）；③握手语义修订
-   （迟到 clean 回执自愈等——设计修订链+门审回炉）。裁决前不立项。
+1. **C 态确认框无人值守面——e2e 面已由 seam 根治（方向①落地，§0 追加段）**；
+   **剩余呈批=生产语义面**（kimi/deepseek 双源一致呈报）：慢机真实用户也可能
+   被 1000ms clean 窗的迟到回执误弹确认框（生产语境体验面，非测试面）。选项：
+   ①维持现状（生产零改动——主控推荐，慢机误弹属低频体验面）；②握手语义修订
+   （迟到 clean 回执自愈/窗宽自适应——设计修订链+门审回炉+快照时效方案
+   〔deepseek B3 数据丢失关切必须先解〕）。裁决前不立项。
 2. 治理沿承：teardown 无条件段不变量（timer+引用清不论销毁态必经；死引用良性）
    登记 docs/invariants.md——随下批顺手（非独立票）。
+3. ai-budget E4 CI flaky（首试 90s 超时重试过，run 39141915828）——单现
+   observing（FLK 台账口径；非确定失败单现→复跑定绿；再现有同指纹即立案）。
 
 ## §3 治理注记（本场增量）
 
@@ -68,8 +80,12 @@
 
 ## §4 CI 回执
 
-- 本笔 push（v217+v218+修复 6 笔）→ run 见 gh（推送时填：本字段由收口会话补
-  conclusion 核验后闭账；**未核验不得翻 done**）。
+- run 39141915828（首 push 877b4ad7）=**failure**——e2e 步红定性=teardown 脏态
+  C 框挂面（§0 追加段），非修复回归（零用例终败+134 passed）；处置=seam 批
+  （416423bb/a396e764）+本笔重推。
+- 本笔 push（seam 批+v218 修订）→ 新 run **待核验**：e2e 步绿即闭账（预期
+  全绿；若 ai-budget E4 再 flaky 且 teardown 不再挂=seam 生效佐证）。**未核验
+  不得翻 done**——收口会话或下场首动作补 conclusion。
 
 ## §5 沿承挂账
 
