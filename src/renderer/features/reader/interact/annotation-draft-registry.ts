@@ -25,6 +25,8 @@
  * - 全部导出为纯函数（无 React 依赖）；模块级 Map/Set 随会话存活（单用户本地
  *   应用，KB 量级线性增长接受——notes.store 模块级元数据同口径）
  */
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
+
 /** 卸载期草稿快照：comment=最新未落盘值；failed=最近一次保存尝试是否失败（重挂载恢复态依据） */
 export interface AnnotationDraftSnapshot {
   comment: string
@@ -46,9 +48,12 @@ const generations = new Map<string, number>()
 /** 删除成功墓碑：此后一切注册/恢复/写同步全拒（防迟到写复活/防目标复活） */
 const tombstones = new Set<string>()
 
-/** 卸载草稿入表（墓碑拒入——已删目标不复活草稿）；同 id 后写覆盖（最新值单源） */
+/** 卸载草稿入表（墓碑拒入——已删目标不复活草稿）；同 id 后写覆盖（最新值单源）。
+ *  [F-VISFB-64] closing gate：退出握手冻结期用户写拒绝。quit 收口 ② 不经本表——
+ *  挂载句柄 flush 的写结果经句柄返回态直喂 ④ 判定（②链零 registry 闸点，
+ *  轮2 B-r1-01 实证；drafts 表只承接卸载残留=非②路径） */
 export function saveAnnotationDraft(id: string, comment: string, failed: boolean): void {
-  if (tombstones.has(id)) {
+  if (tombstones.has(id) || quitWriteBlocked()) {
     return
   }
   drafts.set(id, { comment, failed })
@@ -72,13 +77,16 @@ export function annotationDraftSaved(id: string, comment: string): void {
   }
 }
 
-/** 挂载期注册 flush 句柄（编辑器 mount effect；重复注册=同 id 单编辑器，覆盖无害） */
+/** 挂载期注册 flush 句柄（编辑器 mount effect；重复注册=同 id 单编辑器，覆盖无害）。
+ *  [F-VISFB-64] closing gate：冻结期句柄变更拒绝（挂载/卸载用户命令——设计 §④） */
 export function registerDraftFlush(id: string, flush: AnnotationDraftFlush): void {
+  if (quitWriteBlocked()) return
   flushHandles.set(id, flush)
 }
 
-/** 卸载注销 flush 句柄 */
+/** 卸载注销 flush 句柄（[F-VISFB-64] closing gate 同上——冻结期拒绝） */
 export function unregisterDraftFlush(id: string): void {
+  if (quitWriteBlocked()) return
   flushHandles.delete(id)
 }
 
@@ -139,14 +147,18 @@ export function isAnnotationWriteLive(id: string, gen: number): boolean {
   return !tombstones.has(id) && (generations.get(id) ?? 0) === gen
 }
 
-/** 删除发起：草稿出表+代际自增（此后到达的先代际写全判废）；幂等 */
+/** 删除发起：草稿出表+代际自增（此后到达的先代际写全判废）；幂等。
+ *  [F-VISFB-64] closing gate：冻结期删改用户命令拒绝（增删改写源面） */
 export function discardAnnotationDraft(id: string): void {
+  if (quitWriteBlocked()) return
   drafts.delete(id)
   generations.set(id, (generations.get(id) ?? 0) + 1)
 }
 
-/** 删除成功：打墓碑并清条目（幂等）——此后 save 拒入/take 恒 null/写全判废 */
+/** 删除成功：打墓碑并清条目（幂等）——此后 save 拒入/take 恒 null/写全判废
+ *  （[F-VISFB-64] closing gate 同上——冻结期拒绝） */
 export function markAnnotationDeleted(id: string): void {
+  if (quitWriteBlocked()) return
   tombstones.add(id)
   drafts.delete(id)
 }

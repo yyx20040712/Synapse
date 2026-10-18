@@ -5,9 +5,11 @@
  * - openExternal：({ url }) → security/shell-guard 的 openExternalGuarded(deps.shell, url)
  *   → 未通过校验抛 DomainError(code='INVALID_REQUEST')；通过 → { ok: true }
  * - setQuitDirty（TABS-04 增量）：({ dirty }) → deps.setQuitDirty 注入（bootstrap
- *   接 main-window 模块缓存）→ { ok: true }——renderer 聚合 dirty 变化沿 push 上报
+ *   接 main-window setQuitDirty——[F-VISFB-64] 起喂 quit-close-policy
+ *   dirty-push 自持快照）→ { ok: true }——renderer 聚合 dirty 变化沿 push 上报
  * - reportQuitFlush（[F-VISFB-14] 退出握手增量）：({ requestId, stillDirty }) →
- *   deps.reportQuitFlush（main-window 待答表关联 resolve）→ { ok: true }
+ *   deps.reportQuitFlush（[F-VISFB-64] 起喂 policy receipt——迟到/除名 id 由
+ *   policy 丢弃）→ { ok: true }
  * - windowControl（R2-SH3 增量）：({ action }) → deps.controlWindow 透传（bootstrap
  *   闭包包主窗口）→ 回读 { ok: true, maximized }——四 action 语义单源在
  *   main-window.controlWindow

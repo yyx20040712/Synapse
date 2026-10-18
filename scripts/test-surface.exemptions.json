@@ -1098,6 +1098,54 @@
       "caseTitle": "linkNodes CONFLICT（service 守卫拒绝）：动作丢弃+toast reason+保存态回落 clean",
       "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
       "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "判定函数：clean 放行 / dirty 拦截",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "模块级缓存：setQuitDirty/getQuitDirty 往返（renderer push 上报的 main 侧缓存）",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "clean 态 close：不 preventDefault、不弹确认框、不 destroy（默认放行）",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "dirty 态 close + 确认：preventDefault → 确认框（固定文案）→ destroy 强制关闭",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "dirty 态 close + 取消：preventDefault → 窗口保持（不 destroy，dirty 缓存不迁）",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "dirty 态 close + 确认框异常（reject）：按取消处理——窗口保持、不抛出（deepseek W1）",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "上报 dirty=true/false：透传注入的 setQuitDirty 并返回 { ok: true }",
+      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
+      "caseTitle": "[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）——IpcDeps 必填直调（缺失即红）",
+      "reason": "F-VISFB-64 装配面重排：lineagePending 透传行为零变（INV-91 保留）——标题微缩+断言集随 makeIpcDeps 形态重排，指纹面变更故登记（非契约语义变更；新同名用例承接）",
+      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
     }
   ]
 }

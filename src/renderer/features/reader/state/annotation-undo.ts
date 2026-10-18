@@ -59,6 +59,7 @@
  *   no-op、per-tab 隔离+clearStack
  */
 import { api, ApiClientError } from '../../../api/client'
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import type { Annotation, AnnotationInput } from '@shared/models/annotation'
 
 /** 三类逆操作载荷（判别联合——kind 即原操作名） */
@@ -142,9 +143,11 @@ function remapStackIds(s: UndoEntry[], oldId: string, newId: string, skip: UndoE
 const undoInFlightPapers = new Set<string>()
 
 /** 执行栈顶逆操作：成功后精确移除正被撤销的条目并返回 apply；api 失败/异常
- *  不弹栈可重试；空栈 no-op；同篇撤销进行中 busy 拒绝 */
+ * 不弹栈可重试；空栈 no-op；同篇撤销进行中 busy 拒绝。
+ * [F-VISFB-64·回炉 W1] closing gate：undo 逆写=用户动作，冻结期拒绝（复用
+ * busy 消费语义——调用方静默合并，栈不变零 api） */
 export async function undo(paperId: string): Promise<UndoOutcome> {
-  if (undoInFlightPapers.has(paperId)) {
+  if (quitWriteBlocked() || undoInFlightPapers.has(paperId)) {
     return { done: false, reason: 'busy' }
   }
   const s = stacks[paperId]

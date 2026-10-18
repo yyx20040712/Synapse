@@ -62,9 +62,7 @@ import {
   bindWindowStateEvents,
   controlWindow,
   createMainWindow,
-  createQuitFlushRequest,
-  handleCloseWithQuitHandshake,
-  getQuitDirty,
+  installQuitCloseInterception,
   setQuitDirty,
   setLineagePending,
   getLineagePending,
@@ -227,7 +225,7 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       ping: (host) => pingHost(`https://${host}/`, { fetchImpl: fetchLike }),
       setQuitDirty,
       setLineagePending,
-      // [F-VISFB-14] 退出握手 flush 回执落点（main-window 待答表按 id 关联）
+      // [F-VISFB-14] 退出握手 flush 回执落点（[F-VISFB-64] 起=喂 policy receipt）
       reportQuitFlush: reportQuitFlushResult,
       // R2-SH3：闭包直引下方 const window（TDZ 不可能触发——IPC 调用来自
       // renderer，必然晚于窗口创建；dialogs 惰性 getter 同段先例）
@@ -279,29 +277,33 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
     }
   })
 
-  // [F-VISFB-14] TABS-04 退出拦截升级=退出握手 flush-first：dirty 态 close →
-  // preventDefault+renderer flush（quitFlush 事件+有限超时+flushing 重入锁）→
-  // 净=destroy 零确认／仍脏/超时=模态二次确认（确认=destroy 强制关闭——destroy
-  // 不再触发 close 无重入）。注册在 saveBounds 监听之后：确认退出路径下窗口
-  // 几何已由前一个监听保存（TABS-04 沿承）。
-  window.on('close', (event) => {
-    void handleCloseWithQuitHandshake(getQuitDirty(), event, window, {
-      confirmQuit: (message) =>
-        dialog
-          .showMessageBox(window, {
-            type: 'warning',
-            message,
-            buttons: ['确认退出', '取消'],
-            // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据）
-            defaultId: 1,
-            cancelId: 1,
-            noLink: true
-          })
-          .then((r) => r.response === 0),
-      requestQuitFlush: createQuitFlushRequest((payload) => {
-        window.webContents.send(EVENT_CHANNELS.quitFlush, payload)
-      })
-    })
+  // [F-VISFB-64] TABS-04 退出拦截升级=关闭入口无条件握手（quit-close-policy
+  // 装配——设计 docs/design/2026-10-18_f-visfb64-design.md）：close 一律
+  // preventDefault+quit-flush 帧（缓存仅分级等待：clean grace 1000ms／dirty
+  // 5000ms，超时只确认不静默销毁）；唯一 clean 销毁面=有效回执 false；取消
+  // （C→I）发 quit-flush-abort 帧（epoch 水线——renderer 解冻 closing gate）。
+  // 注册在 saveBounds 监听之后：确认退出路径下窗口几何已由前一个监听保存
+  // （TABS-04 沿承）。now=Electron main 单调 performance.now（设计 §⑦）。
+  installQuitCloseInterception(window, {
+    now: () => performance.now(),
+    sendQuitFlushFrame: (payload) => {
+      window.webContents.send(EVENT_CHANNELS.quitFlush, payload)
+    },
+    sendAbortFrame: (payload) => {
+      window.webContents.send(EVENT_CHANNELS.quitFlushAbort, payload)
+    },
+    confirmQuit: (message) =>
+      dialog
+        .showMessageBox(window, {
+          type: 'warning',
+          message,
+          buttons: ['确认退出', '取消'],
+          // 默认焦点=取消：防误触回车/空格直接确认退出丢未落库数据）
+          defaultId: 1,
+          cancelId: 1,
+          noLink: true
+        })
+        .then((r) => r.response === 0)
   })
 
   // F-SESS-01：renderer 重载/崩溃（main 存活）→中止在途语料导出会话——否则

@@ -27,10 +27,9 @@
  * 节点派发 onBlur——主动收口承载）+id 守卫；R3 异步落点写前核在场；R4
  * saving 让位；R5 textarea 右键原生放行；R6 y 下限=柄高（grip inline 直注
  * ——CSS 变量法因 C-4c 悬空锚弃用，geom 常量单源）。
- * [回炉轮 2] S1① 在飞菜单随 saving 关闭（effect 清态——菜单两态不复活）；
- * S4 textarea onPointerDown stopPropagation（正文区点击不达容器画线处理器
- * ——React 链隔离）；S7② closeEdit 守卫改 editingIdRef 现值（迟到旧闭包
- * blur 不清新会话）；菜单 portal 装配迁 LineageNoteMenuPortal（行数红线）。 */
+ * [回炉轮 2] S1① 在飞菜单随 saving 关闭（effect 清态）；S4 textarea
+ * onPointerDown stopPropagation（React 链隔离）；S7② closeEdit 守卫改
+ * editingIdRef 现值；菜单 portal 装配迁 LineageNoteMenuPortal（行数红线）。 */
 import {
   useEffect,
   useMemo,
@@ -45,6 +44,7 @@ import { useLineageViewStore } from './lineage-view.store'
 import { clampToContent, notesInteractive, NOTE_GRIP_H, NOTE_H, NOTE_W, toOwnPt } from './lineage-note-geom'
 import { useNoteDrag } from './use-note-drag'
 import { useNoteDraftBridge } from './lineage-note-draft'
+import { quitWriteBlocked } from '../../app/quit-closing-gate'
 import { LineageNoteMenuPortal, type NoteMenu } from './LineageNoteMenu'
 
 export function LineageFloatingNotes(props: {
@@ -133,7 +133,8 @@ export function LineageFloatingNotes(props: {
   /** 会话收口单点（R2④ id 守卫读 editingIdRef 现值〔S7②〕：迟到旧闭包 blur
    *  不清新会话；空→回收；未变→零写；他径已删→静默出编辑态） */
   const closeEdit = (id: string, value: string): void => {
-    if (editingIdRef.current !== id) return
+    // [F-VISFB-64·轮2] closing gate：冻结期提交会话整体拒绝（保会话+pending）；②.5 收口经同步豁免域放行
+    if (editingIdRef.current !== id || quitWriteBlocked()) return
     const store = useLineageStore.getState()
     const n = store.floatingNotes.find((f) => f.id === id)
     setEditingId(null)
@@ -220,7 +221,7 @@ export function LineageFloatingNotes(props: {
                     // [S4] 正文区点击止于 textarea（不达容器画线处理器——caret 定位不触画线链）
                     e.stopPropagation()
                   }}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => (quitWriteBlocked() ? undefined : setDraft(e.target.value)) /* [F-VISFB-64·回炉 W2] closing gate：草稿内容写入口（本地态先行于 pending 置真；②.5 收口同步域不受影响） */}
                   onBlur={() => closeEdit(n.id, draft)}
                 />
               ) : (

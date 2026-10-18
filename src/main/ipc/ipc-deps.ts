@@ -17,16 +17,17 @@ export interface IpcDeps {
   userDataDir: string
   /** 网络诊断探活（http-client.pingHost 的包装，探 ALLOWED_REMOTE_HOSTS） */
   ping: (host: string) => Promise<{ ok: boolean; latencyMs: number }>
-  /** TABS-04 退出拦截：renderer dirty 上报落点（main-window 模块缓存） */
+  /** TABS-04 退出拦截：renderer dirty 上报落点（[F-VISFB-64] 起=main-window
+   *  setQuitDirty 喂 quit-close-policy dirty-push 自持快照——分级判定源） */
   setQuitDirty: (dirty: boolean) => void
   /** [F-FOLDER-01] INV-91 S1 队列闸：renderer 脉络写队列 pending 上报落点。
    *  [回炉码 7/k1-W9] 必填化——原「可选+受锁桩工厂零改」理由已被同 diff
    *  桩工厂随迁证伪（makeIpcDeps 已提供该键）；装配缺失=typecheck 红（bootstrap
    *  装配契约锚）+system.test 调用面锚 */
   setLineagePending: (pending: boolean) => void
-  /** [F-VISFB-14] 退出握手 flush 回执落点（main-window 待答表按 requestId
-   *  关联 resolve——迟到/超时后回执在表内零命中即丢弃）。必填=setLineagePending
-   *  同型（makeIpcDeps 桩工厂随迁） */
+  /** [F-VISFB-14] 退出握手 flush 回执落点（[F-VISFB-64] 起=main-window
+   *  reportQuitFlushResult 喂 policy receipt——迟到/超时后回执由 policy 按
+   *  id/时效丢弃）。必填=setLineagePending 同型（makeIpcDeps 桩工厂随迁） */
   reportQuitFlush: (requestId: string, stillDirty: boolean) => void
   /** R2-SH3 frameless 窗控：四 action 落点（bootstrap 闭包包主窗口） */
   controlWindow: (action: WindowControlAction) => { maximized: boolean }

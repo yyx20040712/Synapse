@@ -58,6 +58,7 @@ import {
   saveAnnotationDraft,
   takeAnnotationDraft
 } from './annotation-draft-registry'
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import type { Annotation } from '@shared/models/annotation'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
@@ -124,9 +125,12 @@ export function useAnnotationPopupActions(args: {
     return hit?.comment ?? null
   }
 
-  /** 批注保存：api 成功 → store 同步 → 收起弹层 → onChanged 通知 */
+  /** 批注保存：api 成功 → store 同步 → 收起弹层 → onChanged 通知。
+   *  [F-VISFB-64·回炉 W1] closing gate 用户命令入口（手动保存）；autosaveComment
+   *  不闸=timer/收口驱动非用户命令入口（quit flush ② 经 draft.flush→onAutosave
+   *  消费——闸则收口自锁；800ms 计时器写=非用户异步写，由②等在途+④查态覆盖） */
   async function saveComment(a: Annotation, comment: string): Promise<void> {
-    if (busy) {
+    if (busy || quitWriteBlocked()) {
       return
     }
     // [F-VISFB-12] W1：目标已删零写（删除跳过 flush 面）
@@ -227,8 +231,12 @@ export function useAnnotationPopupActions(args: {
     })
   }
 
-  /** 删除：confirm 确认 → api → store 同步 → 收起（菜单/编辑器一并）→ onChanged */
+  /** 删除：confirm 确认 → api → store 同步 → 收起（菜单/编辑器一并）→ onChanged。
+   *  [F-VISFB-64·回炉 W1] closing gate 用户命令入口（冻结期零 confirm 零 api） */
   async function deleteAnnotation(a: Annotation): Promise<void> {
+    if (quitWriteBlocked()) {
+      return
+    }
     if (busy || !window.confirm(DELETE_CONFIRM)) {
       return
     }

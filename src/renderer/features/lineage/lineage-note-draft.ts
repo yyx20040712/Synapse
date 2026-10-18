@@ -33,6 +33,7 @@
  */
 import { useEffect, useSyncExternalStore, type RefObject } from 'react'
 import { useLineageStore } from './lineage.store'
+import { quitWriteBlocked } from '../../app/quit-closing-gate'
 
 /** 未收口草稿在场标记（编辑中且 draft≠note.content） */
 let pending = false
@@ -56,8 +57,11 @@ const subscribe = (cb: () => void): (() => void) => {
 }
 const getSnapshot = (): boolean => pending
 
-/** 置位（等值 no-op 零 emit——T2 后续键零推送） */
+/** 置位（等值 no-op 零 emit——T2 后续键零推送）。
+ *  [F-VISFB-64] closing gate：置真（用户输入信号）冻结期拒绝；清假豁免
+ *  （安全向+quit 收口 ②.5 清理由 runQuitInternal 豁免域承载） */
 export function setNoteDraftPending(v: boolean): void {
+  if (v && quitWriteBlocked()) return
   if (pending === v) return
   pending = v
   emit()
@@ -103,7 +107,9 @@ export function fireLineageNoteCommit(): void {
   } catch {
     return
   }
-  setNoteDraftPending(false)
+  // [轮2 W-r1-02] 冻结期提交会话被闸（closeEdit 整体拒绝）——草稿未转 store，
+  // pending 保真不清（quit ②.5 在同步豁免域内到达此处不受影响）
+  if (!quitWriteBlocked()) setNoteDraftPending(false)
 }
 
 /**

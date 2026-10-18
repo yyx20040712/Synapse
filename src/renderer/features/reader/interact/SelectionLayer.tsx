@@ -72,6 +72,7 @@ import { SelectionToolbar } from './SelectionToolbar'
 import { SelectionPaint } from './selection-paint'
 import { wireSelectionEvents, type SelectionEventsHandle } from './selection-events'
 import { useReaderStore } from '../state/reader.store'
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
 export { closestPageRoot, pageIndexOf } from './selection-geometry'
@@ -109,7 +110,9 @@ export function SelectionLayer(props: {
 
   /** 按当前色+kind 落库（page=选区所在页 0 基——F-02）；成功后清选区刷新 store */
   async function save(kind: AnnotationKind): Promise<void> {
-    if (pending === null || busy) return
+    // [F-VISFB-64·轮2 W-r1-03] closing gate：create 链用户命令入口（设计 §④
+    // 「标注增删改」字面——冻结期拒绝零 api，选区保持）
+    if (pending === null || busy || quitWriteBlocked()) return
     const input: AnnotationInput = {
       page: pending.pageNo, kind, color,
       quoteText: pending.anchor.quote, prefixText: pending.anchor.prefix,

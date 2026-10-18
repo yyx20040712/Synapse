@@ -20,6 +20,7 @@ import { makeAnnotation, makeTab } from '../../utils/factories'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
 import { runQuitFlush } from '../../../src/renderer/app/quit-flush'
+import { setQuitClosing } from '../../../src/renderer/app/quit-closing-gate'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
@@ -30,6 +31,12 @@ import {
   saveAnnotationDraft,
   unregisterDraftFlush
 } from '../../../src/renderer/features/reader/interact/annotation-draft-registry'
+import {
+  noteDraftPending,
+  registerNoteDraftFlush,
+  setNoteDraftPending,
+  unregisterNoteDraftFlush
+} from '../../../src/renderer/features/lineage/lineage-note-draft'
 
 const mocks = vi.hoisted(() => ({
   notesGet: vi.fn(),
@@ -76,6 +83,8 @@ async function seedDirtyNote(paperId: string, content: string): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // [F-VISFB-64] closing gate 模块单例复位（gate 用例冻结态不跨用例泄漏）
+  setQuitClosing(false)
   // [回炉 W-6 m6 根因修] Once 实现队列跨用例残留（clearAllMocks 只清调用不
   // 清 once 队列——前用例未消费的 mockResolvedValueOnce 会错位消费本用例的
   // deferred 桩→变异下 TypeError 非断言红）：notes/lineage 三桩逐用例 reset
@@ -251,6 +260,84 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
     resolveSave(noteResult('qp-12', '在途值'))
     await expect(quit).resolves.toBe(false)
     expect(settled).toBe(true)
+  })
+
+  it('[F-VISFB-64] closing gate 冻结用户写：closing 中 edit 拒绝（pending 不立起）→收口仍净', async () => {
+    try {
+      setQuitClosing(true)
+      useNotesStore.getState().edit('qp-g1', { contentMd: '冻结窗内输入' })
+      expect(useNotesStore.getState().noteByPaper['qp-g1']).toBeUndefined()
+      const stillDirty = await runQuitFlush()
+      expect(mocks.notesSave).not.toHaveBeenCalled()
+      expect(stillDirty).toBe(false)
+    } finally {
+      setQuitClosing(false)
+    }
+  })
+
+  it('[F-VISFB-64] origin 豁免：closing 中收口 ②.5 fireLineageNoteCommit 不自锁（pending 清→净）', async () => {
+    registerNoteDraftFlush(() => setNoteDraftPending(false))
+    try {
+      setNoteDraftPending(true)
+      setQuitClosing(true)
+      const stillDirty = await runQuitFlush()
+      expect(noteDraftPending()).toBe(false)
+      expect(stillDirty).toBe(false)
+    } finally {
+      unregisterNoteDraftFlush()
+      setNoteDraftPending(false)
+      setQuitClosing(false)
+    }
+  })
+
+  it('[F-VISFB-64] closing 中 lineage 用户写冻结：moveNode no-op（队列不立起）→收口仍净', async () => {
+    try {
+      useLineageStore.setState({ nodes: [NODE], status: 'ready' })
+      setQuitClosing(true)
+      useLineageStore.getState().moveNode('n-1', 30, 40)
+      expect(useLineageStore.getState().queue).toEqual([])
+      expect(useLineageStore.getState().saveStatus).toBe('clean')
+      const stillDirty = await runQuitFlush()
+      expect(mocks.patchNode).not.toHaveBeenCalled()
+      expect(stillDirty).toBe(false)
+    } finally {
+      setQuitClosing(false)
+    }
+  })
+
+  it('[F-VISFB-64·回炉 B1] flush await 窗内用户写被拒：① 在途（豁免同步域已释放）期 edit 不入新值→收口仍净', async () => {
+    await seedDirtyNote('qp-b1', '在途值')
+    let resolveSave: ((v: ReturnType<typeof noteResult>) => void) | null = null
+    mocks.notesSave.mockImplementationOnce(
+      () => new Promise((r) => { resolveSave = r as typeof resolveSave })
+    )
+    // 访问器形（闭包取现值——对象/窄化快照会捕 null）
+    const settle = (v: ReturnType<typeof noteResult>): void => {
+      resolveSave?.(v)
+    }
+    let quit: Promise<boolean> | null = null
+    try {
+      setQuitClosing(true)
+      quit = runQuitFlush()
+      await drain()
+      // ① 收口立存在途（收口核心放行）——同步豁免域不跨 await：在途窗内
+      // 用户输入被拒（新值不入草稿）
+      useNotesStore.getState().edit('qp-b1', { contentMd: '窗口内新输入' })
+      expect(useNotesStore.getState().noteByPaper['qp-b1']?.contentMd).toBe('在途值')
+      settle(noteResult('qp-b1', '在途值'))
+      await expect(quit).resolves.toBe(false)
+      expect(mocks.notesSave).toHaveBeenCalledTimes(1)
+      expect(mocks.notesSave).toHaveBeenLastCalledWith({ paperId: 'qp-b1', contentMd: '在途值' })
+    } finally {
+      // 红证失败路径不留悬挂在途（inflight 模块闭包跨用例——残余未 settle 写
+      // 会挂死下游用例的收口在途网）：deferred 兜底 resolve+quit 收尾+弃改清扫
+      setQuitClosing(false)
+      if (quit !== null) {
+        settle(noteResult('qp-b1', '在途值'))
+        await quit.catch(() => undefined)
+      }
+      useNotesStore.getState().discardPendingEdit('qp-b1')
+    }
   })
 })
 

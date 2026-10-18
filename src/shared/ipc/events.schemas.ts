@@ -1,6 +1,7 @@
 /**
- * 事件面 zod 校验单口——main→renderer 六事件（importProgress/
- * exportCorpus/windowState+foldersChanged/lineageChanged+[F-VISFB-14] quitFlush）
+ * 事件面 zod 校验单口——main→renderer 七事件（importProgress/
+ * exportCorpus/windowState+foldersChanged/lineageChanged+[F-VISFB-14] quitFlush
+ * +[F-VISFB-64] quitFlushAbort）
  * 载荷 schema 集合，供 preload 接收侧 safeParse 兜底消费；与 api-surface.ts 的
  * PreloadEvents 类型同目录邻近防漂移——新增事件通道 = 接线表 EVENT_CHANNELS +
  * 本件两处对齐，preload 兜底不漏新通道。
@@ -25,7 +26,8 @@ import {
   windowStateEventSchema,
   foldersChangedEventSchema,
   lineageChangedEventSchema,
-  quitFlushEventSchema
+  quitFlushEventSchema,
+  quitFlushAbortEventSchema
 } from './schemas'
 
 export {
@@ -34,7 +36,9 @@ export {
   foldersChangedEventSchema,
   lineageChangedEventSchema,
   // [F-VISFB-14] 退出握手 flush 请求事件（requestId 关联——preload 接收侧兜底消费）
-  quitFlushEventSchema
+  quitFlushEventSchema,
+  // [F-VISFB-64] 退出握手中止事件（C→I 解冻帧——epoch 水线载荷）
+  quitFlushAbortEventSchema
 }
 
 /**

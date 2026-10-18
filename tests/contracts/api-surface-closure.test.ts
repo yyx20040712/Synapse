@@ -128,13 +128,14 @@ describe('contracts/api-surface-closure —— 接线表闭合性（89 通道 pi
     }
   })
 
-  it('事件通道六枚举 pin（[F-VISFB-14] +quitFlush；[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）', () => {
+  it('事件通道七枚举 pin（[F-VISFB-14] +quitFlush；[F-FOLDER-01] +foldersChanged+lineageChanged；[F-VISFB-64] +quitFlushAbort）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）', () => {
     expect(Object.keys(EVENT_CHANNELS).sort()).toEqual([
       'exportCorpus',
       'foldersChanged',
       'importProgress',
       'lineageChanged',
       'quitFlush',
+      'quitFlushAbort',
       'windowState'
     ])
     const eventChannels = Object.values(EVENT_CHANNELS)
@@ -152,24 +153,26 @@ describe('contracts/api-surface-closure —— 接线表闭合性（89 通道 pi
     ])
   })
 
-  it('事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚；[F-VISFB-14] +quitFlush 六通道）', () => {
+  it('事件通道值 pin：通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚；[F-VISFB-14] +quitFlush；[F-VISFB-64] +quitFlushAbort）', () => {
     expect({ ...EVENT_CHANNELS }).toEqual({
       importProgress: 'import/progress/event',
       exportCorpus: 'export/corpus/event',
       windowState: 'system/window-state/event',
       foldersChanged: 'folders/changed/event',
       lineageChanged: 'lineage/changed/event',
-      quitFlush: 'system/quit-flush/event'
+      quitFlush: 'system/quit-flush/event',
+      quitFlushAbort: 'system/quit-flush-abort/event'
     })
   })
 
-  it('事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红；[F-VISFB-14] +quitFlush）', () => {
+  it('事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红；[F-VISFB-14] +quitFlush；[F-VISFB-64] +quitFlushAbort）', () => {
     expect(typeof S.importProgressEventSchema.safeParse).toBe('function')
     expect(typeof S.exportProgressEventSchema.safeParse).toBe('function')
     expect(typeof S.windowStateEventSchema.safeParse).toBe('function')
     expect(typeof S.foldersChangedEventSchema.safeParse).toBe('function')
     expect(typeof S.lineageChangedEventSchema.safeParse).toBe('function')
     expect(typeof S.quitFlushEventSchema.safeParse).toBe('function')
+    expect(typeof S.quitFlushAbortEventSchema.safeParse).toBe('function')
   })
 
   it('组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）', () => {

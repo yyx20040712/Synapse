@@ -653,6 +653,12 @@ export type WindowStateEvent = z.infer<typeof windowStateEventSchema>
 export const quitFlushEventSchema = z.object({ requestId: z.string().min(1) }).strict()
 export type QuitFlushEvent = z.infer<typeof quitFlushEventSchema>
 
+/** [F-VISFB-64] 退出握手中止事件（main→renderer 单向）：C→I（用户取消确认）时
+ *  发出；requestId=epoch 水线——bridge 废止不超过该 id 的活动 epoch 并解冻用户
+ *  写（迟到 abort 不误伤后续关闭序列，设计稿 §④ W-03 A 层） */
+export const quitFlushAbortEventSchema = z.object({ requestId: z.string().min(1) }).strict()
+export type QuitFlushAbortEvent = z.infer<typeof quitFlushAbortEventSchema>
+
 /** 退出握手 flush 回执（renderer→main invoke）：stillDirty=收口后最新 dirty
  *  判定（INV-141：fulfilled≠已落库——收口后一律查态，非任一 promise 兑现值） */
 export const quitFlushReportReqSchema = z

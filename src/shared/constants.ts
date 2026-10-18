@@ -65,6 +65,20 @@ export const MAX_PAGE_SIZE = 200
 export const AUTOSAVE_DEBOUNCE_MS = 600_000
 
 /**
+ * [F-VISFB-64] 退出握手等待预算（毫秒）——main 侧 quit-close-policy 分级等待
+ * （初始 dirty 5s/WC 升级 WD 截止恒 t0+5s）+renderer 侧 quit-flush-bridge 有界
+ * 复位兜底（abort 丢失时最晚本值解除 closing）两侧单源消费；原驻 main-window.ts
+ * 已迁出上移（dup-constants 负锚——禁本地副本，改值须 [locked-change]）。
+ */
+export const QUIT_FLUSH_TIMEOUT_MS = 5_000
+
+/**
+ * [F-VISFB-64] 退出握手初始 clean 分级宽限（毫秒）——丙形态终裁=1000（设计稿
+ * §⑪-1：票面实证繁忙窗数百 ms，1000 覆盖有余界；超时只确认不静默销毁）。
+ */
+export const QUIT_CLEAN_GRACE_MS = 1_000
+
+/**
  * [F-VISFB-41 B3] 分隔条键盘步进（像素/击——APG separator 惯例）——
  * use-sidebar-pane（阅读器侧栏）+use-lib-pane-widths（库页双侧栏）共源
  * （dup-constants C-4d 收敛裁决 2026-10-17：同名同值跨文件禁本地副本）

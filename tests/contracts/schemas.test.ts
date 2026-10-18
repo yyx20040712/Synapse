@@ -295,6 +295,8 @@ const VALID: Record<string, unknown[]> = {
   setQuitDirtyReqSchema: [{ dirty: false }, { dirty: true }],
   // [F-VISFB-14] 退出握手两面（事件帧 requestId 关联+回执 stillDirty）
   quitFlushEventSchema: [{ requestId: 'quit-flush-1' }],
+  // [F-VISFB-64] 退出握手中止帧（C→I 解冻——epoch 水线载荷）
+  quitFlushAbortEventSchema: [{ requestId: 'quit-flush-1' }],
   quitFlushReportReqSchema: [
     { requestId: 'q-1', stillDirty: true },
     { requestId: 'q-2', stillDirty: false }
@@ -384,6 +386,7 @@ const SCHEMA_NAMES = [
   'syncKeyInfoResSchema',
   'setQuitDirtyReqSchema',
   'quitFlushEventSchema',
+  'quitFlushAbortEventSchema',
   'quitFlushReportReqSchema',
   'tagIdReqSchema',
   'tagListReqSchema',

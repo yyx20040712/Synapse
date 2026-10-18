@@ -10,59 +10,51 @@
  * 接口结构化类型，测试免依赖 electron 真体——文件内既有风格）。
  *
  * ── 行为层 ──
- * - 退出拦截状态机（[F-VISFB-14] 退出握手 flush-first 升级——C-A3 翻案面）：
- *   | 态 | 含义 | 事件→迁移 |
- *   | clean | renderer 上报 dirty=false（或启动初值） | close 请求 → 直接放行（默认行为） |
- *   | dirty | 任一写面未落库/失败（TABS-03∪lineage 聚合上报） | close → preventDefault +
- *     renderer flush（quitFlush 事件→reportQuitFlush 回执；有限超时
- *     QUIT_FLUSH_TIMEOUT_MS；flushing 重入锁=二次 close 单发） |
- *   | dirty + flush 净 | 收口后最新判定 stillDirty=false | win.destroy() 零确认（数据已存） |
- *   | dirty + 仍脏/超时/发送异常 | flush 失败或超时降级 | main 侧 showMessageBox 二次确认
- *     （QUIT_CONFIRM_MESSAGE 同族——「未能自动保存…确认退出？」） |
- *   | dirty + 确认 | 用户确认退出 | win.destroy() 强制关闭（绕过 close 再拦截） |
- *   | dirty + 取消 | 用户取消 | 回 dirty 态（窗口保持） |
- * - dirty 上报通道（新 IPC，api-surface 受锁 [locked-change]）：
- *   system/set-quit-dirty { dirty: boolean } → void——renderer 在聚合 dirty
- *   变化沿（false→true / true→false）上报；main 侧模块级缓存最近值（push 模式，
- *   避免 close 时反向询问 renderer 的时序复杂度）
- * - 防重入：确认对话框弹出期间再点 close → 忽略（对话框模态天然挡住，记录依据）
+ * - 关闭入口无条件握手（[F-VISFB-64]——push 竞态根治，设计单源=docs/design/
+ *   2026-10-18_f-visfb64-design.md）：close 一律 preventDefault+发起 quit-flush
+ *   握手（缓存只决定等待分级，非放行依据）；状态机拆件=quit-close-policy.ts
+ *   （I/WC/WD/C/D × 八类事件，纯 TS 零 Electron import），本件只留端口与订阅：
+ *   | 态 | 含义 |
+ *   | I | 空闲（取消后回此态；下次 close 新 id） |
+ *   | WC/WD | 握手等待（首快照 clean=grace 1000ms／dirty=5000ms；WC 内
+ *     dirty push 升级 WD，截止恒 t0+5000，WD 不降级） |
+ *   | C | 确认等待（超时/仍脏/send 异常/renderer 崩溃降级——超时只确认不静默
+ *     销毁；window-modal 模态挡重复 close） |
+ *   | D | 终态（唯一 clean 销毁面=有效回执 false；确认退出同入；destroy 恰
+ *     一次；dispose 幂等） |
+ *   取消（C→I）发 quit-flush-abort 帧（requestId=epoch 水线，renderer 解冻
+ *   closing gate+旧 epoch 转 orphan-pending）；QUIT_CONFIRM_MESSAGE 文案不变。
+ * - dirty 上报通道：system/set-quit-dirty → setQuitDirty 喂 policy dirty-push
+ *   （自持快照单一状态源）；lineagePending 缓存保留（INV-91 S1 队列闸）。
  * - 窗控四 action（R2-SH3）：minimize/maximize-toggle/close/get-state——close 走
- *   win.close() **绝不 destroy**（保上方 TABS-04 拦截链）；get-state 只读零副作用
+ *   win.close() **绝不 destroy**（保上方拦截链）；get-state 只读零副作用
  *
  * ── 接口层 ──
- * - export function createMainWindow(...) 不变（装配内加 close 监听）
- * - export function quitDirtyGuard deps 注入（dialogs.showMessageBox）——纯逻辑
- *   可测（决定 preventDefault 与否的判定函数导出）
- * - export function controlWindow(win: WindowLike, action: WindowControlAction)：
- *   执行后 isMaximized() 回读返回
- * - export function bindWindowStateEvents(win: MaximizeEventsLike, send)：maximize
- *   沿 → send({maximized:true}) / unmaximize 沿 → send({maximized:false})；
- *   F-G9 fullscreen 沿同入反映面（enter→true / leave→回读 isMaximized()）
+ * - export function createMainWindow(...) 不变
+ * - export function installQuitCloseInterception(win, deps)：装配 close/
+ *   closed/render-process-gone 订阅+policy effects 适配（timer generation/
+ *   confirm token/abort 帧发送失败承接）；返回 dispose（幂等）
+ * - export function controlWindow(win, action)/bindWindowStateEvents(win, send)
  *
  * ── 架构层 ──
- * - main/windows 层；新通道走 shared/ipc/api-surface.ts 接线表（zod strict，
- *   preload 自动生成桥——架构 §3 契约机制）；不引入 renderer 反向 invoke
- * - 接缝（本工单改动面，file:line）：shared/ipc/api-surface.ts（set-quit-dirty +
- *   window-control 通道与 windowState 事件记录，受锁 [locked-change]）/
- *   ipc/system.ts:1-（通道 handler 注册）/ renderer 上报点=App.tsx 或 reader
- *   组合根 effect watch useTabDirtyAggregate（TABS-03 产出）→ api.system.setQuitDirty
+ * - main/windows 层；事件通道走 shared/ipc/api-surface.ts（quitFlush+
+ *   quitFlushAbort，受锁 [locked-change]）；不引入 renderer 反向 invoke
+ * - 接缝：ipc/system.ts+ipc-deps.ts（setQuitDirty/reportQuitFlush 落点）、
+ *   bootstrap.ts（install 装配——now=performance.now/发帧/确认框）
  *
  * ── 生命周期层 ──
- * - 预留：before-quit 级联（多窗口未来不适用——单窗口负面清单）；不做：
- *   保存并退出一键动作（autosave-first 下确认即放弃未落库增量）
+ * - 不做：保存并退出一键动作（autosave-first 下确认即放弃未落库增量）
  * - window-state.ts bounds 记忆不受影响（仅记忆 x/y/w/h，已存行为）
  *
  * ── 文化层 ──
- * - 测试：tests/unit/windows/quit-dirty-guard.test.ts（clean 放行/dirty 拦截+
- *   确认 destroy/dirty 拦截+取消保持）+ tests/unit/ipc/system.test.ts 扩展
- *   （新通道注册断言）+ tests/contracts/preload-surface.test.ts 自动对账
- *   （新通道桥暴露）——IPC 闭环三面锚，plan 门 NIT2 处置；
- *   web-preferences.test.ts 安全面全量保留不回归；
- *   tests/unit/windows/window-control.test.ts（R2-SH3：四 action/事件绑定/
- *   titleBarStyle/drag-no-drag 皮肤锁）
+ * - 测试：tests/unit/windows/quit-close-policy.test.ts（状态机全表）+
+ *   quit-handshake.test.ts（装配面）/quit-dirty-guard.test.ts（dirty 链+IPC
+ *   透传）/window-control.test.ts（R2-SH3）；web-preferences.test.ts 安全面
+ *   全量保留不回归；contracts 自动对账（preload-surface/api-surface-closure）
  */
 import type { BrowserWindow, HandlerDetails, WebPreferences } from 'electron'
 import type { AppSettings, WindowControlAction } from '../../shared/ipc/schemas'
+import { createQuitClosePolicy, type QuitClosePolicy } from './quit-close-policy'
 
 export const WINDOW_SECURITY_FLAGS = {
   sandbox: true,
@@ -173,15 +165,22 @@ export function createMainWindow(
   return win
 }
 
-// ── 退出拦截（TABS-04 行为层）──────────────────────────────────────
+// ── [F-VISFB-64] 关闭入口无条件握手（policy 端口与订阅）──────────────
 
-/** renderer push 上报的 dirty 缓存（push 模式：close 时无需反向询问 renderer，
- *  规避 close 事件内再等 renderer 应答的时序复杂度——头注行为层裁决） */
-let quitDirtyCached = false
+/** policy 进程单例（IPC 落点经模块函数转发；装配先于 renderer 加载完成——
+ *  无 push 丢失窗） */
+let quitPolicy: QuitClosePolicy | null = null
 
-/** IPC 上报落点（bootstrap 注入 IpcDeps.setQuitDirty → 此处） */
+/** IPC 上报落点（bootstrap 注入 IpcDeps.setQuitDirty → 此处）：喂 policy
+ *  dirty-push——自持快照单一状态源（close 首快照的分级判定源，非放行依据） */
 export function setQuitDirty(dirty: boolean): void {
-  quitDirtyCached = dirty
+  quitPolicy?.dirtyPush(dirty)
+}
+
+/** IPC 回执落点（system/report-quit-flush → policy receipt）：迟到/已除名/
+ *  过期 id 在 policy 内丢弃（超时降级后不误伤后续握手） */
+export function reportQuitFlushResult(requestId: string, stillDirty: boolean): void {
+  quitPolicy?.receipt(requestId, stillDirty)
 }
 
 /** [F-FOLDER-01] INV-91 S1 队列闸判定缓存：renderer 脉络写队列 pending 信号
@@ -198,194 +197,147 @@ export function getLineagePending(): boolean {
   return lineagePendingCached
 }
 
-export function getQuitDirty(): boolean {
-  return quitDirtyCached
-}
-
-/** 判定函数（头注接口层要求导出）：dirty → 拦截；clean → 放行默认关闭 */
-export function quitDirtyGuard(dirty: boolean): boolean {
-  return dirty
-}
-
 /**
  * 确认框文案单源（测试锚定同一常量——INV-11 精神）。
  * [F-VISFB-14 d1 W4④] 同族改值：退出握手 flush-first 落地后本框只在
  * 「自动保存失败或超时」分支出现（旧「有未保存的修改（灰点标记的标签页）」
- * 全量弹窗路径退役——flush 成功即静默关闭零确认）。
+ * 全量弹窗路径退役——flush 成功即静默关闭零确认）。[F-VISFB-64] 沿承不变。
  */
 export const QUIT_CONFIRM_MESSAGE =
   '有修改未能自动保存（保存失败或超时），退出后将丢失这部分修改。确认退出？'
 
-export interface QuitGuardDeps {
-  /** 确认框（模态）：resolve true=确认退出，false=取消 */
-  confirmQuit: (message: string) => Promise<boolean>
+/** 订阅面最小形状（结构化类型：测试免依赖 electron 真体——文件内既有风格） */
+export interface QuitEventSink {
+  on(event: string, listener: (...args: never[]) => void): void
+  removeListener(event: string, listener: (...args: never[]) => void): void
+}
+
+/** 装配窗口最小形状：close/closed 订阅+destroy+webContents 崩溃订阅 */
+export interface QuitInterceptionWindow extends QuitEventSink {
+  destroy(): void
+  webContents: QuitEventSink
+}
+
+export interface QuitInterceptionDeps {
+  /** 单调钟（Electron main performance.now——设计 §⑦ now() 注入口径） */
+  now(): number
+  /** quit-flush 发帧（同步抛错=send-failed 回灌 policy） */
+  sendQuitFlushFrame(payload: { requestId: string }): void
+  /** quit-flush-abort 发帧（C→I 解冻；抛错由 B 层兜底承接，policy 保持 I） */
+  sendAbortFrame(payload: { requestId: string }): void
+  /** 确认框（window-modal）：resolve true=确认退出，false=取消 */
+  confirmQuit(message: string): Promise<boolean>
 }
 
 /**
- * 确认→关闭共尾（守卫流与握手降级段共用）：QUIT_CONFIRM_MESSAGE 模态确认
- * →确认=destroy/取消=保持；对话框异常按取消处理（窗口保持可重试，避免
- * preventDefault 后关闭路径死锁）。
+ * 装配（bootstrap 主窗口段调用）：win close/closed + webContents
+ * render-process-gone 订阅→policy 八类事件适配；effects 侧=timer generation
+ * 适配/confirm token 适配/abort 帧发送失败承接。close 一律 preventDefault
+ * （无条件握手——policy.close 仅 I 态起握，busy/C 态重复 close 忽略）。
+ * 返回 dispose（幂等：清 timer+摘订阅+policy 死面）。
  */
-async function confirmAndMaybeDestroy(
-  win: { destroy(): void },
-  deps: QuitGuardDeps
-): Promise<void> {
-  let confirmed = false
-  try {
-    confirmed = await deps.confirmQuit(QUIT_CONFIRM_MESSAGE)
-  } catch {
-    confirmed = false
+export function installQuitCloseInterception(
+  win: QuitInterceptionWindow,
+  deps: QuitInterceptionDeps
+): { dispose(): void } {
+  const timer: { handle: ReturnType<typeof setTimeout> | null; generation: number } = {
+    handle: null,
+    generation: 0
   }
-  if (confirmed) win.destroy()
-}
-
-/**
- * close 事件守卫流（[F-VISFB-14] 起 bootstrap 不再直接挂本函数——装配升级为
- * handleCloseWithQuitHandshake；保留导出=受锁 quit-dirty-guard.test 的降级
- * 路径同族锚+纯 confirm 面单测锚）：
- * clean 放行；dirty → preventDefault → 确认框 → 确认=destroy 强制关闭（destroy
- * 不再触发 close，无重入）/取消=窗口保持（dirty 缓存不迁）。确认框模态天然挡住
- * 弹出期间的重复 close（头注防重入依据）。
- */
-export async function handleCloseWithQuitGuard(
-  dirty: boolean,
-  event: { preventDefault(): void },
-  win: { destroy(): void },
-  deps: QuitGuardDeps
-): Promise<void> {
-  if (!quitDirtyGuard(dirty)) return
-  event.preventDefault()
-  await confirmAndMaybeDestroy(win, deps)
-}
-
-// ── [F-VISFB-14] 退出握手（flush-first 三件套）────────────────────────
-// 状态机（宪法前置，跨格序列=tests/unit/windows/quit-handshake.test.ts）：
-// clean close=放行；dirty close=preventDefault→renderer flush（有限超时）→
-// stillDirty=false=destroy 零确认／仍脏或超时或发送异常=confirm 降级（同上
-// confirmAndMaybeDestroy）→确认=destroy/取消=保持；flushing 重入锁=二次
-// close 单发（INV-141④）；迟到回执按 requestId 关联丢弃（超时后待答表除名）。
-
-/** flush 请求待答表（requestId → resolver；超时除名→迟到回执零误伤） */
-const quitFlushPending = new Map<string, (stillDirty: boolean) => void>()
-
-/** requestId 单调序（模块级——进程内唯一） */
-let quitFlushSeq = 0
-
-/** flushing 重入锁：握手中（flush 等待段）的再次 close 忽略（单发） */
-let quitFlushBusy = false
-
-/** 单次 flush 请求（requestId 与回执 promise 成对——超时除名按 id） */
-export interface QuitFlushCall {
-  requestId: string
-  result: Promise<boolean>
-}
-
-/**
- * flush 请求工厂（bootstrap 注入 webContents.send；测试注入桩 send）：
- * 每次调用自增 requestId 并登记待答表——回执经 reportQuitFlushResult 按 id
- * 关联 resolve。send 同步抛错=executor 内拒绝（调用侧 catch 按未知脏降级）。
- */
-export function createQuitFlushRequest(
-  send: (payload: { requestId: string }) => void
-): () => QuitFlushCall {
-  return () => {
-    quitFlushSeq += 1
-    const requestId = `quit-flush-${quitFlushSeq}`
-    const result = new Promise<boolean>((resolve) => {
-      quitFlushPending.set(requestId, resolve)
-      send({ requestId })
-    })
-    return { requestId, result }
+  let disposed = false
+  let onClose: (event: { preventDefault(): void }) => void = () => undefined
+  let onClosed: () => void = () => undefined
+  let onGone: () => void = () => undefined
+  const teardown = (): void => {
+    if (disposed) return
+    disposed = true
+    if (timer.handle !== null) clearTimeout(timer.handle)
+    timer.handle = null
+    win.removeListener('close', onClose)
+    win.removeListener('closed', onClosed)
+    win.webContents.removeListener('render-process-gone', onGone)
+    if (quitPolicy === policy) quitPolicy = null
   }
-}
-
-/** renderer 回执落点（IPC system/report-quit-flush → ipc-deps 注入此函数）：
- *  待答表按 id 命中即 resolve+除名；未命中（超时已除名/未知 id）=迟到回执丢弃 */
-export function reportQuitFlushResult(requestId: string, stillDirty: boolean): void {
-  const resolve = quitFlushPending.get(requestId)
-  if (resolve === undefined) return
-  quitFlushPending.delete(requestId)
-  resolve(stillDirty)
-}
-
-/** [回炉 W-5] 待答表余量（测试可观测面——send 抛错/超时两降级路径的表清锚） */
-export function quitFlushPendingSize(): number {
-  return quitFlushPending.size
-}
-
-/**
- * 退出握手 flush 超时预算（提案值——主控集成窗核定）：
- * 单用户本地 SQLite，收口序列=串行 IPC 往返+本地写（毫秒级）；5s=三个数量级
- * 余量覆盖病态盘/AV 扫描，且不超用户感知挂起阈值（超时后 confirm 即出）。
- */
-export const QUIT_FLUSH_TIMEOUT_MS = 5000
-
-/** 有限超时等待：超时=按仍脏降级（true）并除名（迟到回执丢弃） */
-function awaitQuitFlush(call: QuitFlushCall, timeoutMs: number): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => {
-      quitFlushPending.delete(call.requestId)
-      resolve(true)
-    }, timeoutMs)
-    call.result.then(
-      (stillDirty) => {
-        clearTimeout(timer)
-        resolve(stillDirty)
-      },
-      () => {
-        // [回炉 W-5] 发送面 rejection（send 同步抛错→executor 拒绝）：与超时
-        // 分支同构除名——待答表不遗留死项（迟到回执零命中丢弃）
-        clearTimeout(timer)
-        quitFlushPending.delete(call.requestId)
-        resolve(true)
+  const policy = createQuitClosePolicy(deps.now, {
+    sendQuitFlush(requestId) {
+      try {
+        deps.sendQuitFlushFrame({ requestId })
+      } catch {
+        // 发送面异常（webContents 已亡等）：回灌 send-failed→清臂+除名→C
+        policy.sendFailed()
       }
-    )
+    },
+    armTimer(deadline, generation) {
+      if (timer.handle !== null) clearTimeout(timer.handle)
+      timer.generation = generation
+      timer.handle = setTimeout(() => {
+        timer.handle = null
+        policy.timerFired(generation)
+      }, Math.max(0, deadline - deps.now()))
+    },
+    clearTimer(_deadline, generation) {
+      if (generation === timer.generation && timer.handle !== null) {
+        clearTimeout(timer.handle)
+        timer.handle = null
+      }
+    },
+    retireRequest(_requestId) {
+      // 观测钩：除名自持于 policy（设计 §⑦ effects 所有权面——无外部待答表）
+    },
+    showConfirm(token) {
+      // [回炉 W4] 同步抛错按取消同语义（对话框异常=取消沿承——C→I+abort）；
+      // 异步 rejection 经第二回调同承接
+      try {
+        deps
+          .confirmQuit(QUIT_CONFIRM_MESSAGE)
+          .then(
+            (confirmed) => policy.confirmResolved(token, confirmed),
+            () => policy.confirmResolved(token, false)
+          )
+      } catch {
+        policy.confirmResolved(token, false)
+      }
+    },
+    closeConfirm() {
+      // Electron showMessageBox 无编程关闭口：迟到确认经 token 失效承接
+      // （C 态窗毁清理表——设计 §⑥）；token 已随 dispose 失效。
+    },
+    unfreezeRenderer(requestId) {
+      try {
+        deps.sendAbortFrame({ requestId })
+      } catch {
+        // I 保持（设计 §⑥「I|abort send-failed」）：abort 丢失由 bridge
+        // 5000ms 有界复位兜底（B 层），不重试成循环
+      }
+    },
+    destroyWindow() {
+      win.destroy()
+    },
+    disposePolicy() {
+      teardown()
+    }
   })
-}
-
-export interface QuitHandshakeDeps extends QuitGuardDeps {
-  /** flush 请求（createQuitFlushRequest 产出） */
-  requestQuitFlush: () => QuitFlushCall
-  /** 超时预算（测试注入；缺省 QUIT_FLUSH_TIMEOUT_MS） */
-  timeoutMs?: number
-}
-
-/**
- * [F-VISFB-14] close 事件握手流（bootstrap 装配面）：clean 放行；dirty →
- * preventDefault+flush（单发）→净=destroy 零确认／仍脏/超时/异常=confirm
- * 降级（confirmAndMaybeDestroy）→确认 destroy/取消保持。flush 等待段持
- * flushing 锁（二次 close=再 preventDefault 后忽略——不放行默认关闭）；
- * confirm 段已释放锁（模态挡沿承）。
- * [回炉 W-1] busy 检查前置于 clean 放行：flush 在途期 renderer push
- * dirty=false 后的二次 close 不得走 clean 早退默认关闭（穿透明手握手）——
- * busy 态一律 preventDefault 拦下（握手完成后由收口终态或用户再关承接）。
- */
-export async function handleCloseWithQuitHandshake(
-  dirty: boolean,
-  event: { preventDefault(): void },
-  win: { destroy(): void },
-  deps: QuitHandshakeDeps
-): Promise<void> {
-  if (quitFlushBusy) {
+  onClose = (event) => {
+    // 无条件握手：close 一律拦截（缓存仅分级——preventDefault 不以快照为闸）
     event.preventDefault()
-    return
+    policy.close()
   }
-  if (!quitDirtyGuard(dirty)) return
-  event.preventDefault()
-  quitFlushBusy = true
-  let stillDirty = true
-  try {
-    stillDirty = await awaitQuitFlush(deps.requestQuitFlush(), deps.timeoutMs ?? QUIT_FLUSH_TIMEOUT_MS)
-  } catch {
-    stillDirty = true
-  } finally {
-    quitFlushBusy = false
+  onClosed = () => {
+    policy.windowDestroyed()
   }
-  if (!stillDirty) {
-    win.destroy()
-    return
+  onGone = () => {
+    policy.rendererGone()
   }
-  await confirmAndMaybeDestroy(win, deps)
+  win.on('close', onClose)
+  win.on('closed', onClosed)
+  win.webContents.on('render-process-gone', onGone)
+  quitPolicy = policy
+  return {
+    dispose: () => {
+      policy.dispose()
+      teardown()
+    }
+  }
 }
 
 // ── 窗控（R2-SH3 frameless caption 三键——main 侧单一真源）──────────
@@ -414,7 +366,7 @@ export interface MaximizeEventsLike {
 
 /**
  * 四 action 窗控（票面行为层表）：close 调 win.close() **绝不 destroy**——
- * 保 TABS-04 dirty 拦截链（确认退出的 destroy 只属于 handleCloseWithQuitGuard）。
+ * 保 TABS-04 拦截链（确认退出的 destroy 只属于退出握手装配）。
  * 统一返回执行后 isMaximized() 回读（get-state 只读零副作用）。
  */
 export function controlWindow(win: WindowLike, action: WindowControlAction): { maximized: boolean } {

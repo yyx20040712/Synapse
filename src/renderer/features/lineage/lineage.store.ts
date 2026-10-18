@@ -48,6 +48,7 @@ import { createWriteQueue } from './lineage-write-queue'
 import { createSessionOps } from './lineage-session-ops'
 import { createNoteOps } from './lineage-note-ops'
 import { useLineageViewStore } from './lineage-view.store'
+import { quitWriteBlocked } from '../../app/quit-closing-gate'
 import type { LineageSaveStatus, SessionSnapshot, WriteAction } from './lineage-write-queue'
 
 export type {
@@ -241,11 +242,15 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
   let seq = 0
   const wq = createWriteQueue({ set, get })
   // [F-VISFB-61 拆件] 编辑会话撤销/重做域件（beginUnit/restore 纯移动自本件
-  // ——lineage-session-ops.ts 单源；解构注入调用面名字零 churn）
+  // ——lineage-session-ops.ts 单源；解构注入调用面名字零 churn）。
+  // [F-VISFB-64] closing gate 挂点：lineage 用户操作在 write-queue.enqueue 前
+  // 经 beginUnit 统一入口冻结（undo 逆写=用户动作同闸——设计 §④ 写源表）；
+  // quit 收口 ②.5 fireLineageNoteCommit 经 runQuitInternal 豁免域放行
   const { beginUnit, restore } = createSessionOps({ set, get })
+  const beginUnitGated = (): boolean => (quitWriteBlocked() ? false : beginUnit())
   // [F-VISFB-62 拆件] 悬浮笔记动作域件（三操作纯移动自本件——
   // lineage-note-ops.ts 单源；解构注入调用面名字零 churn）
-  const { addFloatingNote, updateFloatingNote, removeFloatingNote } = createNoteOps({ get, beginUnit, enqueue: wq.enqueue })
+  const { addFloatingNote, updateFloatingNote, removeFloatingNote } = createNoteOps({ get, beginUnit: beginUnitGated, enqueue: wq.enqueue })
 
   return {
     nodes: [],
@@ -318,14 +323,14 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     moveNode(id, x, y) {
       mustNode(get().nodes, id)
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'patch-node', id, patch: { x, y } })
     },
 
     reorderMonthSlots(nodeIds) {
       // 月组全序重写：传入序即槽位序（0..n-1 透写）；同实体 lazy 融合
       // [②U1] 整组=一编辑单元（一次 undo 整组回退）
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       nodeIds.forEach((id, slot) => {
         mustNode(get().nodes, id)
         wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { slot } })
@@ -335,7 +340,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     drawEdge(from, to, payload) {
       // 查重单点（§C.3——service UNIQUE 兜底）；[R6] saving=busy（非假成功）
       if (hasPair(from, to)) return { ok: false, reason: 'duplicate' }
-      if (!beginUnit()) return { ok: false, reason: 'busy' }
+      if (!beginUnitGated()) return { ok: false, reason: 'busy' }
       const id = crypto.randomUUID()
       wq.enqueue({
         kind: 'upsert-edge',
@@ -364,7 +369,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       // 更新语义：id 提供端点保持（label 后编辑不换父——F-LG15）；全载荷含
       // 视觉字段+via（A8 接缝：缺省合成不回清）；[F-VISFB-66] 物化扩面：
       // via/双锚随现值 null 归一（未钉定=null 幂等落库）
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'upsert-edge', input: materializeEdgeInput(e, { label }) })
     },
 
@@ -373,7 +378,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       if (e === undefined) throw new Error(`边不在图中：${edgeId}`)
       // id 全载荷：from/to/label/via 读现值（防半更新清字段——A8 含 via）；
       // dashed/color 成对置；[F-VISFB-66] 物化扩面同 editManualEdgeLabel
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'upsert-edge', input: materializeEdgeInput(e, { dashed, color }) })
     },
 
@@ -382,7 +387,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       if (e === undefined) throw new Error(`边不在图中：${edgeId}`)
       // id 全载荷（A8：from/to/label/视觉字段读现值——防半更新清字段）；
       // [F-VISFB-66] via=显式 null 清除（约定迁移——null/null 归一恒透传）
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'upsert-edge', input: materializeEdgeInput(e, { via }) })
     },
 
@@ -400,7 +405,7 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
             (x.fromNode === next.to && x.toNode === next.from))
       )
       if (dup) return { ok: false, reason: 'duplicate' }
-      if (!beginUnit()) return { ok: false, reason: 'busy' }
+      if (!beginUnitGated()) return { ok: false, reason: 'busy' }
       const grabbed: { fromAnchor?: LineageAnchor } | { toAnchor?: LineageAnchor } =
         next.end === 'from' ? { fromAnchor: next.anchor } : { toAnchor: next.anchor }
       wq.enqueue({
@@ -416,17 +421,17 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     },
 
     saveLineTypeNames(names) {
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'upsert-line-type-names', input: names })
     },
 
     removeNode(id) {
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'remove-node', id })
     },
 
     removeEdge(id) {
-      if (!beginUnit()) return
+      if (!beginUnitGated()) return
       wq.enqueue({ kind: 'remove-edge', id })
     },
 
@@ -444,13 +449,14 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     undo() {
       const s = get()
-      if (s.flushing || s.undoStack.length === 0) return
+      // [F-VISFB-64] closing gate：undo 逆写=用户动作，入队前冻结（设计 §④）
+      if (quitWriteBlocked() || s.flushing || s.undoStack.length === 0) return
       restore(s.undoStack[s.undoStack.length - 1]!, 'redo')
     },
 
     redo() {
       const s = get()
-      if (s.flushing || s.redoStack.length === 0) return
+      if (quitWriteBlocked() || s.flushing || s.redoStack.length === 0) return
       restore(s.redoStack[s.redoStack.length - 1]!, 'undo')
     },
 

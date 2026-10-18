@@ -22,6 +22,7 @@ import type {
   ImportProgressEvent,
   ImportResult,
   LineageChangedEvent,
+  QuitFlushAbortEvent,
   QuitFlushEvent,
   WindowStateEvent
 } from '../shared/ipc/schemas'
@@ -31,6 +32,7 @@ import {
   foldersChangedEventSchema,
   lineageChangedEventSchema,
   quitFlushEventSchema,
+  quitFlushAbortEventSchema,
   windowStateEventSchema
 } from '../shared/ipc/events.schemas'
 import { err, type Result } from '../shared/app-error'
@@ -156,6 +158,17 @@ export function buildEvents(): PreloadEvents {
       const listener = guardedEventForwarder(EVENT_CHANNELS.quitFlush, quitFlushEventSchema, cb)
       ipcRenderer.on(EVENT_CHANNELS.quitFlush, listener)
       return () => ipcRenderer.removeListener(EVENT_CHANNELS.quitFlush, listener)
+    },
+    // [F-VISFB-64] 退出握手中止帧（C→I 解冻——requestId=epoch 水线；丢帧=
+    // bridge 5000ms 有界复位兜底承接）
+    onQuitFlushAbort(cb: (e: QuitFlushAbortEvent) => void): () => void {
+      const listener = guardedEventForwarder(
+        EVENT_CHANNELS.quitFlushAbort,
+        quitFlushAbortEventSchema,
+        cb
+      )
+      ipcRenderer.on(EVENT_CHANNELS.quitFlushAbort, listener)
+      return () => ipcRenderer.removeListener(EVENT_CHANNELS.quitFlushAbort, listener)
     }
   }
 }

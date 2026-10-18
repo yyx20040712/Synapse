@@ -70,6 +70,7 @@ import { create } from 'zustand'
 import { api, unwrap } from '../../api/client'
 import type { Note } from '@shared/models/note'
 import { AUTOSAVE_DEBOUNCE_MS } from '@shared/constants'
+import { quitWriteBlocked } from '../../app/quit-closing-gate'
 
 export interface NoteDraft {
   contentMd: string
@@ -232,6 +233,15 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     return flight
   }
 
+  // [F-VISFB-64·回炉 B1] 立存核心（无闸）：saveNow 用户命令入口与 flushNow
+  // 收口链共用（首载门控+清防抖+同步派发——[B3 格3/格9]/[F-VISFB-11] 语义原位）；
+  // 闸只挂用户入口，收口链豁免不依赖豁免域
+  const dispatchSaveNow = (paperId: string): Promise<void> => {
+    if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve()
+    clearTimer(paperId)
+    return dispatchSave(paperId)
+  }
+
   // 弃改收口私有实现（单篇，discardPendingEdit 与 discardAllPendingEdits 共用）：
   // 清防抖句柄+全部模块级编辑元数据+条目；discardGen 自增使在途 save 回调按
   // 代际守卫全 no-op（防回调重建条目/pending 镜像）。全操作幂等——条目/元数据
@@ -305,6 +315,9 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     },
 
     edit(paperId, patch) {
+      // [F-VISFB-64] closing gate：退出握手冻结期用户输入拒绝（α——④查态后
+      // 写面新鲜性；quit 收口 ① 的补存经 runQuitInternal 豁免域放行不自锁）
+      if (quitWriteBlocked()) return
       // 编辑元数据打点（模块级，不入 NoteDraft 契约）：lastEditedAt 供 saveSoon
       // 首载门控，touched 供字段级合并，pendingEdit 标记"本地存在未保存编辑"，
       // editSeq 供保存成功回调判定"派发后是否又有新编辑"
@@ -333,13 +346,11 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     },
 
     saveNow(paperId) {
-      // [B3 格3/格9] 点击立即落盘：清防抖 T+同步派发（dirty+点击/error+点击共用；
-      // 首载门控同 saveSoon——服务器基线未知不抢存，由 load 合并+补存承接）。
-      // [F-VISFB-11] 可等待面：直通 dispatchSave 返回的在途 promise；门控命中
-      // 返回已决议空 promise（门控语义零改——不派发即无在途可等）
-      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve()
-      clearTimer(paperId)
-      return dispatchSave(paperId)
+      // [F-VISFB-64·回炉 B1] closing gate：saveNow=用户命令入口（保存按钮），
+      // 冻结期拒绝；收口链（flushAllNow→flushNow）走 dispatchSaveNow 核心
+      // （豁免域=同步域不跨 await——异步链深处禁依赖豁免，闸点收窄到命令入口）
+      if (quitWriteBlocked()) return Promise.resolve()
+      return dispatchSaveNow(paperId)
     },
 
     async flush(paperId) {
@@ -387,7 +398,8 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         flight = inflight.get(paperId)
       }
       if (!pendingEdit.has(paperId)) return
-      await get().saveNow(paperId)
+      // [F-VISFB-64·回炉 B1] 收口核心路径（无用户入口闸——saveNow 闸不拦收口）
+      await dispatchSaveNow(paperId)
     },
 
     async flushAllNow() {

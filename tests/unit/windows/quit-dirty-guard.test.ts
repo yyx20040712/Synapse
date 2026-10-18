@@ -1,88 +1,135 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+/**
+ * [F-VISFB-64] quit-dirty-guard 改写（契约变更随 F-VISFB-64——clean 直放/
+ * quitDirtyGuard/handleCloseWithQuitGuard 纯函数族随无条件握手退役删除，设计稿
+ * §⑪-6 豁免预批；断言强度沿承=判定面改 policy 自持快照+分级计时）。
+ *
+ * 锁链：
+ * - setQuitDirty IPC 落点=quit-close-policy dirty-push（自持快照单一状态源——
+ *   close 首快照的分级判定源，非放行依据）；
+ * - 分级：clean→WC 1000ms/dirty→WD 5000ms/WC 内 push 升级换臂/WD 不降级；
+ * - C 态 push 仅缓存+确认不叠；
+ * - INV-91 lineagePending 缓存保留面（folders.service 消费零改）+IPC 透传。
+ */
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import {
-  QUIT_CONFIRM_MESSAGE,
-  getQuitDirty,
-  handleCloseWithQuitGuard,
-  quitDirtyGuard,
+  installQuitCloseInterception,
+  setLineagePending,
+  getLineagePending,
   setQuitDirty
 } from '../../../src/main/windows/main-window'
+import { QUIT_CLEAN_GRACE_MS, QUIT_FLUSH_TIMEOUT_MS } from '../../../src/shared/constants'
 import { createSystemIpc } from '../../../src/main/ipc/system'
 import { makeIpcDeps } from '../../utils/ipc-deps'
 import { guardedDescribe } from '../../utils/guard'
 
-function makeEvent(): { preventDefault: ReturnType<typeof vi.fn> } {
-  return { preventDefault: vi.fn() }
+type CloseListener = (event: { preventDefault(): void }) => void
+
+function makeHarness() {
+  let clock = 0
+  const closeLs: CloseListener[] = []
+  const confirms = vi.fn(async () => false)
+  const frames: { requestId: string }[] = []
+  const win = {
+    on(event: string, listener: (...args: never[]) => void): void {
+      if (event === 'close') closeLs.push(listener as CloseListener)
+    },
+    removeListener(): void {},
+    destroy(): void {},
+    webContents: { on(): void {}, removeListener(): void {} }
+  }
+  const handle = installQuitCloseInterception(win, {
+    now: () => clock,
+    sendQuitFlushFrame: (p) => {
+      frames.push(p)
+    },
+    sendAbortFrame: () => undefined,
+    confirmQuit: confirms
+  })
+  return {
+    confirms,
+    frames,
+    handle,
+    fireClose() {
+      const event = { preventDefault: vi.fn() }
+      for (const l of [...closeLs]) l(event)
+      return event
+    },
+    async advance(ms: number): Promise<void> {
+      clock += ms
+      await vi.advanceTimersByTimeAsync(ms)
+      for (let i = 0; i < 6; i++) await Promise.resolve()
+    }
+  }
 }
 
-function makeWin(): { destroy: ReturnType<typeof vi.fn> } {
-  return { destroy: vi.fn() }
-}
+let h: ReturnType<typeof makeHarness> | null = null
 
-guardedDescribe('SR2-TABS-04', 'main-window 退出拦截 —— dirty 缓存与 close 守卫（四态）', () => {
-  beforeEach(() => {
-    setQuitDirty(false)
-  })
+beforeEach(() => {
+  vi.useFakeTimers()
+  h = makeHarness()
+})
 
-  it('判定函数：clean 放行 / dirty 拦截', () => {
-    expect(quitDirtyGuard(false)).toBe(false)
-    expect(quitDirtyGuard(true)).toBe(true)
-  })
+afterEach(() => {
+  h?.handle.dispose()
+  h = null
+  vi.useRealTimers()
+})
 
-  it('模块级缓存：setQuitDirty/getQuitDirty 往返（renderer push 上报的 main 侧缓存）', () => {
+guardedDescribe('SR2-TABS-04', '退出拦截 dirty 链 —— policy 自持快照分级（F-VISFB-64 改写）', () => {
+  it('setQuitDirty(true)→close=WD 分级：5000ms 计时（1000ms 不确认、5000ms 确认恰一次）', async () => {
+    const harness = h!
     setQuitDirty(true)
-    expect(getQuitDirty()).toBe(true)
-    setQuitDirty(false)
-    expect(getQuitDirty()).toBe(false)
+    harness.fireClose()
+    await harness.advance(QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).not.toHaveBeenCalled()
+    await harness.advance(QUIT_FLUSH_TIMEOUT_MS - QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
   })
 
-  it('clean 态 close：不 preventDefault、不弹确认框、不 destroy（默认放行）', async () => {
-    const event = makeEvent()
-    const win = makeWin()
-    const confirmQuit = vi.fn(async () => true)
-    await handleCloseWithQuitGuard(false, event, win, { confirmQuit })
-    expect(event.preventDefault).not.toHaveBeenCalled()
-    expect(confirmQuit).not.toHaveBeenCalled()
-    expect(win.destroy).not.toHaveBeenCalled()
-  })
-
-  it('dirty 态 close + 确认：preventDefault → 确认框（固定文案）→ destroy 强制关闭', async () => {
-    const event = makeEvent()
-    const win = makeWin()
-    const confirmQuit = vi.fn(async () => true)
-    await handleCloseWithQuitGuard(true, event, win, { confirmQuit })
-    expect(event.preventDefault).toHaveBeenCalledTimes(1)
-    expect(confirmQuit).toHaveBeenCalledTimes(1)
-    expect(confirmQuit).toHaveBeenCalledWith(QUIT_CONFIRM_MESSAGE)
-    expect(win.destroy).toHaveBeenCalledTimes(1)
-  })
-
-  it('dirty 态 close + 取消：preventDefault → 窗口保持（不 destroy，dirty 缓存不迁）', async () => {
-    const event = makeEvent()
-    const win = makeWin()
+  it('setQuitDirty 往返：true→false 后 close=WC 1000ms 分级（快照跟随最新 push）', async () => {
+    const harness = h!
     setQuitDirty(true)
-    const confirmQuit = vi.fn(async () => false)
-    await handleCloseWithQuitGuard(true, event, win, { confirmQuit })
-    expect(event.preventDefault).toHaveBeenCalledTimes(1)
-    expect(confirmQuit).toHaveBeenCalledTimes(1)
-    expect(win.destroy).not.toHaveBeenCalled()
-    expect(getQuitDirty()).toBe(true)
+    setQuitDirty(false)
+    harness.fireClose()
+    await harness.advance(QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
   })
 
-  it('dirty 态 close + 确认框异常（reject）：按取消处理——窗口保持、不抛出（deepseek W1）', async () => {
-    const event = makeEvent()
-    const win = makeWin()
-    const confirmQuit = vi.fn(async () => {
-      throw new Error('dialog boom')
-    })
-    await expect(handleCloseWithQuitGuard(true, event, win, { confirmQuit })).resolves.toBeUndefined()
-    expect(event.preventDefault).toHaveBeenCalledTimes(1)
-    expect(win.destroy).not.toHaveBeenCalled()
+  it('WC 内 dirty push 升级：clean close 后 push(true) 换臂——grace 到点不确认、t0+5000 确认', async () => {
+    const harness = h!
+    harness.fireClose()
+    setQuitDirty(true)
+    await harness.advance(QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).not.toHaveBeenCalled()
+    await harness.advance(QUIT_FLUSH_TIMEOUT_MS - QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
+  })
+
+  it('WD 不降级：dirty close 后 push(false) 计时不变（仍 5000ms 到点确认）', async () => {
+    const harness = h!
+    setQuitDirty(true)
+    harness.fireClose()
+    setQuitDirty(false)
+    await harness.advance(QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).not.toHaveBeenCalled()
+    await harness.advance(QUIT_FLUSH_TIMEOUT_MS - QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
+  })
+
+  it('C 态 push 仅缓存+确认不叠：超时入 C 后 push 零新框', async () => {
+    const harness = h!
+    harness.fireClose()
+    await harness.advance(QUIT_CLEAN_GRACE_MS)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
+    setQuitDirty(true)
+    setQuitDirty(false)
+    expect(harness.confirms).toHaveBeenCalledTimes(1)
   })
 })
 
 guardedDescribe(
   'SR2-TABS-04',
-  'ipc/system set-quit-dirty 通道 —— renderer→main dirty 上报透传（头注「system.test.ts 扩展」的落位处置：check-tickets 规则 5 机器裁定 guardedDescribe 文件必须 import 登记文件，故并入本文件）',
+  'ipc/system 通道 —— dirty/pending 上报透传（头注「system.test.ts 扩展」的落位处置沿承）',
   () => {
     it('上报 dirty=true/false：透传注入的 setQuitDirty 并返回 { ok: true }', async () => {
       const seen: boolean[] = []
@@ -92,16 +139,23 @@ guardedDescribe(
       expect(seen).toEqual([true, false])
     })
 
-    it('[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）——IpcDeps 必填直调（缺失即红）', async () => {
+    it('[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）', async () => {
       const seenPending: boolean[] = []
       const ipc = createSystemIpc(
         makeIpcDeps({ setLineagePending: (v) => void seenPending.push(v) })
       )
-      await expect(
-        ipc.setQuitDirty({ dirty: true, lineagePending: true })
-      ).resolves.toEqual({ ok: true })
+      await expect(ipc.setQuitDirty({ dirty: true, lineagePending: true })).resolves.toEqual({ ok: true })
       await expect(ipc.setQuitDirty({ dirty: false })).resolves.toEqual({ ok: true })
-      expect(seenPending).toEqual([true, false]) // 显式 true→true；缺省→false
+      expect(seenPending).toEqual([true, false])
     })
   }
 )
+
+guardedDescribe('SR2-TABS-04', 'lineagePending 缓存保留面（INV-91 S1 队列闸——folders.service 消费零改）', () => {
+  it('setLineagePending/getLineagePending 往返（模块级缓存）', () => {
+    setLineagePending(true)
+    expect(getLineagePending()).toBe(true)
+    setLineagePending(false)
+    expect(getLineagePending()).toBe(false)
+  })
+})

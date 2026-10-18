@@ -46,6 +46,7 @@ import { useNotesStore } from '../../notes/notes.store'
 import { allDraftFlushHandles, discardAnnotationDraft, fireAllDraftFlushes } from '../interact/annotation-draft-registry'
 import type { AnnotationDraftFlush } from '../interact/annotation-draft-registry'
 import { useShallow } from 'zustand/react/shallow'
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 
 /** 两写面信号包（isTabDirty 的纯函数输入） */
 export interface TabDirtySignals {
@@ -135,6 +136,9 @@ export function useNotesDrafts(): Record<string, boolean> {
  * 关闭路径。
  */
 export function confirmCloseDirty(paperId: string): boolean {
+  // [F-VISFB-64] closing gate：退出握手冻结期 tab 关闭用户命令拒绝（冻结面=
+  //   设计 §④「annotations 句柄、tab dirty——挂载/卸载用户命令」）
+  if (quitWriteBlocked()) return false
   const tab = useReaderStore.getState().tabs[paperId]
   // 标题与 TabBar tabTitle 同型：title 优先（文献名——缺陷②），空 title 兜底
   // fileName 去扩展名，fileName 亦空（tab 缺失/异常）兜底 paperId
@@ -179,6 +183,8 @@ const closingTabs = new Set<string>()
  * 失败误入仍脏，D1 残余面 5 现状沿承）。
  */
 export async function requestCloseTab(paperId: string): Promise<boolean> {
+  // [F-VISFB-64] closing gate：冻结期关 tab 命令整体拒绝（不触发 flush 写面）
+  if (quitWriteBlocked()) return false
   if (closingTabs.has(paperId)) return false
   // [F-VISFB-15 ①面2] ACTIVE tab（挂载编辑器所在篇）clean 两写面净也须经
   // 句柄收口（un-attempted dirty 不在两写面信号内）；非活动 tab 无挂载编辑
@@ -275,6 +281,9 @@ async function flushMountedDraftHandles(paperId: string): Promise<void> {
  * 不阻切换；失败=句柄 failed→卸载注册承接重挂载重试，12 号机制在场）。
  */
 export function switchTabFlushFirst(targetId: string): void {
+  // [F-VISFB-64] closing gate：冻结期切 tab 命令整体拒绝（含激活位变更——
+  // 冻结窗 ms 级，用户点击丢失可接受；写面不被离场 flush 触发）
+  if (quitWriteBlocked()) return
   const departing = useReaderStore.getState().activeId
   if (departing !== null && departing !== targetId) {
     void useNotesStore.getState().flushNow(departing).catch(() => undefined)

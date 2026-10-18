@@ -4,6 +4,7 @@
  * 锁链：退出握手 main→renderer 事件帧（requestId 关联）经 guardedEventForwarder
  * 接收侧兜底——合法帧透传 cb / 畸形帧 console.warn+丢弃+订阅存活（D-GOV-4
  * 沿承）；订阅通道=EVENT_CHANNELS.quitFlush。
+ * [F-VISFB-64] 扩 abort 面：onQuitFlushAbort（C→I 解冻帧——同型接收侧兜底）。
  * electron 全 mock（preload-events-guard.test 同型）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -66,5 +67,29 @@ describe('preload onQuitFlush 桥（F-VISFB-14）', () => {
     expect(received).toEqual([{ requestId: 'quit-flush-2' }])
     off()
     expect(removeListenerMock).toHaveBeenCalledWith(EVENT_CHANNELS.quitFlush, listener)
+  })
+})
+
+describe('preload onQuitFlushAbort 桥（F-VISFB-64——C→I 解冻帧）', () => {
+  it('订阅 quitFlushAbort 通道：合法帧（requestId）等值透传 cb；通道名锚', () => {
+    const received: unknown[] = []
+    buildEvents().onQuitFlushAbort((e) => received.push(e))
+    expect(onMock).toHaveBeenCalledWith(EVENT_CHANNELS.quitFlushAbort, expect.any(Function))
+    expect(EVENT_CHANNELS.quitFlushAbort).toBe('system/quit-flush-abort/event')
+    lastListener()(undefined, { requestId: 'quit-flush-3' })
+    expect(received).toEqual([{ requestId: 'quit-flush-3' }])
+  })
+
+  it('畸形帧（空 requestId）：warn+丢弃+订阅存活；退订摘除同一 listener', () => {
+    const received: unknown[] = []
+    const off = buildEvents().onQuitFlushAbort((e) => received.push(e))
+    const listener = lastListener()
+    listener(undefined, { requestId: '' })
+    expect(received).toEqual([])
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    listener(undefined, { requestId: 'quit-flush-4' })
+    expect(received).toEqual([{ requestId: 'quit-flush-4' }])
+    off()
+    expect(removeListenerMock).toHaveBeenCalledWith(EVENT_CHANNELS.quitFlushAbort, listener)
   })
 })

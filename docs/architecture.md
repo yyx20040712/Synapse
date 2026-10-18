@@ -92,6 +92,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0023 | 走线候选位分配=后处理槽位分配（F-ROUTE-02——候选 B 路线裁决：routeOne 六态零侵入+slotAssign 单 pass+applyBandLanes 退役迁残余子 pass；INV-112~117；决策正文单源=docs/design/2026-10-06_f-route02-design.md v1.5，不另立 adr 正件防双源） |
 | 0024 | 脉络砖砌网格布局+五态走线正统化（F-SLOTGRID-01——用户 2026-10-07 方向级四裁决+2026-10-08 呈裁落定 v1.4：砖砌交错/横纵等距 72 通道/全自动 gutter 选路 corridor 退役/F-ROUTEDET-01 并入；布局=capacity.ts 容量公式纯函数族+行容器渲染瀑布退役，走线=direct→h-slip→detour→band→overlap 五态链+坐标集封闭，拖拽=INV-111 算术落点；INV-SLOTGRID-01/02+INV-110/111/117/119 修订族；决策正文单源=docs/design/2026-10-07_f-slotgrid01-design.md v1.4，不另立 adr 正件防双源） |
 | 0025 | DB 契约战役批 DB-1 数据契约冻结（F-DBCAMP-01——016-019 四迁移+INV-121~126：folder_id NOT NULL 真重建〔fkOff 模式〕/is_starred 星标/app_meta 身份载体〔owner uuid+设备 token〕/tags 多域化〔UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6〕；**folder↔graph 契约=结构性投影不建表**〔用户 2026-10-08 裁决①「一个文件夹不允许多张脉络图，必须一一对应」——图身份≡lineage_nodes.folder_id，无独立 graphs 表；v165 探针差异④「folder↔graph 落法」就此勘正关闭〕；〔甲乙丙〕三裁决=存量归主图/移夹标签留原域/筛选上限不动；决策正文单源=docs/design/2026-10-08_f-dbcamp01-design.md v1.2+§11 终裁记录+§12 用户呈裁落定，不另立 adr 正件防双源） |
+| 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -133,6 +134,17 @@ papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage
 草稿导入通道随导入链退役删除——ADR-0022）+folders.changed/lineage.changed 双事件+
 lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
 +lineagePending（INV-91 S1 队列闸）。
+
+[F-VISFB-64]（2026-10-18）关闭入口无条件握手批改（ADR-0026）：事件通道 6→7
+（+system/quit-flush-abort/event——C→I 解冻帧，载荷 {requestId}=epoch 水线，
+quitFlushAbortEventSchema 四面同步）；常量上移 src/shared/constants.ts
+（QUIT_FLUSH_TIMEOUT_MS 自 main-window.ts 迁出+QUIT_CLEAN_GRACE_MS 新增——
+main policy 分级与 renderer bridge 有界复位两侧单源）；实体面=新件
+src/main/windows/quit-close-policy.ts（I/WC/WD/C/D 状态机，纯 TS 零 Electron
+import）+src/renderer/app/quit-closing-gate.ts（closing 冻结门模块级单例）+
+quit-flush-bridge.ts 重构（busy/orphan epoch+abort 订阅+5000ms 有界复位）；
+main-window.ts 退出段退役删除（clean 直放面消亡——458→410 行，INV-22 尾句
+改写+写源治理条款）。
 
 [F-LGRAPH-01②]（2026-10-02）编辑器批（U1/U8）：lineageEdges 视觉线型内联
 （+dashed/color——迁移 014；kind 四值 tree/inferred/ref/manual 退役→repo

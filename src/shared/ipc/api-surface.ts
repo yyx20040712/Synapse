@@ -265,7 +265,10 @@ export const EVENT_CHANNELS = {
   lineageChanged: 'lineage/changed/event',
   // [F-VISFB-14] 退出握手 flush 请求（renderer 收帧即 runQuitFlush 收口，
   // 经 system/report-quit-flush 回执 stillDirty——requestId 双向关联）
-  quitFlush: 'system/quit-flush/event'
+  quitFlush: 'system/quit-flush/event',
+  // [F-VISFB-64] 退出握手中止（C→I 用户取消确认时发——requestId=epoch 水线，
+  // bridge 废止不超过该 id 的活动 epoch 并解冻 closing gate）
+  quitFlushAbort: 'system/quit-flush-abort/event'
 } as const
 
 /** 事件桥形状（preload 暴露与 renderer 全局声明的单一类型来源，禁止两处手写） */
@@ -276,6 +279,7 @@ export type PreloadEvents = {
   onFoldersChanged(cb: (e: S.FoldersChangedEvent) => void): () => void
   onLineageChanged(cb: (e: S.LineageChangedEvent) => void): () => void
   onQuitFlush(cb: (e: S.QuitFlushEvent) => void): () => void
+  onQuitFlushAbort(cb: (e: S.QuitFlushAbortEvent) => void): () => void
 }
 
 // ── 类型推导（preload 桥 & services 契约都从这里长出来）──────────────

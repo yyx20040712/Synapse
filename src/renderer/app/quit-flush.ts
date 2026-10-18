@@ -30,12 +30,18 @@ import {
   hasPendingAnnotationDrafts
 } from '../features/reader/interact/annotation-draft-registry'
 import { fireLineageNoteCommit, noteDraftPending } from '../features/lineage/lineage-note-draft'
+import { runQuitInternal } from './quit-closing-gate'
 
 /**
  * 退出收口：执行全部写面立存并返回「收口后最新 dirty 判定」。
  * true=仍有未落库/未知态（main 侧走 confirm 降级）；false=全部最新值已落库
  * （main 侧直接 destroy 零确认）。异常上抛由调用方（quit-flush-bridge）按
  * stillDirty=true 承接。
+ * [F-VISFB-64·回炉 B1] 豁免域=同步域、不跨 await：跨 await 收口链不再外层
+ * 整体包裹——①③ 经收口核心路径（notes dispatchSaveNow/写队列 flush 无用户
+ * 入口闸）；唯一命中闸点的跨步链=②.5 fireLineageNoteCommit（同步链：handle→
+ * closeEdit→updateFloatingNote 的 beginUnitGated 闸点），在其同步调用处就地
+ * 包裹。语义红线=closing=true 时一切非收口链用户写拒绝，不受 flush 在途影响。
  */
 export async function runQuitFlush(): Promise<boolean> {
   // ① notes 全量立存（串行逐篇——flushAllNow）
@@ -47,9 +53,11 @@ export async function runQuitFlush(): Promise<boolean> {
   const annotationHandleDirty = states.some((s) => s !== 'saved' && s !== 'clean')
   // ②.5 [F-VISFB-63] 悬浮笔记编辑草稿 fire-first commit（挂载编辑会话收口入队
   // ——textarea 卸载无 blur 同链〔62 号 d1 定谳〕，入队后由 ③ save 正道落库；
-  // flushing 窗 fire no-op：pending 保真由 ④ 查态承接=main confirm 降级不静默丢）
-  fireLineageNoteCommit()
-  // ③ lineage 写队列正道收口（≠clean 才发起；await 后查态）
+  // flushing 窗 fire no-op：pending 保真由 ④ 查态承接=main confirm 降级不静默丢）。
+  // [F-VISFB-64·回炉 B1] 同步豁免域就地包裹：fire→handle→closeEdit→
+  // updateFloatingNote（beginUnitGated 闸点）+setNoteDraftPending(假向) 全同步
+  runQuitInternal(fireLineageNoteCommit)
+  // ③ lineage 写队列正道收口（≠clean 才发起；await 后查态——flush 链无用户入口闸）
   const lineageBefore = useLineageStore.getState()
   if (lineageBefore.saveStatus !== 'clean') {
     await lineageBefore.save()

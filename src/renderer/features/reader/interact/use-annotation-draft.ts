@@ -34,6 +34,7 @@
  *   （防幽灵写——落库同步由写路径消费方承接）。
  */
 import { useLayoutEffect, useRef, useState } from 'react'
+import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import {
   registerDraftFlush,
   saveAnnotationDraft,
@@ -240,6 +241,12 @@ export function useAnnotationDraft(
     if (next === commentRef.current) {
       return
     }
+    // [F-VISFB-64·门二 P0-1 主控终裁承接] closing 冻结期用户输入拒绝（值入口——
+    // 句柄内容/tab dirty 变更前；LineageFloatingNotes onChange 对称面）：防
+    // ②已过后的 un-attempted 值落组件本地不入④表面（INV-22 写源治理面）
+    if (quitWriteBlocked()) {
+      return
+    }
     if (!composingRef.current) {
       // 旧值须同步捕获：setPast 函数式更新子在 flush 期才执行，届时读 ref 已是新值
       const prev = commentRef.current
@@ -265,7 +272,9 @@ export function useAnnotationDraft(
   }
 
   function undoEdit(): void {
-    if (past.length === 0) {
+    // [F-VISFB-64·门二 P0-1] closing 冻结期拒绝（编辑器撤销钮直调本入口——
+    // 不经 popups 动作闸；栈与值同步不变）
+    if (quitWriteBlocked() || past.length === 0) {
       return
     }
     const cur = commentRef.current
@@ -275,7 +284,8 @@ export function useAnnotationDraft(
   }
 
   function redoEdit(): void {
-    if (future.length === 0) {
+    // [F-VISFB-64·门二 P0-1] closing 冻结期拒绝（同 undo——栈与值同步不变）
+    if (quitWriteBlocked() || future.length === 0) {
       return
     }
     const cur = commentRef.current
