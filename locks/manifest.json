@@ -499,7 +499,7 @@
         },
         {
             "path": "tests/e2e/selection-twocol.spec.ts",
-            "sha256": "d7db8431cb54c0cd79d9ced0c17610b79f8a078ed5e7e2ce86992444ac5099d4"
+            "sha256": "a04609b24622c132d4390656645b3656575bef88dd671347faf08b0b330b4c60"
         },
         {
             "path": "tests/e2e/shell-rail.spec.ts",

@@ -417,8 +417,45 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     } catch (e) {
       sel53Experiments = { error: String(e) }
     }
+    // [F-VISFB-53CI-01 诊断轮四] 拖拽拦截假说：playwright 对 chromium 页启用
+    // Input.setInterceptDrags（drag 拦截管道）——三轮三手势全退化为光标放置后，
+    // 剩余机制嫌疑=拦截管道在 Windows 面抑制原生选区扩展。两实验：
+    // nointercept=自有 CDP 会话关拦截后纯拖；rawcdp=自有会话裸
+    // dispatchMouseEvent 全拖链（pointerType 默认 mouse）
+    const sel53Intercept: Record<string, unknown> = {}
+    try {
+      const cdp = await app.context().newCDPSession(win)
+      sel53Intercept.interceptOff = await cdp
+        .send('Input.setInterceptDrags', { enabled: false })
+        .then(() => 'ok', (e: unknown) => `err:${String(e)}`)
+      sel53Intercept.nointercept = await sel53RecoveryExperiment(win, 'plain', sx, sy, ex, ey)
+      await win.evaluate(() => window.getSelection()?.removeAllRanges())
+      await win.waitForTimeout(120)
+      const dispatch = (
+        type: 'mouseMoved' | 'mousePressed' | 'mouseReleased',
+        x: number,
+        y: number,
+        buttons: number,
+        button: 'none' | 'left' = 'none',
+        clickCount = 0
+      ): Promise<unknown> => cdp.send('Input.dispatchMouseEvent', { type, x, y, button, buttons, clickCount })
+      await dispatch('mouseMoved', sx, sy, 0)
+      await dispatch('mousePressed', sx, sy, 1, 'left', 1)
+      for (let i = 1; i <= 6; i += 1) {
+        await dispatch('mouseMoved', sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6, 1, 'left')
+        await win.waitForTimeout(60)
+      }
+      await dispatch('mouseReleased', ex, ey, 0, 'left')
+      await win.waitForTimeout(300)
+      sel53Intercept.rawcdp = {
+        selection: await sel53SelectionState(win),
+        rectsCount: await win.evaluate(() => document.querySelectorAll('[data-testid="selection-rect"]').length)
+      }
+    } catch (e) {
+      sel53Intercept.error = String(e)
+    }
     const bundle = JSON.stringify(
-      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post, experiments: sel53Experiments },
+      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post, experiments: sel53Experiments, intercept: sel53Intercept },
       null,
       2
     )
