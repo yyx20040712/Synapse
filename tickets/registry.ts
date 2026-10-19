@@ -32,6 +32,7 @@ export type TicketArea =
   | 'lineage'
   | 'e2e'
   | 'workspaces'
+  | 'docs'
 
 export interface Ticket {
   id: string
