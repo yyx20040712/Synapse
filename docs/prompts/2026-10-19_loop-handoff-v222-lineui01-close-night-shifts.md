@@ -55,17 +55,18 @@ impl/kickoff-prompt-v2.md——双会话互扰教训 v218 §3-1）。
 - 两场均毕后（次日起）按 §2 序推进；任一场未毕由次日会话承接，不跳票。
 - 53CI-02 已设计就绪（§2 序 6）——场 A/B 后夜间有余量或次日会话可接着排。
 
-## §2 测试版本路线（更新：序 2 done）
+## §2 测试版本路线（更新：序 2 done+序 3 文档治理立票）
 
 | 序 | 票 | 内容 | 状态 |
 |---|---|---|---|
 | 1 | F-RECOV-01/02 | 数据安全双票（场 A/B） | 排程§1 |
 | 2 | F-LINEUI-01 | 横向 autoscroll+工具条/徽记 sticky | **done（本场 b28f5119）** |
-| 3 | F-SNAPCLEAN-01 | 旧九表兼容清除+旧数据清理 | 已裁清 |
-| 4 | F-TESTLOCK-01 | 测试锁分级+成本阀成文（首单元=基线再生成解锁） | 已批 |
-| 5 | F-EVCTX-01/F-DETOURW-01 | e2e 取证保号/走线 1.2px 顺带 | 工程债 |
-| 6 | F-VISFB-53CI-02 | 选区快慢双几何+鼠标投影语义（设计单源=用户认可提案） | 设计就绪 |
-| 7 | **dist 测试版** | npm run dist 打包+版本号；**用户首用轮**（v221 §2-A 检查单沿承） | 终点 |
+| 3 | F-DOCS-01 | 文档群可读性治理（去比喻词/去映射/平实语言——用户 2026-10-20 指令，排夜队后首位） | 已立票 |
+| 4 | F-SNAPCLEAN-01 | 旧九表兼容清除+旧数据清理 | 已裁清 |
+| 5 | F-TESTLOCK-01 | 测试锁分级+成本阀成文（首单元=基线再生成解锁） | 已批 |
+| 6 | F-EVCTX-01/F-DETOURW-01 | e2e 取证保号/走线 1.2px 顺带 | 工程债 |
+| 7 | F-VISFB-53CI-02 | 选区快慢双几何+鼠标投影语义（设计单源=用户认可提案） | 设计就绪 |
+| 8 | **dist 测试版** | npm run dist 打包+版本号；**用户首用轮**（v221 §2-A 检查单沿承） | 终点 |
 - 压着不阻塞：F-WINGUARD-01（Windows 使用时）、F-E2EFLK-01（observing
   沿承）、F-REQFP-01（DB 战役触发）、F-SNAPHINT-01（首用轮收集条件）。
 
@@ -82,7 +83,8 @@ impl/kickoff-prompt-v2.md——双会话互扰教训 v218 §3-1）。
 
 - v221 §5 沿承面不变（test-surface 基线再生成→F-TESTLOCK-01 首单元；
   L 系沿承；53CI-02 设计就绪）。
-- open 池 11 张：F-RECOV-01/02（§1 场 A/B）、F-SNAPCLEAN-01、
+- open 池 12 张：F-RECOV-01/02（§1 场 A/B）、F-DOCS-01（序 3——夜队后
+  首位，用户 2026-10-20 指令立票）、F-SNAPCLEAN-01、
   F-TESTLOCK-01、F-EVCTX-01、F-DETOURW-01、F-VISFB-53CI-02、
   F-E2EFLK-01、F-REQFP-01、F-SNAPHINT-01、F-WINGUARD-01（压着）。
 - 批档=仓外 20261019-lineui01-impl（progress.md 总账+design v1/v2.1+
