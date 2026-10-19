@@ -28,6 +28,10 @@
    接斜杠的写法——会把 CSS 注释提前终结） */
 :root {
   /* ── 亮面（白天族=裸 :root 值；T3-P1 六 token 换白天终值+桥接 var 形态）── */
+  /* [F-VISFB-67] 时间线最小布局宽（ADR-0028/INV-169）：布局常量非主题族——
+     置 token 权威区供 C-4c 锚（消费=theme-lineage.css 月框/内容层双消费式；
+     577=默认窗 1280 月框 border-box computed width 实测，改值只动此一处） */
+  --tl-frame-min: 577px;
   --bg: #f4f6f9;
   --panel: #ffffff;
   --panel-glass: var(--panel);

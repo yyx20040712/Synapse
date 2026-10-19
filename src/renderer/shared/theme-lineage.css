@@ -18,15 +18,36 @@
 
 /* ══ [T3-P6] 脉络时间线（纵向年+月 DOM 时间线——mockup L203-262 逐值）══ */
 /* 滚动容器（pan/zoom INV-43/44 退役→滚动定位语义）；height:100%=Board 块级
-   宿主直挂（mockup .lg-wrap flex 场景外补——申报） */
+   宿主直挂（mockup .lg-wrap flex 场景外补——申报）
+   [F-VISFB-67] overflow-x hidden→auto：地板化后窄视口内容宽 717>clientWidth
+   由横向滚动承载（用户裁决「缩放独立，不应出现〔窄视口分行〕」——三改
+   原子之一；≥1280 无横溢时 scrollWidth===clientWidth 零变） */
 .timeline {
+  /* [F-VISFB-67 轮 3 W1] 地板单源变量=theme.css :root token（C-4c 锚——布局
+     常量非主题族，权威区定义+此处注释互指）：577=默认档 1280 首月框 computed
+     width 读数（border-box 口径——U0 钉死）。消费面=①.month-frame min-width
+     （地板）②.tl-content min-width calc(+140px)（边层铺满滚动域——两消费式
+     共享单源，改地板值只动 theme.css 一处） */
   flex: 1;
   height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   position: relative;
 }
-.tl-content { position: relative; padding: 18px 28px 46px 20px; }
+.tl-content {
+  position: relative;
+  padding: 18px 28px 46px 20px;
+  /* [F-VISFB-67 轮 3 W1] 边层滚动域承载：.tl-edges/.tl-edge-hits 均 inset:0+
+     width:100% 驻本件——块级宽=scrollport 宽不随横滚扩展，地板态滚出区
+     （内容 717>scrollport）边线 SVG 可绘制（overflow:visible）但命中区不外延
+     =滚出区边句柄不可命中（探针实证 461<643）。min-width=地板框 577+140
+     （140=tl-month 横 margin 92+本件横 padding 48——地板态内容自然宽算式）
+     使内容盒≥滚动域→两边层随铺满；≥1280 自然宽 717≥717 等值零变。
+     [轮 4 W-5] :has(.month-frame) 守卫=空图态不铺 717（空态文案在窄视口
+     scrollport 内可见——无月框即无横滚域需求，Chromium 152 :has 支持） */
+  min-width: calc(var(--tl-frame-min) + 140px);
+}
+.tl-content:not(:has(.month-frame)) { min-width: 0; }
 /* 空图空态（文案常驻无死按钮——Canvas 空态语义沿承；类为本票新增申报） */
 .tl-empty { padding: 48px 0; text-align: center; color: var(--faint); font-size: var(--fs-body); }
 /* A11 年距 38px；年份头=衬线数字（纯数字无「年」字）+「N 篇」mono 计数+细线 */
@@ -54,6 +75,13 @@
   flex-direction: column;
   gap: 72px;
   min-height: 58px;
+  /* [F-VISFB-67 U0 钉死] 窄视口低容量分行退役地板：577=默认档 1280 首月框
+     computed width 读数（border-box 口径：timeline clientWidth 717−tl-content
+     横 padding 48−tl-month 横 margin 92；探针实测亚默认窗读数与 1280 全等
+     容差 0）——亚默认窗 W 恒 577=参考形，分行/卡宽不再随窄视口坍缩；
+     三改原子之一。〔轮 3 W1〕值迁 var(--tl-frame-min) 单源（.timeline 域
+     定义一次，与 .tl-content min-width 消费式共享） */
+  min-width: var(--tl-frame-min);
   position: relative;
   overflow: hidden;
   transition: height .38s cubic-bezier(.22,.9,.26,1), border-color var(--dur-lazy), background var(--dur-lazy);
@@ -102,6 +130,9 @@
   border-radius: 8px;
   padding: 5px 6px 4px;
   box-shadow: var(--shadow-card);
+  /* [F-VISFB-67] 卡恒 128 不压缩（窄视口卡宽压缩族退役——三改原子之一；
+     地板矩阵内行自然宽 528≤框内容宽 549.8 恒不触缩） */
+  flex-shrink: 0;
   cursor: grab;
   touch-action: none;
   position: relative;

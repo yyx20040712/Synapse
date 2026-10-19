@@ -35,6 +35,7 @@ import { frameKeyOf } from './lineage-timeline'
 import type { FlightJob } from './card-drag-flight'
 import { srcGroupIdsOf } from './card-drag-geometry'
 import { insertIndexFromGrid } from './card-drag-grid'
+import { readFrameContentWidth } from './use-capacity-layout'
 import { clientToOwnPt, effectiveScale } from './timeline-zoom'
 import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 
@@ -220,7 +221,10 @@ export function useDragSession(args: {
               if (sc.extend) nextIdx = sc.srcIds.length - 1
               else {
                 const fp = framePointer(sc.frameEl, sc.lastClient.x, sc.lastClient.y)
-                const w = Number.parseFloat(getComputedStyle(sc.frameEl).width)
+                // [轮 3 B1] 容量输入=内容盒宽归一化单源（readFrameContentWidth
+                // ——与布局侧 use-capacity-layout 同源；此前直读 raw computed
+                // width=两源分叉，1440 档布局 [3,1]/拖拽 [4] 网格错插）
+                const w = readFrameContentWidth(sc.frameEl)
                 nextIdx = insertIndexFromGrid(fp.x, fp.y, w, sc.srcIds.length, sc.srcIdx)
               }
             }
@@ -340,12 +344,16 @@ export function useDragSession(args: {
         // [F-SLOTGRID-01 U3] 落点=含源网格算术（INV-111 消费面——设计 §5.5/
         //  预裁决 D1/D3）：rowCounts 含源卡（srcIds 全长），判定面不随占位槽
         //  腾位漂移（推挤滞回结构性消除——旧 rect 逐帧实测法随本批退役）；
-        //  W=frame computed width 实时读（use-capacity-layout 同一 CSS 单源），
-        //  读取失败（NaN/unmeasured）经 capacities 状态机降级单行语义。
+        //  W=frame 内容盒宽归一化实时读（[轮 3 B1] readFrameContentWidth
+        //  单源——use-capacity-layout 同式），读取失败（NaN/unmeasured）经
+        //  capacities 状态机降级单行语义。
         if (extend) nextIdx = s.srcIds.length - 1 // 新行空位=组末
         else {
           const p = framePointer(s.frameEl, e.clientX, e.clientY)
-          const w = Number.parseFloat(getComputedStyle(s.frameEl).width)
+          // [轮 3 B1] 容量输入=内容盒宽归一化单源（readFrameContentWidth——
+          // use-capacity-layout 同一 CSS 单源+同一归一化式；读取失败（0/
+          // unmeasured）经 capacities 状态机降级单行语义）
+          const w = readFrameContentWidth(s.frameEl)
           nextIdx = insertIndexFromGrid(p.x, p.y, w, s.srcIds.length, s.srcIdx)
         }
       }
