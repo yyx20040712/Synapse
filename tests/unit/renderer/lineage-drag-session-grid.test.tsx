@@ -69,7 +69,7 @@ function mount(nodes: LineageNode[]): void {
 
 /** W 注入（frame inline width→会话/computed 同源读+渲染 partitionRows 双消费） */
 const injectW = async (nodes: LineageNode[], w: number): Promise<void> => {
-  req('.month-frame').setAttribute('style', `width: ${w}px`)
+  req('.month-frame').setAttribute('style', `width: ${w}px; padding-left: 12px; padding-right: 12px; border-left-width: 0px; border-right-width: 0px`)
   await act(async () => {
     root?.render(
       <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />

@@ -1146,6 +1146,24 @@
       "caseTitle": "[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）——IpcDeps 必填直调（缺失即红）",
       "reason": "F-VISFB-64 装配面重排：lineagePending 透传行为零变（INV-91 保留）——标题微缩+断言集随 makeIpcDeps 形态重排，指纹面变更故登记（非契约语义变更；新同名用例承接）",
       "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "T6 [F-SLOTGRID-01] 砖砌网格：窄窗 5 卡同月→行容器分行=capacity 同源公式+奇行错位 100+零 margin-left 残留",
+      "reason": "F-VISFB-67 W-3 同源化：T6 期望改用 contentWidthOf（生产同式归一化读数）替代 raw computed 宽，标题随口径改写（旧窄窗 1/1 形态 extinct——用户裁决 2026-10-18 逐字在账本 ruling 行 runId=20261018-openbook）",
+      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（门一 d1-W3 条件 3 处置）"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "caseTitle": "γ3 [F-SLOTGRID-01 U3] 纵排语义（1000 视口 1/1）：跨行插入按 y 行带+行分布=partitionRows 同源",
+      "reason": "F-VISFB-67 R1 主控裁定：γ3 纵排布防卫被地板灭绝（1/1 容量带 extinct——用户裁决「不应该出现」），重写为 640 视口 3 卡月单行 [3] 地板契约（纵排数学面退役归 γ1/γ2/γ4）",
+      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（主控裁定 R1+受锁翻面授权链）"
+    },
+    {
+      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
+      "assertionText": "expect(css).toMatch(/\\.timeline\\s*\\{[^}]*overflow-y:\\s*auto;[^}]*overflow-x:\\s*hidden/)",
+      "reason": "F-VISFB-67 终裁 v3 CSS 三改之一：.timeline overflow-x hidden→auto（窄视口横滚承载——用户裁决授权面）；断言体同步翻面为 auto，用例标题保留历史措辞（签名键冻结由本豁免承载）",
+      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（终裁 v3+门一已裁翻面）"
     }
   ]
 }

@@ -438,9 +438,9 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     const nodes = [node('A'), node('B'), node('C'), node('D')]
     mount(nodes)
     // jsdom 无 RO=unmeasured 单行——注入 W（frame inline width→useCapacityLayout
-    // 挂载帧同步首读链）：nodes 新引用重渲染→effect 重跑→computed width 570.4
+    // 挂载帧同步首读链）：nodes 新引用重渲染→effect 重跑→归一化 W=546.4（computed 570.4−pad24——[轮 4 N-1] 注释同步）
     // →partition(4)=行0 [A,B,C]/行1 odd [D]（跨行布防 ≥2 行）
-    req('.month-frame').setAttribute('style', 'width: 570.4px')
+    req('.month-frame').setAttribute('style', 'width: 570.4px; padding-left: 12px; padding-right: 12px; border-left-width: 0px; border-right-width: 0px')
     await act(async () => {
       // 全 props 重渲染（回调链齐——onUp finish 闭包经最新 args 读回调）
       root?.render(
@@ -492,8 +492,8 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
   it('跨行源卡保育（A 案）[F-DRAGREMOUNT-01]：激活帧节点保育（同父 keyed 调和）+ghost inline 全键存续（left/top/position/marginLeft）→驻原行非末行 odd→后续 move 节点恒稳+settle 清场照常', async () => {
     const nodes = [node('A'), node('B'), node('C'), node('D')]
     mount(nodes)
-    // W 注入（奇行 settle 例同型）：570.4→N=3/M=2→[A,B,C] 行0+[D] 行1 奇行
-    req('.month-frame').setAttribute('style', 'width: 570.4px')
+    // W 注入（奇行 settle 例同型）：computed 570.4→归一化 546.4→N=3/M=2→[A,B,C] 行0+[D] 行1 奇行（[轮 4 N-1]）
+    req('.month-frame').setAttribute('style', 'width: 570.4px; padding-left: 12px; padding-right: 12px; border-left-width: 0px; border-right-width: 0px')
     await act(async () => {
       root?.render(
         <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
@@ -548,7 +548,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     const nodes = [node('A'), node('B'), node('C'), node('D'), node('E'), node('F'), node('G'), node('H')]
     mount(nodes)
     // W 注入（第 18 例同型）：570.4→N=3/M=2→partition(8)=[3,2,3]（行 1 odd [D,E]）
-    req('.month-frame').setAttribute('style', 'width: 570.4px')
+    req('.month-frame').setAttribute('style', 'width: 570.4px; padding-left: 12px; padding-right: 12px; border-left-width: 0px; border-right-width: 0px')
     await act(async () => {
       root?.render(
         <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />

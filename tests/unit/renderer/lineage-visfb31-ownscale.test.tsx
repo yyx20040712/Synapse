@@ -81,9 +81,15 @@ function mount(nodes: LineageNode[], edges: LineageEdge[] = []): void {
   })
 }
 
-/** W 注入（frame inline width——computed 同源读；lineage-drag-session-grid 同法） */
+/** W 注入（frame inline 五值——[轮 3 k1-W3] computed 同源读+内容盒宽归一化
+ * 落地后 pad/border 须随注入（jsdom 无样式表空串→NaN→unmeasured 假路径）；
+ * border=0px=会话 padding-box 原点换算零修正（1.6 值参与即平移指针域）；
+ * lineage-drag-session-grid 同法） */
 const injectW = async (nodes: LineageNode[], w: number): Promise<void> => {
-  req('.month-frame').setAttribute('style', `width: ${w}px`)
+  req('.month-frame').setAttribute(
+    'style',
+    `width: ${w}px; padding-left: 12px; padding-right: 12px; border-left-width: 0px; border-right-width: 0px`
+  )
   await act(async () => {
     root?.render(
       <LineageTimeline nodes={nodes.map((n) => ({ ...n }))} edges={[]} onNodeClick={onNodeClick} onReorderMonthSlots={reorder} />
@@ -272,7 +278,13 @@ describe('[F-VISFB-31] 接缝②capacity 命中输入侧=own 域', () => {
       if (el === req('.month-frame')) {
         return {
           width: real.width,
+          // [轮 3 k1-W3] 归一化五值补齐（pad/borderRight 缺席→NaN→unmeasured
+          // 假路径——本例意图=measured own 域命中面）；borderLeft 1.6=本例
+          // 被测面（padding-box 原点横修正）沿承
+          paddingLeft: '12px',
+          paddingRight: '12px',
           borderLeftWidth: '1.6px',
+          borderRightWidth: '1.6px',
           borderTopWidth: '1.6px'
         } as unknown as CSSStyleDeclaration
       }

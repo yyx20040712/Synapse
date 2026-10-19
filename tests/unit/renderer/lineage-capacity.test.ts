@@ -201,4 +201,25 @@ describe('F-SLOTGRID-01 capacity 纯函数族（砖砌网格数学——INV-SLOT
       indexOf(1, Number.POSITIVE_INFINITY, 570.4)
     ]).toEqual([0, 0, 0, 0])
   })
+
+  it('[F-VISFB-67 U2] 阶跃边界三组±1（生产输入域=归一化内容盒宽——R3 裁定后与 capacity 契约域对齐，数值域不变）：even 3→2 于 528/odd 2→1 于 428/even 2→1 于 328', () => {
+    // N=⌊(W+72)/200⌋ 阶跃点：W=528（600/200 恰整除）与 W=328；M=⌊(W−28)/200⌋
+    // 阶跃点：W=428——各组取边界−1/边界/边界+1 三点锁阶跃方向（下行越界即红）
+    expect([527, 528, 529].map((w) => capacities(w).n)).toEqual([2, 3, 3])
+    expect([427, 428, 429].map((w) => capacities(w).m)).toEqual([1, 2, 2])
+    expect([327, 328, 329].map((w) => capacities(w).n)).toEqual([1, 2, 2])
+  })
+
+  it('[F-VISFB-67 U2·R3] 地板锚（生产真实输入=归一化内容盒宽）：capacities(549.8)={n:3,m:2}+partitionRows(2/5/8,549.8)=[2]/[3,2]/[3,2,3]（e2e V67-01 行形态期望单源；computed 577 域变体 n/m 同段）', () => {
+    // [R3 裁定] use-capacity-layout 读数归一化（computed−pad−border=577−27.2）
+    // ——capacity 契约域「月框内容坐标」对齐；(549.8+72)/200→3、(549.8−28)/200→2
+    // 与 577 域同段（地板参考形不变）；577 保留为纯函数变体注记（函数零改）
+    expect(capacities(549.8)).toEqual({ n: 3, m: 2 })
+    expect(capacities(577)).toEqual({ n: 3, m: 2 })
+    expect([partitionRows(2, 549.8), partitionRows(5, 549.8), partitionRows(8, 549.8)]).toEqual([
+      [[0, 1]],
+      [[0, 1, 2], [3, 4]],
+      [[0, 1, 2], [3, 4], [5, 6, 7]]
+    ])
+  })
 })

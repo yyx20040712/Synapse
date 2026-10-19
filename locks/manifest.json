@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-18T21:29:52.755Z",
+    "generatedAt": "2026-10-19T05:23:44.302Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "b67838d48dbbce8c4c5aa36b4d161d26322723fd29d9d6345283abde2f49170e"
+            "sha256": "5cdd9e1b1782f4c149837e6fb00af13909c8feb315bbc9e9f4422f433b080f57"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "8af6437421103b9e9ca137a8279b630307b8fad605e9bbce7570ed86e57decde"
+            "sha256": "4b7aaee071ddc29837ce3b601d39a4ebe75d3dc7e7fd507f09ed92d9d5617aef"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -442,8 +442,12 @@
             "sha256": "0faaacd4112ff3a84e55e649eaa045b4c378ff622f7bb1d0a6ece68e8a480e94"
         },
         {
+            "path": "tests/e2e/lineage-visfb67-floor.spec.ts",
+            "sha256": "5d1e0b948bc427c56b1495adf629745fa38707d0f326ed2f03dc2771688378e8"
+        },
+        {
             "path": "tests/e2e/lineage.spec.ts",
-            "sha256": "93b49e80092974a0207294cacbb12a40288f4eb70f2aad5ee6ad0f6f316eb165"
+            "sha256": "190b2f36c678f233dd92ea2e7e03e98e7cf5b0db6e20406e6a3d36b26a6a3681"
         },
         {
             "path": "tests/e2e/meta-year-month.spec.ts",
@@ -1087,11 +1091,11 @@
         },
         {
             "path": "tests/unit/renderer/lineage-capacity.test.ts",
-            "sha256": "9a5f746ba7b35f2e1bbf9fd55db38433220eb2d9d4444fe0d47b266888c605ec"
+            "sha256": "b751f593347e3943f21660edeede39ec57e6c8d9e252354e04ccb8a3fbee31d5"
         },
         {
             "path": "tests/unit/renderer/lineage-card-drag.test.tsx",
-            "sha256": "dd7d56a95ce183ed7cf3b6fd7beb802f219f61fe8f09631fa30c85746b8cb7c5"
+            "sha256": "81006c53ed9b1803c2f501e792d11a7ca30b3721ae93be61c28aeeee7123898f"
         },
         {
             "path": "tests/unit/renderer/lineage-card-flight.test.ts",
@@ -1127,7 +1131,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-drag-session-grid.test.tsx",
-            "sha256": "497787addfb24b39c3f9627c8bc7417680b14e3c534fce2d50e2b89ded84ac96"
+            "sha256": "0d029d45eb02e84df7545384c03189d78d2340e8945af1ccba8aeb1629636183"
         },
         {
             "path": "tests/unit/renderer/lineage-drawline-esc.test.tsx",
@@ -1315,7 +1319,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-timeline.test.tsx",
-            "sha256": "92f8e1c8dcc7feb383b3600bc6fe9608dbdcfa9b20162ca4f00c0b2967329048"
+            "sha256": "42327dd8477819b6ee01cc85de5c22442d65bdeb04d1de8f93ada39f4d19afd1"
         },
         {
             "path": "tests/unit/renderer/lineage-toolbar-session.test.tsx",
@@ -1327,7 +1331,11 @@
         },
         {
             "path": "tests/unit/renderer/lineage-visfb31-ownscale.test.tsx",
-            "sha256": "2f97dfdc314b75445bc070294d82ac3942a91378bc342313f8ddad84c1a9a9e2"
+            "sha256": "84a52a64b4eed17aa0aae12c445393875fa59a13611efe2652f24d4b269bec49"
+        },
+        {
+            "path": "tests/unit/renderer/lineage-visfb67-floor.test.tsx",
+            "sha256": "b64d9ba1ccb9b71c6abe31bd73c9f2a51df3fde2c0babf7e3e97a9bdcdade467"
         },
         {
             "path": "tests/unit/renderer/lineage-write-queue-merge.test.ts",

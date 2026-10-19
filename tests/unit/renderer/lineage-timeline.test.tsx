@@ -424,8 +424,11 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
 })
 
 describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊录）', () => {
+  // [F-VISFB-67] 断言体翻面：overflow-x hidden→auto（终裁 v3 三改之一——窄视口
+  // 横滚承载）；用例标题「hidden」字样=历史措辞保留（test-surface 基线签名键
+  // 冻结——标题变更走 [locked-change][test-refactor] 基线重生成，主控收口）
   it('容器：.timeline overflow-y auto/overflow-x hidden；.tl-content padding 18px 28px 46px 20px', () => {
-    expect(css).toMatch(/\.timeline\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden/)
+    expect(css).toMatch(/\.timeline\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*auto/)
     expect(css).toMatch(/\.tl-content\s*\{[^}]*padding:\s*18px 28px 46px 20px/)
   })
 
