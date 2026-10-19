@@ -212,7 +212,9 @@ export const recoverySaveResSchema = z.discriminatedUnion('status', [
       epoch: z.number().int().min(0),
       file: recoverySlotFileSchema
     })
-    .strict()
+    .strict(),
+  // [F-RECOV-01 N8] 链深满拒（per-(ws,type) save 链深≥D_max——release/read 豁免）
+  z.object({ status: z.literal('queue-overflow'), epoch: z.number().int().min(0) }).strict()
 ])
 export type RecoverySaveRes = z.infer<typeof recoverySaveResSchema>
 

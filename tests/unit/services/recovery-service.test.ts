@@ -15,7 +15,7 @@ import { RECOVERY_REGISTRY, type LineageRecoveryPayload } from '../../../src/sha
  */
 const tmpDirs: string[] = []
 
-async function mkRoot(): Promise<{ root: string; svc: ReturnType<typeof createRecoveryService> }> {
+async function mkRoot(): Promise<{ root: string; svc: ReturnType<typeof createRecoveryService>; setCurrentWs: (id: string) => void }> {
   const root = await mkdtemp(join(tmpdir(), 'rec-svc-'))
   tmpDirs.push(root)
   let currentWs = 'ws-a'
@@ -266,6 +266,70 @@ describe('F-VISFB-65 recovery.service —— 会话/槽归属/epoch 编排（INV
     const read = await svc.read({ workspaceId: 'ws-a', type: TYPE, token: finalToken })
     if (read.status === 'found') {
       expect((read.payload as LineageRecoveryPayload).queue[0]).toMatchObject({ id: 'two' }) // 后写胜出
+    }
+  })
+})
+
+describe('F-RECOV-01 D_max=8 per-key 链深上界（仅拦 save；release/read 豁免——W7/N8）', () => {
+  it('同键同步 9 连 save：前 8 入链全 saved；第 9 撞 cap=queue-overflow（拒时不占深、携当前 epoch）；落定后深度归零可再写', async () => {
+    const { svc } = await mkRoot()
+    const req = (tag: string) => ({ workspaceId: 'ws-a', type: TYPE, epoch: 0, session: 'sess-1', payload: payload(tag) })
+    const inflight: Promise<Awaited<ReturnType<typeof svc.save>>>[] = []
+    for (let i = 0; i < 8; i += 1) {
+      inflight.push(svc.save(req(`q${i}`))) // 同步批：未落定即入链（深度=8）
+    }
+    const ninth = await svc.save(req('q9')) // cap 检查在入链前同步发生
+    expect(ninth.status).toBe('queue-overflow')
+    if (ninth.status === 'queue-overflow') {
+      expect(ninth.epoch).toBe(0) // typed 判别成员携当前 epoch
+    }
+    const settled = await Promise.all(inflight)
+    for (const r of settled) expect(r.status).toBe('saved')
+    const again = await svc.save(req('q10')) // 深度已归零
+    expect(again.status).toBe('saved')
+  })
+
+  it('异键不受 cap 影响：ws-a 满深时 ws-b 正常入链', async () => {
+    const { svc, setCurrentWs } = await mkRoot()
+    const inflight: Promise<Awaited<ReturnType<typeof svc.save>>>[] = []
+    for (let i = 0; i < 8; i += 1) {
+      inflight.push(svc.save({ workspaceId: 'ws-a', type: TYPE, epoch: 0, session: 'sess-1', payload: payload(`a${i}`) }))
+    }
+    setCurrentWs('ws-b')
+    const rb = await svc.save({ workspaceId: 'ws-b', type: TYPE, epoch: 0, session: 'sess-1', payload: payload('b0') })
+    expect(rb.status).toBe('saved') // per-key 隔离
+    await Promise.all(inflight)
+  })
+
+  it('release/read 豁免：链深满仍可入链执行（clean 收口/读取不可拒）', async () => {
+    const { svc } = await mkRoot()
+    const inflight: Promise<Awaited<ReturnType<typeof svc.save>>>[] = []
+    for (let i = 0; i < 8; i += 1) {
+      inflight.push(svc.save({ workspaceId: 'ws-a', type: TYPE, epoch: 0, session: 'sess-1', payload: payload(`e${i}`) }))
+    }
+    const rel = svc.release({ workspaceId: 'ws-a', type: TYPE, token: 'nope', reason: 'clean' }) // 深度=8 时同步调用
+    const rd = svc.read({ workspaceId: 'ws-a', type: TYPE, token: 'nope' })
+    await expect(rel).resolves.toMatchObject({ status: 'gone' })
+    await expect(rd).resolves.toMatchObject({ status: 'gone' })
+    const settled = await Promise.all(inflight)
+    for (const r of settled) expect(r.status).toBe('saved')
+  })
+
+  it('W12 链序：saveA→saveB→release(A 旧 token) 全序执行——槽终值=B、release=gone 不删不推进（采纳序不压更新写）', async () => {
+    const { svc } = await mkRoot()
+    const r1 = await svc.save({ workspaceId: 'ws-a', type: TYPE, epoch: 0, session: 'sess-1', payload: payload('A') })
+    const tokenA = r1.status === 'saved' ? r1.token : ''
+    const p2 = svc.save({ workspaceId: 'ws-a', type: TYPE, epoch: 0, session: 'sess-1', payload: payload('B') })
+    const pRel = svc.release({ workspaceId: 'ws-a', type: TYPE, token: tokenA, reason: 'discard' })
+    const [r2, rel] = await Promise.all([p2, pRel])
+    expect(r2.status).toBe('saved')
+    expect(rel.status).toBe('gone') // A token 已被 B 覆写→不符→不删
+    if (rel.status === 'gone') expect(rel.epoch).toBe(0) // 不推进
+    const peek = await svc.peek({ workspaceId: 'ws-a' })
+    expect(peek.slots[TYPE]!.status).toBe('available') // B 留驻
+    const read = await svc.read({ workspaceId: 'ws-a', type: TYPE, token: peek.slots[TYPE]!.file!.token })
+    if (read.status === 'found') {
+      expect((read.payload as LineageRecoveryPayload).queue[0]).toMatchObject({ id: 'B' }) // 槽终值=B
     }
   })
 })

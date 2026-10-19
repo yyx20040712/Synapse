@@ -37,6 +37,7 @@ import {
 } from '../../../src/renderer/features/lineage/lineage-note-draft'
 import {
   enterWorkspaceRecovery,
+  getRecoveryState,
   initRecoveryScheduler,
   resetRecoveryScheduler
 } from '../../../src/renderer/features/lineage/recoveryScheduler'
@@ -246,5 +247,29 @@ describe('F-VISFB-65 草稿四态：commit 窗去重判据+快照生命周期（
     stashRestoreDraft({ noteId: 'f1', text: '恢复稿', asNewNote: false })
     expect(consumeRestoreDraft()).toEqual({ noteId: 'f1', text: '恢复稿', asNewNote: false })
     expect(consumeRestoreDraft()).toBeNull()
+  })
+})
+
+describe('F-RECOV-01 溢出契约贯通（N4：queue-overflow→退避→unavailable→成功清除）', () => {
+  it('save=queue-overflow：编辑路径计 failStreak 走退避；4 连溢出→degraded(kind=unavailable)；成功清除', async () => {
+    vi.useFakeTimers()
+    try {
+      stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'queue-overflow', epoch: 0 } })
+      useLineageStore.getState().moveNode('A', 3, 4) // 编辑单元→enqueue→notify
+      await vi.advanceTimersByTimeAsync(300) // 首发=溢出拒
+      await vi.advanceTimersByTimeAsync(1000) // 退避 1
+      await vi.advanceTimersByTimeAsync(2000) // 退避 2
+      await vi.advanceTimersByTimeAsync(4000) // 退避 3
+      expect(stubApi.recovery.save).toHaveBeenCalledTimes(4)
+      expect(getRecoveryState().degraded).toBe(true)
+      expect(getRecoveryState().kind).toBe('unavailable')
+      stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'saved', token: 't9', epoch: 0 } })
+      useLineageStore.getState().moveNode('A', 5, 6)
+      await vi.advanceTimersByTimeAsync(300)
+      expect(stubApi.recovery.save).toHaveBeenCalledTimes(5)
+      expect(getRecoveryState().degraded).toBe(false) // 成功清除
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -94,6 +94,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0025 | DB 契约战役批 DB-1 数据契约冻结（F-DBCAMP-01——016-019 四迁移+INV-121~126：folder_id NOT NULL 真重建〔fkOff 模式〕/is_starred 星标/app_meta 身份载体〔owner uuid+设备 token〕/tags 多域化〔UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6〕；**folder↔graph 契约=结构性投影不建表**〔用户 2026-10-08 裁决①「一个文件夹不允许多张脉络图，必须一一对应」——图身份≡lineage_nodes.folder_id，无独立 graphs 表；v165 探针差异④「folder↔graph 落法」就此勘正关闭〕；〔甲乙丙〕三裁决=存量归主图/移夹标签留原域/筛选上限不动；决策正文单源=docs/design/2026-10-08_f-dbcamp01-design.md v1.2+§11 终裁记录+§12 用户呈裁落定，不另立 adr 正件防双源） |
 | 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
 | 0027 | 恢复副本统一管理（F-VISFB-65——WPS 式丢稿防御前两道防线：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单一存储位+shared RECOVERY_REGISTRY 类型注册表（命名/schema/生命周期单源，为 reader 草稿族预留）+每 (工作区,类型) 单槽覆写；消费=takeOver 超越（token+epoch 双校验无空窗）；删除=release token 作用域+epoch 删除屏障；与 DB 落库解耦（重放幂等兜底）；决策正文单源=docs/adr/0027-recovery-copy-unified-management.md，设计链终态=仓外 20261019-fvisfb65-impl/65-design-final.md） |
+| 0029 | 恢复副本常态写 never-settle 治理（F-RECOV-01——ADR-0027 域行为演进：慢盘语义前提=常态写永不因超时取消/判败（仅解除观测）；renderer 双阈值看门狗 T_slow=10s 降级呈现/T_stuck=60s 逻辑弃置+ghost 迟到对账（token 双账本）；main serialize 链 per-key save 深上界 D_max=8 回 queue-overflow（release/read 豁免、peek 不走链）；degraded 期探针保活自愈（经 pump 单飞，每代探针 ghost ≤1）；三档 chip（缓慢/未确认/不可用+重启缀）；设计链=v2+主控终裁 v3〔仓外 20261020-nightb/recoV01〕；不变量=INV-171..174） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -148,6 +149,23 @@ card-drag-session 两域共用；存量 border-box/内容坐标 27.2px 契约错
 CI 1024 与本地 1280 own 几何同构（结构性收益）。不变量=INV-169；zoom>100%
 溢出滚动承载（主控裁定可复议）；A2 全局冻结/640 镶边/横向 autoscroll=呈批
 未实施。测试面=V67-01..07+阶跃边界+门二双变异红证。
+
+[F-RECOV-01]（2026-10-20）恢复副本常态 save never-settle 治理（ADR-0029）：ADR-0027
+域行为演进——语义前提=慢盘不误判丢稿（常态写永不因超时取消/判败，超时仅解除观测，
+红线承载=watchdog「一切取消语义不存在于本件」）；renderer 侧双阈值看门狗
+（T_slow=10s→chip slow「写入缓慢」；T_stuck=60s 绝对 deadline→逻辑弃置=inFlight
+解除+op 物理留驻 ghost+迟到对账〔token 双账本：物理账本无条件记账/采纳账本仅 gen 符/
+chip 清除仅 gen 符∧无新在途〕）；gen++ 同步弃置在途+bounded drain（race 1500ms——
+INV-161 锁测语义保真）；main 侧 serialize 链 per-key save 深上界 D_max=8（先查后入链
+回 RecoverySaveRes 'queue-overflow'——shared schemas zod 联合单源；release/read 豁免、
+peek 不走链=决策面永不堵）；degraded 期探针保活（经 pump 单飞；每代探针 ghost ≤1、
+到点核查未安息=计失败观测不实发——W8 终态 unavailable+「重启应用可恢复」缀可达）；
+拆件=recoveryWatchdog.ts（双阈值+探针调度）/recoveryBackoff.ts（纯参数表）/
+recoveryEntry.ts（ws-entry 五符号迁入，端口注入）；RecoveryBar 三档 chip+pending 并列
+形态。不变量=INV-171..174（INV-166/167 扩展注）。测试面=S1-S17 锚族+D_max 矩阵+
+变异红证（executor 13 针+门二独立复证 3 针）；设计链=仓外 20261020-nightb/recoV01
+（v1→r1 返工→v2→r2 返工→主控终裁 v3）。遗留呈报=D 面裁出（startupScan hang=应用
+启动治理域另立）/文案族与参数初值待用户复议。
 
 [F-VISFB-65]（2026-10-19）恢复副本统一管理批改（ADR-0027）：IPC 通道 +4（recovery
 域：peek/save/read/release——invoke 应答制，请求显式携带 workspaceId 受

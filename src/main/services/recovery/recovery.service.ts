@@ -16,6 +16,10 @@
  *   ——token=真 token 或 opaque，放弃唯一凭证）。
  * - startupScan：根 ensure→孤儿目录清理→逐 (ws,type) tmp 提升（IPC 注册前
  *   bootstrap 调用）。
+ * - [F-RECOV-01 N8/W7] save 链深上界 D_max=8（per-(ws,type)）：入链前查深
+ *   （拒=queue-overflow 新 status——typed，shared/recovery/schemas），入链
+ *   即 ++、settle finally--（拒时不占深）；release/read 豁免（clean 收口与
+ *   读取不可拒——豁免有界性假设=用户动作频度有界）；peek 不走链（既有事实）。
  *
  * ── 不变量锚（INV-157/158/159/160）──
  * 单槽恒一；外会话/未消费副本不可覆写（takeOver 双校验例外）；release 先删
@@ -55,6 +59,9 @@ function invalidReq(message: string): RecoveryDomainError {
   return new RecoveryDomainError('INVALID_REQUEST', message)
 }
 
+/** [F-RECOV-01] per-(ws,type) save 链深上界（W7 终裁 D_max=8——仅拦 save） */
+const SAVE_CHAIN_MAX = 8
+
 export interface RecoveryServiceDeps {
   /** recovery 根目录（=<userData>/recovery——应用级单例注入） */
   recoveryRoot: string
@@ -77,6 +84,8 @@ export function createRecoveryService(deps: RecoveryServiceDeps): RecoveryServic
   const epochs = new Map<string, number>()
   /** per-(ws,type) 串行链（同键操作全序——并发 save/release 不交错） */
   const chains = new Map<string, Promise<unknown>>()
+  /** [F-RECOV-01] per-key save 在链深（入链 ++／settle finally——；release/read 不计） */
+  const saveDepth = new Map<string, number>()
 
   const keyOf = (ws: string, type: string): string => `${ws}\u0000${type}`
   const dirOf = (ws: string): string => join(recoveryRoot, ws)
@@ -138,29 +147,38 @@ export function createRecoveryService(deps: RecoveryServiceDeps): RecoveryServic
       if (!parsed.success) throw invalidReq(`恢复载荷不合法：${req.type as string}`)
       const payload = parsed.data
       const k = keyOf(req.workspaceId, req.type)
-      return serialize(k, async () => {
-        const curEpoch = epochs.get(k) ?? 0
-        if (req.epoch !== curEpoch) return { status: 'stale' as const, epoch: curEpoch }
-        const dir = dirOf(req.workspaceId)
-        const slot = await readSlot(dir, req.type)
-        // 槽归属：空 / 本人会话最近 token（lastWriterSession 匹配=ownToken 语义）
-        const own = slot.kind === 'available' && slot.lastWriterSession === req.session
-        // [回炉 W6/INV-160] takeOver 仅限 available 槽（可读可覆写面）——invalid/
-        // foreign-version 即便 token 匹配也 pending（不可覆写，仅 release 可收）
-        const takeOver =
-          req.takeOverToken !== undefined && slot.kind === 'available' && slot.token === req.takeOverToken
-        if (!own && !takeOver && slot.kind !== 'empty') {
-          return { status: 'pending' as const, epoch: curEpoch, file: slotFileOf(slot) }
-        }
-        const token = randomUUID()
-        await writeSlotAtomic(dir, req.type, {
-          token,
-          writtenAt: new Date().toISOString(),
-          lastWriterSession: req.session,
-          payload
+      // [F-RECOV-01 N8] 先查后入链（拒时不 ++）；入链即 ++、settle finally--
+      if ((saveDepth.get(k) ?? 0) >= SAVE_CHAIN_MAX) {
+        return { status: 'queue-overflow' as const, epoch: epochs.get(k) ?? 0 }
+      }
+      saveDepth.set(k, (saveDepth.get(k) ?? 0) + 1)
+      try {
+        return await serialize(k, async () => {
+          const curEpoch = epochs.get(k) ?? 0
+          if (req.epoch !== curEpoch) return { status: 'stale' as const, epoch: curEpoch }
+          const dir = dirOf(req.workspaceId)
+          const slot = await readSlot(dir, req.type)
+          // 槽归属：空 / 本人会话最近 token（lastWriterSession 匹配=ownToken 语义）
+          const own = slot.kind === 'available' && slot.lastWriterSession === req.session
+          // [回炉 W6/INV-160] takeOver 仅限 available 槽（可读可覆写面）——invalid/
+          // foreign-version 即便 token 匹配也 pending（不可覆写，仅 release 可收）
+          const takeOver =
+            req.takeOverToken !== undefined && slot.kind === 'available' && slot.token === req.takeOverToken
+          if (!own && !takeOver && slot.kind !== 'empty') {
+            return { status: 'pending' as const, epoch: curEpoch, file: slotFileOf(slot) }
+          }
+          const token = randomUUID()
+          await writeSlotAtomic(dir, req.type, {
+            token,
+            writtenAt: new Date().toISOString(),
+            lastWriterSession: req.session,
+            payload
+          })
+          return { status: 'saved' as const, token, epoch: curEpoch }
         })
-        return { status: 'saved' as const, token, epoch: curEpoch }
-      })
+      } finally {
+        saveDepth.set(k, Math.max((saveDepth.get(k) ?? 1) - 1, 0))
+      }
     },
 
     async read(req) {

@@ -105,3 +105,65 @@ describe('F-VISFB-65 RecoveryBar —— 确认条四行形+chip（§6 呈现锚�
     expect(testid('recovery-reopen')).not.toBeNull()
   })
 })
+
+describe('F-RECOV-01 RecoveryBar —— degraded 三档+重启缀+pending 单 chip 位优先', () => {
+  it('kind 三档文案：slow/stuck-pending/unavailable（不称不可用——红线①）+重启缀', () => {
+    mountBar(state({ phase: 'open', file: null, slotKind: null, degraded: true, kind: 'slow' }))
+    expect(testid('recovery-chips')?.textContent).toContain('恢复副本写入缓慢，正在等待磁盘')
+    act(() => {
+      root?.render(
+        <RecoveryBar
+          state={state({ phase: 'open', file: null, slotKind: null, degraded: true, kind: 'stuck-pending' })}
+          onRestore={vi.fn()}
+          onDiscard={vi.fn()}
+          onDefer={vi.fn()}
+          onReopen={vi.fn()}
+        />
+      )
+    })
+    expect(testid('recovery-chips')?.textContent).toContain('恢复副本写入状态未确认，正在重试确认')
+    expect(testid('recovery-chips')?.textContent).not.toContain('恢复副本不可用')
+    act(() => {
+      root?.render(
+        <RecoveryBar
+          state={state({ phase: 'open', file: null, slotKind: null, degraded: true, kind: 'unavailable', restartHint: true })}
+          onRestore={vi.fn()}
+          onDiscard={vi.fn()}
+          onDefer={vi.fn()}
+          onReopen={vi.fn()}
+        />
+      )
+    })
+    const chips = testid('recovery-chips')?.textContent ?? ''
+    expect(chips).toContain('恢复副本不可用，当前编辑未受保护')
+    expect(chips).toContain('重启应用可恢复') // W8 终态加缀（probeFailStreak≥3）
+  })
+
+  it('pending×degraded 单 chip 位 pending 优先：slow/stuck-pending 让位（unavailable 并列=既有锁）', () => {
+    mountBar(state({ phase: 'open', file: null, slotKind: null, pendingChip: true, degraded: true, kind: 'slow' }))
+    let chips = testid('recovery-chips')?.textContent ?? ''
+    expect(chips).toContain('恢复副本待处理，当前编辑未受保护')
+    expect(chips).not.toContain('恢复副本写入缓慢') // slow 让位（degraded 态内部保留——解除后复显）
+    act(() => {
+      root?.render(
+        <RecoveryBar
+          state={state({ phase: 'open', file: null, slotKind: null, pendingChip: true, degraded: true, kind: 'stuck-pending' })}
+          onRestore={vi.fn()}
+          onDiscard={vi.fn()}
+          onDefer={vi.fn()}
+          onReopen={vi.fn()}
+        />
+      )
+    })
+    chips = testid('recovery-chips')?.textContent ?? ''
+    expect(chips).not.toContain('恢复副本写入状态未确认') // stuck-pending 让位
+    expect(chips).toContain('恢复副本待处理，当前编辑未受保护')
+  })
+
+  it('R6 unavailable×pending 并列：两 chip 同现（数据未保护语义重——不讓位）', () => {
+    mountBar(state({ phase: 'open', file: null, slotKind: null, pendingChip: true, degraded: true, kind: 'unavailable' }))
+    const chips = testid('recovery-chips')?.textContent ?? ''
+    expect(chips).toContain('恢复副本待处理，当前编辑未受保护')
+    expect(chips).toContain('恢复副本不可用，当前编辑未受保护')
+  })
+})
