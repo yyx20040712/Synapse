@@ -230,11 +230,15 @@ development Model Selection+loop-engineering references/06）；**架构与
 - **Linux（现役=VMware 虚拟机 Ubuntu 24.04.5，X11 桌面）+ Electron 44**（44.4.3，
   Chromium M152/内嵌 Node 24/ABI 149）。e2e 开箱即用（electron linux dist 经
   npmmirror 镜像随 npm ci 落位+playwright——WSLg 单次全量 108/108〔v181，
-  2026-10-13，108 用例时代〕；VMware e2e 底色〔2026-10-14 排查场定谳〕=深夜
-  automation 窗稳定红（FLK-02 几何族+FLK-03 窗口状态族两环境级豁免单点——
-  白天定向+全量双跑两票用例绿+CI windows-latest 三票用例绿，guest 环境假设全排除=环境登记态）
-  +FLK-01 输入事件类偶发族（白天未复现，open 沿承）——**判读口径=automation
-  清晨窗两红豁免/白天窗全量=权威**（单源=registry FLK 三票行+flake 台账）；CI
+  2026-10-13，108 用例时代〕；VMware e2e 时间相关 flake 面〔2026-10-14 排查场
+  定谳+**2026-10-19 用户裁决废除窗口口径**〕=FLK-01 输入事件偶发族+FLK-02
+  几何族+FLK-03 窗口状态族（历史形态呈深夜稳定红/白天绿，guest 内环境假设
+  已全排除〔无 suspend/屏保/DPMS/monitors 变动〕——残余解释面=宿主/虚拟化层，
+  未根治）。**判读口径（用户 2026-10-19 逐字「彻底取消所谓白天窗描述，
+  一个稳定的软件怎么能受时间影响呢」）=全天同一标准：红即红，非确定失败
+  单现复跑定绿按通则，无按时段豁免、无择窗排程——三族再红一律按待根治
+  缺陷立案（承接=F-E2EFLK-01；FLK-02/03 旧「环境登记态」处置同日失效）**；
+  CI
   面底色=windows-latest runner 虚拟屏 1024×768 钳制窗口（DEFAULT_BOUNDS
   1280×800 被 clampBounds——窄视口下布局容量形态与本地 1280×800 不同构：
   月框低容量区同月多卡分行+错位、卡可被推出视口；F-CIFLK-01 已清偿
