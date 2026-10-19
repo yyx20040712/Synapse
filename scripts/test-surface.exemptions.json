@@ -640,8 +640,8 @@
     {
       "file": "tests/e2e/selection-twocol.spec.ts",
       "skipSiteText": "test.skip( process.env.CI === 'true' && process.platform === 'win32', '延期：windows-latest CI 确定红排查中 [F-VISFB-53CI-01]（B3 收口立案——本地绿/CI 零块三 run 同指纹）' )",
-      "reason": "F-VISFB-53CI-01 立案门：windows-latest CI 确定红（三 run 六 attempt 同指纹零块）本地绿——声明式平台门非静默缩测，排查票闭后撤门同笔退役豁免",
-      "rulingLink": "tickets/registry.ts F-VISFB-53CI-01（B3 收口 CI 回执条款同指纹立案线——runId=20261017-visfbb3）"
+      "reason": "F-VISFB-53CI-01 立案门：windows-latest CI 确定红（三 run 六 attempt 同指纹零块）本地绿——声明式平台门非静默缩测，排查票闭后撤门同笔退役豁免。〔2026-10-19 修复批注记：门已随 A' 修复撤除（ef0df9e4）——本条现阶段承载 SKIPSITE_REMOVED retiring 面对账（基线仍含该门），随 test-surface 基线再生成（挂账 v220 §5 先批 3 零命中豁免清理）同笔退役，勿提前手删（提前删=check 红）〕",
+      "rulingLink": "tickets/registry.ts F-VISFB-53CI-01（B3 收口 CI 回执条款同指纹立案线——runId=20261017-visfbb3；修复批 runId=20261019-sel53ci）"
     },
     {
       "file": "tests/e2e/reader-text.spec.ts",

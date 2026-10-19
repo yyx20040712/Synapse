@@ -237,33 +237,6 @@ async function installSel53EventRecorder(win: Page): Promise<void> {
   })
 }
 
-/** [F-VISFB-53CI-01 诊断轮二] 选区摘要（节点身份带 class+子数——锚 DIV 定位面） */
-async function sel53SelectionState(win: Page): Promise<Record<string, unknown>> {
-  return win.evaluate(() => {
-    const sel = window.getSelection()
-    if (sel === null) return { present: false }
-    const desc = (n: Node | null): string | null => {
-      if (n === null) return null
-      if (n.nodeType === 3) return `text:${(n as Text).data.slice(0, 20)}`
-      const el = n as Element
-      const cls = el.classList && el.classList.length ? `.${Array.from(el.classList).join('.')}` : ''
-      const kids = el.childElementCount !== undefined ? `(children=${el.childElementCount})` : ''
-      const text = el.textContent === null ? '' : el.textContent.slice(0, 24)
-      return `${el.nodeName}${cls}${kids}="${text}"`
-    }
-    return {
-      present: true,
-      rangeCount: sel.rangeCount,
-      isCollapsed: sel.isCollapsed,
-      anchorOffset: sel.anchorOffset,
-      focusOffset: sel.focusOffset,
-      anchorNode: desc(sel.anchorNode),
-      focusNode: desc(sel.focusNode),
-      text: sel.toString().slice(0, 60)
-    }
-  })
-}
-
 /** [F-VISFB-53CI-01 修复·A'] 锚位缓存+帧保活。帧保活=body 无操作 CSS 动画
  *  （opacity 1→1，零视觉/零布局/零 childList）：扩展期停发 mousemove 后无
  *  输入事件=合成器零帧=rAF 饥饿（实测：写已落 selectionchange 已发而 app
@@ -343,6 +316,26 @@ async function sel53ExtendSelectionTo(win: Page, x: number, y: number): Promise<
   )
 }
 
+/** [F-VISFB-53CI-01 修复·A' 轮二] 写后静默等待：几何稳定（连续 3 次采样全等）
+ *  或预算尽——CI 慢 runner 实测（run 39255850641）：rAF 序无保证（k1-N1）+
+ *  写→画排空延迟>停顿窗=采样窗内仍在逐行追平/并块迁移（停顿窗断言红）。
+ *  采样前静默=停顿契约锚在「真空闲稳定态」（快慢边界迁移已落定）。 */
+async function sel53WaitQuiescent(win: Page, budgetMs = 1_500): Promise<void> {
+  const deadline = Date.now() + budgetMs
+  let prev = await rectStylesSnapshot(win)
+  let stable = 0
+  while (Date.now() < deadline && stable < 3) {
+    await win.waitForTimeout(40)
+    const cur = await rectStylesSnapshot(win)
+    if (cur === prev) {
+      stable += 1
+    } else {
+      stable = 0
+    }
+    prev = cur
+  }
+}
+
 // 〔F-VISFB-53CI-01 修复轮 2026-10-19·设计终裁 v2=A'〕根因四轮定谳（run
 // 39237929022/39241064507/39243612387/39246123749）：windows-latest+Electron 44
 // 合成输入栈（CDP Input 全路径）无法产生原生选区扩展——一切鼠标手势退化为
@@ -407,11 +400,9 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
   // 授权 left——CI payload 对比定位分叉点；探针档=仓外 20261019-sel53ci-probe）
   const sel53Pre = await collectSel53PreDiag(win, sx, sy)
   const sel53VerdictData = sel53Verdict(sel53Pre, sx)
-  const sel53PreSel = await sel53SelectionState(win)
   console.log(
     `[sel53-diag] items=${sel53Pre.items.length} layout=${String(sel53VerdictData.kind)} gutter=${JSON.stringify(sel53VerdictData.gutter)} ` +
-      `auth=${JSON.stringify(sel53VerdictData.auth)} hitInTextLayer=${sel53Pre.hit === null ? 'null' : sel53Pre.hit.closestTextLayer} ` +
-      `preSelection=${JSON.stringify(sel53PreSel)}`
+      `auth=${JSON.stringify(sel53VerdictData.auth)} hitInTextLayer=${sel53Pre.hit === null ? 'null' : sel53Pre.hit.closestTextLayer}`
   )
   try {
     await win.mouse.move(sx, sy)
@@ -429,6 +420,9 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
       await sel53ExtendSelectionTo(win, sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
       await win.waitForTimeout(80)
     }
+    // [F-VISFB-53CI-01 修复·A' 轮二] 采样前静默（慢 runner 排空+settle 并块
+    // 迁移落定后快照——停顿窗断言锚真空闲态）
+    await sel53WaitQuiescent(win)
     await expect(win.locator('[data-testid="selection-rect"]').first(), '停顿前 visual 帧块在场').toBeVisible({ timeout: 3_000 })
     const beforePause = await rectSnapshot(win)
     expect(beforePause.count, '停顿前 visual 帧块在场').toBeGreaterThanOrEqual(1)
@@ -485,7 +479,7 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     // 事件序+选区态取证口——W7：CI 再红时的定性依据）
     const sel53Post = await collectSel53PostDiag(win).catch((e: unknown) => ({ error: String(e) }))
     const bundle = JSON.stringify(
-      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
+      { pre: sel53Pre, verdict: sel53VerdictData, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
       null,
       2
     )

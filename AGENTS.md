@@ -249,6 +249,12 @@ development Model Selection+loop-engineering references/06）；**架构与
   再现 element-not-found 间接签名红首查视口外坐标；次生挂账 F-GEOMASSUME-01=
   窄视口卡宽 flex 压缩≠CARD_W 128——维持登记=2026-10-14 用户裁决）；**收口
   CI 回执条款已升格完成定义段（2026-10-14 用户裁决——本段不再承载）**）。
+  **CI 合成输入栈无原生文本选区扩展**（windows-latest+Electron 44——CDP Input
+  全路径含裸 dispatchMouseEvent 与关 setInterceptDrags 均退化为「mousedown 置
+  坍缩光标+move 平移光标」，四轮诊断 2026-10-19 定谳 app 零缺陷；Linux 同路径
+  正常——单源=INV-170②+F-VISFB-53CI-01 批档）：选区类 e2e 的选区产生一律走
+  程序化写（reader-text selectText/selection-twocol A' setBaseAndExtent 先例），
+  禁再以原生拖选扩展形态烧 CI run；真实用户态不受影响（真实输入≠合成输入）。
   **Chromium 边框亚像素平台差**（border 1.6px 声明在 Linux
   DPR=1 下 used value 落定 1px、Windows 保 1.6px）=路由几何面教训——单源=
   routing/detour.ts 头注+F-PLATFORM-01 票面，勿在文档复抄。
