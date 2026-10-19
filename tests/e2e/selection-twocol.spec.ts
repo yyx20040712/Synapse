@@ -264,45 +264,95 @@ async function sel53SelectionState(win: Page): Promise<Record<string, unknown>> 
   })
 }
 
-/** [F-VISFB-53CI-01 诊断轮三] 恢复实验矩阵（失败现场同 run 直接判别可用手势
- *  ——二轮定谳：Windows CI 把拖拽路由成「tap 置光标+drag 移光标」触屏语义，
- *  选区恒坍缩零扩展；三候选手势同场对比）：
- *  plain=复位后纯拖重试（首交互异常假说）/shift=Shift 持按拖（自光标扩展）/
- *  dblclick=双击起拖（词选态拖拽扩展） */
-async function sel53RecoveryExperiment(
-  win: Page,
-  kind: 'plain' | 'shift' | 'dblclick',
-  sx: number,
-  sy: number,
-  ex: number,
-  ey: number
-): Promise<Record<string, unknown>> {
-  await win.evaluate(() => window.getSelection()?.removeAllRanges())
-  await win.waitForTimeout(120)
-  if (kind === 'shift') await win.keyboard.down('Shift')
-  if (kind === 'dblclick') await win.mouse.dblclick(sx, sy)
-  await win.mouse.move(sx, sy)
-  await win.mouse.down()
-  for (let i = 1; i <= 6; i += 1) {
-    await win.mouse.move(sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
-    await win.waitForTimeout(60)
-  }
-  await win.mouse.up()
-  if (kind === 'shift') await win.keyboard.up('Shift')
-  await win.waitForTimeout(300)
-  const selection = await sel53SelectionState(win)
-  const rectsCount = await win.evaluate(() => document.querySelectorAll('[data-testid="selection-rect"]').length)
-  return { kind, selection, rectsCount }
+/** [F-VISFB-53CI-01 修复·A'] 锚位缓存+帧保活。帧保活=body 无操作 CSS 动画
+ *  （opacity 1→1，零视觉/零布局/零 childList）：扩展期停发 mousemove 后无
+ *  输入事件=合成器零帧=rAF 饥饿（实测：写已落 selectionchange 已发而 app
+ *  调度器 rAF 门 evaluate 永不执行〔本地 1024 复现〕）；无条件启动（不与锚
+ *  缓存成败耦合）；寿命=页面。恒值动画持续排帧=Chromium M152（Electron 44）
+ *  实证行为无规范保证——升级失效形态=零块红（暴露方向安全），排查首查本注。
+ *  锚侧守卫（d1-W4）：caret 位不在 textLayer→不缓存（全跳写→跳写计数断言红）；
+ *  缓存前清旧槽防陈旧锚。 */
+async function sel53CacheAnchor(win: Page, x: number, y: number): Promise<void> {
+  await win.evaluate(
+    ({ x, y }) => {
+      const w = window as unknown as {
+        __sel53ext?: { anchorNode: Node; anchorOffset: number; skips: number }
+        __sel53keep?: Animation
+      }
+      w.__sel53keep = document.body.animate([{ opacity: '1' }, { opacity: '1' }], { duration: 60_000, iterations: Infinity })
+      delete w.__sel53ext
+      const doc = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null }
+      const r = doc.caretRangeFromPoint?.(x, y) ?? null
+      if (r === null) return
+      const anchorEl =
+        r.startContainer.nodeType === 1
+          ? (r.startContainer as Element).closest('.textLayer')
+          : r.startContainer.parentElement?.closest('.textLayer') ?? null
+      if (anchorEl === null) return
+      w.__sel53ext = { anchorNode: r.startContainer, anchorOffset: r.startOffset, skips: 0 }
+    },
+    { x, y }
+  )
 }
 
-// 〔F-VISFB-53CI-01 诊断轮 2026-10-19〕撤 2026-10-17 平台门（skipSite 豁免随// 本批转 retiring）——本地探针两形态（1024×768 CI 几何/1920×1080 默认界）已证
-// OnMouseDown 三零块路径结构性不可能：textLayer 行盒 line-height=font-size 钉死
-// 盒高（平台不变量）+中缝左界（54+列宽）≫指针 20% 位（cross-gutter 需列宽
-// <22px）+哨兵可见保证 items 非空——CI「零块」指纹嫌疑收敛到三下游面：
-// ①命中链截断（mousedown target 非 .textLayer 后代）②事件未达 ③rects 存在
-// 但零盒/不可见（红在 toBeVisible 非 count——「零块」实为「零可见块」）。
-// 本轮=诊断红跑取证（CI 产物仅 failure() 上传=票面任务①口径）：失败现场
-// attach 全量诊断 payload；根因修复批随票闭处置本段去留。
+/** [F-VISFB-53CI-01 修复·A'] 程序化扩展写：caretRangeFromPoint 焦点投影+
+ *  setBaseAndExtent 原子写（禁 removeAllRanges+addRange——中间空态污染空帧
+ *  断言）。守卫（锚未缓存/脱挂、caret null、焦点不在 textLayer、写抛错）全
+ *  计入 skips（拖后断言=0）。resolve=rAF 先行+setTimeout 兜底（保活失效不
+ *  挂起）；写→画节拍承运=每步 80ms 等待+断言轮询，不依赖单帧序（k1-N1）。 */
+async function sel53ExtendSelectionTo(win: Page, x: number, y: number): Promise<void> {
+  await win.evaluate(
+    ({ x, y }) =>
+      new Promise<void>((resolve) => {
+        const w = window as unknown as { __sel53ext?: { anchorNode: Node; anchorOffset: number; skips: number } }
+        const ext = w.__sel53ext
+        const settle = (): void => {
+          requestAnimationFrame(() => resolve())
+          setTimeout(resolve, 500)
+        }
+        const countSkip = (): void => {
+          if (ext !== undefined) ext.skips += 1
+          settle()
+        }
+        const sel = window.getSelection()
+        if (ext === undefined || sel === null || !ext.anchorNode.isConnected) {
+          countSkip()
+          return
+        }
+        const doc = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null }
+        const r = doc.caretRangeFromPoint?.(x, y) ?? null
+        const containerEl =
+          r === null
+            ? null
+            : r.startContainer.nodeType === 1
+              ? (r.startContainer as Element).closest('.textLayer')
+              : r.startContainer.parentElement?.closest('.textLayer') ?? null
+        if (r === null || containerEl === null) {
+          countSkip()
+          return
+        }
+        try {
+          sel.setBaseAndExtent(ext.anchorNode, ext.anchorOffset, r.startContainer, r.startOffset)
+        } catch {
+          countSkip()
+          return
+        }
+        settle()
+      }),
+    { x, y }
+  )
+}
+
+// 〔F-VISFB-53CI-01 修复轮 2026-10-19·设计终裁 v2=A'〕根因四轮定谳（run
+// 39237929022/39241064507/39243612387/39246123749）：windows-latest+Electron 44
+// 合成输入栈（CDP Input 全路径）无法产生原生选区扩展——一切鼠标手势退化为
+// 「tap 置光标+drag 移光标」（授权链/管线/绘制在 CI 全健康，app 零缺陷；Linux
+// 同路径正常）。修复=刺激层 A'：真实 mousedown/mouseup（52 授权门+终局链全真）
+// +扩展期程序化选区写（双平台唯一选区源——无 mousemove=无 Windows 坍缩光标
+// 交错〔B4〕亦无 Linux 原生扩展〔W4〕）。覆盖边界（d1-W6）：授权→管线→断言
+// 面零削弱；app mousemove 会话动态仅 8.25px 微移覆盖——原生拖拽路径 CI 面不
+// 再覆盖（本地 Linux 面承载）。「慢拖」契约载体=5+1 步渐进选区变化×80ms+
+// 300ms 停顿。断言原文逐字（指纹门）+追加四条 oracle（W2+回炉收紧）。
 test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条', async ({}, testInfo) => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-sel53-'))
   await bootstrapMigrations(userData)
@@ -343,18 +393,18 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
 
   // 慢拖左栏：行首起 → 逐帧步进右下（栏内）→ 停顿 300ms（>200ms settle 窗）
   // → 续拖小步 → 释放
-  // [CI 回执修复 2026-10-17] ①拖拽终点纵向钳入视口（CI windows-latest 1024×768
-  // 钳制窗——2.2×行高落点可出下缘，出视口鼠标事件不扩选=停顿前零块首现实录）；
-  // ②快照前等待首块可见（慢 runner 上 visual rAF 帧未 flush 即快照=同红面——
-  // expect 等待替代即时快照，语义不变：拖选有块才前进）
+  // [CI 回执修复 2026-10-17] 拖拽终点纵向钳入视口（CI windows-latest 1024×768
+  // 钳制窗——2.2×行高落点可出下缘）；快照前等待首块可见（慢 runner 上 visual
+  // rAF 帧未 flush 即快照=同红面——expect 等待替代即时快照，语义不变）
+  // [F-VISFB-53CI-01 修复·A' 2026-10-19] 扩展段=程序化写步进（真实 mousedown/
+  //   mouseup 保留——52 授权门+终局链全真；根因/设计=头注修复轮段）
   const vh = await win.evaluate(() => window.innerHeight)
   const sx = lb!.x + lb!.width * 0.2
   const sy = lb!.y + lb!.height / 2
   const ex = lb!.x + lb!.width * 0.8
   const ey = Math.min(lb!.y + lb!.height * 2.2, vh - 24)
-  // [F-VISFB-53CI-01 诊断轮] 预拖采集+授权判定（本地健康基线=items 23/
-  // two-column/授权 left——CI payload 与此对比即定位分叉点；探针档=仓外
-  // 20261019-sel53ci-probe）
+  // [F-VISFB-53CI-01] 预拖采集+授权判定（本地健康基线=items 23/two-column/
+  // 授权 left——CI payload 对比定位分叉点；探针档=仓外 20261019-sel53ci-probe）
   const sel53Pre = await collectSel53PreDiag(win, sx, sy)
   const sel53VerdictData = sel53Verdict(sel53Pre, sx)
   const sel53PreSel = await sel53SelectionState(win)
@@ -366,8 +416,17 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
   try {
     await win.mouse.move(sx, sy)
     await win.mouse.down()
-    for (let i = 1; i <= 6; i += 1) {
-      await win.mouse.move(sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
+    await sel53CacheAnchor(win, sx, sy)
+    // [F-VISFB-53CI-01 修复·A' 补] 单步微移（+8,+2）=位移 8.25px（F-12 真划选
+    // 门槛 DRAG_SELECT_THRESHOLD_PX=3——无位移 mouseup=单击语义不出条
+    // 〔selection-events.ts:117〕）；横 8px≪行宽 110px、纵 2px<行高半=恒落
+    // 哨兵行盒内（d1-N1）：Windows 光标平移 selectionchange 在首块前=空帧断言
+    // 窗口外，Linux 原生小扩展随首写原子覆盖
+    await win.mouse.move(sx + 8, sy + 2)
+    // [F-VISFB-53CI-01 修复·A'] 扩展期停发真实 mousemove（B4/W4——双平台选区
+    // 唯一源）；循环 5 步至 5/6 插值点（d1-W1：终点步留停顿后=真渐进）
+    for (let i = 1; i <= 5; i += 1) {
+      await sel53ExtendSelectionTo(win, sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
       await win.waitForTimeout(80)
     }
     await expect(win.locator('[data-testid="selection-rect"]').first(), '停顿前 visual 帧块在场').toBeVisible({ timeout: 3_000 })
@@ -381,7 +440,11 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     expect(pauseSamples[0]!.split(';')[0]!, '首采样首块样式=停顿前锚').toBe(beforePause.first)
     expect(pauseSamples.every((s) => s.length > 0), `停顿窗块数恒 ≥1（采样序=${pauseSamples.map((s) => s.split(';').length).join(',')}）`).toBe(true)
     expect(new Set(pauseSamples).size, `停顿窗几何序列单调稳定（采样序=${pauseSamples.join(' => ')}）`).toBe(1)
-    await win.mouse.move(ex, ey)
+    // [F-VISFB-53CI-01 修复·A'] 续拖小步=停顿后第 6 步渐进写至终点 (ex,ey)
+    // （d1-W1）；释放=真实 mouseup 于微移位非终点（d1-W2：release-affinity 按
+    // 释放点判定——释放点在锚行内非 focus 行上方间隙=零重定向；ey 钳制结构性
+    // 非反向〔d1-W8〕，极端近底形态由 oracle 终态兜底）
+    await sel53ExtendSelectionTo(win, ex, ey)
     await win.mouse.up()
 
     // 终局：工具条在场（mouseup 全量锚定成功——anchor 未退化）
@@ -402,60 +465,27 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     expect(firstNonZero, '拖选期至少一次块渲染记录').toBeGreaterThanOrEqual(0)
     const during = counts.slice(firstNonZero)
     expect(during.every((n) => n > 0), `拖选全程无 0 块空帧记录（记录序=${counts.join(',')}）`).toBe(true)
+
+    // [F-VISFB-53CI-01 修复] 选区 oracle 四面（W2+d1-W3/W5 收紧，追加=指纹门
+    // 超集合法）：跳写计数=0（守卫静默回归红）/长度下界/含 'LCOL ROW'（与锚行
+    // 'LCOL SENTINEL ALPHA' 异串=非恒真，独立于 caretRangeFromPoint 定位=无共模）
+    // /不含 'RCOL'（上界——跨栏写即红）。分工：oracle 验刺激层定位正确性；app
+    // 侧判别由块记录/域断言承载（M2'/M3b 红证面）——勿删其一
+    const sel53FinalText = await win.evaluate(() => window.getSelection()?.toString() ?? '')
+    const sel53Skips = await win.evaluate(
+      () => (window as unknown as { __sel53ext?: { skips: number } }).__sel53ext?.skips ?? -1
+    )
+    expect(sel53Skips, '扩展写零跳写（守卫静默回归红）').toBe(0)
+    expect(sel53FinalText.length, '终局选区非空跨行（oracle）').toBeGreaterThanOrEqual(20)
+    expect(sel53FinalText.includes('LCOL ROW'), '终局选区覆盖后续行（oracle）').toBe(true)
+    expect(sel53FinalText.includes('RCOL'), '终局选区不越栏（oracle 上界）').toBe(false)
   } catch (err) {
-    // [F-VISFB-53CI-01 诊断轮] 失败现场 payload（attach 随 CI failure 产物上传；
-    // best-effort——页面已死时仅存预拖面）
+    // [F-VISFB-53CI-01 修复] 失败现场 payload（attach 随 CI failure 产物上传；
+    // best-effort——页面已死时仅存预拖面。四轮诊断结论已归档 run 链，本段留
+    // 事件序+选区态取证口——W7：CI 再红时的定性依据）
     const sel53Post = await collectSel53PostDiag(win).catch((e: unknown) => ({ error: String(e) }))
-    // [F-VISFB-53CI-01 诊断轮三] 恢复实验矩阵（三手势同场对比——修复方向直证）
-    let sel53Experiments: Record<string, unknown> = {}
-    try {
-      sel53Experiments = {
-        plain: await sel53RecoveryExperiment(win, 'plain', sx, sy, ex, ey),
-        shift: await sel53RecoveryExperiment(win, 'shift', sx, sy, ex, ey),
-        dblclick: await sel53RecoveryExperiment(win, 'dblclick', sx, sy, ex, ey)
-      }
-    } catch (e) {
-      sel53Experiments = { error: String(e) }
-    }
-    // [F-VISFB-53CI-01 诊断轮四] 拖拽拦截假说：playwright 对 chromium 页启用
-    // Input.setInterceptDrags（drag 拦截管道）——三轮三手势全退化为光标放置后，
-    // 剩余机制嫌疑=拦截管道在 Windows 面抑制原生选区扩展。两实验：
-    // nointercept=自有 CDP 会话关拦截后纯拖；rawcdp=自有会话裸
-    // dispatchMouseEvent 全拖链（pointerType 默认 mouse）
-    const sel53Intercept: Record<string, unknown> = {}
-    try {
-      const cdp = await app.context().newCDPSession(win)
-      sel53Intercept.interceptOff = await cdp
-        .send('Input.setInterceptDrags', { enabled: false })
-        .then(() => 'ok', (e: unknown) => `err:${String(e)}`)
-      sel53Intercept.nointercept = await sel53RecoveryExperiment(win, 'plain', sx, sy, ex, ey)
-      await win.evaluate(() => window.getSelection()?.removeAllRanges())
-      await win.waitForTimeout(120)
-      const dispatch = (
-        type: 'mouseMoved' | 'mousePressed' | 'mouseReleased',
-        x: number,
-        y: number,
-        buttons: number,
-        button: 'none' | 'left' = 'none',
-        clickCount = 0
-      ): Promise<unknown> => cdp.send('Input.dispatchMouseEvent', { type, x, y, button, buttons, clickCount })
-      await dispatch('mouseMoved', sx, sy, 0)
-      await dispatch('mousePressed', sx, sy, 1, 'left', 1)
-      for (let i = 1; i <= 6; i += 1) {
-        await dispatch('mouseMoved', sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6, 1, 'left')
-        await win.waitForTimeout(60)
-      }
-      await dispatch('mouseReleased', ex, ey, 0, 'left')
-      await win.waitForTimeout(300)
-      sel53Intercept.rawcdp = {
-        selection: await sel53SelectionState(win),
-        rectsCount: await win.evaluate(() => document.querySelectorAll('[data-testid="selection-rect"]').length)
-      }
-    } catch (e) {
-      sel53Intercept.error = String(e)
-    }
     const bundle = JSON.stringify(
-      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post, experiments: sel53Experiments, intercept: sel53Intercept },
+      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
       null,
       2
     )
