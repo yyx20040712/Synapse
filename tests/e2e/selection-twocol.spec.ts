@@ -150,9 +150,18 @@ function sel53Verdict(pre: Sel53PreDiag, sx: number): Record<string, unknown> {
 }
 
 /** [F-VISFB-53CI-01 诊断轮] 失败现场采集：selection 摘要+rects 全量盒与样式
- *  （可见性判别面：零盒/visibility/display vs 不存在）+变异计数 */
+ *  （可见性判别面：零盒/visibility/display vs 不存在）+变异计数+事件记录
+ *  （轮二：__sel53ev——mousedown/selectstart/selectionchange 到达与阻止态） */
 async function collectSel53PostDiag(win: Page): Promise<Record<string, unknown>> {
   return win.evaluate(() => {
+    const desc = (n: Node | null): string | null => {
+      if (n === null) return null
+      if (n.nodeType === 3) return `text:${(n as Text).data.slice(0, 20)}`
+      const el = n as Element
+      const cls = el.classList && el.classList.length ? `.${Array.from(el.classList).join('.')}` : ''
+      const kids = el.childElementCount !== undefined ? `(children=${el.childElementCount})` : ''
+      return `${el.nodeName}${cls}${kids}`
+    }
     const sel = window.getSelection()
     const selection =
       sel === null
@@ -162,8 +171,8 @@ async function collectSel53PostDiag(win: Page): Promise<Record<string, unknown>>
             isCollapsed: sel.isCollapsed,
             anchorOffset: sel.anchorOffset,
             focusOffset: sel.focusOffset,
-            anchorNode: sel.anchorNode === null ? null : sel.anchorNode.nodeType === 3 ? `text:${(sel.anchorNode as Text).data.slice(0, 20)}` : sel.anchorNode.nodeName,
-            focusNode: sel.focusNode === null ? null : sel.focusNode.nodeType === 3 ? `text:${(sel.focusNode as Text).data.slice(0, 20)}` : sel.focusNode.nodeName,
+            anchorNode: desc(sel.anchorNode),
+            focusNode: desc(sel.focusNode),
             text: sel.toString().slice(0, 80)
           }
     const rects = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="selection-rect"]')).map((b) => {
@@ -179,8 +188,79 @@ async function collectSel53PostDiag(win: Page): Promise<Record<string, unknown>>
         opacity: cs.opacity
       }
     })
-    const w = window as unknown as { __sel53?: { counts: number[] } }
-    return { selection, rectsCount: rects.length, rects, counts: w.__sel53?.counts ?? [], toolbarPresent: document.querySelector('[data-testid="selection-toolbar"]') !== null }
+    const w = window as unknown as { __sel53?: { counts: number[] }; __sel53ev?: { events: unknown[] } }
+    return {
+      selection,
+      rectsCount: rects.length,
+      rects,
+      counts: w.__sel53?.counts ?? [],
+      events: w.__sel53ev?.events ?? [],
+      toolbarPresent: document.querySelector('[data-testid="selection-toolbar"]') !== null
+    }
+  })
+}
+
+/** [F-VISFB-53CI-01 诊断轮二] 页面事件记录器（capture+bubble 双相——事件到达/
+ *  target/默认阻止四问判别：CI 失败态=坍缩光标在 DIV#13 且整场零扩展——
+ *  mousedown 是否到达/target 是否 SPAN/selectstart 是否被阻在录） */
+async function installSel53EventRecorder(win: Page): Promise<void> {
+  await win.evaluate(() => {
+    const w = window as unknown as { __sel53ev?: { events: unknown[] } }
+    w.__sel53ev = { events: [] }
+    const desc = (t: EventTarget | null): string => {
+      if (t instanceof Element) {
+        return t.tagName + (t.classList.length ? `.${Array.from(t.classList).join('.')}` : '')
+      }
+      return t === null ? 'null' : String(t)
+    }
+    const push = (e: Event, phase: string): void => {
+      const ev = w.__sel53ev!.events
+      if (ev.length > 120) return
+      const me = e as MouseEvent
+      if (e.type === 'mousemove' && ev.length > 40) return
+      ev.push({ type: e.type, phase, x: me.clientX, y: me.clientY, button: me.button, buttons: me.buttons, target: desc(e.target), prevented: e.defaultPrevented })
+    }
+    for (const type of ['mousedown', 'mouseup', 'mousemove', 'selectstart'] as const) {
+      document.addEventListener(type, (e) => push(e, 'capture'), true)
+      document.addEventListener(type, (e) => push(e, 'bubble'), false)
+    }
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection()
+      w.__sel53ev!.events.push({
+        type: 'selectionchange',
+        collapsed: sel?.isCollapsed ?? null,
+        rangeCount: sel?.rangeCount ?? null,
+        anchor: desc(sel?.anchorNode ?? null),
+        offset: sel?.anchorOffset ?? null
+      })
+    })
+  })
+}
+
+/** [F-VISFB-53CI-01 诊断轮二] 选区摘要（节点身份带 class+子数——锚 DIV 定位面） */
+async function sel53SelectionState(win: Page): Promise<Record<string, unknown>> {
+  return win.evaluate(() => {
+    const sel = window.getSelection()
+    if (sel === null) return { present: false }
+    const desc = (n: Node | null): string | null => {
+      if (n === null) return null
+      if (n.nodeType === 3) return `text:${(n as Text).data.slice(0, 20)}`
+      const el = n as Element
+      const cls = el.classList && el.classList.length ? `.${Array.from(el.classList).join('.')}` : ''
+      const kids = el.childElementCount !== undefined ? `(children=${el.childElementCount})` : ''
+      const text = el.textContent === null ? '' : el.textContent.slice(0, 24)
+      return `${el.nodeName}${cls}${kids}="${text}"`
+    }
+    return {
+      present: true,
+      rangeCount: sel.rangeCount,
+      isCollapsed: sel.isCollapsed,
+      anchorOffset: sel.anchorOffset,
+      focusOffset: sel.focusOffset,
+      anchorNode: desc(sel.anchorNode),
+      focusNode: desc(sel.focusNode),
+      text: sel.toString().slice(0, 60)
+    }
   })
 }
 
@@ -228,6 +308,8 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
   const gutterMid = (lb!.x + lb!.width + rb!.x) / 2
 
   await installFrameObserver(win)
+  // [F-VISFB-53CI-01 诊断轮二] 事件记录器（拖前装——事件到达/target/阻止态）
+  await installSel53EventRecorder(win)
 
   // 慢拖左栏：行首起 → 逐帧步进右下（栏内）→ 停顿 300ms（>200ms settle 窗）
   // → 续拖小步 → 释放
@@ -245,9 +327,11 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
   // 20261019-sel53ci-probe）
   const sel53Pre = await collectSel53PreDiag(win, sx, sy)
   const sel53VerdictData = sel53Verdict(sel53Pre, sx)
+  const sel53PreSel = await sel53SelectionState(win)
   console.log(
     `[sel53-diag] items=${sel53Pre.items.length} layout=${String(sel53VerdictData.kind)} gutter=${JSON.stringify(sel53VerdictData.gutter)} ` +
-      `auth=${JSON.stringify(sel53VerdictData.auth)} hitInTextLayer=${sel53Pre.hit === null ? 'null' : sel53Pre.hit.closestTextLayer}`
+      `auth=${JSON.stringify(sel53VerdictData.auth)} hitInTextLayer=${sel53Pre.hit === null ? 'null' : sel53Pre.hit.closestTextLayer} ` +
+      `preSelection=${JSON.stringify(sel53PreSel)}`
   )
   try {
     await win.mouse.move(sx, sy)
@@ -293,7 +377,7 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     // best-effort——页面已死时仅存预拖面）
     const sel53Post = await collectSel53PostDiag(win).catch((e: unknown) => ({ error: String(e) }))
     const bundle = JSON.stringify(
-      { pre: sel53Pre, verdict: sel53VerdictData, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
+      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
       null,
       2
     )
