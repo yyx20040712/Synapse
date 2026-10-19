@@ -92,8 +92,12 @@ impl/kickoff-prompt-v2.md——双会话互扰教训 v218 §3-1）。
 
 ## §5 CI 回执
 
-- 2426c3c6（v221 补记）run 39270360444 **success 亲验**（原留场 A 首动作
-  核验——已绿，场 A 免核此笔）。
-- e9a81bec（v221 勘误）+b28f5119（F-LINEUI-01 闭批）→ run 39289681474
-  **=场 A 首动作核验对象**（docs 笔被同 run 承载——GitHub 按推送 head
-  触发单 run）。
+- 2426c3c6（v221 补记）run 39270360444 **success 亲验**。
+- F-LINEUI-01 实现批 CI 验证：run 39289681474（b28f5119 直接触发）被
+  docs 笔推送 **supersede 取消**（同分支新推送取消旧 run——非失败，
+  v221 时代 1c7b7041 同形态判读）；实际承载=run **39289952140**
+  （head=6bf945fa，代码含 b28f5119 全部变更）**success 亲验
+  （2026-10-20 凌晨）——闭批要件满足**。
+- F-DOCS-01 立票笔（registry+v222 路线表，本地 98165694 起）推送触发的
+  run **=场 A 首动作核验对象**（docs-only 变更，风险面=quality/tickets
+  关卡）。
