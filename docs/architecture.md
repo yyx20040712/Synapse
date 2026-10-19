@@ -136,6 +136,19 @@ papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage
 lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
 +lineagePending（INV-91 S1 队列闸）。
 
+[F-VISFB-67]（2026-10-19）脉络时间线布局地板化（ADR-0028）：`.month-frame`
+border-box 地板 `--tl-frame-min:577px`（CSS 单源变量，默认窗 1280 月框形）+
+`.tl-content min-width calc(+140)` 双消费式（边层铺满）+`:not(:has(.month-frame))`
+空图守卫+`.tl-card flex-shrink:0`+`.timeline overflow-x:auto`——亚默认窗
+（clientWidth<717）恒参考形 [2]/[3,2]/[3,2,3]，窄视口低容量分行/卡宽压缩退役
+（用户裁决 2026-10-18）；capacity 输入统一归一化内容盒宽
+（`readFrameContentWidth` 五值单源——布局 use-capacity-layout+拖拽
+card-drag-session 两域共用；存量 border-box/内容坐标 27.2px 契约错位与容量
+入段带过估根治〔走线域 detour 常量派生 1.2px 窗残余=F-DETOURW-01〕）；
+CI 1024 与本地 1280 own 几何同构（结构性收益）。不变量=INV-169；zoom>100%
+溢出滚动承载（主控裁定可复议）；A2 全局冻结/640 镶边/横向 autoscroll=呈批
+未实施。测试面=V67-01..07+阶跃边界+门二双变异红证。
+
 [F-VISFB-65]（2026-10-19）恢复副本统一管理批改（ADR-0027）：IPC 通道 +4（recovery
 域：peek/save/read/release——invoke 应答制，请求显式携带 workspaceId 受
 guardWorkspace 校验）；跨进程类型单源迁移=writeActionSchema 自 renderer
@@ -412,7 +425,7 @@ AGENTS.md「环境事实」单源，此处不复制。
   并吞=带派生单源——INV-113/114 结构前提）。`lineage-routing.ts`=消费面
   re-export 桶文件不变；行为不变量=INV-112~117。
 - [F-SLOTGRID-01]（2026-10-08 实施批 U1-U4 终态，ADR-0024）砖砌网格布局+
-  走线正统化：`capacity.ts` 容量公式纯函数族（N=⌊(W+72)/200⌋/M=⌊(W+72−100)/
+  走线正统化：`capacity.ts` 容量公式纯函数族（[F-VISFB-67 地板化]W 输入=归一化内容盒宽单源 readFrameContentWidth+CSS 地板 577——INV-169；N=⌊(W+72)/200⌋/M=⌊(W+72−100)/
   200⌋/相位 o=100/数组序贪心分行/index↔(row,col) 双射/hitTest——INV-
   SLOTGRID-01）+`use-capacity-layout.ts`（W=getComputedStyle transform 正交
   /RO→rAF 合并/routeEpoch 三源 bump=布局变更即重算走线）+TimelineYears

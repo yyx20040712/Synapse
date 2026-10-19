@@ -167,11 +167,12 @@
     {
       "spec": "tests/e2e/smoke.spec.ts",
       "case": "frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）（:116）",
-      "count": 5,
+      "count": 13,
       "fingerprint": "同值型稳定（:148 expect.poll BrowserWindow.isMaximized 5s 轮询恒收 false——Expected true/Received false，X11 WM 最大化面）；五数据点同指纹=U6 批 executor 全量红+定向复跑红+基线 worktree 红（自述未留档）+probe 主树全量红+基线树 worktree@57b442ea 无 U6 diff 复现红（档内四数据点——U6 diff 致病排除，21 件 diff 零窗口/标题栏/main 接触面）",
-      "status": "resolved",
+      "status": "filed",
       "first_seen": "2026-10-14",
-      "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-03 环境登记翻 done）：深夜 automation 窗环境级稳定红、白天窗绿——白天定向+全量双跑两票用例绿+CI windows-latest 4 run 本用例绿；guest 环境假设全排除（同 FLK-02 条）；翻转窗实测 03:21 绿→06:00 红；判读口径同 FLK-02 条"
+      "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-03 环境登记翻 done）：深夜 automation 窗环境级稳定红、白天窗绿——白天定向+全量双跑两票用例绿+CI windows-latest 4 run 本用例绿；guest 环境假设全排除（同 FLK-02 条）；翻转窗实测 03:21 绿→06:00 红；判读口径同 FLK-02 条",
+      "note": "；[F-VISFB-67 批追记 2026-10-19] 本地 xvfb 再 8 现同指纹（isMaximized poll Expected true/Received false@:148——时间戳批档 20261019-fvisfb67-impl §6-R4），改前对照同红+CI 历绿=本地环境面（xvfb maximize 语义）；历史 5+本批 8=13 已过立案线，并入 F-E2EFLK-01 待根治承接（勘误：本批 gate2 probe 曾误跑 :13 侧栏例，「标题栏本跑未复现」作废——批档勘误在录）"
     },
     {
       "spec": "tests/e2e/lineage.spec.ts",
@@ -246,10 +247,11 @@
     {
       "spec": "tests/e2e/ai-cascade-delete.spec.ts",
       "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
-      "count": 2,
+      "count": 3,
       "fingerprint": "点击拦截/元素脱挂型（:83 aside 内「AI 会话」tab click——html intercepts pointer events+element detached from DOM 重试后 element(s) not found；未达核心断言面=前置辅助 createNote 后 .tl-note-text 5s 不可见）",
       "first_seen": "2026-10-19",
-      "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）"
+      "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）",
+      "note": "；[F-VISFB-67 批追记 2026-10-19] 1280 全量负载单现→定向复跑 3/3 定绿（observing 口径不变，不销项）"
     }
   ]
 }
