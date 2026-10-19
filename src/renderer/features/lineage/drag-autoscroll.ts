@@ -7,12 +7,15 @@
  *   getCursorClient 返回 **null=尚无有效指针采样**（R1 hasClient 闸：首个
  *   有效采样前 tick 不施滚不调 onScrollFrame）；onScrollFrame=帧协议③④
  *   （幂等；托管泵/tick/scroll 监听三路同调）；
- * - startAutoScroll(s, {managed})：managed=true（缺省）=模块 rAF 泵驱动
- *   （画线/笔记柄/调线）；false=纯 tick（card-drag——会话自有 rAF 顶部调
- *   tick(dtMs)，返回 {scrolled, containerRect}）；
- * - 帧协议：⓪suspend 检查→①读光标（null 闸）→②算深度施 scrollTop→
- *   ③④onScrollFrame（施加后值）。scrolled=**scrollTop 施加前后真差值**
- *   （R12——到界/零位移/未采样恒 false）。
+ * - startAutoScroll(s, {managed, horizontal})：managed=true（缺省）=模块 rAF 泵
+ *   驱动（画线/笔记柄/调线）；false=纯 tick（card-drag——会话自有 rAF 顶部调
+ *   tick(dtMs)，返回 {scrolled, containerRect}）；horizontal（缺省 false=纯 Y
+ *   现状零变）=step 双轴施滚——[F-LINEUI-01①] card-drag 唯一启用点（拖卡至
+ *   视口左右缘画布横滚），managed 三消费方不传=竖向语义零变；
+ * - 帧协议：⓪suspend 检查→①读光标（null 闸）→②算深度施
+ *   scrollTop/scrollLeft（X 轴仅 horizontal——Y 恒算）→③④onScrollFrame
+ *   （施加后值）。scrolled=**scrollTop/scrollLeft 施加前后真差值任一轴真**
+ *   （R12 语义横轴同承——到界/零位移/未采样恒 false）。
  *
  * ── 机制（W-06r2/W-07r2+R2）──
  * - ensure() 单例引用计数：blur/focus（window）+ 容器 frame 事件监听
@@ -22,8 +25,9 @@
  * - 容器 scroll 事件（window capture）→幂等派发 frame 事件→onScrollFrame。
  *
  * ── 速度曲线（§G.3+R27）──
- * - zone=容器 clientHeight×20%（clientHeight≤0→零步进守卫）；Vmax=1200
- *   屏幕 px/s；v=Vmax×(depthPx/zonePx)；dt 钳 ≤50ms。
+ * - zone=容器 clientHeight/clientWidth×20%（≤0→该轴零步进守卫——容器口径
+ *   非视口）；Vmax=1200 屏幕 px/s；v=Vmax×(depthPx/zonePx)；dt 钳 ≤50ms。
+ *   横轴镜像=autoscrollStepX（F-LINEUI-01）。
  */
 export interface AutoScrollSession {
   /** .timeline 根（滚动容器） */
@@ -40,9 +44,10 @@ export interface AutoScrollHandle {
   tick(dtMs: number): { scrolled: boolean; containerRect: DOMRect }
 }
 
-/** 速度上限（屏幕 px/s——§G.3 手算：700px 视口 zone=140px，60fps 最深 20px/帧） */
+/** 速度上限（屏幕 px/s——§G.3 手算：700px 容器 zone=140px，60fps 最深 20px/帧） */
 export const AUTOSCROLL_VMAX = 1200
-/** 触发区高度比（容器 clientHeight 的上下各 20%——裁定 4 逐字） */
+/** 触发区比例（容器 clientHeight/clientWidth 的上下/左右各 20%——裁定 4 逐字；
+ *  横轴同参镜像 F-LINEUI-01①） */
 export const AUTOSCROLL_ZONE_RATIO = 0.2
 /** dt 钳（ms——长帧防跳变） */
 const AUTOSCROLL_DT_CAP_MS = 50
@@ -80,7 +85,7 @@ const g: AutoscrollGlobal = {
   containers: new Map()
 }
 
-/** 深度→速度→位移（纯函数——曲线/dt 钳/零高守卫单测面） */
+/** 深度→速度→位移（纯函数——曲线/dt 钳/零高守卫单测面；横轴镜像=autoscrollStepX） */
 export function autoscrollStep(
   container: { clientHeight: number },
   cursorClientY: number,
@@ -102,6 +107,36 @@ export function autoscrollStep(
   const dt = Math.min(dtMs, AUTOSCROLL_DT_CAP_MS)
   // 向上滚=负位移（scrollTop 减）
   const sign = cursorClientY < topZoneY ? -1 : 1
+  return { scrollPx: sign * v * (dt / 1000), zonePx, depthPx }
+}
+
+/** [F-LINEUI-01①] 深度→速度→位移横轴（纯函数——autoscrollStep 的横轴镜像：
+ * scrollLeft/clientWidth/rectLeft/rectRight 坐标域完全对称；Rule of Three
+ * 第 2 次重复——保持两函数镜像不抽公共核，曲线参数（Vmax/zone 比/dt 钳）
+ * 与容器口径单源共享；左带=负位移（scrollLeft 减）。rectLeft/rectRight 取
+ * border edge（含竖滚动条宽~15px）——与纵向 rectTop/Bottom 含横滚动条的
+ * 既有形态同构沿承，zone 20% 粗粒度下不构成行为偏差不补偿。 */
+export function autoscrollStepX(
+  container: { clientWidth: number },
+  cursorClientX: number,
+  containerRectLeft: number,
+  containerRectRight: number,
+  dtMs: number
+): { scrollPx: number; zonePx: number; depthPx: number } {
+  // 零宽守卫（未布局/隐藏）→零步进（zonePx 除零防线——带内光标位变异判别）
+  if (container.clientWidth <= 0) return { scrollPx: 0, zonePx: 0, depthPx: 0 }
+  const zonePx = container.clientWidth * AUTOSCROLL_ZONE_RATIO
+  const leftZoneX = containerRectLeft + zonePx
+  const rightZoneX = containerRectRight - zonePx
+  let depthPx = 0
+  if (cursorClientX < leftZoneX) depthPx = leftZoneX - cursorClientX
+  else if (cursorClientX > rightZoneX) depthPx = cursorClientX - rightZoneX
+  else return { scrollPx: 0, zonePx, depthPx: 0 }
+  const clampedDepth = Math.min(depthPx, zonePx)
+  const v = AUTOSCROLL_VMAX * (clampedDepth / zonePx)
+  const dt = Math.min(dtMs, AUTOSCROLL_DT_CAP_MS)
+  // 向左滚=负位移（scrollLeft 减）
+  const sign = cursorClientX < leftZoneX ? -1 : 1
   return { scrollPx: sign * v * (dt / 1000), zonePx, depthPx }
 }
 
@@ -172,26 +207,38 @@ function release(s: AutoScrollSession, sessionId: number): void {
 
 export function startAutoScroll(
   s: AutoScrollSession,
-  opts?: { managed?: boolean }
+  opts?: { managed?: boolean; horizontal?: boolean }
 ): AutoScrollHandle {
   const managed = opts?.managed !== false
+  // [F-LINEUI-01①] horizontal 缺省 false=纯 Y 现状零变（managed 三消费方零改）
+  const horizontal = opts?.horizontal === true
   const sessionId = ensure(s)
   let raf = 0
   let last = performance.now()
   let stopped = false
   const step = (dtMs: number): { scrolled: boolean; containerRect: DOMRect } => {
-    // 帧协议⓪~④：suspend→hasClient 闸（R1）→算深度施 scrollTop→真差值（R12）
+    // 帧协议⓪~④：suspend→hasClient 闸（R1）→算深度施双轴→真差值（R12 任一轴真）
     const rect = s.container.getBoundingClientRect()
     if (g.suspended) return { scrolled: false, containerRect: rect }
-    if (s.container.clientHeight <= 0) return { scrolled: false, containerRect: rect }
     const cur = s.getCursorClient()
     if (cur === null) return { scrolled: false, containerRect: rect } // R1 未采样闸
-    const before = s.container.scrollTop
-    const { scrollPx } = autoscrollStep(s.container, cur.clientY, rect.top, rect.bottom, dtMs)
-    if (scrollPx !== 0) s.container.scrollTop += scrollPx
+    // [F-LINEUI-01①·N-5] 外层 clientHeight 守卫按轴拆（旧形零高短路横轴）：
+    // Y 分支守卫 clientHeight（恒算——现状）、X 分支守卫 clientWidth
+    let moved = false
+    if (s.container.clientHeight > 0) {
+      const beforeTop = s.container.scrollTop
+      const { scrollPx } = autoscrollStep(s.container, cur.clientY, rect.top, rect.bottom, dtMs)
+      if (scrollPx !== 0) s.container.scrollTop += scrollPx
+      if (Math.abs(s.container.scrollTop - beforeTop) > 0) moved = true
+    }
+    if (horizontal && s.container.clientWidth > 0) {
+      const beforeLeft = s.container.scrollLeft
+      const { scrollPx } = autoscrollStepX(s.container, cur.clientX, rect.left, rect.right, dtMs)
+      if (scrollPx !== 0) s.container.scrollLeft += scrollPx
+      if (Math.abs(s.container.scrollLeft - beforeLeft) > 0) moved = true
+    }
     // R12：scrolled=施加前后真差值（到界 clamp/零位移=不减不调）
-    const moved = Math.abs(s.container.scrollTop - before) > 0
-    if (moved) s.onScrollFrame() // ③④：施加后重算（幂等——scrollTop=施加后值）
+    if (moved) s.onScrollFrame() // ③④：施加后重算（幂等——scrollTop/scrollLeft=施加后值）
     return { scrolled: moved, containerRect: s.container.getBoundingClientRect() }
   }
   const pump = (): void => {

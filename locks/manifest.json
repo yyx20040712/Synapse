@@ -418,6 +418,10 @@
             "sha256": "c4fc2c65e1e6d8f3b20209254d220acec5ff4ea9d1706843ac38b32c0b82b7cf"
         },
         {
+            "path": "tests/e2e/lineage-lineui01.spec.ts",
+            "sha256": "cd19ab7f3bd554cd74b0821a0983099dcc55c69a9056823ffb0460ad2ae42917"
+        },
+        {
             "path": "tests/e2e/lineage-notes.spec.ts",
             "sha256": "b6471c47db9a8c4858cea8713d6b79b9d88dcf1e1a058ff0ea5bffff952a8cf3"
         },
@@ -1067,7 +1071,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-autoscroll.test.ts",
-            "sha256": "10134edfaa0a791119a37fc4889c392f3bcf22733e8094bba8ade9fd9cdf0626"
+            "sha256": "4fe1efd98532d142a83bfd1b9a4d7197b325952ae6a6d016b658afbe5f13f494"
         },
         {
             "path": "tests/unit/renderer/lineage-board.test.tsx",

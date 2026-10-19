@@ -237,7 +237,9 @@ export function useDragSession(args: {
             }
           }
         },
-        { managed: false }
+        // [F-LINEUI-01①] horizontal:true——卡拖会话=横滚唯一启用点（拖卡至
+        // 视口左右缘画布横滚；画线/笔记柄/调线三 managed 消费方竖向语义零变）
+        { managed: false, horizontal: true }
       )
       // [回炉 R7] 驻留帧循环（effect 域——pending→dragging 换 effect 不拆泵；
       // 未激活帧空转，激活后每帧顶部 tick→（首帧）基准重测）

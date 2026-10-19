@@ -9,6 +9,7 @@ import {
   AUTOSCROLL_VMAX,
   __testAutoscrollState,
   autoscrollStep,
+  autoscrollStepX,
   startAutoScroll
 } from '../../../src/renderer/features/lineage/drag-autoscroll'
 
@@ -306,6 +307,179 @@ describe('F-VISFB-66·会话机制（R1 未采样闸/R2 监听生命周期/R12 �
     expect(frames).toHaveLength(0)
     window.dispatchEvent(new Event('scroll', { bubbles: true }))
     expect(frames.length).toBeGreaterThanOrEqual(1)
+    h.stop()
+  })
+})
+
+describe('F-LINEUI-01·autoscrollStepX 横轴速度曲线（autoscrollStep 横轴镜像——左/右带线性/带间零/零宽守卫/dt 钳/方向符号）', () => {
+  /** 容器夹具：clientWidth=800（zone=160px）——rect left/right 由用例给 */
+  const CONTAINER_W = 800
+
+  it('带间（中带）=零位移（zone 边界内不滚）', () => {
+    const r = autoscrollStepX({ clientWidth: CONTAINER_W }, 400, 0, 800, 16)
+    expect(r.scrollPx).toBe(0)
+    expect(r.depthPx).toBe(0)
+  })
+
+  it('右带深度线性：右带半深处 v=Vmax/2（800×0.2=160 带内 80px 深）', () => {
+    const r = autoscrollStepX({ clientWidth: CONTAINER_W }, 640 + 80, 0, 800, 1000)
+    // depth=80（right zone 起 640）→v=600px/s；dt 钳 50ms→位移=600×0.05=30
+    expect(r.scrollPx).toBeCloseTo((AUTOSCROLL_VMAX / 2) * 0.05, 5)
+  })
+
+  it('左带=负位移（向左滚——scrollLeft 减）+深度线性镜像', () => {
+    const r = autoscrollStepX({ clientWidth: CONTAINER_W }, 160 - 80, 0, 800, 1000)
+    expect(r.scrollPx).toBeLessThan(0)
+    expect(r.scrollPx).toBeCloseTo(-(AUTOSCROLL_VMAX / 2) * 0.05, 5)
+  })
+
+  it('最深封顶=Vmax（depth≥zone 钳 zone）', () => {
+    const r = autoscrollStepX({ clientWidth: CONTAINER_W }, 800 + 500, 0, 800, 1000)
+    expect(r.scrollPx).toBeCloseTo(AUTOSCROLL_VMAX * 0.05, 5) // dt 钳 50ms
+  })
+
+  it('dt 钳 ≤50ms（长帧不跳变）', () => {
+    const r100 = autoscrollStepX({ clientWidth: CONTAINER_W }, 780, 0, 800, 100)
+    const r50 = autoscrollStepX({ clientWidth: CONTAINER_W }, 780, 0, 800, 50)
+    expect(Math.abs(r100.scrollPx)).toBeCloseTo(Math.abs(r50.scrollPx), 5)
+  })
+
+  it('[守卫] clientWidth=0→零步进（未布局守卫——zonePx 除零防线；带内变异光标位：守卫删则 0/0=NaN）', () => {
+    const r = autoscrollStepX({ clientWidth: 0 }, 400, 0, 800, 100)
+    expect(r.scrollPx).toBe(0)
+    expect(r.zonePx).toBe(0)
+    // 判别位：cursor 在 rectLeft 之左（带内形态）——守卫删则 0/0=NaN 即红
+    const r2 = autoscrollStepX({ clientWidth: 0 }, -5, 0, 800, 100)
+    expect(Number.isFinite(r2.scrollPx), '零宽带内=有限零步进（除零防线）').toBe(true)
+    expect(r2.scrollPx).toBe(0)
+  })
+})
+
+describe('F-LINEUI-01·horizontal 门控（缺省 false 零变+X 独立施滚+横轴 R12+按轴守卫）', () => {
+  let container: HTMLElement
+  let framesX: number[]
+  /** scrollLeft/scrollTop 可写域模型（min 0/max 各 500——浏览器 clamp 行为镜像） */
+  let top: number
+  let left: number
+  const MAX_TOP = 500
+  const MAX_LEFT = 500
+
+  /** rect 恒满幅（top/bottom=0..600，left/right=0..800）——按轴守卫用例仅靠
+   *  clientHeight/clientWidth mock 分轴，坐标判域不受影响 */
+  const makeContainer = (h: number, w: number): void => {
+    container = document.createElement('div')
+    Object.defineProperty(container, 'clientHeight', { value: h, configurable: true })
+    Object.defineProperty(container, 'clientWidth', { value: w, configurable: true })
+    Object.defineProperty(container, 'getBoundingClientRect', {
+      value: () => ({ top: 0, bottom: 600, left: 0, right: 800, width: 800, height: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+    top = 0
+    left = 0
+    Object.defineProperty(container, 'scrollTop', {
+      get: () => top,
+      set: (v: number) => {
+        top = Math.max(0, Math.min(MAX_TOP, v))
+      },
+      configurable: true
+    })
+    Object.defineProperty(container, 'scrollLeft', {
+      get: () => left,
+      set: (v: number) => {
+        left = Math.max(0, Math.min(MAX_LEFT, v))
+      },
+      configurable: true
+    })
+    framesX = []
+  }
+
+  const makeSession = (
+    cursor: { x: number; y: number } | null,
+    opts?: { managed?: boolean; horizontal?: boolean }
+  ): ReturnType<typeof startAutoScroll> =>
+    startAutoScroll(
+      {
+        container,
+        getCursorClient: () => (cursor === null ? null : { clientX: cursor.x, clientY: cursor.y }),
+        onScrollFrame: () => framesX.push(container.scrollLeft)
+      },
+      opts
+    )
+
+  beforeEach(() => makeContainer(600, 800))
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('[缺省 false] horizontal 未传+初始 scrollLeft 非零+横带内光标→step 后 scrollLeft 不动（空转也绿的无判别形态禁用）', () => {
+    makeContainer(600, 800)
+    left = 200 // 判别 fixture：非零——X 恒算的实现会推进即红
+    const h = makeSession({ x: 780, y: 300 }) // x=右带内（640 界外）/y=中带
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(false) // y 中带零位移+X 未启用
+    expect(container.scrollLeft).toBe(200) // 不动（门控面直证）
+    expect(framesX).toHaveLength(0)
+    h.stop()
+  })
+
+  it('[horizontal:true] X-only 真差：光标仅横带（纵带外）→scrolled=true+onScrollFrame 被调（横轴独立施滚触发帧协议）', () => {
+    const h = makeSession({ x: 780, y: 300 }, { managed: false, horizontal: true })
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(true)
+    expect(container.scrollLeft).toBeGreaterThan(0)
+    expect(container.scrollTop).toBe(0) // y 中带——纯横轴面
+    expect(framesX.length).toBeGreaterThan(0)
+    expect(framesX[0]!).toBe(container.scrollLeft) // 帧序：onScrollFrame 观测=施加后值
+    h.stop()
+  })
+
+  it('[R12·横] scrollLeft=0 左带驻留：不能为负——真差=0→scrolled false+零 onScrollFrame', () => {
+    expect(container.scrollLeft).toBe(0)
+    const h = makeSession({ x: 30, y: 300 }, { managed: false, horizontal: true })
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(false) // 0 为底——向左无可滚
+    expect(framesX).toHaveLength(0)
+    h.stop()
+  })
+
+  it('[R12·横] scrollLeft=max 右带驻留：钳 max 后真差=0→scrolled false+零 onScrollFrame', () => {
+    left = MAX_LEFT
+    const h = makeSession({ x: 780, y: 300 }, { managed: false, horizontal: true })
+    const r = h.tick(100) // 深带驻留但到界——真差值=0
+    expect(r.scrolled).toBe(false)
+    expect(container.scrollLeft).toBe(MAX_LEFT)
+    expect(framesX).toHaveLength(0)
+    h.stop()
+  })
+
+  it('[左向真差] horizontal:true+左带光标+初始 scrollLeft>0→scrollLeft 减小（「仅加不减」实现在此红——d1-W3：LU-01 左回段有被原生边缘滚动掩盖风险，左向判别力由本例承载）', () => {
+    left = 300
+    const h = makeSession({ x: 30, y: 300 }, { managed: false, horizontal: true })
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(true)
+    expect(container.scrollLeft).toBeLessThan(300) // 左带=scrollLeft 减（负向施滚）
+    expect(framesX.length).toBeGreaterThan(0) // 左向真差同样触发帧协议
+    h.stop()
+  })
+
+  it('[N-5 按轴守卫] clientHeight=0+clientWidth>0+horizontal+右带→scrollLeft 推进（旧外层 clientHeight 守卫的实现在此红）', () => {
+    makeContainer(0, 800) // 零高但横可滚——Y 分支守卫、X 分支照算
+    const h = makeSession({ x: 780, y: 590 }, { managed: false, horizontal: true })
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(true)
+    expect(container.scrollLeft).toBeGreaterThan(0) // 横轴推进（守卫拆轴判别锁）
+    expect(container.scrollTop).toBe(0) // 零高无 Y 可施
+    h.stop()
+  })
+
+  it('[N-5 按轴守卫·镜像] clientWidth=0+clientHeight>0+纵带→scrollTop 推进+scrollLeft 不动（非零初值判别）', () => {
+    makeContainer(600, 0)
+    left = 120 // 判别初值：X 误施即红
+    const h = makeSession({ x: 780, y: 590 }, { managed: false, horizontal: true })
+    const r = h.tick(100)
+    expect(r.scrolled).toBe(true)
+    expect(container.scrollTop).toBeGreaterThan(0) // 纵轴照算（零宽不挡 Y）
+    expect(container.scrollLeft).toBe(120) // 零宽守卫——X 不施
     h.stop()
   })
 })
