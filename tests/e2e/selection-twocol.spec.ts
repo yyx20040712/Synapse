@@ -220,7 +220,7 @@ async function installSel53EventRecorder(win: Page): Promise<void> {
       if (e.type === 'mousemove' && ev.length > 40) return
       ev.push({ type: e.type, phase, x: me.clientX, y: me.clientY, button: me.button, buttons: me.buttons, target: desc(e.target), prevented: e.defaultPrevented })
     }
-    for (const type of ['mousedown', 'mouseup', 'mousemove', 'selectstart'] as const) {
+    for (const type of ['mousedown', 'mouseup', 'mousemove', 'selectstart', 'dragstart'] as const) {
       document.addEventListener(type, (e) => push(e, 'capture'), true)
       document.addEventListener(type, (e) => push(e, 'bubble'), false)
     }
@@ -264,8 +264,38 @@ async function sel53SelectionState(win: Page): Promise<Record<string, unknown>> 
   })
 }
 
-// 〔F-VISFB-53CI-01 诊断轮 2026-10-19〕撤 2026-10-17 平台门（skipSite 豁免随
-// 本批转 retiring）——本地探针两形态（1024×768 CI 几何/1920×1080 默认界）已证
+/** [F-VISFB-53CI-01 诊断轮三] 恢复实验矩阵（失败现场同 run 直接判别可用手势
+ *  ——二轮定谳：Windows CI 把拖拽路由成「tap 置光标+drag 移光标」触屏语义，
+ *  选区恒坍缩零扩展；三候选手势同场对比）：
+ *  plain=复位后纯拖重试（首交互异常假说）/shift=Shift 持按拖（自光标扩展）/
+ *  dblclick=双击起拖（词选态拖拽扩展） */
+async function sel53RecoveryExperiment(
+  win: Page,
+  kind: 'plain' | 'shift' | 'dblclick',
+  sx: number,
+  sy: number,
+  ex: number,
+  ey: number
+): Promise<Record<string, unknown>> {
+  await win.evaluate(() => window.getSelection()?.removeAllRanges())
+  await win.waitForTimeout(120)
+  if (kind === 'shift') await win.keyboard.down('Shift')
+  if (kind === 'dblclick') await win.mouse.dblclick(sx, sy)
+  await win.mouse.move(sx, sy)
+  await win.mouse.down()
+  for (let i = 1; i <= 6; i += 1) {
+    await win.mouse.move(sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
+    await win.waitForTimeout(60)
+  }
+  await win.mouse.up()
+  if (kind === 'shift') await win.keyboard.up('Shift')
+  await win.waitForTimeout(300)
+  const selection = await sel53SelectionState(win)
+  const rectsCount = await win.evaluate(() => document.querySelectorAll('[data-testid="selection-rect"]').length)
+  return { kind, selection, rectsCount }
+}
+
+// 〔F-VISFB-53CI-01 诊断轮 2026-10-19〕撤 2026-10-17 平台门（skipSite 豁免随// 本批转 retiring）——本地探针两形态（1024×768 CI 几何/1920×1080 默认界）已证
 // OnMouseDown 三零块路径结构性不可能：textLayer 行盒 line-height=font-size 钉死
 // 盒高（平台不变量）+中缝左界（54+列宽）≫指针 20% 位（cross-gutter 需列宽
 // <22px）+哨兵可见保证 items 非空——CI「零块」指纹嫌疑收敛到三下游面：
@@ -376,8 +406,19 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     // [F-VISFB-53CI-01 诊断轮] 失败现场 payload（attach 随 CI failure 产物上传；
     // best-effort——页面已死时仅存预拖面）
     const sel53Post = await collectSel53PostDiag(win).catch((e: unknown) => ({ error: String(e) }))
+    // [F-VISFB-53CI-01 诊断轮三] 恢复实验矩阵（三手势同场对比——修复方向直证）
+    let sel53Experiments: Record<string, unknown> = {}
+    try {
+      sel53Experiments = {
+        plain: await sel53RecoveryExperiment(win, 'plain', sx, sy, ex, ey),
+        shift: await sel53RecoveryExperiment(win, 'shift', sx, sy, ex, ey),
+        dblclick: await sel53RecoveryExperiment(win, 'dblclick', sx, sy, ex, ey)
+      }
+    } catch (e) {
+      sel53Experiments = { error: String(e) }
+    }
     const bundle = JSON.stringify(
-      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post },
+      { pre: sel53Pre, verdict: sel53VerdictData, preSelection: sel53PreSel, drag: { sx, sy, ex, ey, vh, gutterMid }, post: sel53Post, experiments: sel53Experiments },
       null,
       2
     )
