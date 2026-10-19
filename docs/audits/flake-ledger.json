@@ -242,6 +242,14 @@
       "status": "observing",
       "first_seen": "2026-10-18",
       "resolution": "observing（C-03 观察门：白天再现即升级 F-E2EFLK-01 排查优先级）；CI 面=windows-latest 另案 F-CIFLK-01 已修"
+    },
+    {
+      "spec": "tests/e2e/ai-cascade-delete.spec.ts",
+      "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
+      "count": 2,
+      "fingerprint": "点击拦截/元素脱挂型（:83 aside 内「AI 会话」tab click——html intercepts pointer events+element detached from DOM 重试后 element(s) not found；未达核心断言面=前置辅助 createNote 后 .tl-note-text 5s 不可见）",
+      "first_seen": "2026-10-19",
+      "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）"
     }
   ]
 }
