@@ -7,11 +7,11 @@
         },
         {
             "path": "docs/defense-lifecycle.md",
-            "sha256": "f6443921c2352625253f28655a658f966ef6cd80e9d4f03ed75bb5ea18c3fd7e"
+            "sha256": "89e29210fa92156dfd8e589a509df1ab8c2a0fdfe2d0062331dcf293c66fa611"
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "c0dc709cf847583df9e285614a546480bfacab01f9531ffae35af7efd5b377f1"
+            "sha256": "f9797098974f67a571ad37157dc0b19e822b0194516d49f62c45774a85115f2e"
         },
         {
             "path": "electron.vite.config.ts",

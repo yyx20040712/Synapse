@@ -8,21 +8,20 @@
 
 | 项 | 要求 | 说明 |
 | --- | --- | --- |
-| Node | **24.x**（engines>=22；check-quality 版本守卫非 24 即红——Node 25 下 vitest jsdom 假红实证） | **Linux=~/tools/node24 tarball**（npmmirror 下载解压：`curl -sL https://registry.npmmirror.com/-/binary/node/v24.20.0/node-v24.20.0-linux-x64.tar.xz`，PATH 前缀或 ~/.bashrc 持久化）；系统 apt node 18 不可用。Windows 机=Volta 项目锁定沿承（package.json `volta` 字段，clone 即生效） |
+| Node | **24.x**（engines>=22；check-quality 版本守卫非 24 即红——Node 25 下 vitest jsdom 假红实证） | **Linux=~/tools/node24 tarball**（npmmirror 下载解压：`curl -sL https://registry.npmmirror.com/-/binary/node/v24.20.0/node-v24.20.0-linux-x64.tar.xz`，PATH 前缀或 ~/.bashrc 持久化）；系统 apt node 18 不可用。Windows 机=Volta 项目锁定沿用（package.json `volta` 字段，clone 即生效） |
 | git | 系统 git | Linux **零额外网络配置**（直连；Windows 遗留 ssl/proxy 覆盖已删）；推送凭据=§3 |
-| 网络 | 直连 | `.npmrc` npmmirror 二进制镜像入库沿承；旧机代理 7890 已废 |
+| 网络 | 直连 | `.npmrc` npmmirror 二进制镜像入库沿用；旧机代理 7890 已废 |
 | zcode CLI | 按既定规格安装（skills/插件同规格——与项目仓库无关，用户侧配置） | 项目侧零依赖 |
 
 > 仓库应驻 Linux 原生文件系统（如 ~/，ext4）——网络盘/挂载盘下 git/npm 显著
 > 变慢且文件 watcher 失效（WSL2 时代=/mnt/c drvfs 同理）。
 >
 > 核对：新开 shell `node -v` 必须=24.x（系统 node18 会因版本守卫必红——见 AGENTS.md
-> 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（全量 114 用例
-> 〔v184 后〕：白天窗全量≈113/114=权威判读〔2026-10-14 排查场——偶发红单例
-> 复跑绿即过〕；automation 清晨窗=FLK-02/03 两环境级稳定红豁免单点〔深夜窗
-> 红/白天绿/CI 绿——环境登记态，单源=registry FLK 票行+flake 台账〕，非环境
-> 配置错；WSL2 曾单次 108/108 全绿〔v181，108 用例时代〕），若依赖库缺失再查
-> `npx playwright install-deps`。
+> 环境事实）；VMware X11 桌面下 playwright/electron 本机开箱即用（全量 135+1 用例
+> （INV-168 v218 口径）〔v184 后〕：全天同一标准，红即红，非确定失败单现复跑定绿按通则；FLK-02/03
+> 旧「环境登记态」处置已随 2026-10-19 用户裁决废除窗口口径而失效；WSL2 曾单次
+> 108/108 全绿〔v181，108 用例时代〕）〔2026-10-20 F-DOCS-01 对齐〕，若依赖库
+> 缺失再查 `npx playwright install-deps`。
 
 > **本机残留备案**：仓库根 `.mimosa/`（finding-ledger/hook-state/history 等）系
 > zcode 宿主钩子的本机产物，非项目资产（.gitignore 已忽略）——审计/取证时勿误认；
@@ -93,14 +92,15 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（达到预期口径才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：303 文件 3262 用例 / locks 427（工单 open 数随排程浮动，
-                      # 以 tickets/registry.ts 实时为准；2026-10-14 v184 后基线）
-npm run build && npm run test:e2e   # 预期全量 114 用例（白天窗≈113/114——偶发红单例
-                      # 复跑绿即过；automation 清晨窗=FLK-02/03 两环境级稳定红豁免单点
-                      # 〔2026-10-14 排查场定谳：深夜窗红/白天绿/CI 绿——环境登记态，
-                      # 勿按复跑销项亦勿按红修码〕，单源=registry FLK 票行+flake 台账；
-                      # e2e 全绿权威基线=WSL2 v181〔108 用例时代〕；e2e 不含在
-                      # verify 里，须单独跑）
+npm run verify        # 预期 exit 0：408 文件 4267 用例 / locks 551（工单 open 数随排程浮动，
+                      # 以 tickets/registry.ts 实时为准；2026-10-20 刷新）〔2026-10-20 F-DOCS-01 对齐〕
+npm run build && npm run test:e2e   # 预期全量 135+1 用例（INV-168，2026-10-19 v218 口径；
+                      # 以实际跑为准）（全天同一标准：红即红，非确定失败
+                      # 单现复跑定绿按通则；FLK-02/03 旧「环境登记态」处置已随
+                      # 2026-10-19 用户裁决废除窗口口径而失效；三族再红一律按待根治
+                      # 缺陷立案（F-E2EFLK-01 承接），无按时段/环境豁免；e2e 全绿权威
+                      # 基线=WSL2 v181〔108 用例时代〕；e2e
+                      # 不含在 verify 里，须单独跑）〔2026-10-20 F-DOCS-01 对齐〕
 ```
 
 - 数字对不上：先看是否 Node 版本≠24（裸跑 npx vitest 绕过版本守卫，
@@ -122,4 +122,4 @@ npm run build && npm run test:e2e   # 预期全量 114 用例（白天窗≈113/
 
 按 `docs/prompts/` 下**编号最大**的 handoff 开工（设备迁移专用开工书=
 `2026-08-27_device-migration-handoff.md`）。宪法纪律（技能清点/分级阅读/
-三屋模式）不变——见 AGENTS.md。
+三阶段流程）不变——见 AGENTS.md。
