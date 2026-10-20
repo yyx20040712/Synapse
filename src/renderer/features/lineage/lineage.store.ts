@@ -102,7 +102,9 @@ export interface LineageStore {
   queue: WriteAction[]
   flushing: boolean
   /** [F-VISFB-65 回炉 W7] CONFLICT 面收尾重拉持久标志（系统型失败提前退出
-   *  不丢——任意后续 flush 成功收尾统一消费一次） */
+   *  不丢——任意后续 flush 成功收尾统一消费一次）。〔INV-175 F-RECOV-02〕语义
+   *  扩域=「图态与库态偏离待和解」：恢复载入恒置位；清位唯二=load() 应用分支
+   *  +discardSession；flush 收尾/undo·redo 回基线 clean=只触发 load 不清位 */
   needsReload: boolean
   /** [F-LGRAPH-01②U1] 会话快照栈（每编辑单元前图态——undo/redo 载荷） */
   undoStack: SessionSnapshot[]
@@ -317,7 +319,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
           error: null,
           // 库态新基线：自库态起栈（Word 式——mockup §2.2「再进入=自库态起栈」）
           undoStack: [],
-          redoStack: []
+          redoStack: [],
+          // [INV-175] 权威落地即清（主清位——图态四面已==库态，偏离和解完成；
+          // 清除点唯二：本处+discardSession〔用户明示放弃例外〕）
+          needsReload: false
         })
       } catch (e) {
         if (s !== seq) return
@@ -475,8 +480,14 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       restore(s.undoStack[s.undoStack.length - 1]!, 'redo')
       // [F-VISFB-65] undo 回基线（queue 空→clean）=clean 四源之一→release；
       // [回炉 R4] 仍 dirty（部分撤销）→通知调度器收敛副本（撤销动作出副本）
-      if (get().saveStatus === 'clean') markRecoveryClean('clean')
-      else notifyRecoveryEditUnit()
+      if (get().saveStatus === 'clean') {
+        markRecoveryClean('clean')
+        // [INV-175] 干净化点只触发不清位：回基线 clean 且图态与库态偏离未和解
+        // →补权威落地（触发时 queue 空∧flushing=false——互锁放行；清位=load 应用分支）
+        if (get().needsReload) void get().load()
+      } else {
+        notifyRecoveryEditUnit()
+      }
     },
 
     redo() {
@@ -485,8 +496,13 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       restore(s.redoStack[s.redoStack.length - 1]!, 'undo')
       // [F-VISFB-65] redo 回基线同族（快照对称面——会话回基线即弃副本）；
       // [回炉 R4] dirty 复来（回基线 release 后 redo）→副本须重建
-      if (get().saveStatus === 'clean') markRecoveryClean('clean')
-      else notifyRecoveryEditUnit()
+      if (get().saveStatus === 'clean') {
+        markRecoveryClean('clean')
+        // [INV-175] 干净化点只触发不清位（undo 对称面——快照对称态挂点）
+        if (get().needsReload) void get().load()
+      } else {
+        notifyRecoveryEditUnit()
+      }
     },
 
     discardSession() {
@@ -526,7 +542,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         undoStack: [],
         redoStack: [],
         status: 'ready',
-        error: null
+        error: null,
+        // [INV-175] 恢复会话权威存疑：载入即置位（语义=「图态与库态偏离待和解」
+        // ——恢复恒存疑，无残值亦置位；与图应用同一 set 补丁=原子无半载态）
+        needsReload: true
       })
       useLineageViewStore.getState().clearFocus()
       useLineageViewStore.getState().resetTool()

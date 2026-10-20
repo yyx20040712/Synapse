@@ -518,9 +518,11 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     // INV-84 修订申报：乐观写在场，被拒意图经 load 回填不在本地残留；
     // [F-VISFB-65 单元二] remap 分支同携——主图新行的权威回填；
     // [回炉 W7] needsReload 持久标志并入判定（上轮 CONFLICT 后系统型失败
-    // 提前退出→重试成功的新 flush 收口补拉——幽灵乐观行不残留）
+    // 提前退出→重试成功的新 flush 收口补拉——幽灵乐观行不残留）；
+    // [INV-175 F-RECOV-02 只触发不清位]：flush 成功收尾=干净化点之一——
+    // 此处禁清位（fire→落地前竞窗内新编辑会互锁丢弃 load，早清=残值复活面）；
+    // 清位唯二=load() 应用分支（权威落地即清）+discardSession（放弃例外）
     if (conflictTouched || get().needsReload === true) {
-      set({ needsReload: false })
       void get().load()
     }
   }
