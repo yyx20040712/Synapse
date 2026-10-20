@@ -197,6 +197,10 @@ development Model Selection+loop-engineering references/06）；**架构与
   受锁面，manifest 落后=下次 locks:check/verify 必红；禁延至收口补登
   （2026-09-02 四波场三现实录：两 gen 脚本连续落后于并行锁操作+门二 verify 拦截）。
 - 每次 AI 改动一个逻辑单元一个 commit；提交前 `git diff --stat` 自查。
+- **立票/翻状态笔最小验证面=typecheck**：tickets/registry.ts 变更的提交推送前
+  须 `npm run typecheck` 绿（tickets:check 无类型面——TicketArea 越界曾致 CI
+  确定红，前史=e6115dfd〔2026-10-20〕；同型复发二次即升级机检关卡立案——
+  立票防线=用户授权主控自决，2026-10-20）。
 - **多命令链判码纪律**：命令链以 grep/管道过滤输出判定通过时，须显式判命令
   退出码（`[ $? -eq 0 ]` 或管道首命令 `${PIPESTATUS[0]}`），grep 行命中≠命令
   绿——b8029630 带 typecheck 红提交事故实录（2026-10-18；单源=v214 §3-6③
