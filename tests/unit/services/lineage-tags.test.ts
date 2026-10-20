@@ -17,7 +17,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SqliteDb } from '../../../src/main/db/connection'
-import { MIGRATIONS, readUserVersion } from '../../../src/main/db/migrate'
+import { readUserVersion } from '../../../src/main/db/migrate'
 import { createLineageRepo } from '../../../src/main/db/repos/lineage.repo'
 import { createPapersRepo } from '../../../src/main/db/repos/papers.repo'
 import { createTagsRepo } from '../../../src/main/db/repos/tags.repo'
@@ -65,9 +65,8 @@ beforeEach(() => {
 // ── 迁移 007：tags 列死置锚（[A1b] 应用面退役、DDL 待 D 批清列） ──
 
 describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () => {
-  it('版本接续：MIGRATIONS 含 version 7 且 user_version=15（新库全量，[F-UIRES-03 C1] 015 落地后）', () => {
-    expect(MIGRATIONS.some((m) => m.version === 7)).toBe(true)
-    expect(readUserVersion(db)).toBe(25)
+  it('版本接续：新库全量 user_version=26（[F-SNAPCLEAN-01] 基线压缩后链尾——旧链 version 7 断言随压缩退役）', () => {
+    expect(readUserVersion(db)).toBe(26)
   })
 
   it('tags 列在场（TEXT 可空——死置保留清列归 D 批）；存量行零迁移可读且 DTO 无 tags 键（[A1b] 读面不映射）', () => {

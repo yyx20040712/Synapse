@@ -96,6 +96,7 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
 | 0027 | 恢复副本统一管理（F-VISFB-65——WPS 式丢稿防御前两道防线：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单一存储位+shared RECOVERY_REGISTRY 类型注册表（命名/schema/生命周期单源，为 reader 草稿族预留）+每 (工作区,类型) 单槽覆写；消费=takeOver 超越（token+epoch 双校验无空窗）；删除=release token 作用域+epoch 删除屏障；与 DB 落库解耦（重放幂等兜底）；决策正文单源=docs/adr/0027-recovery-copy-unified-management.md，设计链终态=仓外 20261019-fvisfb65-impl/65-design-final.md） |
 | 0029 | 恢复副本常态写 never-settle 治理（F-RECOV-01——ADR-0027 域行为演进：慢盘语义前提=常态写永不因超时取消/判败（仅解除观测）；renderer 双阈值看门狗 T_slow=10s 降级呈现/T_stuck=60s 逻辑弃置+ghost 迟到对账（token 双账本）；main serialize 链 per-key save 深上界 D_max=8 回 queue-overflow（release/read 豁免、peek 不走链）；degraded 期探针保活自愈（经 pump 单飞，每代探针 ghost ≤1）；三档 chip（缓慢/未确认/不可用+重启缀）；设计链=v2+主控终裁 v3〔仓外 20261020-nightb/recoV01〕；不变量=INV-171..174） |
+| 0030 | 迁移链基线压缩（F-SNAPCLEAN-01——B″ 续号方案：删 001–025 全 25 件、并单件 026_baseline.sql=旧全链执行完毕态全量终态〔DDL 全对象+新库生效种子〕，新库 user_version 直达 26 版本连续不重置；遗留 v2x 旧库在新代码下启动=响亮迁移失败非静默；旧链升级舞步唯一消费者=本地 v22 测试库，随批 tar 备份后删除——开发期未分发=压缩唯一安全窗；等价证明=双库 sqlite_master+种子 diff 空〔仓外批档〕+migrate.test 全对象集永驻守卫；「迁移不可修改」第三笔例外随批入 migrate.ts 头注；授权链=2026-10-19 用户裁决「开发阶段一切以最新版本为准，不考虑多余的兼容」+票面受锁面 [tests+migrations]；回退=git revert 单批恢复链与测试+tar 还原数据；决策正文单源=仓外 scripts-audits/20261020-snapclean01/design-v2-final.md，不另立 adr 正件防双源） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
@@ -123,8 +124,8 @@ F-TAGS-01 标签颜色身份/papers.folder_id+impact_factor+lineage_nodes.folder
 tags.folder_id 多域化（**UNIQUE(folder_id,name) 替换全局 UNIQUE(name)**+存量
 归主图〔甲裁决〕+挂接域守卫触发器 paper_tags_domain_guard+域内 20 满禁建/
 每篇 6 硬禁服务层限额〔INV-126 表级挂接域一致三机制〕——F-TAGS-02 数据面；
-〔乙裁决〕移夹标签留原域=moveFolder 摘挂接步）。papers 现态 20 列。标注定位器=W3C Web Annotation 思路
-（quote/prefix/suffix+startOffset/endOffset+rects/sortKey）。迁移只追加（受锁）。
+〔乙裁决〕移夹标签留原域=moveFolder 摘挂接步）。papers 现态 21 列。标注定位器=W3C Web Annotation 思路
+（quote/prefix/suffix+startOffset/endOffset+rects/sortKey）。迁移只追加（受锁；第三笔例外〔前三笔=012 本体修复 F-MIGR-01/004 头注勘误 F-BAKRET-01/本批基线压缩 F-SNAPCLEAN-01——migrate.ts 头注在档，ADR-0030〕——001–025 并单件 026_baseline.sql，本节历史迁移号引文均指压缩前沿革）。
 契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
 （ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）。
 [F-FOLDER-01]（2026-09-30）契约批改：paperSummary +`folderId`（可空）+

@@ -7,7 +7,7 @@
  * - 文件字节=完整 envelope 的 canonical JSON（键字母序/无空白/UTF-8/无尾换行）
  *   ——文件即 canonical（U3 闸②重算无二次序列化歧义）。envelope 恒九键：
  *   format_version=1（数据格式版恒整数）/schema_version（导出时刻 user_version）
- *   /snapshot_seq/owner_id/table_counts（九表名→行数——闸①对齐）/payload_sha256
+ *   /snapshot_seq/owner_id/table_counts（十表名→行数——闸①对齐）/payload_sha256
  *   （sha256(明文 payload canonical JSON 字节)，hex 小写）/payload_nonce（12 字节
  *   base64）/payload（AES-256-GCM 密文||16 字节 auth tag 拼接后 base64）/
  *   hmac_sha256（hex 小写——唯一 MAC 面外字段）。
@@ -19,7 +19,7 @@
  *   ——实现侧自裁申报在档。安全性不降：payload 篡改由 HMAC 面（payload 字符串
  *   在场）+GCM tag（密文本体入认证）双拦；其余字段在两面同构——重签 HMAC 的
  *   字段搬运卷仍被 GCM AAD 拦）。
- * - 明文 payload（加密前 canonical JSON）={data:{<九表名>:[行对象…]},
+ * - 明文 payload（加密前 canonical JSON）={data:{<十表名>:[行对象…]},
  *   deletions:[…], pdf_refs:[…]}——摘要域三件合一（r3-W2 勘正面：闸③「同 sha」
  *   判据同口径）。
  * - HKDF-SHA256 三钥：IKM=sync_key（hex 解码 32 字节）；salt='synapse/dbcamp01/

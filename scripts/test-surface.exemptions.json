@@ -1164,6 +1164,126 @@
       "assertionText": "expect(css).toMatch(/\\.timeline\\s*\\{[^}]*overflow-y:\\s*auto;[^}]*overflow-x:\\s*hidden/)",
       "reason": "F-VISFB-67 终裁 v3 CSS 三改之一：.timeline overflow-x hidden→auto（窄视口横滚承载——用户裁决授权面）；断言体同步翻面为 auto，用例标题保留历史措辞（签名键冻结由本豁免承载）",
       "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（终裁 v3+门一已裁翻面）"
+    },
+    {
+      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——012 文件夹×图绑定升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——017 星标列升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-app-meta.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——018 app_meta 落链路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-ai-domain.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——020 AI 域落链路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——019 tags 多域化重建路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——016 papers NOT NULL 重建路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——010 脉络数据层 v2 升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-022-ghost-edges.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——022 幽灵边存量清理路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-reading-time.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——008/009 阅读时长加删列双跳路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
+      "fileScope": true,
+      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——015 存量换色路径〔设计清单外同族——盘点 grep 扩面申报，impl-report 自裁①〕的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "新库：全量应用，user_version = 最新版本",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：版本数组/终值断言随 B″ 改写——新用例「新库全量：appliedVersions=[26]、全对象集+种子在位」承载且断言面扩强（43 表集+16 索引+59 触发器族+种子四组）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "迁移失败整体回滚：user_version 不变、半成品表不残留（注入坏迁移验证）",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：同机制原位重写——新用例「迁移失败整体回滚」同断言面（user_version 归 0+无半建对象）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "002 索引在位：added_at 排序不再全表扫（[F-FOLDER-01] 集合过滤索引随 paper_collections 退役连带消亡）",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：索引断言随重写升级——新用例 ALL_INDEXES 精确全集断言（idx_papers_added_at 在内，16 项全集=超集承载）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "重复执行幂等（已应用版本跳过）",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：幂等断言随重写迁移——新用例「已迁移库重开：零应用幂等+开库断言仍执行」前半段承载",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "迁移产物包含全部核心表与 FTS 表（schema golden）",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：表集断言随重写升级——新用例 ALL_TABLES 精确全集断言（43 表含 FTS 虚表与 shadow=超集承载）",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "FTS 触发器在位：插入 papers 后 papers_fts 可搜（trigram 支持中文子串）",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：FTS 行为锁由既有 tests/unit/db/fts.test.ts 承载（未动）；新用例触发器族计数断言（12 件 FTS 触发器）补对象面",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/db/migrate.test.ts",
+      "caseTitle": "外键级联：删 paper 连带删 annotation",
+      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：级联行为锁由既有 repo 层测试承载（papers.folder-contract/folders-delete-domain 等——均跑在基线终态 schema 上）；DDL 级 CASCADE 子句在 026 原文中保真",
+      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
+    },
+    {
+      "file": "tests/unit/services/lineage-edge-via.test.ts",
+      "caseTitle": "新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插 via=NULL 行合法（存量零迁移兼容）",
+      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：标题链尾值随基线压缩改写（→26），用例体同位——直插兼容行为断言不变",
+      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
+    },
+    {
+      "file": "tests/unit/services/lineage-tags.test.ts",
+      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=15（新库全量，[F-UIRES-03 C1] 015 落地后）",
+      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：旧链 version 7 存在性断言随基线压缩退役（MIGRATIONS 单件 026）；链尾断言值随迁（→26）——用例体收敛为 user_version 断言",
+      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
+    },
+    {
+      "file": "tests/unit/services/lineage-u8-linetype.test.ts",
+      "caseTitle": "新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插无视觉列旧行读面归一（不炸）",
+      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：标题链尾值随基线压缩改写（→26），用例体同位——读面归一断言不变",
+      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
     }
   ]
 }

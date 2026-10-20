@@ -8,138 +8,44 @@
  * 注释级例外（在档）：004 头注 stale 句改写（[F-BAKRET-01] 2026-09-30——
  * 纯注释零 SQL 变更零运行时影响，主控随批批准；例外口径=注释勘误不属
  * 「迁移不可修改」红线所防的语义漂移面）。
+ * 第三笔例外（在档）：[F-SNAPCLEAN-01] 迁移链基线压缩（2026-10-20，ADR-0030）——
+ * 删已合入 001–025 全 25 件、并单件 026_baseline.sql（B″ 续号方案：新库
+ * user_version 直达 26，版本连续不重置）。授权链=2026-10-19 用户裁决「开发
+ * 阶段一切以最新版本为准，不考虑多余的兼容」（账本 1488 行⑦）+票面受锁面
+ * [tests+migrations]；旧链升级舞步唯一消费者=本地 v22 测试库（随批 tar 备份
+ * 后删除）；等价证明（双库 sqlite_master+种子 diff 空）与回退路径=仓外批档
+ * scripts-audits/20261020-snapclean01/（design-v2-final.md §1/§7）。遗留 v2x
+ * 旧库在新代码下启动=响亮迁移失败（22<26 跑 026→CREATE TABLE 已存在→事务
+ * 回滚抛错）——有意行为非静默错配。
  *
  * SQL 通过 Vite ?raw 内联进产物，打包后无需携带 .sql 文件。
- * 测试：tests/unit/db/migrate.test.ts（新库全量/已迁移跳过/部分失败回滚）。
+ * 测试：tests/unit/db/migrate.test.ts（新库全量〔基线漂移守卫〕/已迁移跳过
+ * +开库断言仍执行/失败回滚）。
  */
 import type { SqliteDb } from './connection'
-import initSql from './migrations/001_init.sql?raw'
-import indexesSql from './migrations/002_indexes.sql?raw'
-import aiNotesSql from './migrations/003_ai_notes.sql?raw'
-import lineageSql from './migrations/004_lineage.sql?raw'
-import citedBySql from './migrations/005_cited_by.sql?raw'
-import refEdgesSql from './migrations/006_lineage_ref_edges.sql?raw'
-import nodeTagsSql from './migrations/007_lineage_node_tags.sql?raw'
-import readingTimeSql from './migrations/008_reading_time.sql?raw'
-import readingTimeDropSql from './migrations/009_reading_time_drop.sql?raw'
-import lineageV2Sql from './migrations/010_lineage_v2.sql?raw'
-import tagsColorSql from './migrations/011_tags_color.sql?raw'
-import foldersGraphsSql from './migrations/012_folders_graphs.sql?raw'
-import lineageEdgeViaSql from './migrations/013_lineage_edge_via.sql?raw'
-import lineageEdgeVisualSql from './migrations/014_lineage_edge_visual.sql?raw'
-import lineageEdgeBlueRecolorSql from './migrations/015_lineage_edge_blue_recolor.sql?raw'
-import papersFolderNotNullSql from './migrations/016_papers_folder_not_null.sql?raw'
-import papersIsStarredSql from './migrations/017_papers_is_starred.sql?raw'
-import appMetaSql from './migrations/018_app_meta.sql?raw'
-import tagsFolderDomainSql from './migrations/019_tags_folder_domain.sql?raw'
-import aiDomainSql from './migrations/020_ai_domain.sql?raw'
-import deletionEventsSql from './migrations/021_deletion_events.sql?raw'
-import lineageGhostEdgesSql from './migrations/022_lineage_ghost_edges.sql?raw'
-import paperFiguresSql from './migrations/023_paper_figures.sql?raw'
-import lineageFloatingNotesSql from './migrations/024_lineage_floating_notes.sql?raw'
-import lineageEdgeAnchorsSql from './migrations/025_lineage_edge_anchors.sql?raw'
+import baselineSql from './migrations/026_baseline.sql?raw'
 
 export interface Migration {
   version: number
   name: string
   sql: string
-  /** [F-DBCAMP-01 DB-1] FK-OFF 迁移模式（016 重建父表舞步配套）：置真时执行器
-   * 在事务外围 PRAGMA foreign_keys=OFF（事务内该 pragma 无操作=012 头注 F1），
-   * 事务内 exec 后先跑 foreign_key_check 断言（可读未提交态，违约即抛=整体
-   * 回滚+user_version 不前进），finally 复位 ON。机制边界（U1 探针 2×2 真值表）：
-   * 子表 FK 子句改写由 RENAME 父表触发——fk=ON 恒改写；fk=OFF∧legacy=ON
-   * 不改写；fk=OFF∧legacy=OFF 仍改写（本仓连接从不置 legacy）。官方序（旧表
-   * 只 DROP 不 RENAME、新表 RENAME 无引用者）=不进 RENAME 改写面，FK OFF
-   * 只承担关断 DROP 父表的隐式 DELETE 级联〔d1-新N2 精化〕 */
+  /** [F-DBCAMP-01 DB-1] FK-OFF 迁移模式（历史首例 016 重建父表舞步——该用例
+   * 已随 [F-SNAPCLEAN-01] 基线压缩删除，机制保留供后续重建型迁移复用）：置真时
+   * 执行器在事务外围 PRAGMA foreign_keys=OFF（事务内该 pragma 对 FK 约束无
+   * 操作=SQLite 语义），事务内 exec 后先跑 foreign_key_check 断言（可读未提交
+   * 态，违约即抛=整体回滚+user_version 不前进），finally 复位 ON。机制边界（U1 探针 2×2
+   * 真值表）：子表 FK 子句改写由 RENAME 父表触发——fk=ON 恒改写；fk=OFF∧
+   * legacy=ON 不改写；fk=OFF∧legacy=OFF 仍改写（本仓连接从不置 legacy）。
+   * 官方序（旧表只 DROP 不 RENAME、新表 RENAME 无引用者）=不进 RENAME 改写面，
+   * FK OFF 只承担关断 DROP 父表的隐式 DELETE 级联〔d1-新N2 精化〕 */
   fkOff?: boolean
 }
 
-/** 迁移清单：新增迁移在此追加（文件放 migrations/ 并 import ?raw） */
+/** 迁移清单：新增迁移在此追加（文件放 migrations/ 并 import ?raw）。
+ * [F-SNAPCLEAN-01] 基线压缩后现役单件=026（B″ 续号——新库直达 26）；后续演进
+ * 从 027_*.sql 起新增，026 与其内容不可再修改。 */
 export const MIGRATIONS: readonly Migration[] = [
-  { version: 1, name: 'init', sql: initSql },
-  { version: 2, name: 'indexes', sql: indexesSql },
-  { version: 3, name: 'ai_notes', sql: aiNotesSql },
-  { version: 4, name: 'lineage', sql: lineageSql },
-  { version: 5, name: 'cited_by', sql: citedBySql },
-  { version: 6, name: 'lineage_ref_edges', sql: refEdgesSql },
-  { version: 7, name: 'lineage_node_tags', sql: nodeTagsSql },
-  { version: 8, name: 'reading_time', sql: readingTimeSql },
-  // [F-TIME-02] 2026-09-19 用户裁决移除阅读时长——008 加列→009 删列双跳
-  // （已合入迁移不可修改=CI 锁硬规则）
-  { version: 9, name: 'reading_time_drop', sql: readingTimeDropSql },
-  // [T3-P5] 脉络数据层 v2：month/slot/sub 列+lineage_graph_meta KV+slot 窗口
-  // 回填（010 落地时新库终值 10——现行链尾随 011 演进，k1-W1 勘正）
-  { version: 10, name: 'lineage_v2', sql: lineageV2Sql },
-  // [F-TAGS-01] 标签颜色：tags.color TEXT 可空无默认（NULL=存量默认 accent；
-  // 新库 user_version 终值 11）
-  { version: 11, name: 'tags_color', sql: tagsColorSql },
-  // [F-FOLDER-01] 文件夹×脉络图绑定：papers.folder_id（单归属）+impact_factor
-  // +lineage_nodes.folder_id（修订二：可空列+迁移回填+repo 写边界兜底——SQLite
-  // ADD COLUMN 静态禁 REFERENCES+非空 DEFAULT）+坑 a 存量去重+部分唯一索引
-  // +回填+paper_collections 退役（design-final 修订二——新库 user_version 终值 12）
-  { version: 12, name: 'folders_graphs', sql: foldersGraphsSql },
-  // [F-LINEAGE-02 ①a] 手动调线路点：lineage_edges.via JSON TEXT（缺省 NULL=
-  // 自动路由；不变量校验在 service 写面——新库 user_version 终值 13）
-  { version: 13, name: 'lineage_edge_via', sql: lineageEdgeViaSql },
-  // [F-LGRAPH-01②U8] 边视觉线型内联：dashed INTEGER/color TEXT NOT NULL
-  // DEFAULT（存量行零迁移归一=实线+蓝；kind 列保留恒 'manual'——A3 DDL 最小
-  // 化；新库 user_version 终值 15（k1-N1 勘正——015 起））
-  { version: 14, name: 'lineage_edge_visual', sql: lineageEdgeVisualSql },
-  // [F-UIRES-03 C1] 存量边旧蓝换深蓝：色板首色 '#3a5bd9'→'#1e3a8a'（呈裁①
-  // ——shared 单源换值随批；014 DEFAULT 不动=repo 写面恒显式色死路径；
-  // 新库 user_version 终值 15）
-  { version: 15, name: 'lineage_edge_blue_recolor', sql: lineageEdgeBlueRecolorSql },
-  // [F-DBCAMP-01 DB-1] papers.folder_id NOT NULL 真重建（v122 裁决② DDL 终态；
-  // 官方 12 步序=旧表只 DROP 不 RENAME+FTS 双扫——候选 A legacy 换名舞步经
-  // 探针证不可行；FK-OFF 模式首例=fkOff 标志；新库 user_version 终值 16）
-  { version: 16, name: 'papers_folder_not_null', sql: papersFolderNotNullSql, fkOff: true },
-  // [F-DBCAMP-01 DB-1 U2 / F-STAR-01] papers.is_starred 星标列+partial index
-  // （ADD COLUMN 静态 DEFAULT 0——与 016 重建本质不同：FK 面零牵动，无 fkOff；
-  // 新库 user_version 终值 17）
-  { version: 17, name: 'papers_is_starred', sql: papersIsStarredSql },
-  // [F-DBCAMP-01 DB-1 U3] app_meta 键值表（owner uuid+设备 token 本地侧载体
-  // ——010 lineage_graph_meta 同形态三列 KV 无 seed：身份值=运行期
-  // ensureIdentity 缺席才生成，snapshot_seq=DB-3 面不初始化；纯新增表零 FK
-  // 面，无 fkOff；新库 user_version 终值 18）
-  { version: 18, name: 'app_meta', sql: appMetaSql },
-  // [F-DBCAMP-01 DB-1 U4 / F-TAGS-02] tags 多域：folder_id 域列+UNIQUE(folder_id,
-  // name)+存量归主图+挂接域守卫触发器（012 族域资产语义——CASCADE 夹删随灭；
-  // 重建序独立于 016：无 FTS 面/无表上触发器/唯一子表=paper_tags；fkOff 同 016
-  // ——tags 是父表 DROP 级联灭挂接；新库 user_version 终值 19）
-  { version: 19, name: 'tags_folder_domain', sql: tagsFolderDomainSql, fkOff: true },
-  // [F-DBCAMP-01 DB-2 U1] AI 域数据面：change_epochs epoch 基建（INV-J，10 表
-  // ×3 触发器+播种 10 行）+AI 域 5 新表（sessions/messages/tasks/memory/
-  // task_audit）+分类条件枚举（19=6+7+6 冻结）+ai_memory FTS（external content
-  // +trigram）+G2 审计触发器+随锚级联触发器（用户裁定①②④⑥——纯新增无表
-  // 重建，无 fkOff；级联体 T3 实照修正=memory 先删链式 _ad 清 FTS，见 020 头注；
-  // 新库 user_version 终值 20）
-  { version: 20, name: 'ai_domain', sql: aiDomainSql },
-  // [F-DBCAMP-01 DB-3 U1] 删事件日志（设计 §13.1/§13.3 021 号改派）：
-  // deletion_events append-only 账+deletion_log_guard 直执守卫+导出面九表
-  // AFTER DELETE 触发器族+append-only 拒写防御；服务层零侵入；纯新增表+触发器
-  // 无表重建，无 fkOff；新库 user_version 终值 21
-  { version: 21, name: 'deletion_events', sql: deletionEventsSql },
-  // [F-DBCAMP-01 DB-4 / F1] 幽灵边存量清理（guard 先行三步：stop=1→DELETE 跨图
-  // 边→stop=0——防 021 触发器落账假删事件；判据=双端点 nodes.folder_id 不等；
-  // 纯存量 DELETE 无 DDL，无 fkOff；新库 user_version 终值 22）
-  { version: 22, name: 'lineage_ghost_edges', sql: lineageGhostEdgesSql },
-  // [F-VISFB-42] 派生图表资产合同：figure_jobs 状态表（pending→ready/failed
-  // 终态+excess 截断记档+failed_count）+paper_figures 资产表（digest 单键去重/
-  // 资产路径/像素尺寸/CTM bbox/页码）；papers 零新列；派生不入快照（恢复后
-  // 重提取）；paper_id FK CASCADE（papers 三删除路径自动清派生行）；纯新增
-  // 表无触发器，无 fkOff；新库 user_version 终值 23
-  { version: 23, name: 'paper_figures', sql: paperFiguresSql },
-  // [F-VISFB-61] 悬浮笔记数据面：floating_notes 画布笔记表（无 paper_id——
-  // §0-5 纯画布节点不关联文献；x/y 画布 own 域坐标）+folder_id FK CASCADE
-  // （域删级联——012/019 族域资产先例）+021 族第十表删事件触发器（快照导入
-  // 防复活数据源）；入快照导出面（TABLE_SPECS 十表）；纯新增表+索引+触发器
-  // 无表重建，无 fkOff；新库 user_version 终值 24
-  { version: 24, name: 'lineage_floating_notes', sql: lineageFloatingNotesSql },
-  // [F-VISFB-66] 边端点钉定锚列：from_anchor/to_anchor AnchorRef JSON TEXT
-  // （NULL=未钉定=路由派生——E2 运行时回落零回填；013 头注「锚点=运行时
-  // 12 锚派生」句自本迁移起作废——锚位成端点身份一等成分）；纯 ADD COLUMN
-  // 无表重建，无 fkOff；新库 user_version 终值 25
-  { version: 25, name: 'lineage_edge_anchors', sql: lineageEdgeAnchorsSql }
+  { version: 26, name: 'baseline', sql: baselineSql }
 ]
 
 export interface MigrateResult {
@@ -190,7 +96,7 @@ export function migrate(
       db.pragma(`user_version = ${migration.version}`)
     })
     // FK-OFF 模式：DROP 父表需关断其隐式 DELETE 级联（FK ON 下 DROP 父表=
-    // 级联灭子表——012 头注 F3）——必须在事务外关断（事务内该 pragma 无操作）；
+    // 其隐式 DELETE 级联灭子表——SQLite 语义）——必须在事务外关断（事务内该 pragma 无操作）；
     // finally 复位，失败路径不留半关断连接
     if (migration.fkOff === true) db.pragma('foreign_keys = OFF')
     try {
@@ -206,7 +112,8 @@ export function migrate(
   // 复位/播种行被清空等形态）由静默失效转显性告警。空行态=触发器 WHEN 子查询
   // NULL→静默停记（防线停摆面），由行数断言捕获。migrate 每次开库都调用
   // （bootstrap/workspace-layout），循环零应用（已迁移库重开）断言仍须执行；
-  // 版本<21 的注入式部分迁移测试不受版本守卫波及。
+  // [F-SNAPCLEAN-01] 基线压缩后新库终值 26≥21 恒过闸=活防线非死码（主控裁决
+  // 保留不动）。版本<21 的注入式部分迁移测试不受版本守卫波及。
   if (readUserVersion(db) >= 21) {
     let guard: { n: number; s: number }
     try {
@@ -216,13 +123,13 @@ export function migrate(
     } catch (e) {
       throw new Error(
         `deletion_log_guard 开库断言失败：表缺失或不可读（${String(e)}）——` +
-          '库版本已达 21 而守卫表不在位，库处于不一致态'
+        '库版本已达 21 而守卫表不在位，库处于不一致态'
       )
     }
     if (guard.n !== 1) {
       throw new Error(
         `deletion_log_guard 开库断言失败：守卫行数=${guard.n}≠1（播种恰 1 行被破坏` +
-          '——空行/多行均为防线停摆面，修复守卫表后再开库）'
+        '——空行/多行均为防线停摆面，修复守卫表后再开库）'
       )
     }
     if (guard.s !== 0) {

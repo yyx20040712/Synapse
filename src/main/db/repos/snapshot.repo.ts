@@ -161,7 +161,7 @@ export interface SnapshotRepo {
   readExportTables(): SnapshotExportRows
   /** deletion_events 全量读（ORDER BY seq——只读消费，§13.1） */
   readDeletionEvents(): SnapshotDeletionEvent[]
-  /** PRAGMA user_version（envelope schema_version 字段源——链尾=24〔024 起〕） */
+  /** PRAGMA user_version（envelope schema_version 字段源——基线压缩后链尾=26（F-SNAPCLEAN-01，迁移面单件 026_baseline.sql）） */
   readSchemaVersion(): number
 }
 

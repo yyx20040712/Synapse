@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-20T00:08:01.538Z",
+    "generatedAt": "2026-10-20T05:23:49.467Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "f9797098974f67a571ad37157dc0b19e822b0194516d49f62c45774a85115f2e"
+            "sha256": "64f413d92e91b06d3d21f0eb0fc35c1f6e9e43591450af55bfcec134079c6c15"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "2c8a961ec89e2fab9da552367d2d8e320540514e1fd11c22c0a5a85c67260817"
+            "sha256": "2a78c876916c7c70a2931a56c63073b4f8b731fc373b7a036c9f3dadefa17e8b"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -106,104 +106,8 @@
             "sha256": "3b4aabe452593facca2e916f6e42e1ca7be3dc94502368e603292353eea80ff5"
         },
         {
-            "path": "src/main/db/migrations/001_init.sql",
-            "sha256": "9520b146c9eaffaf10ab120b1221c2459fd60c1ea94be1af1f644daafd5d5169"
-        },
-        {
-            "path": "src/main/db/migrations/002_indexes.sql",
-            "sha256": "9ae7965b97f721a2db5dedd918f229779db4a917ec7c71d0324bc3b928322f05"
-        },
-        {
-            "path": "src/main/db/migrations/003_ai_notes.sql",
-            "sha256": "41ccc316b8dc291562950257dc573f0f1ed00866dc7b9dc694636da18c949333"
-        },
-        {
-            "path": "src/main/db/migrations/004_lineage.sql",
-            "sha256": "f8b57b3a4f9d40401ebc90ec666c46b2b135ab47d9da67f9854961571fda05b5"
-        },
-        {
-            "path": "src/main/db/migrations/005_cited_by.sql",
-            "sha256": "020264ff845287491eba3644332a3ff95ef592bb2267e91d5cd33055a7086164"
-        },
-        {
-            "path": "src/main/db/migrations/006_lineage_ref_edges.sql",
-            "sha256": "282fc012e844b9c589bf5685388e1dca9dfba3655c9685d69d05efd006aa1d22"
-        },
-        {
-            "path": "src/main/db/migrations/007_lineage_node_tags.sql",
-            "sha256": "8c8d331addeec993c802ca2c82fbf0c3f3828b1c14873eecad2c8439dd697bd9"
-        },
-        {
-            "path": "src/main/db/migrations/008_reading_time.sql",
-            "sha256": "0b096f12238996ee0b6a3b29426dbc423576f5588e7ccd9d937200daa73b0fd9"
-        },
-        {
-            "path": "src/main/db/migrations/009_reading_time_drop.sql",
-            "sha256": "50afe52ecf65b39ef14b5a54813438373e9af66b5c8342a373080c9a529ca4ef"
-        },
-        {
-            "path": "src/main/db/migrations/010_lineage_v2.sql",
-            "sha256": "2126ddcb0e02f04e192b056a00d1e4a39bf7294c7b6db189bd66253db640e87c"
-        },
-        {
-            "path": "src/main/db/migrations/011_tags_color.sql",
-            "sha256": "1d2a5deab5c142f55cd9a2dde97ea26857dc3bec3969b06cce62604059508b50"
-        },
-        {
-            "path": "src/main/db/migrations/012_folders_graphs.sql",
-            "sha256": "a12acbf09e97188492b6d609bdff9bf45ab038044a22d4c9dbdda01770922425"
-        },
-        {
-            "path": "src/main/db/migrations/013_lineage_edge_via.sql",
-            "sha256": "04db323e8eafe23d2f86f1ffb189ca4a340bb7c6e671c562c27028d293a7fce8"
-        },
-        {
-            "path": "src/main/db/migrations/014_lineage_edge_visual.sql",
-            "sha256": "af35164ffe4974beb046cee2324c74f2993c0923149ab4f23bc363911422cff1"
-        },
-        {
-            "path": "src/main/db/migrations/015_lineage_edge_blue_recolor.sql",
-            "sha256": "9c39e7fe2a2076e0023212e7093103c1ee82a1331cc0530695fe3a0ce293063e"
-        },
-        {
-            "path": "src/main/db/migrations/016_papers_folder_not_null.sql",
-            "sha256": "6f5da201fc0ff2243a7c7ed98586d3b45f5d7894bb1ffa30e83672f63e5c1c56"
-        },
-        {
-            "path": "src/main/db/migrations/017_papers_is_starred.sql",
-            "sha256": "c0a5a8dbdcb81846fc70938790ceaf56cf6254c686d145612d56b00d3eafc613"
-        },
-        {
-            "path": "src/main/db/migrations/018_app_meta.sql",
-            "sha256": "ecb4f7063e681c399f7329ed7053525101e271070be9098918a966f52321cfe3"
-        },
-        {
-            "path": "src/main/db/migrations/019_tags_folder_domain.sql",
-            "sha256": "15af477c77db728002d00b6344e4bed17955f8566474d030b2021203bbf372ed"
-        },
-        {
-            "path": "src/main/db/migrations/020_ai_domain.sql",
-            "sha256": "bd45472bffae79e04ed05115316e4a76c7fa109408acddb81974eea8b89477bc"
-        },
-        {
-            "path": "src/main/db/migrations/021_deletion_events.sql",
-            "sha256": "c8fdd02b5f8eb7c1423263d0d2e930f64162a66d3c15a4dea62e2d99c2fb88ec"
-        },
-        {
-            "path": "src/main/db/migrations/022_lineage_ghost_edges.sql",
-            "sha256": "e4ef34ab8fb20bf534e3d48f9e543ece008eb69f2dfbb67d5f1165d2325dc2fb"
-        },
-        {
-            "path": "src/main/db/migrations/023_paper_figures.sql",
-            "sha256": "18edac69e4e93853ba70fa8743367965d0bdc6ccb1219bebb1d606d4803e4c36"
-        },
-        {
-            "path": "src/main/db/migrations/024_lineage_floating_notes.sql",
-            "sha256": "8f1b8c56c7e34e16ec15895d0e46fa0ec0ee94ec8bc359bee2c2ca948a1b05be"
-        },
-        {
-            "path": "src/main/db/migrations/025_lineage_edge_anchors.sql",
-            "sha256": "0629f7f33a878460c99362c83be39d17e48bda7cd70a4b766c0f6496406c8cec"
+            "path": "src/main/db/migrations/026_baseline.sql",
+            "sha256": "6c165f4c76093d52636e459cec4d9ef2b238ed5e3113f7c68b50fc734751db05"
         },
         {
             "path": "src/renderer/app/StatusBar.tsx",
@@ -590,56 +494,8 @@
             "sha256": "744d318ebc08b41c64a8778d2692a09f39bd088ece22e18549303158df9511c3"
         },
         {
-            "path": "tests/unit/db/migrate-022-ghost-edges.test.ts",
-            "sha256": "bc9d7088bd8e4139d709a993e857bfb92bc8dedf4548d84be89377fe6a59f492"
-        },
-        {
-            "path": "tests/unit/db/migrate-025-edge-anchors.test.ts",
-            "sha256": "69aac205d5083669eda226b8b21b63733eef798d7de194bf78bf0c708e71c58e"
-        },
-        {
-            "path": "tests/unit/db/migrate-ai-domain.test.ts",
-            "sha256": "f403cf77d33546b4c8cb530480fc513a712ddf84ae81837c74bd478616da35a1"
-        },
-        {
-            "path": "tests/unit/db/migrate-app-meta.test.ts",
-            "sha256": "c097ce4de5af85ed149e382c628079e9a063c5c1b0ea3b655a74be58ee4a020d"
-        },
-        {
-            "path": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-            "sha256": "6e0c760f1922db4d1cda2037c248f15237095e66b01ca9a9c362bf920ee08fe0"
-        },
-        {
-            "path": "tests/unit/db/migrate-folders-graphs.test.ts",
-            "sha256": "ec7a5d425bf953ce2530bf6a85eb75fce8477f38d3a56112464f5c625984db8c"
-        },
-        {
-            "path": "tests/unit/db/migrate-lineage-v2.test.ts",
-            "sha256": "0d7d3531e5308ca7a124c938b5cf81880f9e1ec2c81a1a6624e52f2097341fc0"
-        },
-        {
-            "path": "tests/unit/db/migrate-paper-figures.test.ts",
-            "sha256": "02dfe91aa5eec6f05005df92f18b00273bc1714df2caa3c51818ed2113573910"
-        },
-        {
-            "path": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-            "sha256": "73848474815e01829df33238cf18725991ad2bb9b07f67a610911479c258b95f"
-        },
-        {
-            "path": "tests/unit/db/migrate-papers-is-starred.test.ts",
-            "sha256": "9963b252da3c67be8d623ed6cf6d7411e4b9d3a42e953f172ec1e7e822874f11"
-        },
-        {
-            "path": "tests/unit/db/migrate-reading-time.test.ts",
-            "sha256": "e6e8daf0ca8b82bb6508da2b9981a907d7176cb360172f72a58312df56c26946"
-        },
-        {
-            "path": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-            "sha256": "4cc1ebec0eaa74bffae8bfcf2850324839b65117a9fb7050708d72ed090d72fc"
-        },
-        {
             "path": "tests/unit/db/migrate.test.ts",
-            "sha256": "5225f1604c887ab8d324f3103ef247b2b9df79accc93c1c272781eb4a149ec98"
+            "sha256": "9aa9a7313fa77dfde5d46e6e15e4e2bf0a9bc1a6c35f1678c03b05a13be23a0f"
         },
         {
             "path": "tests/unit/db/repos/ai-context.repo.test.ts",
@@ -687,7 +543,7 @@
         },
         {
             "path": "tests/unit/db/repos/floating-notes.repo.test.ts",
-            "sha256": "3e725580933643a1fc8f85aed8054012ec3006a7788bc35e6ae8d65cd1903a99"
+            "sha256": "165ed784d2ce7616976606154e7c5f7ab4d26fb16b92f9d0725f139d9b9d7249"
         },
         {
             "path": "tests/unit/db/repos/import-snapshot.repo.test.ts",
@@ -723,7 +579,7 @@
         },
         {
             "path": "tests/unit/db/repos/snapshot.repo.test.ts",
-            "sha256": "8ce240a7898c8bb0590b240897942765b74f9c81b09224e3e3dbb18fba7362e1"
+            "sha256": "9665ef949a2f8235323ccc9d6a163b600435af6b46d43149ea5be5b6adfb30d3"
         },
         {
             "path": "tests/unit/db/repos/tags-color.repo.test.ts",
@@ -1919,7 +1775,7 @@
         },
         {
             "path": "tests/unit/services/import-snapshot.service.test.ts",
-            "sha256": "fa624f143d092f79adf8b70ab846b9f2e099519e0d11204c65e0a8a689914db4"
+            "sha256": "818b2842bf31ace9806e4e9c862362defe92e51697cbef21282775378c84259b"
         },
         {
             "path": "tests/unit/services/import.service.test.ts",
@@ -1947,7 +1803,7 @@
         },
         {
             "path": "tests/unit/services/lineage-edge-via.test.ts",
-            "sha256": "fc6eb18f1c1119dfaf15526458ed87706582e850db3e1b3847cc65063ac27872"
+            "sha256": "0f579ec34ab9280ca7d0bbc930f276fa2b8bd9c9d9168b776b2418f57e0f09d1"
         },
         {
             "path": "tests/unit/services/lineage-import.test.ts",
@@ -1963,11 +1819,11 @@
         },
         {
             "path": "tests/unit/services/lineage-tags.test.ts",
-            "sha256": "79bba006c44cb17f964de9a648d8d9dccb4be64d22e0ecc86db7250a91fc8480"
+            "sha256": "364693b68dd6f8abc13d8e60ddb18734ae258a6a2ab73243ab2263730741de93"
         },
         {
             "path": "tests/unit/services/lineage-u8-linetype.test.ts",
-            "sha256": "d18878aad878df2ca43e66b567d7e923cfaad946497b0709265e76a2bc2a0d55"
+            "sha256": "0613b3ad1d99e075967caf437e2c3106b7852e055f87a19174325ba053103b51"
         },
         {
             "path": "tests/unit/services/lineage-v2-model.test.ts",

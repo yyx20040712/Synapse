@@ -28,7 +28,8 @@
  * - 水位 recv_seq:<owner> 分键（空键≡0/跳号合法/拒收卷不推进——§13.4）；导入
  *   日志 import_log:<owner>:<seq>=payload_sha256（仅 applied 落——r3-N1）；
  *   拒收统计 import_reject_stats 全局单键 JSON。经 app_meta KV 语句面，零新
- *   迁移（user_version 恒 21）。
+ *   迁移（不依赖迁移链演进——〔F-SNAPCLEAN-01 勘正：原「user_version 恒 21」
+ *   为撰写时态，批前已滞后于链尾演进〕）。
  * - FTS×3 rebuild：external content 对账步（§13.2⑥——触发器已自动维护，
  *   rebuild=防御性）。**实现形态偏离票面字面**（简报③-4 原文 'rebuild' 专用
  *   语法）：三 FTS 表列名与源表映射错位（papers_fts.authors↔papers.
