@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
+            "sha256": "306d536b353f4170dc16d3240f64a259a80bf9cd1afc29e85de1e4e88601bc8e"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -355,7 +355,7 @@
         },
         {
             "path": "tests/e2e/lineage.spec.ts",
-            "sha256": "190b2f36c678f233dd92ea2e7e03e98e7cf5b0db6e20406e6a3d36b26a6a3681"
+            "sha256": "86c5ffbb4dff3dabdadd283e149d745816320afbd64eb9d03c86ccc3384365f6"
         },
         {
             "path": "tests/e2e/meta-year-month.spec.ts",
@@ -883,7 +883,7 @@
         },
         {
             "path": "tests/unit/renderer/lib-pane-widths.test.tsx",
-            "sha256": "2d4e37a3773bbf9415d54e0635274d674500af2873d77852b4fd385687b6b579"
+            "sha256": "0388bb0a17007eb24e74080974be75da3084b7fd0d887d4d16eede62eb35abea"
         },
         {
             "path": "tests/unit/renderer/library-cards.test.tsx",

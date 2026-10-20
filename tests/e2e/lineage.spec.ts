@@ -1408,7 +1408,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         return { x: r.x, y: r.y, w: r.width, h: r.height }
       })
     )
-    expect(boxes.length).toBe(2)
+    expect(boxes.length, '几何采样数=候选槽实计数（行为锚=前置 toHaveCount）').toBe(await cands.count())
     // 末卡下界（rect 时代延伸域锚沿承——+20=旧 20px 行隙遗产；网格语义下
     // 候选恒落 cell 集，本容差仅放宽下界不参与 rect↔算术判别）
     const lastBottom = await win.evaluate((frameKey) => {
@@ -2050,7 +2050,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       const clipRight = el.getBoundingClientRect().right - parseFloat(getComputedStyle(el).borderRightWidth)
       return Array.from(el.querySelectorAll('.tl-card')).map((c) => c.getBoundingClientRect().right - clipRight)
     })
-    expect(clip.length).toBe(3)
+    expect(clip.length, '裁切采样数=月框卡实计数（行为锚=同例单行三卡计数）').toBe(await frame.locator('.tl-card').count())
     for (const over of clip) {
       expect(over, `卡右缘超裁切边界量（正=裁切）：${over.toFixed(1)}`).toBeLessThanOrEqual(0.5)
     }
@@ -2170,7 +2170,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .poll(async () => await root.evaluate((el) => (el.getAttribute('style') ?? '') === ''), { timeout: 10_000 })
       .toBe(true)
     const cell = positionOf(3, w)
-    expect(cell.row, 'γ4 落位行=奇行（positionOf 奇行支）').toBe(1)
+    expect(cell.row, 'γ4 落位行=奇行=非首行（精确行值由同例行分布锚+DOM 序末位蕴含承载；≤1px 锚=positionOf 同源一致性，非独立行值锁）').toBeGreaterThan(0)
     const gb = await root.boundingBox()
     if (gb === null) throw new Error('落位卡不可见')
     expect(

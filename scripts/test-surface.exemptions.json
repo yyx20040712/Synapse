@@ -1,4 +1,35 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(boxes.length).toBe(2)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 内部簿记（几何采样数与前置 toHaveCount(2) 行为锚同值重复锁）+R2 等价改写问=计数行为不变的实现重构不应红此簿记锚——新断言=关系式 boxes.length===cands.count()，行为锚由同例 toHaveCount 承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(clip.length).toBe(3)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 内部簿记（裁切采样数与同例已锁卡数重复锁，:1411 同型）+R2 等价改写问=卡集不变的实现重构不应红此簿记锚——新断言=关系式 clip.length===月框卡实计数，行为锚由同例单行三卡计数承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    },
+    {
+      "file": "tests/e2e/lineage.spec.ts",
+      "assertionText": "expect(cell.row, 'γ4 落位行=奇行（positionOf 奇行支）').toBe(1)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 坐标簿记（positionOf 同源公式自断言近恒真；双射往返已由 lineage-capacity 单测锁）+R2 等价改写问=网格行为不变的实现重构不红此簿记——新断言=非首行关系 toBeGreaterThan(0)，精确行值由同例 partitionRows [3,1] 锚+落位算术 ≤1px 锚承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lib-pane-widths.test.tsx",
+      "assertionText": "expect(cssExp).toMatch(/\\.lib-fnav\\s*\\{[^}]*width:\\s*var\\(--lib-fnav-w,\\s*224px\\);/)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P3 松化：R2 等价改写问=CSS 行为不变换写（空白形态/规则在两载体文件间迁移）可红源文本正则——R1 值源问=224px 为 INV-147 声明缺省（值精度保持不随形松化）——新断言=空白全剥离归一存在性（属性名 width+var(--lib-fnav-w)+关键值 224px），退化形态经变异红证；RR1 收窄后锚选择器规则块域",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    },
+    {
+      "file": "tests/unit/renderer/lib-pane-widths.test.tsx",
+      "assertionText": "expect(cssLib).toMatch(/\\.lib-drawer\\s*\\{[^}]*width:\\s*var\\(--lib-drawer-w,\\s*316px\\);/)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P3 松化：R2 等价改写问=CSS 行为不变换写可红源文本正则——R1 值源问=316px 为 INV-147 声明缺省（值精度保持）——新断言=空白全剥离归一存在性（width+var(--lib-drawer-w)+316px），退化形态经变异红证；RR1 收窄后锚选择器规则块域",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    }
+  ]
 }

@@ -546,6 +546,12 @@ describe('F-VISFB-41 LibraryPage 接线面——双侧分隔条挂载与 CSS 载
     join(process.cwd(), 'src/renderer/features/library/library-explorer.css'),
     'utf8'
   )
+  // [F-TESTLOCK-01 Q3 P3] 空白全剥离归一——CSS 等价换写（空白形态/属性序/规则
+  // 在两载体文件间迁移）零红，锚属性名+关键值不锚排版（判分见批档
+  // classification-unit.md；值精度 224/316=INV-147 声明缺省原样在场）。
+  // [RR1·RR2] 先剥 /* */ 注释再归一——注释通道不得供匹配（属性名边界由断言
+  // 正则 (?:[^};]*;)* 前缀锚定——先验属性各成完整 prop; 段，width 非 *-width 子串）。
+  const normCss = (s: string): string => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, '')
 
   it('双 .lib-sep 在位：左条=.lib-fnav 之后·右条=.lib-drawer 之前；.lib-page>.lib-fnav 直子锚不破', async () => {
     await mountPage()
@@ -579,8 +585,8 @@ describe('F-VISFB-41 LibraryPage 接线面——双侧分隔条挂载与 CSS 载
 
   it('CSS 载体逐值锁：.lib-fnav/.lib-drawer 宽=页根变量（缺省 224/316 零变）+.lib-sep 热区 7px', async () => {
     await mountPage()
-    expect(cssExp).toMatch(/\.lib-fnav\s*\{[^}]*width:\s*var\(--lib-fnav-w,\s*224px\);/)
-    expect(cssLib).toMatch(/\.lib-drawer\s*\{[^}]*width:\s*var\(--lib-drawer-w,\s*316px\);/)
+    expect(normCss(cssLib + cssExp), '.lib-fnav 宽=页根变量（缺省 224px——INV-147；P3 锚选择器规则块内属性名+关键值：空白/属性序/载体文件不锚）').toMatch(/\.lib-fnav\{(?:[^};]*;)*width:var\(--lib-fnav-w,224px\)/)
+    expect(normCss(cssLib + cssExp), '.lib-drawer 宽=页根变量（缺省 316px——INV-147；P3 锚选择器规则块内属性名+关键值：空白/属性序/载体文件不锚）').toMatch(/\.lib-drawer\{(?:[^};]*;)*width:var\(--lib-drawer-w,316px\)/)
     expect(cssLib).toMatch(/\.lib-sep\s*\{[^}]*width:\s*7px;/)
   })
 })
