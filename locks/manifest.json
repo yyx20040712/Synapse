@@ -87,11 +87,11 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "a67d773bc075292c3aaf26e5cd8596c991cc4c5fa896252296101645620e0a71"
+            "sha256": "fe9e375df7b645f0f8648c0cbccb9410967775e3a8a50cc68b6a5f4459f53c70"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "2a78c876916c7c70a2931a56c63073b4f8b731fc373b7a036c9f3dadefa17e8b"
+            "sha256": "7c1051f6e2bc3943b7c1dbe4da229694455681b8875a346c99279e555edb733f"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
