@@ -119,8 +119,9 @@ PASS cfg:7cad99403681）+项目账本 ruling 行（.zcode/org-ledger.jsonl:1576�
 
 ## §6 CI 回执
 
-- 本批 4098b28f 已推送（075eecb3..4098b28f）；CI run=39529386315 在跑——
-  **success 方闭场**；非 success 先定性（非确定失败单现→复跑定绿+flake 台账；
-  同指纹复现→立案排查——spec 改动面 CI 窄视口首秀为观察位，红即按 F-CIFLK-01
-  谱系立案）。
-- 本交接书 docs 笔=下场首动作核验对象。
+- 本批实现笔=07b6f249+docs 笔=b1d02e2c 已推送（075eecb3..b1d02e2c——4098b28f/
+  fbf7b0d9 经 amend 重组：范围闸逐提交判定，[test-refactor] 尾注误挂须改提交
+  信息清偿，尾注史留痕=仓外批档 closeout.md §四-1）；CI run=39531953369
+  **success 亲验**（manifest 尾注检查+六道关卡双 job 全绿——spec 改动面 CI 窄
+  视口首秀绿，观察位清零）。
+- 本交接书 docs 笔=下场首动作核验对象（本笔推送后随 supersede 形态既定）。
