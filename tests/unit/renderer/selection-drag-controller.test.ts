@@ -13,8 +13,9 @@
  *  mousemove 只写 ref（零选区写，pointer 供投影消费）/echo 精确抑制（canonical
  *  signature 相等——探针 E1/E2 逐字回声）/有界振荡退出（CAP=3+mousemove 重开
  *  写窗——B4 加严）/mouseup 会话终局后外部选区不吞（B4-3 S5 窗语义）/
- *  shift+click 锚侧违例投影/栏顶之上=栏首+栏底之下=栏尾/中缝悬停元素槽位形态
- *  （探针 E9——focus=(span,0) 元素形）。
+ *  shift+click 锚侧违例投影/越顶=首带+越底=末带（F-VISFB-53CI-02 B3——按 B2 二值，
+ *  视觉序单源）/中缝悬停元素槽位形态（探针 E9——focus=(span,0) 元素形）/
+ *  ⑮ 间隙最近带+等距取上带（B1 新契约）/⑯ 乱序 DOM 越顶越底取视觉首末带（B3）。
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
@@ -24,8 +25,21 @@ import { createSelectionDragController } from '../../../src/renderer/features/re
  * 双栏夹具（结构对齐 0C fixture 形态：左右栏+中缝+行带）：
  * 左栏 L1..L3 x[10,90]、右栏 R1..R3 x[210,290]、中缝 [90,210]、
  * 行带 y：[10,20]/[34,44]/[58,68]；textLayer 原点 (0,0)=client 坐标同构。
+ * order=DOM 追加序自订（⑯ 乱序形态——缺省=文档序）。
  */
-function makeTwoColLayer(): {
+const FIXTURE_TEXT: Record<string, string> = {
+  L1: 'LEFT ONE', L2: 'LEFT TWO', L3: 'LEFT THREE',
+  R1: 'RIGHT ONE', R2: 'RIGHT TWO', R3: 'RIGHT THREE'
+}
+const FIXTURE_BOX: Record<string, { top: number; bottom: number; left: number; right: number }> = {
+  L1: { top: 10, bottom: 20, left: 10, right: 90 },
+  L2: { top: 34, bottom: 44, left: 10, right: 90 },
+  L3: { top: 58, bottom: 68, left: 10, right: 90 },
+  R1: { top: 10, bottom: 20, left: 210, right: 290 },
+  R2: { top: 34, bottom: 44, left: 210, right: 290 },
+  R3: { top: 58, bottom: 68, left: 210, right: 290 }
+}
+function makeTwoColLayer(order?: string[]): {
   page: HTMLElement
   layer: HTMLElement
   spanOf: (id: string) => HTMLSpanElement
@@ -36,20 +50,15 @@ function makeTwoColLayer(): {
   const layer = document.createElement('div')
   layer.className = 'textLayer'
   stubRectOf(layer, { top: 0, bottom: 120, left: 0, right: 300 })
-  const mk = (id: string, text: string, b: { top: number; bottom: number; left: number; right: number }): HTMLSpanElement => {
+  const mk = (id: string): HTMLSpanElement => {
     const s = document.createElement('span')
     s.id = id
-    s.textContent = text
-    stubRectOf(s, b)
+    s.textContent = FIXTURE_TEXT[id]!
+    stubRectOf(s, FIXTURE_BOX[id]!)
     layer.append(s)
     return s
   }
-  mk('L1', 'LEFT ONE', { top: 10, bottom: 20, left: 10, right: 90 })
-  mk('L2', 'LEFT TWO', { top: 34, bottom: 44, left: 10, right: 90 })
-  mk('L3', 'LEFT THREE', { top: 58, bottom: 68, left: 10, right: 90 })
-  mk('R1', 'RIGHT ONE', { top: 10, bottom: 20, left: 210, right: 290 })
-  mk('R2', 'RIGHT TWO', { top: 34, bottom: 44, left: 210, right: 290 })
-  mk('R3', 'RIGHT THREE', { top: 58, bottom: 68, left: 210, right: 290 })
+  for (const id of order ?? ['L1', 'L2', 'L3', 'R1', 'R2', 'R3']) mk(id)
   page.append(layer)
   document.body.append(page)
   return {
@@ -155,8 +164,8 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     }
     expect(sel().focusNode).toBe(f.textOf('R2'))
     expect(sel().focusOffset).toBe(4)
-    // selectionchange 时刻以「最后一 move」的 pointer 投影：y=52 → L2/L3 行带间隙下沿
-    // 取下带 L3（阅读序下行）；px=240 ≥ 锚栏 x1 → 行尾
+    // selectionchange 时刻以「最后一 move」的 pointer 投影：y=52 落 L2/L3 间隙——
+    // [F-VISFB-53CI-02 B1] 间隙取最近带：距 L3 顶 6 < 距 L2 底 8 → L3；px=240 ≥ 锚栏 x1 → 行尾
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(10)
@@ -233,19 +242,35 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     expect(sel().focusOffset).toBe(3)
   })
 
-  it('⑨ 指针越出栏带：低于栏底=栏尾（DOM 序末项文本尾）、高于栏顶=栏首（首项 offset 0）', () => {
+  it('⑨ 指针越出栏带：低于栏底=视觉末带按 x 二值、高于栏顶=视觉首带按 x 二值（53CI-02 B3 改写——原 DOM 序首末项契约废止）', () => {
+    // [F-VISFB-53CI-02 B3 改写] 越顶/越底=视觉首带/末带按 B2 二值（px≥x1→带内最右
+    // 盒文本尾，px≤x0→最左盒 offset 0）——不再 DOM 序首项恒 offset 0/末项恒文本尾
     const f = makeTwoColLayer()
     const ctl = createSelectionDragController({ pageRoot: f.page })
     down(ctl, f.spanOf('L1'), 20, 15)
+    // 越底 + px≥x1 → 末带行尾（L3 文本尾 10）
     move(250, 200)
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R3'), 2)
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(10)
+    // 越顶 + px≥x1 → 首带行尾（L1 文本尾 8——旧契约为首项 offset 0，改写点）
     move(250, 5)
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R3'), 2)
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L1'))
+    expect(sel().focusOffset).toBe(8)
+    // 越顶 + px 落栏 x 域内（x0<20<x1）→ 首带行首 offset 0
+    move(20, 5)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R3'), 2)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L1'))
+    expect(sel().focusOffset).toBe(0)
+    // 越底 + px≤x0 → 末带行首 offset 0（旧契约恒末项文本尾，改写点）
+    move(8, 200)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R3'), 2)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(0)
   })
 
@@ -330,5 +355,48 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     // 第二发同签名 S（同会话内再次到达）：签名已消费——不再抑制（false=转发）
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('L2'), 8)
     expect(ctl.onSelectionChange()).toBe(false)
+  })
+
+  it('⑮ [F-VISFB-53CI-02 B1] 间隙取最近带：偏上→上带/偏下→下带/等距取上带（阅读序保守防外扩）', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L1'), 20, 15)
+    // L2 带 [34,44] 与 L3 带 [58,68] 的间隙 (44,58)：y=46 距上带底 2 < 距下带顶 12 → 上带 L2 行尾
+    move(250, 46)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    expect(sel().focusOffset).toBe(8)
+    // y=55 距下带顶 3 < 距上带底 11 → 下带 L3 行尾
+    move(250, 55)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L3'))
+    expect(sel().focusOffset).toBe(10)
+    // y=51 等距（7==7）→ 取上带 L2（旧契约恒取下带 L3，判别点）
+    move(250, 51)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    expect(sel().focusOffset).toBe(8)
+  })
+
+  it('⑯ [F-VISFB-53CI-02 B3] 乱序 DOM 形态：越顶/越底取视觉首带/末带（rowBandsOf 视觉序单源，非 DOM 序首末项）', () => {
+    // DOM 追加序 L2,R1,L3,R2,L1,R3——左栏 DOM 序=[L2,L3,L1]；视觉序=[L1,L2,L3]
+    const f = makeTwoColLayer(['L2', 'R1', 'L3', 'R2', 'L1', 'R3'])
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    down(ctl, f.spanOf('L2'), 20, 39)
+    // 越顶 y=5：视觉首带=L1（DOM 首项=L2——旧契约投影 L2 offset 0 在此红）；px≥x1 → 行尾 8
+    move(250, 5)
+    sel().setBaseAndExtent(f.textOf('L2'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L1'))
+    expect(sel().focusOffset).toBe(8)
+    // 越底 y=200：视觉末带=L3（DOM 末项=L1——旧契约投影 L1 文本尾 8 在此红）→ L3 行尾 10
+    move(250, 200)
+    sel().setBaseAndExtent(f.textOf('L2'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    expect(sel().focusNode).toBe(f.textOf('L3'))
+    expect(sel().focusOffset).toBe(10)
   })
 })

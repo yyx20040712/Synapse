@@ -26,9 +26,12 @@
  *   终态——归一化振荡有界退出）→ 转发调度器。
  *   转发后 rAF 帧点 evaluate.visual 与 mouseup 的 evaluate.full 同读 window
  *   selection=visual-full-mouseup 共用 effective selection 单源（禁两套几何）。
- * - 投影语义：pointer y 落行带→该行（带间隙取阅读序下带）；px ≥ 锚栏 x1 →
- *   行尾（带内最右盒文本尾）、px ≤ x0 → 行首（最左盒 offset 0）；y 高于
- *   栏顶→栏首（DOM 序首项 offset 0）、低于栏底→栏尾（DOM 序末项文本尾）。
+ * - 投影语义（[F-VISFB-53CI-02] B1/B2/B3 新契约——选区范围恒等鼠标投影，禁
+ *   结构性外扩）：pointer y 落行带→该带；y 落带间隙→距 y 最近带（比较
+ *   y−上带.bottom 与 下带.top−y，等距取上带=阅读序保守防外扩）；y 越首带顶
+ *   →视觉首带、越末带底→视觉末带（rowBandsOf 输出=视觉序单源，不再 DOM 序
+ *   首末项）；带内 x 二值：px ≥ 锚栏 x1 → 带内最右盒文本尾、px ≤ x0 → 最左
+ *   盒 offset 0（栏尾全选仅指针真处栏底以下时成立）。
  * - 元素槽位形态边界（探针 E9：中缝悬停解析为邻行 span 槽位 (span,0)）按
  *   span 归属判栏；全宽带/旋转盒/不可解析边界（页外/工具条等）不判违例
  *   （全宽标题行内拖选不受扰——51 号头注「52 持最终语义裁量」的落法）。
@@ -184,26 +187,32 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     return bands
   }
 
-  /** 投影目标（头注行为层投影语义）：y 越栏带→栏首/栏尾；落带/间隙→该行
-   *  （间隙取阅读序下带）；行内按 rowEnd 定行尾（最右盒文本尾）/行首 */
+  /** 投影目标（头注行为层投影语义——[F-VISFB-53CI-02] B1/B2/B3）：y→行带映射
+   *  （带内=该带；间隙=距 y 最近带，等距取上带；越顶/越底=视觉首带/末带——
+   *  rowBandsOf 视觉序单源）；行内按 rowEnd 定行尾（最右盒文本尾）/行首 */
   function projectTo(s: DragSession, y: number, rowEnd: boolean): DragBoundary | null {
     const items = s.colItems
     if (items.length === 0) return null
     const bands = rowBandsOf(items)
-    if (y < bands[0]!.top) {
-      return { node: items[0]!.text, offset: 0 }
-    }
-    if (y > bands[bands.length - 1]!.bottom) {
-      const last = items[items.length - 1]!
-      return { node: last.text, offset: last.text.data.length }
-    }
-    let band = bands[bands.length - 1]!
-    for (const b of bands) {
-      if (b.bottom > y) {
-        band = b
+    let band = bands[0]!
+    const last = bands[bands.length - 1]!
+    if (y > last.bottom) {
+      band = last // 越末带底 → 视觉末带
+    } else if (y >= band.top) {
+      // 带内或间隙：首个 y ≤ bottom 的带；y < 其 top=间隙 → 距 y 最近带（等距取上带）
+      for (let i = 0; i < bands.length; i += 1) {
+        const b = bands[i]!
+        if (y > b.bottom) continue
+        if (y >= b.top) {
+          band = b
+        } else {
+          const prev = bands[i - 1]!
+          band = y - prev.bottom <= b.top - y ? prev : b
+        }
         break
       }
     }
+    // y < bands[0].top=越首带顶 → band 初值（视觉首带）直用
     const pick = band.items.reduce((m, it) => (rowEnd ? it.box.x + it.box.w > m.box.x + m.box.w : it.box.x < m.box.x) ? it : m)
     return rowEnd ? { node: pick.text, offset: pick.text.data.length } : { node: pick.text, offset: 0 }
   }

@@ -30,6 +30,36 @@
       "assertionText": "expect(cssLib).toMatch(/\\.lib-drawer\\s*\\{[^}]*width:\\s*var\\(--lib-drawer-w,\\s*316px\\);/)",
       "reason": "F-TESTLOCK-01 Q3 试点 P3 松化：R2 等价改写问=CSS 行为不变换写可红源文本正则——R1 值源问=316px 为 INV-147 声明缺省（值精度保持）——新断言=空白全剥离归一存在性（width+var(--lib-drawer-w)+316px），退化形态经变异红证；RR1 收窄后锚选择器规则块域",
       "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
+    },
+    {
+      "file": "tests/e2e/selection-twocol.spec.ts",
+      "caseTitle": "F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条",
+      "reason": "F-VISFB-53CI-02 票据授权改写：B5 投影语义新断言追加（间隙段三断言）+R1 守卫补强（skips2/selText 非空）+RR2-2 lb2/rb2 域统一+收尾 sel53Verdict 死代码删——用例标题未动（INV-63），断言面签名变=授权演进",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
+    },
+    {
+      "file": "tests/unit/renderer/selection-drag-controller.test.ts",
+      "caseTitle": "⑨ 指针越出栏带：低于栏底=栏尾（DOM 序末项文本尾）、高于栏顶=栏首（首项 offset 0）",
+      "reason": "F-VISFB-53CI-02 B3 契约改写：越顶/越底=视觉首带/末带按 B2 二值（DOM 序首末项契约废止）——主控 INV-63 裁决随票更新标题（陈旧已反转义=误导性契约面），断言面同步演进",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
+    },
+    {
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "快慢等价（INV-58 后半）：同夹具下 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）",
+      "reason": "F-VISFB-53CI-02 A2 语义改写：慢路零重画——同签名 settle 不再 setPaint，paint 保持快路帧（INV-58 演进已回写 docs/invariants.md:75）；锚由「逐位一致」改「保持快路帧+同源区间」",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
+    },
+    {
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）",
+      "reason": "F-VISFB-53CI-02 A2 语义改写+主控 INV-63 标题裁决：同签名 settle 不再 setPaint（mid-drag zoom=快 zoom1 帧保持），标题改实「A2 语义改写——同签名 settle 不再 setPaint，paint 保持快路帧」",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
+    },
+    {
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）",
+      "reason": "F-VISFB-53CI-02 RR2-1 红证改实：cancel 删除变异实测 8 用例全绿=无判别力（双路吸收），标题尾注改实「cancel 删除变异实测无判别力〔双路吸收〕，现存判别面=终局几何锚+防抖不补枪面」——it 保留（终态几何锚仍有值）",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     }
   ]
 }

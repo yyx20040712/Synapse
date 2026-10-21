@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "64f413d92e91b06d3d21f0eb0fc35c1f6e9e43591450af55bfcec134079c6c15"
+            "sha256": "72e46ec789f059ca42d66433a4a65b90baab0cc2d9b64ab92aafe26f9ea2e0bf"
         },
         {
             "path": "electron.vite.config.ts",
@@ -91,7 +91,7 @@
         },
         {
             "path": "scripts/test-surface.exemptions.json",
-            "sha256": "306d536b353f4170dc16d3240f64a259a80bf9cd1afc29e85de1e4e88601bc8e"
+            "sha256": "f61367be2604942d98da0bd9a2b24f68c76f55bdd2a567201efcb4909f73ef3c"
         },
         {
             "path": "scripts/test-surface/extract.mjs",
@@ -407,7 +407,7 @@
         },
         {
             "path": "tests/e2e/selection-twocol.spec.ts",
-            "sha256": "ebd53245e4b7d8e467c23bd46b468cd68c80e92a0b14e18bb686d4852cb9949d"
+            "sha256": "7dd45746ec93495fe8867ba467fb286fc77a80fe5e1e87857b23263259044666"
         },
         {
             "path": "tests/e2e/shell-rail.spec.ts",
@@ -1443,7 +1443,7 @@
         },
         {
             "path": "tests/unit/renderer/selection-drag-controller.test.ts",
-            "sha256": "c93cce6afe5e0aa2e77c7560d130fafbcb13ca0e20c0e9e57ac0a9e7040dcf49"
+            "sha256": "640f618fabfbda62a4c24bf6a42400f75eb149099b62cef15df7fd41d2929439"
         },
         {
             "path": "tests/unit/renderer/selection-drag-fixture.test.ts",
@@ -1451,7 +1451,7 @@
         },
         {
             "path": "tests/unit/renderer/selection-evaluate.test.tsx",
-            "sha256": "346be8db63a5efc5a71971d3271422de7bdc3e7adb4c591868c6a54f00f86a12"
+            "sha256": "22790a98b6f0bb355a637f488dc6d725ea9b2f99b2ade37c8c57f1214be9b19a"
         },
         {
             "path": "tests/unit/renderer/selection-flicker.test.tsx",

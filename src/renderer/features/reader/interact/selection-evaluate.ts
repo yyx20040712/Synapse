@@ -15,8 +15,9 @@
  *   ——gBCR/Range.gBCR 残余两项绝对量在场：零宽盒守卫 Range.gBCR×1+
  *   pixelBoxOf 基准盒×1，§12 归一化净面披露在档）。链=轻量偏移 probe（Range.toString
  *   ×2——省 selectionToAnchor 的 O(页文本) join+quote/prefix/suffix 切片与
- *   rectsBetweenPoints/medianFontSizeBetween 全量几何/量测链）→page-items.store
- *   直读页项→rectsForOffsetRange+基线分组+归一化→setPaint；**bands 项几何链
+ *   rectsBetweenPoints/medianFontSizeBetween 全量几何/量测链；[53CI-02 A1] probe
+ *   前 eff 边界双侧 snapBlankBoundary 归一化=区间推导同源，见下 F-VISFB-53 段）
+ *   →page-items.store 直读页项→rectsForOffsetRange+基线分组+归一化→setPaint；**bands 项几何链
  *   现算不缓存**（bandsFromItems 纯函数 O(被选项) 零布局读零 measureText——
  *   无缓存摊销必要；第四轮取证 §12 tick 实测在档佐证）。四道守卫前置强制
  *   ：(i) sel 空/坍缩→setPaint(null)；(ii) 跨页→
@@ -29,11 +30,14 @@
  *   自带 DOM 量测回退链）；全量的回退链=DOM 量测（b2 已建）——三层：快路径→
  *   全量→DOM 量测。快路径自身零 console.warn（回退诊断单源=evaluateCore 的
  *   itemChainFor，防每帧双 warn 刷屏）。
- * - **INV-58 等价/同帧覆盖**：快路径偏移域=probe 全文偏移（selectionToAnchor
- *   同源同式）→快慢产物同族同链等价；mouseup/settle 全量在快路径最后一帧后
- *   执行（mouseup 形态=cancel 先清 rAF 再同步全量），setPaint 以全量产物同帧
- *   覆盖（边界差额由此吸收——已知边界①/①'）。锚=selection-evaluate.test
- *   快慢等价 it+同帧覆盖 it（票面强制）。
+ * - **INV-58 等价/[F-VISFB-53CI-02 A2] 慢路零重画**：快路径偏移域=probe 全文
+ *   偏移（selectionToAnchor 同源同式+A1 归一化镜像=区间推导同源——paint 与
+ *   pending.anchor.rects 同 eff 归一化边界+同 item 链数学恒等）；**该 canonical
+ *   签名快路已画时 settle/mouseup 均不再 setPaint（paint 保持快路帧）**——慢路
+ *   终局权威仅剩 pending/工具条/拒绝门（fromMouseUp=true 恒执行语义不变）；
+ *   mouseup 终局改写（enforce/release-affinity）使签名≠快路已画签名时慢路照常
+ *   画终态帧；快路缺席形态（程序化/键盘选区）慢路照常 setPaint。锚=
+ *   selection-evaluate.test 快慢等价 it+同帧覆盖 it（A2 改写）+A1/A2 组四锚。
  * - [F-A6-b2] rects 产链切换（R-迁移主链+DOM 量测回退双路结构）：主链=
  *   pdf-item-geometry.itemSelectionGeometry（基线分组并块+归一化
  *   pixelBoxOf(textLayer) 同盒 INV-37+mergeRects 终裁；bands 同步切
@@ -56,29 +60,39 @@
  *   paint——W-4 三面）**：①统一=effectiveRangeOf（snapVisualBoundary 末行
  *   下方吸附+docOrderPair——visual 与 settle/mouseup 全量共用单源）——全量
  *   锚定经 rangeToAnchor（anchor-serialize 拆面）消费 eff 边界 Range，
- *   quote/paint/anchor 三通道同源；无标记命中形态 eff=raw 行为零变。乱序
- *   transform 形态下 raw 边界经 snapBlankBoundary('end') 栏分流可解到次行
- *   行首（丢行）=双几何交替源（d1 归因实证）。②同签名禁重复 paint=visual/
- *   settle 两路各自记录 canonical signature（52 号四元组域单源导出面
- *   canonicalSignatureOf/Equals）；同签名重复 selectionchange 零 paint 零
- *   校准重排；分路径缓存=同帧覆盖语义保持（full 首见恒执行——zoom 差分
- *   形态覆盖快帧）；fromMouseUp=true 恒执行（终局权威：跨页/G2 toast 门与
- *   工具条单一出口）。③失效点=save 清选区+mousedown 新会话（invalidate——
- *   52 回炉 B-1 纪隔离同精神，跨会话旧签名零残留）
+ *   quote/paint/anchor 三通道同源；无标记命中形态 eff=raw 行为零变。
+ *   **[F-VISFB-53CI-02 A1 区间推导同源]**：visual 探针段经
+ *   normalizedOffsetsOf（selection-effective-range 拆件）对 eff 边界双侧同调
+ *   snapBlankBoundary（rangeToAnchor :205-206 同根同侧同纯函数）+翻转兜底——
+ *   构造性等价不依幂等性（非幂等形态双侧各调一次同果；六形态单测锚转正）。
+ *   ②同签名禁重复 paint=visual/settle 两路各自记录 canonical signature（52 号
+ *   四元组域单源导出面 canonicalSignatureOf/Equals）；同签名重复
+ *   selectionchange 零 paint 零校准重排；分路径缓存=同帧覆盖语义保持（full
+ *   首见恒执行——zoom 差分形态覆盖快帧）；fromMouseUp=true 恒执行（终局权威：
+ *   跨页/G2 toast 门与工具条单一出口）。**[53CI-02 A2] 慢路零重画**：同签名
+ *   快路已画时 settle/mouseup 不再 setPaint（paint 保持快路帧——「停了以后块
+ *   还跳一下」观感根除；已知边界② zoom-mid-drag 差分形态=paint 保持拖选期
+ *   zoom 帧，语义披露如上 INV-58 段）。③失效点=save 清选区+mousedown 新会话
+ *   （invalidate——52 回炉 B-1 纪隔离同精神，跨会话旧签名零残留）
  *
  * ── 接口层 ── / ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - export function createEvaluate(ctx)：工厂返回 {visual, full} 双路径闭包
  *   （ctx=组件状态写口+挂载盒+文献 id——纯函数域件零 React 依赖）；
  *   PaintSelection/PendingSelection 类型随迁（SelectionLayer 消费）
  * - [F-RDR-01 B] module-level 导出三函数 markAffinityShortcutFlushed/
- *   shouldSkipVisual/clearAffinityShortcut（S5 短路窗——SelectionLayer mouseup
- *   mark/mousedown clear 接线消费）+docOrderPair（eff 边界文档序定序纯函数
- *   ——W-4 回炉单测消费面）；A 吸附经 anchor-blank-snap.
- *   snapVisualBoundary（interact→anchors 方向既有）
+ *   shouldSkipVisual/clearAffinityShortcut（S5 短路窗——selection-events
+ *   mouseup mark/mousedown clear 接线消费〔宿主自 SelectionLayer 迁出，
+ *   RR2 批门一 k1-W1 锤出改实〕）；docOrderPair/effectiveRangeOf 已迁
+ *   selection-effective-range（[F-VISFB-53CI-02 拆件——行数闸门兑现：
+ *   A1 镜像+A2 增量使本件超 500 红线余量不足，eff 边界域整体拆出；
+ *   docOrderPair 经本件 re-export 保持 W-4 回炉单测消费面）；A 吸附经
+ *   anchor-blank-snap.snapVisualBoundary（新件内——interact→anchors 方向既有）
  * - 依赖单向：本件→anchor-serialize/annotation-anchor/annotation-resolve/
- *   pdf-item-geometry/page-items.store/reader.store/selection-geometry（零环）
+ *   pdf-item-geometry/page-items.store/reader.store/selection-geometry/
+ *   selection-effective-range（零环）
  * - probeTextLength 消费自 anchor-serialize 导出面单源（F-GEOM-01-G2 收敛，
- *   本域复刻已删）
+ *   本域复刻已删；[53CI-02] 起消费点迁至 selection-effective-range.
+ *   normalizedOffsetsOf——visual 探针段归一化镜像内）
  * - tests/unit/renderer/selection-layer.test.tsx（既有行为面——G2 起含页项桩
  *   〔对账表 A——回退态不挂工具条〕）+
  *   selection-item-chain.test.tsx（F-A6-b2 接线面）+selection-evaluate.test.tsx
@@ -87,17 +101,21 @@
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { showToast } from '../../../shared/ui/Toast'
-import { probeTextLength, rangeToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
+import { rangeToAnchor, type SelectionAnchor } from '../anchors/anchor-serialize'
 import { findRangeAtOffset, fullTextOf, pixelBoxOf } from '../anchors/annotation-anchor'
 import { bandsForTextNodes, type RowBand } from '../anchors/annotation-resolve'
 import { calibrateBandsWithSpans } from '../anchors/annotation-band-calibrate'
-import { snapVisualBoundary } from '../anchors/anchor-blank-snap'
 import { clampScale, itemSelectionGeometry, reconcileItemsWithDom } from '../anchors/pdf-item-geometry'
 import type { ItemSelectionGeometry } from '../anchors/pdf-item-geometry'
 import { usePageItemsStore } from '../anchors/page-items.store'
 import { useReaderStore } from '../state/reader.store'
 import { canonicalSignatureEquals, canonicalSignatureOf, type CanonicalSignature } from './selection-drag-controller'
+import { effectiveRangeOf, normalizedOffsetsOf } from './selection-effective-range'
 import { closestPageRoot, pageIndexOf, toolbarMountPos } from './selection-geometry'
+
+// [F-VISFB-53CI-02 拆件] docOrderPair 迁至 selection-effective-range——re-export
+// 保持 W-4 回炉单测消费面（visual-snap-shortcut.test）零改
+export { docOrderPair } from './selection-effective-range'
 
 /** 跨页/跨出页盒选区的拒绝提示（F-02 主控裁决：INV-02 可见，禁静默） */
 const CROSS_PAGE_HINT = '选区跨页，不支持创建标注'
@@ -134,57 +152,11 @@ export function clearAffinityShortcut(): void {
   affinityFlushedAt = null
 }
 
-/** [F-RDR-01 A] eff 边界文档序定序：anchor/focus 无向（snapVisualBoundary 双侧
- *  同钳位目标），而 probe 探测位 start/end 有向（文档序）——映回文档序
- *  （无吸附时与 range.start/end 同源同值=行为零变）。[W-4 回炉③] 包含关系
- *  （元素槽位边界 vs 其后代文本节点）compareDocumentPosition 只定节点树序
- *  不定槽位（祖先恒「先于」后代，槽位实际可在后代之后）——该形态经
- *  Range.compareBoundaryPoints 点对点精确比较；非包含态 FOLLOWING/PRECEDING
- *  即文档序（规范语义），同节点按 offset。导出面=W-4 回炉单测消费
- *  （纯函数域件，几何域函数导出同 selection-geometry 先例） */
-export function docOrderPair(
-  a: { node: Node; offset: number },
-  b: { node: Node; offset: number }
-): [{ node: Node; offset: number }, { node: Node; offset: number }] {
-  if (a.node === b.node) {
-    return a.offset <= b.offset ? [a, b] : [b, a]
-  }
-  const pos = a.node.compareDocumentPosition(b.node)
-  if ((pos & (Node.DOCUMENT_POSITION_CONTAINS | Node.DOCUMENT_POSITION_CONTAINED_BY)) === 0) {
-    return (pos & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 ? [a, b] : [b, a]
-  }
-  // 包含形态：节点树序不定槽位——Range 点对点比较（jsdom/Chromium 同语义）
-  const pa = document.createRange()
-  pa.setStart(a.node, a.offset)
-  pa.setEnd(a.node, a.offset)
-  const pb = document.createRange()
-  pb.setStart(b.node, b.offset)
-  pb.setEnd(b.node, b.offset)
-  return pa.compareBoundaryPoints(Range.START_TO_START, pb) <= 0 ? [a, b] : [b, a]
-}
-
 /** [F-A4 a 面] 自绘并集层状态（页盒+归并 rects+F-A5 行簇字形带；清除=层卸载） */
 export interface PaintSelection {
   root: HTMLElement
   rects: AnnotationRect[]
   bands: RowBand[]
-}
-
-/** [F-VISFB-53] 统一快慢 effective boundary 的 eff 边界 Range（两路共用单源）：
- *  snapVisualBoundary 末行下方吸附（双侧，null=原始边界 fallback）→
- *  docOrderPair 文档序定序 → Range。visual 快路径与 settle/mouseup 全量锚定
- *  同消费本函数——快慢边界同源=闪烁根治主面（d1 归因：回退 DOM 家族+校准
- *  时机双几何交替——乱序 transform 形态下 raw 边界把行尾解到次行行首） */
-function effectiveRangeOf(sel: Selection): Range {
-  const aSnap = snapVisualBoundary(sel.anchorNode!, sel.anchorOffset, 'anchor')
-  const fSnap = snapVisualBoundary(sel.focusNode!, sel.focusOffset, 'focus')
-  const effAnchor = aSnap ?? { node: sel.anchorNode!, offset: sel.anchorOffset }
-  const effFocus = fSnap ?? { node: sel.focusNode!, offset: sel.focusOffset }
-  const [startB, endB] = docOrderPair(effAnchor, effFocus)
-  const range = document.createRange()
-  range.setStart(startB.node, startB.offset)
-  range.setEnd(endB.node, endB.offset)
-  return range
 }
 
 /** [回炉轮1 W2] 签名缓存槽位：真实签名 | 空选区 null | 未评估哨兵（三分） */
@@ -324,31 +296,27 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     // 单源 effectiveRangeOf）：替换原始边界进几何计算（空守卫 fallback=原始
     // 边界；双侧同钳位目标，方向对称由 docOrderPair 承担）
     const effRange = effectiveRangeOf(sel)
-    // 轻量偏移 probe（Range.toString ×2 O(页文本)——join/quote/prefix/suffix
-    // 切片与 rectsBetweenPoints/medianFontSize 全量几何量测链全省）
-    const lead = probeTextLength(textLayer, effRange.startContainer, effRange.startOffset, 'start')
-    const tail = lead === null ? null : probeTextLength(textLayer, effRange.endContainer, effRange.endOffset, 'end')
+    // [F-VISFB-53CI-02 A1] 区间推导同源：eff 边界双侧经 snapBlankBoundary 归一化
+    // +翻转兜底（normalizedOffsetsOf——与慢路 rangeToAnchor :205-206 同根同侧同调
+    // 一次=构造性等价，不依幂等性；等价链=新件头注）
     const entry = usePageItemsStore.getState().pages[pageNo + 1]
     let item: ItemSelectionGeometry | null = null
-    if (lead !== null && tail !== null && entry !== undefined) {
+    if (entry !== undefined) {
       const domText = fullTextOf(textLayer)
-      if (reconcileItemsWithDom(entry.text.items, domText)) {
-        const start = lead
-        const end = domText.length - tail
-        if (end > start) {
-          try {
-            const zoom = useReaderStore.getState().tabs[paperId]?.zoom ?? 1
-            item = itemSelectionGeometry({
-              items: entry.text.items,
-              styles: entry.text.styles,
-              viewport: { scale: clampScale(zoom), rotate: entry.geometry.rotate, view: entry.geometry.view },
-              start,
-              end,
-              base: pixelBoxOf(textLayer)
-            })
-          } catch {
-            item = null // 计算异常→回退（诊断单源=evaluateCore 链内 warn）
-          }
+      const offsets = reconcileItemsWithDom(entry.text.items, domText) ? normalizedOffsetsOf(textLayer, effRange, domText) : null
+      if (offsets !== null) {
+        try {
+          const zoom = useReaderStore.getState().tabs[paperId]?.zoom ?? 1
+          item = itemSelectionGeometry({
+            items: entry.text.items,
+            styles: entry.text.styles,
+            viewport: { scale: clampScale(zoom), rotate: entry.geometry.rotate, view: entry.geometry.view },
+            start: offsets.start,
+            end: offsets.end,
+            base: pixelBoxOf(textLayer)
+          })
+        } catch {
+          item = null // 计算异常→回退（诊断单源=evaluateCore 链内 warn）
         }
       }
     }
@@ -373,7 +341,11 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
   function full(fromMouseUp: boolean): void {
     const sig = canonicalSignatureOf(window.getSelection())
     if (!fromMouseUp && absorbed(lastFullSig, sig)) return
-    lastFullSig = sig
+    // [F-VISFB-53CI-02 A2] 慢路零重画判定（同步前捕获）：该 canonical 签名快路
+    // 已画（visual 侧已评估该签名）→settle/mouseup 均不再 setPaint（paint 保持
+    // 快路帧）；pending/工具条/G2 toast/跨页拒绝门照常执行；mouseup 终局改写
+    // （enforce/release-affinity）使签名≠快路已画签名时=false→慢路画终态帧
+    const paintedByVisual = absorbed(lastVisualSig, sig)
     // [回炉轮1 B→微回炉 W-1] 终局与 settle 两路完成后均同步 visual 签名缓存：
     // full 产物=该签名的权威渲染——mouseup 的 releaseAffinity/enforce 改写使终局
     // 签名 A≠拖选期 visual 已评估的 R 时（终局面），以及 S5 窗内改选 B 被
@@ -381,8 +353,9 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     // 后续窗外同签名 echo 在 visual 路命中吸收（否则快路径重画覆盖权威帧、
     // settle 路又被 lastFullSig 吸收无法纠正）。复审论证无害：lastFullSig 本就
     // 独立记录、同步不致 full 首见自吸收（sig 读取在 absorbed 判定之后）
+    lastFullSig = sig
     lastVisualSig = sig
-    evaluateCore(fromMouseUp, false)
+    evaluateCore(fromMouseUp, false, paintedByVisual)
   }
 
   /** [F-VISFB-53] 签名缓存失效：save 清选区时刻（SelectionLayer.save）与
@@ -393,11 +366,14 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     lastFullSig = UNEVALUATED
   }
 
-  function evaluateCore(fromMouseUp: boolean, visualOnly: boolean): void {
+  function evaluateCore(fromMouseUp: boolean, visualOnly: boolean, preservePaint = false): void {
+    // [F-VISFB-53CI-02 A2] preservePaint=true（该签名快路已画）时一切 setPaint
+    // 调用跳过（守卫路径 setPaint(null) 跳过无害——同签名同守卫结果 paint 已是
+    // null）；pending/工具条/toast 语义不受影响
     const sel = window.getSelection()
     if (sel === null || sel.rangeCount === 0 || sel.isCollapsed) {
       if (!visualOnly) setPending(null)
-      setPaint(null)
+      if (!preservePaint) setPaint(null)
       return
     }
     const anchorRoot = closestPageRoot(sel.anchorNode)
@@ -407,7 +383,7 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       // 防抖路径静默防拖选中途刷屏）
       if (fromMouseUp) showToast(CROSS_PAGE_HINT, 'info')
       if (!visualOnly) setPending(null)
-      setPaint(null)
+      if (!preservePaint) setPaint(null)
       return
     }
     // 两边界同盒（同为 null=页外选区——静默收起，与页列无关）
@@ -421,13 +397,13 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
     // textLayer 非空由 anchor 非空蕴含——并列检查保留防御语义
     if (anchor === null || textLayer === null) {
       if (!visualOnly) setPending(null)
-      setPaint(null)
+      if (!preservePaint) setPaint(null)
       return
     }
     const box = sel.getRangeAt(0).getBoundingClientRect()
     if (box.width === 0 && box.height === 0) {
       if (!visualOnly) setPending(null)
-      setPaint(null)
+      if (!preservePaint) setPaint(null)
       return
     }
     // [F-A6-b2] rects 产链切换：项几何链为主（R-迁移）——rects/bands 同由项
@@ -439,20 +415,20 @@ export function createEvaluate(ctx: EvaluateContext): EvaluateHandle {
       // G2 降级门（active——头注声明）：拖选期抑制渲染；toast 门=fromMouseUp
       // （门一 W2 口径——对齐跨页拒绝既有形态：settle 防抖路径静默防拖选中途
       // 刷屏，完成时刻可见=INV-02；pending 清面保持 !visualOnly 不动）
-      setPaint(null)
+      if (!preservePaint) setPaint(null)
       if (!visualOnly) setPending(null)
       if (fromMouseUp) showToast(GEOMETRY_REJECT_HINT, 'info')
       return
     }
     if (item !== null) {
       // [F-A9] 同 visual 快路径——预览带渲染时刻校准（快慢两路同款=INV-58 快慢等价保持）
-      setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
+      if (!preservePaint) setPaint({ root: anchorRoot!, rects: item.rects, bands: calibrateBandsWithSpans(textLayer, item.bands, pixelBoxOf(textLayer)) })
     } else {
       // [F-GEOM-01-G2 保存门] item 链失败＝仅显示不入库（设计书 §2.4）：paint 照渲
       // DOM 回退形状（视觉连续）；pending=null 不挂工具条＝无保存入口（「所见≠所存
       // 时不给保存入口」）；诊断单源＝itemChainFor 三因 warn（零新增 warn 位）
       const range = findRangeAtOffset(textLayer, anchor.start, anchor.end)
-      setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })
+      if (!preservePaint) setPaint({ root: anchorRoot!, rects: anchor.rects, bands: range !== null ? bandsForTextNodes(range.textNodes.map((t) => t.node), pixelBoxOf(textLayer)) : [] })
       if (!visualOnly) setPending(null)
       return
     }
