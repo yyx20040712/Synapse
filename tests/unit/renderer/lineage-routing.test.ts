@@ -30,7 +30,7 @@ function makeSnap(partial: Partial<LayoutSnapshot> = {}): LayoutSnapshot {
     labels: partial.labels ?? [],
     frames: partial.frames ?? [],
     yearHeads: partial.yearHeads ?? [],
-    contentW: partial.contentW ?? 800
+    contentW: partial.contentW ?? 600 // [F-DETOURW-01] 默认与 gridFrame 语义档一致（627.2−27.2=600——走线消费 contentW 后 frames 非空例须逐例对齐）
   }
 }
 
@@ -38,7 +38,7 @@ const CARD_W = 128
 const CARD_H = 72
 
 /** 网格框架夹具（border-box：fx0+12+φ+200k=卡左——98.4+13.6=112 基准；
- *  W=fw−27.2——fw=627.2 ⇒ W=600 ⇒ N=3/M=2） */
+ *  [F-DETOURW-01] 容量输入=makeSnap 默认 contentW 600=fw−27.2 语义档 ⇒ N=3/M=2） */
 function gridFrame(): { x: number; y: number; w: number; h: number; year: number } {
   return { x: 98.4, y: 80.4, w: 627.2, h: 720, year: 2022 }
 }
@@ -93,7 +93,10 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
         ['D', rect(100, 192, CARD_W, CARD_H)],
         ['B', rect(100, 284, CARD_W, CARD_H)]
       ]),
-      frames: [{ ...rect(90, 60, 600, 400), year: 2022 }]
+      frames: [{ ...rect(90, 60, 600, 400), year: 2022 }],
+      // [F-DETOURW-01] 对齐=f.w−27.2=572.8（声明口径归一化——改造前期望几何
+      // 按此档手推，行为保持）
+      contentW: 572.8
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
@@ -370,7 +373,10 @@ describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返
         { ...rect(66, 70.5, 592, 104), year: 2026 },
         { ...rect(66, 200.5, 592, 104), year: 2026 },
         { ...rect(66, 330.5, 592, 104), year: 2026 }
-      ]
+      ],
+      // [F-DETOURW-01] 对齐=Linux used 口径 592−26=566（本例=Linux/WSLg 实测
+      // 夹具——used border 1px/侧；N=3/M=2 档与旧派生 564.8 同档）
+      contentW: 566
     })
     expect(gridChannelsOf(snap).length, '通道全集非空（行集≥1 行）').toBeGreaterThan(0)
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
@@ -477,7 +483,8 @@ describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪
         ['B', rect(100, 300, CARD_W, CARD_H)]
       ]),
       yearHeads,
-      frames: [{ ...rect(90, 60, 600, 400), year: 2022 }]
+      frames: [{ ...rect(90, 60, 600, 400), year: 2022 }],
+      contentW: 572.8 // [F-DETOURW-01] 对齐=f.w−27.2（声明口径——行为保持）
     })
 
   it('对照基线：无 yearHead→direct（拦路实验的前提锁定）', () => {
@@ -578,7 +585,8 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
         ['B', rect(160, 244, CARD_W, CARD_H)]
       ]),
       labels: [label],
-      frames: [{ ...rect(98.4, 80.4, 400, 300), year: 2022 }]
+      frames: [{ ...rect(98.4, 80.4, 400, 300), year: 2022 }],
+      contentW: 372.8 // [F-DETOURW-01] 对齐=f.w−27.2=372.8（声明口径——N=2/M=1 档行为保持）
     })
 
   it('月标挡首选 slot→散开第二槽终落 band（骨架末段=slot1 锚+d 手推）', () => {

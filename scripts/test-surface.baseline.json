@@ -4950,7 +4950,7 @@
             "expect(win.locator('.drag-slot:not(.cand)')).toHaveText('置 入', { timeout: 5_000 })",
             "expect(win.locator('.drag-slot.cand').first()).toBeVisible()",
             "expect(cands).toHaveCount(2, { timeout: 5_000 })",
-            "expect(boxes.length).toBe(2)",
+            "expect(boxes.length, '几何采样数=候选槽实计数（行为锚=前置 toHaveCount）').toBe(await cands.count())",
             "expect(b.w, `候选槽 ${i} 宽度（零盒=不在场）`).toBeGreaterThan(0)",
             "expect(b.h, `候选槽 ${i} 高度（零盒=不在场）`).toBeGreaterThan(0)",
             "expect(b.x, `候选槽 ${i} 左界落源框内`).toBeGreaterThanOrEqual(frameBox.x - 0.5)",
@@ -5086,7 +5086,7 @@
             "expect(await frame.locator('.tl-row').first().locator('.tl-card').count(), '单行三卡').toBe(3)",
             "expect( await frame.locator('.tl-card').evaluateAll( (els, ts) => els.map((e) => ts.find((t) => (e.textContent ?? '').includes(t)) ?? ''), ['脉络根文献', '脉络甲文献', '脉络乙文献'] ) ).toEqual(['脉络根文献', '脉络甲文献', '脉络乙文献'])",
             "expect(new Set(cardWs).size === 1 && cardWs[0] === 128, `卡宽恒 128（实测 ${JSON.stringify(cardWs)}）`).toBe(true)",
-            "expect(clip.length).toBe(3)",
+            "expect(clip.length, '裁切采样数=月框卡实计数（行为锚=同例单行三卡计数）').toBe(await frame.locator('.tl-card').count())",
             "expect(over, `卡右缘超裁切边界量（正=裁切）：${over.toFixed(1)}`).toBeLessThanOrEqual(0.5)"
           ]
         },
@@ -5109,7 +5109,7 @@
             "expect(Math.abs(oddCand.y - (fb.y + bt + FRAME_PAD_TOP + PITCH_Y)), 'γ4 奇行候选 y=行 1 节距（≤1px）').toBeLessThanOrEqual(1)",
             "expect(ph).toHaveText('置 入', { timeout: 5_000 })",
             "expect(liveRowOdd, 'γ4 实态槽随插位入奇行（cell3 在流占位）').toBe(true)",
-            "expect(cell.row, 'γ4 落位行=奇行（positionOf 奇行支）').toBe(1)",
+            "expect(cell.row, 'γ4 落位行=奇行=非首行（精确行值由同例行分布锚+DOM 序末位蕴含承载；≤1px 锚=positionOf 同源一致性，非独立行值锁）').toBeGreaterThan(0)",
             "expect( Math.abs(gb.x - (fb.x + bl + FRAME_PAD_LEFT + OFFSET_O + PITCH_X * cell.col)), `γ4 落位 x=positionOf 奇行支（φ=100——实测 ${gb.x.toFixed(1)} vs 算术 ${(fb.x + bl + FRAME_PAD_LEFT + OFFSET_O + PITCH_X * cell.col).toFixed(1)}，≤1px）` ).toBeLessThanOrEqual(1)",
             "expect(Math.abs(gb.y - (fb.y + bt + FRAME_PAD_TOP + PITCH_Y * cell.row)), 'γ4 落位 y=positionOf 奇行支（≤1px）').toBeLessThanOrEqual(1)",
             "expect(rowCounts, `γ4 settle 行分布=partitionRows 同源（W=${w.toFixed(1)}）`).toEqual(partitionRows(4, w).map((r) => r.length))",
@@ -5927,7 +5927,7 @@
           "describePath": [],
           "title": "F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条",
           "markers": [],
-          "line": 349,
+          "line": 314,
           "assertions": [
             "expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })",
             "expect(leftRow).toBeVisible({ timeout: 20_000 })",
@@ -5948,7 +5948,14 @@
             "expect(sel53Skips, '扩展写零跳写（守卫静默回归红）').toBe(0)",
             "expect(sel53FinalText.length, '终局选区非空跨行（oracle）').toBeGreaterThanOrEqual(20)",
             "expect(sel53FinalText.includes('LCOL ROW'), '终局选区覆盖后续行（oracle）').toBe(true)",
-            "expect(sel53FinalText.includes('RCOL'), '终局选区不越栏（oracle 上界）').toBe(false)"
+            "expect(sel53FinalText.includes('RCOL'), '终局选区不越栏（oracle 上界）').toBe(false)",
+            "expect(lb2).not.toBeNull()",
+            "expect(rb2).not.toBeNull()",
+            "expect(b2).not.toBeNull()",
+            "expect(skips2, '间隙段扩展写零跳写').toBe(0)",
+            "expect(gapProbe.selText.length, '间隙段选区非空（堵静默 skip 盲区）').toBeGreaterThan(0)",
+            "expect(gapProbe.focusText, '间隙拖动投影=最近带（上带）行——旧契约 focus 落下一行').toContain('ALPHA')",
+            "expect(gapProbe.selText.includes('LCOL ROW 01'), '间隙拖动选区不含下一行（旧「间隙取下带」契约即红）').toBe(false)"
           ]
         }
       ]
@@ -10389,6 +10396,74 @@
           "line": 41,
           "assertions": [
             "expect(repo.namesByPaper('p-1')).toEqual(['alpha', 'zeta'])"
+          ]
+        }
+      ]
+    },
+    "tests/unit/e2e-output-prune.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）\",\"12 个 run-* 目录 → 保留恰 10 个且为 mtime 最新者（run-03..run-12；run-01/run-02 删）\"]",
+          "describePath": [
+            "F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）"
+          ],
+          "title": "12 个 run-* 目录 → 保留恰 10 个且为 mtime 最新者（run-03..run-12；run-01/run-02 删）",
+          "markers": [],
+          "line": 38,
+          "assertions": [
+            "expect(left).toEqual(['run-03', 'run-04', 'run-05', 'run-06', 'run-07', 'run-08', 'run-09', 'run-10', 'run-11', 'run-12'])",
+            "expect(left).toHaveLength(10)"
+          ]
+        },
+        {
+          "key": "[\"F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）\",\"非 run- 前缀条目不动（other-dir/runX/file.txt 保留——只裁 run- 前缀目录）\"]",
+          "describePath": [
+            "F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）"
+          ],
+          "title": "非 run- 前缀条目不动（other-dir/runX/file.txt 保留——只裁 run- 前缀目录）",
+          "markers": [],
+          "line": 46,
+          "assertions": [
+            "expect(left).toEqual(['file.txt', 'other-dir', 'run-02', 'run-03', 'run-04', 'run-05', 'run-06', 'run-07', 'run-08', 'run-09', 'run-10', 'run-11', 'runX'])"
+          ]
+        },
+        {
+          "key": "[\"F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）\",\"目录不存在 → 零抛出零删（e2e 首跑前 test-results/ 缺席态）\"]",
+          "describePath": [
+            "F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）"
+          ],
+          "title": "目录不存在 → 零抛出零删（e2e 首跑前 test-results/ 缺席态）",
+          "markers": [],
+          "line": 58,
+          "assertions": [
+            "expect(pruneRunDirs(ghost, 10)).resolves.toBeUndefined()"
+          ]
+        },
+        {
+          "key": "[\"F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）\",\"空目录/不足 keep → 零删（3 个 run-* 全留——keep=10 上界未达不裁）\"]",
+          "describePath": [
+            "F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）"
+          ],
+          "title": "空目录/不足 keep → 零删（3 个 run-* 全留——keep=10 上界未达不裁）",
+          "markers": [],
+          "line": 63,
+          "assertions": [
+            "expect(left).toEqual(['run-01', 'run-02', 'run-03'])"
+          ]
+        },
+        {
+          "key": "[\"F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）\",\"[RR1-3] PRUNE_KEEP 常量本体钉：===10（保留 10 目录≈5 轮运行指纹——双 stamp 现象在档）\"]",
+          "describePath": [
+            "F-EVCTX-01 pruneRunDirs（run-* mtime 降序保留 keep=10，余者递归删除）"
+          ],
+          "title": "[RR1-3] PRUNE_KEEP 常量本体钉：===10（保留 10 目录≈5 轮运行指纹——双 stamp 现象在档）",
+          "markers": [],
+          "line": 72,
+          "assertions": [
+            "expect(PRUNE_KEEP).toBe(10)"
           ]
         }
       ]
@@ -20513,7 +20588,7 @@
           ],
           "title": "双 .lib-sep 在位：左条=.lib-fnav 之后·右条=.lib-drawer 之前；.lib-page>.lib-fnav 直子锚不破",
           "markers": [],
-          "line": 550,
+          "line": 556,
           "assertions": [
             "expect(pg?.querySelector('.lib-fnav + .lib-sep')).not.toBeNull()",
             "expect(pg?.querySelector('.lib-main-col + .lib-sep')).not.toBeNull()",
@@ -20528,7 +20603,7 @@
           ],
           "title": "aria 面：双 separator role+aria-label+aria-valuenow/min/max（APG separator）",
           "markers": [],
-          "line": 559,
+          "line": 565,
           "assertions": [
             "expect(seps?.length).toBe(2)",
             "expect(sf.getAttribute('role')).toBe('separator')",
@@ -20550,10 +20625,10 @@
           ],
           "title": "CSS 载体逐值锁：.lib-fnav/.lib-drawer 宽=页根变量（缺省 224/316 零变）+.lib-sep 热区 7px",
           "markers": [],
-          "line": 580,
+          "line": 586,
           "assertions": [
-            "expect(cssExp).toMatch(/\\.lib-fnav\\s*\\{[^}]*width:\\s*var\\(--lib-fnav-w,\\s*224px\\);/)",
-            "expect(cssLib).toMatch(/\\.lib-drawer\\s*\\{[^}]*width:\\s*var\\(--lib-drawer-w,\\s*316px\\);/)",
+            "expect(normCss(cssLib + cssExp), '.lib-fnav 宽=页根变量（缺省 224px——INV-147；P3 锚选择器规则块内属性名+关键值：空白/属性序/载体文件不锚）').toMatch(/\\.lib-fnav\\{(?:[^};]*;)*width:var\\(--lib-fnav-w,224px\\)/)",
+            "expect(normCss(cssLib + cssExp), '.lib-drawer 宽=页根变量（缺省 316px——INV-147；P3 锚选择器规则块内属性名+关键值：空白/属性序/载体文件不锚）').toMatch(/\\.lib-drawer\\{(?:[^};]*;)*width:var\\(--lib-drawer-w,316px\\)/)",
             "expect(cssLib).toMatch(/\\.lib-sep\\s*\\{[^}]*width:\\s*7px;/)"
           ]
         }
@@ -24147,6 +24222,77 @@
           "line": 141,
           "assertions": [
             "expect(css).toMatch(/\\.lg-inspector\\s*\\{[^}]*width:\\s*252px/)"
+          ]
+        }
+      ]
+    },
+    "tests/unit/renderer/lineage-detourw01.test.ts": {
+      "ticketIds": [],
+      "conditionalSkipSites": [],
+      "hardSkipSites": [],
+      "cases": [
+        {
+          "key": "[\"F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）\",\"contentW=727.9（窗左界下沿）→ 派生行容量档 [3,3,3,3,3]=capacities(727.9) 直算档\"]",
+          "describePath": [
+            "F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）"
+          ],
+          "title": "contentW=727.9（窗左界下沿）→ 派生行容量档 [3,3,3,3,3]=capacities(727.9) 直算档",
+          "markers": [],
+          "line": 91,
+          "assertions": [
+            "expect(derived).toEqual([3, 3, 3, 3, 3])",
+            "expect(derived).toEqual(capTiersOf(727.9))"
+          ]
+        },
+        {
+          "key": "[\"F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）\",\"contentW=728（N=4 档位下界）→ 派生行容量档 [4,3,4,3,4]=capacities(728) 直算档\"]",
+          "describePath": [
+            "F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）"
+          ],
+          "title": "contentW=728（N=4 档位下界）→ 派生行容量档 [4,3,4,3,4]=capacities(728) 直算档",
+          "markers": [],
+          "line": 97,
+          "assertions": [
+            "expect(derived).toEqual([4, 3, 4, 3, 4])",
+            "expect(derived).toEqual(capTiersOf(728))"
+          ]
+        },
+        {
+          "key": "[\"F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）\",\"contentW=754（N=4 段内代表值——归一化输入域钉；f.w 域分叉经归一化已不存在）→ 派生行容量档 [4,3,4,3,4]\"]",
+          "describePath": [
+            "F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）"
+          ],
+          "title": "contentW=754（N=4 段内代表值——归一化输入域钉；f.w 域分叉经归一化已不存在）→ 派生行容量档 [4,3,4,3,4]",
+          "markers": [],
+          "line": 103,
+          "assertions": [
+            "expect(derived).toEqual([4, 3, 4, 3, 4])",
+            "expect(derived).toEqual(capTiersOf(754))"
+          ]
+        },
+        {
+          "key": "[\"F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）\",\"contentW=755.1（N=4 段内代表值——归一化输入域钉）→ 派生行容量档 [4,3,4,3,4]\"]",
+          "describePath": [
+            "F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）"
+          ],
+          "title": "contentW=755.1（N=4 段内代表值——归一化输入域钉）→ 派生行容量档 [4,3,4,3,4]",
+          "markers": [],
+          "line": 109,
+          "assertions": [
+            "expect(derived).toEqual([4, 3, 4, 3, 4])",
+            "expect(derived).toEqual(capTiersOf(755.1))"
+          ]
+        },
+        {
+          "key": "[\"F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）\",\"unmeasured 守卫：contentW=0（jsdom/空图态）→ 零通道早退（capacities(0)=∞ 死循环防点——与 useCapacityLayout unmeasured 降级同族）\"]",
+          "describePath": [
+            "F-DETOURW-01 走线容量输入=contentW 一致性（布局/走线同档——INV-169② 三域合流）"
+          ],
+          "title": "unmeasured 守卫：contentW=0（jsdom/空图态）→ 零通道早退（capacities(0)=∞ 死循环防点——与 useCapacityLayout unmeasured 降级同族）",
+          "markers": [],
+          "line": 115,
+          "assertions": [
+            "expect(gridChannelsOf(snapWithW(0))).toEqual([])"
           ]
         }
       ]
@@ -29880,7 +30026,7 @@
           ],
           "title": "② h-slip：x 带分离（右向）→ 近侧锚单段直线；d=源右 ¾ (228,154)→目标左 ¼ (400,158) 手推",
           "markers": [],
-          "line": 110,
+          "line": 113,
           "assertions": [
             "expect(r.route).toBe('h-slip')",
             "expect(r.d).toBe('M 228 154 L 400 158')"
@@ -29893,7 +30039,7 @@
           ],
           "title": "② h-slip 左向（anchor 左分支行为锁）：目标在源左侧 → 源左锚→目标右锚",
           "markers": [],
-          "line": 124,
+          "line": 127,
           "assertions": [
             "expect(r.route).toBe('h-slip')",
             "expect(r.d).toBe('M 400 154 L 228 318')"
@@ -29906,7 +30052,7 @@
           ],
           "title": "④ band：同行带近侧不可直连+错列（x_s≠x_t）→ 行隙带 zigzag（72px 网格夹具——横移 y=带槽位中位 208）",
           "markers": [],
-          "line": 136,
+          "line": 139,
           "assertions": [
             "expect(r.route).toBe('band')",
             "expect(r.pts).toEqual([ { x: 208, y: 172 }, { x: 208, y: 182 }, { x: 208, y: 208 }, { x: 244, y: 208 }, { x: 244, y: 244 } ])",
@@ -29920,7 +30066,7 @@
           ],
           "title": "⑤ overlap：通道全集封死（巨墙覆全部网格通道）→ 最短路线重叠兜底+overlapExempt 透出（x_s=x_t → 单竖段）",
           "markers": [],
-          "line": 156,
+          "line": 159,
           "assertions": [
             "expect(r.route).toBe('overlap')",
             "expect(r.pts).toEqual([{ x: 176, y: 172 }, { x: 176, y: 388 }])",
@@ -29935,7 +30081,7 @@
           ],
           "title": "⑤ overlap L 形先横后竖（H<V 字典序 tie-break）：x_s≠x_t 且带封闭 → 骨架 [a,(b.x,a.y),b]",
           "markers": [],
-          "line": 175,
+          "line": 178,
           "assertions": [
             "expect(r.route).toBe('overlap')",
             "expect(r.pts).toEqual([{ x: 228, y: 154 }, { x: 400, y: 154 }, { x: 400, y: 214 }])",
@@ -29950,7 +30096,7 @@
           ],
           "title": "端点卡缺失：d 空+route overlap+onWarn（防御面沿承——走廊族退役后占位态=overlap）",
           "markers": [],
-          "line": 195,
+          "line": 198,
           "assertions": [
             "expect(r.d).toBe('')",
             "expect(r.route).toBe('overlap')",
@@ -29965,7 +30111,7 @@
           ],
           "title": "通道槽占用（N17）：两同柱边先后路由 → 次边取顺位次槽 367.3（首边占 358.7）",
           "markers": [],
-          "line": 218,
+          "line": 221,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['detour', 'detour'])",
             "expect(paths[0]!.detourMarks).toBe('358.7:182.7')",
@@ -29981,7 +30127,7 @@
           ],
           "title": "上行方向（目标在上）：镜像构造 → detour 成立（skel 首末锚=源顶/目标底）",
           "markers": [],
-          "line": 232,
+          "line": 235,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.pts[0]).toEqual({ x: 176, y: 388 })",
@@ -29996,7 +30142,7 @@
           ],
           "title": "候选枚举尽→降级链：左缘+列间通道全灭 → band/overlap 承接（③ 例负锚——无死循环/无静默空产出）",
           "markers": [],
-          "line": 250,
+          "line": 253,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.detourMarks).toBe('676.7:500.7')"
@@ -30009,7 +30155,7 @@
           ],
           "title": "[B1] 上行×双被阻段：源在下（row4 col0）→目标在上（row0 col0），贯通解门形（行进序 strips=源侧先）",
           "markers": [],
-          "line": 288,
+          "line": 291,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.pts).toEqual([ { x: 176, y: 676 }, { x: 176, y: 666 }, { x: 176, y: 637 }, { x: 676.7, y: 637 }, { x: 676.7, y: 211 }, { x: 176, y: 211 }, { x: 176, y: 182 }, { x: 176, y: 172 } ])",
@@ -30023,7 +30169,7 @@
           ],
           "title": "[W1] 贯通省拐（拐弯数主键全局承载）：带1 就近候选 358.7×带2 唯一候选 676.7 → 贯通解 676.7 优先于就近-远组合",
           "markers": [],
-          "line": 303,
+          "line": 306,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.detourMarks).toBe('676.7:500.7,676.7:500.7')",
@@ -30037,7 +30183,7 @@
           ],
           "title": "[B2] 空行通道（网格容量派生）：行1 无实卡+label 障碍横贯 x₀ → 空行通道候选承接（实卡反推=假阴性降级）",
           "markers": [],
-          "line": 316,
+          "line": 319,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.detourMarks).toBe('140.7:35.3')",
@@ -30051,7 +30197,7 @@
           ],
           "title": "[B2 防御] 行集上界=框高派生：1 行框（h=135.2）+越界卡（中心在框内底缘）→ 零幻影 row1 通道",
           "markers": [],
-          "line": 340,
+          "line": 343,
           "assertions": [
             "expect(channels.length).toBeGreaterThan(0)",
             "expect(channels.every((c) => c.yLo === 100), '全部通道驻 row0 带（越界卡零幻影行）').toBe(true)"
@@ -30064,7 +30210,7 @@
           ],
           "title": "[F-PLATFORM-01] 边框亚像素容差：Linux 框高 104（border 1px×2）→ 行集 1 行非 0——通道在册路由不退化 overlap",
           "markers": [],
-          "line": 355,
+          "line": 358,
           "assertions": [
             "expect(gridChannelsOf(snap).length, '通道全集非空（行集≥1 行）').toBeGreaterThan(0)",
             "expect(r.route, '丙拦直连→绕行族承接（band/detour），不落 overlap 兜底').toBe('band')"
@@ -30077,7 +30223,7 @@
           ],
           "title": "[B3] 中段夹缝封闭（h∈[28,36) 无槽）→ 该组合不可行：detourSkeleton 返 null（禁中点发明——坐标集闭包）",
           "markers": [],
-          "line": 380,
+          "line": 386,
           "assertions": [
             "expect(r).toBeNull()"
           ]
@@ -30089,7 +30235,7 @@
           ],
           "title": "[W3] band 态通道槽位占用（下一段顺位首空槽）：两 band 边同 row1 右缘通道 → 次边取次槽 600.7（首边占 575.3）",
           "markers": [],
-          "line": 403,
+          "line": 409,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['band', 'band'])",
             "expect(paths[0]!.pts.some((q) => q.x === 575.3)).toBe(true)",
@@ -30104,7 +30250,7 @@
           ],
           "title": "byTotalOrder：拐弯数主键（x===curX=0 拐先于一切）→|x−refX| 次键→x 末键（等距对判别——拐弯键唯一判别面）",
           "markers": [],
-          "line": 425,
+          "line": 431,
           "assertions": [
             "expect([...cands].sort(byTotalOrder(150, 200)).map((c) => c.x)).toEqual([200, 100, 300])",
             "expect([...cands].sort(byTotalOrder(150, 0)).map((c) => c.x)).toEqual([100, 200, 300])"
@@ -30117,7 +30263,7 @@
           ],
           "title": "源面负锚：routing/chain.ts 零 corridor/fallback/CORRIDOR_/defaultCorridor/laneIndex 字面（走廊族彻底退役）",
           "markers": [],
-          "line": 437,
+          "line": 443,
           "assertions": [
             "expect(src).not.toMatch(/corridorSkeleton|defaultCorridor|CORRIDOR_|laneIndex/)",
             "expect(src).not.toMatch(/'corridor'|'fallback'/)"
@@ -30130,7 +30276,7 @@
           ],
           "title": "routeAll 态域：混合夹具全产出 route∈五态+manual（类型面+运行时双锁）",
           "markers": [],
-          "line": 445,
+          "line": 451,
           "assertions": [
             "expect(allowed.has(p.route), `route=${p.route} ∈ 五态域`).toBe(true)",
             "expect(p.d.length, `${p.edgeId} d 非空`).toBeGreaterThan(0)"
@@ -30143,7 +30289,7 @@
           ],
           "title": "对照基线：无 yearHead→direct（拦路实验的前提锁定）",
           "markers": [],
-          "line": 483,
+          "line": 490,
           "assertions": [
             "expect(r.route).toBe('direct')"
           ]
@@ -30155,7 +30301,7 @@
           ],
           "title": "year-head 拦 direct 中段→降级链触发（route≠direct+有产出）",
           "markers": [],
-          "line": 488,
+          "line": 495,
           "assertions": [
             "expect(r.route).not.toBe('direct')",
             "expect(r.d).not.toBe('')"
@@ -30168,7 +30314,7 @@
           ],
           "title": "障碍集组装：yearHeads 与卡/月标注同源并入（allObstacles 三源并集）",
           "markers": [],
-          "line": 496,
+          "line": 503,
           "assertions": [
             "expect(allObstacles(snap)).toHaveLength(3)"
           ]
@@ -30180,7 +30326,7 @@
           ],
           "title": "manual-override 不参与避让（via 在场穿 yearHead 照走——现状语义沿承）",
           "markers": [],
-          "line": 506,
+          "line": 513,
           "assertions": [
             "expect(r.route).toBe('manual-override')"
           ]
@@ -30192,7 +30338,7 @@
           ],
           "title": "via 折线构造：锚=端点卡主向定边（右 ½ 序）；route=manual-override；r=6 圆角 pass",
           "markers": [],
-          "line": 519,
+          "line": 526,
           "assertions": [
             "expect(r.route).toBe('manual-override')",
             "expect(r.d).toBe('M 228 136 L 294 136 Q 300 136 300 142 L 300 330 Q 300 336 294 336 L 228 336')"
@@ -30205,7 +30351,7 @@
           ],
           "title": "via 优先于甲链（在场即 manual——不落 direct/h-slip）+缺省 via 不触发",
           "markers": [],
-          "line": 535,
+          "line": 542,
           "assertions": [
             "expect(withVia.route).toBe('manual-override')",
             "expect(noVia.route).toBe('direct')"
@@ -30218,7 +30364,7 @@
           ],
           "title": "同输入 routeEdge 100 次输出全等+routeAll 单边一致（detour 夹具——网格通道派生确定性）",
           "markers": [],
-          "line": 550,
+          "line": 557,
           "assertions": [
             "expect(routeEdge(e, snap)).toEqual(first)",
             "expect(routeAll([e], snap)).toEqual([first])"
@@ -30231,7 +30377,7 @@
           ],
           "title": "月标挡首选 slot→散开第二槽终落 band（骨架末段=slot1 锚+d 手推）",
           "markers": [],
-          "line": 584,
+          "line": 592,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 224, y: 244 })",
@@ -30246,7 +30392,7 @@
           ],
           "title": "全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null+routeEdge 降级 overlap（走廊退役后兜底）",
           "markers": [],
-          "line": 600,
+          "line": 608,
           "assertions": [
             "expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')).toBeNull()",
             "expect(r.route).toBe('overlap')",
@@ -30260,7 +30406,7 @@
           ],
           "title": "散开锚 picks 落记=生效锚（tgt 项=散开 side/slot 非首选——仅胜出态）",
           "markers": [],
-          "line": 611,
+          "line": 619,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.picks).toEqual([ ['A', 'bottom', 2], ['B', 'top', 1] ])"
@@ -30273,7 +30419,7 @@
           ],
           "title": "[回炉 B2] 散开候选避开已 commit 槽（占用预检）：slot1 被占+slot0 月标挡→散至 slot2",
           "markers": [],
-          "line": 623,
+          "line": 631,
           "assertions": [
             "expect(band).not.toBeNull()",
             "expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 256, y: 244 })",
@@ -30287,7 +30433,7 @@
           ],
           "title": "① 带内双下降共道→槽位化：同列两 direct 边穿同一行隙单元→x 电平互异且∈分点集+d 手推",
           "markers": [],
-          "line": 640,
+          "line": 648,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['direct', 'direct'])",
             "expect(paths[0]!.d).toBe('M 164 172 L 164 300')",
@@ -30304,7 +30450,7 @@
           ],
           "title": "③b 槽域穷尽豁免（n=1 单槽夹具）：两消费边→第 2 边 L3 豁免落 ideal 未偏移",
           "markers": [],
-          "line": 670,
+          "line": 678,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['h-slip', 'h-slip'])",
             "expect(paths[0]!.slotMarks).toBe('0:0')",
@@ -30323,7 +30469,7 @@
           ],
           "title": "⑧ [U4] 观测钩子投影：retain 例 overlapExempt 挂而 slotFallback 不挂；land 例两标志均不挂",
           "markers": [],
-          "line": 691,
+          "line": 699,
           "assertions": [
             "expect(paths[0]!.slotMarks).toBe('0:2')",
             "expect(paths[1]!.slotMarks).toBe('0:4')",
@@ -30340,7 +30486,7 @@
           ],
           "title": "⑩ [U4-RR1 k1-W1] 三线同端点对三落位：½→¾→¼ 三锚 ideal 164/196/132→槽 164 retain/200 land/128 land，三电平两两互异∈分点集",
           "markers": [],
-          "line": 707,
+          "line": 715,
           "assertions": [
             "expect(paths.map((p) => p.route)).toEqual(['direct', 'direct', 'direct'])",
             "expect(paths[0]!.d).toBe('M 164 172 L 164 300')",
@@ -30358,7 +30504,7 @@
           ],
           "title": "[k1-W2′] Phase B 混合解：双带候选族互斥（带1=col0|1 族/带2=右缘族）无贯通类 → 异槽混合组合承接+detourMarks 双异值",
           "markers": [],
-          "line": 735,
+          "line": 743,
           "assertions": [
             "expect(r.route).toBe('detour')",
             "expect(r.detourMarks).toBe('358.7:182.7,575.3:399.3')",
@@ -30374,7 +30520,7 @@
           ],
           "title": "[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场（route=overlap 兜底）",
           "markers": [],
-          "line": 763,
+          "line": 771,
           "assertions": [
             "expect(paths.slice(0, 3).map((p) => p.route)).toEqual(['detour', 'detour', 'detour'])",
             "expect(paths[3]!.route).toBe('overlap')",
@@ -33396,7 +33542,7 @@
           ],
           "title": "激活/移动帧 inline 写回 own px：u=1.25 卡 client 160×90 → width 写 128px、move 帧 left=Δclient÷u（旧 ÷z 写 160px/80px 红）",
           "markers": [],
-          "line": 234,
+          "line": 239,
           "assertions": [
             "expect(card.style.position).toBe('absolute')",
             "expect(card.style.width).toBe('128px')",
@@ -33411,7 +33557,7 @@
           ],
           "title": "pullPx 连续跟随量=own px：u=1.25 指针越底缘 50 own px → --lg-pull=50px、越 100 own px 封顶 82px（旧 client 量 62.5px 红）",
           "markers": [],
-          "line": 252,
+          "line": 257,
           "assertions": [
             "expect((req('.month-frame') as HTMLElement).style.getPropertyValue('--lg-pull')).toBe('50px')",
             "expect((req('.month-frame') as HTMLElement).style.getPropertyValue('--lg-pull')).toBe('82px')"
@@ -33424,7 +33570,7 @@
           ],
           "title": "framePointer padding-box=own px：u=1.25 非零框原点+1.6px 边框——指针落 B 中心前 1 own px → 原位零写（旧 ÷z 判后侧改写红）",
           "markers": [],
-          "line": 269,
+          "line": 274,
           "assertions": [
             "expect(reorder).not.toHaveBeenCalled()"
           ]
@@ -33436,7 +33582,7 @@
           ],
           "title": "useDrawLine 锚与预览端点=own px：u=1.25 卡 client (250,130,160,90) → 预览线 own 域端点（旧 ÷z=client 值红）",
           "markers": [],
-          "line": 303,
+          "line": 308,
           "assertions": [
             "expect(line).not.toBeNull()",
             "expect(parseFloat(line!.getAttribute('x1') ?? '')).toBeCloseTo(264, 10)",
@@ -33452,7 +33598,7 @@
           ],
           "title": "平移滚动映射=own px（÷u）：u=1.25 client 位移 50 → scrollLeft=100−40（旧直写 −50 红）",
           "markers": [],
-          "line": 324,
+          "line": 329,
           "assertions": [
             "expect(setSL).toHaveBeenCalled()",
             "expect(setSL.mock.calls[setSL.mock.calls.length - 1]![0]).toBeCloseTo(60, 10)"
@@ -33465,7 +33611,7 @@
           ],
           "title": "当前月判定偏移=own px（×s_eff）：u=1.25 框底 74.9<75（60×1.25）不选 → 当前月=次框（旧阈 60 选首框红）",
           "markers": [],
-          "line": 342,
+          "line": 347,
           "assertions": [
             "expect(frames.length).toBe(2)",
             "expect(useLineageViewStore.getState().activeFrameKey).toBe('2022|10')"
@@ -33478,7 +33624,7 @@
           ],
           "title": "uiScale prop bump+--ui-scale 1→1.25 → 快照重算（path d 迁移 own 域）——缺键不重算形红",
           "markers": [],
-          "line": 370,
+          "line": 375,
           "assertions": [
             "expect(d1).not.toBeNull()",
             "expect(d2).not.toBeNull()",
@@ -33492,7 +33638,7 @@
           ],
           "title": "宿主 settings→uiScale prop 接线（R1·B-1③）：settings small→large+--ui-scale 1.25 → 路由快照重算（d 迁移）",
           "markers": [],
-          "line": 423,
+          "line": 428,
           "assertions": [
             "expect(d1).not.toBeNull()",
             "expect(d2).not.toBeNull()",
@@ -33506,7 +33652,7 @@
           ],
           "title": "flight 飞行目标=own 域（W-1①）：u=1.25 双 rAF 后 left=client÷1.25−ho（旧 ÷z 写 client 值红）",
           "markers": [],
-          "line": 458,
+          "line": 463,
           "assertions": [
             "expect(card.style.position).toBe('absolute')",
             "expect(card.style.left).toBe('80px')",
@@ -33521,7 +33667,7 @@
           ],
           "title": "下拉带域=own px（W-1②）：u=1.25 clientY=290（=200+72own≤带内界 302.5）松手→带内落位改写（旧 82client 带=282 带外回弹零写红）",
           "markers": [],
-          "line": 480,
+          "line": 485,
           "assertions": [
             "expect(reorder).toHaveBeenCalledTimes(1)",
             "expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])"
@@ -33534,7 +33680,7 @@
           ],
           "title": "吸附高亮 r=屏幕域 12px 承诺（W-1③）：u=1.25 hint dot r=4.8/环 r=7.2（旧 z 单因子 r=6/9 红）",
           "markers": [],
-          "line": 494,
+          "line": 499,
           "assertions": [
             "expect(dot).not.toBeNull()",
             "expect(dot!.getAttribute('r')).toBe('4.8')",
@@ -43269,7 +43415,7 @@
           ],
           "title": "① 授权 mousedown（左/右栏）启动会话；非 textLayer 目标零触",
           "markers": [],
-          "line": 82,
+          "line": 91,
           "assertions": [
             "expect(eL.defaultPrevented).toBe(false)",
             "expect(ctl.onSelectionChange()).toBe(false)",
@@ -43288,7 +43434,7 @@
           ],
           "title": "② 中缝/零栏不启动：preventDefault+无会话（后续违例选区原样转发不被改写）",
           "markers": [],
-          "line": 106,
+          "line": 115,
           "assertions": [
             "expect(eG.defaultPrevented).toBe(true)",
             "expect(ctl.onSelectionChange()).toBe(false)",
@@ -43304,7 +43450,7 @@
           ],
           "title": "③ 违例拖选钳制：focus 投影回锚栏行尾（visual-full-mouseup 共用源）；栏内非违例零写",
           "markers": [],
-          "line": 128,
+          "line": 137,
           "assertions": [
             "expect(ctl.onSelectionChange()).toBe(false)",
             "expect(sel().anchorNode).toBe(f.textOf('L1'))",
@@ -43322,7 +43468,7 @@
           ],
           "title": "④ mousemove 只写 ref：拖选 move 风暴零选区写，pointer 供其后投影消费",
           "markers": [],
-          "line": 147,
+          "line": 156,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('R2'))",
             "expect(sel().focusOffset).toBe(4)",
@@ -43337,7 +43483,7 @@
           ],
           "title": "⑤ echo 精确抑制：自写签名相等的事件被抑制不转发，异形态不抑制",
           "markers": [],
-          "line": 165,
+          "line": 174,
           "assertions": [
             "expect(ctl.onSelectionChange()).toBe(true)",
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
@@ -43351,7 +43497,7 @@
           ],
           "title": "⑥ 归一化振荡有界退出：无 move 窗内连续自写 ≤3，超出接受终态；move 重开写窗",
           "markers": [],
-          "line": 180,
+          "line": 189,
           "assertions": [
             "expect(clamps).toBe(3)",
             "expect(sel().focusNode).toBe(f.textOf('R2'))",
@@ -43365,7 +43511,7 @@
           ],
           "title": "⑦ mouseup 会话终局：enforce 终局核查+endSession 后外部选区不被拦截/清除（B4-3）",
           "markers": [],
-          "line": 202,
+          "line": 211,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
@@ -43381,7 +43527,7 @@
           ],
           "title": "⑧ shift+click 锚侧违例：anchor（旧栏）投影锚栏行首，focus 原样",
           "markers": [],
-          "line": 222,
+          "line": 231,
           "assertions": [
             "expect(sel().anchorNode).toBe(f.textOf('R2'))",
             "expect(sel().anchorOffset).toBe(0)",
@@ -43390,17 +43536,21 @@
           ]
         },
         {
-          "key": "[\"F-VISFB-52 selection-drag-controller —— 指针授权手势\",\"⑨ 指针越出栏带：低于栏底=栏尾（DOM 序末项文本尾）、高于栏顶=栏首（首项 offset 0）\"]",
+          "key": "[\"F-VISFB-52 selection-drag-controller —— 指针授权手势\",\"⑨ 指针越出栏带：低于栏底=视觉末带按 x 二值、高于栏顶=视觉首带按 x 二值（53CI-02 B3 改写——原 DOM 序首末项契约废止）\"]",
           "describePath": [
             "F-VISFB-52 selection-drag-controller —— 指针授权手势"
           ],
-          "title": "⑨ 指针越出栏带：低于栏底=栏尾（DOM 序末项文本尾）、高于栏顶=栏首（首项 offset 0）",
+          "title": "⑨ 指针越出栏带：低于栏底=视觉末带按 x 二值、高于栏顶=视觉首带按 x 二值（53CI-02 B3 改写——原 DOM 序首末项契约废止）",
           "markers": [],
-          "line": 236,
+          "line": 245,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('L3'))",
             "expect(sel().focusOffset).toBe(10)",
             "expect(sel().focusNode).toBe(f.textOf('L1'))",
+            "expect(sel().focusOffset).toBe(8)",
+            "expect(sel().focusNode).toBe(f.textOf('L1'))",
+            "expect(sel().focusOffset).toBe(0)",
+            "expect(sel().focusNode).toBe(f.textOf('L3'))",
             "expect(sel().focusOffset).toBe(0)"
           ]
         },
@@ -43411,7 +43561,7 @@
           ],
           "title": "⑩ 中缝悬停元素槽位形态（探针 E9）：focus=(span,0) 元素形按 span 归属判栏",
           "markers": [],
-          "line": 252,
+          "line": 277,
           "assertions": [
             "expect(sel().focusNode).toBe(f.spanOf('L2'))",
             "expect(sel().focusOffset).toBe(0)",
@@ -43426,7 +43576,7 @@
           ],
           "title": "⑪ 回声签名一次性消费+会话边界清零（回炉 B-1）：endSession 后外部 T 与旧自写态 S 均不得抑制",
           "markers": [],
-          "line": 269,
+          "line": 294,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
             "expect(ctl.onSelectionChange()).toBe(false)",
@@ -43442,7 +43592,7 @@
           ],
           "title": "⑫ 相邻 drag epoch 签名域隔离（回炉 B-1）：第二纪授权 mousedown 后外部到达旧纪自写态 S 不得抑制",
           "markers": [],
-          "line": 289,
+          "line": 314,
           "assertions": [
             "expect(ctl.onSelectionChange()).toBe(false)",
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
@@ -43456,7 +43606,7 @@
           ],
           "title": "⑬ 写窗交错（回炉 W-1）：写→mousemove→写…8 轮各重开窗，每窗恰 1 写、全程 8 写>CAP（epoch 随真实移动无界=设计语义）",
           "markers": [],
-          "line": 306,
+          "line": 331,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('L2'))"
           ]
@@ -43468,11 +43618,43 @@
           ],
           "title": "⑭ 一次性消费（微回炉 probe A-2）：同会话内同签名第二发不再抑制",
           "markers": [],
-          "line": 319,
+          "line": 344,
           "assertions": [
             "expect(sel().focusNode).toBe(f.textOf('L2'))",
             "expect(ctl.onSelectionChange()).toBe(true)",
             "expect(ctl.onSelectionChange()).toBe(false)"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-52 selection-drag-controller —— 指针授权手势\",\"⑮ [F-VISFB-53CI-02 B1] 间隙取最近带：偏上→上带/偏下→下带/等距取上带（阅读序保守防外扩）\"]",
+          "describePath": [
+            "F-VISFB-52 selection-drag-controller —— 指针授权手势"
+          ],
+          "title": "⑮ [F-VISFB-53CI-02 B1] 间隙取最近带：偏上→上带/偏下→下带/等距取上带（阅读序保守防外扩）",
+          "markers": [],
+          "line": 360,
+          "assertions": [
+            "expect(sel().focusNode).toBe(f.textOf('L2'))",
+            "expect(sel().focusOffset).toBe(8)",
+            "expect(sel().focusNode).toBe(f.textOf('L3'))",
+            "expect(sel().focusOffset).toBe(10)",
+            "expect(sel().focusNode).toBe(f.textOf('L2'))",
+            "expect(sel().focusOffset).toBe(8)"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-52 selection-drag-controller —— 指针授权手势\",\"⑯ [F-VISFB-53CI-02 B3] 乱序 DOM 形态：越顶/越底取视觉首带/末带（rowBandsOf 视觉序单源，非 DOM 序首末项）\"]",
+          "describePath": [
+            "F-VISFB-52 selection-drag-controller —— 指针授权手势"
+          ],
+          "title": "⑯ [F-VISFB-53CI-02 B3] 乱序 DOM 形态：越顶/越底取视觉首带/末带（rowBandsOf 视觉序单源，非 DOM 序首末项）",
+          "markers": [],
+          "line": 384,
+          "assertions": [
+            "expect(sel().focusNode).toBe(f.textOf('L1'))",
+            "expect(sel().focusOffset).toBe(8)",
+            "expect(sel().focusNode).toBe(f.textOf('L3'))",
+            "expect(sel().focusOffset).toBe(10)"
           ]
         }
       ]
@@ -43521,25 +43703,27 @@
           ],
           "title": "快慢等价（INV-58 后半）：同夹具下 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）",
           "markers": [],
-          "line": 152,
+          "line": 149,
           "assertions": [
             "expect(fast.length).toBeGreaterThanOrEqual(1)",
             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
-            "expect(blockStyles()).toEqual(fast)"
+            "expect(blockStyles()).toEqual(fast)",
+            "expect(toolbar(), 'settle 慢路语义照常（pending/工具条落地——零重画只跳 setPaint）').not.toBeNull()"
           ]
         },
         {
-          "key": "[\"F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）\",\"同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）\"]",
+          "key": "[\"F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）\",\"同帧覆盖锚[A2 语义改写]（票面强制断言改写——53CI-02）：同签名 settle 不再 setPaint，paint 保持快路帧（mid-drag zoom 形态：快=zoom1 帧保持，慢路几何同源不再覆盖）\"]",
           "describePath": [
             "F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）"
           ],
-          "title": "同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）",
+          "title": "同帧覆盖锚[A2 语义改写]（票面强制断言改写——53CI-02）：同签名 settle 不再 setPaint，paint 保持快路帧（mid-drag zoom 形态：快=zoom1 帧保持，慢路几何同源不再覆盖）",
           "markers": [],
-          "line": 172,
+          "line": 170,
           "assertions": [
             "expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
             "expect(rect).not.toBeNull()",
-            "expect(parseFloat(rect!.style.top)).toBeCloseTo((168 / 792) * 100, 2)"
+            "expect(parseFloat(rect!.style.top), 'A2 零重画：同签名 settle 后 paint 保持快路帧（zoom1）').toBeCloseTo((84 / 792) * 100, 2)",
+            "expect(toolbar(), 'settle 慢路语义照常（工具条落地）').not.toBeNull()"
           ]
         },
         {
@@ -43549,7 +43733,7 @@
           ],
           "title": "快路径守卫前置（裁决 2-§5①(ii)）：跨页选区 visual 路 rAF 帧后仍静默 setPaint(null)——无守卫时快路径把跨页偏移归一化进单页=paint 出块在此红",
           "markers": [],
-          "line": 204,
+          "line": 203,
           "assertions": [
             "expect(firstRect()).toBeNull()",
             "expect(toastSpy).not.toHaveBeenCalled()",
@@ -43558,13 +43742,13 @@
           ]
         },
         {
-          "key": "[\"F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）\",\"W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）\"]",
+          "key": "[\"F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）\",\"W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；RR2-1 红证改实——cancel 删除变异实测无判别力〔双路吸收〕，现存判别面=终局几何锚+防抖不补枪面）\"]",
           "describePath": [
             "F-A6-c 快路径 evaluateVisual（rAF 帧×项几何链直取）"
           ],
-          "title": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）",
+          "title": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；RR2-1 红证改实——cancel 删除变异实测无判别力〔双路吸收〕，现存判别面=终局几何锚+防抖不补枪面）",
           "markers": [],
-          "line": 228,
+          "line": 226,
           "assertions": [
             "expect(firstRect()).not.toBeNull()",
             "expect(toolbar()).not.toBeNull()",
@@ -43572,6 +43756,68 @@
             "expect(parseFloat(rect!.style.top)).toBeCloseTo((168 / 792) * 100, 2)",
             "expect(final).not.toBeNull()",
             "expect(parseFloat(final!.style.top)).toBeCloseTo((168 / 792) * 100, 2)"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）\",\"A1 区间推导同源（构造性等价六形态锚——P1 探针转正）：normalizedOffsetsOf 与 rangeToAnchor 区间恒等（含非幂等形态——双侧同根同侧同调 snapBlankBoundary 一次，不依幂等性）\"]",
+          "describePath": [
+            "F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）"
+          ],
+          "title": "A1 区间推导同源（构造性等价六形态锚——P1 探针转正）：normalizedOffsetsOf 与 rangeToAnchor 区间恒等（含非幂等形态——双侧同根同侧同调 snapBlankBoundary 一次，不依幂等性）",
+          "markers": [],
+          "line": 307,
+          "assertions": [
+            "expect(fast, `${f.name}：快路归一化区间（删 snapBlank 镜像变异在此红）`).toEqual({ start: f.want[0], end: f.want[1] })",
+            "expect(slow?.start, `${f.name}：慢路 rangeToAnchor start 恒等`).toBe(f.want[0])",
+            "expect(slow?.end, `${f.name}：慢路 rangeToAnchor end 恒等`).toBe(f.want[1])"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）\",\"A1/A4 组件级同源锚（多空白行非幂等形态 B）：paint 几何=归一化区间项几何+save 入参区间=慢路同区间（所见即所存恒等投影）\"]",
+          "describePath": [
+            "F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）"
+          ],
+          "title": "A1/A4 组件级同源锚（多空白行非幂等形态 B）：paint 几何=归一化区间项几何+save 入参区间=慢路同区间（所见即所存恒等投影）",
+          "markers": [],
+          "line": 401,
+          "assertions": [
+            "expect(rect).not.toBeNull()",
+            "expect(parseFloat(rect!.style.left)).toBeCloseTo((18 / 612) * 100, 2)",
+            "expect(parseFloat(rect!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
+            "expect(toolbar()).not.toBeNull()",
+            "expect(parseFloat(firstRect()!.style.left), 'A2：终局 paint 保持快路帧').toBeCloseTo((18 / 612) * 100, 2)",
+            "expect(arg.annotation.startOffset).toBe(1)",
+            "expect(arg.annotation.endOffset).toBe(4)",
+            "expect(arg.annotation.quoteText).toBe(' bb')"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）\",\"A2 终局改写分支：mouseup 时刻选区被改写（enforce/release-affinity 形态）→终局签名≠快路已画签名→慢路照常画终态帧\"]",
+          "describePath": [
+            "F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）"
+          ],
+          "title": "A2 终局改写分支：mouseup 时刻选区被改写（enforce/release-affinity 形态）→终局签名≠快路已画签名→慢路照常画终态帧",
+          "markers": [],
+          "line": 447,
+          "assertions": [
+            "expect(parseFloat(firstRect()!.style.width)).toBeCloseTo((100 / 612) * 100, 2)",
+            "expect(rect).not.toBeNull()",
+            "expect(parseFloat(rect!.style.width), '终局签名≠快路签名：慢路画终态帧（半选几何）').toBeCloseTo((50 / 612) * 100, 2)",
+            "expect(toolbar()).not.toBeNull()"
+          ]
+        },
+        {
+          "key": "[\"F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）\",\"A2 快路缺席形态（程序化/键盘选区——visual 未评估该签名）：慢路照常 setPaint\"]",
+          "describePath": [
+            "F-VISFB-53CI-02 A1/A2（区间推导同源+慢路零重画）"
+          ],
+          "title": "A2 快路缺席形态（程序化/键盘选区——visual 未评估该签名）：慢路照常 setPaint",
+          "markers": [],
+          "line": 471,
+          "assertions": [
+            "expect(rect, '快路缺席时慢路照常 setPaint（preservePaint 恒 true 变异下 null 红）').not.toBeNull()",
+            "expect(parseFloat(rect!.style.top)).toBeCloseTo((84 / 792) * 100, 2)",
+            "expect(toolbar()).not.toBeNull()"
           ]
         }
       ]
@@ -65382,9 +65628,9 @@
     }
   },
   "stats": {
-    "fileCount": 440,
-    "caseCount": 4344,
-    "assertionCount": 14702,
+    "fileCount": 442,
+    "caseCount": 4360,
+    "assertionCount": 14758,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
@@ -65395,963 +65641,63 @@
   "exemptionsSnapshot": [
     {
       "file": "tests/e2e/lineage.spec.ts",
-      "assertionText": "expect(cardA).toHaveClass(/dim/)",
-      "reason": "F-VISFB-21 C4：T13 由两卡（聚焦+dim）改三卡夹具（甲邻接常亮/乙 dim）——旧 cardA dim 断言被三卡 bright/dim 断言组取代（判别力保位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21（C4 bright=focus∪双向一度邻接）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
-      "caseTitle": "全流：armed→pointerdown 近锚（A 右中 ±6）→dragging 预览线→pointerup 落 B 近锚→建边+入撤销栈+tool 回 select",
-      "reason": "F-VISFB-21 C2 语义改写：用例体不变断言同强度，标题与 tool 断言随新语义（draw-solid 保持）改写——新标题在 cur 面（NEW 行在档）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21（§2.4 旧文偏差翻案）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
-      "assertionText": "expect(onNodeClick).toHaveBeenCalledTimes(1)",
-      "reason": "F-VISFB-21 C2 后 RR4 旗释放观测面改锚链：第二次卡点击由「选中」变「达锚链」——onNodeClick 断言换 anchor==='B' 直证（判别力增强）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-      "caseTitle": "图例两型真文本挂滚动容器 .timeline（U8 重整：实线/虚线）",
-      "reason": "F-VISFB-21 N1 图例删除：图例渲染用例随组件退役，换 .tl-legend toHaveCount(0) 零残留负锚",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-      "caseTitle": "CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例视口级定位",
-      "reason": "F-VISFB-21 N1：CSS 锁用例标题含图例视口级定位段——图例 CSS 随删除退役，用例改写（其余 CSS 锁面沿承），旧标题整串退役",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21/§7"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-rr17-drawline-multipointer.test.tsx",
-      "assertionText": "expect(useLineageViewStore.getState().tool).toBe('select')",
-      "reason": "F-VISFB-21 C2 语义改写：同行为锁换新语义断言（tool==='draw-solid'）——RR17 phase 闸九断言其余不动",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-21"
-    },
-    {
-      "file": "tests/unit/renderer/notes.store.test.ts",
-      "caseTitle": "load 写入；edit 标 dirty；1.5s 内防抖后保存一次",
-      "reason": "F-VISFB-11 节拍 1500ms→600s：标题随节拍语义改写（「防抖窗口后保存一次」在 cur 面）——用例体窗口派生化断言同强度",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-3（600s 共享常量单源）"
-    },
-    {
-      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
-      "caseTitle": "readSchemaVersion=迁移链尾 user_version 22（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正）",
-      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（22→23——断言面同位保位，非删测）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
-    },
-    {
-      "file": "tests/unit/services/import-snapshot.service.test.ts",
-      "caseTitle": "schema_newer：伪造 schema_version=23 卷（buildEnvelope 直调）→拒收",
-      "reason": "F-VISFB-42 023 落链随链更新：用例标题链尾数字随链勘正（伪卷 23→24——断言面同位保位，非删测）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-42（迁移 023 落链——受锁链尾族随链更新）"
-    },
-    {
-      "file": "tests/unit/renderer/app-shell.test.tsx",
-      "assertionText": "expect( document.querySelector('.app-content-row [role=\"separator\"]'), '壳层不再包 SplitPane（唯一 SplitPane=阅读器侧栏，在 main 内）' ).toBeNull()",
-      "reason": "F-VISFB-41 库栏拖宽把手（页内 role=separator）与壳层负锚接缝冲突——主控接缝裁决收窄至 main 外（filter closest('main')===null 集合 toEqual([])，守卫力≥原——门一 N7 独立复核）；值改写非删测",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-41（主控集成窗接缝裁决——B3 批集成笔 a3629c9d）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "通道总数=81（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面，域 21 不变）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75：+AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域枚举 pin：恰 21 域（[F-DBCAMP-01 DB-3 U2] 20→21：+snapshot；[F-DBCAMP-01 DB-2 U2] 14→20：+AI 六域；[F-FOLDER-01] 12→14：+folders+papers）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_audit 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_cascade 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_memory 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_messages 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_sensor 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_sessions 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 ai_tasks 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 enrich 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 export_ 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 folders 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 import_ 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 library 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 lineage 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 notes 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 papers 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 reader 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 settings 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 snapshot 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 system 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 tags 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "域 workspaces 方法集 pin",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "路由前缀集 pin：通道名首段全集合（import_→import、ai_sensor→ai-sensor|ai-notes|zcode-link 的跨名域全枚举）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "PRELOAD_HIDDEN_METHODS 闭合：引用的域/方法都在表内；隐藏通道仍在 allChannels（main 侧全量注册不减面——INV-07/INV-54）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道五枚举 pin（[F-FOLDER-01] +foldersChanged+lineageChanged）；事件通道一律 /event 后缀、invoke 通道无此后缀（命名空间互斥）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "PRELOAD_HIDDEN_METHODS 集合本体 pin：恰 import_.fromPaths 一项（增删隐藏面须意识化——防引用检查型 vacuous green）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道值 pin：五通道字符串精确钉死（改名即红——键集/后缀 pin 之外的值位锚）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "事件通道载荷 schema 配对在场（PreloadEvents 类型消费的运行时锚——缺导出即红）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/contracts/api-surface-closure.test.ts",
-      "caseTitle": "组合装配域（ComposedHandlerDomains=workspaces）通道名 pin：四通道全注册（ApiHandlers 可选的编译期代价→运行时枚举补偿）",
-      "reason": "F-VISFB-43 figures 域入包随链：5 通道+10 schema（通道 pin 81→86/域 21→22/方法集·路由前缀·事件·隐藏方法·组合域 pin 随 it.each 再生成——值改写非删测，闭合性语义同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（v207 §1-1 条件⑤ServiceBundle figures 键入包）"
-    },
-    {
-      "file": "tests/e2e/library-detail-info.spec.ts",
-      "assertionText": "expect(win.getByTestId('paper-info-strip-retry')).toBeVisible({ timeout: 10_000 })",
-      "reason": "F-VISFB-43 主控集成窗 e2e 适配：旧 M2 提取失败降级面（重试微钮）随管线退役——零 figures→strip 省略+重试钮 toHaveCount(0)（标题/断言随语义改写，I4「降级不挡主件」锚保持）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（executor 自裁④移交清单——主控集成笔）"
-    },
-    {
-      "file": "tests/e2e/lineage-side-info.spec.ts",
-      "caseTitle": "无真 PDF 场图片提取失败→strip 省略+重试微钮在场（I4 降级不挡主件）",
-      "reason": "F-VISFB-43 主控集成窗 e2e 适配：旧 M2 提取失败降级面（重试微钮）随管线退役——零 figures→strip 省略+重试钮 toHaveCount(0)（标题/断言随语义改写，I4「降级不挡主件」锚保持）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（executor 自裁④移交清单——主控集成笔）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperImageExtractor.test.ts",
-      "fileScope": true,
-      "reason": "F-VISFB-43 原子退役：PaperImageExtractor 及其测试整件删除（F-LGRAPH-01「先删不加=中间态」先例——新管线落地与旧方案删除同票；消费面轮询/重试面一并退役）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（任务书明示 FILE 级 test-surface 豁免=主控集成域登记）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "ready：strip 在场 2 图（dataURL 横滚条）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "partial：failedPages=3 徽注在场（计数锚）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "空省略：authors=[]→作者块缺席；abstract=\"\"→摘要块与 toggle 均缺席",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "images 缺席→strip 与降级行均缺席（C2-② 借出弃置瞬态非 error 面）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "error：降级行+重试微钮在场；点击→retryPaperImages(pId 派生单源, fileUrl) 恒等锚",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/PaperInfoSection.test.tsx",
-      "caseTitle": "M3：toggle 展开/收起往返（class open）；key={data.id} 换篇重挂载→expanded 复位",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
-      "caseTitle": "M1 error 面：「信息加载失败」行+重试钮在场（aria-label=重试）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
-      "caseTitle": "M1 重试钮点击→store.retry 被调（参数=paperId）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
-      "caseTitle": "extracting 态：strip 与降级行双缺席（借出弃置瞬态非 error 面——C2-②）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/unit/renderer/SidePaperInfo.test.tsx",
-      "caseTitle": "重试观察链：getPaperImages 首返 error 引用→250ms 轮询捕捉 extracting 新引用→下传 images 更新（降级行转缺席）",
-      "reason": "F-VISFB-43 消费方换源：props figures 纯数据/figures.list 单发拉取（零轮询零提取零重试面）——测试件随换源重写（标题与断言面改写，判别力同位）",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §5-43（INV-136/139 换源面）"
-    },
-    {
-      "file": "tests/e2e/reader-text.spec.ts",
-      "caseTitle": "A3 复活面端到端：防抖窗内关脏 tab（确认弃改）→重开同文献→笔记=基线",
-      "reason": "F-VISFB-14 C-A3 翻案（任务书 §0-1）：关 tab 默认=flush-first 立存（成功零弹窗即关），旧「确认弃改→基线空串」断言随翻案反转——原位改写为「flush-first 立存→重开=已存值」且判别力加严（不挂 dialog 自动接受器：若回归旧恒 confirm 行为模态阻塞→tab 不关→计数断言红）；confirm 弃改分支=单元级 close-tab-flush.test 9 例承载",
-      "rulingLink": "docs/design/2026-10-16_visfb-campaign-taskbook-final.md §0-1/§5-B1段14号（runId=20261017-visfbb4）"
-    },
-    {
-      "file": "tests/unit/db/deletion-log.test.ts",
-      "caseTitle": "U1-1 对位：九表各恰 1 个 <t>_deletion_log_ad+触发器 WHEN 守卫在场（sql 文本含 FROM deletion_log_guard）+全库 %_deletion_log_% 计数=9+deletion_events 上恰 2 个 append-only 触发器+guard 播种恰 1 行 stop=0",
-      "reason": "F-VISFB-61 021 族第十表：题名九表→十表+计数 9→10 活性更新（floating_notes 触发器入列——断言强度只增）",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/db/deletion-log.test.ts",
-      "caseTitle": "U1-3 逐表删除断言 ×9（身份矩阵：常规表=OLD.id；paper_tags=pid|tid 拼接；lineage_graph_meta=key 值）",
-      "reason": "F-VISFB-61 同上：×9→×10+floating_notes 删事件 case 入矩阵",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/db/repos/import-snapshot.repo.test.ts",
-      "caseTitle": "upsert 表序=FK 父先子后钉死（collections→tags→papers→lineage_nodes→paper_tags→notes→annotations→lineage_edges→lineage_graph_meta）",
-      "reason": "F-VISFB-61 IMPORT_TABLE_ORDER +floating_notes（紧随 collections——唯一 FK 父）题名随实序更新",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/db/repos/import-snapshot.repo.test.ts",
-      "caseTitle": "父先子后序全量落库：按 IMPORT_TABLE_ORDER 逐表 upsert 异源全行集→九表行数对账（表序正确性的正向锚）",
-      "reason": "F-VISFB-61 九表→十表行数对账+floating_notes 异源行入序",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
-      "caseTitle": "九表读面行序矩阵：逆序夹具→输出按行序矩阵有序（updated_at,id 三表=id 两表=复合键表）",
-      "reason": "F-VISFB-61 TABLE_SPECS 九表→十表题名更新（floating_notes 行序断言入格）",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/db/repos/snapshot.repo.test.ts",
-      "caseTitle": "九表读面列齐全：逐表断言行对象键集=迁移终态全列（SELECT 禁 * 的对位面）",
-      "reason": "F-VISFB-61 同上十表化（floating_notes 七列 PRAGMA 对位入格）",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/services/export-snapshot.service.test.ts",
-      "caseTitle": "table_counts=实载行数（九键恰 §13.7 九表）+seq 语义：首导 1/构建取消零耗/commit 后再导=2",
-      "reason": "F-VISFB-61 table_counts 九键→十键（floating_notes:0 入期望）题名随键集更新",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/services/folders-delete-domain.test.ts",
-      "caseTitle": "删夹=域删级联零残留：papers/lineage_nodes/lineage_edges/notes/annotations/paper_tags/ai_notes 域内全灭；他夹与主图数据不动+双广播",
-      "reason": "F-VISFB-61 域资产扩展：题名枚举 +floating_notes（零残留断言入体——断言强度只增）",
-      "rulingLink": "docs/prompts/2026-10-17_loop-handoff-v211-b6-close.md §3 裁决部 GO_WITH_CONDITIONS+任务书 §5-B6 61 号（受锁测试 [locked-change] 面授权——批档 scripts-audits/20261017-visfbb6）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "assertionText": "expect(stubApi.lineage.upsertEdge).toHaveBeenCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', dashed: false, color: '#0f8a6d' })",
-      "reason": "F-VISFB-66 单元一物化纪律扩面：applyEdgeLineStyle 载荷断言增列 via/fromAnchor/toAnchor null 归一（原位增强非删检）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §0.3/§D.2（终裁采纳清单 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "assertionText": "expect(stubApi.lineage.upsertEdge).toHaveBeenLastCalledWith({ id: 'e1', from: 'A', to: 'B', label: '继承甲', dashed: true, color: '#c07a2a' })",
-      "reason": "F-VISFB-66 单元一物化纪律扩面：成对置回路径同增列 null 归一（原位增强非删检）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §0.3/§D.2（终裁采纳清单 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c1-clickchain.test.tsx",
-      "fileScope": true,
-      "reason": "F-VISFB-66 豁免#6：点两卡连边链整文件随链路退役删除（裁定 2——唯一建边径=锚点显式拖拽）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#6/§B.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-manual-edit.test.tsx",
-      "fileScope": true,
-      "reason": "F-VISFB-66 豁免#4：linkManualParent 孤儿测试整文件随改父业务退役删除（裁定 3——三入口死码删，store linkManualParent 无生产调用面）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#4/§C.1"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚（fromEff）').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚（fromEff）').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚（snap）').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚（snap）').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.x1 - ends.fromExp.x), '预览起点 x=规则锚').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.y1 - ends.fromExp.y), '预览起点 y=规则锚').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.x2 - ends.snapExp.x), '预览吸附端 x=规则锚').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "assertionText": "expect(Math.abs(ends.y2 - ends.snapExp.y), '预览吸附端 y=规则锚').toBeLessThanOrEqual(0.5)",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "caseTitle": "R-锚级一致①direct 意图：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "caseTitle": "R-锚级一致②h-slip：端点恒落 12 锚体系（zoom 1.0/0.8/1.5）",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "caseTitle": "R-锚级一致③band：端点恒落 12 锚体系+首段外法线（zoom 三档）",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "caseTitle": "R-锚级一致④跨年绕行：端点恒落 12 锚体系（U2 绕行族 band/detour——zoom 三档）",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
-    },
-    {
-      "file": "tests/e2e/lineage-anchor-consistency.spec.ts",
-      "caseTitle": "R-锚级一致⑤manual-override via 直写：端点恒落 12 锚体系（zoom 三档）",
-      "reason": "F-VISFB-66 条件豁免#8：R 族规则锚基座等势置换为钉定基座（同点数同强度——落端=钉定锚+from 恒等新增；置换说明附档）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#8（裁定 1）"
+      "assertionText": "expect(boxes.length).toBe(2)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 内部簿记（几何采样数与前置 toHaveCount(2) 行为锚同值重复锁）+R2 等价改写问=计数行为不变的实现重构不应红此簿记锚——新断言=关系式 boxes.length===cands.count()，行为锚由同例 toHaveCount 承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
     },
     {
       "file": "tests/e2e/lineage.spec.ts",
-      "caseTitle": "T1 种子节点时间线渲染真实文本→UI 连线→滚动容器锚后节点仍可断言",
-      "reason": "F-VISFB-66 豁免#1：T1 右键径用例整删（连线到…链路退役）；断言比对记录随批档（unit2-e2e-compare.md）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#1（裁定 2）"
+      "assertionText": "expect(clip.length).toBe(3)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 内部簿记（裁切采样数与同例已锁卡数重复锁，:1411 同型）+R2 等价改写问=卡集不变的实现重构不应红此簿记锚——新断言=关系式 clip.length===月框卡实计数，行为锚由同例单行三卡计数承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
     },
     {
       "file": "tests/e2e/lineage.spec.ts",
-      "assertionText": "expect(win.getByTestId('lineage-pending-link')).toBeVisible()",
-      "reason": "F-VISFB-66 单元二 e2e 改写：右键/点两卡径断言随链路退役删除（T3 拒绝语义等价迁移=拖拽径二次画同对）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.1 T3 行（裁定 2）"
+      "assertionText": "expect(cell.row, 'γ4 落位行=奇行（positionOf 奇行支）').toBe(1)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P2 松化：R3 坐标簿记（positionOf 同源公式自断言近恒真；双射往返已由 lineage-capacity 单测锁）+R2 等价改写问=网格行为不变的实现重构不红此簿记——新断言=非首行关系 toBeGreaterThan(0)，精确行值由同例 partitionRows [3,1] 锚+落位算术 ≤1px 锚承载",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
     },
     {
-      "file": "tests/e2e/lineage.spec.ts",
-      "assertionText": "expect(win.getByText(/该逻辑线已存在（.+），重复边被拒绝/)).toBeVisible({ timeout: 10_000 })",
-      "reason": "F-VISFB-66 单元二 e2e 改写：右键/点两卡径断言随链路退役删除（T3 拒绝语义等价迁移=拖拽径二次画同对）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.1 T3 行（裁定 2）"
+      "file": "tests/unit/renderer/lib-pane-widths.test.tsx",
+      "assertionText": "expect(cssExp).toMatch(/\\.lib-fnav\\s*\\{[^}]*width:\\s*var\\(--lib-fnav-w,\\s*224px\\);/)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P3 松化：R2 等价改写问=CSS 行为不变换写（空白形态/规则在两载体文件间迁移）可红源文本正则——R1 值源问=224px 为 INV-147 声明缺省（值精度保持不随形松化）——新断言=空白全剥离归一存在性（属性名 width+var(--lib-fnav-w)+关键值 224px），退化形态经变异红证；RR1 收窄后锚选择器规则块域",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
     },
     {
-      "file": "tests/e2e/lineage.spec.ts",
-      "caseTitle": "T12c 线型链跨格全序列（C1：展开钮/色行 per-kind/点两卡连边/连画/Esc 分层/详情不开）",
-      "reason": "F-VISFB-66 豁免#2：T12c 点两卡径用例整删；断言比对记录随批档",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#2（裁定 2）"
+      "file": "tests/unit/renderer/lib-pane-widths.test.tsx",
+      "assertionText": "expect(cssLib).toMatch(/\\.lib-drawer\\s*\\{[^}]*width:\\s*var\\(--lib-drawer-w,\\s*316px\\);/)",
+      "reason": "F-TESTLOCK-01 Q3 试点 P3 松化：R2 等价改写问=CSS 行为不变换写可红源文本正则——R1 值源问=316px 为 INV-147 声明缺省（值精度保持）——新断言=空白全剥离归一存在性（width+var(--lib-drawer-w)+316px），退化形态经变异红证；RR1 收窄后锚选择器规则块域",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-testlock01/design-v2-final.md"
     },
     {
-      "file": "tests/e2e/lineage.spec.ts",
-      "caseTitle": "T12d pendingLink 提示条 Esc 退出（F-ESC-01：Esc 后点卡不建边）",
-      "reason": "F-VISFB-66 豁免#3：T12d pendingLink 模式用例整删（模式态随右键链路退役）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#3（裁定 2/3）"
+      "file": "tests/e2e/selection-twocol.spec.ts",
+      "caseTitle": "F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条",
+      "reason": "F-VISFB-53CI-02 票据授权改写：B5 投影语义新断言追加（间隙段三断言）+R1 守卫补强（skips2/selText 非空）+RR2-2 lb2/rb2 域统一+收尾 sel53Verdict 死代码删——用例标题未动（INV-63），断言面签名变=授权演进",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     },
     {
-      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
-      "caseTitle": "竖向布局：dragging 预览端点=selectAnchor 规则锚（snap 端=selectAnchor(目标 rect, 源中心)，起点=fromEff=selectAnchor(源 rect, 目标中心)）",
-      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+      "file": "tests/unit/renderer/selection-drag-controller.test.ts",
+      "caseTitle": "⑨ 指针越出栏带：低于栏底=栏尾（DOM 序末项文本尾）、高于栏顶=栏首（首项 offset 0）",
+      "reason": "F-VISFB-53CI-02 B3 契约改写：越顶/越底=视觉首带/末带按 B2 二值（DOM 序首末项契约废止）——主控 INV-63 裁决随票更新标题（陈旧已反转义=误导性契约面），断言面同步演进",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     },
     {
-      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
-      "caseTitle": "横向近邻布局：同断言（规则锚=主向横边+侧内投影——move 落顶中锚判别位）",
-      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "快慢等价（INV-58 后半）：同夹具下 rAF 帧快路径产物与 settle 全量产物逐位一致（块数+四向几何）",
+      "reason": "F-VISFB-53CI-02 A2 语义改写：慢路零重画——同签名 settle 不再 setPaint，paint 保持快路帧（INV-58 演进已回写 docs/invariants.md:75）；锚由「逐位一致」改「保持快路帧+同源区间」",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     },
     {
-      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
-      "caseTitle": "斜向布局：同断言（投影越界取最近槽——move 落右中锚判别位）",
-      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "同帧覆盖（票面强制断言）：快路径帧产物落地后全量评估覆盖——paint 终态=全量产物（mid-drag zoom 形态：快=zoom1、全量=zoom2，终态必须=zoom2 ≠ 快路径帧）",
+      "reason": "F-VISFB-53CI-02 A2 语义改写+主控 INV-63 标题裁决：同签名 settle 不再 setPaint（mid-drag zoom=快 zoom1 帧保持），标题改实「A2 语义改写——同签名 settle 不再 setPaint，paint 保持快路帧」",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     },
     {
-      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
-      "caseTitle": "未命中目标：snap=null+fromEff=null+预览端点=cursor（x1/y1 回落 from.pt 起拖锚）",
-      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-anchfix01.test.tsx",
-      "caseTitle": "取消径 fromEff 复位：mid-drag blur 中断→重拖 fromEff 重算（无残留跨会话）",
-      "reason": "F-VISFB-66 单元二：fromEff 规则锚 morph 断言族随裁决 D 翻案改写为钉定基座（预览端点=按下锚/命中锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1/§A.2（裁定 1）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "加边全流程：菜单「连线到…」→目标选取→upsertEdge {from: 源, to: 目标}",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "树拒绝三路径 toast：service 中文 reason 透传（多父/成环/自环），UI 零守卫只接呈现",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "改父=删旧边+加新边两调用（N5 语义：UI 单操作，service 两调用）",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "互斥①发起 pendingLink 清工具：draw-X 态「连线到…」→tool 回 select（完成语义恒 select 态路由）+点 B 产品路径闭合",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "互斥②进画线清意图：pendingLink 激活后 tool 进 draw-X→提示条撤（防 draw 路由劫持完成链死路）",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-board.test.tsx",
-      "caseTitle": "互斥③组合格：draw-X+palette 开→发起→tool select+paletteFor null（resetTool 一并收板）+意图在场可完成",
-      "reason": "F-VISFB-66 单元二：pendingLink 互斥/加边/改父用例随右键链路+改父退役删除（裁定 2/3）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1/§C.1"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-anchors.test.tsx",
-      "caseTitle": "dragging 近目标锚（snap 维）：circle.snapped=目标卡规则锚（[F-ANCHFIX-01 批 1b] 选锚统一=B top ½ 164,300——selectAnchor(B, A 中心)）——预览端点同源（P4）",
-      "reason": "F-VISFB-66 单元二：snap=selectAnchor 规则锚断言随钉定模型改写（snap=命中锚本身——裁决 D 翻案）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §A.1（裁定 1）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "空面 no-op：select+无板+无锚+无菜单→Esc store 零变化",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "菜单层让路：菜单 DOM 在场→Esc 单口 no-op（store 全保持——菜单自治关闭承载）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "色板层：板开（叠加锚+armed）→Esc 只关板（锚/画线保持）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "锚层：板 null+锚 picked+armed→Esc 只清锚（tool 保持=连画域不退）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "工具层：板 null+锚 null+armed→Esc 退画线（→select）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "INPUT 让路（锚在场变体）：输入焦点内 Esc=原生优先（板/锚/画线全保持）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "组合跨格序列：菜单+板+锚+armed 叠加→四连 Esc 逐层退全清（一次只关最上层）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "setDrawAnchor 写读+resetTool 清锚（工具态中止=锚无残留）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "setMode 清锚（模式切换=退出画线域）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "kind 切换（draw-X→draw-Y）锚保留（仍在画线域——C1 语义沿承）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "resetForMount 清锚（进页缺省）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "对话框层让路：role=dialog DOM 在场→Esc 单口 no-op（store 全保持——Dialog 自治 Esc 承载）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "pendingLink 让路：提示条标记 DOM 在场→Esc 单口 no-op（提示条自治 Esc 承载）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "提示条自治 Esc：pendingLink 激活→Esc→setPendingLink 恰一调 null（经 props 回写）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "提示条 IME 组词期 Esc=取消候选词非关闭（isComposing 守卫）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "提示条 INPUT 让路：输入焦点内 Esc=原生优先（提示条不关）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "提示条上层让路：对话框/菜单在场→自治监听 no-op（setPendingLink 零调）",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-c2-esc.test.tsx",
-      "caseTitle": "层序跨格序列：dialog+提示条+板+锚+armed 叠加→五连 Esc 逐层各退一层",
-      "reason": "F-VISFB-66 单元二：Esc 锚层/pendingLink 层用例随层删除改写（E-ESC-01 单层直达承载）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.2（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-drawline.test.tsx",
-      "caseTitle": "R15 源卡高亮：dragging 期源卡挂 .link-src（T3-P7B 语义沿承）；收尾撤",
-      "reason": "F-VISFB-66 豁免#6 族：useDrawLine 点两卡分支族断言随 handleCardClick 退役改写（源侧高亮删除负锚化 W-09r2）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#6/§B.1（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
-      "caseTitle": "R11② manual 线跨卡换端：reconnectEdge+L 重正交（新拐点落地）",
-      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
-      "caseTitle": "R11② 自动线（空 via）跨卡换端：物化种子走 reconnectEnd（不整体跳过）+空 via 不穿透 IPC",
-      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-edit-r2.test.tsx",
-      "caseTitle": "R11①② 自动线（空 via）同卡换锚：物化 via 承载新锚位（空 via 归一不落 []）",
-      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-edit.test.ts",
-      "caseTitle": "换锚（新锚右侧边）：首拐插入 (V.x, A.y)——入轴=锚法线向+via 全保留",
-      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-edit.test.ts",
-      "caseTitle": "同轴直达：新锚与首 via 同列（竖直锚位）=零插入",
-      "reason": "F-VISFB-66 单元二：reconnectEnd L 重正交/via 保留语义用例随换端语义反转改写（清 via 重算+重钉锚——终裁修正含本端卡三格）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.1/§C.3（裁定 3+终裁 §二）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-edge-overlay.test.tsx",
-      "caseTitle": "CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+link-src+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B）",
-      "reason": "F-VISFB-66 单元二：.link-src CSS 正锚随源侧高亮链退役负锚化（W-09r2）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §B.1（W-09r2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-rr13-noop.test.tsx",
-      "caseTitle": "负锚（短路不过火）：同卡换锚（B 左中→B 顶中）仍写入=L 重正交+一编辑单元",
-      "reason": "F-VISFB-66 单元二：同卡换锚用例随换锚合法化（终裁修正 C1a）改写——清 via+重钉锚断言",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 主控终裁（runId=20261018-fvisfb66 批档 07 号件） §二（本端卡异锚=合法换锚）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-session-store.test.ts",
-      "caseTitle": "[F-ALIGN-01 改写] 新建类动作乐观生成 id（画线）：linkNodes 乐观边即时在场（uuid=落库 id——无临时 id 漂移；原 addPaperNode 面随节点新建路径退役删——节点唯一来源=入库/移动两路）",
-      "reason": "F-VISFB-66 单元二：linkNodes 调用面随入口退役改写为 drawEdge 单径（必携双锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.3（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-session-store.test.ts",
-      "assertionText": "expect(showToast).toHaveBeenCalledWith('连线已保存', 'success')",
-      "reason": "F-VISFB-66 单元二：linkNodes 调用面随入口退役改写为 drawEdge 单径（必携双锚）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §C.3（裁定 2）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "caseTitle": "upsertEdge/removeEdge 成功回填：新边追加、删边清除",
-      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "caseTitle": "新建边成功 toast 统一文案（U8 单基型）；label 后编辑（id 在场）不 toast",
-      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "caseTitle": "N5 改父部分失败：删旧边成功+加新边失败=合法中间态+toast 指明+retry 只重发加边",
-      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "caseTitle": "linkNodes 新建（U8 单基型）+成功 toast 统一文案",
-      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-store-write.test.ts",
-      "caseTitle": "linkNodes CONFLICT（service 守卫拒绝）：动作丢弃+toast reason+保存态回落 clean",
-      "reason": "F-VISFB-66 豁免#5 族：store 三入口用例随改父/点两卡退役删除或改写为 drawEdge 单径（toast=即时暂存提示）",
-      "rulingLink": "runId=20261018-fvisfb66 · F-VISFB-66 · F-VISFB-66 设计书 v1.2（runId=20261018-fvisfb66 批档 06 号件） §H.4#5/§C.1（裁定 2/3）"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "判定函数：clean 放行 / dirty 拦截",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "模块级缓存：setQuitDirty/getQuitDirty 往返（renderer push 上报的 main 侧缓存）",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "clean 态 close：不 preventDefault、不弹确认框、不 destroy（默认放行）",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "dirty 态 close + 确认：preventDefault → 确认框（固定文案）→ destroy 强制关闭",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "dirty 态 close + 取消：preventDefault → 窗口保持（不 destroy，dirty 缓存不迁）",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "dirty 态 close + 确认框异常（reject）：按取消处理——窗口保持、不抛出（deepseek W1）",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "上报 dirty=true/false：透传注入的 setQuitDirty 并返回 { ok: true }",
-      "reason": "F-VISFB-64 无条件握手化：quitDirtyGuard/getQuitDirty 纯函数族随 clean 直放面退役删除（契约变更非超集——终裁 §⑪-6 预批；断言面迁移至 quit-close-policy.test/quit-handshake.test/quit-dirty-guard 新同名用例）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/unit/windows/quit-dirty-guard.test.ts",
-      "caseTitle": "[F-FOLDER-01·回炉码 7] lineagePending 装配契约锚：同载荷透传注入的 setLineagePending（缺省 false=旧载荷兼容）——IpcDeps 必填直调（缺失即红）",
-      "reason": "F-VISFB-64 装配面重排：lineagePending 透传行为零变（INV-91 保留）——标题微缩+断言集随 makeIpcDeps 形态重排，指纹面变更故登记（非契约语义变更；新同名用例承接）",
-      "rulingLink": "docs/design/2026-10-18_f-visfb64-design.md §⑪-6"
-    },
-    {
-      "file": "tests/e2e/lineage.spec.ts",
-      "caseTitle": "T6 [F-SLOTGRID-01] 砖砌网格：窄窗 5 卡同月→行容器分行=capacity 同源公式+奇行错位 100+零 margin-left 残留",
-      "reason": "F-VISFB-67 W-3 同源化：T6 期望改用 contentWidthOf（生产同式归一化读数）替代 raw computed 宽，标题随口径改写（旧窄窗 1/1 形态 extinct——用户裁决 2026-10-18 逐字在账本 ruling 行 runId=20261018-openbook）",
-      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（门一 d1-W3 条件 3 处置）"
-    },
-    {
-      "file": "tests/e2e/lineage.spec.ts",
-      "caseTitle": "γ3 [F-SLOTGRID-01 U3] 纵排语义（1000 视口 1/1）：跨行插入按 y 行带+行分布=partitionRows 同源",
-      "reason": "F-VISFB-67 R1 主控裁定：γ3 纵排布防卫被地板灭绝（1/1 容量带 extinct——用户裁决「不应该出现」），重写为 640 视口 3 卡月单行 [3] 地板契约（纵排数学面退役归 γ1/γ2/γ4）",
-      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（主控裁定 R1+受锁翻面授权链）"
-    },
-    {
-      "file": "tests/unit/renderer/lineage-timeline.test.tsx",
-      "assertionText": "expect(css).toMatch(/\\.timeline\\s*\\{[^}]*overflow-y:\\s*auto;[^}]*overflow-x:\\s*hidden/)",
-      "reason": "F-VISFB-67 终裁 v3 CSS 三改之一：.timeline overflow-x hidden→auto（窄视口横滚承载——用户裁决授权面）；断言体同步翻面为 auto，用例标题保留历史措辞（签名键冻结由本豁免承载）",
-      "rulingLink": "docs/prompts/2026-10-19_loop-handoff-v220-fvisfb67-close.md §0/§3（终裁 v3+门一已裁翻面）"
-    },
-    {
-      "file": "tests/unit/db/migrate-folders-graphs.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——012 文件夹×图绑定升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-is-starred.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——017 星标列升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-app-meta.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——018 app_meta 落链路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-ai-domain.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——020 AI 域落链路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-tags-folder-domain.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——019 tags 多域化重建路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-papers-folder-not-null.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——016 papers NOT NULL 重建路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-lineage-v2.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——010 脉络数据层 v2 升级路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-022-ghost-edges.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——022 幽灵边存量清理路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-reading-time.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——008/009 阅读时长加删列双跳路径的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate-edge-blue-recolor.test.ts",
-      "fileScope": true,
-      "reason": "F-SNAPCLEAN-01 基线压缩（B″）：被测升级行为随基线压缩消失——015 存量换色路径〔设计清单外同族——盘点 grep 扩面申报，impl-report 自裁①〕的迁移对象已删（旧链 001–025 删除，现役单件 026_baseline.sql），终态契约由 migrate.test.ts 全对象集断言+repo/service 层终态测试承载（覆盖映射=批档 impl-report.md）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "新库：全量应用，user_version = 最新版本",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：版本数组/终值断言随 B″ 改写——新用例「新库全量：appliedVersions=[26]、全对象集+种子在位」承载且断言面扩强（43 表集+16 索引+59 触发器族+种子四组）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "迁移失败整体回滚：user_version 不变、半成品表不残留（注入坏迁移验证）",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：同机制原位重写——新用例「迁移失败整体回滚」同断言面（user_version 归 0+无半建对象）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "002 索引在位：added_at 排序不再全表扫（[F-FOLDER-01] 集合过滤索引随 paper_collections 退役连带消亡）",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：索引断言随重写升级——新用例 ALL_INDEXES 精确全集断言（idx_papers_added_at 在内，16 项全集=超集承载）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "重复执行幂等（已应用版本跳过）",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：幂等断言随重写迁移——新用例「已迁移库重开：零应用幂等+开库断言仍执行」前半段承载",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "迁移产物包含全部核心表与 FTS 表（schema golden）",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：表集断言随重写升级——新用例 ALL_TABLES 精确全集断言（43 表含 FTS 虚表与 shadow=超集承载）",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "FTS 触发器在位：插入 papers 后 papers_fts 可搜（trigram 支持中文子串）",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：FTS 行为锁由既有 tests/unit/db/fts.test.ts 承载（未动）；新用例触发器族计数断言（12 件 FTS 触发器）补对象面",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/db/migrate.test.ts",
-      "caseTitle": "外键级联：删 paper 连带删 annotation",
-      "reason": "F-SNAPCLEAN-01 migrate.test 整件重写（基线压缩后三用例族）：级联行为锁由既有 repo 层测试承载（papers.folder-contract/folders-delete-domain 等——均跑在基线终态 schema 上）；DDL 级 CASCADE 子句在 026 原文中保真",
-      "rulingLink": "2026-10-19 用户裁决（账本 1488 行⑦「开发阶段一切以最新版本为准，不考虑多余的兼容」）+tickets/registry.ts F-SNAPCLEAN-01（受锁面 [tests+migrations]）+design-v2-final.md §5/§7（仓外 scripts-audits/20261020-snapclean01）"
-    },
-    {
-      "file": "tests/unit/services/lineage-edge-via.test.ts",
-      "caseTitle": "新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插 via=NULL 行合法（存量零迁移兼容）",
-      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：标题链尾值随基线压缩改写（→26），用例体同位——直插兼容行为断言不变",
-      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
-    },
-    {
-      "file": "tests/unit/services/lineage-tags.test.ts",
-      "caseTitle": "版本接续：MIGRATIONS 含 version 7 且 user_version=15（新库全量，[F-UIRES-03 C1] 015 落地后）",
-      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：旧链 version 7 存在性断言随基线压缩退役（MIGRATIONS 单件 026）；链尾断言值随迁（→26）——用例体收敛为 user_version 断言",
-      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
-    },
-    {
-      "file": "tests/unit/services/lineage-u8-linetype.test.ts",
-      "caseTitle": "新库 user_version=15（[F-UIRES-03 C1] 015 起）；直插无视觉列旧行读面归一（不炸）",
-      "reason": "F-SNAPCLEAN-01 版本字面量随迁（链尾 25→26）：标题链尾值随基线压缩改写（→26），用例体同位——读面归一断言不变",
-      "rulingLink": "同上 rulingLink（F-SNAPCLEAN-01 基线压缩——design-v2-final.md §3-7 版本字面量随迁）"
+      "file": "tests/unit/renderer/selection-evaluate.test.tsx",
+      "caseTitle": "W1 mouseup cancel-before-evaluate 顺序锚（门一回炉——竞态面）：mouseup 时刻在途 rAF 清除+settle 防抖不补枪——mouseup 全量产物为终态（判别形态=预渲染 paint 后重建在途 rAF，mouseup 后改 zoom 推进 300ms 越过帧点与防抖点，paint 仍=mouseup 时刻全量几何；onMouseUp 删 scheduler.cancel() 的变异在此红）",
+      "reason": "F-VISFB-53CI-02 RR2-1 红证改实：cancel 删除变异实测 8 用例全绿=无判别力（双路吸收），标题尾注改实「cancel 删除变异实测无判别力〔双路吸收〕，现存判别面=终局几何锚+防抖不补枪面」——it 保留（终态几何锚仍有值）",
+      "rulingLink": "/home/yyx/synapse-archive/scripts-audits/20261020-visfb53ci02/master-touch-rulings.md"
     }
   ]
 }

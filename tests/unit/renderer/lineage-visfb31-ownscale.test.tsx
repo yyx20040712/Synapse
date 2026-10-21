@@ -207,6 +207,11 @@ describe('[F-VISFB-31] 接缝③buildSnapshot=own 域（路由 px 常量族同�
     year.setAttribute('data-year', '2022')
     const frame = document.createElement('div')
     frame.className = 'month-frame'
+    // [F-DETOURW-01] contentW=月框内容盒宽归一化值（readFrameContentWidth 单源）
+    // ——jsdom 无样式表空串→NaN→unmeasured，内联五值注入使 computed 可读
+    // （injectW 先例同法；627.2−24−3.2=600=断言值）
+    frame.style.cssText =
+      'width:627.2px;padding-left:12px;padding-right:12px;border-left-width:1.6px;border-right-width:1.6px'
     year.appendChild(frame)
     content.appendChild(card)
     content.appendChild(year)

@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "72e46ec789f059ca42d66433a4a65b90baab0cc2d9b64ab92aafe26f9ea2e0bf"
+            "sha256": "93973f65df7af567f6d7be29e34a352ef7474d4a28c7c46d41f6174eafa78960"
         },
         {
             "path": "electron.vite.config.ts",
@@ -23,7 +23,7 @@
         },
         {
             "path": "playwright.config.ts",
-            "sha256": "2d3971915ed6b0983fda51b1cf9d32dc91f5b66414c0685978997185843110a2"
+            "sha256": "5668ef351738eaea96aabf13418b1ba46fdd2804a5f28ce2ac69e6c602d8b3f0"
         },
         {
             "path": "scripts/calibrate-token-estimate.mjs",
@@ -87,7 +87,7 @@
         },
         {
             "path": "scripts/test-surface.baseline.json",
-            "sha256": "fe9e375df7b645f0f8648c0cbccb9410967775e3a8a50cc68b6a5f4459f53c70"
+            "sha256": "c980e91b15d562fb29ab407a9ccb7652262b26fe314a2c9dd6adc563fcb04b71"
         },
         {
             "path": "scripts/test-surface.exemptions.json",
@@ -284,6 +284,10 @@
         {
             "path": "tests/e2e/geo-probes.ts",
             "sha256": "fd1cd5c40a382e82be799b19f8515ac9f237453a74c115894b22a51c3a9ad269"
+        },
+        {
+            "path": "tests/e2e/global-setup.ts",
+            "sha256": "f1c8a2359a0883b52db53a62faa8b42b54ad875ae226aebd6b703226730eabc8"
         },
         {
             "path": "tests/e2e/import-drag.spec.ts",
@@ -592,6 +596,10 @@
         {
             "path": "tests/unit/db/repos/tags.repo.test.ts",
             "sha256": "c034a2ef388f0cf9b412cba5b0a1cc6a4441fda695ce772a6888dc49d761fc4b"
+        },
+        {
+            "path": "tests/unit/e2e-output-prune.test.ts",
+            "sha256": "90943cc4a8b9ae5bfa11c038dc4c245fe52e89e9f1e3adee4e79edd9b5be2d99"
         },
         {
             "path": "tests/unit/events-schemas.test.ts",
@@ -982,6 +990,10 @@
             "sha256": "73e41bff542763ef85560c45115267552aa5dfef66140939cf2b2af868f5cf8d"
         },
         {
+            "path": "tests/unit/renderer/lineage-detourw01.test.ts",
+            "sha256": "c0ea20b2a11e4e57378e3c88feb223999827994caab47ea274833619a5edeb7b"
+        },
+        {
             "path": "tests/unit/renderer/lineage-drag-grid.test.ts",
             "sha256": "7a0821a40f260d780e8f3e8139e224e6b9a5c755a688793e2aa3c0bb85381867"
         },
@@ -1083,7 +1095,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-pin-routing.test.ts",
-            "sha256": "9d2068340cb3cb6932691e39bbd64347f8cf4c5d49e04aa2e103537b88e682e6"
+            "sha256": "d2c5da265bcad5c1ff755c7f72aa4f760c5aa93fe2f977edd77a344eefb109e7"
         },
         {
             "path": "tests/unit/renderer/lineage-pull-follow.test.tsx",
@@ -1119,7 +1131,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-routing.test.ts",
-            "sha256": "ec94484b2f93c92b30cb65082806910518bb804dd254c7d29dba183b3bd973aa"
+            "sha256": "c45da7b7420644c957b5df86a2e0cce2734d4d1e7ac27a6fa1e586702c164d1d"
         },
         {
             "path": "tests/unit/renderer/lineage-rr13-noop.test.tsx",
@@ -1195,7 +1207,7 @@
         },
         {
             "path": "tests/unit/renderer/lineage-visfb31-ownscale.test.tsx",
-            "sha256": "84a52a64b4eed17aa0aae12c445393875fa59a13611efe2652f24d4b269bec49"
+            "sha256": "5ea76827c2c0efb5a3f79ee2bbe7950ed4bada97939992a33c02f41583fddff4"
         },
         {
             "path": "tests/unit/renderer/lineage-visfb67-floor.test.tsx",
@@ -2012,6 +2024,10 @@
         {
             "path": "tests/utils/api-client-mock.ts",
             "sha256": "a4ddb5095191fa73846f055f11b918a7ee7e9a5cd26f200e7724f96e63f5db5c"
+        },
+        {
+            "path": "tests/utils/e2e-output-prune.ts",
+            "sha256": "e79f2a84b0d0ba5f61e9f6c7e8d529fd5a8971eb75b8d90f65b3bf6e4d83fd78"
         },
         {
             "path": "tests/utils/factories.ts",

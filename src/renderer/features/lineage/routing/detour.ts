@@ -49,7 +49,9 @@ import { PAD, polylineClearStubs, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
 import { midSlotOf, quant, slotPositions } from './gap-cells'
 
-/** 月框边框宽（.month-frame border 1.6px——快照 border-box 坐标换算用） */
+/** 月框边框宽（.month-frame border 1.6px——[F-DETOURW-01 起] 仅高度/坐标侧
+ *  消费（fx0 换算/innerH 派生）；宽度侧容量输入已归一=snap.contentW 单源
+ *  （readFrameContentWidth——INV-169②），本常量不再参与容量宽度派生 */
 const FRAME_BORDER = 1.6
 /** 月框底 padding（.month-frame padding-bottom 12px——capacity.ts 未导出底
  *  值，本件镜像常量；capacity 属 U1 产出件本票只读） */
@@ -120,15 +122,27 @@ function rowsFromFrame(f: { x: number; y: number; w: number; h: number }): Array
 const chanCache = new WeakMap<LayoutSnapshot, GridChannel[]>()
 
 /** 网格通道全集（逐框逐行：列间段 k=1..cap−1+左右边侧道；快照级 WeakMap 缓存
- *  ——routeAll 逐边复用零重算。行集=框几何派生〔RR1 B2〕） */
+ *  ——routeAll 逐边复用零重算。行集=框几何派生〔RR1 B2〕。[F-DETOURW-01] 容量
+ *  输入 W=snap.contentW 快照级单值（readFrameContentWidth 归一化单源——布局/
+ *  拖拽/走线三域合流 INV-169②；全月框同宽=CSS 地板结构事实 INV-169①——
+ *  旧逐框 f.w−2×FRAME_BORDER−2×FRAME_PAD_LEFT 声明口径派生与布局 used 口径在
+ *  帧宽 [200N−46,200N−44.8) 1.2px 窗分叉，随本票退役）；W≤0=unmeasured 零通道
+ *  早退（capacities(0)=∞ 入 k 循环即死循环——jsdom/空图态真实可达；零通道→
+ *  无障碍通道派生→各边直降/band 承接，与 useCapacityLayout unmeasured 降级
+ *  同族，非新降级发明）） */
 export function gridChannelsOf(snap: LayoutSnapshot): GridChannel[] {
   const cached = chanCache.get(snap)
   if (cached !== undefined) return cached
+  // [F-DETOURW-01] W=快照 contentW（快照级单值——循环外提取，见头注）
+  const w = snap.contentW
+  if (!(w > 0)) {
+    // unmeasured 守卫（必置）：capacities(≤0)=∞——入 k=1..cap−1 循环即死循环
+    chanCache.set(snap, [])
+    return []
+  }
   const out: GridChannel[] = []
   for (const f of snap.frames) {
     const fx0 = f.x + FRAME_BORDER
-    // W=框内容宽（设计 §2 容量行：内容区=[12,12+W)——border-box 换算=减双边框与双 padding）
-    const w = f.w - 2 * FRAME_BORDER - 2 * FRAME_PAD_LEFT
     const caps = capacities(w)
     for (const { r, top } of rowsFromFrame(f)) {
       const row = { top }

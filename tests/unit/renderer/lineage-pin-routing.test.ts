@@ -173,7 +173,7 @@ describe('F-VISFB-66·[回炉 R4] band 钉定族（bandSkeleton fromPin/toPin �
       { x: 20, y: 330, w: 900, h: 250, year: 2021 }
     ],
     yearHeads: [],
-    contentW: 1000
+    contentW: 872.8 // [F-DETOURW-01] 对齐=f.w−27.2（声明口径——N=4/M=4 档行为保持；走线消费 contentW 后 frames 非空例逐例对齐）
   })
 
   it('toPin 终落=钉定锚且 route=band（bandSkeleton 钉定终落分支——禁散开到其他槽）', () => {

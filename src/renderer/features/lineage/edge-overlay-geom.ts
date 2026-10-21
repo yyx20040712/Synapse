@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react'
 import { validateLineageAnchor, type LineageAnchor, type LineageEdge } from '@shared/models/lineage'
 import type { LayoutSnapshot } from './lineage-routing'
 import { effectiveScale } from './timeline-zoom'
+import { readFrameContentWidth } from './use-capacity-layout'
 
 /**
  * [F-VISFB-66] 装配自检（renderer 读侧——设计书 §D.5 N-02r2）：锚载荷形状
@@ -69,10 +70,15 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
   // ::after{flex:1} 横线横贯内容全宽，全宽 rect 挡死 band 跨年终落=CI 红
   // T-P1b（设计稿 v1.16 随批回写）；1px 装饰横线为伪元素天然采不到，不视为障碍
   const yearHeads = Array.from(content.querySelectorAll('.tl-year-num, .tl-year-meta')).map(toBox)
-  // [F-SLOTGRID-01 U2] contentW 沿承透出（边侧通道右缘界=框内缘非内容缘——
-  // 通道派生驻 routing/detour.ts gridChannelsOf；corridor 字段随走廊退役删除；
-  // [F-VISFB-31] ÷s_eff=own 域宽——与 128/200 常量族同系）
-  return { cards, labels, frames, yearHeads, contentW: base.width / sEff }
+  // [F-DETOURW-01] contentW 语义改造=首月框内容盒宽归一化值（readFrameContentWidth
+  // 单源——与 useCapacityLayout 布局量测/card-drag-session 拖拽容量输入同函数同
+  // 选择器同帧同步读=同值，INV-169② 三域合流；computed 五值天然布局 px，zoom
+  // 不影响 computed——不除 sEff，与快照 own 域同系）。无月框（空图）/无效读数
+  // →0（unmeasured——走线零通道守卫/布局单行降级同族）。原 corridor 时代残留
+  // （base.width/sEff=content 容器宽）全仓消费侧零命中随本票退役
+  const firstFrame = content.querySelector('.month-frame')
+  const contentW = firstFrame instanceof HTMLElement ? readFrameContentWidth(firstFrame) : 0
+  return { cards, labels, frames, yearHeads, contentW }
 }
 
 /** [F-LGRAPH-01②U8] 边视觉样式（dashed/color 内联——A3；虚线纹固定 6 3） */

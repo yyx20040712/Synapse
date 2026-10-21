@@ -33,6 +33,10 @@ export interface LayoutSnapshot {
   /** [F-UIRES-03 C2·P7] 年份头障碍集（.tl-year-num/.tl-year-meta rects——buildSnapshot
    *  采集；避让 PAD 同源 avoid.PAD 不另设） */
   yearHeads: Rect[]
+  /** [F-DETOURW-01] 首月框内容盒宽归一化值（buildSnapshot 经 readFrameContentWidth
+   *  单源采集——布局 useCapacityLayout/拖拽 card-drag-session/走线 detour 三域
+   *  合流 INV-169②；0=unmeasured——走线零通道守卫，与布局全卡首行降级同族）。
+   *  原 corridor 时代透出残留（content 容器宽）语义随本票退役 */
   contentW: number
 }
 

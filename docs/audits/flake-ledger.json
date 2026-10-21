@@ -1,257 +1,257 @@
 {
-  "version": 1,
-  "note": "[F-TESTREF-W4] e2e flake 台账——机器可读不确定面登记（替代散落交接书散文计数，P7-A 七现跨 5 份交接书的人肉维护终结；2026-09-11 终裁 §4-4 W4 行）。数据源=charter §1.4 审计快照（docs/design/2026-09-11_test-system-optimization-charter.md——计数截至 2026-09-11 立账时点）+各线史料档（见 resolution 指针）；first_seen 以史料可考证时点为准，无法精确到日的线以该用例最早存在场次记。新 flake 处置通则=AGENTS 测试纪律「同用例 2 次非确定失败即立案」（失败指纹记差值/同值/序列位置；复跑绿不销项）。〔2026-10-19 用户裁决（逐字=当日账本 ruling 行）：「彻底取消所谓白天窗描述，一个稳定的软件怎么能受时间影响呢」——按时段判读/豁免/择窗口径彻底废除：历史条目中「深夜/清晨/白天窗」表述为当时观察记录留档不删，判读自本日起全天同一标准（红即红、单现复跑定绿按通则），FLK-01/02/03 族再红一律按待根治缺陷立案（承接=F-E2EFLK-01）〕",
-  "cases": [
-    {
-      "spec": "tests/e2e/reader-text.spec.ts",
-      "case": "剪贴板读回断言系（P7-A）",
-      "count": 7,
-      "fingerprint": "同值/外部资源（系统剪贴板被外部占用+异步竞态）",
-      "status": "resolved",
-      "first_seen": "2026-08-23",
-      "resolution": "已修：清除标记+5×200ms 条件重读（[locked-change]；史料=2026-08-23 起跨 5 份交接书——P7-A 战役，立案线通则的前案）"
-    },
-    {
-      "spec": "tests/e2e/reader-text.spec.ts",
-      "case": "划选高亮后重开仍在原位",
-      "count": 2,
-      "fingerprint": "同值 y=3.45px>2px 容差（回落→重锚双态瞬态）",
-      "status": "resolved",
-      "first_seen": "2026-09-02",
-      "resolution": "已修：stableRel 双采样稳定门（INV-51 稳态口径；史料=scripts/audits/f-r2e-investigation.md）"
-    },
-    {
-      "spec": "tests/e2e/z-r2e-probe.spec.ts",
-      "case": "几何指纹矩阵探针（rel 对拍）",
-      "count": 2,
-      "fingerprint": "探针自身测量竞态（二现 dy=+4.4375/dh=−4.975——首现 resolve 即红族）",
-      "status": "resolved",
-      "first_seen": "2026-09-03",
-      "resolution": "已修：rectStableGate v2（史料=scripts/audits/z-r2e-flake-case.md——2 现同族触发立案线首案）"
-    },
-    {
-      "spec": "tests/e2e/tag-lifecycle.spec.ts",
-      "case": "chip 交互系",
-      "count": 2,
-      "fingerprint": "同位置（重挂载窗/陈旧数据窗）",
-      "status": "resolved",
-      "first_seen": "2026-09-03",
-      "resolution": "已修：key=detail.id+stale guard（P7E-01 场；史料=docs/prompts/2026-09-03_loop-handoff-v29-p7e01-tag-lifecycle.md）"
-    },
-    {
-      "spec": "tests/e2e/reader-text.spec.ts",
-      "case": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
-      "count": 2,
-      "fingerprint": "toast 3s 超时未现（2026-10-08 第 2 现：全套 #82 序列位/失败行 spec:1090 toBeVisible toast 缺席/定向复跑绿——复跑绿不销项）",
-      "status": "filed",
-      "first_seen": "2026-08-30",
-      "resolution": "立案（2026-10-08 门二裁决部终裁 C1——第 2 现达「同用例 2 次」立案线；史料=首轮 docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md+第 2 现 u1-r2-e2e-full.raw.txt:124/147-174+定向复跑 u1-r2-e2e-readertext-rerun:7〔台账指针勘误 2026-10-09：原引 gate2-probe-report.md A2 节系种子面确定性红非本用例〕；排查票待立——F-DBCAMP-01 DB-1 后续批承载或独立票）；2026-10-09 穿插窗排查（runId=20261009-0100-db2open）：**未复现**——3 轮 7 执行全绿（单 spec 18/18→repeat-each=5 90/90→全量 102/102 本例 #82 绿位），count 维持 2；在档第 2 现失败轮 5.1s 反比绿轮 7.2-7.4s 快 ~2s（:1090 fail-fast）——非全局饥饿形态；候选根因排序（证据制非定论）：H1 mouseup 时选区非跨页有效态（文本层重建/F-A12 affinity；F-FLAKE-02 同族嫌疑——settle 门未覆盖本段滚动懒渲染）＞H2 负载型 toast 渲染延迟＞H3 3500ms 自动退场 vs 3s 观察窗（余量 500ms）＞H4 坐标漂移；**再现时首取 test-results/ 该用例 error-context.md 快照**（DOM 快照可直判工具条在场与否=H1/H4 与 H2/H3 分岔，历史两现均未留）；证据=仓外 20261009-0100-db2open/flake1030-{report.md,r1-spec.log,r2-repeat5.log,r3-full.log}"
-    },
-    {
-      "spec": null,
-      "case": "F-G11 分隔条拖拽（split-pane 分隔条 e2e 序列——史料未载精确 spec 文件，v27 记 e2e 8 全量 1 红）",
-      "count": 1,
-      "fingerprint": "序列相关（拖动反向；确认 1+未捕获 1 不计）",
-      "status": "observing",
-      "first_seen": "2026-09-02",
-      "resolution": "观察中（史料=docs/prompts/2026-09-02_loop-handoff-v27-wg1-closed.md §F-G11）"
-    },
-    {
-      "spec": null,
-      "case": "settings.png 非确定带（载体=scripts/audits 像素 diff 工具层快照，非 e2e spec——工具层故 spec 置 null）",
-      "count": 1,
-      "fingerprint": "y=[208,240) 色带瞬时",
-      "status": "observing",
-      "first_seen": "2026-09-10",
-      "resolution": "观察中（再现 2 次立案=累计 3 门槛，系 charter §1.4 原文口径——工具层像素带非确定带宽高于 e2e 断言红，门槛从宽非笔误；史料=docs/prompts/2026-09-10_loop-handoff-v56-css03-closed.md）"
-    },
-    {
-      "spec": "tests/e2e/corpus-export.spec.ts",
-      "case": "全链导出系",
-      "count": 5,
-      "fingerprint": "与剪贴板同时现（疑同族全局资源）+独立 60s 整用例超时（2026-09-18 全套跑 3.0m 环境慢态；定向复跑 2.2s/3.8s 双绿——负载敏感型）；2026-09-19 第 5 观测（G10 批，spec :157 F-SESS-01 重载格单用例）：同值=满 60s test timeout，序列位=全套 #4/定向 #2，4 红 1 绿（放宽 180s 快样本 4.1s 过——功能无硬断，禁记因果），同 spec :31 全链用例历次恒绿，bundle 三产物 sha256 恒等（G2 43 绿时点→本批，scripts/audits/g10-build-hash.log）=迁移链因果排除",
-      "status": "unpursued",
-      "first_seen": "2026-08-27",
-      "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）；2026-09-18 第 4 观测（GEOM 设计链批，scripts/audits/geom01-e2e-corpus-rerun.raw.txt 指纹档）——立案线（2 次）早已越过，立案排查归后续批（建议与 F-EXPORT-01 拆件票同场）；2026-09-19 第 5 观测定向复跑也红（升级观察：从套跑红定向绿到定向也红+快样本绿——时序敏感竞态嫌疑=第二段再发起 streaming 起步，复跑绿不销项），四 rerun 档=scripts/audits/g10-e2e-{appgate,corpus-rerun,corpus-rerun2,corpus-rerun3,corpus-rerun4}.log，F-EXPORT-01 开工须携本批指纹首查"
-    },
-    {
-      "spec": "tests/e2e/reader-scroll.spec.ts",
-      "case": "收官全链（P3 划选步骤）",
-      "count": 5,
-      "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log。2026-09-30「脉络图前小票」批 4 现增量（executor-2 场×2→executor-3 场×1→回炉批 0→probe 场×1，各场单 spec 复跑恒绿=非确定性确认；批次三票+回炉面零 reader 域引用=非本批引入；probe 指纹档=仓外 f-prebatch-probe-progress.md）——与「列宽基准」条目同测试同位置相邻段（:176 同行两变体：本条 selectText 脱附/彼条 annotation-rect 等待超时）＝同族「负载下元素脱附」两变体，F-FLAKE-02 修复票范围须并含（裁决部 C1/C2）",
-      "status": "fix-landed",
-      "first_seen": "2026-09-30",
-      "resolution": "fix-landed（台账首例新值——语义自描述：修复已落地、观察窗未期的中间态，非 resolved）。已修 F-FLAKE-02 2026-10-01：根因=fit-width 后 TextLayer 双段重建（zoom React 同步下钻一次 replaceChildren+渲染管线 setEntry 二次，两窗间旧 span 必灭——SelectionLayer 契约「文本层重建→选区清」，非虚拟化回收）；修复=fit 后渲染管线 settle 门（waitForFunction：canvas+textLayer 容器宽[仅 setEntry 后更新]贴合 fit 终宽 ±2）+划选前稳定锚定（scrollIntoViewIfNeeded+waitFor visible——组合安全源，非判别性断言）。证据=仓外 F-FLAKE-02/（探针时间线：Δ=0 贴行 4/5 脱附/Δ≥15ms 7/7 健康+全量 e2e 终形态 3 轮 64/64 零复现[+初版形态 3 轮附加]+probe 门可达性变异红证 tol 0.01 超时）。**观察窗条款（裁决部终裁）**：N=3 场跨批次全量 e2e（每场 ≥1 次 64/64，CI 可并入计数）零复现→转 resolved（收口主控顺带核）；**同指纹再现 1 次（含 Δ=0 脱附指纹即直接归因）→回 filed 并启动结构性封闭评估**（候选序：①测试侧 span 连续两帧稳定标尺[低风险直改]②应用侧 settle 信号/文本层单次重建消窗[行为改动走设计链+查 INV 登记面]）——收紧阈值=再现 1 次即升级（不适用常规 2 现线；机制依据=产品侧重建窗口客观存在，测试协议仅将其推出操作窗，门=必要非充分锚——门一 k1-W1/d1-W1 双审共认）。count 保留历史值 5 不清零"
-    },
-    {
-      "spec": "tests/e2e/reader-scroll.spec.ts",
-      "case": "列宽基准-标注原位抽验-离屏回收-进度恢复",
-      "count": 4,
-      "fingerprint": "同值=全量套件负载下 :176 getByTestId(annotation-rect) 等待超时（负载型 timeout；F-FOLDER-02 executor 场 2 现+主控 R1 场 2 现，四现同指纹；隔离复跑恒绿 2.8s+第三轮全量 64/64 绿——非确定性确认）；序列位置=全量套件尾部段长用例",
-      "status": "fix-landed",
-      "first_seen": "2026-09-30",
-      "resolution": "fix-landed（语义自描述=修复已落地、观察窗未期的中间态，非 resolved——台账首例新值）。已修 F-FLAKE-02 2026-10-01：本变体与「收官全链（P3 划选步骤）」条目**同根因**（fit-width 后 TextLayer 双段重建——selectText 成功后选区被后续重建摧毁→工具条收→标注不落地→annotation-rect 超时；SelectionLayer 契约摧毁链）**同一修复**（settle 门+划选前稳定锚定）。观察窗/复发升级条款与该条目同（N=3 场全量零复现转 resolved；同指纹再现 1 次回 filed 启动结构性封闭评估）。count 保留历史值 4 不清零；两条目不合并（保计数粒度）。证据=仓外 F-FLAKE-02/"
-    },
-    {
-      "spec": "tests/e2e/reader-text.spec.ts",
-      "case": "P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截",
-      "count": 1,
-      "fingerprint": "同值=:313 getByText('P7BA-MARK').first() toBeVisible 10s 超时 element(s) not found（序列二中段——关 tab 后留存 tab 的状态保持标记文本未现）；序列位=首跑红 retry #1 绿（11.2s）；上场 run 37131855587 同用例直接绿=非确定性确认",
-      "status": "observing",
-      "first_seen": "2026-10-03",
-      "resolution": "观察中（再 1 现立案；史料=CI run 37133311174 日志〔GitHub Actions〕+2026-10-04 场开工首查——v119 §挂账承载）"
-    },
-    {
-      "spec": "tests/e2e/reader-scroll.spec.ts",
-      "case": "缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移（F-05 :266）",
-      "count": 1,
-      "fingerprint": "90s 整用例 test timeout 首跑挂起（非断言红）→retry #1 秒绿（2.4s）——负载/时序型挂起候选；与 :176 族两变体（selectText 脱附/annotation-rect 等待超时）同 spec 异位异指纹，独立计数不并入 F-FLAKE-02 观察窗条款（该条款管同指纹）",
-      "status": "observing",
-      "first_seen": "2026-10-03",
-      "resolution": "观察中（再 1 现立案；史料=CI run 37144795869 日志〔t1race RR2 终证场——T1 同 run 首次转绿〕+2026-10-04 v119 §5 增补承载）"
-    },
-    {
-      "spec": "tests/e2e/reader-text.spec.ts",
-      "case": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久（:581）",
-      "count": 1,
-      "fingerprint": "重启后笔记 textarea 混入拼音残片 jian'li（期望 e2e 总评内容实得 e2e 总评内容jian'li——他处键入泄漏进 autosave 面；全套 #102 序列位/失败行 spec:627 toHaveValue；定向复跑 18/18 绿——复跑绿不销项）",
-      "status": "resolved",
-      "first_seen": "2026-10-08",
-      "resolution": "销案（2026-10-08 用户裁决——根因=用户本人当时连续打字，真实键入经前台焦点混入被测 app 笔记 textarea（拼音残片 jian'li 即用户 IME 输入），属外部输入污染族（P7-A 剪贴板被占用同族），非代码/测试缺陷，无需修复不设观察——史料=u3-e2e-close.raw.txt+定向复跑 u3-e2e-rerun1.raw.txt 18/18 绿+全量复跑 u3-e2e-close2.raw.txt 102/102 EXIT=0）"
-    },
-    {
-      "spec": "tests/e2e/lineage-route-slots.spec.ts + lineage-sidebar/lineage-topic-node/lineage.spec（lineage 族 14 例）",
-      "case": "U4 收口 probe e2e attempt1 第 36-49 例连续 14 ✘（全 lineage 族——DB-2 UI U4 白名单外，与本批改动零交集）",
-      "count": 1,
-      "fingerprint": "差值型分布（~40s 超时样+120ms/126ms/18s 速败族）；时间窗 07:12-07:2x 与另一兄弟会话误派探针 e2e 并发窗精确咬合（out/ 互覆+electron 争抢——让位裁决账本 2026-10-13T07:20 行+VOID.md 在档）；attempt2 同 36-49 例全 ✓（单次连续 108/108 EXIT=0）",
-      "status": "observing",
-      "first_seen": "2026-10-13",
-      "resolution": "contention 伪象定性（门二裁决部 Q2——同用例 2 次立案线未触〔各 1 现〕；观察面=后续批次 lineage 族 e2e 若再现同指纹且无并发窗即升级立案）"
-    },
-    {
-      "spec": "tests/e2e/lineage.spec.ts",
-      "case": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+[②U6] 跨月物理域回弹无 toast+edit 态驱动（:901）",
-      "count": 2,
-      "fingerprint": "同用例同序列位（两现均全量序列 #49 位；第 2 现=spec:1002 .month-frame.stretch toHaveCount 期望 1 实得 0，8.4s fail-fast，14×重试零元素=跨月拖拽 stretch 态未出现；第 1 现=attempt1 40.5s 超时样——断言点未留存〔日志被杀〕，同断言点不可证仅同用例同位）；两环境复绿证据（WSL2 attempt2 全量 108/108 含本例+VMware 定向单例 3.5s 绿）——全量红/单例绿形态",
-      "status": "filed",
-      "first_seen": "2026-10-13",
-      "resolution": "立案（2026-10-13 VMware 对齐批——「同用例 2 次」通则线+上条（lineage 族）观察面「再现且无并发窗即升级」双触发：第 1 现=U4 收口 attempt1 #49〔WSL2，时属并发窗伪象族〕；第 2 现=VMware 首跑 #49〔无并发窗单会话〕。**与前条互见防双计误读**：attempt1 事件在前条按事件级登记（14 例集体）、本条按用例级计数（T9 全史失败次数）——同一次红不双轨处置，立案计数以本条用例级为准。**第 2 跑全量再证=本例绿+同跑 S4/T12 红（输入事件族漂移分布）→H2 环境级强化**（见下两条）。**族级主嫌=H2**（VMware X11 输入事件注入偶发丢〔环境级〕——三用例跨两跑漂移分布+全部单例复绿+WSL2 曾单次 108/108 全绿史=代码面零证据）；**次嫌=H1**（快环境时序压缩竞态——VMware 全量 5.3m vs WSL2 1.5h：90/5.3≈17.0、90/5.5≈16.4 倍）；H3 并发伪象残余最弱（两跑均无并发窗在场）；排查票=F-E2EFLK-01（registry 同批立案——VMware 对齐批 2026-10-13，族口径=本条+S4/T12 两条）；证据=仓外 20261013-vmware-align/{e2e-vmware-run1.log,e2e-vmware-run2.log,e2e-vmware-rerun-t9.log,e2e-vmware-rerun-s4t12.log}+20261013-u4/probe-e2e-attempt1-killed.log:91"
-    },
-    {
-      "spec": "tests/e2e/library-explorer.spec.ts",
-      "case": "S4：行拖入左栏文件夹=drop「移入」徽标+moveFolder 执行（合成内部拖拽）（:55）",
-      "count": 1,
-      "fingerprint": "同值（spec:69 新建文件夹后 navRow toBeVisible 超时——element not found 10s；VMware 第 2 跑 #19 位 12.2s；单例复跑 2.4s 绿）",
-      "status": "observing",
-      "first_seen": "2026-10-13",
-      "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔键盘路径：Enter 提交后行未现；用例主体=合成内部拖拽〕，与 T9/T12 同跑漂移分布，族定性+排查归口 F-E2EFLK-01（键盘路径在票面任务面②一并覆盖）；单例复跑绿在档）"
-    },
-    {
-      "spec": "tests/e2e/lineage.spec.ts",
-      "case": "T12 画线全链+手动调线+右键菜单（②U5：手柄/加点/拖顶点/穿卡警示软断言）（:1100）",
-      "count": 1,
-      "fingerprint": "同值（spec:1174 edge-menu toBeVisible 超时——右键 click force 后菜单未现 5s；VMware 第 2 跑 #51 位 7.8s；单例复跑 3.1s 绿）",
-      "status": "observing",
-      "first_seen": "2026-10-13",
-      "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔右键顶点菜单未现〕，与 T9/S4 同跑漂移分布，族定性+排查归口 F-E2EFLK-01；单例复跑绿在档）"
-    },
-    {
-      "spec": "tests/e2e/library-density.spec.ts",
-      "case": "文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（libfix1 塌 0 回归锁）（:161）",
-      "count": 5,
-      "fingerprint": "差值型稳定（:222 .lib-r-main boundingBox 宽 Expected>=140/Received=120 恒值，predicate 5s 轮询超时非抖动——wideMin 分支 wideW>=1274?140:100 走 140 而列宽实收 120）；五数据点全同指纹（U5 树 3 现：全量 #19+主控单例复跑+probe 主树复核；基线树 worktree@1645cb5b 无 U5 diff 2 现稳定红——U5 diff 致病排除）；用例头注自述探针基线 ≈151.6 禁精确值断言防环境漂移",
-      "status": "resolved",
-      "first_seen": "2026-10-14",
-      "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-02 环境登记翻 done）：非「当前机确定性恒红」而是深夜 automation 窗环境级稳定红、白天窗绿——白天定向 8/8 绿+白天全量 114 本用例绿+CI windows-latest 4 run 本用例均绿；guest 环境假设全排除（无 suspend/屏保禁用 idle-delay=0/DPMS 禁/monitors.xml 恒定/openbox-xvfb 未运行/uptime 与 wall 吻合=宿主冻结排除）；翻转窗实测 00:07 绿→03:21 红；判读口径=automation 清晨窗豁免单点/白天窗全量权威（AGENTS 环境段+DEV-SETUP 同步）"
-    },
-    {
-      "spec": "tests/e2e/smoke.spec.ts",
-      "case": "frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）（:116）",
-      "count": 13,
-      "fingerprint": "同值型稳定（:148 expect.poll BrowserWindow.isMaximized 5s 轮询恒收 false——Expected true/Received false，X11 WM 最大化面）；五数据点同指纹=U6 批 executor 全量红+定向复跑红+基线 worktree 红（自述未留档）+probe 主树全量红+基线树 worktree@57b442ea 无 U6 diff 复现红（档内四数据点——U6 diff 致病排除，21 件 diff 零窗口/标题栏/main 接触面）",
-      "status": "filed",
-      "first_seen": "2026-10-14",
-      "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-03 环境登记翻 done）：深夜 automation 窗环境级稳定红、白天窗绿——白天定向+全量双跑两票用例绿+CI windows-latest 4 run 本用例绿；guest 环境假设全排除（同 FLK-02 条）；翻转窗实测 03:21 绿→06:00 红；判读口径同 FLK-02 条",
-      "note": "；[F-VISFB-67 批追记 2026-10-19] 本地 xvfb 再 8 现同指纹（isMaximized poll Expected true/Received false@:148——时间戳批档 20261019-fvisfb67-impl §6-R4），改前对照同红+CI 历绿=本地环境面（xvfb maximize 语义）；历史 5+本批 8=13 已过立案线，并入 F-E2EFLK-01 待根治承接（勘误：本批 gate2 probe 曾误跑 :13 侧栏例，「标题栏本跑未复现」作废——批档勘误在录）"
-    },
-    {
-      "spec": "tests/e2e/lineage.spec.ts",
-      "case": "脉络图 e2e 全链 T3 重复加边拒绝 toast（:341，断言点 :411 .drag-slot:not(.cand)）",
-      "count": 5,
-      "fingerprint": "CI windows-latest 恒红型（与本地平台相反）：element(s) not found——拖拽进行中置入槽未渲染，toHaveText 5s 超时；四 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6）含 CI retry1 复跑红；本地 Linux 白天全量 #50 T3 绿 4.5s；引入窗=10-07 d2be052e 绿→10-13 5c7d3616 红（DB-2 批积压推送窗——src diff vs runner 镜像漂移二候选未分）",
-      "status": "resolved",
-      "first_seen": "2026-10-13",
-      "resolution": "立案=F-CIFLK-01（2026-10-14 排查场发现——v184 收口漏 CI 核查教训同步入票：收口 push 后须挂 CI 完成复查回执方可闭批）。定谳+修复（2026-10-14 runId=20261014-ciflk1）：五 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6/0b41b186 含 CI retry 红）；根因=e2e 视口几何链非产品缺陷——CI runner 虚拟屏 1024×768 钳制窗口（1280×800 被 clampBounds）→月框低容量区同月双卡分行（PITCH_Y 144=trace 纵差逐字吻合）+错位（OFFSET_O 100）推乙卡出视口（y=779.75>768）→attached 查询 boundingBox 视口外坐标→mouse.down 落空→拖拽会话未启动→置入槽零渲染；引入窗=SLOTGRID U1（4ab86fcf 10-08）布局网格化（分行指纹只有 U1 体系产生）；本地 Linux 绿=屏大 1280×800 同行形态。修复=T3 拖拽前乙卡 scrollIntoView 滚动锚（T5 先例同型）+instant 显式化+滚后视口兜底断言；探针复现（880×620 完全复刻 CI 形态，y=779.75 一字不差）红→绿实证+门二 probe 变异红证两轮一致；门一 k1+d1 双 PWC（W/N 全采纳）+门二 probe 6/6+裁决部 GO_WITH_CONDITIONS C1-C6 全兑现；verify 303/3262/427 对账基线 EXIT=0。证据=仓外 scripts-audits/20261014-ciflk1/（evidence.md+fix-final.diff+session-open）。判读口径沉淀：CI 再现 element-not-found 间接签名红（拖拽/点击类）首查视口外坐标（AGENTS 环境段同句）；〔2026-10-18 回归一现+再修〕F-VISFB-66 改写 T3（拖拽径）丢滚动锚→CI 39092561093 attempt+retry 确定性红（同指纹 element not found）——root(2020 顶段)与乙(分行后 ~780)窄窗不可共视=旧单卡锚治不了双端拖拽；再修=自适应双径（已共视直接拖/未共视走新自动滚动底缘触发区带乙入视上带再落锚——裁定 4 实战首用），本地 T3 绿 10s（39 号件日志）；〔2026-10-18 四修终态补记（v214 §6-3 核对缺口）〕前注止于一修——一修 f65d0939（带内抓取）CI 39093814719 红（末位卡 max 滚恒驻底带=0.75 上带永不可达）→二修 b8029630 程序化滚至容器中心（带 typecheck TS2488 红提交=流程失误：grep 命中≠退出码绿——账本 ci-triage 行+AGENTS 依赖与提交段判码纪律同日落笔）→三修 73500460 Array.from CI 仍红（阈值对末位卡几何永假）→四修终版 6bafe140=种子几何主修（root 移同月 slot0——span 144 恒共视两平台统一直拖径）+阈值放宽完整入容器→CI success 亲验（v214 §4）。教训=改写承载旧修复的用例须先清点其环境适配面+几何不可共视正解=种子级结构调整非运行时补偿（v214 §3-6①②）；程序化滚动安全网分支随 v214 §6-1 删除（共视前提转前置断言锁）"
-    },
-    {
-      "spec": "tests/e2e/ai-cascade-delete.spec.ts",
-      "case": "E5 场景二 零计数：有图边无 AI 资源——仅第一窗无第二窗（:103）",
-      "count": 1,
-      "fingerprint": "挂起型首现（2026-10-14 白天全量 09:16-09:25）：用例跑满 90s 全局超时+worker teardown 90s 双层挂起（非断言红）；error-context 无页面态（timeout 指纹）——快照=仓外 20261014-flk3/e5-scene2-error-context-daytime.md；单例复跑绿 2.4s；同用例 U6 批全量+定向多次绿",
-      "status": "observing",
-      "first_seen": "2026-10-14",
-      "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；挂起型与 FLK-01 输入事件族异型；再现时首取 error-context 快照"
-    },
-    {
-      "spec": "tests/e2e/library-explorer.spec.ts",
-      "case": "S5a 行右键菜单三项版（删除项批 B 点亮+星标项不渲染）+移动子面执行（:108）",
-      "count": 1,
-      "fingerprint": "挂起型 CI 首现（run 38550671406 attempt1，2026-10-14 33f57f6a）：测试跑 1.5m 超时标 x+Worker teardown 90s 双层挂起（非断言红），worker 终止=run 26/114 处中止（前 25 全绿含 T3 域）；error-context=仓外 20261014-db3/s5a-ci-hang-error-context.md；attempt2 复跑全绿 success；批内容=纯文档 diff（AGENTS/methodology 4 行）与 app 行为零因果",
-      "status": "observing",
-      "first_seen": "2026-10-14",
-      "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；与 case 20（E5 场景二，本地白天窗挂起型）同型不同例——挂起族跨例分布（本地白天窗+CI runner 两端各一例）=环境级线索候选；本用例第二现即立案+族级评估（两例并卷观察）"
-    },
-    {
-      "spec": "tests/e2e/theme-trio.spec.ts",
-      "case": "T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天（:96）",
-      "count": 3,
-      "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success；第二现（2026-10-15 本地 VMware 日间窗，DB-4 g2probe 全量首跑〔runId=20261015-dbcamp-db4〕）：同指纹 strict mode violation resolved to 2 elements；首跑红 14.4m 套件内+单例复跑绿（复跑绿不销项）；批内容=DB-4 星标/标签/治理面零因果（主题链路零触及）——两现跨环境（CI windows+本地 VMware）同指纹，count 1→2 filed 触发立案线（F-E2EFLK-04）；第三现（2026-10-15 DB-4 收口 CI run 38685349467 attempt1〔c5c86e4c〕）：同指纹 flaky 分类（attempt1 红+重试绿，run conclusion=success——ci-watch-c5c86e4c.raw.txt:443-470）；两环境〔CI windows+本地 VMware〕三天三现，FLK-04 排查紧迫度升",
-      "status": "resolved",
-      "first_seen": "2026-10-14",
-      "resolution": "2026-10-15 修复收口（runId=20261015-flk04，票=F-E2EFLK-04 翻 done）：根因=toast-store 去重窗 DEDUPE_MS=1000 与 success 停留 3500ms 结构失配——两保存间隔∈(1s,3.5s) 时旧卡未退场+新卡不被窗拦=同文案双卡共存 strict 双命中。修复=app 侧同文案同 kind 在场折叠（showToast fold：清旧计时→重置全程停留计时，同 id 不增卡不 notify；1s 窗保留防手动关后连点）=INV-134 登记；e2e spec 零改动（strict 断言升格行为锁）。行为锁=tests/unit/renderer/toast.test.tsx 折叠族五例 B1-B5（always-active）+三形状变异红证（M1 删 fold/M2 删计时重置/M3 find 删 kind 比较——M3 双红含既有异 kind 锁）。烤验=门一 k1（继任席——k3 认证失败）PASS B0W1N2+d1 PASS B0W0N4+门二 probe 七项（theme-trio 定向连跑 5/5 零 violation+e2e 全量 T3-P1/P4 恒绿）+adjudicator GO_WITH_CONDITIONS（C1-C3 全兑现）。诊断档=仓外 20261015-flk04/diagnosis.md。",
-      "ticket": "F-E2EFLK-04"
-    },
-    {
-      "spec": "tests/e2e/ai-cascade-delete.spec.ts",
-      "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
-      "count": 1,
-      "fingerprint": "detach 循环 60s 超时型（非纯挂起型——与 case 20/21 同族异亚型，台账分别落笔=裁决部 C2）：TimeoutError locator.click 60s 于 spec:83 aside.getByRole('tab',{name:'AI 会话'}).click()——locator resolved 且 visible/enabled/stable 全过后「element was detached from the DOM, retrying」循环至超时（reader-aside 内该 tab 被反复重挂载）。首现=2026-10-15 18:43-19:02 本地 VMware（FLK-04 批门二 probe 全量+定向复跑同窗 2 红）；error-context=仓外 20261015-flk04/g2probe-2-error-context.md（含主控判别补记）。判别链（裁决部裁定成立）：①主工作区同构建红转绿（2/2 红→第三跑 3/3 绿——代码/构建变量排除）②干净 HEAD worktree 基线 3/3 绿 ③失败流程零 showToast 面+Toast.tsx diff 纯注释（静态解耦）→定性=环境相位漂移非代码回归。环境线索（申报面——无随档进程证据，不承载判别）：红窗与宿主机并行会话（waterprint vite dev+geckodriver 18:01 起）活跃期重合。",
-      "status": "observing",
-      "first_seen": "2026-10-15",
-      "resolution": "首现 observing（同窗 2 红按 FLK-04 先例归组记 count 1——裁决部维持）；挂起/超时族跨例第三例（E5 场景二 case 20+S5a case 21+本例）环境级候选线索增强；再现即触立案线（跨场次第二现=立案排查）。再现时首取 error-context 快照+对照本判别链。"
-    },
-    {
-      "spec": "tests/e2e/corpus-export.spec.ts",
-      "case": "AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建（:31）",
-      "count": 1,
-      "fingerprint": "挂起/超时型（90s test timeout exceeded——首跑 1.5m 无断言差值输出+连带 Worker teardown 90000ms exceeded 拖红 job 退出码；同 run retry #1 绿 4.0s）。首现=2026-10-15 CI windows-latest run 38739035324 attempt1（bec8aad3 治理纯文档批零因果——上一 run 4ba78737 绿；本地零跑面）。分类=非确定失败单现 observing（同用例 2 次触发立案线）；族注记=挂起/超时族第四例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+本案）且为该族 CI 面首例（前三例均本地 VMware——跨环境形态注，环境级线索待第五例再评估）。error-context=CI test-results 产物（corpus-export-AI-语料导出全链…-fa3da 目录）。再现即触立案线。"
-    },
-    {
-      "spec": "tests/e2e/ai-tasks-card.spec.ts",
-      "case": "E2 任务卡六态与取消：queued 取消→已取消；running 执行中无取消钮；终态三态文案（:33）",
-      "count": 1,
-      "fingerprint": "挂起/worker-teardown 型（90s test timeout exceeded 于 E2 六态用例，随后 Worker teardown timeout 90000ms——同 worker 10 例〔E1①②③/E3/E4/E5×3/E7/E2〕连带未跑判红，连带≠独立红；attempt2〔--failed 复跑〕e2e 全绿含 E2，10m51s）。首现=2026-10-16 05:20Z CI windows-latest run 38855228730 attempt1 @aa5dc4ce（B6 候补收口 push 笔——批次零 src/e2e 改动〔纯 unit 测试面+docs〕，静态解耦；前置 run 38847967569 绿=跨 run 非确定；其余六段 attempt1 全绿含 vitest 3495+指纹门）。分类=非确定失败单现 observing（同用例 2 次触发立案线）。error-context=CI test-results 产物。",
-      "status": "observing",
-      "first_seen": "2026-10-16",
-      "resolution": "首现 observing（复跑绿不销项——失败指纹在档）；挂起/超时族跨例第五例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+corpus-export CI 首例+本案）且为该族 CI 面第二例——两 CI 例集中 2026-10-15/16 窗（corpus-export fa3da+本案），环境级线索按族注记口径维持、族内 CI 面第二现即触该族 CI 专项排查候选呈报；本用例再现即触立案线（跨场次第二现=立案排查，首取 error-context 快照+对照 corpus-export 例判别形态）。"
-    },
-    {
-      "spec": "tests/e2e/lineage.spec.ts",
-      "case": "T3 重复加边拒绝 toast（F-VISFB-66 改写后形态——拖拽径二次画同对+quit 拦截两态）本地 VMware 侧",
-      "count": 6,
-      "fingerprint": "Target page, context or browser has been closed（FLK-03 窗口状态族同指纹）：五现=深夜/清晨 automation 窗（2026-10-18 01-06 时段 runId=20261018-fvisfb66 executor 各轮+复跑绿）；第六现=白天窗 10:08 三 spec 联跑 #T3（9.2s 红）→同窗单例复跑绿（9.7s）——白天瞬态首现，FLK-03「深夜窗专属」环境归因弱化（观察登记非翻案）；〔裁决部 C-03 口径〕前五现=深夜豁免窗、第六现=首次白天同指纹；后续三次相关运行绿（单例+两轮三 spec 全量）非销项；第二次白天同指纹立即升级既有票排查并暂停环境豁免解释",
-      "status": "observing",
-      "first_seen": "2026-10-18",
-      "resolution": "observing（C-03 观察门：白天再现即升级 F-E2EFLK-01 排查优先级）；CI 面=windows-latest 另案 F-CIFLK-01 已修"
-    },
-    {
-      "spec": "tests/e2e/ai-cascade-delete.spec.ts",
-      "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
-      "count": 3,
-      "fingerprint": "点击拦截/元素脱挂型（:83 aside 内「AI 会话」tab click——html intercepts pointer events+element detached from DOM 重试后 element(s) not found；未达核心断言面=前置辅助 createNote 后 .tl-note-text 5s 不可见）",
-      "first_seen": "2026-10-19",
-      "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）",
-      "note": "；[F-VISFB-67 批追记 2026-10-19] 1280 全量负载单现→定向复跑 3/3 定绿（observing 口径不变，不销项）"
-    }
-  ]
+ "version": 1,
+ "note": "[F-TESTREF-W4] e2e flake 台账——机器可读不确定面登记（替代散落交接书散文计数，P7-A 七现跨 5 份交接书的人肉维护终结；2026-09-11 终裁 §4-4 W4 行）。数据源=charter §1.4 审计快照（docs/design/2026-09-11_test-system-optimization-charter.md——计数截至 2026-09-11 立账时点）+各线史料档（见 resolution 指针）；first_seen 以史料可考证时点为准，无法精确到日的线以该用例最早存在场次记。新 flake 处置通则=AGENTS 测试纪律「同用例 2 次非确定失败即立案」（失败指纹记差值/同值/序列位置；复跑绿不销项）。〔2026-10-19 用户裁决（逐字=当日账本 ruling 行）：「彻底取消所谓白天窗描述，一个稳定的软件怎么能受时间影响呢」——按时段判读/豁免/择窗口径彻底废除：历史条目中「深夜/清晨/白天窗」表述为当时观察记录留档不删，判读自本日起全天同一标准（红即红、单现复跑定绿按通则），FLK-01/02/03 族再红一律按待根治缺陷立案（承接=F-E2EFLK-01）〕",
+ "cases": [
+  {
+   "spec": "tests/e2e/reader-text.spec.ts",
+   "case": "剪贴板读回断言系（P7-A）",
+   "count": 7,
+   "fingerprint": "同值/外部资源（系统剪贴板被外部占用+异步竞态）",
+   "status": "resolved",
+   "first_seen": "2026-08-23",
+   "resolution": "已修：清除标记+5×200ms 条件重读（[locked-change]；史料=2026-08-23 起跨 5 份交接书——P7-A 战役，立案线通则的前案）"
+  },
+  {
+   "spec": "tests/e2e/reader-text.spec.ts",
+   "case": "划选高亮后重开仍在原位",
+   "count": 2,
+   "fingerprint": "同值 y=3.45px>2px 容差（回落→重锚双态瞬态）",
+   "status": "resolved",
+   "first_seen": "2026-09-02",
+   "resolution": "已修：stableRel 双采样稳定门（INV-51 稳态口径；史料=scripts/audits/f-r2e-investigation.md）"
+  },
+  {
+   "spec": "tests/e2e/z-r2e-probe.spec.ts",
+   "case": "几何指纹矩阵探针（rel 对拍）",
+   "count": 2,
+   "fingerprint": "探针自身测量竞态（二现 dy=+4.4375/dh=−4.975——首现 resolve 即红族）",
+   "status": "resolved",
+   "first_seen": "2026-09-03",
+   "resolution": "已修：rectStableGate v2（史料=scripts/audits/z-r2e-flake-case.md——2 现同族触发立案线首案）"
+  },
+  {
+   "spec": "tests/e2e/tag-lifecycle.spec.ts",
+   "case": "chip 交互系",
+   "count": 2,
+   "fingerprint": "同位置（重挂载窗/陈旧数据窗）",
+   "status": "resolved",
+   "first_seen": "2026-09-03",
+   "resolution": "已修：key=detail.id+stale guard（P7E-01 场；史料=docs/prompts/2026-09-03_loop-handoff-v29-p7e01-tag-lifecycle.md）"
+  },
+  {
+   "spec": "tests/e2e/reader-text.spec.ts",
+   "case": "F-ARCH4-M1 跨根选区防线真浏览器定性：跨页真鼠标=toast 拒绝；同页跨 textLayer 边界=静默不建锚；页内选区=工具条（三向对照）",
+   "count": 2,
+   "fingerprint": "toast 3s 超时未现（2026-10-08 第 2 现：全套 #82 序列位/失败行 spec:1090 toBeVisible toast 缺席/定向复跑绿——复跑绿不销项）",
+   "status": "filed",
+   "first_seen": "2026-08-30",
+   "resolution": "立案（2026-10-08 门二裁决部终裁 C1——第 2 现达「同用例 2 次」立案线；史料=首轮 docs/prompts/2026-08-30_loop-handoff-v12-arch-fix-batch.md+第 2 现 u1-r2-e2e-full.raw.txt:124/147-174+定向复跑 u1-r2-e2e-readertext-rerun:7〔台账指针勘误 2026-10-09：原引 gate2-probe-report.md A2 节系种子面确定性红非本用例〕；排查票待立——F-DBCAMP-01 DB-1 后续批承载或独立票）；2026-10-09 穿插窗排查（runId=20261009-0100-db2open）：**未复现**——3 轮 7 执行全绿（单 spec 18/18→repeat-each=5 90/90→全量 102/102 本例 #82 绿位），count 维持 2；在档第 2 现失败轮 5.1s 反比绿轮 7.2-7.4s 快 ~2s（:1090 fail-fast）——非全局饥饿形态；候选根因排序（证据制非定论）：H1 mouseup 时选区非跨页有效态（文本层重建/F-A12 affinity；F-FLAKE-02 同族嫌疑——settle 门未覆盖本段滚动懒渲染）＞H2 负载型 toast 渲染延迟＞H3 3500ms 自动退场 vs 3s 观察窗（余量 500ms）＞H4 坐标漂移；**再现时首取 test-results/ 该用例 error-context.md 快照**（DOM 快照可直判工具条在场与否=H1/H4 与 H2/H3 分岔，历史两现均未留）；证据=仓外 20261009-0100-db2open/flake1030-{report.md,r1-spec.log,r2-repeat5.log,r3-full.log}"
+  },
+  {
+   "spec": null,
+   "case": "F-G11 分隔条拖拽（split-pane 分隔条 e2e 序列——史料未载精确 spec 文件，v27 记 e2e 8 全量 1 红）",
+   "count": 1,
+   "fingerprint": "序列相关（拖动反向；确认 1+未捕获 1 不计）",
+   "status": "observing",
+   "first_seen": "2026-09-02",
+   "resolution": "观察中（史料=docs/prompts/2026-09-02_loop-handoff-v27-wg1-closed.md §F-G11）"
+  },
+  {
+   "spec": null,
+   "case": "settings.png 非确定带（载体=scripts/audits 像素 diff 工具层快照，非 e2e spec——工具层故 spec 置 null）",
+   "count": 1,
+   "fingerprint": "y=[208,240) 色带瞬时",
+   "status": "observing",
+   "first_seen": "2026-09-10",
+   "resolution": "观察中（再现 2 次立案=累计 3 门槛，系 charter §1.4 原文口径——工具层像素带非确定带宽高于 e2e 断言红，门槛从宽非笔误；史料=docs/prompts/2026-09-10_loop-handoff-v56-css03-closed.md）"
+  },
+  {
+   "spec": "tests/e2e/corpus-export.spec.ts",
+   "case": "全链导出系",
+   "count": 5,
+   "fingerprint": "与剪贴板同时现（疑同族全局资源）+独立 60s 整用例超时（2026-09-18 全套跑 3.0m 环境慢态；定向复跑 2.2s/3.8s 双绿——负载敏感型）；2026-09-19 第 5 观测（G10 批，spec :157 F-SESS-01 重载格单用例）：同值=满 60s test timeout，序列位=全套 #4/定向 #2，4 红 1 绿（放宽 180s 快样本 4.1s 过——功能无硬断，禁记因果），同 spec :31 全链用例历次恒绿，bundle 三产物 sha256 恒等（G2 43 绿时点→本批，scripts/audits/g10-build-hash.log）=迁移链因果排除",
+   "status": "unpursued",
+   "first_seen": "2026-08-27",
+   "resolution": "未立票（曾建议串行化票——charter §1.4 收录时点裁决；e2e 用例 2026-08-27 落地起实录，散档未载精确首现日）；2026-09-18 第 4 观测（GEOM 设计链批，scripts/audits/geom01-e2e-corpus-rerun.raw.txt 指纹档）——立案线（2 次）早已越过，立案排查归后续批（建议与 F-EXPORT-01 拆件票同场）；2026-09-19 第 5 观测定向复跑也红（升级观察：从套跑红定向绿到定向也红+快样本绿——时序敏感竞态嫌疑=第二段再发起 streaming 起步，复跑绿不销项），四 rerun 档=scripts/audits/g10-e2e-{appgate,corpus-rerun,corpus-rerun2,corpus-rerun3,corpus-rerun4}.log，F-EXPORT-01 开工须携本批指纹首查"
+  },
+  {
+   "spec": "tests/e2e/reader-scroll.spec.ts",
+   "case": "收官全链（P3 划选步骤）",
+   "count": 5,
+   "fingerprint": "同值=locator.selectText Element is not attached to the DOM @:176（P3 划选——元素虚拟化脱附时序）；序列位=全套 #19；单规格复跑 2/2 绿+二轮全量 55/55 绿（非 F-WS-02 改动面——reader 域零文件）；指纹全录=仓外 F-WS-02/probe/probe-m2-e2e-raw.log。2026-09-30「脉络图前小票」批 4 现增量（executor-2 场×2→executor-3 场×1→回炉批 0→probe 场×1，各场单 spec 复跑恒绿=非确定性确认；批次三票+回炉面零 reader 域引用=非本批引入；probe 指纹档=仓外 f-prebatch-probe-progress.md）——与「列宽基准」条目同测试同位置相邻段（:176 同行两变体：本条 selectText 脱附/彼条 annotation-rect 等待超时）＝同族「负载下元素脱附」两变体，F-FLAKE-02 修复票范围须并含（裁决部 C1/C2）",
+   "status": "fix-landed",
+   "first_seen": "2026-09-30",
+   "resolution": "fix-landed（台账首例新值——语义自描述：修复已落地、观察窗未期的中间态，非 resolved）。已修 F-FLAKE-02 2026-10-01：根因=fit-width 后 TextLayer 双段重建（zoom React 同步下钻一次 replaceChildren+渲染管线 setEntry 二次，两窗间旧 span 必灭——SelectionLayer 契约「文本层重建→选区清」，非虚拟化回收）；修复=fit 后渲染管线 settle 门（waitForFunction：canvas+textLayer 容器宽[仅 setEntry 后更新]贴合 fit 终宽 ±2）+划选前稳定锚定（scrollIntoViewIfNeeded+waitFor visible——组合安全源，非判别性断言）。证据=仓外 F-FLAKE-02/（探针时间线：Δ=0 贴行 4/5 脱附/Δ≥15ms 7/7 健康+全量 e2e 终形态 3 轮 64/64 零复现[+初版形态 3 轮附加]+probe 门可达性变异红证 tol 0.01 超时）。**观察窗条款（裁决部终裁）**：N=3 场跨批次全量 e2e（每场 ≥1 次 64/64，CI 可并入计数）零复现→转 resolved（收口主控顺带核）；**同指纹再现 1 次（含 Δ=0 脱附指纹即直接归因）→回 filed 并启动结构性封闭评估**（候选序：①测试侧 span 连续两帧稳定标尺[低风险直改]②应用侧 settle 信号/文本层单次重建消窗[行为改动走设计链+查 INV 登记面]）——收紧阈值=再现 1 次即升级（不适用常规 2 现线；机制依据=产品侧重建窗口客观存在，测试协议仅将其推出操作窗，门=必要非充分锚——门一 k1-W1/d1-W1 双审共认）。count 保留历史值 5 不清零"
+  },
+  {
+   "spec": "tests/e2e/reader-scroll.spec.ts",
+   "case": "列宽基准-标注原位抽验-离屏回收-进度恢复",
+   "count": 4,
+   "fingerprint": "同值=全量套件负载下 :176 getByTestId(annotation-rect) 等待超时（负载型 timeout；F-FOLDER-02 executor 场 2 现+主控 R1 场 2 现，四现同指纹；隔离复跑恒绿 2.8s+第三轮全量 64/64 绿——非确定性确认）；序列位置=全量套件尾部段长用例",
+   "status": "fix-landed",
+   "first_seen": "2026-09-30",
+   "resolution": "fix-landed（语义自描述=修复已落地、观察窗未期的中间态，非 resolved——台账首例新值）。已修 F-FLAKE-02 2026-10-01：本变体与「收官全链（P3 划选步骤）」条目**同根因**（fit-width 后 TextLayer 双段重建——selectText 成功后选区被后续重建摧毁→工具条收→标注不落地→annotation-rect 超时；SelectionLayer 契约摧毁链）**同一修复**（settle 门+划选前稳定锚定）。观察窗/复发升级条款与该条目同（N=3 场全量零复现转 resolved；同指纹再现 1 次回 filed 启动结构性封闭评估）。count 保留历史值 4 不清零；两条目不合并（保计数粒度）。证据=仓外 F-FLAKE-02/"
+  },
+  {
+   "spec": "tests/e2e/reader-text.spec.ts",
+   "case": "P7-B 收官三序列：换 tab 状态保持 / 关 tab（含 error tab）/ 退出拦截",
+   "count": 1,
+   "fingerprint": "同值=:313 getByText('P7BA-MARK').first() toBeVisible 10s 超时 element(s) not found（序列二中段——关 tab 后留存 tab 的状态保持标记文本未现）；序列位=首跑红 retry #1 绿（11.2s）；上场 run 37131855587 同用例直接绿=非确定性确认",
+   "status": "observing",
+   "first_seen": "2026-10-03",
+   "resolution": "观察中（再 1 现立案；史料=CI run 37133311174 日志〔GitHub Actions〕+2026-10-04 场开工首查——v119 §挂账承载）"
+  },
+  {
+   "spec": "tests/e2e/reader-scroll.spec.ts",
+   "case": "缺陷 A：窄视口程序滚动（页码跳转+PageDown）只滚阅读器滚动容器——TabBar 恒在视口、外层滚动面零位移（F-05 :266）",
+   "count": 1,
+   "fingerprint": "90s 整用例 test timeout 首跑挂起（非断言红）→retry #1 秒绿（2.4s）——负载/时序型挂起候选；与 :176 族两变体（selectText 脱附/annotation-rect 等待超时）同 spec 异位异指纹，独立计数不并入 F-FLAKE-02 观察窗条款（该条款管同指纹）",
+   "status": "observing",
+   "first_seen": "2026-10-03",
+   "resolution": "观察中（再 1 现立案；史料=CI run 37144795869 日志〔t1race RR2 终证场——T1 同 run 首次转绿〕+2026-10-04 v119 §5 增补承载）"
+  },
+  {
+   "spec": "tests/e2e/reader-text.spec.ts",
+   "case": "P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 autosave+片段单击定位闪烁+重启持久（:581）",
+   "count": 1,
+   "fingerprint": "重启后笔记 textarea 混入拼音残片 jian'li（期望 e2e 总评内容实得 e2e 总评内容jian'li——他处键入泄漏进 autosave 面；全套 #102 序列位/失败行 spec:627 toHaveValue；定向复跑 18/18 绿——复跑绿不销项）",
+   "status": "resolved",
+   "first_seen": "2026-10-08",
+   "resolution": "销案（2026-10-08 用户裁决——根因=用户本人当时连续打字，真实键入经前台焦点混入被测 app 笔记 textarea（拼音残片 jian'li 即用户 IME 输入），属外部输入污染族（P7-A 剪贴板被占用同族），非代码/测试缺陷，无需修复不设观察——史料=u3-e2e-close.raw.txt+定向复跑 u3-e2e-rerun1.raw.txt 18/18 绿+全量复跑 u3-e2e-close2.raw.txt 102/102 EXIT=0）"
+  },
+  {
+   "spec": "tests/e2e/lineage-route-slots.spec.ts + lineage-sidebar/lineage-topic-node/lineage.spec（lineage 族 14 例）",
+   "case": "U4 收口 probe e2e attempt1 第 36-49 例连续 14 ✘（全 lineage 族——DB-2 UI U4 白名单外，与本批改动零交集）",
+   "count": 1,
+   "fingerprint": "差值型分布（~40s 超时样+120ms/126ms/18s 速败族）；时间窗 07:12-07:2x 与另一兄弟会话误派探针 e2e 并发窗精确咬合（out/ 互覆+electron 争抢——让位裁决账本 2026-10-13T07:20 行+VOID.md 在档）；attempt2 同 36-49 例全 ✓（单次连续 108/108 EXIT=0）",
+   "status": "observing",
+   "first_seen": "2026-10-13",
+   "resolution": "contention 伪象定性（门二裁决部 Q2——同用例 2 次立案线未触〔各 1 现〕；观察面=后续批次 lineage 族 e2e 若再现同指纹且无并发窗即升级立案）"
+  },
+  {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "T9 拖拽调序全流：拖→置入槽→松手→DOM 序=新序+reload 持久+[②U6] 跨月物理域回弹无 toast+edit 态驱动（:901）",
+   "count": 2,
+   "fingerprint": "同用例同序列位（两现均全量序列 #49 位；第 2 现=spec:1002 .month-frame.stretch toHaveCount 期望 1 实得 0，8.4s fail-fast，14×重试零元素=跨月拖拽 stretch 态未出现；第 1 现=attempt1 40.5s 超时样——断言点未留存〔日志被杀〕，同断言点不可证仅同用例同位）；两环境复绿证据（WSL2 attempt2 全量 108/108 含本例+VMware 定向单例 3.5s 绿）——全量红/单例绿形态",
+   "status": "filed",
+   "first_seen": "2026-10-13",
+   "resolution": "立案（2026-10-13 VMware 对齐批——「同用例 2 次」通则线+上条（lineage 族）观察面「再现且无并发窗即升级」双触发：第 1 现=U4 收口 attempt1 #49〔WSL2，时属并发窗伪象族〕；第 2 现=VMware 首跑 #49〔无并发窗单会话〕。**与前条互见防双计误读**：attempt1 事件在前条按事件级登记（14 例集体）、本条按用例级计数（T9 全史失败次数）——同一次红不双轨处置，立案计数以本条用例级为准。**第 2 跑全量再证=本例绿+同跑 S4/T12 红（输入事件族漂移分布）→H2 环境级强化**（见下两条）。**族级主嫌=H2**（VMware X11 输入事件注入偶发丢〔环境级〕——三用例跨两跑漂移分布+全部单例复绿+WSL2 曾单次 108/108 全绿史=代码面零证据）；**次嫌=H1**（快环境时序压缩竞态——VMware 全量 5.3m vs WSL2 1.5h：90/5.3≈17.0、90/5.5≈16.4 倍）；H3 并发伪象残余最弱（两跑均无并发窗在场）；排查票=F-E2EFLK-01（registry 同批立案——VMware 对齐批 2026-10-13，族口径=本条+S4/T12 两条）；证据=仓外 20261013-vmware-align/{e2e-vmware-run1.log,e2e-vmware-run2.log,e2e-vmware-rerun-t9.log,e2e-vmware-rerun-s4t12.log}+20261013-u4/probe-e2e-attempt1-killed.log:91"
+  },
+  {
+   "spec": "tests/e2e/library-explorer.spec.ts",
+   "case": "S4：行拖入左栏文件夹=drop「移入」徽标+moveFolder 执行（合成内部拖拽）（:55）",
+   "count": 1,
+   "fingerprint": "同值（spec:69 新建文件夹后 navRow toBeVisible 超时——element not found 10s；VMware 第 2 跑 #19 位 12.2s；单例复跑 2.4s 绿）",
+   "status": "observing",
+   "first_seen": "2026-10-13",
+   "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔键盘路径：Enter 提交后行未现；用例主体=合成内部拖拽〕，与 T9/T12 同跑漂移分布，族定性+排查归口 F-E2EFLK-01（键盘路径在票面任务面②一并覆盖）；单例复跑绿在档）"
+  },
+  {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "T12 画线全链+手动调线+右键菜单（②U5：手柄/加点/拖顶点/穿卡警示软断言）（:1100）",
+   "count": 1,
+   "fingerprint": "同值（spec:1174 edge-menu toBeVisible 超时——右键 click force 后菜单未现 5s；VMware 第 2 跑 #51 位 7.8s；单例复跑 3.1s 绿）",
+   "status": "observing",
+   "first_seen": "2026-10-13",
+   "resolution": "观察中（再 1 现立案——VMware 对齐批 2026-10-13：输入事件族一员〔右键顶点菜单未现〕，与 T9/S4 同跑漂移分布，族定性+排查归口 F-E2EFLK-01；单例复跑绿在档）"
+  },
+  {
+   "spec": "tests/e2e/library-density.spec.ts",
+   "case": "文献库窄窗 1024：标题列保底可见+复原 1285 视觉零变（libfix1 塌 0 回归锁）（:161）",
+   "count": 5,
+   "fingerprint": "差值型稳定（:222 .lib-r-main boundingBox 宽 Expected>=140/Received=120 恒值，predicate 5s 轮询超时非抖动——wideMin 分支 wideW>=1274?140:100 走 140 而列宽实收 120）；五数据点全同指纹（U5 树 3 现：全量 #19+主控单例复跑+probe 主树复核；基线树 worktree@1645cb5b 无 U5 diff 2 现稳定红——U5 diff 致病排除）；用例头注自述探针基线 ≈151.6 禁精确值断言防环境漂移",
+   "status": "resolved",
+   "first_seen": "2026-10-14",
+   "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-02 环境登记翻 done）：非「当前机确定性恒红」而是深夜 automation 窗环境级稳定红、白天窗绿——白天定向 8/8 绿+白天全量 114 本用例绿+CI windows-latest 4 run 本用例均绿；guest 环境假设全排除（无 suspend/屏保禁用 idle-delay=0/DPMS 禁/monitors.xml 恒定/openbox-xvfb 未运行/uptime 与 wall 吻合=宿主冻结排除）；翻转窗实测 00:07 绿→03:21 红；判读口径=automation 清晨窗豁免单点/白天窗全量权威（AGENTS 环境段+DEV-SETUP 同步）"
+  },
+  {
+   "spec": "tests/e2e/smoke.spec.ts",
+   "case": "frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）（:116）",
+   "count": 13,
+   "fingerprint": "同值型稳定（:148 expect.poll BrowserWindow.isMaximized 5s 轮询恒收 false——Expected true/Received false，X11 WM 最大化面）；五数据点同指纹=U6 批 executor 全量红+定向复跑红+基线 worktree 红（自述未留档）+probe 主树全量红+基线树 worktree@57b442ea 无 U6 diff 复现红（档内四数据点——U6 diff 致病排除，21 件 diff 零窗口/标题栏/main 接触面）",
+   "status": "filed",
+   "first_seen": "2026-10-14",
+   "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-03 环境登记翻 done）：深夜 automation 窗环境级稳定红、白天窗绿——白天定向+全量双跑两票用例绿+CI windows-latest 4 run 本用例绿；guest 环境假设全排除（同 FLK-02 条）；翻转窗实测 03:21 绿→06:00 红；判读口径同 FLK-02 条",
+   "note": "；[F-VISFB-67 批追记 2026-10-19] 本地 xvfb 再 8 现同指纹（isMaximized poll Expected true/Received false@:148——时间戳批档 20261019-fvisfb67-impl §6-R4），改前对照同红+CI 历绿=本地环境面（xvfb maximize 语义）；历史 5+本批 8=13 已过立案线，并入 F-E2EFLK-01 待根治承接（勘误：本批 gate2 probe 曾误跑 :13 侧栏例，「标题栏本跑未复现」作废——批档勘误在录）"
+  },
+  {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "脉络图 e2e 全链 T3 重复加边拒绝 toast（:341，断言点 :411 .drag-slot:not(.cand)）",
+   "count": 5,
+   "fingerprint": "CI windows-latest 恒红型（与本地平台相反）：element(s) not found——拖拽进行中置入槽未渲染，toHaveText 5s 超时；四 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6）含 CI retry1 复跑红；本地 Linux 白天全量 #50 T3 绿 4.5s；引入窗=10-07 d2be052e 绿→10-13 5c7d3616 红（DB-2 批积压推送窗——src diff vs runner 镜像漂移二候选未分）",
+   "status": "resolved",
+   "first_seen": "2026-10-13",
+   "resolution": "立案=F-CIFLK-01（2026-10-14 排查场发现——v184 收口漏 CI 核查教训同步入票：收口 push 后须挂 CI 完成复查回执方可闭批）。定谳+修复（2026-10-14 runId=20261014-ciflk1）：五 run 同指纹（5c7d3616/3ca5a4c9/ed05a9c4/aff02af6/0b41b186 含 CI retry 红）；根因=e2e 视口几何链非产品缺陷——CI runner 虚拟屏 1024×768 钳制窗口（1280×800 被 clampBounds）→月框低容量区同月双卡分行（PITCH_Y 144=trace 纵差逐字吻合）+错位（OFFSET_O 100）推乙卡出视口（y=779.75>768）→attached 查询 boundingBox 视口外坐标→mouse.down 落空→拖拽会话未启动→置入槽零渲染；引入窗=SLOTGRID U1（4ab86fcf 10-08）布局网格化（分行指纹只有 U1 体系产生）；本地 Linux 绿=屏大 1280×800 同行形态。修复=T3 拖拽前乙卡 scrollIntoView 滚动锚（T5 先例同型）+instant 显式化+滚后视口兜底断言；探针复现（880×620 完全复刻 CI 形态，y=779.75 一字不差）红→绿实证+门二 probe 变异红证两轮一致；门一 k1+d1 双 PWC（W/N 全采纳）+门二 probe 6/6+裁决部 GO_WITH_CONDITIONS C1-C6 全兑现；verify 303/3262/427 对账基线 EXIT=0。证据=仓外 scripts-audits/20261014-ciflk1/（evidence.md+fix-final.diff+session-open）。判读口径沉淀：CI 再现 element-not-found 间接签名红（拖拽/点击类）首查视口外坐标（AGENTS 环境段同句）；〔2026-10-18 回归一现+再修〕F-VISFB-66 改写 T3（拖拽径）丢滚动锚→CI 39092561093 attempt+retry 确定性红（同指纹 element not found）——root(2020 顶段)与乙(分行后 ~780)窄窗不可共视=旧单卡锚治不了双端拖拽；再修=自适应双径（已共视直接拖/未共视走新自动滚动底缘触发区带乙入视上带再落锚——裁定 4 实战首用），本地 T3 绿 10s（39 号件日志）；〔2026-10-18 四修终态补记（v214 §6-3 核对缺口）〕前注止于一修——一修 f65d0939（带内抓取）CI 39093814719 红（末位卡 max 滚恒驻底带=0.75 上带永不可达）→二修 b8029630 程序化滚至容器中心（带 typecheck TS2488 红提交=流程失误：grep 命中≠退出码绿——账本 ci-triage 行+AGENTS 依赖与提交段判码纪律同日落笔）→三修 73500460 Array.from CI 仍红（阈值对末位卡几何永假）→四修终版 6bafe140=种子几何主修（root 移同月 slot0——span 144 恒共视两平台统一直拖径）+阈值放宽完整入容器→CI success 亲验（v214 §4）。教训=改写承载旧修复的用例须先清点其环境适配面+几何不可共视正解=种子级结构调整非运行时补偿（v214 §3-6①②）；程序化滚动安全网分支随 v214 §6-1 删除（共视前提转前置断言锁）"
+  },
+  {
+   "spec": "tests/e2e/ai-cascade-delete.spec.ts",
+   "case": "E5 场景二 零计数：有图边无 AI 资源——仅第一窗无第二窗（:103）",
+   "count": 1,
+   "fingerprint": "挂起型首现（2026-10-14 白天全量 09:16-09:25）：用例跑满 90s 全局超时+worker teardown 90s 双层挂起（非断言红）；error-context 无页面态（timeout 指纹）——快照=仓外 20261014-flk3/e5-scene2-error-context-daytime.md；单例复跑绿 2.4s；同用例 U6 批全量+定向多次绿",
+   "status": "observing",
+   "first_seen": "2026-10-14",
+   "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；挂起型与 FLK-01 输入事件族异型；再现时首取 error-context 快照"
+  },
+  {
+   "spec": "tests/e2e/library-explorer.spec.ts",
+   "case": "S5a 行右键菜单三项版（删除项批 B 点亮+星标项不渲染）+移动子面执行（:108）",
+   "count": 1,
+   "fingerprint": "挂起型 CI 首现（run 38550671406 attempt1，2026-10-14 33f57f6a）：测试跑 1.5m 超时标 x+Worker teardown 90s 双层挂起（非断言红），worker 终止=run 26/114 处中止（前 25 全绿含 T3 域）；error-context=仓外 20261014-db3/s5a-ci-hang-error-context.md；attempt2 复跑全绿 success；批内容=纯文档 diff（AGENTS/methodology 4 行）与 app 行为零因果",
+   "status": "observing",
+   "first_seen": "2026-10-14",
+   "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案）；与 case 20（E5 场景二，本地白天窗挂起型）同型不同例——挂起族跨例分布（本地白天窗+CI runner 两端各一例）=环境级线索候选；本用例第二现即立案+族级评估（两例并卷观察）"
+  },
+  {
+   "spec": "tests/e2e/theme-trio.spec.ts",
+   "case": "T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天（:96）",
+   "count": 3,
+   "fingerprint": "双 toast 断言红 CI 首现（run 38558739342 attempt1，2026-10-14 60aa81c7）：expect(getByText(设置已保存)).toBeVisible() strict mode violation resolved to 2 elements（两个同文案 toast 同时在场）；attempt 4.6s 红+Retry #1 同指纹（run 内确定性）；上一 run（38555398972，app 构建字节等价）同用例绿=跨 run 非确定；批内容=纯文档 diff 零因果；error-context=仓外 20261014-db3/t3p4-ci-toast-error-context.md；attempt2 复跑全绿 success；第二现（2026-10-15 本地 VMware 日间窗，DB-4 g2probe 全量首跑〔runId=20261015-dbcamp-db4〕）：同指纹 strict mode violation resolved to 2 elements；首跑红 14.4m 套件内+单例复跑绿（复跑绿不销项）；批内容=DB-4 星标/标签/治理面零因果（主题链路零触及）——两现跨环境（CI windows+本地 VMware）同指纹，count 1→2 filed 触发立案线（F-E2EFLK-04）；第三现（2026-10-15 DB-4 收口 CI run 38685349467 attempt1〔c5c86e4c〕）：同指纹 flaky 分类（attempt1 红+重试绿，run conclusion=success——ci-watch-c5c86e4c.raw.txt:443-470）；两环境〔CI windows+本地 VMware〕三天三现，FLK-04 排查紧迫度升",
+   "status": "resolved",
+   "first_seen": "2026-10-14",
+   "resolution": "2026-10-15 修复收口（runId=20261015-flk04，票=F-E2EFLK-04 翻 done）：根因=toast-store 去重窗 DEDUPE_MS=1000 与 success 停留 3500ms 结构失配——两保存间隔∈(1s,3.5s) 时旧卡未退场+新卡不被窗拦=同文案双卡共存 strict 双命中。修复=app 侧同文案同 kind 在场折叠（showToast fold：清旧计时→重置全程停留计时，同 id 不增卡不 notify；1s 窗保留防手动关后连点）=INV-134 登记；e2e spec 零改动（strict 断言升格行为锁）。行为锁=tests/unit/renderer/toast.test.tsx 折叠族五例 B1-B5（always-active）+三形状变异红证（M1 删 fold/M2 删计时重置/M3 find 删 kind 比较——M3 双红含既有异 kind 锁）。烤验=门一 k1（继任席——k3 认证失败）PASS B0W1N2+d1 PASS B0W0N4+门二 probe 七项（theme-trio 定向连跑 5/5 零 violation+e2e 全量 T3-P1/P4 恒绿）+adjudicator GO_WITH_CONDITIONS（C1-C3 全兑现）。诊断档=仓外 20261015-flk04/diagnosis.md。",
+   "ticket": "F-E2EFLK-04"
+  },
+  {
+   "spec": "tests/e2e/ai-cascade-delete.spec.ts",
+   "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
+   "count": 1,
+   "fingerprint": "detach 循环 60s 超时型（非纯挂起型——与 case 20/21 同族异亚型，台账分别落笔=裁决部 C2）：TimeoutError locator.click 60s 于 spec:83 aside.getByRole('tab',{name:'AI 会话'}).click()——locator resolved 且 visible/enabled/stable 全过后「element was detached from the DOM, retrying」循环至超时（reader-aside 内该 tab 被反复重挂载）。首现=2026-10-15 18:43-19:02 本地 VMware（FLK-04 批门二 probe 全量+定向复跑同窗 2 红）；error-context=仓外 20261015-flk04/g2probe-2-error-context.md（含主控判别补记）。判别链（裁决部裁定成立）：①主工作区同构建红转绿（2/2 红→第三跑 3/3 绿——代码/构建变量排除）②干净 HEAD worktree 基线 3/3 绿 ③失败流程零 showToast 面+Toast.tsx diff 纯注释（静态解耦）→定性=环境相位漂移非代码回归。环境线索（申报面——无随档进程证据，不承载判别）：红窗与宿主机并行会话（waterprint vite dev+geckodriver 18:01 起）活跃期重合。",
+   "status": "observing",
+   "first_seen": "2026-10-15",
+   "resolution": "首现 observing（同窗 2 红按 FLK-04 先例归组记 count 1——裁决部维持）；挂起/超时族跨例第三例（E5 场景二 case 20+S5a case 21+本例）环境级候选线索增强；再现即触立案线（跨场次第二现=立案排查）。再现时首取 error-context 快照+对照本判别链。"
+  },
+  {
+   "spec": "tests/e2e/corpus-export.spec.ts",
+   "case": "AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+部分成功可见+残留清空重建（:31）",
+   "count": 1,
+   "fingerprint": "挂起/超时型（90s test timeout exceeded——首跑 1.5m 无断言差值输出+连带 Worker teardown 90000ms exceeded 拖红 job 退出码；同 run retry #1 绿 4.0s）。首现=2026-10-15 CI windows-latest run 38739035324 attempt1（bec8aad3 治理纯文档批零因果——上一 run 4ba78737 绿；本地零跑面）。分类=非确定失败单现 observing（同用例 2 次触发立案线）；族注记=挂起/超时族第四例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+本案）且为该族 CI 面首例（前三例均本地 VMware——跨环境形态注，环境级线索待第五例再评估）。error-context=CI test-results 产物（corpus-export-AI-语料导出全链…-fa3da 目录）。再现即触立案线。"
+  },
+  {
+   "spec": "tests/e2e/ai-tasks-card.spec.ts",
+   "case": "E2 任务卡六态与取消：queued 取消→已取消；running 执行中无取消钮；终态三态文案（:33）",
+   "count": 1,
+   "fingerprint": "挂起/worker-teardown 型（90s test timeout exceeded 于 E2 六态用例，随后 Worker teardown timeout 90000ms——同 worker 10 例〔E1①②③/E3/E4/E5×3/E7/E2〕连带未跑判红，连带≠独立红；attempt2〔--failed 复跑〕e2e 全绿含 E2，10m51s）。首现=2026-10-16 05:20Z CI windows-latest run 38855228730 attempt1 @aa5dc4ce（B6 候补收口 push 笔——批次零 src/e2e 改动〔纯 unit 测试面+docs〕，静态解耦；前置 run 38847967569 绿=跨 run 非确定；其余六段 attempt1 全绿含 vitest 3495+指纹门）。分类=非确定失败单现 observing（同用例 2 次触发立案线）。error-context=CI test-results 产物。",
+   "status": "observing",
+   "first_seen": "2026-10-16",
+   "resolution": "首现 observing（复跑绿不销项——失败指纹在档）；挂起/超时族跨例第五例（case 20 E5 场景二+case 21 S5a+E5 场景一 detach 亚型+corpus-export CI 首例+本案）且为该族 CI 面第二例——两 CI 例集中 2026-10-15/16 窗（corpus-export fa3da+本案），环境级线索按族注记口径维持、族内 CI 面第二现即触该族 CI 专项排查候选呈报；本用例再现即触立案线（跨场次第二现=立案排查，首取 error-context 快照+对照 corpus-export 例判别形态）。"
+  },
+  {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "T3 重复加边拒绝 toast（F-VISFB-66 改写后形态——拖拽径二次画同对+quit 拦截两态）本地 VMware 侧",
+   "count": 6,
+   "fingerprint": "Target page, context or browser has been closed（FLK-03 窗口状态族同指纹）：五现=深夜/清晨 automation 窗（2026-10-18 01-06 时段 runId=20261018-fvisfb66 executor 各轮+复跑绿）；第六现=白天窗 10:08 三 spec 联跑 #T3（9.2s 红）→同窗单例复跑绿（9.7s）——白天瞬态首现，FLK-03「深夜窗专属」环境归因弱化（观察登记非翻案）；〔裁决部 C-03 口径〕前五现=深夜豁免窗、第六现=首次白天同指纹；后续三次相关运行绿（单例+两轮三 spec 全量）非销项；第二次白天同指纹立即升级既有票排查并暂停环境豁免解释",
+   "status": "observing",
+   "first_seen": "2026-10-18",
+   "resolution": "observing（C-03 观察门：白天再现即升级 F-E2EFLK-01 排查优先级）；CI 面=windows-latest 另案 F-CIFLK-01 已修"
+  },
+  {
+   "spec": "tests/e2e/ai-cascade-delete.spec.ts",
+   "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
+   "count": 5,
+   "fingerprint": "点击拦截/元素脱挂型（:83 aside 内「AI 会话」tab click——html intercepts pointer events+element detached from DOM 重试后 element(s) not found；未达核心断言面=前置辅助 createNote 后 .tl-note-text 5s 不可见）",
+   "first_seen": "2026-10-19",
+   "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）",
+   "note": "；[F-VISFB-67 批追记 2026-10-19] 1280 全量负载单现→定向复跑 3/3 定绿（observing 口径不变，不销项）；[2026-10-21 追记（runId=20261021-evctx-detourw 场次 2 门二实证面）] 同指纹再两现：本地全量（154 例面）exit=1 一红 + 同日单例复跑同 :83 同 detached 签名 exit=1——双轮 error-context.md 指纹经 F-EVCTX-01 保号面双目录并存零覆写实测归档（run-2026-10-21T10-53-41-198Z/run-2026-10-21T11-16-09-133Z）；第三跑（同日晚些）exit=0 转绿=非确定失败族定性支持。立案状态维持（承接 F-E2EFLK-01 输入事件族排查面不变）"
+  }
+ ]
 }
