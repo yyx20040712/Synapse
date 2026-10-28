@@ -195,8 +195,9 @@ development Model Selection+loop-engineering references/06）；**架构与
   派发器已退役删除，2026-10-03）；岗位承载与路由矩阵单源=技能
   templates/agents.matrix.json，项目级供应商覆盖=.zcode/org-config.json；
   组织差异回灌=.zcode/org-delta.jsonl。
-- **技能版本锚定**（2026-09-18 裁决 12）：基准=最新版 git 提交号，现用
-  v3.1.2@a761e6b；org-config 无版本字段，以提交号+本注为准。
+- 技能版本不锚定：宪法不绑定 ai-dev-org 的版本号/提交号，跟随当前安装版
+  （2026-10-28 用户裁决，取代 2026-09-18 裁决 12 的版本锚定——技能持续升级，
+  锚定必然滞后）。
 - 组织账本=.zcode/org-ledger.jsonl（行 schema 单源=技能 references/02 §9）；
   结项前跑技能 scripts/health-scan.mjs（RED=0 方可结项）。
 - 段预算机检：本段 ≤600 非空白字符
