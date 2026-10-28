@@ -1,7 +1,7 @@
 # ADR-0027：恢复副本统一管理（WPS 式丢稿防御——单一服务/单槽/类型注册表）
 
 - 状态：accepted（2026-10-19，F-VISFB-65 实施批随批落档）
-- 关联票：F-VISFB-65（63 号 C2 簇后果根治）；设计链=kimi 拟定两轮+deepseek 对抗两轮+主控终裁 v3（批档=仓外 20261019-fvisfb65-impl/65-design-final.md）
+- 关联票：F-VISFB-65（63 号 C2 簇后果根治）；设计链=拟定两轮+对抗两轮+终裁 v3（批档=仓外 20261019-fvisfb65-impl/65-design-final.md）
 
 ## 背景
 

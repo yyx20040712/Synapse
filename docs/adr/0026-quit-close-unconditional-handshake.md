@@ -2,7 +2,7 @@
 
 日期：2026-10-18 ｜ 票：F-VISFB-64 ｜ 状态：accepted（验收=本批 verify 全绿+门审；
 设计单源=docs/design/2026-10-18_f-visfb64-design.md 终稿 v1.2+§⑪ 终裁八项——
-三段通道完链 drafter 三轮+auditor 两轮+GLM 终裁，修订记录注 F-VISFB-64）
+三段通道完链（拟定三轮+审核两轮+终裁），修订记录注 F-VISFB-64）
 
 ## 背景
 
