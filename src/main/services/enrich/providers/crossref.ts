@@ -61,10 +61,10 @@ const workSchema = z.object({
       // 宽松化）；缺省/显式 null→toWork 归一 null（不写缓存通道）
       'is-referenced-by-count': z.number().int().nullable().optional()
     })
-    .default({})
+    .prefault({})
 })
 
-const listSchema = z.object({ message: z.object({ items: z.array(z.unknown()).default([]) }).default({}) })
+const listSchema = z.object({ message: z.object({ items: z.array(z.unknown()).default([]) }).prefault({}) })
 
 /** 双形状读取：桩返回 Response，运行时返回已校验数据（见架构层） */
 async function readBody(raw: unknown): Promise<unknown> {

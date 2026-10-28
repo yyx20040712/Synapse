@@ -356,7 +356,8 @@ export type FloatingNote = z.infer<typeof floatingNoteSchema>
  *  created_at 保留+updated_at 刷新）或插入（未知 id——repo ON CONFLICT(id)
  *  DO UPDATE 的 INSERT 分支；upsertEdge 家族同型：service 守卫=域归属存在性
  *  而非行 id 存在性〔回炉 R3 语义如实表述〕）。x/y 有限数守卫在 service 写面
- *  （z.number() 放行 Infinity——k1-N5 畸形防线同族） */
+ *  （zod4 起 z.number() 已在 schema 层拒 Infinity/NaN〔ADR-0031 语义收紧〕，
+ *  service 守卫保留为纵深防御——k1-N5 畸形防线同族） */
 export const floatingNoteUpsertSchema = floatingNoteSchema
   .omit({ createdAt: true, updatedAt: true })
   .extend({

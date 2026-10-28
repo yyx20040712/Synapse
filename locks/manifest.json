@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-28T03:40:38.221Z",
+    "generatedAt": "2026-10-28T04:14:02.704Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -175,7 +175,7 @@
         },
         {
             "path": "src/shared/models/lineage.ts",
-            "sha256": "f06a77feefb7f25f6ff774a32aebdcb0a0fc2aa8c3c6b136844a17195d38774b"
+            "sha256": "23365074016c55367178f2a041bcb25aab62549901e1c76cff47fe0535c172ad"
         },
         {
             "path": "src/shared/models/note.ts",
