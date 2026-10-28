@@ -90,3 +90,20 @@ describe('SR2-ENR-01 crossref provider —— is-referenced-by-count 缺省形',
     expect(work?.title).toBe('Deep learning for water demand forecasting')
   })
 })
+
+/** F-DEP-02：zod4 输入侧默认值锚——crossref 两处 .prefault({})（v3 default 语义等价物）。
+ *  撤掉 prefault（message 变必带）→ parse 抛 ZodError → 两用例红（变异红证在档）。 */
+describe('F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值', () => {
+  it('byDoi：响应缺 message → 默认形状（title 空串/authors 空）而非异常', async () => {
+    const p = createCrossrefProvider({ fetchJson: fakeFetchJson({ status: 'ok' }) })
+    const work = await p.byDoi('10.1016/j.watres.2024.01.001')
+    expect(work).not.toBeNull()
+    expect(work?.title).toBe('')
+    expect(work?.authors).toEqual([])
+  })
+
+  it('byTitle：响应缺 message → items 默认空 → null 而非异常', async () => {
+    const p = createCrossrefProvider({ fetchJson: fakeFetchJson({ status: 'ok' }) })
+    await expect(p.byTitle('water demand forecasting')).resolves.toBeNull()
+  })
+})

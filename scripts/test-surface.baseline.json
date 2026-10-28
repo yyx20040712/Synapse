@@ -60983,6 +60983,32 @@
             "expect(work?.citedByCount).toBeNull()",
             "expect(work?.title).toBe('Deep learning for water demand forecasting')"
           ]
+        },
+        {
+          "key": "[\"F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值\",\"byDoi：响应缺 message → 默认形状（title 空串/authors 空）而非异常\"]",
+          "describePath": [
+            "F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值"
+          ],
+          "title": "byDoi：响应缺 message → 默认形状（title 空串/authors 空）而非异常",
+          "markers": [],
+          "line": 97,
+          "assertions": [
+            "expect(work).not.toBeNull()",
+            "expect(work?.title).toBe('')",
+            "expect(work?.authors).toEqual([])"
+          ]
+        },
+        {
+          "key": "[\"F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值\",\"byTitle：响应缺 message → items 默认空 → null 而非异常\"]",
+          "describePath": [
+            "F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值"
+          ],
+          "title": "byTitle：响应缺 message → items 默认空 → null 而非异常",
+          "markers": [],
+          "line": 105,
+          "assertions": [
+            "expect(p.byTitle('water demand forecasting')).resolves.toBeNull()"
+          ]
         }
       ]
     },
@@ -65629,8 +65655,8 @@
   },
   "stats": {
     "fileCount": 442,
-    "caseCount": 4360,
-    "assertionCount": 14758,
+    "caseCount": 4362,
+    "assertionCount": 14762,
     "skipSiteCount": 10,
     "conditionalSkipSiteCount": 10,
     "hardSkipSiteCount": 0,
