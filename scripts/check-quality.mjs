@@ -10,7 +10,9 @@
  * / e2e 截图比对负锚（第 9 段——INV-64）/ 模型代号负锚（第 8 段——扫描面
  * 单源=scripts/check-model-names.mjs）/ 节点唯一来源负锚词表（第 10 段——
  * INV-NEW-1，F-ALIGN-01）+治理表行格数校验（10b 段）/ src/main 禁冲突替换式
- * 删除（第 11 段——F-DBCAMP-01 DB-3 U1，删事件账漏账路径负锚）。
+ * 删除（第 11 段——F-DBCAMP-01 DB-3 U1，删事件账漏账路径负锚）/ 文档禁用词
+ * 负锚（第 12 段——F-DOCGOV-02 U4，宪法「文档写作规范」节词面棘轮，词表/
+ * 扫描面/行级豁免单源=scripts/check-doc-terms.mjs）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -19,6 +21,7 @@ import postcss from 'postcss'
 import { COLOR_RE, META_RE, stripUrlFunctions } from './color-re.mjs'
 import { scanDuplicateConstants, formatDupDetails, clipped } from './check-dup-constants.mjs'
 import { scanModelNames } from './check-model-names.mjs'
+import { scanDocTerms } from './check-doc-terms.mjs'
 
 const root = process.cwd()
 const violations = []
@@ -558,6 +561,12 @@ for (const f of mainFiles) {
     )
   }
 }
+
+// 12) [F-DOCGOV-02 U4 2026-10-28] 文档禁用词负锚——活文档正文出现宪法
+//     「文档写作规范」节禁用词表词面即红（词面棘轮；词表/扫描面/行级豁免
+//     单源=scripts/check-doc-terms.mjs，import 先例=scanModelNames；治理
+//     登记=docs/defense-lifecycle.md 登记行㉖——退出条件与复审节奏在彼）。
+for (const v of scanDocTerms(root)) violations.push(`doc-terms: ${v}`)
 
 if (violations.length > 0) {
   console.error('quality 检查未通过：')

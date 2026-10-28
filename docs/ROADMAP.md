@@ -3,10 +3,10 @@
 > **退役声明（2026-09-19，F-DOCGOV-01——复杂度治理裁决书裁决 8）**：本文的阶段
 > 编排职能已由「最新交接书（docs/prompts/ 下 vN 最高者〔历史交接书已迁仓外
 > `/home/yyx/synapse-archive/docs-2026-10-28/prompts/`〕，AGENTS 排程真相源规则）
-> + tickets/registry.ts」接替——2026-08-28 后的战役（workspace/改名/F-A/F-CSS/
+> + tickets/registry.ts」接替——2026-08-28 后的专项（workspace/改名/F-A/F-CSS/
 > F-LINT/F-TESTREF/F-DEDUP/F-GEOM/域归位/文档治理等）编排层记录在交接书链，
 > 本文不再滚动更新。本页保留两件事：
-> ①Phase 0~7 编排历史与验收要点的浓缩档案（战役细节=各战役报告+registry 票面）；
+> ①Phase 0~7 编排历史与验收要点的浓缩档案（专项细节=各专项报告+registry 工单正文）；
 > ②**机器输入锚段**：下方 `### P7-X：` 标题行集合是 scripts/check-tickets.mjs
 > 规则 6 的 decidedScopes 取数源（src 内 SR2-\* 工单头注 `// b3: P7-X` 指针依赖）
 > ——**退役后仍禁删/禁改这些标题行的 `### P7-X：` 前缀形态**；触碰本页必须跑
@@ -23,7 +23,7 @@
 - Phase 5 标签/集合/详情/增强/导出/设置（23/23）✅（2026-08-22；收官报告
   /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-22_phase5-closeout.md）
 - Phase 6 打包分发（SR-PKG-01/02）✅（2026-08-22；自动化冒烟=装得上/起得来/
-  卸得掉含注册表断言；「干净机全链路人工验收」留用户随手验——战役报告
+  卸得掉含注册表断言；「干净机全链路人工验收」留用户随手验——专项报告
   /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-22_SR-PKG-01.md 与 2026-08-22_SR-PKG-02.md）
 
 ## Phase 7（v2 主线 A~H 全域完结，2026-08-24~09-08）
@@ -31,13 +31,13 @@
 > 主线顺序 A→B→F→C→G→H（C 先于 F 落地系 N1 增补块裁决；D/E 并行穿插）。
 > 以下各段标题行=机器输入锚段（见退役声明②），勿改前缀。
 
-### P7-A：阅读器交互基建 ✅（2026-08-24，工单 4/4 + e2e 验收；战役报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-24_p7a-campaign.md）
+### P7-A：阅读器交互基建 ✅（2026-08-24，工单 4/4 + e2e 验收；专项报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-24_p7a-campaign.md）
 
 ✅ 交付：ctrl 滚轮缩放 / ctrl+c 复制 / 翻页键位映射 / 标注四选项菜单 /
 SplitPane 分隔条（宽度持久化）；验收=keymap 成对注册+菜单出口锁定用例+e2e
 缩放复制可见效果；INV-14 输入接缝三面全锚。
 
-### P7-B：多标签页 + 同步状态投影 ✅（2026-08-25 收官，工单 5/5——TABS-01/02/03 前役 + TABS-04/UNDO-01 收官役；e2e 三序列（换/关/退含 error 场景）全绿，INV-15/22 装配级收口升已锚定，INV-23 新登记；战役报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-25_p7b-campaign.md）
+### P7-B：多标签页 + 同步状态投影 ✅（2026-08-25 收官，工单 5/5——TABS-01/02/03 前役 + TABS-04/UNDO-01 收官役；e2e 三序列（换/关/退含 error 场景）全绿，INV-15/22 装配级收尾升已锚定，INV-23 新登记；专项报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-25_p7b-campaign.md）
 
 ✅ 交付：tab 栏（单窗口多文献）+ reader.store per-tab 重构 + 灰点投影 +
 关闭脏 tab/退出二次确认（main 侧拦截）+ 标注操作级 undo 栈；验收=换/关/退
@@ -50,7 +50,7 @@ SplitPane 分隔条（宽度持久化）；验收=keymap 成对注册+菜单出�
 回收断言+进度回写/恢复 e2e（reader-scroll.spec）+既有标注重开原位全量兼容；
 INV-29~34（域件随 F-GEOM-01 目录化驻 reader/{state,view,interact}）。
 
-### P7-C：笔记结构化重构（AI 语料核心） ✅（2026-08-26，工单 6/6 + 收官 e2e；战役报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-26_p7c-campaign.md）
+### P7-C：笔记结构化重构（AI 语料核心） ✅（2026-08-26，工单 6/6 + 收官 e2e；专项报告 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-26_p7c-campaign.md）
 
 ✅ 交付：阅读器侧栏三栏（目录/缩略图/笔记）+片段笔记=标注锚定（引文+记录）
 +md 语料导出（front-matter+引文块+笔记，ADR-0011）+锚点定位服务（INV-20
@@ -61,7 +61,7 @@ INV-29~34（域件随 F-GEOM-01 目录化驻 reader/{state,view,interact}）。
 
 ✅ 两批全役（2026-08-27）：SR2-AI-01~05 应用面（ai_notes 独立表/提取管线/
 语料导出五件套）+SR2-AI-06~10 回灌联动组（ADR-0015 伴随进程文件协议/回灌
-导入器/笔记面板 AI 面/AI 标注渲染对等/zcode 联动）；战役报告=
+导入器/笔记面板 AI 面/AI 标注渲染对等/zcode 联动）；专项报告=
 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-27_ai-campaign.md + ai-campaign-batch2.md；验收=repo
 单测/多页夹具断言/导出 golden/e2e 全链/queue 幂等。
 
@@ -69,11 +69,11 @@ INV-29~34（域件随 F-GEOM-01 目录化驻 reader/{state,view,interact}）。
 
 ✅ SR2-LG-01~05 全役（2026-08-27）：模型+草稿导入（迁移 004）→RT tidy tree
 零依赖布局+SVG 画布 →交互编辑+自动保存+退出聚合扩面 →侧板详情+双击锚点
-跳转 →e2e 全链；战役报告=/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-27_lineage-campaign.md；
+跳转 →e2e 全链；专项报告=/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-27_lineage-campaign.md；
 验收=浏览/编辑保存/跳转 e2e；INV-20/22/27 随单锚定（三 kind 边终态见
 INV-27——ref=R2-LG12/manual=F-LG15 扩面）。
 
-### P7-D：玻璃质感 UX 战役（可与主线并行）
+### P7-D：玻璃质感 UX 专项（可与主线并行）
 
 ✅ P7D-01 两批（2026-09-03~09-08）：theme token 体系/玻璃质感/微交互反馈/
 字号六档语义刻度；验收=变量单源断言（theme.test TOKENS 正锚+全域负锚，

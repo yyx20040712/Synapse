@@ -92,9 +92,9 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（达到预期口径才算环境就绪）
 
 ```bash
-npm run verify        # 预期 exit 0：396 文件 4190 用例 / locks 515（工单 open 数随排程浮动，
-                      # 以 tickets/registry.ts 实时为准；2026-10-20 刷新——F-SNAPCLEAN-01 基线
-                      # 压缩批：−12 测试件/−25+1 迁移件/manifest 551→515）
+npm run verify        # 预期 exit 0：398 文件 4208 用例 / locks 520（工单 open 数随排程浮动，
+                      # 以 tickets/registry.ts 实时为准；2026-10-28 刷新——F-DOCGOV-02 U4 批：
+                      # +check-doc-terms.mjs 受锁 1 件；用例口径=F-DEP-02 终态 398/4208）
 npm run build && npm run test:e2e   # 预期全量 135+1 用例（INV-168，2026-10-19 v218 口径；
                       # 以实际跑为准）（全天同一标准：红即红，非确定失败
                       # 单现复跑定绿按通则；FLK-02/03 旧「环境登记态」处置已随

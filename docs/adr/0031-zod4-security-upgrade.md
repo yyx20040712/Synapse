@@ -1,6 +1,6 @@
 # ADR-0031 zod 3.25.76 → 4.6.7 安全升级（F-DEP-02）
 
-> 日期：2026-10-28 · 状态：已裁决（用户裁决 A=升级专项批） · 上游：安全通报 GHSA-mrhx-c7xc-m3w5（zod<4.6.6 全线受影响：超大受限集合校验可致内存耗尽；首次暴露=CI run 40625051076 audit 步红，2026-10-28） · 票面=tickets/registry.ts F-DEP-02 · 编号说明：0028-0030 已被 F-VISFB-67/F-RECOV-01/F-SNAPCLEAN-01 占用（registry 在案），本批取 0031
+> 日期：2026-10-28 · 状态：已裁决（用户裁决 A=升级专项批） · 上游：安全通报 GHSA-mrhx-c7xc-m3w5（zod<4.6.6 全线受影响：超大受限集合校验可致内存耗尽；首次暴露=CI run 40625051076 audit 步红，2026-10-28） · 工单正文=tickets/registry.ts F-DEP-02 · 编号说明：0028-0030 已被 F-VISFB-67/F-RECOV-01/F-SNAPCLEAN-01 占用（registry 在案），本批取 0031
 
 ## 背景
 
@@ -8,10 +8,10 @@ CI 依赖审计步（npm audit --omit=dev --audit-level=high）因该通报转�
 
 ## 决策
 
-1. `package.json` 精确钉版 `zod: 4.6.7`（沿用全仓精确钉版惯例；lockfile integrity 钉扎）。
+1. `package.json` 精确固定版本 `zod: 4.6.7`（沿用全仓精确固定版本惯例；lockfile integrity 钉扎）。
 2. 迁移改写最小化，仅两处：`src/main/services/enrich/providers/crossref.ts` 两处 `.default({})` → `.prefault({})`——zod4 `.default()` 语义改为输出侧类型（含必带默认字段的对象不再接受 `{}` 字面量），`.prefault()` 为 zod4 提供的输入侧默认值（语义与 v3 `.default()` 等价：先补 `{}` 再走内层 parse，逐次浅克隆新对象，无共享可变状态）。配套回归锚两例入 tests/unit/services/providers/crossref.test.ts（缺 message→默认形状/null 而非异常；变异红证在档：撤 prefault→恰两例红→还原 7/7 绿）。
 3. **接受既有 API 形态原地保留**：`.strict()`（193 处，机检口径 grep 实数；zod4 弃用但仍可用——`catchall: never()` 语义、未知键仍拒绝，仅错误文案变化〔v4「Unrecognized key: x」〕，且 detail 不进 renderer UI）；双参 `z.record(z.K, z.V)`（6 处，v4 兼容）；`z.discriminatedUnion`（6 处——字面 grep `z\.discriminatedUnion(` 计 5 为漏检口径，paper.ts:133 一处 `z` 与 `.discriminatedUnion` 跨行；接受/拒绝行为不变，无效判别值错误码由 invalid_union_discriminator 改 invalid_union）。弃用面在后续触及对应文件时顺带消化。
-4. **语义收紧接受在档**：zod4 起 `z.number()` 拒非有限数（Infinity/NaN）、`.int()` 改 safe-int——受影响点=lineage.ts:222/346-347、ipc/schemas.ts ctmX/Y 与 patch x/y、paper.ts impactFactor；方向=正确收紧（坐标/计量面拒 Infinity 是期望行为），service 层有限数守卫保留为纵深防御，src/shared/models/lineage.ts:358-359 受锁注释已随批勘正。
+4. **语义收紧接受在档**：zod4 起 `z.number()` 拒非有限数（Infinity/NaN）、`.int()` 改 safe-int——受影响点=lineage.ts:222/346-347、ipc/schemas.ts ctmX/Y 与 patch x/y、paper.ts impactFactor；方向=正确收紧（坐标/计量面拒 Infinity 是期望行为），service 层有限数守卫保留为纵深防御，src/shared/models/lineage.ts:359-360 受锁注释已随批勘正。
 5. 测试面：存量 4206 例在 zod4 下零改动通过（装机后首轮）；双审后新增 2 例 prefault 回归锚（终态 vitest=398 文件/4208 例）；test-surface 基线随批重冻结（28 行纯增；终态 stats=442 文件/4362 例/14762 断言，含 e2e 面口径）。
 
 ## JIT/new Function 动态代码路径（安全面披露）

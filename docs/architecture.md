@@ -1,7 +1,7 @@
 # 架构（architecture）
 
 > 本文为活文档（持续更新）；模块职责的正本在**每个源文件的头部规约注释**里（工单号索引）。
-> 岗位与流程术语（主控/门一/门二/红证/锚定）的定义见 AGENTS.md 与 docs/invariants.md「术语说明」。
+> 岗位与流程术语（主控/隔离一审/终审/红证/锚定）的定义见 AGENTS.md 与 docs/invariants.md「术语说明」。
 
 ## 1. 进程与分层
 
@@ -55,13 +55,15 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
     → tickets → locks → lint → typecheck → test → build。
   - quality 多段：占位/乱码/跨域/行数分级 repo≤300·组件≤250/分层方向解析
     +B-1 同值双常量棘轮+B-5 AST tsx inline 色+6c C-4c CSS var() 语义锚
-    +第 9 段 e2e 截图负锚（INV-64）。
+    +第 8 段模型代号负锚+第 9 段 e2e 截图负锚（INV-64）+第 12 段文档禁用词
+    负锚（F-DOCGOV-02——扫描面单源=scripts/check-doc-terms.mjs）。
   - tickets：工单号一致性/绑定对账（含 tests 目录扫描）/B4 防线（规则 6 以
     ROADMAP 退役页 `### P7-X：` 锚段集为 decidedScopes——退役页机器输入）。
   - locks：受锁文件 sha256 对账（行尾由 `.gitattributes` 强制 LF；scripts 下
     全部 .mjs/.ps1 自动入锁面）。
-  - 独立本地关卡：`npm run lint:model-names`（src 禁外部模型代号词表——**未串
-    verify/CI 链，收尾自跑义务**，AGENTS 完成定义段）；CI 另有尾注检查
+  - 独立本地快跑入口：`npm run lint:model-names`（src 禁外部模型代号——
+    src 负锚已内联 quality 第 8 段随 verify/CI 跑）、`npm run doc-terms:check`
+    （文档禁用词——已内联 quality 第 12 段随 verify/CI 跑）；CI 另有尾注检查
     （[dep-change]/[locked-change]）、npm audit、[test-refactor] 范围闸。
 
 ## 5. 关键设计决策（ADR 索引——决策正文=`docs/adr/`：背景/候选/裁决/后果+随件修订记录）
@@ -96,14 +98,14 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 | 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
 | 0027 | 恢复副本统一管理（F-VISFB-65——WPS 式丢稿防御前两道防线：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单一存储位+shared RECOVERY_REGISTRY 类型注册表（命名/schema/生命周期单源，为 reader 草稿族预留）+每 (工作区,类型) 单槽覆写；消费=takeOver 超越（token+epoch 双校验无空窗）；删除=release token 作用域+epoch 删除屏障；与 DB 落库解耦（重放幂等兜底）；决策正文单源=docs/adr/0027-recovery-copy-unified-management.md，设计链终态=仓外 20261019-fvisfb65-impl/65-design-final.md） |
 | 0029 | 恢复副本常态写 never-settle 治理（F-RECOV-01——ADR-0027 域行为演进：慢盘语义前提=常态写永不因超时取消/判败（仅解除观测）；renderer 双阈值看门狗 T_slow=10s 降级呈现/T_stuck=60s 逻辑弃置+ghost 迟到对账（token 双账本）；main serialize 链 per-key save 深上界 D_max=8 回 queue-overflow（release/read 豁免、peek 不走链）；degraded 期探针保活自愈（经 pump 单飞，每代探针 ghost ≤1）；三档 chip（缓慢/未确认/不可用+重启缀）；设计链=v2+主控终裁 v3〔仓外 20261020-nightb/recoV01〕；不变量=INV-171..174） |
-| 0030 | 迁移链基线压缩（F-SNAPCLEAN-01——B″ 续号方案：删 001–025 全 25 件、并单件 026_baseline.sql=旧全链执行完毕态全量终态〔DDL 全对象+新库生效种子〕，新库 user_version 直达 26 版本连续不重置；遗留 v2x 旧库在新代码下启动=响亮迁移失败非静默；旧链升级舞步唯一消费者=本地 v22 测试库，随批 tar 备份后删除——开发期未分发=压缩唯一安全窗；等价证明=双库 sqlite_master+种子 diff 空〔仓外批档〕+migrate.test 全对象集永驻守卫；「迁移不可修改」第三笔例外随批入 migrate.ts 头注；授权链=2026-10-19 用户裁决「开发阶段一切以最新版本为准，不考虑多余的兼容」+票面受锁面 [tests+migrations]；回退=git revert 单批恢复链与测试+tar 还原数据；决策正文单源=仓外 scripts-audits/20261020-snapclean01/design-v2-final.md，不另立 adr 正件防双源） |
+| 0030 | 迁移链基线压缩（F-SNAPCLEAN-01——B″ 续号方案：删 001–025 全 25 件、并单件 026_baseline.sql=旧全链执行完毕态全量终态〔DDL 全对象+新库生效种子〕，新库 user_version 直达 26 版本连续不重置；遗留 v2x 旧库在新代码下启动=响亮迁移失败非静默；旧链升级舞步唯一消费者=本地 v22 测试库，随批 tar 备份后删除——开发期未分发=压缩唯一安全窗；等价证明=双库 sqlite_master+种子 diff 空〔仓外批次档案〕+migrate.test 全对象集永驻守卫；「迁移不可修改」第三笔例外随批入 migrate.ts 头注；授权链=2026-10-19 用户裁决「开发阶段一切以最新版本为准，不考虑多余的兼容」+工单正文受锁面 [tests+migrations]；回退=git revert 单批恢复链与测试+tar 还原数据；决策正文单源=仓外 scripts-audits/20261020-snapclean01/design-v2-final.md，不另立 adr 正件防双源） |
 | 0031 | zod 3.25.76→4.6.7 安全升级（F-DEP-02——GHSA-mrhx-c7xc-m3w5 高危通报〔超大受限集合校验内存耗尽〕用户裁决 A 升级线；唯一行为改写=crossref 两处 .default({})→.prefault({})〔zod4 default 改输出侧语义〕+回归锚两例；z.number() 拒非有限数+.int() 改 safe-int 语义收紧接受在档〔受锁注释随批勘正〕；.strict() 193 处弃用形态原地保留；决策正文单源=docs/adr/0031-zod4-security-upgrade.md） |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
 
 ## 6. 数据模型
 
-11 张表 + 3 个 FTS5（external content+触发器——[回炉码 11] paper_collections
+11 张表 + 3 个 FTS5（external content+触发器——[返工码 11] paper_collections
 DROP 后 10 张，[F-DBCAMP-01] 018 app_meta 落地后 11 张）：papers/collections/tags/
 paper_tags/annotations/notes（001 基座——**paper_collections 已随 [F-FOLDER-01]
 012 迁移退役 DROP**：collections 语义升级=文献单归属文件夹，M2M 挂接面退役）
@@ -151,7 +153,7 @@ card-drag-session 两域共用；存量 border-box/内容坐标 27.2px 契约错
 入段带过估根治〔走线域 detour 常量派生 1.2px 窗残余=F-DETOURW-01〕）；
 CI 1024 与本地 1280 own 几何同构（结构性收益）。不变量=INV-169；zoom>100%
 由溢出滚动承担（主控裁定可复议）；A2 全局冻结/640 镶边/横向 autoscroll=已提交用户审批
-未实施。测试面=V67-01..07+阶跃边界+门二双变异红证。
+未实施。测试面=V67-01..07+阶跃边界+终审双变异红证。
 
 [F-RECOV-01]（2026-10-20）恢复副本常态 save never-settle 治理（ADR-0029）：ADR-0027
 域行为演进——语义前提=慢盘不误判丢稿（常态写永不因超时取消/判败，超时仅解除观测，
@@ -166,7 +168,7 @@ peek 不走链=决策面永不堵）；degraded 期探针保活（经 pump 单�
 拆件=recoveryWatchdog.ts（双阈值+探针调度）/recoveryBackoff.ts（纯参数表）/
 recoveryEntry.ts（ws-entry 五符号迁入，端口注入）；RecoveryBar 三档 chip+pending 并列
 形态。不变量=INV-171..174（INV-166/167 扩展注）。测试面=S1-S17 锚族+D_max 矩阵+
-变异红证（executor 13 针+门二独立复证 3 针）；设计链=仓外 20261020-nightb/recoV01
+变异红证（executor 13 针+终审独立复证 3 针）；设计链=仓外 20261020-nightb/recoV01
 （v1→r1 返工→v2→r2 返工→主控终裁 v3）。遗留呈报=D 面项裁决移出（startupScan hang=应用
 启动治理域另立）/文案族与参数初值待用户复议。
 

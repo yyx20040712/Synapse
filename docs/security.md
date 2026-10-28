@@ -32,7 +32,7 @@
 
 ## 5. 供应链
 
-- lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/react-dom/zod/zustand 共 6 个，预算 ≤15）精确钉版，无 `^` 范围；Electron 在 devDependencies 精确钉版（随构建进产物）
+- lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/react-dom/zod/zustand 共 6 个，预算 ≤15）精确固定版本，无 `^` 范围；Electron 在 devDependencies 精确固定版本（随构建进产物）
 - 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
 - Electron 44.4.3（当期支持线，2026-09-19 F-ELE-03 升级，breaking 面核对与
