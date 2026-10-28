@@ -85,7 +85,7 @@
 ## §4 控制注记（随首笔实现提交落 registry）
 
 - **C-A3 翻案**：撤销「关闭 tab 确认后默认弃改」→「先 flush 最新值，成功才关闭；discard
-  仅供用户显式放弃」。INV-50/106 同步修订；历史归档（tickets/archive/C-A3.md）追加
+  仅供用户显式放弃」。INV-50/106 同步修订；历史归档（/home/yyx/synapse-archive/docs-2026-10-28/tickets-archive/C-A3.md）追加
   superseded 指针；QUIT_CONFIRM_MESSAGE（main-window.ts:206-208）文案同族改值；关 tab
   异步化后的重入锁（连点关闭叉=双 flush 防护）入 14 票面。
 - **标签销项**：维持 checkbox 勾选+文件夹隔离；「按钮失能」按既定交互销项（挂产品销项

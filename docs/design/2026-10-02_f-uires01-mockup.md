@@ -3,7 +3,7 @@
 > **状态：已定案（2026-10-02 用户裁决 P-1..P-11 全按拟推成立——P-1/P-6/
 > P-8/P-11 四问亲裁+其余七项默认成立口径）。本档即 F-UIRES-01 实施蓝图
 > 真相源；实施批次=§8（批 A 纯 UI/批 B delete 通道/DB 窗口批后置）。**
-> 呈裁面=§5 呈裁点 P-1..P-11。样本=docs/design/
+> 呈裁面=§5 呈裁点 P-1..P-11。样本=/home/yyx/synapse-archive/docs-2026-10-28/design/
 > mockups/2026-10-02_f-uires01-library.html（+同名 png，七幕）。视觉审
 > 三轮 B=0（§6）。单源指针：F-TAGS-02 域化数据模型/迁移=DB 窗口域（本稿
 > 只定 UI 形态节）；F-STAR-01 starred 列=DB 窗口域（本稿只定形态位）。

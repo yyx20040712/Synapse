@@ -1,6 +1,6 @@
 # ADR-0019 划选视觉反馈回退官方原生半透明路线（R1）
 
-日期：2026-08-29（R3 修订 2026-09-04） · 状态：已裁决（执行=SR2-F-08） · 取代：SR2-F-06/SR2-F-07 的 ::selection 处置 · 上游：`docs/prompts/2026-08-29_loop-handoff.md` §2F1 · 取证：`scripts/audits/f1-forensics.report.md`
+日期：2026-08-29（R3 修订 2026-09-04） · 状态：已裁决（执行=SR2-F-08） · 取代：SR2-F-06/SR2-F-07 的 ::selection 处置 · 上游：`/home/yyx/synapse-archive/docs-2026-10-28/prompts/2026-08-29_loop-handoff.md` §2F1 · 取证：`scripts/audits/f1-forensics.report.md`
 
 ## 背景
 

@@ -60,7 +60,7 @@
 - **升级内容**：better-sqlite3 12.11.1→13.0.3（[dep-change]）。v13.0.0 起为 N-API
   版本（node-addon-api），**同一份绑定跨 Node/Electron ABI 通用**（Node 24.20.0
   ABI 137 / Electron 42.9.3 main ABI 146 双运行时实测加载+读写+FTS5+transaction+
-  pragma 全过——产研 docs/reports/2026-09-18_ele-upgrade-prestudy.md §1.3）。
+  pragma 全过——产研 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-09-18_ele-upgrade-prestudy.md §1.3）。
   SQLite 引擎 3.52.x→3.53.4。prebuilt 随 npm 包直发
   （`node_modules/better-sqlite3/prebuilds/win32-x64.node`），npm 正常安装即得，
   无 postinstall 下载步骤。

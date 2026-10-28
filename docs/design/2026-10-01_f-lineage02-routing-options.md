@@ -3,7 +3,7 @@
 > **状态：呈裁中（未裁决）——回复方式见 §0。**
 > 三段链：Kimi 拟定首跳稿（仓外 f-lineage02-design/drafter-out.md）→
 > deepseek 对抗审（B3/W16/N9 返工——仓外 auditor-out.md）→ **本档=主控终裁
-> 呈裁案册**（审计闭合面=§4 决定表；视觉样本=docs/design/mockups/
+> 呈裁案册**（审计闭合面=§4 决定表；视觉样本=/home/yyx/synapse-archive/docs-2026-10-28/design/mockups/
 > 2026-10-01_f-lineage02-routing.html + 同名 png）。
 > 用户四轮批复输入=v94-v97；社区实践调研附录=§5。
 

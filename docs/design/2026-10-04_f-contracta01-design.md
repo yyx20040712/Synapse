@@ -2,7 +2,7 @@
 
 > 三段通道产物：拟定者岗设计书 → 审核者岗对抗审（B1/W11/N3）→ 主控终裁
 > （含全部待核实项亲核销项）→ 用户四项裁决落定（§5）。本文=实施依据稿。
-> 前承视检反馈 R1（docs/prompts/2026-10-04_visual-feedback-r1-analysis.md）。
+> 前承视检反馈 R1（/home/yyx/synapse-archive/docs-2026-10-28/prompts/2026-10-04_visual-feedback-r1-analysis.md）。
 
 ## §0 已亲核事实底座（审核发现清偿记录）
 
@@ -75,7 +75,7 @@
 [locked-change] 尾注+locks 即时同步；test-surface 有意收紧处先裁决
 后落 exemptions.json（禁先删后补）。
 
-**〔对齐批连带修订 2026-10-04〕**：对齐批设计稿（docs/design/
+**〔对齐批连带修订 2026-10-04〕**：对齐批设计稿（/home/yyx/synapse-archive/docs-2026-10-28/design/
 2026-10-04_f-align01-design.md §0 四清单-4）先行落地的情形下——其对齐批
 单元一将 `lineage/upsert-node` 通道拆分为 `lineage/patch-node`（Req 白名单
 **临时含 `tags`+`coreIdea`** 两字段，即本批 A1b/A3 的遗留面）。若对齐批

@@ -49,7 +49,7 @@
 > （两钮迁详情页头部操作行+resizer 键盘+锚点显隐收窄——三屋全链毕
 > 细节见 §2 B5 节末回写块）。
 
-> 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（docs/prompts/
+> 链路：用户视检 R2 反馈（五图 17 项）→R2 增补档 §9（/home/yyx/synapse-archive/docs-2026-10-28/prompts/
 > 2026-10-04_visual-feedback-r1-analysis.md §9.1-9.4——用户两轮裁决全录，
 > 本稿引证不重复）→ops-drafter 拟稿→ops-auditor 对抗审核（**返工级 B1+W10
 > +N10**）→主控核包外事实四项+终裁修订（本稿）。审核发现全数吸收，处置

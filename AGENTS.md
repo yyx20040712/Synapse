@@ -1,7 +1,8 @@
 # AGENTS.md —— AI 协作宪法（给所有代理的硬规则）
 
-> 本文档的每条规则都有历史事故对应（事故档见根目录 `AI辅助开发经验教训.md`；
-> 工作法原理层见 `docs/methodology.md`）。
+> 本文档的每条规则都有历史事故对应（事故编年档已迁仓外档案区
+> `/home/yyx/synapse-archive/docs-2026-10-28/root/AI辅助开发经验教训.md`
+> ——F-DOCGOV-02，2026-10-28；工作法原理层见 `docs/methodology.md`）。
 > CI 会强制其中可机检的条目；不可机检的靠审查。**规则冲突时以本文为准。**
 
 > 原 Synapse↔ai-dev-org 词汇映射表已于 2026-10-20（F-DOCS-01）删除——

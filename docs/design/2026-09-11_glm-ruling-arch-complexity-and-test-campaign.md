@@ -3,7 +3,7 @@
 > 裁决人：主控 GLM5.3（宪法 §工单工作流「架构与技术路线层面的设计与优化=Kimi 拟定→
 > deepseek 审核→GLM5.3 主控终裁+指挥实现」之终裁位）。
 > 输入件（deepseek v4.1 产出，原样入库不回改——分析责任归产出方，勘误以本件为准）：
-> ① `docs/reports/2026-09-11_architecture-complexity-audit.md`（下称《审计》）
+> ① `/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-09-11_architecture-complexity-audit.md`（下称《审计》）
 > ② `docs/design/2026-09-11_test-system-optimization-charter.md`（下称《宪章》）
 > 裁决方法：先对两件全部可机检断言做抽查实证（§1 对账表），后逐建议裁决；
 > 裁决分四档：**采纳 / 修正采纳 / 否决（附触发线）/ 挂起（用户裁决面）**。

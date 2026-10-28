@@ -96,7 +96,7 @@ providers（SR-NET-*）与纯函数（bibtex/report/anchor）可并行。
   electron-builder NSIS（electronDist 复用本地 node_modules/electron/dist，npmRebuild 关闭）。
 - **新机器首跑**：winCodeSign-2.6.0 含 darwin symlink，无管理员权限解压失败——一次性预置
   `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\winCodeSign-2.6.0`（操作细节见
-  docs/reports/2026-08-22_SR-PKG-01.md §4）。
+  /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-22_SR-PKG-01.md §4）。
 - `npm run smoke:installer` 只验「装得上/起得来/卸得掉」（含卸载注册表 HKCU/HKLM 强断言）；
   全链路（导入→阅读→标注→导出）需在无开发环境的机器人工验收。
 - 已知上游行为：静默卸载可留空安装目录壳（electron-builder#1298）——冒烟脚本已代清理，

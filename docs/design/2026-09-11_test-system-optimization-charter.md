@@ -1,6 +1,6 @@
 # 测试系统集中优化——工程宪章（呈 GLM5.3 编排）
 
-> 日期：2026-09-11 ｜ 上游：`docs/reports/2026-09-11_architecture-complexity-audit.md`
+> 日期：2026-09-11 ｜ 上游：`/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-09-11_architecture-complexity-audit.md`
 > 目的：为「集中优化测试系统」战役提供**可执行编排 + 防作弊机制设计**。
 > 读者：主控 GLM5.3（编排者）。本件是**战役宪章**，不是实现票；实现票按 §8 拆分。
 > 口径声明：本文全部计数为 2026-09-11 实测（wc/find/git），非文档摘抄。

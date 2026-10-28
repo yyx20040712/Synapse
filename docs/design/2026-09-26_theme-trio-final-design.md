@@ -1,8 +1,8 @@
 # 统一定稿设计：三主题 UI + 脉络时间线重设计（2026-09-26 定稿轮）
 
 > 状态：**定稿**（用户四轮裁决 A1~A15 / B1~B4 / D1~D3 全量落档后的统一设计档）。
-> 视觉基准 = `docs/design/mockups/2026-09-26_v2_theme-{light,dark,sepia}.html`（三稿同构，值以稿为准；本档为文字规格与实施计划真相源）。
-> 需求链：`2026-09-26_theme-trio-brief.md`（A/B/D 三批裁决）｜参考图 `2026-09-26_v2_ref-bilibili-sidebar.png`。
+> 视觉基准 = `/home/yyx/synapse-archive/docs-2026-10-28/design/mockups/2026-09-26_v2_theme-{light,dark,sepia}.html`（三稿同构，值以稿为准；本档为文字规格与实施计划真相源）。
+> 需求链：`2026-09-26_theme-trio-brief.md`（A/B/D 三批裁决）｜参考图 `2026-09-26_v2_ref-bilibili-sidebar.png`（已迁仓外 `/home/yyx/synapse-archive/docs-2026-10-28/design/mockups/`）。
 > 范围（B4）：**自动化 + 人工笔记 + 人工绘制脉络**的人工链路完善；**全部数据结构化、AI 易读**；美观 UI。AI 评估与下载引擎**后置**。
 
 ## §0 主题 token 三族终值

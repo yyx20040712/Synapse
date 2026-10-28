@@ -87,5 +87,5 @@
   scripts-audits/F-GOV-01/30-closure-nums.md）；A1 反引号模板串多行=已知逃逸边界（probe
   实证仓外 F-GOV-01/raw03；单引号换行由 tsc 拦）。
 - A2 check-tickets fieldOf 名锚定=「字段序不变」实际必需面仅 (id,file) 前两位。
-- A3 INV 瘦身短语级重组口径=数字/专名全溯源、连写为压缩重组（复算基准=
-  invariants-archive 原文块）。
+- A3 INV 瘦身短语级重组口径=数字/专名全溯源、连写为压缩重组（复算基准=仓外
+  docs-2026-10-28/invariants-archive 原文块——2026-10-28 F-DOCGOV-02 迁出）。

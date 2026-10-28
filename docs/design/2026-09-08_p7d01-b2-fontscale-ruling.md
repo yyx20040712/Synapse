@@ -1,7 +1,7 @@
 # P7D-01 批二 · 字号语义刻度用户裁决记录（2026-09-08 在场轮）
 
 > 裁决人=用户（在场轮 AskUserQuestion 四问全落,零异议通过推荐案）。
-> 评审载体=mockup 案册 `docs/design/mockups/p7d01-b2-fontscale.html`
+> 评审载体=mockup 案册 `/home/yyx/synapse-archive/docs-2026-10-28/design/mockups/p7d01-b2-fontscale.html`
 > （P1~P6 六面板+页首映射表,100% 实尺寸+2× 放大条;无头截图验证档
 > `scripts/audits/p7d01-out/b2-mockup-full.png`——桶②不入库）。
 > 上游=docs/design/2026-09-03_p7d01-token-candidates.md（乙字号方向+

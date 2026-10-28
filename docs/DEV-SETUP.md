@@ -121,6 +121,7 @@ npm run build && npm run test:e2e   # 预期全量 135+1 用例（INV-168，2026
 
 ## 6. 首会话开工
 
-按 `docs/prompts/` 下**编号最大**的 handoff 开工（设备迁移专用开工书=
-`2026-08-27_device-migration-handoff.md`）。宪法纪律（技能清点/分级阅读/
+按 `docs/prompts/` 下**编号最大**的 handoff 开工（历史交接书已迁仓外
+`/home/yyx/synapse-archive/docs-2026-10-28/prompts/`；设备迁移专用开工书=
+`2026-08-27_device-migration-handoff.md`，在该仓外目录）。宪法纪律（技能清点/分级阅读/
 三阶段流程）不变——见 AGENTS.md。

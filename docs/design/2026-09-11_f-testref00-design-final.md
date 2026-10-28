@@ -103,7 +103,7 @@ skipSiteCount/eachExpandedRows）。**基线首版生成时点=实现票内、�
   `tests/** ∪ scripts/check-test-surface* ∪ scripts/test-surface*.{json,mjs} ∪
   scripts/test-surface/** ∪ .github/workflows/** ∪ package.json ∪ package-lock.json
   ∪ docs/prompts/** ∪ docs/design/** ∪ tickets/registry.ts ∪ locks/manifest.json
-  ∪ AGENTS.md ∪ docs/methodology.md ∪ docs/invariants.md ∪ docs/audits/**`——
+  ∪ AGENTS.md ∪ docs/methodology.md ∪ docs/invariants.md ∪ docs/audits/**`（docs/audits/ 历史件已迁仓外 `/home/yyx/synapse-archive/docs-2026-10-28/audits/`）——
   **src/** 一律红。package.json 放行论证见 §0-W7。逐提交判定（merge 场景无歧义）。
 - 双尾注制（[test-refactor]+[locked-change]）循 Kimi §8；用例闸=指纹闸蕴含。
 

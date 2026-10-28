@@ -2,7 +2,7 @@
 
 > 裁决人：用户（14 项直裁，2026-09-17~18 会话）｜拟定：主控 GLM5.3。
 > 前史链：2026-09-11 架构复杂度审计
-> （`docs/reports/2026-09-11_architecture-complexity-audit.md`，M1~M5 五机制）
+> （`/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-09-11_architecture-complexity-audit.md`，M1~M5 五机制）
 > → 2026-09-11 GLM 终裁
 > （`docs/design/2026-09-11_glm-ruling-arch-complexity-and-test-campaign.md`，立案 9 票）
 > → **本件**（2026-09-17 四路只读调研 + 用户直裁 14 项，承接并扩展前史）。

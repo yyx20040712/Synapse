@@ -1,5 +1,5 @@
 {
-    "generatedAt": "2026-10-28T03:05:45.651Z",
+    "generatedAt": "2026-10-28T03:40:38.221Z",
     "files": [
         {
             "path": ".github/workflows/ci.yml",
@@ -7,7 +7,7 @@
         },
         {
             "path": "docs/defense-lifecycle.md",
-            "sha256": "b0bf326370ed95fe6630190b9c39d920ae32b190b6db2d7f28179f470fa7b026"
+            "sha256": "6d1f3b277531f4a82a1d6754a7e2f24dd7d5b8d67d1bf1df3ac429f05ebe9033"
         },
         {
             "path": "docs/invariants.md",
@@ -2059,7 +2059,7 @@
         },
         {
             "path": "tickets/archive/README.md",
-            "sha256": "87293906ab8b9b8ce20dc4e291856b66f781d3a6990e8c705df1cf148d2ac4a7"
+            "sha256": "72721cb0055f79a3d5f9cad78e06a6992164d3461a8addd5af1a2e5978520bb8"
         },
         {
             "path": "tsconfig.json",

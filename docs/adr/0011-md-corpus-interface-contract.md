@@ -6,7 +6,7 @@
 - 状态：已裁决——v1 契约冻结（P7-C 实现前修订，不构成破坏性变更），P7-C
   工单化按此验收；AI 链条扩展位预留
 - 关联：B3 裁决问3（DB 唯一真相源+md 投影）；ROADMAP P7-C/P8+ 愿景范畴；
-  AI 蓝图 docs/reports/2026-08-25_ai-sensor-blueprint.md（§4.1 裁决记录）
+  AI 蓝图 /home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-25_ai-sensor-blueprint.md（§4.1 裁决记录）
 
 ## 背景
 
@@ -93,7 +93,7 @@ schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
 
 ## 修订记录 v1.1（2026-08-25 第三轮：计划审查定稿——实现前修订，非破坏性）
 
-> 审查与裁决实录=docs/reports/2026-08-25_ai-plan-review.md（R4~R9）；工单化母本
+> 审查与裁决实录=/home/yyx/synapse-archive/docs-2026-10-28/reports/2026-08-25_ai-plan-review.md（R4~R9）；工单化母本
 > =ai-module-plan v1.1。以下条款并入上方 v1 契约正文口径。
 
 1. **[ai:*] 段装配入 v1**（D3 独立表既决）：ai_notes 表随 SR2-AI-01 落地，corpus
