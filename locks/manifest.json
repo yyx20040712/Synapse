@@ -11,7 +11,7 @@
         },
         {
             "path": "docs/invariants.md",
-            "sha256": "88dc4100f5de23cfeb9fbd493af7edccd424da31ad4f10a8094a62ea1f776a77"
+            "sha256": "af28c8a515777c35514c28e53554dbb43e5700551fdc22690f268b11499da61b"
         },
         {
             "path": "electron.vite.config.ts",
