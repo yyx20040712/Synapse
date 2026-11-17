@@ -2,9 +2,9 @@
 
 本地学术文献管理 + PDF 阅读标注桌面应用（「智慧水务」课程科研工具）。
 
-- 技术栈：Electron + TypeScript（单语言）+ React 18 + better-sqlite3(FTS5) + pdfjs-dist v4
-- 架构与流程：见 `docs/architecture.md`（含 lineage/workspaces/ai-sensor 域结构速览）；AI 协作规则：见 `AGENTS.md`（先读它）
-- 测试与质量：`npm run verify` 一键全检（八段链与 CI 同口径，关卡清单见 architecture §4）
+- 技术栈：Electron + TypeScript（单语言）+ React 18 + better-sqlite3（FTS5）+ pdfjs-dist v4
+- 架构与流程：见 `docs/architecture.md`；AI 协作规则：见 `AGENTS.md`（先读它）
+- 测试与质量：`npm run verify` 一键全检（与 CI 同口径，关卡清单见 architecture §4）
 
 ## 常用命令
 
@@ -14,7 +14,7 @@
 | `npm run dev` | 启动开发（HMR） |
 | `npm run test` / `npm run test:e2e` | 单测 / 端到端（e2e 需先 build） |
 | `npm run quality:check` / `tickets:check` / `locks:check` | 三道防作弊关卡 |
-| `npm run locks:apply` / `locks:unlock` | 锁定/解锁受保护文件（变更需 [locked-change]） |
+| `npm run locks:apply` / `locks:unlock` | 锁定/解锁受保护文件（变更需 [locked-change] 提交尾注） |
 | `npm run dist` | 打包 NSIS 安装包（npmmirror 镜像，产物 dist/） |
 | `npm run smoke:installer` | 安装包冒烟：静默装→沙箱启动→存活断言→静默卸载（需先 dist） |
 
@@ -29,7 +29,7 @@ src/renderer    React SPA（features 按域组织：library/reader/notes/tags/se
 tools/          ai-sensor 伴随进程 CLI（zcode 技能域——应用永不 spawn；自述见 tools/ai-sensor/README.md）
 tickets/        工单注册表（开发控制面）
 tests/          锁定的测试系统（e2e + 契约 + 安全 + 单测）
-docs/           architecture / security / DEVELOPMENT / ROADMAP（已退役档案）/ adr
+docs/           活文档群（architecture/security/DEVELOPMENT/DEV-SETUP/ROADMAP 等）+ adr + design
 ```
 
 测试数、覆盖率等一切数字以 CI 输出为准，本文档不写具体数字。

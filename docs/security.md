@@ -1,6 +1,6 @@
 # 安全设计（security）
 
-对照 Electron 官方 Security Checklist 落地；机检项在 CI，人检项在审查清单。
+对照 Electron 官方 Security Checklist 落地；机检项在 CI，人检项在文末审查清单。
 
 ## 1. 进程隔离（机检：tests/security/web-preferences.test.ts）
 
@@ -16,35 +16,33 @@
 
 ## 3. IPC 与注入防护（机检：契约/单测）
 
-- 通道全显式注册；请求 zod `.strict()` 校验（未知字段拒绝——历史教训：不许删类型保护）
-- 校验方向单向：invoke 面（renderer→main）=main 侧入侧校验单点；事件推送面（main→renderer 三事件）反向=preload 接收侧 safeParse 兜底（`events.schemas.ts` 单口，schema 本体单源 schemas.ts，与 PreloadEvents 类型邻近防漂移）——main 受信生产者不重复校验（防线不增殖）；畸形帧 console.warn+丢弃该帧、订阅存活（SR-IPC-10/INV-82，D-GOV-4：三事件均通知/进度类，丢帧=陈旧一拍自愈）
+- 通道全显式注册；请求 zod `.strict()` 校验（未知字段拒绝）；类型保护不得删除
+- 校验方向单向：invoke 面（renderer→main）在 main 侧入侧校验（register.ts 单点）；事件推送面（main→renderer 三事件）反向在 preload 接收侧 safeParse 兜底（`events.schemas.ts` 单口，schema 本体单源 schemas.ts，与 PreloadEvents 类型邻近防漂移）；main 受信生产者不重复校验（防线不增殖）；畸形帧 console.warn 并丢弃该帧、订阅存活（INV-82；三事件均通知/进度类，丢帧=陈旧一拍自愈）
 - SQL 全预编译参数化；FTS 输入经 `escapeFtsQuery`（注入向量集在 tests/unit/db/fts.test.ts）
 - renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）
-- 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`）
-- 写盘路径仅两来源：main 侧系统对话框（dialogs.ts）+ 拖拽 File 经 preload webUtils 解析（`apiDrag` 单口，P7E-02/INV-07 修订；路径串不出 preload 堆，fromPaths 通道对 renderer 隐藏）
+- 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`；受信边界清单见 INV-07）
+- 写盘路径仅两来源：main 侧系统对话框（dialogs.ts）+ 拖拽 File 经 preload webUtils 解析（`apiDrag` 单口；路径串不出 preload 堆，fromPaths 通道对 renderer 隐藏）
 - 出网重定向一律不跟随（`redirect: 'error'`）：白名单外 3xx 目标零请求，防 SSRF/开放重定向
 
 ## 4. 外链与网络
 
 - `shell.openExternal` 只经 `openExternalGuarded`（https + 拒绝 localhost/私网/IP 字面量/带凭据 URL）
-- 出网仅 3 个白名单 host（CrossRef/OpenAlex/arXiv），http-client 强制校验；超时 + 退避 + mailto 礼貌 UA
+- 出网仅 3 个白名单 host（CrossRef/OpenAlex/arXiv，清单单源=src/shared/constants.ts），http-client 强制校验；超时 + 退避 + 礼貌 UA
 - 零遥测零分析；核心功能离线可用；Settings 页披露网络行为与诊断
 
 ## 5. 供应链
 
 - lockfile 入库；`npm ci` 冻结；运行时依赖（better-sqlite3/pdfjs-dist/react/react-dom/zod/zustand 共 6 个，预算 ≤15）精确固定版本，无 `^` 范围；Electron 在 devDependencies 精确固定版本（随构建进产物）
-- 依赖变更需 `[dep-change]` 尾注（CI）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
+- 依赖变更需 `[dep-change]` 提交尾注（CI 检查）；新依赖需 ADR；CI `npm audit --omit=dev --audit-level=high`
 - Actions 钉主版本
-- Electron 44.4.3（当期支持线，2026-09-19 F-ELE-03 升级，breaking 面核对与
-  prebuild 矩阵核查见 ADR-0006 执行记录）；Phase 6 打包前复核仍在支持线
-  （44 于 2027-03-02 出线）
+- Electron 44.4.3（当期支持线，升级门流程见 ADR-0006；44 于 2027-03-02 出支持线，打包发布前复核）
 
 ## 6. 数据
 
 - PDF 视为不可信输入：仅在沙箱 renderer 的 pdf.js 中解析，main 只做字节搬运（魔数校验）
 - 本地数据（SQLite + 受管文件）在 userData；无云上传；sha256 去重兼作完整性指纹
 
-## 审查清单（人检，PR 时过一遍）
+## 审查清单（人检，提交前过一遍）
 
 - [ ] 无新增出网 host / 无绕过 http-client 的 fetch
 - [ ] 无 renderer 持有路径/Node API
