@@ -1,263 +1,46 @@
 # 架构（architecture）
 
-> 本文为活文档（持续更新）；模块职责的正本在**每个源文件的头部规约注释**里（工单号索引）。
-> 岗位与流程术语（主控/隔离一审/终审/红证/锚定）的定义见 AGENTS.md 与 docs/invariants.md「术语说明」。
+本文为活文档，描述当前工程现状；按裁剪版 arc42 六组组织。
+模块职责的单源在每个源文件的头部规约注释里；跨模块行为不变量的单源在
+`docs/invariants.md`；岗位与流程术语（主控/隔离一审/终审/红证/锚定）定义见
+invariants.md「术语说明」。
 
-## 1. 进程与分层
+## 1. 目标与约束
 
-```
-Renderer (React SPA, sandbox, 无 Node)
-   │ 只经 window.api（preload contextBridge 白名单）
-Main (Node)
-   ipc/ 薄分发 ──→ services/ 业务用例 ──→ repos/ 数据访问 ──→ db/ (SQLite)
-   workspace-layout（数据目录解析）+ data-layer.container（可重建 facade——switch 热换，ADR-0018）
-   file-store 受管文件   app-file:// 协议   http-client（host 白名单）
-shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结）
-```
+- **目标**：单人使用的本地学术文献管理 + PDF 阅读标注桌面应用；核心功能离线可用；
+  AI 能力经伴随进程由用户手动触发（应用自身零 LLM 出网）。
+- **技术栈**：Electron 44 + TypeScript 单语言全栈 + React 18 + better-sqlite3（FTS5）
+  + pdfjs-dist v4；零 UI 框架以外的运行时重依赖（运行时依赖 6 个，预算 ≤15）。
+- **硬约束**（强制面见宪法与 CI）：
+  - 安全禁令：sandbox/contextIsolation 双开、renderer 禁 Node/路径、SQL 全预编译、
+    CSP 无 unsafe-eval、出网白名单（详见 docs/security.md）。
+  - 分层单向：`ipc → services → repos → db`；`renderer → window.api → ipc`。
+  - 契约冻结：跨进程类型单源 `src/shared/`；测试/契约/迁移/配置受锁（sha256）。
+  - 明确不做清单：见 AGENTS.md「明确不做」。
 
-依赖规则（ESLint + check-quality 双重强制）：
-- `renderer → shared`；`renderer ↛ main/preload/electron/node`（glob 含裸目录形式）
-- `main → shared`；main 内 `ipc → services → repos → db` 禁跨层：ipc 禁 import repos/db；
-  services 禁 import connection/migrations 与 main/ipc；**db 禁反向 import services/ipc
-  及一切上层**。方向性规则由 `check-quality.mjs` 按解析后绝对路径强制（ESLint glob
-  分不清 `shared/ipc` 契约与 `main/ipc` 层）
-- renderer 内 features 域之间禁止互相 import（共享下沉 `renderer/shared`），由 `check-quality.mjs` 扫描
-
-## 2. 数据流示例
-
-导入全链时序图见 §7.3（进程/路径/事务/事件边界一步到位）；阅读与标注锚定链见 §7.4。
-
-## 3. 契约机制（防漂移的核心）
-
-- `src/shared/ipc/api-surface.ts` 是 IPC 的**单一接线表**：通道名 + Req/Res zod schema。
-- preload 按表生成桥（**CJS `.cjs` 输出**——沙箱渲染器不支持 ESM preload；zod 打进
-  bundle）；`ipc/register.ts` 按表注册（zod 校验→service→Result 折叠，横切只写一次）；
-  service 接口类型 `ApiHandlers` 由表推导——漏/多通道 = 编译错误。事件桥形状
-  `PreloadEvents` 与全局声明 `env.d.ts` 同源，禁止两处手写。
-- 所有响应 = `{ok:true,data} | {ok:false,error:{code,message}}`；`AppErrorCode` 封闭枚举。
-- CSP 单真相源：策略只在 `src/main/security/csp.ts`，构建期 cspMetaPlugin 注入
-  index.html meta（生产 file:// 下 meta 是实际防线），源码 html 禁止手写。
-- 契约文件受锁（sha256 对账），改动需 [locked-change]。
-- **通道名→HTTP 路由天然映射（L2 锁线）**：api-surface 通道名「域/方法」天然映射
-  `/api/域/方法`——Word/WPS 插件与服务端可共用同一命名（接线表即路由表，
-  插件侧零新命名面）。
-
-## 4. 骨架期机制（工单填充模式）
-
-- 每个文件头部五层规约（行为/接口/架构/生命周期/文化）= 弱模型的自包含任务书。
-- 未完成实现 = 占位桩（调用即抛，工单 done 即删——机制名与删除义务见 DEVELOPMENT §2）或 UI 占位（`data-ticket` 徽标）。
-- `tickets/registry.ts` 控制测试激活：`guardedDescribe(ticketId)` 在工单 open 时 skip，
-  更新 done 即激活——main 恒绿、防"不实现就更新状态"；**未知工单号当场抛错**（防整组
-  测试静默消失），tests 内只允许引用真实存在的工单号，且 guardedDescribe 的工单号
-  必须与测试文件 import 的被测文件绑定（check-tickets 第 5 关，防挂错块永久 skip）。
-- 防线清单起步于三道 CI 关卡，现已成长为一组（接线单源=package.json verify 链+ci.yml）：
-  - 本地 `npm run verify` 八段链：quality → test-surface（测试面指纹门，INV-63）
-    → tickets → locks → lint → typecheck → test → build。
-  - quality 多段：占位/乱码/跨域/行数分级 repo≤300·组件≤250/分层方向解析
-    +B-1 同值双常量棘轮+B-5 AST tsx inline 色+6c C-4c CSS var() 语义锚
-    +第 8 段模型代号负锚+第 9 段 e2e 截图负锚（INV-64）+第 12 段文档禁用词
-    负锚（F-DOCGOV-02——扫描面单源=scripts/check-doc-terms.mjs）。
-  - tickets：工单号一致性/绑定对账（含 tests 目录扫描）/B4 防线（规则 6 以
-    ROADMAP 退役页 `### P7-X：` 锚段集为 decidedScopes——退役页机器输入）。
-  - locks：受锁文件 sha256 对账（行尾由 `.gitattributes` 强制 LF；scripts 下
-    全部 .mjs/.ps1 自动入锁面）。
-  - 独立本地快跑入口：`npm run lint:model-names`（src 禁外部模型代号——
-    src 负锚已内联 quality 第 8 段随 verify/CI 跑）、`npm run doc-terms:check`
-    （文档禁用词——已内联 quality 第 12 段随 verify/CI 跑）；CI 另有尾注检查
-    （[dep-change]/[locked-change]）、npm audit、[test-refactor] 范围闸。
-
-## 5. 关键设计决策（ADR 索引——决策正文=`docs/adr/`：背景/候选/裁决/后果+随件修订记录）
-
-| 编号 | 主题 |
-| --- | --- |
-| 0001 | Electron 单语言（纯 TypeScript 全栈） |
-| 0002 | pdf.js 库 API 路线（非 embed/自绘替换——决策门 13 断言实证） |
-| 0003 | FTS5 触发器同步外部内容表（trigram） |
-| 0004 | 工单注册表与受锁机制（registry+locks） |
-| 0005 | 版本钉选向训练数据倾斜（弱模型适配——版本以 package.json 为单源） |
-| 0006 | Electron 升级门（已执行 42.9.3——prebuild 矩阵核查先行） |
-| 0007 | 已登记取舍与地雷（登记性地雷在册） |
-| 0008 | notes.store 五模块级结构维持分布式状态机（不坍缩） |
-| 0009 | 零依赖性质测试（固定种子手写攻击序列） |
-| 0010 | **永久空号**——预留「INV-11/07 lint 化评估」，后经 F-LINT-01/CSS-03/F-LINT-04 实装，编号不复用 |
-| 0011 | md 语料接口契约（导出五件套——幂等 sha 口径） |
-| 0012 | 引文图数据模型（自动引文网络图维持不做——与人工策展 lineage 不复用表） |
-| 0013 | 备份/恢复姿态（不做自动机制+手动指引） |
-| 0014 | lineage 图数据模型（人工策展时间树——DDL 演进注记见该件；v1.6=F-CONTRACTA-01 三死列应用层退役：标签唯一源/core_idea 全退役/title 停用） |
-| 0015 | AI 笔记回灌与伴随进程文件协议（含 observe 通道追认） |
-| 0016 | 闲时会话预裁决表 |
-| 0017 | 三阶段流程默认（原称三屋模式；IPC 通道名冻结） |
-| 0018 | 课题隔离=库级分目录（workspaces/<id>/ 一库一文件仓） |
-| 0019 | 划选反馈原生路线（自绘并集层，三轮修订） |
-| 0020 | 应用改名与 userData 目录迁移（四分支幂等迁移） |
-| 0021 | 文件夹单归属×脉络图绑定（F-FOLDER-01——图=文件夹投影/paper_collections 退役） |
-| 0022 | 草稿导入链退役（F-BAKRET-01——备份归未来服务端多实体导出/git 历史即资产） |
-| 0023 | 走线候选位分配=后处理槽位分配（F-ROUTE-02——候选 B 路线裁决：routeOne 六态零侵入+slotAssign 单 pass+applyBandLanes 退役迁残余子 pass；INV-112~117；决策正文单源=docs/design/2026-10-06_f-route02-design.md v1.5，不另立 adr 正件防双源） |
-| 0024 | 脉络砖砌网格布局+五态走线正统化（F-SLOTGRID-01——用户 2026-10-07 方向级四裁决+2026-10-08 呈裁落定 v1.4：砖砌交错/横纵等距 72 通道/全自动 gutter 选路 corridor 退役/F-ROUTEDET-01 并入；布局=capacity.ts 容量公式纯函数族+行容器渲染瀑布退役，走线=direct→h-slip→detour→band→overlap 五态链+坐标集封闭，拖拽=INV-111 算术落点；INV-SLOTGRID-01/02+INV-110/111/117/119 修订族；决策正文单源=docs/design/2026-10-07_f-slotgrid01-design.md v1.4，不另立 adr 正件防双源） |
-| 0025 | DB 契约专项批 DB-1 数据契约冻结（F-DBCAMP-01——016-019 四迁移+INV-121~126：folder_id NOT NULL 真重建〔fkOff 模式〕/is_starred 星标/app_meta 身份载体〔owner uuid+设备 token〕/tags 多域化〔UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6〕；**folder↔graph 契约=结构性投影不建表**〔用户 2026-10-08 裁决①「一个文件夹不允许多张脉络图，必须一一对应」——图身份≡lineage_nodes.folder_id，无独立 graphs 表；v165 探针差异④「folder↔graph 落法」就此勘正关闭〕；〔甲乙丙〕三裁决=存量归主图/移夹标签留原域/筛选上限不动；决策正文单源=docs/design/2026-10-08_f-dbcamp01-design.md v1.2+§11 终裁记录+§12 用户呈裁落定，不另立 adr 正件防双源） |
-| 0026 | 关闭入口无条件握手化（F-VISFB-64——丙+α+A/B：close 一律握手+同步 closing gate+缓存仅分级+quit-flush-abort/orphan 取消安全网+app 退出统一路由；态机拆件 quit-close-policy.ts+QUIT_FLUSH_TIMEOUT_MS/QUIT_CLEAN_GRACE_MS 上移 shared constants；决策正文单源=docs/adr/0026-quit-close-unconditional-handshake.md，设计细节=docs/design/2026-10-18_f-visfb64-design.md） |
-| 0027 | 恢复副本统一管理（F-VISFB-65——WPS 式丢稿防御前两道防线：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单一存储位+shared RECOVERY_REGISTRY 类型注册表（命名/schema/生命周期单源，为 reader 草稿族预留）+每 (工作区,类型) 单槽覆写；消费=takeOver 超越（token+epoch 双校验无空窗）；删除=release token 作用域+epoch 删除屏障；与 DB 落库解耦（重放幂等兜底）；决策正文单源=docs/adr/0027-recovery-copy-unified-management.md，设计链终态=仓外 20261019-fvisfb65-impl/65-design-final.md） |
-| 0029 | 恢复副本常态写 never-settle 治理（F-RECOV-01——ADR-0027 域行为演进：慢盘语义前提=常态写永不因超时取消/判败（仅解除观测）；renderer 双阈值看门狗 T_slow=10s 降级呈现/T_stuck=60s 逻辑弃置+ghost 迟到对账（token 双账本）；main serialize 链 per-key save 深上界 D_max=8 回 queue-overflow（release/read 豁免、peek 不走链）；degraded 期探针保活自愈（经 pump 单飞，每代探针 ghost ≤1）；三档 chip（缓慢/未确认/不可用+重启缀）；设计链=v2+主控终裁 v3〔仓外 20261020-nightb/recoV01〕；不变量=INV-171..174） |
-| 0030 | 迁移链基线压缩（F-SNAPCLEAN-01——B″ 续号方案：删 001–025 全 25 件、并单件 026_baseline.sql=旧全链执行完毕态全量终态〔DDL 全对象+新库生效种子〕，新库 user_version 直达 26 版本连续不重置；遗留 v2x 旧库在新代码下启动=响亮迁移失败非静默；旧链升级舞步唯一消费者=本地 v22 测试库，随批 tar 备份后删除——开发期未分发=压缩唯一安全窗；等价证明=双库 sqlite_master+种子 diff 空〔仓外批次档案〕+migrate.test 全对象集永驻守卫；「迁移不可修改」第三笔例外随批入 migrate.ts 头注；授权链=2026-10-19 用户裁决「开发阶段一切以最新版本为准，不考虑多余的兼容」+工单正文受锁面 [tests+migrations]；回退=git revert 单批恢复链与测试+tar 还原数据；决策正文单源=仓外 scripts-audits/20261020-snapclean01/design-v2-final.md，不另立 adr 正件防双源） |
-| 0031 | zod 3.25.76→4.6.7 安全升级（F-DEP-02——GHSA-mrhx-c7xc-m3w5 高危通报〔超大受限集合校验内存耗尽〕用户裁决 A 升级线；唯一行为改写=crossref 两处 .default({})→.prefault({})〔zod4 default 改输出侧语义〕+回归锚两例；z.number() 拒非有限数+.int() 改 safe-int 语义收紧接受在档〔受锁注释随批勘正〕；.strict() 193 处弃用形态原地保留；决策正文单源=docs/adr/0031-zod4-security-upgrade.md） |
-
-跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）；域结构速览见 §8。
-
-## 6. 数据模型
-
-11 张表 + 3 个 FTS5（external content+触发器——[返工码 11] paper_collections
-DROP 后 10 张，[F-DBCAMP-01] 018 app_meta 落地后 11 张）：papers/collections/tags/
-paper_tags/annotations/notes（001 基座——**paper_collections 已随 [F-FOLDER-01]
-012 迁移退役 DROP**：collections 语义升级=文献单归属文件夹，M2M 挂接面退役）
-+ai_notes（003）+lineage_nodes/lineage_edges（004）+lineage_graph_meta（010
-——图级 KV 配置：lineTypes 线型组 JSON 串，updated_at 应用层写 ISO）+app_meta
-（018——库级 KV：owner uuid+设备 token 身份载体，ensureIdentity 单路径=
-bootstrap assemble 闭包；INV-125）；演进列
-005~012（cited_by 缓存/lineage kind 列——UNIQUE(from,to)=004 既有/lineage
-tags/reading_seconds 加→删反转 F-TIME-02/lineage month+slot+sub——month CHECK
-1..12、slot 窗口函数存量回填=T3-P5 脉络数据层 v2/tags.color TEXT 可空——011=
-F-TAGS-01 标签颜色身份/papers.folder_id+impact_factor+lineage_nodes.folder_id
-+idx_lineage_paper 部分唯一索引+回填+paper_collections DROP——012=F-FOLDER-01
-文件夹×图绑定，INV-88~93+ADR-0021）。[F-DBCAMP-01]（2026-10-08 DB-1 契约
-冻结批 U1-U4）演进列 016~019：016=papers.folder_id **NOT NULL**（v122 裁决②
-未归档域取消——真 CREATE TABLE 级重建+fkOff 迁移模式首例〔INV-123〕+投影
-再对齐保险丝〔INV-121 folder↔graph 一一对应=结构性投影**不建 graphs 表**——
-图身份≡lineage_nodes.folder_id〕）；017=papers.is_starred 星标（partial index
-单列+值域 CHECK〔INV-124〕——F-STAR-01 数据面）；018=app_meta（上文）；019=
-tags.folder_id 多域化（**UNIQUE(folder_id,name) 替换全局 UNIQUE(name)**+存量
-归主图〔甲裁决〕+挂接域守卫触发器 paper_tags_domain_guard+域内 20 满禁建/
-每篇 6 硬禁服务层限额〔INV-126 表级挂接域一致三机制〕——F-TAGS-02 数据面；
-〔乙裁决〕移夹标签留原域=moveFolder 摘挂接步）。papers 现态 21 列。标注定位器=W3C Web Annotation 思路
-（quote/prefix/suffix+startOffset/endOffset+rects/sortKey）。迁移只追加（受锁；第三笔例外〔前三笔=012 本体修复 F-MIGR-01/004 头注勘误 F-BAKRET-01/本批基线压缩 F-SNAPCLEAN-01——migrate.ts 头注在档，ADR-0030〕——001–025 并单件 026_baseline.sql，本节历史迁移号引文均指压缩前沿革）。
-契约面可选增量（T3-P3，2026-09-27）：paperSummarySchema +`citedByCount?`
-（ENR-01 cited_by_count 缓存下探列表行——密度列表引用列，null 整键省略）。
-[F-FOLDER-01]（2026-09-30）契约批改：paperSummary +`folderId`（可空）+
-`impactFactor`（可空）+`pubNo?`（INV-92 库级派生编号——catalogNo 退役零残留，
-单一真相源=papers.queries PUBNO_ORDER 窗口）；paperDetail.lineage 收缩=
-{year,month,edgeCount}；collections 明细键退役（归属=folderId 单值）；
-libraryQuery +folderScope 判别联合（all/unfiled/folder——W5，collectionId 过滤
-随 M2M 退役删）；metadata.patch +month/impactFactor；folders 域四通道+
-papers/move-folder（56→61 通道；[F-BAKRET-01] 2026-09-30 61→60：lineage/import
-草稿导入通道随导入链退役删除——ADR-0022）+folders.changed/lineage.changed 双事件+
-lineage.graph 入参 folderId/响应 pubNos（键=paperId）；set-quit-dirty 载荷
-+lineagePending（INV-91 S1 队列闸）。
-
-[F-VISFB-67]（2026-10-19）脉络时间线布局地板化（ADR-0028）：`.month-frame`
-border-box 地板 `--tl-frame-min:577px`（CSS 单源变量，默认窗 1280 月框形）+
-`.tl-content min-width calc(+140)` 双消费式（边层铺满）+`:not(:has(.month-frame))`
-空图守卫+`.tl-card flex-shrink:0`+`.timeline overflow-x:auto`——亚默认窗
-（clientWidth<717）恒参考形 [2]/[3,2]/[3,2,3]，窄视口低容量分行/卡宽压缩退役
-（用户裁决 2026-10-18）；capacity 输入统一归一化内容盒宽
-（`readFrameContentWidth` 五值单源——布局 use-capacity-layout+拖拽
-card-drag-session 两域共用；存量 border-box/内容坐标 27.2px 契约错位与容量
-入段带过估根治〔走线域 detour 常量派生 1.2px 窗残余=F-DETOURW-01〕）；
-CI 1024 与本地 1280 own 几何同构（结构性收益）。不变量=INV-169；zoom>100%
-由溢出滚动承担（主控裁定可复议）；A2 全局冻结/640 镶边/横向 autoscroll=已提交用户审批
-未实施。测试面=V67-01..07+阶跃边界+终审双变异红证。
-
-[F-RECOV-01]（2026-10-20）恢复副本常态 save never-settle 治理（ADR-0029）：ADR-0027
-域行为演进——语义前提=慢盘不误判丢稿（常态写永不因超时取消/判败，超时仅解除观测，
-红线由 watchdog 承担（「一切取消语义不存在于本件」））；renderer 侧双阈值看门狗
-（T_slow=10s→chip slow「写入缓慢」；T_stuck=60s 绝对 deadline→逻辑弃置=inFlight
-解除+op 物理留驻 ghost+迟到对账〔token 双账本：物理账本无条件记账/采纳账本仅 gen 符/
-chip 清除仅 gen 符∧无新在途〕）；gen++ 同步弃置在途+bounded drain（race 1500ms——
-INV-161 锁测语义保真）；main 侧 serialize 链 per-key save 深上界 D_max=8（先查后入链
-回 RecoverySaveRes 'queue-overflow'——shared schemas zod 联合单源；release/read 豁免、
-peek 不走链=决策面永不堵）；degraded 期探针保活（经 pump 单飞；每代探针 ghost ≤1、
-到点核查未安息=计失败观测不实发——W8 终态 unavailable+「重启应用可恢复」缀可达）；
-拆件=recoveryWatchdog.ts（双阈值+探针调度）/recoveryBackoff.ts（纯参数表）/
-recoveryEntry.ts（ws-entry 五符号迁入，端口注入）；RecoveryBar 三档 chip+pending 并列
-形态。不变量=INV-171..174（INV-166/167 扩展注）。测试面=S1-S17 锚族+D_max 矩阵+
-变异红证（executor 13 针+终审独立复证 3 针）；设计链=仓外 20261020-nightb/recoV01
-（v1→r1 返工→v2→r2 返工→主控终裁 v3）。遗留呈报=D 面项裁决移出（startupScan hang=应用
-启动治理域另立）/文案族与参数初值待用户复议。
-
-[F-VISFB-65]（2026-10-19）恢复副本统一管理批改（ADR-0027）：IPC 通道 +4（recovery
-域：peek/save/read/release——invoke 应答制，请求显式携带 workspaceId 受
-guardWorkspace 校验）；跨进程类型单源迁移=writeActionSchema 自 renderer
-lineage-write-queue.ts 迁 `src/shared/recovery/schemas.ts`（WriteAction 联合+载荷
-+外覆层+注册表+四通道 Req/Res 同文件——renderer re-export 兼容）；错误契约演化=
-AppError 增可选 `reason?: string`（首值 'GHOST_FOLDER' 仅 floating-notes.service
-ghost-folder 拒点发射——DomainError/toAppError/ApiClientError 全链透传，Result
-信封结构化传递）；实体面=新域 src/main/services/recovery/（recovery.files.ts
-原子文件层+recovery.service.ts 编排——per-(ws,type) 串行+epoch）+
-src/renderer/features/lineage/recoveryScheduler.ts（300ms trailing 单飞行合流+
-generation 同步先行）+features/recovery/RecoveryBar.tsx（应用级确认条）；
-存储位=`<userData>/recovery/<workspaceId>/<fileName>`（工作区隔离；槽文件 0600
-——POSIX 面承诺；持久性=进程崩溃级）；不变量族 INV-156..167。
-
-[F-VISFB-64]（2026-10-18）关闭入口无条件握手批改（ADR-0026）：事件通道 6→7
-（+system/quit-flush-abort/event——C→I 解冻帧，载荷 {requestId}=epoch 水线，
-quitFlushAbortEventSchema 四面同步）；常量上移 src/shared/constants.ts
-（QUIT_FLUSH_TIMEOUT_MS 自 main-window.ts 迁出+QUIT_CLEAN_GRACE_MS 新增——
-main policy 分级与 renderer bridge 有界复位两侧单源）；实体面=新件
-src/main/windows/quit-close-policy.ts（I/WC/WD/C/D 状态机，纯 TS 零 Electron
-import）+src/renderer/app/quit-closing-gate.ts（closing 冻结门模块级单例）+
-quit-flush-bridge.ts 重构（busy/orphan epoch+abort 订阅+5000ms 有界复位）；
-main-window.ts 退出段退役删除（clean 直放面消亡——458→410 行，INV-22 尾句
-改写+写源治理条款）。
-
-[F-LGRAPH-01②]（2026-10-02）编辑器批（U1/U8）：lineageEdges 视觉线型内联
-（+dashed/color——迁移 014；kind 四值 tree/inferred/ref/manual 退役→repo
-写边界恒 'manual'，sub 引用制+isSurveyTitle/ref 守卫/多父守卫随体系删除）；
-lineageEdgeUpsert 载荷 kind/sub→dashed/color；upsertLineTypes 载荷→
-lineTypeNames（恰 6 行色行名——图级 KV 新键 'lineTypeNames'）；lineage.json
-导出 schema_version 3（edges 扩 via/dashed/color+line_types 四组→色行名 6
-行——A9' golden 重锁）；lineage.graph 响应 lineTypes→lineTypeNames。
-
-[F-ALIGN-01]（2026-10-04）对齐批实体面：lineage_nodes 语义收敛——主题节点
-（paper_id NULL 纯节点）与手动建点路径应用层全域退役，节点唯一来源=入库
-（挂接导入落夹建节点单跳）/移动（moveFolder 自动建与随迁）两路（INV-NEW-1
-——ADR-0014 v1.5；回潮防御=check-quality 第 10 段负锚词表+defense-lifecycle
-㉔）；lineage/upsert-node 通道拆分 patch-node（id 必填纯编辑 patch——通道
-换名零增减，现数由 api-surface-closure 通道 pin 提供）；三导入通道 Req 扩
-targetFolderId 必填+paperMoveReq.toFolderId 收紧 min(1)（未归档域退役——
-folderScope 判别联合 all/unfiled/folder 收敛 all/folder，INV-NEW-2 应用层
-闸；PaperSummary.folderId 保持可空=历史行读兼容窗口期，DDL NOT NULL=登记为
-遗留项归 D 批（defense-lifecycle ㉓））；folders delete=域删级联（事务序=先逐文献
-remove〔DDL 级联链〕后 folders.remove——INV-NEW-3，主图禁删恒设）。
-
-[F-CONTRACTA-01]（2026-10-04）数据契约批实体面：**三死列应用层退役+DB 死置**
-（清列捆绑 D 批——defense-lifecycle ㉓ 扩行）——①标签唯一源=文献库域
-（tags+paper_tags）：lineage_nodes.tags 私有标签五层退役（A1b——schema/repo
-写链/patch-node 白名单/组件三件套/导出+GOLDEN 重冻结）；脉络卡标签=graph
-读面伴生 map tagNamesByPaper 查表（A1a 换源——tagNamesByIds 批量名查单
-查询 IN join）；②lineage_nodes.core_idea 全退役（A3——编辑对话框+宿主
-整件/store 写链/导出字段/创建占位/测试大扫；「核心想法」语义由全文笔记
-notes.contentMd 承接）；③notes.title 停用（A2——schema/repo 读写链/FTS
-LIKE/导出行；历史残留清零+NOT NULL DEFAULT '' 死置）；笔记三域分域=
-notes 1:1 全文/annotations kind='note' 片段/ai_notes 直读（INV-101~104
-登记）。导出 schema_version 不动（单向导出无消费方——A1b §5.3 同口径）。三死列清列跟踪=defense-lifecycle
-㉓④⑤⑥（终态判据+执行序+清列连带在该行）。前向债务（D 批工单正文承接）：
-6 件单测 SQL 直写夹具含死列（清列时必红——预期内）+--fs-tl-idea token
-名实不符（消费面 .c-tag/.c-venue 存活）+seed 字面量宽松类型缝隙
-（satisfies 收尾候选）。
-
-## 7. 架构图纸（2026-08-21 修复轮起，2026-08-22 Phase 5 收官全图转 ✅）
-
-### 7.1 系统全景（三进程 + 外部边界）
+## 2. 系统边界与方案策略
 
 ```mermaid
 flowchart TB
   subgraph R["Renderer 进程（沙箱 · 无 Node · CSP 封边）"]
     direction TB
-    UI["React SPA ✅ Phase 1~5 全量实现<br/>features: library ✅ · reader ✅（含标注链） · notes ✅ · tags ✅ · settings ✅ · lineage ✅ · workspaces ✅"]
-    WA["window.api / apiEvents ✅<br/>（contextBridge 白名单桥，逐通道生成）"]
+    UI["React SPA<br/>features: library · reader · notes · tags · settings<br/>lineage 发展脉络 · workspaces 课题 · ai · recovery"]
+    WA["window.api / apiEvents<br/>（contextBridge 白名单桥，逐通道生成）"]
     UI --> WA
   end
 
   subgraph M["Main 进程（Node 24 · 单实例锁）"]
     direction TB
-    REG["ipc/register.ts ✅<br/>zod strict 校验 → Result 信封"]
-    SVC["services/ ✅ SVC-01~10 全量<br/>业务用例 · 事务编排"]
-    REPO["repos/ ✅ SR-DB-01~05<br/>db.prepare 参数绑定"]
-    DB[("SQLite ✅ connection/migrate/fts<br/>WAL + FK + FTS5 触发器同步")]
-    PROTO["app-file:// 协议 ✅<br/>paperId → file_ref → 前缀校验"]
-    FSTORE["file-store ✅<br/>sha256 去重 · 受管目录"]
-    HTTP["http-client ✅<br/>白名单 · redirect:error · 20MB 上限"]
+    REG["ipc/register.ts<br/>zod strict 校验 → Result 信封"]
+    SVC["services/<br/>业务用例 · 事务编排"]
+    REPO["repos/<br/>db.prepare 参数绑定"]
+    DB[("SQLite<br/>WAL + FK + FTS5 触发器同步")]
+    PROTO["app-file:// 协议<br/>paperId → file_ref → 前缀校验"]
+    FSTORE["file-store<br/>sha256 去重 · 受管目录 · .trash 隔离"]
+    HTTP["http-client<br/>白名单 · redirect:error · 20MB 上限"]
   end
 
-  subgraph E["外部（全部仅手动触发）"]
+  subgraph E["外部（网络全部仅手动触发）"]
     CR["CrossRef"]:::ext
     OA["OpenAlex"]:::ext
     AX["arXiv"]:::ext
@@ -270,123 +53,270 @@ flowchart TB
   REG --> SVC --> REPO --> DB
   SVC --> FSTORE
   SVC --> HTTP -.-> CR & OA & AX
-  SVC == "webContents.send(import/progress)" ==> WA
+  SVC == "webContents.send(事件推送)" ==> WA
   UI -- "app-file://paperId（无路径）" --> PROTO --> FSTORE
   M -.-> DLG & BRW
   SVC -.->|"userData/ai-sensor/ 文件协议（ADR-0015/INV-26）"| ZC
   classDef ext fill:#eee,stroke:#999,stroke-dasharray: 5 5
 ```
 
-### 7.2 主进程分层与依赖方向（违者 CI 红）
+关键方案策略（决策全文见 §5 ADR 索引）：
 
-```mermaid
-flowchart LR
-  subgraph SHARED["src/shared（受锁 · 契约冻结）"]
-    SURF["api-surface.ts 接线表<br/>通道 + Req/Res zod"]
-    MODELS["models/* + schemas.ts"]
-    ERR["app-error.ts Result/错误码"]
-  end
-  IPC["ipc/* 薄分发 ✅<br/>禁 import repos/db"] --> SVC2["services/* ✅<br/>禁 import connection/migrations"]
-  SVC2 --> REPO2["repos/* ✅<br/>禁 import 上层"]
-  REPO2 --> CONN["db/connection.ts ✅<br/>WAL·FK·busy_timeout"]
-  MIG["db/migrations/*.sql（受锁）✅"] --> CONN
-  FTS["db/fts.ts escapeFtsQuery ✅"] --> REPO2
-  SEC["security/ csp + shell-guard ✅"] --> BOOT["bootstrap.ts 装配根 ✅"]
-  WIN["windows/ main-window+window-state ✅<br/>sandbox·contextIsolation·禁导航<br/>窗口 bounds 记忆+屏幕夹取（SR-INFRA-10）"] --> BOOT
-  BOOT --> IPC
-  IPC -.->|类型| SURF
-  SVC2 -.->|类型 ApiHandlers| SURF
-  SURF --- MODELS & ERR
+- **结构化记录以 SQLite 为真源**：文献/笔记/标注/脉络等结构化业务数据驻
+  SQLite；PDF/派生图表/恢复副本/设置驻受管文件系统。md 语料与 lineage.json
+  为确定性投影导出（幂等、golden 锁定）；快照=带递增序号与随机 nonce 的
+  加密信封（canonical 序列化仅在固定输入下字节确定，非幂等重放）。
+- **课题隔离=库级分目录**（ADR-0018）：每课题一库一文件仓，切换=关旧库重建热换。
+- **丢稿防御两道**：退出/关闭无条件握手 flush-first（ADR-0026）+ 恢复副本
+  单槽覆写（ADR-0027/0029，慢盘不误判）。
+- **folder↔graph 一一对应=结构性投影**：图身份≡lineage_nodes.folder_id，
+  无独立 graphs 表（ADR-0025）。
+
+## 3. 模块结构与关键运行流程
+
+### 3.1 进程与分层
+
+```
+Renderer (React SPA, sandbox, 无 Node)
+   │ 只经 window.api（preload contextBridge 白名单）
+Main (Node)
+   ipc/ 薄分发 ──→ services/ 业务用例 ──→ repos/ 数据访问 ──→ db/ (SQLite)
+   workspace-layout（数据目录解析）+ data-layer.container（可重建 facade，switch 热换）
+   file-store 受管文件   app-file:// 协议   http-client（host 白名单）
+shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结）
 ```
 
-### 7.3 数据流 A：导入一篇 PDF（Phase 2 目标链路）
+依赖规则（ESLint + check-quality 双重强制）：
+
+- `renderer → shared`；`renderer ↛ main/preload/electron/node`（glob 含裸目录形式）
+- `main → shared`；main 内 `ipc → services → repos → db` 禁跨层：ipc 禁 import repos/db；
+  services 禁 import connection/migrations 与 main/ipc；**db 禁反向 import services/ipc
+  及一切上层**。方向性规则由 check-quality 按解析后绝对路径强制（ESLint glob
+  分不清 `shared/ipc` 契约与 `main/ipc` 层）
+- renderer 内 features 域之间禁止互相 import（共享下沉 `renderer/shared`），
+  由 check-quality 扫描
+
+应用壳与窗口（main 侧 `windows/` + `bootstrap.ts`）：
+
+- 窗口 bounds 持久化+屏幕夹取（`window-state.ts`）；单实例锁
+  （requestSingleInstanceLock）。
+- 启动主题注入链：main 同步读 settings 附 theme query →
+  `src/renderer/public/theme-boot.js` 首帧写 dataset.theme（FOUC 兜底）→
+  App effect=运行时单点（两者值一致，载入在途窗不回退——INV-71）。
+
+### 3.2 契约机制（防漂移核心）
+
+```mermaid
+flowchart TB
+  SRC["API_SURFACE（api-surface.ts，受锁）<br/>channel + Req + Res 一条记录一通道"]
+  SRC -->|"infer 推导 z.input"| PA["PreloadApi 类型<br/>preload buildApi() 运行时生成"]
+  SRC -->|"infer 推导 z.output"| AH["ApiHandlers 类型<br/>漏/多通道 = 编译错误"]
+  SRC -->|"遍历注册"| RG["register.ts<br/>Req safeParse → service → Result"]
+  SRC --> EV["EVENT_CHANNELS<br/>单向事件"]
+  T1["tests/contracts/api-surface.test.ts<br/>通道唯一/命名/strict"]
+  T2["tests/contracts/preload-surface.test.ts<br/>运行时暴露面逐域逐方法对账"]
+  SRC -.-> T1 & T2
+  PA -.-> T2
+```
+
+- `src/shared/ipc/api-surface.ts` 是 IPC 的**单一接线表**：通道名 + Req/Res zod schema。
+- preload 按表生成桥（**CJS `.cjs` 输出**——沙箱渲染器不支持 ESM preload；zod 打进
+  bundle）；事件桥形状 `PreloadEvents` 与全局声明 `env.d.ts` 同源，禁止两处手写。
+- 所有响应 = `{ok:true,data} | {ok:false,error:{code,message}}`；`AppErrorCode`
+  封闭枚举；错误可带可选 `reason`（结构化透传，首用=GHOST_FOLDER 询问）。
+- CSP 单源：策略只在 `src/main/security/csp.ts`，构建期注入 index.html meta
+  （生产 file:// 下 meta 是实际防线），源码 html 禁止手写。
+- 契约文件受锁（sha256 对账），改动需 [locked-change]。
+- 通道名→HTTP 路由天然映射（未来适配层命名约束）：api-surface 通道名
+  「域/方法」天然映射 `/api/域/方法`——未来服务端或插件入站接口必须沿用
+  同一命名（接线表即路由表；当前无 HTTP 服务，此为预留命名约束）。
+
+### 3.3 数据模型（单迁移基线）
+
+迁移链已压缩为单件 `026_baseline.sql`（ADR-0030）：新库 user_version 直达 26；
+旧链升级舞步唯一消费者已随批清除；「迁移不可修改」例外与授权链见 migrate.ts
+头注与 ADR-0030。实测基线：**22 表 + 4 个 FTS5 虚表 + 16 索引 + 59 触发器**。
+
+| 域 | 表 |
+| --- | --- |
+| 文献库 | papers（21 列：folder_id NOT NULL 归属、is_starred 星标、cited_by 缓存三列、impact_factor）、collections（=文件夹，主图 `__main__` 禁删）、tags/paper_tags（域化标签：UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6） |
+| 阅读与笔记 | annotations（kind 三值 highlight/underline/note；定位器=W3C Web Annotation 思路 quote/prefix/suffix+startOffset/endOffset+rects/sortKey）、notes（paperId 1:1 全文笔记；title 死置空串）、ai_notes（AI 评估笔记，独立表） |
+| 发展脉络 | lineage_nodes（paper_id 可空全局部分唯一——可空仅为遗留 DDL 兼容，应用层节点唯一来源=文献入库与移动两路（INV-NEW-1）；x/y/year/month/slot；core_idea/tags=留库死置列不入 DTO）、lineage_edges（UNIQUE(from_node,to_node)；dashed/color/via 视觉线型；from_anchor/to_anchor 钉定锚；kind/sub=留库死置列）、lineage_graph_meta（图级 KV：lineTypeNames）、floating_notes（画布悬浮笔记，无 paper_id） |
+| AI 域 | ai_sessions/ai_messages/ai_tasks/ai_task_audit（任务系统）、ai_memory（跨会话记忆）、change_epochs（前缀缓存失效 epoch） |
+| 治理与派生 | app_meta（库级身份 KV：owner uuid+设备 token）、deletion_events/deletion_log_guard（删除落账+防复活）、figure_jobs/paper_figures（图表提取派生资产，PNG-only） |
+
+- FTS5 四虚表（papers/notes/annotations/ai_memory）全部 external content + 触发器同步
+  （trigram，ADR-0003）。
+- 标签唯一源=文献库域（tags+paper_tags）；脉络卡标签行=graph 读面伴生查表。
+- pubNo=库级派生不落库（papers.queries PUBNO_ORDER 窗口，过滤不改编号）。
+- 迁移只追加受锁；fkOff 重建模式守卫见 INV-123。
+
+### 3.4 关键运行流程
+
+导入全链（路径只存在于 main 侧；事务保证文献+挂接原子）：
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant UI as renderer<br/>ImportDropZone ✅SR-LIB-06
-  participant P as preload ✅
-  participant I as ipc/import_ ✅SR-IPC-05
-  participant S as import.service ✅SR-SVC-03
-  participant F as file-store ✅
-  participant R as papers.repo ✅SR-DB-01
-  participant D as SQLite ✅
+  participant UI as renderer ImportDropZone
+  participant P as preload
+  participant I as ipc/import_
+  participant S as import.service
+  participant F as file-store
+  participant R as papers.repo
+  participant D as SQLite
 
   UI->>P: api.import_.fromDialog({})
   P->>I: invoke("import/from-dialog")
   I->>I: Req zod strict 校验
   I->>S: importFiles(dialog.pickPdfFiles())
-  Note over I,S: 路径只存在于 main 侧
   S->>F: storePdfFromPath(path)
   F-->>S: {fileRef, sha256} / DUPLICATE_FILE
-  S->>S: extractPdfMeta（标题/DOI/arXiv）
+  S->>S: extractPdfMeta（标题/DOI/arXiv）+ 落夹建节点单跳
   S->>R: repos.withTransaction(insert + attach)（原子）
   R->>D: db.prepare 参数绑定
-  S-->>P: 进度 onProgress → send("import/progress")
+  S-->>P: 进度事件推送
   S-->>UI: ImportResult {imported, duplicates, failed}
 ```
 
-### 7.4 数据流 B：阅读与标注锚定（Phase 3/4 目标链路）
+阅读与标注锚定链（renderer 全程无文件路径；窗口尺寸变化=纯函数重算）：
 
 ```mermaid
 flowchart TB
-  A["双击文献<br/>library.openPaper ✅（open-paper-bus 事件+闩锁）"] --> B["api.reader.open(paperId)"]
-  B --> C["reader.service ✅SVC-02<br/>fileUrl/fileName 组装 + lastReadPage"]
-  C --> D["fileUrl = app-file://paperId<br/>（renderer 全程无路径）"]
-  D --> E["PdfCanvas ✅SR-RDR-02<br/>唯一 import pdfjs-dist；worker ?url；DPR/取消队列"]
-  E --> F["TextLayer ✅SR-RDR-03<br/>--scale-factor 必设（旧项目教训）；鸭子 viewport"]
-  F --> G["SelectionLayer ✅SR-RDR-05<br/>划选 → 工具条 → selectionToAnchor 三元组（锚定根=页内 .textLayer）"]
-  G --> H["annotation-anchor ✅SR-RDR-01（strong）<br/>quote+prefix+suffix / start-end / rects 三重定位"]
-  H --> I["AnnotationLayer ✅SR-RDR-06<br/>重开时 verifyQuote 显示级重锚，失败回退 rects"]
-  H --> J["持久化：annotations.repo ✅SR-DB-03"]
-  subgraph NOTE["窗口尺寸变化 = 纯函数重算，不依赖像素坐标"]
-    I
-  end
+  A["双击文献 library.openPaper<br/>（open-paper-bus 事件+闩锁）"] --> B["api.reader.open(paperId)"]
+  B --> C["reader.service<br/>fileUrl/fileName 组装 + lastReadPage"]
+  C --> D["fileUrl = app-file://paperId"]
+  D --> E["PdfCanvas（唯一静态 import pdfjs-dist 面=白名单五文件，INV-16）<br/>worker ?url；DPR/取消队列"]
+  E --> F["TextLayer（--scale-factor 必设）"]
+  F --> G["SelectionLayer<br/>划选 → 工具条 → selectionToAnchor 三元组<br/>（锚根=选区所在页盒内 .textLayer；重锚用同一页根）"]
+  G --> H["annotation-anchor<br/>quote+prefix+suffix / start-end / rects 三重定位"]
+  H --> I["AnnotationLayer<br/>重开时 verifyQuote 显示级重锚，失败回退 rects"]
+  H --> J["持久化：annotations.repo"]
 ```
 
-### 7.5 契约机制：一张接线表长出三方（防漂移核心）
+### 3.5 域结构速览
+
+**lineage（发展脉络图，第四视图）**
+
+- 渲染域 `src/renderer/features/lineage/`：
+  - 时间线=纵向「年+月」DOM 布局（TimelineYears；`.month-frame>.tl-row>.tl-card`
+    砖砌网格；capacity.ts 容量公式纯函数族 N=⌊(W+72)/200⌋/M=⌊(W+72−100)/200⌋/
+    奇行相位 100/数组序贪心分行/index↔(row,col) 双射；W=归一化内容盒宽
+    readFrameContentWidth 单源；月框 border-box 最小宽 577px+配套四约束
+    （`.tl-content` min-width calc(577px+140) 边层铺满/空图
+    `:not(:has(.month-frame))` 守卫不铺/`.tl-card` flex-shrink:0 不压缩/
+    `.timeline` overflow-x:auto 横向滚动）——ADR-0028/INV-169）。
+  - 连线层=EdgeOverlay 双层 svg（可见层+命中层 z4）+ `routing/` 纯函数族
+    （gap-cells 间隙单元→slots 槽位分配→zapply Z 形施加→residual 残余→chain
+    五态链编排 direct→h-slip→detour→band→overlap；坐标集封闭=段坐标∈锚/桩∪槽位集
+    ——ADR-0023/0024；detour=网格通道模型）。
+  - 交互=useEdgeComposer 连线编辑状态机 / useDrawLine 画线+12 锚吸附
+    （钉定锚体系）/ card-drag-grid 拖拽算术落点 / use-edge-edit 调线 /
+    drag-autoscroll 四会话统一自动滚动。
+  - 悬浮笔记=LineageFloatingNotes（交互门三源：edit∧select∧非 saving——INV-149）
+    +lineage-note-draft 草稿四落定（INV-150）。
+  - 写路径=lineage-write-queue（FIFO+同 id 整替）+recoveryScheduler（恢复副本）
+    +lineage.store 编辑会话（beginUnit 快照式 undo/redo，保存成功清栈——INV-94）。
+- main 域 `services/lineage/`（边守卫单口 upsertEdge：自环/悬空端点/跨图/
+  重复边/成环/via 校验拒；floating-notes.service）+`repos/lineage.repo(.rows)`+
+  `lineage.write-guards.ts`（month/slot 归一+lineTypeNames 校验）。
+- 排序契约=lineageOrder 唯一纯函数（shared/models/lineage.ts，三消费面禁双实现）。
+- AI 可读导出=corpus 会话第六件套 lineage.json（递归 alphabetical 键序，golden 锁定）。
+
+**workspaces（课题隔离）**
+
+- ADR-0018 库级分目录：`userData/workspaces/<课题 id>/` 各含 synapse.db+files/
+  （完全隔离——去重/FTS/备份天然按课题）；课题指针=userData/workspace.json。
+- main 装配=`workspace-layout.ts`（数据目录解析）+`data-layer.container.ts`
+  （可重建 facade：switch=关旧库→重建→热换，busy 串行守卫）。
+- legacy-fresh 双态启动：全新首启不建 workspaces/（库在 userData 根），二启
+  迁移入 workspaces/default。
+- 渲染域=WorkspacesPage 管理页（卡片列表/新建/行内改名/点卡切换；dirty 确认→
+  IPC switch→location.reload）；默认课题引导态（三条件判定+升格三路，INV-87）。
+
+**ai-sensor（AI 伴随进程域）**
+
+- ADR-0015 文件协议：`userData/ai-sensor/`（pending 任务/status.json 心跳/
+  corpus-ai 产物/archive 账本）；工具侧=`tools/ai-sensor/` CLI；**应用永不 spawn**
+  （INV-21）；observe 通道六态判定。
+- 回灌事务性=清面+重插单篇事务（INV-67）；渲染消费=脉络侧板 AI 评估只读展示
+  （LineageSideAiNotes——AI 显示单面，INV-105）+设置页 zcode 联动。
+
+**AI 会话与记忆域（services/ai/）**
+
+- ai-context：L1/L2 前缀注入面⊆epoch 集合 10 物理表（EPOCH_TABLES 单源；
+  ctx_ver 前进⇒前缀缓存失效——INV-J）。
+- ai-tail：尾段四个组成部分（消息窗/召回/文献展开/代理结果）恒现算，不入
+  前缀缓存（INV-131）；isAgentEnvelope 识别谓词单源（INV-130）。
+- ai-tasks：任务系统 dispatch+memory.create 写入围栏（跨锚 source_task_id
+  同锚不变量——INV-128）。
+- ai-memory-search：MATCH 与 LIKE 两路大小写同折叠（INV-127）。
+
+**figure 域（图表提取）**
+
+- `figure-tasks.service`（代际三守卫：token 在册+paper 在场+sha 同代）+
+  `figure-store.service`（figure_jobs/paper_figures 两表；PNG 魔数守卫；
+  24 上限；内容寻址 figures/<paperId>/<digest>.png）。
+- 渲染消费=shared/figures/FigureExtractor（pdfjs import 白名单五个文件之一，
+  动态 import）+PaperInfoSection 只读展示（app-file figure 分支协议取数）。
+
+**recovery 域（恢复副本）**
+
+- ADR-0027：单一 main recovery 服务+`<userData>/recovery/<wsId>/` 单槽覆写+
+  RECOVERY_REGISTRY 类型注册表（shared/recovery/schemas.ts）；takeOver 超越
+  （token+epoch 双校验）；epoch 删除屏障。
+- ADR-0029 never-settle 治理：常态写永不因超时取消/判败；renderer 双阈值看门狗
+  （T_slow=10s 降级呈现/T_stuck=60s 逻辑弃置+ghost 迟到对账）；main serialize 链
+  per-key save 深上界 D_max=8；三档 chip（缓慢/未确认/不可用）。文件面保证：
+  每（工作区,类型）单槽覆写；tmp 写全后 rename 原子替换；槽文件 0600；
+  持久性=进程崩溃级（不承诺掉电）。关闭握手=main 状态机（close 一律
+  preventDefault+flush-first；超时降级 confirm；取消经 quit-flush-abort
+  解冻帧+bridge 有界复位——ADR-0026/INV-22）。
+
+**snapshot 域（快照导出/导入）**
+
+- `services/snapshot`：TABLE_SPECS 十表导出；导入按 id upsert+deletion_events
+  防复活过滤（跨卷序列一致）；id 不复用（INV-132）。
+
+**enrich 域**：CrossRef 被引数缓存（单调增长语义，INV-28）；含金量供给
+（venue-tier 档位）。
+
+## 4. 部署与横切约定
+
+### 4.1 质量关卡链（本地 verify 与 CI 共有检查同口径；CI 另跑覆盖率/e2e/依赖审计/提交尾注检查）
+
+本地 `npm run verify` 八段链（不含 e2e 与覆盖率）：quality → test-surface
+（测试面指纹门）→ tickets → locks → lint → typecheck → test → build。
+
+- quality 多段：占位/乱码/跨域/行数分级（repo≤300·组件≤250）/分层方向解析
+  /同值双常量棘轮/AST tsx inline 色/CSS var() 语义锚/src 模型代号负锚/e2e 截图
+  负锚/节点唯一来源负锚词表/治理表行格数校验/文档禁用词负锚（扫描面单源=
+  scripts/check-doc-terms.mjs）。
+- tickets：工单号一致性/绑定对账/B4 防线（规则 6 以 ROADMAP 退役页
+  `### P7-X：` 锚段集为已裁决域）。
+- locks：受锁文件 sha256 对账（行尾由 `.gitattributes` 强制 LF；scripts 下全部
+  .mjs/.ps1 自动入锁面）。
+- 独立快跑入口：`npm run lint:model-names`、`npm run doc-terms:check`（两者均已
+  内联 quality 段随 verify/CI 跑）；CI 在共有检查之外另跑覆盖率
+  （vitest --coverage）、e2e（Playwright 全量，需先 build）、npm audit 与
+  提交尾注检查（[dep-change]/[locked-change]）、[test-refactor] 范围闸。
+
+### 4.2 工单与骨架期机制
 
 ```mermaid
 flowchart TB
-  SRC["API_SURFACE（api-surface.ts，受锁）<br/>channel + Req + Res 一条记录一通道"]
-  SRC -->|"infer 推导 z.input"| PA["PreloadApi 类型<br/>preload buildApi() ✅ 运行时生成"]
-  SRC -->|"infer 推导 z.output"| AH["ApiHandlers 类型<br/>漏/多通道 = 编译错误 ✅"]
-  SRC -->|"遍历注册"| RG["register.ts ✅<br/>Req safeParse → service → Result"]
-  SRC --> EV["EVENT_CHANNELS<br/>importProgress 单向事件"]
-  T1["tests/contracts/api-surface.test.ts ✅<br/>通道唯一/命名/strict"]
-  T2["tests/contracts/preload-surface.test.ts ✅（本轮补齐）<br/>运行时暴露面逐域逐方法对账"]
-  SRC -.-> T1 & T2
-  PA -.-> T2
-```
-
-### 7.6 安全边界（纵深，由外向内）
-
-```mermaid
-flowchart TB
-  L1["① 出网：http-client 白名单 3 host + redirect:error + 20MB 上限 ✅"]
-  L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据 ✅<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒 ✅"]
-  L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关 ✅<br/>preload 白名单桥，零 ipcRenderer 泄漏 ✅"]
-  L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval ✅<br/>connect-src 'self' app-file:（出网仍禁，app-file 为受管文件取数通道）✅"]
-  L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery ✅（repos 已实现，33 测试锁定）<br/>app-file:// paperId 白名单 → 受管根前缀校验 ✅<br/>renderer 零路径 · 写盘仅经系统对话框 ✅"]
-  L1 --> L2 --> L3 --> L4 --> L5
-```
-
-### 7.7 治理体系：工单 → 实现 → 关卡 → 状态闭环
-
-```mermaid
-flowchart TB
-  subgraph LOOP["单人 + AI 弱模型领单循环"]
-    RG2["tickets/registry.ts ✅<br/>工单状态控制面（图纸不记数字防漂移——<br/>实时状态见 registry 本体与交接书基线表）"]
+  subgraph LOOP["单人 + AI 领单循环"]
+    RG2["tickets/registry.ts<br/>工单状态控制面"]
     SPEC["源文件头五层规约<br/>= 自包含任务书"]
-    IMPL["弱模型只改工单文件"]
+    IMPL["实现者只改工单文件"]
     GD["guardedDescribe(ticketId)<br/>open → skip · done → 激活<br/>未知工单号当场炸"]
     RG2 --> SPEC --> IMPL --> GD
     GD -->|"人类审查 git diff 后更新状态"| RG2
   end
-  subgraph GATES["关卡（verify = CI 同口径，本轮并轨）"]
+  subgraph GATES["关卡（verify 与 CI 共有检查同口径）"]
     Q["quality:占位/乱码/跨域/行数/分层方向"]
     T["tickets:工单号一致性 + done 残留占位即红"]
-    LK["locks:受锁文件 sha256 对账<br/>（含校验器自身 · 构建与测试配置<br/>——条目数见 locks/manifest.json，图纸不记数字）"]
+    LK["locks:受锁文件 sha256 对账"]
     V["lint → typecheck → test → build"]
   end
   GD --> GATES
@@ -394,134 +324,97 @@ flowchart TB
   LK --> MANIFEST["locks/manifest.json<br/>变更须 [locked-change] 尾注"]
 ```
 
-### 7.8 构建与原生绑定（跨平台事实）
+- 每个文件头部五层规约（行为/接口/架构/生命周期/文化）=自包含任务书。
+- 未完成实现=占位桩（调用即抛，工单 done 即删）或 UI 占位（`data-ticket` 徽标）。
+- guardedDescribe 工单号必须与测试文件 import 的被测文件绑定（check-tickets
+  第 5 关，防挂错块永久 skip）。
 
-better-sqlite3 13.0.3（N-API 版，2026-09-19 F-ELE-02）：同一份
-`prebuilds/<platform>-x64.node` 绑定（linux-x64/win32-x64 等随 npm 包直发）
-跨 Node/Electron ABI 通用（vitest=Node
-ABI 137 / electron-vite=Electron ABI 149——F-ELE-03 升 44 后，双运行时
-无需切换）；v12 时代
-双 ABI 切换机制（scripts/sqlite-abi.mjs+abi-cache）已删除退役。完整
-环境事实（Node 24 锁定/Electron 42 起无 postinstall 等）=
-AGENTS.md「环境事实」单源，此处不复制。
+### 4.3 构建与原生绑定
 
-## 8. 域结构速览（2026-09-19 F-DOCGOV-01 补档——此前三大域未上图/未成节）
+better-sqlite3 13（N-API 版）：同一份 `prebuilds/<platform>-x64.node` 绑定
+（linux-x64/win32-x64 等随 npm 包直发）跨 Node/Electron ABI 通用，双运行时无需
+切换。Electron 42 起 npm 包无 postinstall：二进制首次 require 懒下载已前置到
+npm ci 阶段。完整环境事实（Node 24 锁定等）=AGENTS.md「环境事实」单源。
+打包：`npm run dist` NSIS（详见 DEVELOPMENT §7）。
 
-### 8.1 lineage（发展脉络图）
+### 4.4 安全边界（纵深，由外向内）
 
-- 渲染域 `src/renderer/features/lineage/`（第四视图：[T3-P6 起纵向「年+月」
-  时间线 DOM 布局=LineageTimeline 滚动容器+128×72 小卡——RT 树布局/SVG 画布
-  pan/zoom 整族退役，INV-78；T3-P7A 连线层重建=EdgeOverlay[svg.tl-edges
-  子组件]+lineage-routing.ts 纯函数路由三式/四检避让降级链，INV-79；
-  T3-P7B 编辑交互=useEdgeComposer 状态机（mode 单源驻 Timeline，INV-80）
-  +EdgeTypePopover/EdgeNewSubForm/NewSubLauncher 线型弹层（恒四组手风琴+确定性 sub id+陈旧边自闭守卫[返工 R2/R8]+新建线型飞行窗禁建 saveStatus saving/error 禁建[返工 R5]）
-  +LineageToolbar 换装（.lg-toolbar sticky 挂 .timeline）+store 三 action
-  （applyEdgeLine/linkWithLine[inferred 产生入口落位]/saveLineTypes——
-  队列 FIFO 保证 lineTypes 先于引用其的 edge 写）+同道错峰；
-  TimelineYears/lineage-popover-shared 拆件=组件 250 行红线落点；
-  resolveLabelEntry 随 D-P7B-7 裁撤（零生产调用死代码删除）；
-  T3-P8 交互收尾=useCardDrag 拖拽/改月状态机 hook（pointerdown 5px 阈值
-  +drag-slot 候选槽+settle FLIP 飞行 transitionend 清场——flight
-  后置目标值双 rAF：React 迁组重建节点无 before-change style，同步改值不启
-  过渡）+MonthPop 改月弹层（沿 popover-shared 钳制）+store
-  reorderMonthSlots/moveNodeMonth 两写 action（slot 全序透写/组变 slot
-  缺省归服务端 max+1；写回填后 nodes=lineageOrder 全序——INV-75 消费面
-  扩）+SidePanel 重皮肤（insp-cap/徽章行/AI 评估后置章占位）+drag-hint
-  双态（INV-83：拖拽互斥/跨月拒绝/飞行脱节 dimmed 已知限制）] +侧板详情）；main 域
-  `services/lineage/`（树守卫单口=upsertEdge 运行时——草稿导入校验口随
-  F-BAKRET-01 退役 2026-09-30）+`repos/lineage.repo`（+T3-P5 行映射拆件
-  `lineage.repo.rows.ts`）+`lineage.write-guards.ts`（T3-P5 month/slot 归一+
-  lineTypes 静态校验拆件）。
-- [F-ROUTE-02]（2026-10-06 起，ADR-0023）连线走线候选位分配=routing/ 域族
-  七件面：`routing/gap-cells.ts` 间隙单元提取（卡对投影重叠列+去重排序键+
-  半开区间消费语义+非卡障碍 closed/静态预过滤）→`routing/slots.ts` 分配主循环
-  （用户裁决六分五候选位：L1 本单元可用槽→L2 同带邻缝→L3 整排穷尽豁免落
-  ideal；Δ<1 恰中槽 retain 豁免保留占用）→`routing/zapply.ts` Z 形施加
-  （j 区间+谓词复检 pre-commit 权威门）→`routing/residual.ts` 残余子 pass
-  （旧 applyBandLanes 域全等承袭——开阔域共道分离零丢失）+`routing/chain.ts`
-  编排（routeOne 五态链〔F-SLOTGRID-01 U2 起六态→五态：corridor/fallback
-  随右缘走廊退役，2026-10-07 用户裁决③〕→slotAssign 单 pass→finish 既有
-  复检；SkelResult 中间态+RoutedPath 观测三槽 slotMarks/overlapExempt/
-  slotFallback 投影）+EdgeOverlay.tsx 观测钩子挂线（data-route/data-slot/
-  data-anchors/data-overlap-exempt/data-slot-fallback/data-detour 六属性，
-  后五缺省不挂——INV-117）+`routing/bands.ts` bandsOf（全卡 y 区间
-  并吞=带派生单源——INV-113/114 结构前提）。`lineage-routing.ts`=消费面
-  re-export 桶文件不变；行为不变量=INV-112~117。
-- [F-SLOTGRID-01]（2026-10-08 实施批 U1-U4 终态，ADR-0024）砖砌网格布局+
-  走线正统化：`capacity.ts` 容量公式纯函数族（[F-VISFB-67 地板化]W 输入=归一化内容盒宽单源 readFrameContentWidth+CSS 地板 577——INV-169；N=⌊(W+72)/200⌋/M=⌊(W+72−100)/
-  200⌋/相位 o=100/数组序贪心分行/index↔(row,col) 双射/hitTest——INV-
-  SLOTGRID-01）+`use-capacity-layout.ts`（W=getComputedStyle transform 正交
-  /RO→rAF 合并/routeEpoch 三源 bump=布局变更即重算走线）+TimelineYears
-  `.month-frame>.tl-row>.tl-card` 行容器渲染（奇行 padding-left 100）——瀑布
-  测度迭代族（timeline-waterfall/WATERFALL_*/tl-measure/冻结守卫）整体退役
-  （方案切换=删旧）；走线=routing 八件面（+`routing/detour.ts` 网格通道模型
-  W18+段式近绕七步+两相枚举+DFS_BUDGET=512）五态链 direct→h-slip→detour→
-  band→overlap（坐标集封闭=横/纵段坐标∈锚/桩∪槽位集，框外走廊结构性禁绝
-  ——INV-SLOTGRID-02；兜底=最短路线重叠+overlapExempt 透出）；拖拽=
-  `card-drag-grid.ts`（insertIndexFromGrid 含源算术+candidateSlotAt 阵列——
-  INV-111 算术落点，旧 rect 逐帧实测判定 insertIndexFromRects 退役删除）
-  +`card-drag-session.ts` framePointer=padding-box÷z−border 换算+
-  `drag-slot-candidates.tsx` 候选阵列=算术网格（F-DRAGVIS-01）。
-- [T3-P2] App 壳=grid 三行（38px 顶栏/1fr 内容行/26px 状态条，App.tsx
-  `.app-shell`）+72px 窄轨（`app/Rail.tsx` 七项——课题钮 [F-WS-02] 起路由
-  workspaces 管理页（弹层 `app/WsRailPopover.tsx` 已退役——方案切换=删除
-  旧方案）+下载占位）+状态条（`app/StatusBar.tsx` 哑件，App 组合根 props
-  注入）；F-UI-03 折叠 nav/SplitPane 受控面已退役（SplitPane 本体留=阅读器
-  侧栏消费）。
-  [T3-U1] 状态条自动保存槽=App 组合根 worst-of 聚合（tabDirty[保存失败残留
-  语义]∪lineage saveStatus→已保存/保存中…/保存失败三态真文本，null 无可写面
-  信号槽省略；失败挂 .sig=--signal 色）注入 StatusBar；FOUC 首帧兜底链=
-  bootstrap `readThemeSync`（settings.service 同步读，system→light 迁移同链）
-  →main-window loadURL 拼 query/loadFile {query}→`src/renderer/public/theme-boot.js`
-  同步外链脚本（CSP script-src self）首帧写 dataset.theme，App effect 仍=运行时
-  单点真源（两者值一致——INV-71 扩注；载入在途窗兜底=启动注入值）。
-- [T3-P4] 阅读器视图（第二视图）随主题三族化：页纸底=--paper 单源（PageBox
-  页盒底+canvas 承底层双位消费——light 白桥接/dark 暗纸+canvas filter 反位
-  [案 A：--canvas-filter 三族+缩略图 canvas 同规则]/sepia 奶油纸，INV-74）；
-  工具栏/tab 条/侧栏节标金族消费退役换 mockup .toolbar/.tabbar 语汇
-  （theme-reader.css 单源）。
-- 存储=迁移 004（nodes/edges+UNIQUE(from,to)）+006（kind 列）+007（tags 列）
-  +010（T3-P5 脉络数据层 v2：month/slot/sub 三列+lineage_graph_meta KV
-  [lineTypes 线型组]+slot 窗口函数存量回填）；边四 kind=tree/inferred/ref/
-  manual（INV-27 T3-P5 修订版——inferred 同 tree 守卫先行防退化，产生入口
-  =P7 编辑器+后置 AI 域；sub=样式层引用完整性三守卫）；**排序契约=
-  lineageOrder 唯一纯函数**（shared/models/lineage.ts，三消费禁双实现——
-  graph 读面/lineage.json 导出/library C5 join，INV-75）；catalog_no=呈现时
-  确定性计算不落库（INV-76）；自动引文网络图维持不做（ADR-0012
-  共存已裁决——对象不同、不复用表；T3-P5 核对=不触发 ADR-0014 v2 DAG——
-  仍树+旁挂边，四 kind 行为面收在 INV-27 修订版）。
-- [T3-P5] AI 可读导出=corpus 会话第六件套 lineage.json（finalizing 阶段
-  manifest 终写前落盘；装配单源 `export_/lineage.assemble.ts`——递归
-  alphabetical 键序+schema_version 1，INV-77）；与 ai-sensor 域解耦边界=
-  2026-09-20 survey 档 §9（lineage.json=AI 评估输入预置契约——互不吞并）。
-- 视口/布局/卡尺寸单源不变量=INV-36/38/41/43/44/48（指针，正文在 INV 册；其中 36/38/41/43/44 五条消费面随 T3-P6 SVG 画布退役进入退役态注记——时间线容器结构新单源=INV-78）。
+```mermaid
+flowchart TB
+  L1["① 出网：http-client 白名单 3 host + redirect:error + 20MB 上限"]
+  L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒"]
+  L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关<br/>preload 白名单桥，零 ipcRenderer 泄漏"]
+  L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval<br/>connect-src 'self' app-file:（受管文件取数通道）"]
+  L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery<br/>app-file:// paperId 白名单 → 受管根前缀校验<br/>renderer 零路径 · 写盘仅经系统对话框"]
+  L1 --> L2 --> L3 --> L4 --> L5
+```
 
-### 8.2 workspaces（课题隔离）
+细节与机检锚=docs/security.md。
 
-- ADR-0018 库级分目录：`userData/workspaces/<课题 id>/` 各含 synapse.db+files/
-  （完全隔离——去重/FTS/备份天然按课题）；课题指针=userData/workspace.json。
-- main 装配=`workspace-layout.ts`（数据目录解析）+`data-layer.container.ts`
-  （可重建 facade：switch=关旧库→重建→热换，busy 串行守卫——INV-35 四联）。
-- **legacy-fresh 双态启动**：全新首启不建 workspaces/（库在 userData 根），二启
-  迁移入 workspaces/default（准确语义单源=代码头注+INV-35）。渲染域=[F-WS-02]
-  workspaces 管理页（`features/workspaces/WorkspacesPage.tsx`，课题钮路由入
-  页——卡片列表/新建/行内改名/点卡切换；dirty 确认→IPC switch→
-  `location.reload()` 全新 stores 维持 ADR-0018，联动不变量=INV-72；弹层与
-  设置页课题管理节同批退役）；默认课题身份常量提炼 shared/constants
-  （fs re-export 维持消费面）。**默认课题引导态**（INV-87，D2 批语）：三条件
-  （id=default∧0 篇∧默认名）成立=rail 课题钮以下全禁用浅色+课题名显示位
-  「待选择」，课题钮路由管理页引导新建；升格三路=改名/导入计数（App 组合根
-  桥：引导态∧library total>0→重拉清单）/切非 default；list 每课题条目携
-  paperCount（main 根 `workspace-layout.countPapersInDir` 依赖倒置注入——
-  ADR-0018 一课题一库，逐课题库 COUNT 非单库 GROUP BY）。
+## 5. 架构决策索引（ADR）
 
-### 8.3 ai-sensor（AI 伴随进程域）
+决策正文=`docs/adr/`（背景/候选/裁决/后果+随件修订记录）。未建正件的编号其
+决策单源在注记列。
 
-- ADR-0015 文件协议：`userData/ai-sensor/`（pending 任务/status.json 心跳/
-  corpus-ai 产物/archive 账本——INV-26 三联）；工具侧=`tools/ai-sensor/`
-  （companion.mjs+queue.mjs+SKILL.md——**应用永不 spawn**，INV-21）。
-- 服务三键终态（F-SENSOR-01）：`services/ai_sensor/` 三件 ↔ ServiceBundle 三键
-  平铺（ai_sensor/ai_notes_import/zcode_link）↔ `ipc/ai_sensor.ts` 七 handler
-  （3+2+2）；observe 通道（六态判定单源，SR2-AI-08）2026-09-19 追认入 ADR-0015。
-- 回灌事务性=INV-67（清面+重插单篇事务）；渲染消费=笔记面板 AI 面（七问分色
-  只读）+设置页 zcode 联动三档（纯 fs 检测+一键装技能）。
+| 编号 | 主题 | 正文单源 |
+| --- | --- | --- |
+| 0001 | Electron 单语言（纯 TypeScript 全栈） | docs/adr/ |
+| 0002 | pdf.js 库 API 路线（非 embed/自绘替换） | docs/adr/ |
+| 0003 | FTS5 触发器同步外部内容表（trigram） | docs/adr/ |
+| 0004 | 工单注册表与受锁机制（registry+locks） | docs/adr/ |
+| 0005 | 版本钉选向训练数据倾斜（版本以 package.json 为单源） | docs/adr/ |
+| 0006 | Electron 升级门（prebuild 矩阵核查先行） | docs/adr/ |
+| 0007 | 已登记取舍与地雷（登记性地雷在册） | docs/adr/ |
+| 0008 | notes.store 五模块级结构维持分布式状态机（不坍缩） | docs/adr/ |
+| 0009 | 零依赖性质测试（固定种子手写攻击序列） | docs/adr/ |
+| 0010 | **永久空号**（预留位已实装，编号不复用） | — |
+| 0011 | md 语料接口契约（导出五件套——幂等 sha 口径） | docs/adr/ |
+| 0012 | 引文图数据模型（自动引文网络图维持不做） | docs/adr/ |
+| 0013 | 备份/恢复姿态（不做自动机制+手动指引） | docs/adr/ |
+| 0014 | lineage 图数据模型（人工策展时间树） | docs/adr/ |
+| 0015 | AI 笔记回灌与伴随进程文件协议 | docs/adr/ |
+| 0016 | 闲时会话预裁决表 | docs/adr/ |
+| 0017 | 三阶段流程默认（IPC 通道名冻结） | docs/adr/ |
+| 0018 | 课题隔离=库级分目录 | docs/adr/ |
+| 0019 | 划选反馈原生路线（自绘并集层） | docs/adr/ |
+| 0020 | 应用改名与 userData 目录迁移 | docs/adr/ |
+| 0021 | 文件夹单归属×脉络图绑定 | docs/adr/ |
+| 0022 | 草稿导入链退役 | docs/adr/ |
+| 0023 | 走线候选位分配=后处理槽位分配 | docs/design/2026-10-06_f-route02-design.md |
+| 0024 | 砖砌网格布局+五态走线正统化 | docs/design/2026-10-07_f-slotgrid01-design.md |
+| 0025 | DB 契约冻结（folder↔graph 投影/NOT NULL/app_meta/标签域化） | docs/design/2026-10-08_f-dbcamp01-design.md |
+| 0026 | 关闭入口无条件握手化 | docs/adr/（细节=docs/design/2026-10-18_f-visfb64-design.md） |
+| 0027 | 恢复副本统一管理 | docs/adr/ |
+| 0028 | 时间线布局最小宽度（577px 地板） | 仓外档案区 scripts-audits/20261019-fvisfb67-impl/closeout-drafts.md（自标 ADR 草案——正式正文未建档，如需正式化须补立正件） |
+| 0029 | 恢复副本常态写 never-settle 治理 | 仓外档案区 scripts-audits/20261020-nightb/recoV01/（design-v2.md+design-final-r3.md） |
+| 0030 | 迁移链基线压缩（001–025 并单件 026） | 仓外档案区 scripts-audits/20261020-snapclean01/design-v2-final.md |
+| 0031 | zod 3→4 安全升级 | docs/adr/ |
+
+跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）。
+
+## 6. 质量目标、已知风险与术语
+
+**质量目标**
+
+- `npm run verify` 全绿=合并门槛（共有检查与 CI 同口径——CI 另跑覆盖率与
+  e2e）；收尾 push 后以 CI conclusion 复核（完成定义条款）。
+- 覆盖率门槛：全局 70 / repos 85 / renderer 逻辑层 60（vitest.config.ts 受锁）。
+- e2e 断言「看得见」=真实文本+计算样式（INV-06）；e2e 禁截图比对（INV-64）。
+- 测试面单调性：契约面只增不减，有意收紧走豁免流程（INV-63）。
+
+**已知风险与遗留**
+
+- 登记性地雷与已接受取舍=ADR-0007；开放工单面=tickets/registry.ts（open 项）；
+  治理防线生命周期（退役触发器）=docs/defense-lifecycle.md。
+- CI 虚拟屏 1024×768 与本地 1280×800 不同构：新 e2e 用例凡 boundingBox+mouse
+  拖拽/点击须先滚动锚定；双端拖拽用例须种子级同月共视设计（AGENTS.md 环境事实）。
+- CI 合成输入栈无原生文本选区扩展：选区类 e2e 的选区产生一律走程序化写
+  （INV-170②）。
+- VMware 本地 e2e 偶发失败三族（输入事件/几何/窗口状态——FLK-01/02/03）：
+  全天同一标准，红即红，
+  非确定失败单现复跑定绿按通则（立案票 F-E2EFLK-01 承接根治）。
+
+**术语**
+
+主控/隔离一审/终审/红证/锚定/负锚/欠账等岗位与防线术语的定义单源=
+docs/invariants.md「术语说明」；文档写作规范=AGENTS.md。
