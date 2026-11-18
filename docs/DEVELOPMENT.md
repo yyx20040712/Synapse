@@ -26,7 +26,7 @@ npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断
 
 - **取数据**：`import { api, unwrap } from '../../api/client'`；`await unwrap(api.library.list({...}))`，失败抛 `ApiClientError`（catch 后 toast）。
 - **Result 形状**：service 内抛错（`DomainError` 带 code），`register` 统一折叠；renderer 永远拿 Result。
-- **新 IPC 通道**：改 `src/shared/ipc/schemas.ts` + `api-surface.ts`（变更须在提交说明申报，一般不需要）。
+- **新 IPC 通道**：改 `src/shared/ipc/api-surface.ts` + 对应域 schema（分布四处：ipc/schemas.ts、ipc/ai-schemas.ts、shared/recovery/schemas.ts、models/*——按通道域归属；变更须在提交说明申报）。
 - **SQL**：`db.prepare('... WHERE id = ?').run(id)`；FTS 匹配串必须 `escapeFtsQuery(userInput)`。
 - **多表写入**：service 层组合多条写入必须 `repos.withTransaction(() => {...})` 包裹
   （attach 失败整体回滚，防「failed 的文献已入库且 sha 被占用」半写状态）。
@@ -38,7 +38,7 @@ npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断
 - **笔记保存状态显示**：`deriveSaveStatus`/`detectSaveFailed` 在
   `renderer/shared/save-status.ts`（单一推导点；消费方禁本地另推）。
 - **Toast 在 .ts（非组件）消费**：`import { showToast } from '.../shared/ui/toast-store'`
-  （组件才走 Toast.tsx 再导出——typecheck 关卡强制）。
+  （组件才走 Toast.tsx 再导出——typecheck 拦 .ts import .tsx 一向；反向由评审承载）。
 - **锚点跳转**：一切「跳到某标注」经 `locateAnchor`（reader/anchor-locate.ts，
   INV-20 单入口三层防线 exact/page/paper）——禁各写降级。
 - **不要**：axios/dayjs/lodash/immer——用原生 fetch/Date/展开运算符/Zustand set。
@@ -76,7 +76,7 @@ npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断
 - 受管 PDF：`<数据目录>/workspaces/<课题 id>/files/<sha 分桶>/<sha256>.pdf`
   （内容寻址天然去重，随课题隔离）。
 - 设置与课题指针（应用级，不随课题切换）：`<数据目录>/settings.json`
-  （contactEmail / theme / uiScale）与 `workspace.json`（当前课题指针）。
+  （contactEmail / theme / uiScale / aiBudgets 四键——schemas.ts appSettingsSchema 单源）与 `workspace.json`（当前课题指针）。
 - **备份方法：完全退出应用后，整个数据目录复制到安全位置。**
   WAL 模式下只热复制 `.db` 而不带 `-wal` 侧车文件是不安全的（可能丢失最近写入）。
 

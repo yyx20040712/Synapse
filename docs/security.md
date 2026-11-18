@@ -4,22 +4,22 @@
 
 ## 1. 进程隔离（机检：tests/security/web-preferences.test.ts）
 
-- `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`、`webSecurity: true`、`webviewTag: false`、`navigateOnDragDrop: false`
+- `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`、`webSecurity: true`、`webviewTag: false`、`navigateOnDragDrop: false`、`nodeIntegrationInWorker: false`、`allowRunningInsecureContent: false`、`experimentalFeatures: false`（九旗——main-window.ts 单源）
 - preload 仅经 contextBridge 暴露白名单方法（按 API_SURFACE 生成）；不泄漏 ipcRenderer；不支持任意通道 invoke
 - devTools 仅开发模式
 
 ## 2. 内容边界（机检：CSP 断言）
 
-- 只加载本地内容（打包产物 / dev server）；`will-navigate` 一律阻止；`setWindowOpenHandler` 一律 deny；权限请求默认全拒
+- 只加载本地内容（打包产物 / dev server）；`will-navigate` 阻止（唯一例外=同 URL 重载——课题切换 location.reload）；`setWindowOpenHandler` 一律 deny；权限请求最小放行清单仅 `clipboard-sanitized-write`（其余全拒）
 - CSP：`default-src 'self'; script-src 'self'; worker-src 'self' blob:(pdf.js); style-src 'self' 'unsafe-inline'; img-src 'self' app-file: data: blob:; font-src 'self' data:; connect-src 'self' app-file:(受管文件协议，阅读器取数通道); object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'`
 - 无 unsafe-eval；无 iframe 嵌套内容
 
 ## 3. IPC 与注入防护（机检：契约/单测）
 
 - 通道全显式注册；请求 zod `.strict()` 校验（未知字段拒绝）；类型保护不得删除
-- 校验方向单向：invoke 面（renderer→main）在 main 侧入侧校验（register.ts 单点）；事件推送面（main→renderer 三事件）反向在 preload 接收侧 safeParse 兜底（`events.schemas.ts` 单口，schema 本体单源 schemas.ts，与 PreloadEvents 类型邻近防漂移）；main 受信生产者不重复校验（防线不增殖）；畸形帧 console.warn 并丢弃该帧、订阅存活（INV-82；三事件均通知/进度类，丢帧=陈旧一拍自愈）
+- 校验方向单向：invoke 面（renderer→main）在 main 侧入侧校验（register.ts 单点）；事件推送面（main→renderer 七事件——清单单源=api-surface.ts events 段）反向在 preload 接收侧 safeParse 兜底（`events.schemas.ts` 单口，schema 本体单源 schemas.ts，与 PreloadEvents 类型邻近防漂移）；main 受信生产者不重复校验（防线不增殖）；畸形帧 console.warn 并丢弃该帧、订阅存活（INV-82；通知/进度类丢帧=陈旧一拍自愈，quitFlush/quitFlushAbort 两帧丢帧由 main 超时降级与 bridge 复位承接——INV-22）
 - SQL 全预编译参数化；FTS 输入经 `escapeFtsQuery`（注入向量集在 tests/unit/db/fts.test.ts）
-- renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）
+- renderer 永不接触文件路径；`app-file://` 只接受 paperId（字符白名单）→ 查库 → `path.resolve` + 受管根前缀校验（攻击向量集在 tests/unit/protocol）；响应 ACAO 头仅对 Origin='null' 或 localhost/127.0.0.1 回显（未命中静默不加头）
 - 例外（登记）：`export` 响应里的 `filePath` 是用户刚在系统保存对话框里选的路径，main→renderer 方向回显用于 UI 反馈，不构成注入向量（schemas.ts `exportResSchema`；受信边界清单见 INV-07）
 - 写盘路径仅两来源：main 侧系统对话框（dialogs.ts）+ 拖拽 File 经 preload webUtils 解析（`apiDrag` 单口；路径串不出 preload 堆，fromPaths 通道对 renderer 隐藏）
 - 出网重定向一律不跟随（`redirect: 'error'`）：白名单外 3xx 目标零请求，防 SSRF/开放重定向

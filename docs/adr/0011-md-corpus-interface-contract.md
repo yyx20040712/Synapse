@@ -14,7 +14,7 @@ md 语料导出被定位为「AI 传感器的接口载荷」：应用只负责�
 
 SQLite 是唯一真相源（事务性/FTS/单写者）；md 文件是投影——任何时候可由 DB 全量重导出，md 本身不回写 DB。丢 md 不丢数据；md 的消费者只读。
 
-### 导出物形态（一个目录五件套）
+### 导出物形态（一个目录六件套——v1 五件套+lineage.json）
 
 ```
 <用户经系统对话框选择的目录>/     ← INV-07：路径只出自 main 侧对话框
@@ -65,5 +65,5 @@ annotationCount / noteCount
 
 - 现行通道：五件套会话=`export/corpus-session`（设置页「AI 语料导出」入口）；另有 corpus 单篇 md 快速导出轻量通道，两通道共用同一装配纯函数（单一真相源，禁双实现）。
 - AI 链条消费侧只依赖本契约+INTERFACE.md，不依赖 DB 内部结构——接口稳定面收窄到目录件套。
-- lineage.json 后续作为导出第六件加入（确定性口径=INV-77）。
+- lineage.json 已作为导出第六件落地（确定性口径=INV-77——生产装配恒注入；INTERFACE.md 目录清单同载）。
 - 增量导出、AI 语料写入面扩展：v2 契约范围，届时升 schemaVersion。

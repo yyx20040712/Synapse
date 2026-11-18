@@ -35,7 +35,7 @@ collections M2M 挂接雏形（迁移 001）+脉络每课题全局单图（迁�
    独立 graph 元数据）；「未归档文献可无节点」与「未加入脉络」正交。
 3. **边不加 folder_id（派生）**：边属图=端点所在图——服务层拒跨图边
    （ERR_CROSS_GRAPH_EDGE，INV-90 护栏）；**跨图移动=边删除代价**（移动
-   事务序内清直接连线，弹窗明示）。
+   事务序内清直接连线——现行无确认弹窗，代价静默承担〔2026-11-18 按代码现状修订：三条移动路径均直发 moveFolder〕）。
 4. **编号 pubNo=库级全序派生不落库**（INV-92）：ROW_NUMBER 窗口
    （year/month NULLS LAST+added_at+rowid 决胜）挂进 LIST_SQL；catalogNo
    （图序编号 INV-76）退役，图内节点号与库号同源=pubNo 单一真相源。
@@ -48,7 +48,7 @@ collections M2M 挂接雏形（迁移 001）+脉络每课题全局单图（迁�
 ## 后果
 
 - 跨图移动文献=直接连线同删（用户明示语义——调研矩阵「移动 F1→F2」行）；
-  确认弹窗明示。
+  移动代价现行实现=事务序内静默清边（无弹窗）。
 - catalogNo 全仓退役（lineageCatalogNos 单源删除；lineage.json 导出
   schema_version 2：catalog_no→pub_no）。
 - slot 组域扩为（folderId,year,month）——同图内唯一、跨图独立。

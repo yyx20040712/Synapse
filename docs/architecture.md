@@ -186,11 +186,11 @@ flowchart TB
   A["双击文献 library.openPaper<br/>（open-paper-bus 事件+闩锁）"] --> B["api.reader.open(paperId)"]
   B --> C["reader.service<br/>fileUrl/fileName 组装 + lastReadPage"]
   C --> D["fileUrl = app-file://paperId"]
-  D --> E["PdfCanvas（唯一静态 import pdfjs-dist 面=白名单五文件，INV-16）<br/>worker ?url；DPR/取消队列"]
+  D --> E["PdfDocProvider（pdfjs-dist import 白名单五文件之一——INV-16：<br/>静态三件+动态两件）worker ?url；DPR/取消队列"]
   E --> F["TextLayer（--scale-factor 必设）"]
   F --> G["SelectionLayer<br/>划选 → 工具条 → selectionToAnchor 三元组<br/>（锚根=选区所在页盒内 .textLayer；重锚用同一页根）"]
   G --> H["annotation-anchor<br/>quote+prefix+suffix / start-end / rects 三重定位"]
-  H --> I["AnnotationLayer<br/>重开时 verifyQuote 显示级重锚，失败回退 rects"]
+  H --> I["AnnotationLayer<br/>重锚三层编排：项几何 verifyQuoteItem 主链→DOM→存量回退"]
   H --> J["持久化：annotations.repo"]
 ```
 
@@ -210,15 +210,16 @@ flowchart TB
     （gap-cells 间隙单元→slots 槽位分配→zapply Z 形施加→residual 残余→chain
     五态链编排 direct→h-slip→detour→band→overlap；坐标集封闭=段坐标∈锚/桩∪槽位集
     ——ADR-0023/0024；detour=网格通道模型）。
-  - 交互=useEdgeComposer 连线编辑状态机 / useDrawLine 画线+12 锚吸附
-    （钉定锚体系）/ card-drag-grid 拖拽算术落点 / use-edge-edit 调线 /
-    drag-autoscroll 四会话统一自动滚动。
-  - 悬浮笔记=LineageFloatingNotes（交互门三源：edit∧select∧非 saving——INV-149）
+  - 交互=use-edge-edit 调线态机+useDrawLine 画线+12 锚吸附
+    （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
+    drag-autoscroll 四会话统一自动滚动（INV-80）。
+  - 悬浮笔记=LineageFloatingNotes（交互门四源：edit∧select∧非 saving∧非 recovery 冻结——INV-149）
     +lineage-note-draft 草稿四落定（INV-150）。
-  - 写路径=lineage-write-queue（FIFO+同 id 整替）+recoveryScheduler（恢复副本）
+  - 写路径=lineage-write-queue（FIFO；upsert 同 id 整替、patch-node 字段级融合）+recoveryScheduler（恢复副本）
     +lineage.store 编辑会话（beginUnit 快照式 undo/redo，保存成功清栈——INV-94）。
-- main 域 `services/lineage/`（边守卫单口 upsertEdge：自环/悬空端点/跨图/
-  重复边/成环/via 校验拒；floating-notes.service）+`repos/lineage.repo(.rows)`+
+- main 域 `services/lineage/`（边守卫单口 upsertEdge 七校验：自环/悬空端点/
+  跨图/重复边/成环/via/端点锚校验拒——INV-27；多父放行、kind 恒 'manual'；
+  floating-notes.service）+`repos/lineage.repo(.rows)`+
   `lineage.write-guards.ts`（month/slot 归一+lineTypeNames 校验）。
 - 排序契约=lineageOrder 唯一纯函数（shared/models/lineage.ts，三消费面禁双实现）。
 - AI 可读导出=corpus 会话第六件套 lineage.json（递归 alphabetical 键序，golden 锁定）。
@@ -288,9 +289,10 @@ flowchart TB
 本地 `npm run verify` 六段链（不含 e2e 与覆盖率）：quality → tickets →
 lint → typecheck → test → build。
 
-- quality 多段：占位/乱码/跨域/行数分级（repo≤300·组件≤250）/分层方向解析
-  /同值双常量棘轮/AST tsx inline 色/CSS var() 语义锚/src 模型代号负锚/e2e 截图
-  负锚/节点唯一来源负锚词表。
+- quality 多段：占位/乱码/跨域/行数分级（repo≤300·组件≤250·CSS 450）/分层
+  方向解析/同值双常量棘轮/CSS 字号+色值 token 负锚（AST inline 色规则驻
+  eslint.config.js——quality 6b 段哨兵防回退）/CSS var() 语义锚/src 模型代号
+  负锚/e2e 截图负锚/节点唯一来源负锚词表/src-main 冲突替换式删除负锚。
 - tickets：工单号一致性/绑定对账/已裁决域对账（规则 6 以 ROADMAP 退役页
   `### P7-X：` 锚段集为已裁决域；done 票的 file 指向已删除文件时降级为
   note 观测——机制退役遗留定位符不卡 CI）。
@@ -339,7 +341,7 @@ npm ci 阶段。完整环境事实（Node 24 锁定等）=AGENTS.md「环境事�
 ```mermaid
 flowchart TB
   L1["① 出网：http-client 白名单 3 host + redirect:error + 20MB 上限"]
-  L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据<br/>will-navigate 全拒 · setWindowOpenHandler deny · 权限全拒"]
+  L2["② 外链：shell-guard 拒 localhost/私网/IP 字面量/带凭据<br/>will-navigate 拒（唯一例外=同 URL 重载）· setWindowOpenHandler deny · 权限最小放行（仅 clipboard-sanitized-write）"]
   L3["③ 进程：sandbox + contextIsolation 双开 · nodeIntegration 双关<br/>preload 白名单桥，零 ipcRenderer 泄漏"]
   L4["④ 内容：CSP 双通道（构建 meta + dev 头）无 unsafe-eval<br/>connect-src 'self' app-file:（受管文件取数通道）"]
   L5["⑤ 数据：SQL 全参数绑定 + escapeFtsQuery<br/>app-file:// paperId 白名单 → 受管根前缀校验<br/>renderer 零路径 · 写盘仅经系统对话框"]

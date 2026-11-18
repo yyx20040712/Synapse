@@ -71,7 +71,7 @@ CREATE TABLE lineage_edges (
 8. 新表 `lineage_graph_meta`（图级 KV）：现行键=lineTypeNames（色行名恰 6 行、空名归一「待命名」——schema 单源=src/shared/models/lineage.ts lineTypeNamesSchema）；lineTypes 为历史配置（四组线型体系随 kind 退役，仅为历史留档）；现行线色口径=INV-108 线色双值。
 9. 含金量投影（现行生效）：graph 通道逐文献节点透出 paperMetrics（citedByCount/venueTier+可选 venue/impactFactor）——数据来自 papers 既有列缓存、graph join 透出（键=paperId，主题节点不入表，渲染层零额外取数）；venueTier 映射单源=shared/venue-tier.ts venueToTier。单源=src/main/services/lineage/lineage.service.ts（LineagePaperMetrics 与 graph 读面）。
 
-行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md（INV-27 已随 2026-11-18 登记册修正对齐本现行形态：六校验+多父放行）。
+行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md（INV-27 已随 2026-11-18 登记册修正对齐本现行形态：七校验+多父放行）。
 
 保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态投影；退出拦截聚合面扩图视图脏态。
 

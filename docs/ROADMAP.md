@@ -53,7 +53,7 @@ tab 栏（单窗口多文献）+ reader.store per-tab 重构 + 灰点投影 +
 
 ### P7-G：AI 传感器链条（B3 增量裁决——用户连续裁决 D1-D6+七问 v1，方向已定）✅
 
-SR2-AI-01~05 应用面（ai_notes 独立表/提取管线/语料导出五件套）
+SR2-AI-01~05 应用面（ai_notes 独立表/提取管线/语料导出——v1 五件套，现行六件含 lineage.json）
 +SR2-AI-06~10 回灌联动组（ADR-0015 伴随进程文件协议/回灌导入器/笔记面板
 AI 面/AI 标注渲染对等/zcode 联动）；验收=repo 单测/多页夹具断言/导出
 golden/e2e 全链/queue 幂等。
