@@ -261,7 +261,6 @@ export function createPapersService(deps: LibraryServiceDeps): ApiHandlers['pape
             year: paper.year,
             x: null,
             y: null,
-            tags: null,
             month: null,
             folderId: req.toFolderId
           }
