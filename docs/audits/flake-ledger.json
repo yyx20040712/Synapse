@@ -245,6 +245,24 @@
    "resolution": "observing（C-03 观察门：白天再现即升级 F-E2EFLK-01 排查优先级）；CI 面=windows-latest 另案 F-CIFLK-01 已修"
   },
   {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "γ4 [F-SLOTGRID-01 U4] 奇行候选/落点几何：候选含奇行 cell φ=100+实态槽入奇行+settle 落位=positionOf 奇行支（:2067）",
+   "count": 1,
+   "fingerprint": "全量套件负载下单现（2026-11-18 audit-disposal 收尾全量 152/154 两红之一：spec:2157 liveRowOdd Expected true/Received false——拖拽悬停期实态槽未入奇行 .tl-row.odd；8.4s fail-fast）；同日同窗两 spec 复跑 34/34 本例绿；同日前场（audit-disposal P8 收批）lineage.spec 全量 27/27 本例绿=同代码绿史在档；audit-disposal 各批 lineage 域改动（走线 EPS/edge-edit 会话/timeline-nav-sync accent）与本用例卡拖/槽位域零文件交集",
+   "status": "observing",
+   "first_seen": "2026-11-18",
+   "resolution": "首现 observing（通则=同用例 2 次非确定失败即立案；复跑绿不销项——失败指纹在档）；error-context=test-results/run-2026-11-18T09-04-36-613Z/…γ4…；再现时首取该快照对照本指纹"
+  },
+  {
+   "spec": "tests/e2e/lineage-visfb67-floor.spec.ts",
+   "case": "V67-05 [轮 3 B1] 拖拽容量输入归一化：1440×860 4 卡月 D 原位松手零写+A 跨行拖至 row1 落点（:340）",
+   "count": 1,
+   "fingerprint": "全量套件负载下单现（2026-11-18 audit-disposal 收尾全量与 γ4 同跑两红之一）；同日同窗两 spec 复跑 34/34 本例绿；audit-disposal 各批改动与窄视口地板/容量归一化域零文件交集",
+   "status": "observing",
+   "first_seen": "2026-11-18",
+   "resolution": "首现 observing（同上通则）；与 γ4 条目同跑双红=负载窗共现注记（族级线索：全量尾部拖拽几何族——T9/S4/T12 历史观察面同域，F-E2EFLK-01 族口径参考）；再现即触立案线"
+  },
+  {
    "spec": "tests/e2e/ai-cascade-delete.spec.ts",
    "case": "E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存（:28）",
    "count": 7,
