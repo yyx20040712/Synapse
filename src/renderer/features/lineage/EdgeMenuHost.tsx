@@ -3,6 +3,8 @@
  * [F-LGRAPH-01②U5] EdgeMenuHost —— 调线菜单宿主（EdgeOverlay 拆件——组件
  * 250 行红线）：线/顶点两态菜单渲染+动作收口（store 单口——一动作=一
  * 编辑单元沿 store 各方法；删点分治=edge-edit 代数单源）。
+ * [R2-C3] via 动作（删点/重置走线）经 onCommitVia 上抛宿主统一提交门
+ * （edge-via-commit——非法回弹+清除回自动），本件不再直写 setEdgeVia。
  * [回炉 R14] 菜单 portal 出 .tl-content（transform 祖先劫持 fixed 包含块
  * ——缩放态错位根治；fixed 定位恢复视口基准）。
  * [F-ALIGN-01] 画布空白菜单态随「建点入口…」唯一菜单项退役删除——本件
@@ -19,6 +21,8 @@ export function EdgeMenuHost(props: {
   target: EdgeMenuTarget
   selEdge: LineageEdge | null
   handlesPl: EditPolyline | null
+  /** [R2-C3] via 提交单口（宿主 EdgeOverlay 注入统一提交门——非法回弹/清除回自动） */
+  onCommitVia(via: LineageViaPoint[] | null): void
   onClose(): void
 }): JSX.Element {
   const { selEdge } = props
@@ -36,7 +40,7 @@ export function EdgeMenuHost(props: {
       onReset={() => {
         // [回炉 R19] 自动线（via 已空）重置=no-op（零写零单元——重置目标缺席）
         if (selEdge === null || selEdge.via === undefined) return
-        useLineageStore.getState().setEdgeVia(selEdge.id, null)
+        props.onCommitVia(null)
       }}
       onDelete={() => {
         if (selEdge !== null) useLineageStore.getState().removeEdge(selEdge.id)
@@ -45,8 +49,8 @@ export function EdgeMenuHost(props: {
         const menu = props.target
         if (selEdge === null || menu.kind !== 'vertex' || props.handlesPl === null) return
         const out: { via: LineageViaPoint[] | undefined } = deleteVertexAlgebra(props.handlesPl, menu.idx)
-        // [F-VISFB-66] 清除=显式 null（setEdgeVia 约定迁移——undefined→null）
-        useLineageStore.getState().setEdgeVia(selEdge.id, out.via ?? null)
+        // [F-VISFB-66] 清除=显式 null（undefined→null——[R2-C3] 经提交门免门直写）
+        props.onCommitVia(out.via ?? null)
       }}
       onClose={props.onClose}
     />,

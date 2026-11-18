@@ -16,7 +16,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeApiStub } from '../../utils/api-client-mock'
+import { makeApiStub, toastStoreSpy } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
   lineage: { graph: vi.fn() }
@@ -134,7 +134,7 @@ afterEach(() => {
 
 /** 布局：A(0,0) B(400,0) 同月框；边 e1 via=[(200,0)]（A 右锚→B 左锚水平线）。
  *  store 态同步（调线域读写经 store 单源——props 仅供渲染面） */
-function layout(edgeVia?: Array<{ x: number; y: number }>, third = false): void {
+function layout(edgeVia?: Array<{ x: number; y: number }>, third = false, thirdPos: [number, number] = [612, 230]): void {
   const nodes = third ? [node('A'), node('B'), node('C')] : [node('A'), node('B')]
   const edges = [edgeVia === undefined ? { ...edge('e1', 'A', 'B', []), via: undefined } : edge('e1', 'A', 'B', edgeVia)]
   useLineageStore.setState({ nodes, edges: edges as LineageEdge[], saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
@@ -143,7 +143,7 @@ function layout(edgeVia?: Array<{ x: number; y: number }>, third = false): void 
   stubRect(frame, 0, 0, 800, 200)
   stubRect(host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement, 12, 30)
   stubRect(host!.querySelector('.tl-card[data-node-id="B"]') as HTMLElement, 412, 30)
-  if (third) stubRect(host!.querySelector('.tl-card[data-node-id="C"]') as HTMLElement, 612, 230)
+  if (third) stubRect(host!.querySelector('.tl-card[data-node-id="C"]') as HTMLElement, thirdPos[0], thirdPos[1])
   flushRafs()
 }
 
@@ -309,6 +309,52 @@ describe('U5 手动调线编辑态', () => {
     expect(s.edges[0]?.via).toBeUndefined()
     expect(s.saveStatus).toBe('clean')
     expect(host!.querySelector('[data-testid="edge-handles"]')).toBeNull() // 末态 idle
+  })
+
+  it('[R2-C3] 手动 via 拖段沉入第三方卡=提交门回弹（零写零单元零 dirty+toast+selected 保持）', () => {
+    // A(12,30)/B(412,30) 同行，C(206,130) 行下第三方；via 两点水平段 (200,66)-(300,66)
+    // 拖沉 dy=100 → 中段 y=166 穿 C 膨胀带 (202..338)×(126..206) → 三档均碰障回弹
+    layout([
+      { x: 200, y: 66 },
+      { x: 300, y: 66 }
+    ], true, [206, 130])
+    click(hitOf('e1'))
+    const before = useLineageStore.getState().undoStack.length
+    segDown(hitOf('e1'), 250, 66) // via 内点对段
+    docMove(250, 166) // 法向投影 dy=+100（水平段仅 dy）
+    docUp(250, 166)
+    const s = useLineageStore.getState()
+    expect(s.undoStack.length).toBe(before) // 零撤销单元
+    expect(s.edges[0]?.via).toEqual([{ x: 200, y: 66 }, { x: 300, y: 66 }]) // 零写（回拖前定态）
+    expect(s.saveStatus).toBe('clean') // 零 dirty
+    expect(s.queue.length).toBe(0) // 零入队
+    expect(toastStoreSpy).toHaveBeenCalledWith('落点无可行走线，已回弹', 'error')
+    expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull() // selected 保持
+  })
+
+  it('[R2-C3] 删除顶点 L 重连穿第三方卡=提交门回弹（via 原样零单元零 dirty）', () => {
+    // via=[(170,10),(380,10)] 上行绕行链净空；删 idx0 → L 重连产生
+    // (140,y)→(380,y) 横段穿 C(212,30) 膨胀带 → 回弹（菜单路径经提交门）
+    layout([
+      { x: 170, y: 10 },
+      { x: 380, y: 10 }
+    ], true, [212, 30])
+    click(hitOf('e1'))
+    const handles = host!.querySelectorAll('[data-testid="edge-handle-vertex"]')
+    expect(handles.length).toBe(2)
+    rc(handles[0] as HTMLElement, 30, 30) // 顶点 #1 菜单
+    const menu = document.querySelector('[data-testid="edge-menu"]')
+    expect(menu?.textContent).toContain('删除顶点')
+    const before = useLineageStore.getState().undoStack.length
+    act(() => {
+      menu!.querySelector('[role="menuitem"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const s = useLineageStore.getState()
+    expect(s.undoStack.length).toBe(before) // 零撤销单元
+    expect(s.edges[0]?.via).toEqual([{ x: 170, y: 10 }, { x: 380, y: 10 }]) // via 原样
+    expect(s.saveStatus).toBe('clean')
+    expect(s.queue.length).toBe(0)
+    expect(toastStoreSpy).toHaveBeenCalledWith('落点无可行走线，已回弹', 'error')
   })
 
   it('[ln-C3] 手动 via 拖段中断（Esc→move→up）=零写零单元+idle（会话层同修——行为向 INV-80/RR2·W-5 对齐）', () => {

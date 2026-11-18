@@ -147,7 +147,7 @@ describe('R2-C1 最终净空门半径分档', () => {
     expect(polylineClearStubs(r6.samples, [], obstacles)).toBe(false)
     expect(polylineClearStubs(r3.samples, [], obstacles)).toBe(false)
     expect(polylineClearStubs(r0.samples, [], obstacles)).toBe(true)
-    expect(finalizePath(skeleton, [], obstacles, false)).toEqual({ d: r0.d })
+    expect(finalizePath(skeleton, [], obstacles)).toEqual({ d: r0.d })
   })
 
   it('r=0 尖角仍碰障时返回 blocked 与空 d，不再输出非法线', async () => {
@@ -155,7 +155,7 @@ describe('R2-C1 最终净空门半径分档', () => {
     const obstacles = [rect(40, -10, 20, 20)]
     const skeleton = [pt(0, 0), pt(100, 0)]
     expect(polylineClearStubs(buildRoundedPath(skeleton, 0).samples, [], obstacles)).toBe(false)
-    expect(finalizePath(skeleton, [], obstacles, false)).toEqual({ d: '', clearance: 'blocked' })
+    expect(finalizePath(skeleton, [], obstacles)).toEqual({ d: '', clearance: 'blocked' })
   })
 
   it('slotAssign 施加的非法回折 jog 由最终门阻断，而非只看分配前骨架', async () => {
@@ -172,12 +172,12 @@ describe('R2-C1 最终净空门半径分档', () => {
     expect(assigned.pts).not.toEqual(before)
     expect(assigned.pts.length).toBeGreaterThan(6)
     expect(polylineClearStubs(buildRoundedPath(stripCollinear(assigned.pts), 0).samples, [], allObstacles(snap))).toBe(false)
-    expect(finalizePath(assigned.pts, [], allObstacles(snap), false)).toEqual({ d: '', clearance: 'blocked' })
+    expect(finalizePath(assigned.pts, [], allObstacles(snap))).toEqual({ d: '', clearance: 'blocked' })
   })
 
-  it('manual-override 本段仍只做圆角化，不上自动最终门', async () => {
+  it('[R2-C3] manual-override 同上终门：碰障骨架三档均 blocked 空 d（终门对所有 route 态统一）', async () => {
     const { finalizePath } = await import('../../../src/renderer/features/lineage/routing/finalize')
     const skeleton = [pt(0, 0), pt(100, 0)]
-    expect(finalizePath(skeleton, [], [rect(40, -10, 20, 20)], true)).toEqual({ d: 'M 0 0 L 100 0' })
+    expect(finalizePath(skeleton, [], [rect(40, -10, 20, 20)])).toEqual({ d: '', clearance: 'blocked' })
   })
 })

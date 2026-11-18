@@ -488,7 +488,9 @@ describe('F-SLOTGRID-01 U2 corridor/fallback 退役负锚（方案切换=删旧�
         geom('e1', 'A', 'B'),
         geom('e2', 'A', 'C'),
         geom('e3', 'A', 'D'),
-        geom('e4', 'A', 'B', [{ x: 500, y: 136 }])
+        // [R2-C3] via 点取净空带（免检时代值 (500,136) 落 C 卡 PAD 膨胀带内
+        // →新终门 blocked 空 d；本用例意图锁 route 态域，夹具改净空位承接）
+        geom('e4', 'A', 'B', [{ x: 500, y: 236 }])
       ],
       snap
     )
@@ -536,15 +538,59 @@ describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪
     expect(allObstacles(snap)).toHaveLength(3)
   })
 
-  it('manual-override 不参与避让（via 在场穿 yearHead 照走——现状语义沿承）', () => {
+  it('manual-override 终门承接（via 穿 yearHead → route 仍 manual-override 但 clearance=blocked 空 d——[R2-C3]）', () => {
+    // yearHead(290,224,40,10) 膨胀 [286,334]×[220,234]——via 竖段 x=300 穿头
+    //（原夹具 x=144 头在 via 侧旁未相交，断言仅锁 route 态；本例把头移进
+    // via 行进带，锁终门承接合同：三档均碰障=blocked，数据保留不删边）
     const r = routeEdge(
       geom('e1', 'A', 'B', [
         { x: 300, y: 136 },
         { x: 300, y: 336 }
       ]),
-      columnSnap([rect(144, 224, 40, 10)])
+      columnSnap([rect(290, 224, 40, 10)])
     )
     expect(r.route).toBe('manual-override')
+    expect(r.clearance).toBe('blocked')
+    expect(r.d).toBe('')
+  })
+
+  it('manual-override 障碍集=第三方（源/目标卡全链豁免——[R2-C3] 审查反例回归锚）', () => {
+    // 同排相邻卡 20px 间隙、钉定右中/左中锚：物化 V 形拖段（单 via 斜段对）
+    // 沉降 30px 不穿任何第三方障碍 → 净空。字面全卡谓词下曼哈顿桩区
+    //（正交链=欧氏等长）量不准斜段自卡行程，dy≥15 确定性回弹=回归缺陷；
+    // 穿卡语义单源（crossCardSegments）本就豁免源/目标卡，终门对齐。
+    const gap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(0, 0, CARD_W, CARD_H)],
+        ['B', rect(148, 0, CARD_W, CARD_H)]
+      ])
+    })
+    const pins = { fromAnchor: { side: 'right' as const, slot: 1 as const }, toAnchor: { side: 'left' as const, slot: 1 as const } }
+    for (const dy of [15, 30, 40]) {
+      const r = routeEdge({ edgeId: 'e', sourceId: 'A', targetId: 'B', via: [{ x: 138, y: 36 + dy }], ...pins }, gap)
+      expect(r.clearance, `dy=${dy}`).toBeUndefined()
+      expect(r.d.length, `dy=${dy}`).toBeGreaterThan(0)
+    }
+    // 贴自家端卡边（竖段 x=230 距卡缘 2px，在 PAD=4 带内）=用户主权放行
+    const hug = routeEdge(
+      geom('h1', 'A2', 'B2', [
+        { x: 230, y: 136 },
+        { x: 230, y: 336 }
+      ]),
+      makeSnap({ cards: new Map<string, Rect>([['A2', rect(100, 100, CARD_W, CARD_H)], ['B2', rect(100, 300, CARD_W, CARD_H)]]) })
+    )
+    expect(hug.clearance).toBeUndefined()
+    // 同一 V 形沉降但第三方卡落在下沉带 → blocked（承接合同不受豁免稀释）
+    const third = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(0, 0, CARD_W, CARD_H)],
+        ['B', rect(148, 0, CARD_W, CARD_H)],
+        ['C', rect(100, 60, 60, 60)]
+      ])
+    })
+    const hit = routeEdge({ edgeId: 'e', sourceId: 'A', targetId: 'B', via: [{ x: 138, y: 120 }], ...pins }, third)
+    expect(hit.clearance).toBe('blocked')
+    expect(hit.d).toBe('')
   })
 })
 

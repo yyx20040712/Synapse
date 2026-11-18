@@ -4,7 +4,8 @@
  *
  * ── 态空间（宪法状态纪律）──
  * idle → selected（单击线）→ dragging{vertex|segment}（pointerdown 手柄/段）
- * → selected（pointerup 落定=一编辑单元 setEdgeVia）；selected → reconnect
+ * → selected（pointerup 落定=一编辑单元——[R2-C3] via 写入统一经提交门
+ * commitEdgeVia，非法即回弹零单元）；selected → reconnect
  * （拖端点圆柄——[F-VISFB-66 裁定 3] 换端=清 via 重算自动路径+重钉锚，move
  * 期预览=直线〔固定端锚 pt→cursor/snap——L 重正交端点代数已退役
  * 删除〕）→ selected（换端/换锚 reconnectEdge——分层表见 onEndDown）；
@@ -17,7 +18,8 @@
  *   =零编辑单元（不 beginUnit 不 dirty 不入队；本端卡同锚格并入）。
  * - 自动线（无 via）拖段=[ln-C3] 本地物化段中点进段拖会话（不写库）：同
  *   手势可拖（法向投影+轴过滤磁吸沿承段拖口径），pointerup 恒写一
- *   setEdgeVia=一撤销单元（零位移=物化中点=按下即松手转换末态保形）；
+ *   via 提交（[R2-C3] 提交门）=一撤销单元（零位移=物化中点=按下即松手
+ *   转换末态保形）；
  *   中断（cancel/blur/Esc）不写=不转换（RR2/W-5）；双击加点=即写沿承。
  * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=4）=dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
@@ -43,6 +45,7 @@ import {
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
 import { DRAW_SNAP_R } from './useDrawLine'
 import { runDocDragSession } from './edge-drag-session'
+import { commitEdgeVia } from './edge-via-commit'
 import { useBlockedEdgeEdit } from './use-blocked-edge-edit'
 import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 import { useLineageStore } from './lineage.store'
@@ -292,7 +295,8 @@ export function useEdgeEdit(args: {
       if (e === undefined || pl === null) return
       const seg = nearestSegment(pl, pt)
       const out = addPointOnSegment(pl, seg)
-      store().setEdgeVia(edgeId, out.via)
+      // [R2-C3] 统一提交门（非法 via 回弹：零写零单元零 dirty+toast）
+      commitEdgeVia({ host: args.hostRef.current, edge: e, via: out.via })
       setState({ phase: 'selected', edgeId })
     },
     [store, polylineOf, nearestSegment, enabledRef]
@@ -363,8 +367,9 @@ export function useEdgeEdit(args: {
         // [RR 补批 RR13] via 等值短路：拖放回原位=no-op（不 beginUnit 不 dirty
         // 不入队——R19「重置 no-op 不入栈」对称语义）
         if (!viaEquals(s.startVia, s.liveVia)) {
-          // [F-VISFB-66] 清除=显式 null（setEdgeVia 约定迁移——原 undefined）
-          store().setEdgeVia(cur.edgeId, s.liveVia.length > 0 ? s.liveVia : null)
+          // [R2-C3] 统一提交门（非法 via 回弹；空链归一 null=清除回自动——
+          // 门内单源，[F-VISFB-66] null 约定沿承）
+          commitEdgeVia({ host: args.hostRef.current, edge: e, via: s.liveVia })
         }
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
@@ -455,7 +460,8 @@ export function useEdgeEdit(args: {
   )
 
   /** 段拖拽（selected 态按住命中层拖动——kind=segment；自动线=[ln-C3] 本地
-   *  物化段中点进会话，up 恒写一单元——一次拖段=一 setEdgeVia=一步撤销） */
+   *  物化段中点进会话，up 恒写一单元——一次拖段=一 via 提交（[R2-C3] 提交
+   *  门）=一步撤销） */
   const onSegDown = useCallback(
     (pt: Pt, button: number): void => {
       const cur = stateRef.current
@@ -495,11 +501,11 @@ export function useEdgeEdit(args: {
           // [RR 补批 RR13] via 等值短路（vertex 同式——回原位=no-op 零单元）；
           // [ln-C3] 物化链恒写（绕过短路——零位移=物化中点=现行转换末态保形）
           if (mat !== null || !viaEquals(s.startVia, s.liveVia)) {
-            store().setEdgeVia(cur.edgeId, s.liveVia)
+            commitEdgeVia({ host: args.hostRef.current, edge: e, via: s.liveVia })
           }
         } else if (mat !== null) {
-          // [ln-C3] 零位移（无 move 即松手）=物化转换恒写
-          store().setEdgeVia(cur.edgeId, base.via)
+          // [ln-C3] 零位移（无 move 即松手）=物化转换恒写（经 [R2-C3] 提交门）
+          commitEdgeVia({ host: args.hostRef.current, edge: e, via: base.via })
         }
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })

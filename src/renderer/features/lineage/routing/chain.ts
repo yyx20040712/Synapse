@@ -10,7 +10,8 @@
  * →band 阶梯→outer-ring 外圈绕行→overlap 线-线重叠）——用户裁决「形态上
  * 尽量少拐弯」由链序+候选
  * 全序拐弯数键双层承载**。同锚多边先散锚点（12 锚全满=共享原锚）；detour
- * 通道槽占用经 ChannelUse 槽位级空槽判定。槽位与 jog 施加后，自动路径经
+ * 通道槽占用经 ChannelUse 槽位级空槽判定。槽位与 jog 施加后，路径（含
+ * manual-override——[R2-C3] 终门对所有 route 态统一）经
  * r=6→3→0 最终采样净空门；三档均碰障=blocked 空 d，不再输出尖角非法线。
  * 确定性红线：无随机/无 Date/无三角函数；并列取字典序/
  * 几何序。纯函数零 DOM import（快照采集驻 EdgeOverlay hook 层）。
@@ -49,7 +50,8 @@ export interface LayoutSnapshot {
 
 /** [F-UIRES-03 C2·P7] 障碍集组装单源（三源并集=全部卡∪月标注∪年份头——
  *  [F-SLOTGRID-01 U2 用户裁决①] 空卡位区非障碍（空卡片可以随意穿）；manual-
- *  override 边不消费本集〔via 在场不避让，现状语义沿承〕） */
+ *  override 边终门同检本集〔[R2-C3] via 折线碰障=blocked 空 d——承接合同，
+ *  不参与避让链重排的现行语义不变〕） */
 export function allObstacles(snap: LayoutSnapshot): Rect[] {
   return [...snap.cards.values(), ...snap.labels, ...snap.yearHeads]
 }
@@ -156,14 +158,18 @@ function routeOne(
   // override 不 commit」沿承 N-05r2）
   const fromPin = e.fromAnchor !== undefined ? pinnedPick(src, e.fromAnchor) : undefined
   const toPin = e.toAnchor !== undefined ? pinnedPick(tgt, e.toAnchor) : undefined
-  // manual-override：via 在场（锚=端点卡按主向定边规则定；不参与避让/车道）。
-  // 本段保持最终门免检，提交门另行登记。
+  // manual-override：via 在场（锚=端点卡按主向定边规则定；不参与避让链/
+  // 车道重排）。[R2-C3] 终门同检：新 via 写入由提交门（edge-via-commit.ts）
+  // 先行拦截，本门承接旧 via 与重排后非法 via（碰障=blocked 空 d，数据保留）。
+  // 障碍集=第三方（源/目标卡全链豁免——与穿卡警示 crossCardSegments 单源
+  // 语义对齐〔穿卡=第三方卡〕；审查反例：短间隙钉定边物化 V 形斜段的
+  // 自卡膨胀带行程超过曼哈顿桩区，字面全卡谓词致 dy≥15 确定性回弹）。
   if (e.via !== undefined && e.via.length > 0) {
     const a = fromPin ?? selectAnchor(src, e.via[0]!)
     const b = toPin ?? selectAnchor(tgt, e.via[e.via.length - 1]!)
     // [F-ANCHFIX-01 批 1c] 不 commit（散开语义零变）——anchorMarks 从
     // 实际取数（钉定/规则）派生计入（显示真值：线视觉落在该锚）
-    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', stubExcluded: [], anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
+    return { edgeId: e.edgeId, skel: [a.pt, ...e.via, b.pt], route: 'manual-override', stubExcluded: ends, anchorMarks: `${anchorId(e.sourceId, a.side, a.slot)},${anchorId(e.targetId, b.side, b.slot)}` }
   }
   const commit = (picks: ReadonlyArray<[string, Side, number]>): void => {
     for (const [id, side, slot] of picks) use?.commit(id, side, slot)
@@ -308,7 +314,10 @@ function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
 }
 
 const toPath = (r: SkelResult, all: readonly Rect[]): RoutedPath => {
-  const finalized = finalizePath(r.skel, r.stubExcluded, all, r.route === 'manual-override')
+  // [R2-C3] manual-override 障碍集=第三方（源/目标卡=stubExcluded 全链豁免，
+  // 与穿卡警示单源语义对齐）；自动态=全卡（中段复检含全卡——INV-79 不变）
+  const obs = r.route === 'manual-override' ? all.filter((o) => !r.stubExcluded.includes(o)) : all
+  const finalized = finalizePath(r.skel, r.stubExcluded, obs)
   return {
     edgeId: r.edgeId,
     d: finalized.d,

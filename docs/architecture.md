@@ -219,7 +219,12 @@ flowchart TB
     clearance='blocked'、d=''，可见/命中两层及编辑手柄、警示、虚影均撤销，
     按边提示一次，布局重算自动重试；selected 保留以便恢复后手柄回归，边数据不删，
     blocked 无几何元数据节点保留 data-anchors，占用发布跟随边数据而非路由成功。
-    overlap 只豁免线-线槽位重合，不豁免线-卡相交；manual-override 本段保持免检。
+    overlap 只豁免线-线槽位重合，不豁免线-卡相交；manual-override 同过终门
+    （R2-C3）：障碍集=第三方（源/目标卡全链豁免——与穿卡警示 crossCardSegments
+    单源语义对齐），碰第三方障碍=blocked 显式态，承接旧 via 与重排后非法 via；
+    新 via 写入由提交门 edge-via-commit.ts 统一拦截（拖顶点/拖段含物化/双击
+    加点/菜单删点与重置四口单点收敛——非法松手即回弹：零写零撤销单元零
+    dirty+toast；via=null 清除免门直写回自动路由）。
   - 交互=use-edge-edit 调线态机+useDrawLine 画线+12 锚吸附
     （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
     drag-autoscroll 四会话统一自动滚动（INV-80）。

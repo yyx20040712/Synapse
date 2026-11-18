@@ -19,9 +19,10 @@
  *   paths 按 edgeId Map 配对渲染（回炉 1 W5——禁下标 zip）。
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { LineageEdge, LineageNode } from '@shared/models/lineage'
+import type { LineageEdge, LineageNode, LineageViaPoint } from '@shared/models/lineage'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
+import { commitEdgeVia } from './edge-via-commit'
 import { edgeVisualOpacity, edgeVisualStyle, pinOf } from './edge-overlay-geom'
 import { isEdgeDimmed } from './focus-bright'
 import { useLineageRoutes } from './use-lineage-routes'
@@ -139,6 +140,14 @@ export function EdgeOverlay(props: {
     edit.state.phase === 'idle'
       ? null
       : useLineageStore.getState().edges.find((e) => e.id === (edit.state as { edgeId: string }).edgeId) ?? null
+  /** [R2-C3] 菜单 via 动作（删点/重置）统一提交门（非法回弹+清除回自动） */
+  const commitVia = useCallback(
+    (via: LineageViaPoint[] | null): void => {
+      if (selEdge === null) return
+      commitEdgeVia({ host: svgRef.current, edge: selEdge, via })
+    },
+    [selEdge]
+  )
 
   return (
     <>
@@ -228,6 +237,7 @@ export function EdgeOverlay(props: {
         target={edit.menu}
         selEdge={selEdge}
         handlesPl={edit.handlesPl}
+        onCommitVia={commitVia}
         onClose={edit.closeMenu}
       />
     )}
