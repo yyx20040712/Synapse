@@ -195,6 +195,25 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
     expect(r.overlapExempt).toBe(true)
   })
 
+  it('① direct 同柱 EPS 容差（ln-C1 容差硬化）：同列卡 x 差 0.03≤CELL_EPS → 判同柱 direct（不依赖浮点严格等值）', () => {
+    // A(100,100)/B(100.03,300) 合成分数快照：锚 aPt=(164,172)/bPt=(164.03,300)
+    // ——x 差 0.03≤gap-cells CELL_EPS=0.05 判同柱（远小于锚槽距 32/槽位距 8/列
+    // 距 200）；retain ideal=164 恰中槽 idx2 几何不动；d 的 fmt 0.1 量化 →
+    // 输出与完美对齐夹具（本 describe 首例）全等（亚像素斜率无感）
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['B', rect(100.03, 300, CARD_W, CARD_H)]
+      ])
+    })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('direct')
+    expect(r.pts).toEqual([{ x: 164, y: 172 }, { x: 164.03, y: 300 }])
+    expect(r.d).toBe('M 164 172 L 164 300')
+    expect(r.slotMarks).toBe('0:2')
+    expect(r.anchorMarks).toBe('A:b1,B:t1')
+  })
+
   it('端点卡缺失：d 空+route overlap+onWarn（防御面沿承——走廊族退役后占位态=overlap）', () => {
     const snap = makeSnap({ cards: new Map<string, Rect>([['A', rect(100, 100, CARD_W, CARD_H)]]) })
     const onWarn = vi.fn()

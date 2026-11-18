@@ -212,7 +212,8 @@ interface SlotCand {
   x: number
 }
 
-/** detour 骨架（前置=pa/pb 竖侧锚 x 全等=x₀ 且阻挡带集非空——chain ③ 态调用；
+/** detour 骨架（前置=pa/pb 竖侧锚同柱（chain CELL_EPS 容差判定，非浮点全等）
+ *  且阻挡带集非空——chain ③ 态调用；
  *  候选枚举尽/预算超限→null 降 band。**[RR1 W1] 贯通解（全带同槽）先于混合
  *  组合**（拐弯数主键全局承载——横移次数最少者胜）；混合 DFS 段内迭代
  *  chosen[i−1] 同槽候选优先（增量 0 拐）再按距离序。胜出即 commit 通道槽

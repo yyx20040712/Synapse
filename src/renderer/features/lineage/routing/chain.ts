@@ -16,6 +16,7 @@ import { AnchorUse, anchorId, anchorPick, anchorPoint, selectAnchor, sideAnchor,
 import { bandSkeleton } from './bands'
 import { PAD, polylineClearStubs } from './avoid'
 import { ChannelUse, detourSkeleton } from './detour'
+import { CELL_EPS } from './gap-cells'
 import { buildRoundedPath, stripCollinear } from './rounding'
 import { slotAssign, type AssignEdge } from './slots'
 import type { LineageAnchor, LineageViaPoint } from '@shared/models/lineage'
@@ -173,7 +174,9 @@ function routeOne(
   const commit = (picks: ReadonlyArray<[string, Side, number]>): void => {
     for (const [id, side, slot] of picks) use?.commit(id, side, slot)
   }
-  // ① direct：主向竖向对齐直连（锚 x 相等单竖段）——钉定端直取（禁动）
+  // ① direct：主向竖向对齐直连（锚 x 相等单竖段——同柱判定按 CELL_EPS 容差，
+  // 不依赖浮点严格等值〔ln-C1：现行整数网格下恒等，分数坐标零静默降级〕）
+  // ——钉定端直取（禁动）
   const sa = selectAnchor(src, tc)
   const sb = selectAnchor(tgt, sc)
   const pa = fromPin ?? anchorPick(e.sourceId, src, sa.side, sa.slot, use)
@@ -183,7 +186,7 @@ function routeOne(
   // [RR1 N12 防御] 生效锚恒竖侧才入 detour：AnchorUse 散开可迁横边锚（左/
   //  右）——横边锚桩 aS.x≠x₀（外法线水平伸 10px）生对角线骨架；散开迁横
   //  边=detour 前置废→band/overlap 承接（12 锚域内零死角）
-  if (isVerticalSide(sa.side) && isVerticalSide(sb.side) && aPt.x === bPt.x && isVerticalSide(pa.side) && isVerticalSide(pb.side)) {
+  if (isVerticalSide(sa.side) && isVerticalSide(sb.side) && Math.abs(aPt.x - bPt.x) <= CELL_EPS && isVerticalSide(pa.side) && isVerticalSide(pb.side)) {
     if (polylineClearStubs([aPt, bPt], ends, obstacles)) {
       const picks: ReadonlyArray<[string, Side, number]> = [
         [e.sourceId, pa.side, pa.slot],
@@ -239,14 +242,15 @@ function routeOne(
     }
   }
   // ⑤ overlap 兜底：最短路线+忽略占用+overlapExempt 透出（设计 §2 overlap
-  //  行——x_s≠x_t 时 L 形先横后竖〔H<V 字典序 tie-break〕；确定性红线=形态
-  //  唯一，无随机；C 桥触发器观测面=overlapExempt 占比）
+  //  行——x_s≠x_t 时 L 形先横后竖〔H<V 字典序 tie-break〕；同柱判定=同 ① 门
+  //  CELL_EPS 容差口径〔ln-C1〕；确定性红线=形态唯一，无随机；C 桥触发器
+  //  观测面=overlapExempt 占比）
   const picks: ReadonlyArray<[string, Side, number]> = [
     [e.sourceId, pa.side, pa.slot],
     [e.targetId, pb.side, pb.slot]
   ]
   commit(picks)
-  const skel: Pt[] = aPt.x === bPt.x ? [aPt, bPt] : [aPt, { x: bPt.x, y: aPt.y }, bPt]
+  const skel: Pt[] = Math.abs(aPt.x - bPt.x) <= CELL_EPS ? [aPt, bPt] : [aPt, { x: bPt.x, y: aPt.y }, bPt]
   return { edgeId: e.edgeId, skel, route: 'overlap', stubExcluded: ends, anchorMarks: anchorMarksOf(picks), overlapExempt: true }
 }
 
