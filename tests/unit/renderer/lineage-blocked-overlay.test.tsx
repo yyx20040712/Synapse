@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-/** R2-C1 blocked 连线呈现：可见层/命中层均撤销，按边提示一次，布局变化自动重试。 */
+/** R2-C1 blocked 连线呈现：可见层/命中层均撤销，按边提示一次，布局变化自动重试。
+ * [R2-C2] 夹具墙改纵贯全域高墙（100,60,600,320——外圈四车道连接段必穿墙）：
+ * 矮墙已被 outer-ring 合法绕行，blocked 呈现面须用真不可布通几何驱动。 */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -104,7 +106,7 @@ describe('R2-C1 EdgeOverlay blocked 安全网', () => {
   it('两条不可布通边各自提示一次且不留 path；重算不重复提示，净空恢复后自动重画', () => {
     mount()
     setRect('A', 112, 100, 128, 72)
-    setRect('WALL', 100, 244, 600, 72)
+    setRect('WALL', 100, 60, 600, 320)
     setRect('B', 112, 388, 128, 72)
     flush()
 
@@ -129,7 +131,7 @@ describe('R2-C1 EdgeOverlay blocked 安全网', () => {
     expect(pathCount('path.tl-edge-hit')).toBe(2)
     expect(pathCount('g.tl-edge-blocked')).toBe(0)
 
-    setRect('WALL', 100, 244, 600, 72)
+    setRect('WALL', 100, 60, 600, 320)
     renderAt(3)
     flush()
     expect(pathCount('path.tl-edge')).toBe(0)
@@ -153,7 +155,7 @@ describe('R2-C1 EdgeOverlay blocked 安全网', () => {
     expect(host?.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
     expect(document.querySelector('[data-testid="edge-menu"]')).not.toBeNull()
 
-    setRect('WALL', 100, 244, 600, 72)
+    setRect('WALL', 100, 60, 600, 320)
     renderAt(1, true)
     flush()
     expect(host?.querySelector('[data-testid="edge-handles"]')).toBeNull()

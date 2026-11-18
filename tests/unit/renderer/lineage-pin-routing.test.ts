@@ -194,14 +194,16 @@ describe('F-VISFB-66·[回炉 R4] band 钉定族（bandSkeleton fromPin/toPin �
     expect(r.pts[0]).toEqual({ x: 100, y: 154 }) // A left/2=¾ 位
   })
 
-  it('钉定不可达→band 降 overlap（终落检查不过=兜底态——端点仍=钉定锚）', () => {
-    // toAnchor bottom/0：终落桩向下撞 B 卡身——band 终落检查不过
+  it('钉定不可达→band 降级 [R2-C2] 外圈底环承接（端点仍=钉定锚——底环沿 bottom 外法线进锚）', () => {
+    // toAnchor bottom/0：band 域终落桩自上方撞 B 卡身（vClear 不过）；[R2-C2]
+    // 外圈底车道 y=472+14=486：源右锚下行→底车道→自下方回桩进钉定锚合法
+    // （旧=overlap 兜底；端点主权不变）
     const r = routeEdge(
       { edgeId: 'e1', sourceId: 'A', targetId: 'B', toAnchor: { side: 'bottom', slot: 0 } },
       snapBand()
     )
-    expect(r.route).toBe('overlap') // 降级兜底
-    expect(r.pts[r.pts.length - 1]).toEqual({ x: 132, y: 472 }) // overlap 端点=钉定锚直取
+    expect(r.route).toBe('outer-ring')
+    expect(r.pts[r.pts.length - 1]).toEqual({ x: 132, y: 472 }) // 端点=钉定锚直取（主权不变）
   })
 })
 

@@ -236,11 +236,12 @@ function assignCell(
   return { rec: { edgeId, segIdx, cellId: cell.id, axis: cell.axis, ideal, overlapExempt: true, residual: false } }
 }
 
-/** a3 消费门（[F-SLOTGRID-01 U2] 五态制）：band/direct/detour 轴对齐段与
+/** a3 消费门（[F-SLOTGRID-01 U2] 六态制）：band/direct/detour 轴对齐段与
  *  h-slip 水平段入槽（h-slip 斜段另由 segConsumesCell 非轴对齐早退排除；
  *  detour 段=槽位域路线——槽消费与 INV-112 共线不变量同治）；overlap
  *  （兜底终态=忽略占用——槽位无意义）/manual-override（用户排位主权）
- *  两态不消费 */
+ *  /outer-ring（[R2-C2] 外圈车道坐标非槽位域——INV-SLOTGRID-02 第四类
+ *  坐标源，不入槽位分配）三态不消费 */
 const ROUTE_ELIGIBLE: ReadonlySet<RouteTag> = new Set<RouteTag>(['band', 'direct', 'detour', 'h-slip'])
 
 /** 走线候选位分配主入口（候选 B 单 pass）：消费枚举（a7 序+route 门——

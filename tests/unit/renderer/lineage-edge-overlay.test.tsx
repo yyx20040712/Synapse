@@ -226,7 +226,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(dOf()).toBe(d2)
   })
 
-  it('[F-SLOTGRID-01 U2] data-route 五态域正锚：direct/h-slip 非空读出（corridor/fallback DOM 零出现）+零 console.warn', () => {
+  it('[F-SLOTGRID-01 U2] data-route 六态域正锚：direct/h-slip 非空读出（corridor/fallback DOM 零出现）+零 console.warn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     // 非零卡矩形避免 blocked 安全网撤销全部 path，确保路由域断言读取真实节点。
     mountOverlay(
@@ -240,9 +240,9 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(routes).toHaveLength(2)
     expect(routes).toEqual(['direct', 'h-slip'])
     expect(routes.every((r) => r !== ''), 'route 非空卫').toBe(true)
-    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'overlap', 'manual-override'])
+    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'outer-ring', 'overlap', 'manual-override'])
     for (const r of routes) {
-      expect(allowed.has(r), `route=${r} ∈ 五态域（corridor/fallback 零出现）`).toBe(true)
+      expect(allowed.has(r), `route=${r} ∈ 六态域（corridor/fallback 零出现）`).toBe(true)
     }
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()

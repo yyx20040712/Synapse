@@ -1,6 +1,7 @@
 /**
- * [F-SLOTGRID-01 U2] lineage-routing 甲链例集 v2（五态：direct→h-slip→
- * detour→band→overlap+manual-override——设计 v1.4 §5.3 链序；corridor/
+ * [F-SLOTGRID-01 U2] lineage-routing 甲链例集 v2（六态：direct→h-slip→
+ * detour→band→outer-ring→overlap+manual-override——设计 v1.4 §5.3 链序+[R2-C2
+ * 外圈末级候选；corridor/
  * fallback 29+11 命中随走廊退役删（豁免登记=scripts/test-surface.exemptions.
  * json，授权=设计 §6 2026-10-07 用户裁决③）；旧 legacy 20px 行隙夹具随 U2
  * 槽位封闭判据（带高<36⇔n=0 不可横移）重基线为 72px 行隙网格几何）。
@@ -47,7 +48,7 @@ function geom(id: string, from: string, to: string, via?: Array<{ x: number; y: 
   return { edgeId: id, sourceId: from, targetId: to, via }
 }
 
-describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→overlap 单向不回溯）', () => {
+describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→outer-ring→overlap 单向不回溯——[R2-C2] 增 outer-ring 末级候选）', () => {
   it('① direct：同列上下卡（主向竖+锚 x 相等）→ 单竖直段；d=底锚(164,172)→顶锚(164,300) 手推（retain 恰中槽 idx2=164——槽位 110+108k/6）', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([
@@ -156,7 +157,7 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
     expect(r.d).toBe('M 208 172 L 208 202 Q 208 208 214 208 L 238 208 Q 244 208 244 214 L 244 244')
   })
 
-  it('⑤ overlap：通道全集封死（巨墙覆全部网格通道）→ 保留最短骨架与线-线重叠标记，但最终净空门显式 blocked', () => {
+  it('⑤ 通道全集封死（巨墙覆全部网格通道）→ [R2-C2] 外圈末级候选左环绕墙合法（blocked 仅存于外圈亦四向皆堵时）', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(112, 100, CARD_W, CARD_H)],
@@ -166,13 +167,18 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
       frames: [gridFrame()]
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
-    expect(r.route).toBe('overlap')
-    // 手推：x₀=176；WALL 膨胀 [96,704] 覆全部通道候选，路由搜索降级 overlap。
-    // 骨架仍供诊断与后续布局重试；r=6/3/0 最终采样均穿墙，禁止输出 d。
-    expect(r.pts).toEqual([{ x: 176, y: 172 }, { x: 176, y: 388 }])
-    expect(r.clearance).toBe('blocked')
-    expect(r.d).toBe('')
-    expect(r.overlapExempt).toBe(true)
+    expect(r.route).toBe('outer-ring')
+    // 手推：x₀=176；WALL 膨胀 [96,704] 覆全部通道候选——detour/band 不可行；
+    // [R2-C2] 外圈左车道 x=minLeft−14=86（WALL 左缘 100——右环 714 更长，左环
+    // 胜）：A 左 ¾ (112,154)→桩 (102,154)→车道→B 左 ¼ 桩 (102,406)→锚
+    // (112,406)。d=共线剔除后两拐 r=min(6,…) 圆角
+    expect(r.pts).toEqual([
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 86, y: 154 },
+      { x: 86, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
+    ])
+    expect(r.d).toBe('M 112 154 L 92 154 Q 86 154 86 160 L 86 400 Q 86 406 92 406 L 112 406')
+    expect(r.clearance).toBeUndefined()
+    expect(r.anchorMarks).toBe('A:l2,B:l0')
   })
 
   it('⑤ overlap L 形先横后竖（H<V 字典序 tie-break）：保留线-线重叠骨架；线-卡相交不豁免，r=0 仍穿卡即 blocked', () => {
@@ -463,12 +469,12 @@ describe('F-SLOTGRID-01 U2 corridor/fallback 退役负锚（方案切换=删旧�
   it('源面负锚：routing/chain.ts 零 corridor/fallback/CORRIDOR_/defaultCorridor/laneIndex 字面（走廊族彻底退役）', () => {
     const src = readFileSync(join(process.cwd(), 'src/renderer/features/lineage/routing/chain.ts'), 'utf8')
     expect(src).not.toMatch(/corridorSkeleton|defaultCorridor|CORRIDOR_|laneIndex/)
-    // RouteTag 域：五态+manual-override（corridor/fallback 字面在类型与运行时
+    // RouteTag 域：六态+manual-override（corridor/fallback 字面在类型与运行时
     // 态双灭——注释域外史述不计，故负锚锁符号族非词根）
     expect(src).not.toMatch(/'corridor'|'fallback'/)
   })
 
-  it('routeAll 态域：混合夹具全产出 route∈五态+manual（类型面+运行时双锁）', () => {
+  it('routeAll 态域：混合夹具全产出 route∈六态+manual（类型面+运行时双锁）', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(100, 100, CARD_W, CARD_H)],
@@ -486,9 +492,9 @@ describe('F-SLOTGRID-01 U2 corridor/fallback 退役负锚（方案切换=删旧�
       ],
       snap
     )
-    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'overlap', 'manual-override'])
+    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'outer-ring', 'overlap', 'manual-override'])
     for (const p of paths) {
-      expect(allowed.has(p.route), `route=${p.route} ∈ 五态域`).toBe(true)
+      expect(allowed.has(p.route), `route=${p.route} ∈ 六态域`).toBe(true)
       expect(p.d.length, `${p.edgeId} d 非空`).toBeGreaterThan(0)
     }
   })
@@ -625,15 +631,20 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     expect(r.d).toBe('M 208 172 L 208 202 Q 208 208 214 208 L 218 208 Q 224 208 224 214 L 224 244')
   })
 
-  it('全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null+routeEdge 降级 overlap（走廊退役后兜底）', () => {
+  it('全槽被挡（同边三顶槽全被月标形封堵）→bandSkeleton null（带域面不变）+[R2-C2] routeEdge 外圈左环承接', () => {
     const snap = spreadSnap(rect(146, 236, 140, 8))
     const obstacles = [...snap.cards.values(), ...snap.labels]
     const cards = [...snap.cards.values()]
     expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')).toBeNull()
-    // 全候选失败→降级 overlap（x_s=176≠x_t=192→L 形；兜底=最短路线重叠）
+    // 带域终落全挡（月标膨胀覆三顶槽）——[R2-C2] 外圈左车道 x=112−14=98：
+    // A 左 ¾ (112,154)→车道→B 左 ¼ (160,262)——绕标合法（旧=overlap 兜底）
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
-    expect(r.route).toBe('overlap')
-    expect(r.overlapExempt).toBe(true)
+    expect(r.route).toBe('outer-ring')
+    expect(r.pts).toEqual([
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 98, y: 154 },
+      { x: 98, y: 262 }, { x: 150, y: 262 }, { x: 160, y: 262 }
+    ])
+    expect(r.clearance).toBeUndefined()
   })
 
   it('散开锚 picks 落记=生效锚（tgt 项=散开 side/slot 非首选——仅胜出态）', () => {
@@ -788,11 +799,12 @@ describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1
     expect(r.pts.filter((q) => q.x === 575.3).length).toBeGreaterThanOrEqual(2)
   })
 
-  it("[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场（route=overlap 兜底）", () => {
+  it("[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场→[R2-C2] 外圈左环承接", () => {
     // W 覆 x₀ 全族（[96,304] ∋ 144/176/208/240）：e1-e3 竖边锚各承 detour；
     // e4 生效锚散开至 right ½（aPt=bPt=(240,·) x 全等）——sa/sb 竖侧+x 等
-    // 但 pa/pb 横边：无防御则横边桩 aS.x=250≠x₀ 生对角线；入口约束=生效锚
-    // 恒竖侧→跳过 detour→band 终落槽满员 null→overlap
+    // 但 pa/pb 横边：入口约束=生效锚恒竖侧→跳过 detour→band 终落槽满员
+    // null→旧 overlap 兜底（x=240 贴卡缘穿 PAD 最终门 blocked）；[R2-C2] 外圈
+    // 右车道 x=254∈W 膨胀 [96,304] 撞墙不可行——左车道 x=86 绕行合法
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(112, 100, CARD_W, CARD_H)],
@@ -803,9 +815,12 @@ describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1
     })
     const paths = routeAll(['e1', 'e2', 'e3', 'e4'].map((id) => geom(id, 'A', 'B')), snap)
     expect(paths.slice(0, 3).map((p) => p.route)).toEqual(['detour', 'detour', 'detour'])
-    expect(paths[3]!.route).toBe('overlap')
-    // 兜底形态锚：x 全等单竖段（横边锚 L 形域外——直连形态=最短路线）
-    expect(paths[3]!.pts).toEqual([{ x: 240, y: 136 }, { x: 240, y: 424 }])
+    expect(paths[3]!.route).toBe('outer-ring')
+    expect(paths[3]!.pts).toEqual([
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 86, y: 154 },
+      { x: 86, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
+    ])
+    expect(paths[3]!.clearance).toBeUndefined()
   })
 })
 

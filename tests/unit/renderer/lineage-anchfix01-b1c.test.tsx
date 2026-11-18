@@ -109,11 +109,14 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
     expect(paths[0]!.anchorMarks).toBe('A:b2,B:t0')
   })
 
-  it('overlap 态：带封闭+通道候选全灭（X 并合卡行距 ≤2·PAD 无框无通道）→ anchorMarks=A:b1,B:t1（direct 判别锚沿承）+overlapExempt', () => {
+  it('overlap 态：带封闭+通道候选全灭+外圈连接段全灭（X 纵贯全域高墙——[R2-C2] 后 overlap 仅存于外圈亦不可行时）→ anchorMarks=A:b1,B:t1（direct 判别锚沿承）+overlapExempt', () => {
+    // X [90,690]×[60,380]：纵贯 A/B 全高（膨胀 [86,694]×[56,384]）——无框无
+    // 通道（detour null）、卡区间并合零带（band null）、[R2-C2] 外圈四车道
+    // 连接段必穿墙（outer-ring null）——仅剩 overlap 兜底
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
-        ['X', rect(90, 176, 600, 120)],
+        ['X', rect(90, 60, 600, 320)],
         ['B', rect(100, 300, 128, 72)]
       ])
     )

@@ -208,8 +208,13 @@ flowchart TB
     `.timeline` overflow-x:auto 横向滚动）——ADR-0028/INV-169）。
   - 连线层=EdgeOverlay 双层 svg（可见层+命中层 z4）+ `routing/` 纯函数族
     （gap-cells 间隙单元→slots 槽位分配→zapply Z 形施加→residual 残余→chain
-    五态链编排 direct→h-slip→detour→band→overlap；坐标集封闭=段坐标∈锚/桩∪槽位集
-    ——ADR-0023/0024；detour=网格通道模型）。钉定端按锚外法线起落；自动路径在
+    六态链编排 direct→h-slip→detour→band→outer-ring→overlap；坐标集封闭=段坐标
+    ∈锚/桩∪槽位集∪外圈车道集——ADR-0023/0024；detour=网格通道模型）。
+    band 搜索域=源/目标纵区间内带 ∪ 目标行进方向续侧带 ∪ 目标背侧带（同行被挡
+    零带承接——续侧带落锚=目标远侧锚先试、背侧带落锚=标准 endSide 序）；outer-ring=图域最外圈车道末级候选
+    （routing/outer-ring.ts：四车道=最外障碍边∓(PAD+短桩 10)、每端候选锚经
+    AnchorUse 散开、候选全序=曼哈顿长升序——「稀疏图 blocked=缺陷」的末级
+    承接，排 overlap 之前，不消费槽位分配）。钉定端按锚外法线起落；自动路径在
     槽位与 jog 施加后经 finalize 的 r=6→3→0 最终采样净空门，三档均碰障则
     clearance='blocked'、d=''，可见/命中两层及编辑手柄、警示、虚影均撤销，
     按边提示一次，布局重算自动重试；selected 保留以便恢复后手柄回归，边数据不删，

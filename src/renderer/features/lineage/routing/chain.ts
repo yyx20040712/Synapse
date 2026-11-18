@@ -1,10 +1,14 @@
 /**
- * [F-SLOTGRID-01 U2] chain —— 甲链五态编排（设计 v1.4 §5.3 链序：
- * direct→h-slip→detour→band→overlap 单向不回溯+manual-override；右缘走廊
- * 两态+走廊常量族+车道基道序号随走廊彻底退役删除——2026-10-07 用户裁决③
- * 「corridor 右缘车道彻底退役、兜底=最短路线重叠」）。**链序本身=拐弯数
+ * [F-SLOTGRID-01 U2] chain —— 甲链六态编排（设计 v1.4 §5.3 链序：
+ * direct→h-slip→detour→band→outer-ring→overlap 单向不回溯+manual-override；
+ * 右缘走廊两态+走廊常量族+车道基道序号随走廊彻底退役删除——2026-10-07 用户
+ * 裁决③「corridor 右缘车道彻底退役、兜底=最短路线重叠」。[R2-C2] 裁决
+ * 「不可能没有路径」：band 与 overlap 之间插入 outer-ring 外圈末级候选
+ * （routing/outer-ring.ts——图域最外圈车道，稀疏图 blocked=缺陷）。
+ * **链序本身=拐弯数
  * 升序（direct/h-slip 0 拐→detour 门形
- * →band 阶梯→overlap 线-线重叠）——用户裁决「形态上尽量少拐弯」由链序+候选
+ * →band 阶梯→outer-ring 外圈绕行→overlap 线-线重叠）——用户裁决「形态上
+ * 尽量少拐弯」由链序+候选
  * 全序拐弯数键双层承载**。同锚多边先散锚点（12 锚全满=共享原锚）；detour
  * 通道槽占用经 ChannelUse 槽位级空槽判定。槽位与 jog 施加后，自动路径经
  * r=6→3→0 最终采样净空门；三档均碰障=blocked 空 d，不再输出尖角非法线。
@@ -19,12 +23,13 @@ import { PAD, polylineClearStubs } from './avoid'
 import { ChannelUse, detourSkeleton } from './detour'
 import { CELL_EPS } from './gap-cells'
 import { finalizePath, type RouteClearance } from './finalize'
+import { ringSkeleton } from './outer-ring'
 import { slotAssign, type AssignEdge } from './slots'
 import type { LineageAnchor, LineageViaPoint } from '@shared/models/lineage'
 
 export type { Pt, Rect } from './anchors'
 
-export type RouteTag = 'direct' | 'h-slip' | 'detour' | 'band' | 'overlap' | 'manual-override'
+export type RouteTag = 'direct' | 'h-slip' | 'detour' | 'band' | 'outer-ring' | 'overlap' | 'manual-override'
 export interface MonthFrame extends Rect {
   year: number | null
 }
@@ -228,6 +233,24 @@ function routeOne(
       xLo: Math.min(...band.skel.map((p) => p.x)),
       xHi: Math.max(...band.skel.map((p) => p.x)),
       anchorMarks: anchorMarksOf(band.picks)
+    }
+  }
+  // [R2-C2] ④b 外圈末级候选：band 不可用（同行零带/带内全阻塞/槽位竞争）时
+  // 以图域最外圈车道绕行——排 overlap 之前（用户裁决「不可能没有路径」）。
+  // 净空门=ringSkeleton 内全链 polylineClearStubs（首末 10px 豁免源/目标卡
+  // ——同全体自动态）；槽位分配不消费（ROUTE_ELIGIBLE 白名单外——车道坐标
+  // 非槽位域，INV-SLOTGRID-02 第四类坐标源随批登记）
+  const ring = ringSkeleton(src, tgt, obstacles, use, e.sourceId, e.targetId, fromPin, toPin)
+  if (ring !== null) {
+    const ringPicks: ReadonlyArray<[string, Side, number]> = ring.picks
+    commit(ringPicks)
+    return {
+      edgeId: e.edgeId,
+      skel: ring.skel,
+      route: 'outer-ring',
+      stubExcluded: ends,
+      stubs: stubsOf(e, src, tgt, ringPicks),
+      anchorMarks: anchorMarksOf(ringPicks)
     }
   }
   // ⑤ overlap 兜底：保留最短路线骨架与线-线槽位重叠标记（忽略占用，

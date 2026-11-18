@@ -323,7 +323,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
    * [F-VISFB-66] R-锚级①-⑤改写=落端钉定锚×5（等势置换：同点数同强度换
    * 基座——豁免#8 置换说明附档）：种子边经 spec 直写锚列（better-sqlite3
    * ——迁移 025 列），断言路径首末点=两钉定锚几何点 ±1（zoom 三档恒等）；
-   * route 实测非空卫沿承（钉定端直取仍走五态链——走线仍自动）。
+   * route 实测非空卫沿承（钉定端直取仍走六态链——走线仍自动）。
    */
   const seedPinned = async (
     userData: string,
@@ -395,7 +395,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       } else if (Array.isArray(sp.expectRoute)) {
         expect(sp.expectRoute, `${tag} 边${i} route=${e.route}∈限定族`).toContain(e.route)
       } else {
-        expect(e.route, `${tag} 边${i} data-route 非空卫（钉定端直取仍走五态链）`).not.toBe('')
+        expect(e.route, `${tag} 边${i} data-route 非空卫（钉定端直取仍走六态链）`).not.toBe('')
       }
       const from = await cardContentRect(win, sp.fromTitle)
       const to = await cardContentRect(win, sp.toTitle)
@@ -403,7 +403,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       const ta = ptOf(to, sp.ta.side, sp.ta.slot)
       expect(Math.hypot(e.first.x - fa.x, e.first.y - fa.y), `${tag} 边${i}（${e.route}）首点=from 钉定锚 ±1`).toBeLessThanOrEqual(1)
       expect(Math.hypot(e.last.x - ta.x, e.last.y - ta.y), `${tag} 边${i}（${e.route}）末点=to 钉定锚 ±1`).toBeLessThanOrEqual(1)
-      if (e.route === 'band' || e.route === 'detour') {
+      if (e.route === 'band' || e.route === 'detour' || e.route === 'outer-ring') {
         const nrm = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[sp.fa.side as 'top' | 'bottom' | 'left' | 'right']!
         const len = Math.hypot(e.dir.x, e.dir.y)
         const sin = Math.abs((e.dir.x * nrm.y - e.dir.y * nrm.x) / len)

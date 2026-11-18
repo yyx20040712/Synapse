@@ -90,7 +90,9 @@ function descendCandidates(
 /** 带路由骨架（zigzag：每带先试目标 x 终落；阻塞经通道槽位候选降下一带
  *  ——[RR1 W3] 顺位首**空**槽（ChannelUse 剔除，胜出槽随成功态 commit——
  *  与 detour 共用同一实例）；横移 y=带槽位中位——midSlotOf null=带封闭剔除
- *  〔高<36 不可横移〕） */
+ *  〔高<36 不可横移〕）。[R2-C2] 搜索域=源/目标纵区间内带 ∪ 目标行进方向
+ *  续侧带 ∪ 目标背侧带（同行被挡零带承接——续侧带落锚=目标远侧锚先试，
+ *  背侧带落锚=标准 endSide 序〔审查 B1〕） */
 export function bandSkeleton(
   src: Rect,
   tgt: Rect,
@@ -110,14 +112,39 @@ export function bandSkeleton(
   const sc = center(src)
   const tc = center(tgt)
   const all = bandsOf(snap, cards)
+  const moveOk = (b: Band): boolean =>
+    midSlotOf('y', { x: 0, y: b.top, w: 0, h: b.bottom - b.top }) !== null // 带封闭（<36⇔n=0）——坐标集封闭不可横移
   const between = all.filter((b) => {
-    const moveY = midSlotOf('y', { x: 0, y: b.top, w: 0, h: b.bottom - b.top })
-    if (moveY === null) return false // 带封闭（<36⇔n=0）——坐标集封闭不可横移
+    if (!moveOk(b)) return false
     if (down) return b.top >= src.y + src.h - 0.01 && b.bottom <= tgt.y + 0.01
     return b.bottom <= src.y + 0.01 && b.top >= tgt.y + tgt.h - 0.01
   })
-  if (between.length === 0) return null
-  const bands = down ? between : [...between].reverse()
+  // [R2-C2] 目标续侧带：源/目标纵区间之外、目标行进方向前方的带纳入搜索
+  //（同行被挡=源/目标行区间夹缝零带时的带内解之一）。续侧带序=离目标近者
+  // 先（down 升序 top/up 降序 bottom）。
+  const fwd = all
+    .filter((b) => {
+      if (!moveOk(b)) return false
+      return down ? b.top >= tgt.y + tgt.h - 0.01 : b.bottom <= tgt.y + 0.01
+    })
+    .sort((a, b) => (down ? a.top - b.top : b.bottom - a.bottom))
+  // [R2-C2·审查 B1] 目标背侧带：续侧的反侧（down=目标上方且源上方之外带/
+  // up 对称）——前向带不可行时的局部承接（钉定 right→top 族：目标顶锚自
+  // 上方进入被第三方卡封死、外圈四向连接段亦断时为唯一局部解；band 先于
+  // outer-ring 的既有链序即局部解优先）；序=离源近者先（down 降序 bottom/
+  // up 升序 top）。
+  const back = all
+    .filter((b) => {
+      if (!moveOk(b)) return false
+      return down
+        ? b.bottom <= tgt.y + 0.01 && b.top < src.y + src.h - 0.01
+        : b.top >= tgt.y + tgt.h - 0.01 && b.bottom > src.y + 0.01
+    })
+    .sort((a, b) => (down ? b.bottom - a.bottom : a.top - b.top))
+  if (between.length === 0 && fwd.length === 0 && back.length === 0) return null
+  const inBetween = between.length
+  const fwdEnd = inBetween + fwd.length
+  const bands = down ? [...between, ...fwd, ...back] : [...[...between].reverse(), ...fwd, ...back]
   const sa = sideAnchor(src, down ? 'bottom' : 'top', tc)
   const sb = sideAnchor(tgt, down ? 'top' : 'bottom', sc)
   // [F-VISFB-66] 钉定源端直取（禁动——散开不迁移钉定锚）
@@ -160,6 +187,20 @@ export function bandSkeleton(
     [endSide, (base + 1) % 3],
     [endSide, (base + 2) % 3]
   ]
+  // [R2-C2] 续侧带落锚序：目标远侧锚（外法线朝续侧带来向——自下方带/上方
+  // 带回落的自然进锚）先于近侧 endSide 锚（近侧自续侧带回穿目标卡，vClear
+  // 常杀——侧锚散开域保留兜底）；背侧带（back 区段）落锚=标准 endSide 序
+  //（down+目标上方带自上方进顶锚=endSide 外法线自然向——审查 B1 形态）
+  const farSide: Side = down ? 'bottom' : 'top'
+  const farBase = sideAnchor(tgt, farSide, sc).slot
+  const beyondSpread: ReadonlyArray<readonly [Side, number]> = [
+    [farSide, farBase],
+    [farSide, (farBase + 1) % 3],
+    [farSide, (farBase + 2) % 3],
+    ...spread
+  ]
+  const spreadOf = (i: number): ReadonlyArray<readonly [Side, number]> =>
+    i >= inBetween && i < fwdEnd ? beyondSpread : spread
   // descend 目标 x=几何首选锚 x（use=undefined 时数值全等，routeAll 语义取
   // 几何首选与占用正交一致——[回炉 W2] 沿承）
   const tgtAnchorX = anchorPoint(tgt, endSide, base).x
@@ -202,7 +243,7 @@ export function bandSkeleton(
       continue
     }
     // 终落：目标 x 自本带直落（末 10px 桩区排除源/目标卡——D-L2-4 桩语义）
-    for (const [side, slot] of spread) {
+    for (const [side, slot] of spreadOf(i)) {
       if (use !== undefined && use.has(tgtId, side, slot)) continue
       const pt = anchorPoint(tgt, side, slot)
       const targetStub = stubEnd(pt, side)
