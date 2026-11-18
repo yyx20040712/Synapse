@@ -116,6 +116,33 @@ describe('F-LGRAPH-01①回炉 timeline-nav-sync —— 上报分支（[R5] rect
     expect(useLineageViewStore.getState().activeFrameKey).toBe('2022|10')
   })
 
+  it('[ln-W3b-3] zoom 步进（无 scroll 事件）→ accent 立即按同一判定式重算；监听重挂后 scroll 仍实时', () => {
+    useLineageViewStore.setState({ zoom: 1 }) // 本文件唯一 zoom 写点——显式归 1 防序内残留
+    mount()
+    expect(useLineageViewStore.getState().activeFrameKey).toBe('2022|9') // z=1：首框底缘 300>60=当前
+    // zoom out 一档（transform 缩放改帧 gBCR——mock 首框滚出判定带）；不发 scroll
+    const first = scroller!.querySelector('[data-frame-key="2022|9"]')!
+    vi.spyOn(first, 'getBoundingClientRect').mockReturnValue({
+      top: -100, bottom: -40, left: 0, right: 600, width: 600, height: 200, x: 0, y: -100,
+      toJSON: () => ({})
+    } as unknown as DOMRect)
+    act(() => {
+      useLineageViewStore.getState().zoomStep(-1)
+    })
+    // z=0.9：判定线 60×0.9=54——首框底缘 -40 已出带，次框（底缘 300>54）=当前
+    expect(useLineageViewStore.getState().activeFrameKey).toBe('2022|10')
+    // cleanup 成对（effect 随 zoom 重挂=监听器重挂）：scroll 事件仍实时换月
+    const second = scroller!.querySelector('[data-frame-key="2022|10"]')!
+    vi.spyOn(second, 'getBoundingClientRect').mockReturnValue({
+      top: -60, bottom: -20, left: 0, right: 600, width: 600, height: 200, x: 0, y: -60,
+      toJSON: () => ({})
+    } as unknown as DOMRect)
+    act(() => {
+      scroller!.dispatchEvent(new Event('scroll'))
+    })
+    expect(useLineageViewStore.getState().activeFrameKey).toBeNull() // 两框均出带→无当前月
+  })
+
   it('全空画布（零月框）：activeFrameKey=null 防御', () => {
     host = document.createElement('div')
     document.body.appendChild(host)
