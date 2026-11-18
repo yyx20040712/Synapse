@@ -32,7 +32,14 @@
  */
 import type { SqliteDb } from '../connection'
 import type { AiScope } from './ai-sessions.repo'
-import { toEdge, toNode, type LineageEdgeRow, type LineageNodeRow } from './lineage.repo.rows'
+import {
+  LINEAGE_EDGE_COLS,
+  LINEAGE_NODE_COLS,
+  toEdge,
+  toNode,
+  type LineageEdgeRow,
+  type LineageNodeRow
+} from './lineage.repo.rows'
 import type { LineageEdge, LineageNode } from '../../../shared/models/lineage'
 
 /** epoch 集合=10 物理表固定序（020 头注 §3.F 实照；INV-J 对账面） */
@@ -131,11 +138,12 @@ export function createAiContextRepo(db: SqliteDb): AiContextRepo {
     `SELECT t.name AS name FROM tags t JOIN paper_tags pt ON pt.tag_id = t.id
       WHERE pt.paper_id = ? ORDER BY t.id ASC LIMIT ?`
   )
+  // [db-C3] 读面显式列（SELECT * 收口——列常量单源=lineage.repo.rows 共享）
   const nodesByFolderStmt = db.prepare(
-    `SELECT * FROM lineage_nodes WHERE folder_id = ? ORDER BY created_at, rowid`
+    `SELECT ${LINEAGE_NODE_COLS} FROM lineage_nodes WHERE folder_id = ? ORDER BY created_at, rowid`
   )
   const edgesInFolderStmt = db.prepare(
-    `SELECT * FROM lineage_edges
+    `SELECT ${LINEAGE_EDGE_COLS} FROM lineage_edges
       WHERE from_node IN (SELECT id FROM lineage_nodes WHERE folder_id = ?)
         AND to_node IN (SELECT id FROM lineage_nodes WHERE folder_id = ?)
       ORDER BY created_at, rowid`

@@ -35,6 +35,10 @@ interface FloatingNoteRow {
   updated_at: string
 }
 
+/** 读面显式列清单（与 FloatingNoteRow 字段集一一对应——[db-C3] SELECT *
+ *  收口：防后续迁移加列致行形状漂移；papers.repo SELECT_COLS 先例同型） */
+const FLOATING_NOTE_COLS = 'id, folder_id, x, y, content, created_at, updated_at'
+
 const toNote = (r: FloatingNoteRow): FloatingNote => ({
   id: r.id,
   folderId: r.folder_id,
@@ -65,12 +69,14 @@ export function createFloatingNotesRepo(db: SqliteDb): FloatingNotesRepo {
        folder_id = excluded.folder_id, x = excluded.x, y = excluded.y,
        content = excluded.content, updated_at = excluded.updated_at`
   )
-  const byIdStmt = db.prepare(`SELECT * FROM floating_notes WHERE id = ?`)
+  const byIdStmt = db.prepare(`SELECT ${FLOATING_NOTE_COLS} FROM floating_notes WHERE id = ?`)
   const removeStmt = db.prepare(`DELETE FROM floating_notes WHERE id = ?`)
   const byFolderStmt = db.prepare(
-    `SELECT * FROM floating_notes WHERE folder_id = ? ORDER BY created_at, rowid`
+    `SELECT ${FLOATING_NOTE_COLS} FROM floating_notes WHERE folder_id = ? ORDER BY created_at, rowid`
   )
-  const allStmt = db.prepare(`SELECT * FROM floating_notes ORDER BY created_at, rowid`)
+  const allStmt = db.prepare(
+    `SELECT ${FLOATING_NOTE_COLS} FROM floating_notes ORDER BY created_at, rowid`
+  )
 
   return {
     upsert(input: FloatingNoteUpsert): FloatingNote {

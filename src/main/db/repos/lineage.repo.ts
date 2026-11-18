@@ -88,7 +88,15 @@ import {
   type LineageNodeUpsert
 } from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
-import { parseLineTypeNames, toEdge, toNode, type LineageEdgeRow, type LineageNodeRow } from './lineage.repo.rows'
+import {
+  LINEAGE_EDGE_COLS,
+  LINEAGE_NODE_COLS,
+  parseLineTypeNames,
+  toEdge,
+  toNode,
+  type LineageEdgeRow,
+  type LineageNodeRow
+} from './lineage.repo.rows'
 
 export interface LineageRepo {
   /** 新建（id 缺省 randomUUID）或更新（created_at 保留，updated_at 刷新）。
@@ -141,15 +149,20 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        dashed = excluded.dashed, color = excluded.color,
        updated_at = excluded.updated_at`
   )
-  const nodeByIdStmt = db.prepare(`SELECT * FROM lineage_nodes WHERE id = ?`)
-  const edgeByIdStmt = db.prepare(`SELECT * FROM lineage_edges WHERE id = ?`)
+  // 读面显式列（[db-C3] SELECT * 收口——列常量单源=lineage.repo.rows）
+  const nodeByIdStmt = db.prepare(`SELECT ${LINEAGE_NODE_COLS} FROM lineage_nodes WHERE id = ?`)
+  const edgeByIdStmt = db.prepare(`SELECT ${LINEAGE_EDGE_COLS} FROM lineage_edges WHERE id = ?`)
   const removeNodeStmt = db.prepare(`DELETE FROM lineage_nodes WHERE id = ?`)
   const removeEdgeStmt = db.prepare(`DELETE FROM lineage_edges WHERE id = ?`)
-  const listNodesStmt = db.prepare(`SELECT * FROM lineage_nodes ORDER BY created_at, rowid`)
-  const listEdgesStmt = db.prepare(`SELECT * FROM lineage_edges ORDER BY created_at, rowid`)
+  const listNodesStmt = db.prepare(
+    `SELECT ${LINEAGE_NODE_COLS} FROM lineage_nodes ORDER BY created_at, rowid`
+  )
+  const listEdgesStmt = db.prepare(
+    `SELECT ${LINEAGE_EDGE_COLS} FROM lineage_edges ORDER BY created_at, rowid`
+  )
   // [T3-P3] detail 装配只读对（预编译单语句——值全参数绑定）
   const nodeByPaperIdStmt = db.prepare(
-    `SELECT * FROM lineage_nodes WHERE paper_id = ? ORDER BY created_at, rowid LIMIT 1`
+    `SELECT ${LINEAGE_NODE_COLS} FROM lineage_nodes WHERE paper_id = ? ORDER BY created_at, rowid LIMIT 1`
   )
   const edgeCountByNodeStmt = db.prepare(
     `SELECT COUNT(*) AS n FROM lineage_edges WHERE from_node = ? OR to_node = ?`

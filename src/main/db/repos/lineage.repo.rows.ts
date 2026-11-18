@@ -47,6 +47,16 @@ export interface LineageNodeRow {
   updated_at: string
 }
 
+/** lineage_nodes 读面显式列清单（与 LineageNodeRow 字段集一一对应——
+ *  [db-C3] SELECT * 收口：防后续迁移加列致行形状漂移（papers.repo 头注纪律）；
+ *  lineage.repo/ai-context.repo 两读面共享单源，列集变更须两文件同步对账） */
+export const LINEAGE_NODE_COLS =
+  'id, paper_id, title, core_idea, year, x, y, tags, month, slot, folder_id, created_at, updated_at'
+
+/** lineage_edges 读面显式列清单（与 LineageEdgeRow 字段集一一对应；共享单源同上） */
+export const LINEAGE_EDGE_COLS =
+  'id, from_node, to_node, label, kind, sub, via, from_anchor, to_anchor, dashed, color, created_at, updated_at'
+
 /** lineage_edges 表行形状（列名原样，蛇形；kind=006 迁移列——U8 起应用面恒
  *  'manual' 写入、读面不映射；sub=010 迁移列——U8 起死置（读面不映射）；
  *  via=013 迁移列——NULL=自动路由（F-LINEAGE-02：JSON 数组 TEXT，读面容错

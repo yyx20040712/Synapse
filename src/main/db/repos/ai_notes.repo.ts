@@ -84,6 +84,11 @@ interface AiNoteRow {
   updated_at: string
 }
 
+/** 读面显式列清单（与 AiNoteRow 字段集一一对应——[db-C3] SELECT * 收口：
+ *  防后续迁移加列致行形状漂移；papers.repo SELECT_COLS 先例同型） */
+const AI_NOTE_COLS =
+  'id, paper_id, annotation_id, role, question, model, quote_text, prefix_text, suffix_text, anchor_page, content_md, created_at, updated_at'
+
 function toNote(row: AiNoteRow): AiNote {
   return {
     id: row.id,
@@ -110,16 +115,16 @@ export function createAiNotesRepo(db: SqliteDb): AiNotesRepo {
        @quoteText, @prefixText, @suffixText, @anchorPage, @contentMd, @now, @now)`
   )
   const listByPaperStmt = db.prepare(
-    `SELECT * FROM ai_notes WHERE paper_id = ? ORDER BY created_at, rowid`
+    `SELECT ${AI_NOTE_COLS} FROM ai_notes WHERE paper_id = ? ORDER BY created_at, rowid`
   )
   const countStmt = db.prepare(`SELECT COUNT(*) AS n FROM ai_notes WHERE paper_id = ?`)
-  const byIdStmt = db.prepare(`SELECT * FROM ai_notes WHERE id = ?`)
+  const byIdStmt = db.prepare(`SELECT ${AI_NOTE_COLS} FROM ai_notes WHERE id = ?`)
   const updateContentStmt = db.prepare(
     `UPDATE ai_notes SET content_md = ?, updated_at = ? WHERE id = ?`
   )
   const deleteByPaperStmt = db.prepare(`DELETE FROM ai_notes WHERE paper_id = ?`)
   const listByRoleStmt = db.prepare(
-    `SELECT * FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, rowid`
+    `SELECT ${AI_NOTE_COLS} FROM ai_notes WHERE paper_id = ? AND role = ? ORDER BY created_at, rowid`
   )
 
   return {
