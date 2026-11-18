@@ -191,6 +191,22 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.repo —— 导入合并写面', (
     db.close()
   })
 
+  // [db-C7] 畸形复合键响亮失败：keyArgs 按 '|' 拆分段数≠键列数即 throw——防未来
+  // 键值域变宽后按位装回归位→静默删错行（applyInTx 事务内抛=整体回滚无半写）
+  it('[db-C7] 畸形复合键 deleteDirect 响亮抛错：paper_tags 三段键（键列数=2）→throw 且无误删', () => {
+    const { db, repo } = makeRepo()
+    repo.upsertRow('papers', paperRow('p-c7', 't'))
+    repo.upsertRow('tags', { id: 't-c7', name: 'C7标签', color: null, folder_id: '__main__' })
+    repo.upsertRow('paper_tags', { paper_id: 'p-c7', tag_id: 't-c7' })
+    repo.setGuardStop(1)
+    expect(() => repo.deleteDirect('paper_tags', 'p-c7|t-c7|extra')).toThrow(/畸形复合键|paper_tags/)
+    // 静默错拆面锁：HEAD 行为=丢弃尾段误删在场行（本用例红证），修复后行保留
+    expect((db.prepare(`SELECT COUNT(*) c FROM paper_tags`).get() as { c: number }).c).toBe(1)
+    // 段数匹配的合法键不受校验影响
+    expect(repo.deleteDirect('paper_tags', 'p-c7|t-c7')).toBe(1)
+    db.close()
+  })
+
   it('身份序列化 identityOf：常规表=id/paper_tags=pid|tid 拼接/graph_meta=key 值（§13.1 矩阵单源）', () => {
     expect(identityOf('papers', { id: 'p1' })).toBe('p1')
     expect(identityOf('paper_tags', { paper_id: 'p1', tag_id: 't1' })).toBe('p1|t1')

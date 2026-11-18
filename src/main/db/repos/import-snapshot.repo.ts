@@ -188,6 +188,13 @@ export function createImportSnapshotRepo(db: SqliteDb): ImportSnapshotRepo {
   function keyArgs(table: ImportTable, id: string): Record<string, unknown> {
     const cols = KEY_COLUMNS[table]
     const parts = id.split('|')
+    // [db-C7] 畸形复合键响亮失败：拆分段数≠键列数即 throw（防键值域变宽后按位
+    // 装回错位→静默删错行；applyInTx 事务内抛=整体回滚无半写）
+    if (parts.length !== cols.length) {
+      throw new Error(
+        `import-snapshot.repo：畸形复合键（${table} 键列 ${cols.length} 个、拆得 ${parts.length} 段）：${id}`
+      )
+    }
     const args: Record<string, unknown> = {}
     cols.forEach((c, i) => {
       args[c] = parts[i]
