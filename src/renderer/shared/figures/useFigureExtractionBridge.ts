@@ -12,9 +12,11 @@
  *   extractDocFigures（逐资产分笔 sendAsset=figures.store IPC）→complete
  *   （excess/failed 落账）。
  * - 失败面：文档加载/提取/complete 任一环失败→尝试 complete({failed:1}) 补账
- *   （成功=job failed 落账；token 已死=代际守卫拒——弃单留 pending 待下次
- *   挂载沿重驱，幂等）；store 硬拒（Result err=会话死）经 sendAsset throw
- *   中止提取走同补账径。
+ *   （token 存活且补账成功→按终态三分落账〔stored>0 落 ready，非必 failed〕
+ *   ——含首次终态写 DB 抛错后的同 token 重试〔ds-C8：终态 DB 写成功才焚
+ *   token〕；补账再败（Result err/传输层）或 token 已死（代际守卫拒）→弃单
+ *   留 pending 待下次挂载沿重驱，幂等）；store 硬拒（Result err=会话死）经
+ *   sendAsset throw 中止提取走同补账径。
  * - 禁 page.render/零轮询（静态负锚——figure-negative-anchors.test.ts）。
  *
  * ── 架构层 ── App 组合根单点挂载（与视图路由零耦合——Reader/Library 均不涉）；
@@ -31,7 +33,7 @@ import {
   makeProductionDeps
 } from './FigureExtractor'
 
-/** 单篇提取（begin 已毕——token 在手）；任何失败→complete 补账后弃单 */
+/** 单篇提取（begin 已毕——token 在手）；任何失败→尝试 complete 补账（补账成功按终态三分落账；token 已死或补账再败才弃单留 pending） */
 async function extractOne(paperId: string, token: string): Promise<void> {
   let doc: Awaited<ReturnType<typeof loadFigureDocument>> | null = null
   try {
@@ -56,10 +58,14 @@ async function extractOne(paperId: string, token: string): Promise<void> {
     if (!done.ok) throw new Error(done.error.message)
   } catch (e) {
     console.warn('[figures] 提取失败（补账 failed）：', paperId, e)
+    // 补账 complete：token 存活（首次终态写 DB 抛错未焚——ds-C8）且补账
+    // 成功→按终态三分落账（stored>0 落 ready，非必 failed）；token 已死
+    // （代际守卫拒——Result err 不抛，静默返回）或补账再败→弃单留
+    // pending，下次挂载沿重驱（幂等）
     try {
       await api.figures.complete({ token, excess: 0, failed: 1 })
     } catch {
-      // token 已死（代际守卫拒）——弃单留 pending，下次挂载沿重驱
+      // 传输层异常同弃单容忍
     }
   } finally {
     await doc?.destroy().catch(() => undefined)

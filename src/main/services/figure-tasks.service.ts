@@ -23,7 +23,9 @@
  *   返回 {stored:false, reason}；终态判定归 completeSession。
  * - completeSession：renderer 侧 failed 并入服务端聚合；终态三分=≥1 stored
  *   →ready（excess/failedCount 落账）｜0 stored∧failed>0→failed｜0/0→ready
- *   零资产（提取过零资产≠失败）；complete 后 token 焚毁（防迟到续写）。
+ *   零资产（提取过零资产≠失败）；终态 DB 写成功后 token 焚毁（防迟到续写）；
+ *   终态写抛错→token 存活〔ds-C8〕，调用方可同 token 补账 complete 落
+ *   failed（替代弃单留 pending 待下次挂载沿重提）。
  * - listForPaper：figures 清单（消费面协议 URL 输入）+job 三态视图（无单=null
  *   ——「从未提取」与「提取过零资产」可区分）。
  * ── 架构层 ── services→repos 单向（figure-store 注入复用）；IPC 面=ipc/figures.ts。
@@ -175,13 +177,16 @@ export function createFigureTaskService(deps: FigureTaskDeps) {
     completeSession(input: { token: string; excess: number; failed: number }): { status: 'ready' | 'failed' } {
       const s = requireSession(input.token)
       requireGeneration(s)
-      sessionsByToken.delete(input.token)
       const totalFailed = s.failed + input.failed
       if (s.stored === 0 && totalFailed > 0) {
         figureStore.failExtraction(s.paperId)
+        // ds-C8：token 于终态 DB 写成功后焚毁——写抛错则 token 存活，调用
+        // 方（提取桥 catch 补账）可同 token 重试 complete 落 failed
+        sessionsByToken.delete(input.token)
         return { status: 'failed' }
       }
       figureStore.completeExtraction(s.paperId, { excess: input.excess, failedCount: totalFailed })
+      sessionsByToken.delete(input.token)
       return { status: 'ready' }
     },
 

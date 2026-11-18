@@ -1,7 +1,8 @@
 /**
  * [F-VISFB-43 U4] figure-tasks 服务件单测（job 编排：enqueue 建单幂等/begin
  * 会话令牌/store 代际守卫+per-asset DomainError→failed_count 聚合/complete
- * 终态三分）。蓝本=00B failed≠empty 定式+票面「job 携 paperId/pdfSha/workspace
+ * 终态三分+终态写抛错后 token 存活补账〔ds-C8〕）。蓝本=00B failed≠empty
+ * 定式+票面「job 携 paperId/pdfSha/workspace
  * 代际防迟到回写」。always-active（不经 guardedDescribe——K3 沿承）。
  */
 import { createHash } from 'node:crypto'
@@ -182,6 +183,33 @@ describe('[F-VISFB-43 U4] figure-tasks 服务件', () => {
     const job = svc.listForPaper('p-1').job
     expect(job?.status).toBe('ready')
     expect(job?.failedCount).toBe(3)
+  })
+
+  it('ds-C8 终态写抛错→token 存活可补账：首次异常传播；同 token 二次 complete 落 failed；成功后仍焚 token', () => {
+    seedPaper(db, 'p-1')
+    const repos = createRepos(db)
+    const fileStore = createFileStore(root)
+    const figureStore = createFigureStoreService({ repos, fileStore })
+    // 注入：首次 failExtraction（终态 DB 写）抛错——模拟终态写瞬时 DB 异常
+    const realFail = figureStore.failExtraction.bind(figureStore)
+    let failCalls = 0
+    figureStore.failExtraction = (paperId: string): void => {
+      failCalls += 1
+      if (failCalls === 1) throw new Error('注入：终态写 DB 异常')
+      realFail(paperId)
+    }
+    const svc = createFigureTaskService({ repos, figureStore })
+    svc.enqueue(['p-1'])
+    const token = beginTokenOf(svc, 'p-1')
+    // 首次 complete：终态写抛错——异常正常传播，token 未焚（补账径前提）
+    expect(() => svc.completeSession({ token, excess: 0, failed: 1 })).toThrow('注入：终态写 DB 异常')
+    // 同 token 补账 complete（桥件 catch 补账径同型）：落 failed 终态——
+    // 弃单留 pending 重提→诚实落账
+    const done = svc.completeSession({ token, excess: 0, failed: 1 })
+    expect(done.status).toBe('failed')
+    expect(svc.listForPaper('p-1').job?.status).toBe('failed')
+    // 补账成功后 token 仍焚毁（防迟到续写语义不变）
+    expect(() => svc.completeSession({ token, excess: 0, failed: 0 })).toThrow(DomainError)
   })
 
   it('代际守卫——workspace 切换：新服务实例（容器重建）对旧 token 拒写', async () => {
