@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { createImportService } from '../../../src/main/services/import_/import.service'
-import { createFileStore } from '../../../src/main/services/import_/file-store'
+import { createFileStore, sha256Hex } from '../../../src/main/services/import_/file-store'
 import type { Repos, PaperRow } from '../../../src/main/db/repos'
 import type { ImportProgressEvent } from '../../../src/shared/ipc/schemas'
 import { createTinyPdf, PDF_KNOWN_TEXT } from '../../utils/pdf-factory'
@@ -176,6 +176,38 @@ guardedDescribe('SR-SVC-03', 'import.service —— 导入编排', () => {
     expect(first.imported).toHaveLength(1)
     expect(second.imported).toHaveLength(0)
     expect(second.duplicates).toEqual(['b.pdf'])
+  })
+
+  /** [ds-C4] 并发双 import 同 sha 竞态回归（审计 D1=a 裁决）：事务外查重放行后、
+   *  本会话事务提交前，对端会话在 extractMeta await 窗内提交同 sha 行——修复前
+   *  insert 撞 papers.sha256 UNIQUE 折叠 failed（英文约束文案），修复后事务内
+   *  insert 前复查归 duplicate。桩即"可控延迟的 meta 提取"：调用瞬间直插同 sha
+   *  行=模拟对端提交完成 */
+  it('[ds-C4] extractMeta 等待期对端已提交同 sha 行 → duplicate（非 failed 英文 UNIQUE）', async () => {
+    const db = createTestDb()
+    const storeDir = await mkdtemp(join(tmpdir(), 'race-'))
+    dirs.push(storeDir)
+    const { writeFile } = await import('node:fs/promises')
+    const a = join(storeDir, 'race.pdf')
+    await writeFile(a, createTinyPdf())
+
+    const svc = createImportService({
+      repos: makeRepos(db),
+      fileStore: createFileStore(join(storeDir, 'managed')),
+      gate: noopGate,
+      extractMeta: async (bytes: Uint8Array) => {
+        // 模拟对端 import 会话提交：与本会话将插入的行同 sha（sha 口径与
+        // file-store 单源同函数——受管副本字节即规范内容）
+        db.prepare(
+          `INSERT INTO papers (id, file_ref, sha256, title, added_at, updated_at)
+           VALUES ('peer-1', 'peer/race/x.pdf', ?, '对端会话同 sha 提交', 't', 't')`
+        ).run(sha256Hex(bytes))
+        return { title: '', authors: [], year: null, doi: null, arxivId: null }
+      }
+    })
+    const result = await svc.importFiles([a], TARGET_FOLDER)
+    expect(result.failed).toEqual([]) // 修复前红：UNIQUE 约束英文文案折叠进 failed
+    expect(result.duplicates).toEqual(['race.pdf'])
   })
 
   it('非 PDF 文件进 failed（含中文原因），不中断整批', async () => {

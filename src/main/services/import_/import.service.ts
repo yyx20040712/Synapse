@@ -168,8 +168,9 @@ export function createImportService(deps: {
     try {
       report(sessionId, { phase: 'copying', current, total, fileName })
       const stored = await fileStore.storePdfFromPath(entry.path)
-      // 去重语义（DUPLICATE_FILE）：同 sha 已入库（含本批次先行文件）→ 记文件名跳过，
-      // 不抛错不重复入库；受管存储按内容寻址，重复拷贝只是复用既有分桶文件
+      // 去重语义（DUPLICATE_FILE）——快路径：同 sha 已入库（含本批次先行文件）→
+      // 记文件名跳过，不抛错不重复入库；受管存储按内容寻址，重复拷贝只是复用
+      // 既有分桶文件。免抽取直接返回；并发窗闭合见下方事务内复查（[ds-C4]）
       if (repos.papers.findBySha256(stored.sha256) !== null) {
         return { kind: 'duplicate', fileName }
       }
@@ -196,7 +197,15 @@ export function createImportService(deps: {
       }
       const collection = entry.collection
       const folderId = collection?.id ?? targetFolderId
-      repos.withTransaction(() => {
+      // [ds-C4] 并发竞态闭合：上方事务外查重放行后、本事务提交前，对端 import
+      // 会话可能在 extractMeta await 窗内提交同 sha 行（gate 分计放行并发双
+      // import——import-gate.ts 头注）；事务内 insert 前复查一次（JS 单线程+
+      // 同步事务⇒两事务不交错），命中即归 duplicate——避免撞 papers.sha256
+      // UNIQUE 折叠 failed（英文约束文案），也不依赖错误文案分类
+      const txOutcome = repos.withTransaction((): 'duplicate' | 'imported' => {
+        if (repos.papers.findBySha256(row.sha256) !== null) {
+          return 'duplicate'
+        }
         repos.papers.insert(row)
         // [F-FOLDER-01] 单归属直写（M2M attach 退役——一级子目录名→folder）+
         // [回炉码 2/k1-W4→F-ALIGN-01 D3] 落夹即自动入图（全形态统一）：
@@ -215,7 +224,11 @@ export function createImportService(deps: {
         }
         const { month, slot } = normalizeMonthSlot(seed, repos.lineage.listGraph().nodes)
         repos.lineage.upsertNode({ ...seed, month, slot })
+        return 'imported'
       })
+      if (txOutcome === 'duplicate') {
+        return { kind: 'duplicate', fileName }
+      }
       return { kind: 'imported', summary: toSummary(row, meta.authors, collection?.id ?? targetFolderId) }
     } catch (e) {
       // FileStoreError（UNSUPPORTED_FILE/IO_ERROR）的 message 已是中文；兜底防空串
