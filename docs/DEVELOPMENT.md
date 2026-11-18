@@ -5,7 +5,7 @@
 ## 1. 日常命令
 
 ```bash
-npm run verify        # 提交前必跑：quality + tickets + locks + lint + typecheck + test + build（与 CI 同口径）
+npm run verify        # 提交前必跑：quality + tickets + lint + typecheck + test + build（与 CI 同口径）
 npm run dev           # 开发模式（HMR）
 npm run test          # vitest（单测/契约/安全）
 npm run build         # electron-vite build（产物 out/）
@@ -26,7 +26,7 @@ npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断
 
 - **取数据**：`import { api, unwrap } from '../../api/client'`；`await unwrap(api.library.list({...}))`，失败抛 `ApiClientError`（catch 后 toast）。
 - **Result 形状**：service 内抛错（`DomainError` 带 code），`register` 统一折叠；renderer 永远拿 Result。
-- **新 IPC 通道**：改 `src/shared/ipc/schemas.ts` + `api-surface.ts`（[locked-change]，一般不需要）。
+- **新 IPC 通道**：改 `src/shared/ipc/schemas.ts` + `api-surface.ts`（变更须在提交说明申报，一般不需要）。
 - **SQL**：`db.prepare('... WHERE id = ?').run(id)`；FTS 匹配串必须 `escapeFtsQuery(userInput)`。
 - **多表写入**：service 层组合多条写入必须 `repos.withTransaction(() => {...})` 包裹
   （attach 失败整体回滚，防「failed 的文献已入库且 sha 被占用」半写状态）。
@@ -43,7 +43,7 @@ npm run smoke:installer # 安装包冒烟：静默装→沙箱启动→存活断
   INV-20 单入口三层防线 exact/page/paper）——禁各写降级。
 - **不要**：axios/dayjs/lodash/immer——用原生 fetch/Date/展开运算符/Zustand set。
 
-## 4. 覆盖率门槛（现状；改 vitest.config.ts 需 [locked-change]）
+## 4. 覆盖率门槛（现状；改 vitest.config.ts 须在提交说明申报）
 
 - 全局（lines/statements/functions/branches）：≥70
 - repos 层：≥85

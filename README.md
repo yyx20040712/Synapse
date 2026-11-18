@@ -10,11 +10,10 @@
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm run verify` | quality + tickets + locks + lint + typecheck + test + build（提交前必跑，与 CI 同口径） |
+| `npm run verify` | quality + tickets + lint + typecheck + test + build（提交前必跑，与 CI 同口径） |
 | `npm run dev` | 启动开发（HMR） |
 | `npm run test` / `npm run test:e2e` | 单测 / 端到端（e2e 需先 build） |
-| `npm run quality:check` / `tickets:check` / `locks:check` | 三道防作弊关卡 |
-| `npm run locks:apply` / `locks:unlock` | 锁定/解锁受保护文件（变更需 [locked-change] 提交尾注） |
+| `npm run quality:check` / `tickets:check` | 一致性检查（占位/乱码/分层/工单对账等） |
 | `npm run dist` | 打包 NSIS 安装包（npmmirror 镜像，产物 dist/） |
 | `npm run smoke:installer` | 安装包冒烟：静默装→沙箱启动→存活断言→静默卸载（需先 dist） |
 

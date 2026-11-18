@@ -53,8 +53,8 @@ git config user.email user@local
 #    或覆写 ~/.git-credentials 对应行）
 ```
 
-- 行尾纪律：仓库根 `.gitattributes` 强制 LF（locks 的 sha256 以 LF 为准）——
-  新机**禁改** autocrlf 相关仓库配置。
+- 行尾纪律：仓库根 `.gitattributes` 强制 LF——新机**禁改** autocrlf 相关
+  仓库配置。
 
 <details><summary>Windows 机网络配置（回归 Windows 且需代理时参考）</summary>
 
@@ -86,14 +86,14 @@ node scripts/local-state.mjs import synapse-local-state-*.tar.gz   # 应用进�
 ## 5. 基线核对（达到预期口径才算环境就绪）
 
 ```bash
-npm run verify               # 预期 exit 0（用例数/locks 数随批次浮动，以实际输出为准）
+npm run verify               # 预期 exit 0（用例数随批次浮动，以实际输出为准）
 npm run build && npm run test:e2e   # 预期全量用例以实际输出为准（e2e 不含在 verify 里，须单独跑）
 ```
 
 - verify 红：先看是否 Node 版本≠24（版本守卫在 quality 段）。
-- locks 报受锁文件被改：新机**禁动** `tests/**`、`src/shared/**`、migrations、
-  CI/lint/构建/测试配置（sha256 对账，改须走 [locked-change] 流程——Linux 下
-  ps1 锁工具缺位，manifest 维护走 node 复刻口径，见 AGENTS.md 环境事实）。
+- 受保护面纪律：`tests/**`、`src/shared/**`、migrations、CI/lint/构建/测试
+  配置的变更须在提交说明中显式申报理由（原 sha256 锁机制已退役，凭申报与
+  diff 审查承载——AGENTS.md 测试纪律）。
 - 真实库位置（单源=代码 app.getPath，见 DEVELOPMENT §6）：Linux=
   `~/.config/Synapse/`（Electron userData 默认）；Windows=
   `%APPDATA%\Synapse\`（改名迁移走 `src/main/migrate-user-data.ts` 兜底回落）。

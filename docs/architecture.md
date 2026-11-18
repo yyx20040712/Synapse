@@ -126,7 +126,7 @@ flowchart TB
   封闭枚举；错误可带可选 `reason`（结构化透传，首用=GHOST_FOLDER 询问）。
 - CSP 单源：策略只在 `src/main/security/csp.ts`，构建期注入 index.html meta
   （生产 file:// 下 meta 是实际防线），源码 html 禁止手写。
-- 契约文件受锁（sha256 对账），改动需 [locked-change]。
+- 契约文件（src/shared、测试、migrations、CI）变更须在提交说明中申报理由。
 - 通道名→HTTP 路由天然映射（未来适配层命名约束）：api-surface 通道名
   「域/方法」天然映射 `/api/域/方法`——未来服务端或插件入站接口必须沿用
   同一命名（接线表即路由表；当前无 HTTP 服务，此为预留命名约束）。
@@ -285,21 +285,20 @@ flowchart TB
 
 ### 4.1 质量关卡链（本地 verify 与 CI 共有检查同口径；CI 另跑覆盖率/e2e/依赖审计/提交尾注检查）
 
-本地 `npm run verify` 八段链（不含 e2e 与覆盖率）：quality → test-surface
-（测试面指纹门）→ tickets → locks → lint → typecheck → test → build。
+本地 `npm run verify` 六段链（不含 e2e 与覆盖率）：quality → tickets →
+lint → typecheck → test → build。
 
 - quality 多段：占位/乱码/跨域/行数分级（repo≤300·组件≤250）/分层方向解析
   /同值双常量棘轮/AST tsx inline 色/CSS var() 语义锚/src 模型代号负锚/e2e 截图
-  负锚/节点唯一来源负锚词表/治理表行格数校验/文档禁用词负锚（扫描面单源=
-  scripts/check-doc-terms.mjs）。
-- tickets：工单号一致性/绑定对账/B4 防线（规则 6 以 ROADMAP 退役页
-  `### P7-X：` 锚段集为已裁决域）。
-- locks：受锁文件 sha256 对账（行尾由 `.gitattributes` 强制 LF；scripts 下全部
-  .mjs/.ps1 自动入锁面）。
-- 独立快跑入口：`npm run lint:model-names`、`npm run doc-terms:check`（两者均已
-  内联 quality 段随 verify/CI 跑）；CI 在共有检查之外另跑覆盖率
+  负锚/节点唯一来源负锚词表。
+- tickets：工单号一致性/绑定对账/已裁决域对账（规则 6 以 ROADMAP 退役页
+  `### P7-X：` 锚段集为已裁决域；done 票的 file 指向已删除文件时降级为
+  note 观测——机制退役遗留定位符不卡 CI）。
+- 独立快跑入口：`npm run lint:model-names`；CI 在共有检查之外另跑覆盖率
   （vitest --coverage）、e2e（Playwright 全量，需先 build）、npm audit 与
-  提交尾注检查（[dep-change]/[locked-change]）、[test-refactor] 范围闸。
+  [dep-change] 提交尾注检查。
+- 受保护面（tests/shared/migrations/CI/检查脚本）变更须在提交说明中申报
+  理由（原 sha256 锁与测试面指纹门已退役，凭申报与 diff 审查承载）。
 
 ### 4.2 工单与骨架期机制
 
@@ -316,12 +315,10 @@ flowchart TB
   subgraph GATES["关卡（verify 与 CI 共有检查同口径）"]
     Q["quality:占位/乱码/跨域/行数/分层方向"]
     T["tickets:工单号一致性 + done 残留占位即红"]
-    LK["locks:受锁文件 sha256 对账"]
     V["lint → typecheck → test → build"]
   end
   GD --> GATES
   GATES -->|"红 = 返工，禁放宽断言"| IMPL
-  LK --> MANIFEST["locks/manifest.json<br/>变更须 [locked-change] 尾注"]
 ```
 
 - 每个文件头部五层规约（行为/接口/架构/生命周期/文化）=自包含任务书。
@@ -404,8 +401,7 @@ flowchart TB
 
 **已知风险与遗留**
 
-- 登记性地雷与已接受取舍=ADR-0007；开放工单面=tickets/registry.ts（open 项）；
-  治理防线生命周期（退役触发器）=docs/defense-lifecycle.md。
+- 登记性地雷与已接受取舍=ADR-0007；开放工单面=tickets/registry.ts（open 项）。
 - CI 虚拟屏 1024×768 与本地 1280×800 不同构：新 e2e 用例凡 boundingBox+mouse
   拖拽/点击须先滚动锚定；双端拖拽用例须种子级同月共视设计（AGENTS.md 环境事实）。
 - CI 合成输入栈无原生文本选区扩展：选区类 e2e 的选区产生一律走程序化写
