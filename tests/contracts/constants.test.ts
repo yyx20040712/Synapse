@@ -18,11 +18,11 @@ import { libraryQuerySchema } from '../../src/shared/models/paper'
  * [F-TESTREF-W3] src/shared/constants.ts 直接契约测试——全局常量冻结 pin。
  * 「修改任何一项都可能影响安全边界（如 host 白名单）」是文件头注的冻结
  * 声明——本文件把声明变成机器断言：白名单/协议名/预算值任何漂移即红，
- * 增删须意识化过目（[locked-change] 审查锚）。新测试 always-active。
+ * 增删须意识化过目（审查锚）。新测试 always-active。
  */
 
 describe('contracts/constants —— 全局常量冻结 pin（单一出处）', () => {
-  it('出网 host 白名单冻结（安全 §6.4——新增需 ADR+[locked-change]）', () => {
+  it('出网 host 白名单冻结（安全 §6.4——新增需 ADR（提交说明申报））', () => {
     expect([...ALLOWED_REMOTE_HOSTS]).toEqual(['api.crossref.org', 'api.openalex.org', 'export.arxiv.org'])
   })
 

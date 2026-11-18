@@ -19,7 +19,7 @@
  * ——node 环境 db 域测试禁 import 本件（用 fixtures.ts）；盒几何桩看
  * tests/utils/geometry.ts。
  * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更；C 面零变化指纹门。
- * 受锁文件。[test-refactor][locked-change]
+ * 契约面文件（变更须提交说明申报）。
  */
 import { act } from 'react'
 import type { TabState } from '../../src/renderer/features/reader/state/reader.store'

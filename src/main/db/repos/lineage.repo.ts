@@ -47,7 +47,7 @@
  *   ipc/lineage.ts+schemas/api-surface 受锁扩；**受锁新增清单（门一
  *   N4 处置）：migrations/004_lineage.sql（migrations/ 全目录受锁）+
  *   shared/models/lineage.ts（shared/ 全目录受锁）+新测试——三者均
- *   unlock→批内改→generate→apply+[locked-change] 尾注**
+ *   提交并在说明中申报**
  *
  * ── 架构层 ──
  * - 分层：ipc → services → repos → db 单向（禁 service
@@ -74,7 +74,7 @@
  *   **service upsertEdge 运行时守卫三拒绝路径单测（W1 宿主用例）**；
  *   repo 交互真库夹具（AI-01 测试同型）；**新测试 always-active**
  *   （不经 guardedDescribe——ADR-0017 裁决 3）
- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+ * - 新增受锁测试随实现 提交并在说明中申报
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import { randomUUID } from 'node:crypto'

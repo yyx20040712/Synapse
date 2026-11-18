@@ -6,7 +6,7 @@
  * 2. main/ipc/register.ts：按本表逐通道注册 zod 校验 + service 分发
  * 3. services：类型 ApiHandlers 由本表推导——漏实现/多实现通道 = 编译错误
  *
- * 规则：新增/修改通道必须走 [locked-change]；通道名 = "<域>/<动作>"，全局唯一。
+ * 规则：新增/修改通道须在提交说明申报；通道名 = "<域>/<动作>"，全局唯一。
  */
 import { z } from 'zod'
 import type { Result } from '../app-error'

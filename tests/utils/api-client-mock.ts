@@ -25,7 +25,7 @@
  *
  * 边界：仅 renderer/jsdom 测试面适用——api/client 展开型会加载真模块（顶层
  * 读 window），node 环境测试禁用本工厂的 api mock（toast 面不受限）。
- * 受锁文件。[test-refactor][locked-change]
+ * 契约面文件（变更须提交说明申报）。
  */
 import { vi } from 'vitest'
 import type * as clientModule from '../../src/renderer/api/client'

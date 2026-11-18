@@ -12,7 +12,7 @@
  *   （U2b-1 裁①；序=形态先于存在性——裁③：role→content→会话存在性）**；
  *   insertWithEviction 抛 SessionCapAllPinnedError →映射 AiDomainError('CONFLICT')
  *   ——**复用 CONFLICT 预裁**（tags U4 限额同型先例；禁新增 AppErrorCode——封闭
- *   枚举需 ADR+[locked-change]，本批不动 shared）；文案携带 pinnedCount/total 双
+ *   枚举需 ADR（提交说明申报），本批不动 shared）；文案携带 pinnedCount/total 双
  *   实数（U2b-1 裁②）。
  * - pinMessage/unpinMessage：**会话存在性前置**（消息→会话解析：缺席消息
  *   NOT_FOUND「消息不存在」、在场消息会话已灭 NOT_FOUND「会话不存在」——U2b-1

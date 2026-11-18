@@ -20,7 +20,7 @@
  * - **采样模式（expectRectStable/frameProbe）仅连续性缺陷**：瞬跳/回弹时序
  *   类（需要帧间序列证据的缺陷面）；静止稳定性断言用 expectRectStable。
  *
- * 受锁文件（tests/**——CI sha256 对账）。
+ * 契约面文件（变更须提交说明申报）。
  */
 import { expect, type Locator, type Page } from '@playwright/test'
 

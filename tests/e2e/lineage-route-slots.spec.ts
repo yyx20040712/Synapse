@@ -29,9 +29,6 @@
  *   （data-route-state 不新增——既有 data-route 即胜出态观测位，T-P1b 已
  *   消费；重复挂同值属性=冗余，主控申报处置）。
  *
- * ── 受锁流程（门一 W3 同型）──
- * - 本文件已入 locks manifest——改动必经 locks:unlock→批内改→locks:apply
- *   +[locked-change] 尾注提交。
  * - R3 取景申报：产品库 UNIQUE(from,to) 使同端点对三边不可达（设计 §5 S3
  *   同锚三边=单测域；e2e 域结构证明可达最大=同单元双消费——双向边，跨卡
  *   桥边必穿中间卡被避让链拦），本 spec 断言可达核（同单元槽位互异+∈分点

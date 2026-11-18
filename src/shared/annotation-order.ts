@@ -24,7 +24,7 @@
  * ── 架构层 ──
  * - src/shared 跨进程单源（renderer 与 main 同一实现，INV-11/INV-24）；
  *   仅类型 import（./models/annotation），零运行时依赖、零 IO
- * - 受锁路径：变更走 unlock → 改 → 即时 apply，提交带 [locked-change] 尾注
+ * - 受锁路径：变更须在提交说明申报
  *
  * ── 生命周期层 ──
  * - 不做：DB sortKey 持久列（annotation schema 已冻结，排序键=派生；写库不加列）

@@ -11,7 +11,7 @@ import * as S from '../../src/shared/ipc/schemas'
  * [F-TESTREF-W3] src/shared/ipc/api-surface.ts 直接契约测试——接线表闭合性。
  * 与既有 contracts/api-surface.test.ts（通道唯一性/命名/strict 通用性质）互补：
  * 本文件 pin 表的**形状**（通道数/域枚举/每域方法集/路由前缀集），任何通道
- * 增删都必须意识化更新 pin——接线表是「新增通道必须走 [locked-change]」的
+ * 增删都必须意识化更新 pin——接线表是「新增通道须在提交说明申报」的
  * 执法对象，pin 即变更审计锚。新测试 always-active。
  */
 

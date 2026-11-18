@@ -1,7 +1,5 @@
 /**
- * [F-ANCHFIX-01 批 1b] 锚级一致 e2e（常设化——设计书 v1.2 §3.5 销项判据；
- * 受锁流程：本文件入 locks manifest，改动必经 locks:unlock→改→locks:apply
- * +[locked-change] 尾注提交）。
+ * [F-ANCHFIX-01 批 1b] 锚级一致 e2e（常设化——设计书 v1.2 §3.5 销项判据）。
  *
  * ── 夹具协议（沿承 lineage-route-slots.spec.ts 同型：launch/seedLineageGraph/
  *    openLineage/waitForPaths；helper 区第 2 份复制——抽共享涉 geo-probes 受锁

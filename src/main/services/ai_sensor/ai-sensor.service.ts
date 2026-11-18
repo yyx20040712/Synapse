@@ -108,7 +108,7 @@
  *   新鲜/过期两判）/freshness 阈值边界/hasPendingJob/productExists；状态机
  *   跨格序列 ①~⑤ 用例化（fs 夹具目录驱动）；companion.mjs 探针=CLI 行为
  *   测试（拾取→心跳→产物→移除 job 四步序，AI-05 门二探针法同型）
- * - 新增受锁测试随实现 locks:generate+apply+[locked-change] 尾注
+ * - 新增受锁测试随实现 提交并在说明中申报
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import { randomUUID } from 'node:crypto'

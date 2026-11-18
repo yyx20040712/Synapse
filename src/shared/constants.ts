@@ -1,6 +1,6 @@
 /**
  * 全局常量 —— 单一出处（契约，已冻结）。
- * 修改任何一项都可能影响安全边界（如 host 白名单），需走 [locked-change]。
+ * 修改任何一项都可能影响安全边界（如 host 白名单），须在提交说明申报。
  */
 
 /** 自定义协议：renderer 获取受管 PDF 的唯一通道（app-file://<paperId>） */
@@ -60,7 +60,7 @@ export const MAX_PAGE_SIZE = 200
 /**
  * [F-VISFB-11] 笔记自动保存防抖窗口（毫秒）——notes.store 单源消费
  * （视检反馈战役 §0-3 裁决：600s；dup-constants 负锚——renderer 侧不得
- * 留本地同值副本，改值须 [locked-change]）
+ * 留本地同值副本，改值须提交说明申报）
  */
 export const AUTOSAVE_DEBOUNCE_MS = 600_000
 
@@ -68,7 +68,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 600_000
  * [F-VISFB-64] 退出握手等待预算（毫秒）——main 侧 quit-close-policy 分级等待
  * （初始 dirty 5s/WC 升级 WD 截止恒 t0+5s）+renderer 侧 quit-flush-bridge 有界
  * 复位兜底（abort 丢失时最晚本值解除 closing）两侧单源消费；原驻 main-window.ts
- * 已迁出上移（dup-constants 负锚——禁本地副本，改值须 [locked-change]）。
+ * 已迁出上移（dup-constants 负锚——禁本地副本，改值须提交说明申报）。
  */
 export const QUIT_FLUSH_TIMEOUT_MS = 5_000
 
@@ -105,7 +105,7 @@ export const DEFAULT_WS_NAME = '默认课题'
  * 出处=00B 接手单（批档 20261016-visfbb0/02——XObject-only 提取管线实证）；
  * 校准说明=语料 9 篇 OA 真件（56 资产/63 draws）：px 面积两侧余量 7%（装饰
  * 横幅 58,682 vs 真图 64,372）、CTM 面积两侧余量 11%（3,335 vs 3,700）——
- * 两侧余量 ≤11%，属初值：后续语料扩充再调（调值走 [locked-change]）。
+ * 两侧余量 ≤11%，属初值：后续语料扩充再调（调值须提交说明申报）。
  * 负向测试锚=方标/横幅/规则线三装饰族（00B §二）。
  */
 /** 过滤阈值①：CTM 面积下限（pt²）——60×60pt 等效（横幅 3,335 出局/真图 3,700 入局） */

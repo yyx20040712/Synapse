@@ -11,7 +11,7 @@
  *   shared/models/ai-note.ts zod 枚举镜像消费，接缝双向锚定声明在两文件头注）；
  *   question 列 v1 取值 'Q1'..'Q7'|'divergence'（七问 v1 冻结，蓝图 §4.2），
  *   DDL 不加 CHECK（应用层校验归 zod——DDL 收窄需迁移，扩展性优先；七问
- *   枚举未来扩展=zod 层变更，shared/models 受锁=[locked-change] 流程）
+ *   枚举未来扩展=zod 层变更，shared/models 契约面变更须提交说明申报）
  * - 级联语义：paper 删→CASCADE；annotation 删→SET NULL（锚定段降级篇级，
  *   语料不丢）；FTS v1 不入（检索面先由 zcode 侧 grep 承担，接入应用搜索
  *   属 P7-E 候选）
@@ -51,8 +51,7 @@
  * - 测试：tests/unit/db/repos/ai_notes.repo.test.ts [受锁新增]：insert/
  *   查询（byPaper/byRole）/级联两路径（paper CASCADE/annotation SET NULL）/
  *   role CHECK 拒非法值/updateContent/deleteByPaper
- * - 新增受锁文件（003/ai-note.ts/测试）随实现提交 locks:generate+apply
- *   同步+[locked-change] 尾注（禁跨提交延迟重生成）
+ * - 新增受锁文件（003/ai-note.ts/测试）随实现提交并在说明中申报
  * - 完成后：删除 STUB → npm run verify 绿 → 人工审查 git diff → 翻 registry
  */
 import { randomUUID } from 'node:crypto'

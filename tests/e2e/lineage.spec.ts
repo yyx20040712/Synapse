@@ -28,8 +28,6 @@
  * - **e2e 原生守卫（双条件，门一 W2 处置）**：skip=自身工单未 done
  *   **或**依赖组（SR2-LG-01~04）任一未 done。翻 done 时占位 test
  *   必须已被全链用例替换——**防作弊闭合=主控收口亲验**。
- * - **受锁流程（门一 W3）**：本文件已入 locks manifest——改动必经
- *   locks:unlock→批内改→locks:apply+[locked-change] 尾注提交。
  * - 完成后：npm run verify 绿 → 人工审查 git diff → 翻 registry
  *
  * ── 实现注（LG-05 交付，主控简报六段裁决落点；[F-BAKRET-01] 种子链改述）──

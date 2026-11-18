@@ -1,5 +1,5 @@
 /**
- * 测试基建：IpcDeps 桩工厂（受锁文件）。
+ * 测试基建：IpcDeps 桩工厂（契约面，变更须提交说明申报）。
  * 用法：makeIpcDeps({ services: {...}, dialogs: {...} }) 覆盖需要的部分。
  */
 import type { IpcDeps } from '../../src/main/ipc'

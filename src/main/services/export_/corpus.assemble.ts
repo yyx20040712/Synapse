@@ -32,7 +32,7 @@
  *     归 P7-G 会话工单，本单 golden 断言两次调用逐字节全等）；空集（无 note
  *     无标注）=仅 front-matter+标题 合法产物
  * - 前缀常量单源：CORPUS_USER_PREFIX='[user]'/corpusAiPrefix(source)——语法
- *   变更=改这里+[locked-change]（schemaVersion 联动评估）
+ *   变更=改这里（提交说明申报）（schemaVersion 联动评估）
  *
  * ── 接口层 ──
  * - export interface AiNoteEntry { source: string; content: string; page?: number }

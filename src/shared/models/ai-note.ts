@@ -7,10 +7,10 @@
  * （D3：AI 语料不污染用户标注 schema）。
  * 接缝锚定（INV-11）：role 枚举真相=迁移 003 DDL CHECK
  * （src/main/db/migrations/003_ai_notes.sql）；本文件 zod 枚举为镜像消费——
- * 两处值集必须一致，扩展 role 需新迁移+[locked-change]。
+ * 两处值集必须一致，扩展 role 需新迁移（提交说明申报）。
  * question 取值 'Q1'..'Q7'|'divergence'（七问 v1 冻结，蓝图 §4.2）——DDL 侧
  * 不加 CHECK（扩展性优先），本 zod 层为应用边界校验单源；七问枚举扩展
- * =[locked-change]（本文件受锁）。
+ * =提交说明申报（本文件为契约面）。
  */
 import { z } from 'zod'
 

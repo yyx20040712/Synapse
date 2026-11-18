@@ -5,7 +5,7 @@
  * 接缝锚定（INV-11 体例，先例=ai-note.ts）：
  * - scope/origin 值集与 AI_MEMORY_CATEGORIES 分类体系真相=迁移 020 DDL CHECK
  *   （src/main/db/migrations/020_ai_domain.sql）；本文件 zod 枚举/常量为镜像
- *   消费——两处值集必须一致，扩展需新迁移+[locked-change]（19 类 6+7+6 跨档
+ *   消费——两处值集必须一致，扩展需新迁移（提交说明申报）（19 类 6+7+6 跨档
  *   零同名冻结，用户定稿案）。
  * - AI_AUDIT_KINDS：DDL 对 kind 无 CHECK——值域=服务层冻结 8 值，本枚举为
  *   IPC 边界校验单源。
@@ -73,7 +73,7 @@ export const aiMemoryOriginSchema = z.enum(AI_MEMORY_ORIGINS)
 
 /**
  * 三档冻结类目（020 ai_memory 条件 CHECK 逐字镜像——19 类 6+7+6 跨档零同名；
- * 档间完全隔离，扩展需新迁移+[locked-change]——见文件头注接缝锚定）
+ * 档间完全隔离，扩展需新迁移（提交说明申报）——见文件头注接缝锚定）
  */
 export const AI_MEMORY_CATEGORIES: Record<AiScope, readonly string[]> = {
   paper: [

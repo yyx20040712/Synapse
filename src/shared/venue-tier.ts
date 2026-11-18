@@ -62,7 +62,7 @@ export type VenueTier = 'T1' | 'T2' | 'T3'
 
 /**
  * 种子表（示例级 5 条，机制为主）：内容增量走受锁常量修订制（D3-A 2026-08-27
- * 用户拍板——本文件 src/shared/** 全域入锁，修订=改本表+[locked-change]）。
+ * 用户拍板——本文件 src/shared/** 全域入锁，修订=改本表（提交说明申报））。
  * 键=provider display_name 原形：精确等值、仅 trim，不做 toLowerCase 归一（N-r2b）。
  */
 export const VENUE_TIER_MAP: Readonly<Record<string, VenueTier>> = {

@@ -261,7 +261,7 @@ export function createLineageService(deps: LineageServiceDeps): LineageService {
       }
       // [F-FOLDER-01 INV-90] 跨图边守卫（边属图=端点所在图派生——零冗余零漂移
       // 面的代价=服务层护栏；ERR_CROSS_GRAPH_EDGE 以 CONFLICT 码+中文 reason
-      // 承载：AppErrorCode 封闭枚举纪律（新增码需 ADR+[locked-change]）+
+      // 承载：AppErrorCode 封闭枚举纪律（新增码需 ADR（提交说明申报））+
       // INV-84 拒绝型语义（renderer 队列按 CONFLICT 丢弃动作——重试永不成功型）
       const fromNode = graph.nodes.find((n) => n.id === input.fromNode)!
       const toNode = graph.nodes.find((n) => n.id === input.toNode)!

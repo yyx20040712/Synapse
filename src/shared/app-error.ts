@@ -3,7 +3,7 @@
  *
  * 规则：
  * - 所有 IPC 响应都是 Result<T>；异常堆栈禁止跨进程（安全 §6.3）
- * - AppErrorCode 是封闭枚举，新增需走 ADR + [locked-change]
+ * - AppErrorCode 是封闭枚举，新增需走 ADR 并在提交说明申报
  * - NotImplementedError 是骨架期的受控占位：每个实例必须携带工单号，
  *   CI 由 scripts/check-tickets.mjs 校验工单号真实存在且为 open（防作弊 K3）
  */

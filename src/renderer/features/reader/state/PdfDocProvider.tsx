@@ -22,7 +22,7 @@
  * ── 架构层 ──
  * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
  *   CorpusExtractor/FigureExtractor 五件——ESLint no-restricted-imports 机器锚，
- *   白名单变更=[locked-change]；[F-VISFB-43] 第五件随 PaperImageExtractor 退役
+ *   白名单变更须提交说明申报；[F-VISFB-43] 第五件随 PaperImageExtractor 退役
  *   换名=shared/figures/FigureExtractor.ts——XObject 提取管线自建文档句柄）
  * - [F-VISFB-43] 旧句柄注册表接线（register/unregister 至 PaperImageExtractor
  *   ——INV-135 句柄三则载体）随旧件原子退役删除：提取管线不共享 reader 句柄
