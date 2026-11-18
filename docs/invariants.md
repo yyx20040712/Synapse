@@ -31,7 +31,7 @@
 | INV-09 | 渲染层禁止 Node/Electron API 与绝对文件路径 | AGENTS.md | ESLint 强制 | 已锚定 |
 | INV-10 | 标注层容器是 stacking context：混合模式必须上容器级（rect 级混合被隔离无效） | src/renderer/features/reader/view/AnnotationLayer.tsx | e2e mix-blend 断言 | 已锚定 |
 | INV-11 | 类型/颜色/文案/数值单一真相源（禁止两份等价声明靠注释对齐） | AGENTS.md | 机器锚定（字号+颜色面：quality CSS 负锚+eslint B-5）+人审（数值面）；lineage 恒四组拒绝文案=常量单源已锚 | 颜色+字号面已锚；数值面人审 |
-| INV-12 | 受锁文件变更即时 locks:apply（manifest 与提交同步，禁跨提交延迟） | AGENTS.md | CI locks:check | 已锚定 |
+| INV-12 | 受保护面（tests/src/shared/migrations/CI/检查脚本）变更须在提交说明中显式申报理由；原 sha256 锁机制 2026-11-18 退役 | AGENTS.md | 提交说明+diff 审查 | 部分（凭申报与审查承载，无机器防线） |
 | INV-13 | IPC Result 折叠约定：service 把业务失败折叠为正常返回时，消费方必须分支处理、不得无条件按成功提示 | src/main/services/enrich/enrich.service.ts, src/main/services/reader.service.ts | 人审+折叠面清点存档 | 部分（新增折叠点须随消费方分支一并过审，无机器防线） |
 | INV-14 | 输入接缝注册/注销成对：快捷键/滚轮/指针监听/拖拽期 body 样式副作用/事件订阅与挂载源同源清理 | src/renderer/shared/keymap.ts, useExportCorpusEvents（App 事件桥） | 单测 keymap.test 12+reader-shortcuts.test 8+split-pane.test 11+corpus-export.test | 已锚定 |
 | INV-15 | 阅读器空态（无 tab/loading/error）下 TabBar 保持渲染——error tab 可见/可关/可切，否则打开失败即 UI 死锁 | src/renderer/features/reader/view/ReaderPage.tsx 空态分支 | 组件 tab-bar.test+e2e 三序列（换/关/退含 error 场景） | 已锚定 |
@@ -46,7 +46,7 @@
 | INV-24 | 片段序单源：一切片段序消费面按同一比较器排序（页码→页内偏移→创建序→id 兜底）；排序禁字符串字典序比较 | 本册+src/shared/annotation-order.ts | 单测 annotation-order.test 6 用例+两消费方用例（组件序消费+corpus golden） | 已锚定 |
 | INV-25 | ai_notes 级联语义：paper 删除→级联清空（CASCADE）；annotation 删除→annotation_id 置 NULL 条目保留；级联依赖 foreign_keys=ON 常开 | 迁移 003 DDL, src/main/db/repos/ai_notes.repo.ts, src/main/db/connection.ts | repo 单测（级联两路径用例——真实外键行为） | 已锚定 |
 | INV-26 | 伴随进程文件协议三联：pending job 移除以 corpus-ai 产物落盘成功为前提（失败路径 job 保留）；判活唯一依据=status.json 心跳新鲜度；协议幂等 | ADR-0015, src/main/services/ai_sensor/ai-sensor.service.ts, tools/ai-sensor/companion.mjs | 单测 ai-sensor.service.test（幂等/三态/跨格序列）+CLI 探针 companion.test | 已锚定 |
-| INV-27 | lineage 树单父不变量（四 kind 全景）：tree 边=每节点至多一条 tree 入边（无多父/无环/无自环）；inferred 同树守卫；ref/manual 入边不算 tree 父 | ADR-0014, src/main/services/lineage/lineage.service.ts 两守卫口 | 单测 lineage-import.test（运行时 upsertEdge 三拒绝+ref 六用例+manual 十用例——守卫宿主，ADR-0022） | 已锚定 |
+| INV-27 | lineage 边运行时守卫六校验：自环拒/节点不存在拒/重复边中文收口（UNIQUE(from_node,to_node) 前置）/跨图拒（INV-90）/成环拒（全边可达图）/via 路点不变量校验；多父放行（kind 四值体系已退役——manual 单基型，DB kind 列恒 'manual'，读面不映射） | ADR-0014, src/main/services/lineage/lineage.service.ts 守卫集中处 | 单测 lineage-import.test（自环/成环/收口/不存在用例）+lineage-manual-edges.test（多入边放行） | 已锚定 |
 | INV-28 | 被引缓存刷新语义（与 fill-empty 刻意不同——被引数单调增长）：命中且非 null（含 0）→强制刷新三列同写；null/未命中→旧值保留 | src/main/services/enrich/cited-by.service.ts | 单测 cited-by.test 9 用例+真库断言 papers.repo.test | 已锚定 |
 | INV-29 | 程序跳页与滚动同步双源区分：setPage 第三参 scroll to/none 两态——to=程序跳页 bump scrollRequest 信号；none=只落账不触发程序滚动 | src/renderer/features/reader/state/reader.store.ts, view/PageColumn.tsx | 单测跨格锚 reader.store.test+page-column.test | 已锚定 |
 | INV-30 | canvas 生命周期=渲染窗口绑定：页 canvas 仅存在于渲染窗口内，离屏超限必卸载（canvas+pageText 条目同删） | src/renderer/features/reader/view/PageColumn.tsx | 组件单测 page-column.test+pages-overlay.test+e2e 计数断言 | 已锚定 |
@@ -76,7 +76,7 @@
 | INV-60 | 重锚显示覆盖登记：重锚成功产物覆盖库值 rects 仅显示层、永不回写（annotation.rects 库数据零触碰；source 域标记随 resolved 走） | src/renderer/features/reader/anchors/annotation-resolve.ts, view/AnnotationLayer.tsx, AiAnnotationLayer.tsx | 单测域标记断言 | 已锚定 |
 | INV-61 | 字号档位语义刻度单源：font-size 消费面禁字面量（CSS 声明/inline/arbitrary），tailwind text 系经 v4 @theme 重绑到 --fs-* token | src/renderer/shared/theme.css :root --fs-* 族, docs/design/2026-09-08_p7d01-b2-fontscale-ruling.md | theme.test.ts（TOKENS 正锚+FS 正则全域负锚五通道） | 已锚定 |
 | INV-62 | 划选终点事件层可重定向：mouseup 真划选且释放点浅探无文本时，selection focus 可被改写为上一行行尾（release-affinity 纯函数判别；栏间隙保守零变=已知边界） | src/renderer/features/reader/interact/release-affinity.ts, SelectionLayer.tsx | release-affinity.test 17 用例 | 已锚定 |
-| INV-63 | 测试面单调性：tests 契约面（用例+断言+skip 标记）只增不减；有意收紧/删改必须先取主控裁决再落豁免清单（reason+rulingLink），禁直接改基线 | docs/design/2026-09-11_f-testref00-design-final.md, AGENTS.md [test-refactor] 段 | 机检 npm run test-surface:check（C_after ⊇ C_before 多重集判定） | 已锚定 |
+| INV-63 | 测试面单调性：tests 契约面（用例+断言+skip 标记）只增不减；有意收紧/删改先取用户裁决；原指纹门与豁免清单机制 2026-11-18 退役 | AGENTS.md | 提交说明+diff 审查 | 部分（凭申报与审查承载，无机器防线） |
 | INV-64 | e2e 内禁截图比对：tests/e2e 禁 toHaveScreenshot 断言；「看见」类断言=计算样式+真实文本（INV-06 口径） | scripts/check-quality.mjs 第 9 段负锚 | 机检 check-quality（出现 toHaveScreenshot 即红） | 已锚定 |
 | INV-65 | 导出会话中止单源：renderer 重载/崩溃（main 存活）→bootstrap webContents 双事件→abortActiveSession→failSession 同型处置（清 tmp+同步释放单飞锁） | src/main/services/export_/export-session-state.ts, src/main/bootstrap.ts | 单测四用例+e2e renderer 重载格 | 已锚定 |
 | INV-66 | 受管内容写盘原子性单源：一切同路径内容落盘走 atomicWriteFile（tmp+rename 同卷原子）；仅内容写盘——不覆盖协议流 | src/main/services/shared/atomic-write.ts | 单测 atomic-write.test 8 用例 | 已锚定 |

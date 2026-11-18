@@ -21,7 +21,7 @@
 
 - v1=时间树：纵向=年份分层；横向=树整序（线性时间、零依赖手写——第三方图形库禁引，零新依赖红线）；SVG 渲染（pan/zoom，输入接缝成对注册=INV-14）。
 - 不做 md 时间线中间形态（防两套方案并存红线）；梳理代理的产物消费走 lineage.json 导出面（确定性口径=INV-77）。
-- **后续演进（现行形态）**：v1 的树单父约束与边 kind 体系（tree/ref/manual→四值 tree/inferred/ref/manual）经用户裁决整体退役——现行边=manual 单基型、入边不限条数（「manual 不限条数」用户裁决；接缝：登记册 INV-27 仍按四 kind+树单父守卫登记为「已锚定」，与本现行裁决互斥——详见「数据模型」节接缝标注，待主控按受锁流程裁决登记册）；运行时守卫保留面=自环/悬空端点/跨图/重复边/成环/via 路点/端点锚校验。布局=年份/月份分层+月内 slot 槽位网格（INV-75、INV-SLOTGRID-01）；边携带视觉字段（dashed/color——线色双值口径=INV-108）与 via 路点、端点锚。
+- **后续演进（现行形态）**：v1 的树单父约束与边 kind 体系（tree/ref/manual→四值 tree/inferred/ref/manual）经用户裁决整体退役——现行边=manual 单基型、入边不限条数（「manual 不限条数」用户裁决）；运行时守卫保留面=自环/悬空端点/跨图/重复边/成环/via 路点/端点锚校验。布局=年份/月份分层+月内 slot 槽位网格（INV-75、INV-SLOTGRID-01）；边携带视觉字段（dashed/color——线色双值口径=INV-108）与 via 路点、端点锚。
 - v2=跨支 DAG 曾为预留升版方向（层内序交叉最小化）；多父放行后该预留不再有独立意义。
 - AI 草稿导入协议（lineage JSON 草稿经文件协议导入后人工修订）曾是 v1 决策的一部分，该导入链已随 ADR-0022 退役（2026-09-30）。
 
@@ -71,7 +71,7 @@ CREATE TABLE lineage_edges (
 8. 新表 `lineage_graph_meta`（图级 KV）：现行键=lineTypeNames（色行名恰 6 行、空名归一「待命名」——schema 单源=src/shared/models/lineage.ts lineTypeNamesSchema）；lineTypes 为历史配置（四组线型体系随 kind 退役，仅为历史留档）；现行线色口径=INV-108 线色双值。
 9. 含金量投影（现行生效）：graph 通道逐文献节点透出 paperMetrics（citedByCount/venueTier+可选 venue/impactFactor）——数据来自 papers 既有列缓存、graph join 透出（键=paperId，主题节点不入表，渲染层零额外取数）；venueTier 映射单源=shared/venue-tier.ts venueToTier。单源=src/main/services/lineage/lineage.service.ts（LineagePaperMetrics 与 graph 读面）。
 
-行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md。**接缝标注（原样保留，待裁决）**：INV-27「lineage 树单父不变量（四 kind 全景）」在 docs/invariants.md:49 仍登记且状态=已锚定，与本文现行形态「manual 单基型、入边不限条数（多父放行）」互斥——登记册尚未随本裁决改写，待主控按受锁流程裁决处理；本文不自行改写 invariants.md。
+行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md（INV-27 已随 2026-11-18 登记册修正对齐本现行形态：六校验+多父放行）。
 
 保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态投影；退出拦截聚合面扩图视图脏态。
 
