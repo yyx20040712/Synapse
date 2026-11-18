@@ -1,35 +1,12 @@
 /**
- * [SR-TAG-01] TagEditor —— 标签编辑器（工单：done / weak + F-TAGS-01 三路提交）
- *
- * ── 行为层 ──
- * - 展示某文献已有标签（chip，点 × 移除 → api.tags.detach）；chip 着色
- *   =tags.store 同 id 行 color（INV-86 三面之二；store 陈旧/未含=默认态）
- * - [F-TAGS-01] 三路提交（R4 状态/迁移表——tests/unit/renderer/tag-editor.test.tsx
- *   矩阵全格在档）：
- *   ①Enter：input 空白→no-op；busy→no-op；e.nativeEvent.isComposing→no-op
- *     （IME 组词确认回车——AnnotationEditor 注释范式随迁）；否则 createAndAttach
- *   ②blur：busy→no-op；组词中（compositionStart/End 维护 ref）→no-op
- *     （组词中文本非最终文本）；空白→no-op；否则 createAndAttach
- *   ③「添加」按钮（aria-label="添加标签"，busy 禁用；组词期点击不提交
- *     ——三路同守卫）；建议按钮同款——onMouseDown preventDefault（阻焦点
- *     转移=不触发 blur，click 单路提交——双提交确定性解）
- * - 回炉 R1/R2 硬化（全量语义单源=INV-85①-⑥，含页码面不对称与同类面守卫）：
- *   组词失焦序 B 由 compositionend 补提交（名取 DOM 值）；attachExisting
- *   成败均清空；×/「添加」/建议按钮 mousedown preventDefault；blur 组词
- *   拒绝分支复位 ref
- * - createAndAttach 三路共用（幂等/busy/toast 零复制）；失败 input 保留
- *   （blur/再 Enter/按钮=显式重试路径——语义入 INV-85）
- * - 下拉建议：tags.store 里已有标签（前缀匹配前 5 个，排除已挂接）
- *
- * ── 接口层 ──
- * - export function TagEditor(props: { paperId; folderId; tags; onChanged }): JSX.Element
- *
- * ── 架构层 ──
- * - 挂接/移除成功经 onChanged() 父组件重读；建议自取 tags.store（R1 域桶）
- *
- * ── 生命周期层 ── / ── 文化层 ──
- * - api 失败统一 toast；busy 期间禁输入防重复提交（busy ref 同步镜像
- *   ——blur/Enter 在同批事件窗内也只放行一次，TagLifecycle useBusyGuard 同型）
+ * TagEditor：已挂接 chip、三路新建/挂接提交与前缀建议。
+ * - Enter/blur/「添加」共用 createAndAttach；空白、busy、IME 组词中不提交。
+ *   建议与操作按钮在 mousedown 阻止焦点转移，避免 blur 双提交（INV-85）。
+ * - createAndAttach 失败保留 input 供显式重试；建议挂接成败均清空检索前缀。
+ * - 写后由 finishWrite 按实际写入刷新 tags.store：upsert 成功即视为已写入，
+ *   即使 attach 失败也刷新孤儿标签；仅完整成功才调用 onChanged。
+ * - 列表刷新失败沿用 store 的列表型错误合同，不改报为标签写入失败。
+ * - chip 颜色与前缀建议均读取当前 folderId 的 store 分桶。
  */
 import { useEffect, useRef, useState } from 'react'
 import { TAG_NAME_MAX } from '@shared/models/tag'
@@ -76,21 +53,36 @@ export function TagEditor(props: {
     }
   }, [listError])
 
+  /** 写后统一收尾：只有已知写入才刷新；只有完整成功才通知父组件。 */
+  async function finishWrite(result: {
+    wrote: boolean
+    succeeded: boolean
+    clearInput: boolean
+  }): Promise<void> {
+    if (result.clearInput) setInput('')
+    try {
+      if (result.succeeded) onChanged()
+      if (result.wrote) await refreshTags(folderId)
+    } finally {
+      busyRef.current = false
+      setBusy(false)
+    }
+  }
+
   /** 挂接已有标签（建议点击路径）；成败均清空 input——检索前缀非载荷，
    * 残留会被 blur 路误建独立标签（k1-B1/d1'-W2；语义分立见 INV-85⑤） */
   async function attachExisting(tagId: string): Promise<void> {
     if (busyRef.current) return
     busyRef.current = true
     setBusy(true)
+    let wrote = false
     try {
       await unwrap(api.tags.attach({ paperId, tagId }))
-      onChanged()
+      wrote = true
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
     } finally {
-      setInput('')
-      busyRef.current = false
-      setBusy(false)
+      await finishWrite({ wrote, succeeded: wrote, clearInput: true })
     }
   }
 
@@ -106,16 +98,17 @@ export function TagEditor(props: {
     }
     busyRef.current = true
     setBusy(true)
+    let wrote = false
+    let attached = false
     try {
       const tag = await unwrap(api.tags.upsert({ folderId, name }))
+      wrote = true
       await unwrap(api.tags.attach({ paperId, tagId: tag.id }))
-      setInput('')
-      onChanged()
+      attached = true
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
     } finally {
-      busyRef.current = false
-      setBusy(false)
+      await finishWrite({ wrote, succeeded: attached, clearInput: attached })
     }
   }
 
@@ -125,14 +118,14 @@ export function TagEditor(props: {
     if (busyRef.current) return
     busyRef.current = true
     setBusy(true)
+    let wrote = false
     try {
       await unwrap(api.tags.detach({ paperId, tagId }))
-      onChanged()
+      wrote = true
     } catch (e) {
       showToast(e instanceof ApiClientError ? e.message : TAG_OP_FAILED, 'error')
     } finally {
-      busyRef.current = false
-      setBusy(false)
+      await finishWrite({ wrote, succeeded: wrote, clearInput: false })
     }
   }
 

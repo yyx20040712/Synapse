@@ -52,8 +52,8 @@ test('标签生命周期（B1 编辑态+删除链）：编辑钮改名/取色→
   await tagPaper('P7E 甲文献', '水治', '核心')
   await tagPaper('P7E 乙文献', '水质')
 
-  // 视图切换强制 LibraryPage 卸载/重挂→TagDropdown refresh（数据就位——
-  // TagEditor 的 upsert 路径不刷新 tags.store，挂载 refresh 是既有契约）
+  // 视图切换强制 LibraryPage 卸载/重挂→TagDropdown refresh（此处保留为
+  // 重挂路径的独立回归覆盖；写后刷新合同=tag-editor-refresh 单测+同页用例）
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await win.getByRole('button', { name: '文献库' }).click()
   await win.locator('.lib-dd-btn').click()
@@ -114,6 +114,74 @@ test('标签生命周期（B1 编辑态+删除链）：编辑钮改名/取色→
   await expect(rowA.locator('.lib-t-mini', { hasText: '水质监测' })).toHaveCount(1)
   // INV-53 自愈：被删 id 从筛选集剔除→空选集收敛 undefined→全列表回归
   await expect(win.locator('.lib-row')).toHaveCount(2, { timeout: 10_000 })
+
+  await app.close()
+})
+
+test('标签写后同页刷新：新建/移除/建议挂接后不重挂即可见最新名称与计数', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-tag-same-page-'))
+  await bootstrapMigrations(userData)
+  const papers = [
+    { id: 'e2e-tag-same-a', title: '同页甲文献', sha: 'c'.repeat(64) },
+    { id: 'e2e-tag-same-b', title: '同页乙文献', sha: 'd'.repeat(64) }
+  ] as const
+  for (const p of papers) {
+    const fileRef = `${p.sha.slice(0, 2)}/${p.sha.slice(2, 4)}/${p.sha}.pdf`
+    await seedPaperRow(userData, fileRef, p.sha, p.title, p.id)
+  }
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  // 面板开启态全屏 veil（.lib-dd-veil onClick=closePanel）拦截页面点击——
+  // 关面板动作须点 veil 本身（下拉钮在 veil 之下不可点）。
+  const veil = win.locator('.lib-dd-veil')
+  const tagInput = win.getByLabel('新增标签')
+  const dropdownButton = win.locator('.lib-dd-btn')
+  const panel = win.locator('.lib-dd-panel')
+  const tagRow = panel.locator('.lib-dd-row').filter({ hasText: /^同页标签\d+编辑$/ })
+
+  // 不切视图、不重挂 LibraryPage/TagDropdown：详情新建后直接打开筛选面板。
+  // CI 窄视口（1024×768）：交互前先滚动锚定再点击/输入。
+  const rowA = win.getByText('同页甲文献').first()
+  await rowA.scrollIntoViewIfNeeded()
+  await rowA.click()
+  await tagInput.scrollIntoViewIfNeeded()
+  await tagInput.fill('同页标签')
+  await tagInput.press('Enter')
+  await expect(win.getByLabel('移除标签 同页标签')).toBeVisible({ timeout: 10_000 })
+  await dropdownButton.scrollIntoViewIfNeeded()
+  await dropdownButton.click()
+  await expect(panel).toBeVisible()
+  await expect(tagRow).toHaveCount(1, { timeout: 10_000 })
+  await expect(tagRow.locator('.lib-dd-chip')).toHaveText('同页标签')
+  await expect(tagRow.locator('.lib-dd-ct')).toHaveText('1')
+
+  // 关面板移除 chip，再开面板时零计数立即可见。
+  await veil.click()
+  const removeBtn = win.getByLabel('移除标签 同页标签')
+  await removeBtn.scrollIntoViewIfNeeded()
+  await removeBtn.click()
+  await expect(win.getByLabel('移除标签 同页标签')).toHaveCount(0, { timeout: 10_000 })
+  await dropdownButton.click()
+  await expect(tagRow.locator('.lib-dd-ct')).toHaveText('0', { timeout: 10_000 })
+
+  // 经建议挂接到另一篇文献，仍不切视图，重开面板即恢复计数一。
+  await veil.click()
+  const rowB = win.getByText('同页乙文献').first()
+  await rowB.scrollIntoViewIfNeeded()
+  await rowB.click()
+  await expect(win.locator('.lib-dr-title')).toHaveText('同页乙文献')
+  await tagInput.scrollIntoViewIfNeeded()
+  await tagInput.fill('同页')
+  const suggestion = win.getByRole('button', { name: '同页标签', exact: true })
+  await expect(suggestion).toBeVisible()
+  await suggestion.scrollIntoViewIfNeeded()
+  await suggestion.click()
+  await expect(win.getByLabel('移除标签 同页标签')).toBeVisible({ timeout: 10_000 })
+  await dropdownButton.click()
+  await expect(tagRow.locator('.lib-dd-chip')).toHaveText('同页标签')
+  await expect(tagRow.locator('.lib-dd-ct')).toHaveText('1', { timeout: 10_000 })
 
   await app.close()
 })
