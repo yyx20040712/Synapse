@@ -47,9 +47,9 @@
  *   F-R3：加载失败即 destroy 后重抛，worker 线程不泄漏）
  * - corpusItemReq 载荷契约=schemas.ts corpusItemReqSchema（四 kind 判别联合，
  *   单源——本模块不重复声明形状）
- * - pdfjs-dist 运行时 import 白名单第三成员（INV-16——白名单=PdfCanvas/
- *   TextLayer/CorpusExtractor 三文件清单；本单落地 ESLint 规则即 INV-16
- *   由未锚定翻已锚定）；类型消费循 PdfCanvas 再导出模式（白名单内惯例）
+ * - pdfjs-dist 动态 import 白名单成员（INV-16——现行白名单五文件：
+ *   PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/FigureExtractor）；
+ *   类型消费循 PdfDocProvider 再导出模式（白名单内惯例）
  *
  * ── 架构层 ──
  * - renderer/features/reader 域（pdfjs 消费惯例域）；零 React 组件面（纯

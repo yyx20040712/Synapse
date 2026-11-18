@@ -6,7 +6,7 @@
  * src/main/db/migrations/018_app_meta.sql）。消费面=DB-3 envelope（owner/
  * snapshot_seq/sync_key——[F-DBCAMP-01 DB-3 U2] 起经 snapshot 域五通道+
  * snapshot.repo/service 全链）+DB-2 设置页 token 展示（现行 api-surface
- * 通道 pin=80）。
+ * 通道 pin=93）。
  */
 
 /**

@@ -30,7 +30,7 @@
  *   入 aiTasksStore（设计 §4.2）。
  *
  * ── 文化层 ──
- * - 测试：tests/unit/renderer/ai-session-store.test.ts（受锁——态机/幂等/
+ * - 测试：tests/unit/renderer/ai-session-store.test.ts（契约面——态机/幂等/
  *   竞态/卸载/错误映射五轴）。
  */
 import { create } from 'zustand'

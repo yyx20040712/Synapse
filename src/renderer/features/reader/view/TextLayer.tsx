@@ -21,7 +21,7 @@
  * - geometry 必填（F-A6-b1：缺省即 bug 面——rotation/rawDims 无回退默认值）
  *
  * ── 架构层 ──
- * - pdfjs-dist import 白名单三文件之一（INV-16：PdfCanvas/TextLayer/CorpusExtractor）
+ * - pdfjs-dist import 白名单五文件之一（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/FigureExtractor）
  *   ——文本层 API 与官方 CSS 的消费点
  *
  * ── 生命周期层 ── / ── 文化层 ──

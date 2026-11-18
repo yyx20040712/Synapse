@@ -22,8 +22,9 @@
  *   F-GEOM-01-G1 M0 切环，明细见下方再导出行注）
  *
  * ── 架构层 ──
- * - pdfjs-dist import 白名单文件（INV-16：PdfDocProvider/PdfPageCanvas/TextLayer/
- *   CorpusExtractor）；doc 句柄经 props（生命周期归 PdfDocProvider，本组件不销毁）
+ * - pdfjs-dist import 白名单五文件之一（INV-16：PdfDocProvider/PdfPageCanvas/
+ *   TextLayer/CorpusExtractor/FigureExtractor）；doc 句柄经 props（生命周期归
+ *   PdfDocProvider，本组件不销毁）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e tests/e2e/reader-text.spec.ts（渲染文本断言+canvas 计数上界归 F-04 收官）

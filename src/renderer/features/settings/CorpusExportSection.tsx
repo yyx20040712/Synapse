@@ -30,7 +30,7 @@
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/corpus-export.test.tsx（已锁定：store 三面+
- *   hook 事件桥+组件/挂载）；e2e tests/e2e/corpus-export.spec.ts（受锁：
+ *   hook 事件桥+组件/挂载）；e2e tests/e2e/corpus-export.spec.ts（契约面：
  *   全链+真渲染面+残留清空重建）
  */
 import { Button } from '../../shared/ui/Button'

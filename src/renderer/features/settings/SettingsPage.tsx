@@ -178,7 +178,7 @@ export function SettingsPage(): JSX.Element {
       <SettingsSection title="网络">
         <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
           本应用出网仅限元数据增强与连通诊断，全部由你手动触发，无任何后台网络任务。
-          白名单 host（在受锁常量中维护）：{ALLOWED_REMOTE_HOSTS.join('、')}。
+          白名单 host（在共享常量中维护）：{ALLOWED_REMOTE_HOSTS.join('、')}。
           数据保存在本机，不经任何第三方服务器中转。
         </p>
         <div>

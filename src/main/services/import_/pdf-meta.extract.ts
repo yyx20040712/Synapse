@@ -11,7 +11,7 @@
  * - extractPdfMeta(bytes: Uint8Array): Promise<PdfMetaExtraction>
  *
  * ── 架构层 ──
- * - 不引 pdfjs-dist（项目规约：pdfjs 只允许 renderer 的 PdfCanvas 使用；本文件是
+ * - 不引 pdfjs-dist（项目规约：pdfjs 只允许 renderer 白名单五文件使用——INV-16；本文件是
  *   main 进程纯函数），按字节解析路线实现：
  *   ① 头部 1KB 内找 %PDF- 魔数，找不到按坏文件处理；
  *   ② 全文字节扫描 /Title、/Author（优先取 Info 字典特征键旁的出现位置，避免书签

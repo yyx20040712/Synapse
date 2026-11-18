@@ -10,9 +10,9 @@
  */
 export const INTERFACE_MD = `# Synapse 语料导出接口说明书（INTERFACE）
 
-> 本目录由 Synapse 应用导出（五件套：本文件+manifest.json+corpus/+fulltext/
-> figures/）。「manifest.json 存在」= 导出完整就绪（唯一激活判据）；导出中断
-> = 无 manifest，重跑导出即修复（目录清空重建）。
+> 本目录由 Synapse 应用导出（六件套：本文件+manifest.json+corpus/+fulltext/
+> figures/+lineage.json）。「manifest.json 存在」= 导出完整就绪（唯一激活
+> 判据）；导出中断=无 manifest，重跑导出即修复（目录清空重建）。
 
 ## 目录结构
 
@@ -25,6 +25,8 @@ export const INTERFACE_MD = `# Synapse 语料导出接口说明书（INTERFACE�
 - \`figures/<paperId>/page-<N>.png\`：页级快照（N=1 基页码；2 倍分辨率渲染）
 - \`figures/<paperId>/anno-<annotationId>.png\`：标注区域裁剪（归一化 rects
   包围盒从页快照裁出，与 corpus md 引文块对应）
+- \`lineage.json\`：脉络图投影（第六件——nodes 按 lineageOrder 序+edges 按
+  (created_at,id) 序，对象键序递归 alphabetical；确定性口径=INV-77）
 
 ## corpus md 结构
 

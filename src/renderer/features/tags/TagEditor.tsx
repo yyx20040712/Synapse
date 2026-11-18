@@ -119,8 +119,8 @@ export function TagEditor(props: {
     }
   }
 
-  /** ×：移除挂接（不动标签本身——标签 merge/delete UI 入口已随 TagFilter
-   *  退役挂账 F-TAGS-02；TagDropdown 行右键=改名/颜色双入口） */
+  /** ×：移除挂接（不动标签本身——merge/delete 入口已随 TagFilter 退役挂账
+   *  F-TAGS-02；TagDropdown 行「编辑」钮=改名/颜色唯一入口，右键已退役） */
   async function removeTag(tagId: string): Promise<void> {
     if (busyRef.current) return
     busyRef.current = true

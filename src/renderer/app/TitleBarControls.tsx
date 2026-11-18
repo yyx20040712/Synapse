@@ -16,7 +16,7 @@
  *
  * ── 接口层 ──
  * - export function TitleBarControls(): JSX.Element（App.tsx header 右区挂载，
- *   版本号之后——版本号 margin-left:auto 吸收空隙，三键组排最右）
+ *   gsearch 之后——三键组排最右）
  *
  * ── 架构层 ──
  * - renderer → window.api.system.windowControl（既有机制零新面）；action 类型

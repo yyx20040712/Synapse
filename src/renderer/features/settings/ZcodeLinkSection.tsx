@@ -18,7 +18,7 @@
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - renderer/features/settings 域（SettingsPage 挂载）；api+unwrap 统一错误面；
  *   detect 失败=error 呈现（列表型不 toast）；install 失败=动作型 toast（INV-02）
- * - 测试：tests/unit/renderer/zcode-link-section.test.tsx + e2e zcode-link.spec.ts（受锁）
+ * - 测试：tests/unit/renderer/zcode-link-section.test.tsx + e2e zcode-link.spec.ts
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClientError, api, unwrap } from '../../api/client'
@@ -131,7 +131,7 @@ export function ZcodeLinkSection(): JSX.Element {
       )}
       {(failed || res?.state === 'error') && (
         // [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（data-action
-        // 受锁锚透传——zcode-link-section:70）
+        // 契约面锚透传——zcode-link-section:70）
         <RetryButton dataAction="retry" className="self-start" onClick={() => void run()} />
       )}
     </section>

@@ -14,8 +14,8 @@
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
  * - pdfDoc 以 getDocument 句柄传入（类型 unknown，内部窄化为 pdfjs 类型）；
- *   pdfjs-dist 仅类型导入——运行时调用全走句柄自身方法，不引入运行时依赖面
- *   （渲染 API 唯一入口仍是 PdfCanvas）；句柄生命周期归 PdfCanvas（换文档即销毁），
+ *   pdfjs-dist 仅类型消费——运行时调用全走句柄自身方法，不引入运行时依赖面
+ *   （类型经 PdfDocProvider 再导出）；句柄生命周期归 PdfDocProvider（换文档即销毁），
  *   本组件在途请求失败一律静默降级（目录/缩略图缺席不影响主阅读）
  */
 import { useEffect, useState } from 'react'

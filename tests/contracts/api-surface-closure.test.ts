@@ -15,7 +15,7 @@ import * as S from '../../src/shared/ipc/schemas'
  * 执法对象，pin 即变更审计锚。新测试 always-active。
  */
 
-/** 21 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-DBCAMP-01 DB-2 U2]
+/** 23 域方法集 pin（it.each 展开 + 与运行时对账双消费；[F-DBCAMP-01 DB-2 U2]
  *  +AI 六域 13 通道（ai_sessions/ai_messages/ai_memory/ai_tasks/ai_audit/ai_cascade
  *  ——audit 通道 ai-tasks/list-audit 域归属 ai_audit）；[F-FOLDER-01] +folders/+papers
  *  两域五通道；[F-BAKRET-01] lineage 域 importDraft 退役——lineage 7→6 方法；

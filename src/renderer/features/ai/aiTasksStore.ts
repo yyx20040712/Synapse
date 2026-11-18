@@ -35,7 +35,7 @@
  *   ai_audit/list 三通道（renderer 分层单向——window.api 唯一出口）。
  *
  * ── 文化层 ──
- * - 测试：tests/unit/renderer/ai-tasks-store.test.ts（受锁——任务态机/幂等/
+ * - 测试：tests/unit/renderer/ai-tasks-store.test.ts（契约面——任务态机/幂等/
  *   竞态/取消映射/审计态机/分页轴）；e2e E2/E6=ai-tasks-card.spec.ts。
  */
 import { create } from 'zustand'

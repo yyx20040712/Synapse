@@ -5,10 +5,10 @@
  * 意外带=回炉信号）；输出（行带 y/x 像素范围）供②差分区 crop 目检与③DOM
  * 计算样式断言取坐标——②即本工具 --crop 模式，③由调用方另跑探针。
  *
- * 用法（差分）：node scripts/audits/visual-diff-locate.mjs <baselineDir> <afterDir> [s1,s2,...]
+ * 用法（差分）：node scripts/visual-diff-locate.mjs <baselineDir> <afterDir> [s1,s2,...]
  *   态清单缺省=两目录同名 PNG 交集全跑；逐态输出差分行带（y 含端块全界+x 范围），
  *   报告落 JSON（--json 缺省 scripts/audits/visual-diff-report.json）。
- * 用法（crop）：node scripts/audits/visual-diff-locate.mjs <baselineDir> <afterDir> \
+ * 用法（crop）：node scripts/visual-diff-locate.mjs <baselineDir> <afterDir> \
  *   --crop <state>,<x>,<y>,<w>,<h> [--out <file>]
  *   读该态两图裁矩形，上=baseline 下=after、中间 2px 分隔线，写 PNG
  *   （缺省 scripts/audits/visual-diff-crop.png）。
@@ -61,7 +61,7 @@ function parseArgs(argv) {
     }
   }
   if (pos.length < 2 || pos.length > 3) {
-    fail(2, '用法: node scripts/audits/visual-diff-locate.mjs <baselineDir> <afterDir> [s1,s2,...] [--json f] | --crop <state>,<x>,<y>,<w>,<h> [--out f]')
+    fail(2, '用法: node scripts/visual-diff-locate.mjs <baselineDir> <afterDir> [s1,s2,...] [--json f] | --crop <state>,<x>,<y>,<w>,<h> [--out f]')
   }
   if (opts.crop !== null && pos.length === 3) {
     fail(2, 'crop 模式不接受态清单参数（--crop 已指定态）')
@@ -290,7 +290,7 @@ try {
     // ── 差分模式 ──
     const report = {
       meta: {
-        tool: 'scripts/audits/visual-diff-locate.mjs',
+        tool: 'scripts/visual-diff-locate.mjs',
         date: new Date().toISOString(),
         algorithm: { blockPx: BLOCK, threshold: `RGB 任一通道 |a-b|>${TH}`, minDiffPixels: CNT },
         baselineDir, afterDir, states

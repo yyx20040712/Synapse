@@ -56,7 +56,7 @@ import type { ManifestPaper } from './corpus.export.io'
  *  [F-EXPORT-01] 随 ActiveSession 外提本件（reject 载荷类型单源）。 */
 export class SessionError extends DomainError {}
 
-/** 六态显式化（「五件套」指产物数非态数）：idle=无会话；preparing/streaming/
+/** 六态显式化（产物=六件套：INTERFACE/manifest/corpus/fulltext/figures/lineage.json）：idle=无会话；preparing/streaming/
  *  finalizing=在途；done/failed=终态即销毁；interrupted=进程/窗口同死（非驻留
  *  态——见头注态空间定义，不入联合字面量因不可观测无迁移消费面）。 */
 export type ExportSessionPhase =

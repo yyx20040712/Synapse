@@ -14,9 +14,9 @@
  *     对象常量 / 插值模板 / bigint 天然排除（非字面量初值；bigint 另加文本 /n$/i
  *     双保险 [门二 W-1]）；收集面=顶层/模块级 const（与 dry-run ^const 行首锚同
  *     口径，函数/块级局部不收 [门二 W-4]）；.test./.spec. 同口径排除 [门二 W-2]。
- * baseline 棘轮（§3）：scripts/dup-constants.baseline.json 存存量 8 组真命中
- * 指纹（name+kind+value+文件集，无行号）。运行时新增/漂移命中 exit 1；
- * baseline 内打印「待收敛」放行（收敛子票 F-LINT-03 候选）。baseline 变更
+ * baseline 棘轮（§3）：scripts/dup-constants.baseline.json 存存量命中指纹
+ * （name+kind+value+文件集，无行号——2026-09-10 收敛毕现空表）。运行时
+ * 新增/漂移命中 exit 1；baseline 内打印「待收敛」放行。baseline 变更
  * 随提交说明申报。
  * B-2 副产物（§5）：未 export 的字面量 const 清单=stderr 只读输出，
  * DUP_CONSTANTS_B2=1 展开全清单；不卡 CI、不定消费规则。

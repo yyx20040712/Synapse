@@ -2,7 +2,7 @@
  * [T3-P2→F-WS-02] Rail —— B站式 72px 窄轨侧栏（无 logo，自「课题」始；A15/A10/A8）。
  *
  * ── 行为层 ──
- * - 七项：课题（[F-WS-02] 视图路由钮——点击切 workspaces 管理页，弹层
+ * - 六项：课题（[F-WS-02] 视图路由钮——点击切 workspaces 管理页，弹层
  *   WsRailPopover 已退役=方案切换删旧方案）→下载（占位 toast——A8 规划中）
  *   →文献库/阅读器/脉络（视图切换，active 态）→rail-foot（margin-top:auto
  *   贴底）→设置

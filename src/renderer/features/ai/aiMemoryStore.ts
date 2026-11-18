@@ -78,7 +78,7 @@
  *   （renderer 分层单向——window.api 唯一出口；新建仅 global 档=新呈裁-1）。
  *
  * ── 文化层 ──
- * - 测试：tests/unit/renderer/ai-memory-store.test.ts（受锁——态机/双语义
+ * - 测试：tests/unit/renderer/ai-memory-store.test.ts（契约面——态机/双语义
  *   路由/幂等/竞态/CRUD 错误映射/回炉 R1-R5 轴）；e2e E7=ai-manage-tabs.spec.ts。
  */
 import { create } from 'zustand'

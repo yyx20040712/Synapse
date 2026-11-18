@@ -86,10 +86,10 @@ export interface ScrollProgress {
   beginProgramScroll(page: number): void
   /** 关 tab：该 tab 的 pending 立即落库（store.closeTab 经 flusher 接线调用） */
   flushPending(paperId: string): void
-  /** P7E-05 复合 flusher 消费口：取走该 tab 的待落页码（不落库——落库归
-   *  复合 flusher 单通道合并时长账一次 invoke；无账返回 undefined） */
+  /** 收尾 flusher 消费口：取走该 tab 的待落页码（不落库——落库归收尾
+   *  flusher 单通道页码单载荷一次 invoke；无账返回 undefined） */
   takePending(paperId: string): number | undefined
-  /** P7E-05 复合 flusher 消费口：待落账 pid 清单（flushAll 并集遍历） */
+  /** 收尾 flusher 消费口：待落账 pid 清单（flushAll 并集遍历） */
   pendingIds(): string[]
   /** 全关/卸载：整账本一次收 */
   flushAll(): void

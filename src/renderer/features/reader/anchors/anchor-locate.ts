@@ -35,7 +35,7 @@
  *   [data-annotation-id] 元素居中+闪烁（locate-flash 类，样式模块级单次注入）
  *   → 'exact'
  *   ②page：verifyQuote 失败 → 停留该页+toast「锚定失效，已定位到所在页」→'page'
- *   ③paper：target.anchor=null（篇级）或 quoteText 空 → setPage(0) 开篇→'paper'
+ *   ③paper：target.anchor=null（篇级）或 quoteText 长度<2 → setPage(anchorPage ?? 0)→'paper'〔实码判据〕
  * - 跨视图：tab 未开/loading/error → requestOpenPaper（open-paper-bus.ts:17）
  *   → 轮询 tabs[id].status（POLL_MS=50）：ready→继续 ①；error→作废 resolve
  *   'paper' 无提示（打开失败已由 ReaderPage toast——不重复提示，S7）；

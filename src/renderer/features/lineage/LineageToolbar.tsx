@@ -209,8 +209,7 @@ export function LineageToolbar(props: {
       </button>
       <span className="drag-hint" data-testid="drag-hint">
         {/* [F-UIRES-03 C1→C2·P6] 终态文案（v1.11① CAD 正名）：画线=从卡边锚点
-            拖至目标卡（点两卡径=用户确认保留的隐藏等效径）；拖动段=C3 月内
-            调序（INV-107 改月单口沿承） */}
+            拖至目标卡（唯一建边径）；拖动段=C3 月内调序（INV-107 改月单口沿承） */}
         编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡
       </span>
       {saveStatus === 'error' && (

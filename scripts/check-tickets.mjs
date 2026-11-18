@@ -93,7 +93,7 @@ function walk(dir, filter, acc = []) {
 
 const violations = []
 
-// 0) 全工单号格式白名单（F-REG-01）：前缀全集=registry 165 票实测——SR/SR2/
+// 0) 全工单号格式白名单（F-REG-01）：前缀全集=registry 历史实测——SR/SR2/
 //    R1/R2/R3/F/C/T3 系须至少一段后缀；P7 系显式枚举（裸形态仅 B7/P7A 两枚实存；
 //    门二 W-2 收紧：P7D/E/X 后缀系不可裸，新前缀免同步逃逸口已封；T3=三主题
 //    UI+脉络时间线战役前缀 2026-09-26 T3-P1 起）

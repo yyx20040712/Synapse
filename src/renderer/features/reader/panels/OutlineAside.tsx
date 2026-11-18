@@ -3,7 +3,7 @@
  * [SR2-C-04] OutlineAside —— 阅读器侧栏三栏宿主（工单：done / strong）
  *
  * ── 行为层 ──
- * - 三栏并列=三个并列选项卡（目录/缩略图/笔记——tab 并列非三栏同时可见）。
+ * - 侧栏并列选项卡（目录/缩略图/笔记/AI 会话四页签——tab 并列非同时可见）。
  *   tablist 三项宿主在本组件（OutlinePanel 内部 tab 态+tablist 已摘除，改
  *   mode prop 化——pdfjs 句柄与目录/缩略图行为零变化，纯结构迁移）
  * - tab 态迁移表（三态互斥，事件=点击 setTab(id)）：
