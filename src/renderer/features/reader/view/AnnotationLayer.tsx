@@ -3,7 +3,8 @@
  *
  * ── 行为层 ──
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
- *   整层容器 mix-blend-mode:multiply——荧光笔语义，白纸显色、黑字透出，色块不透明；
+ *   整层容器 mix-blend-mode:var(--annotation-blend)——light/sepia 用 multiply、
+ *   dark 用 screen；色块位于 canvas 上，PDF 自绘不透明背景不再遮死标注；
  *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
  *   （F-11 顶/底收边修标注下偏；F-A4 b② 行盒自适应 band——重锚字形带在场
  *   时顶贴字形顶缘底贴底缘）；DOM 回退层行级合并=annotation-anchor.mergeLineRects
@@ -37,7 +38,7 @@
  * ── 生命周期层 ── / ── 文化层 ──
  * - e2e：tests/e2e/reader-text.spec.ts 后半（选中→高亮→重开仍在原位）
  */
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
 import type { Annotation } from '@shared/models/annotation'
 import { normalizedLineHeight, matchBand, bandsNearRects, type ResolvedAnnotation, type RowBand } from '../anchors/annotation-resolve'
 import { resolveAnnotationRectsLayered } from '../anchors/annotation-resolve-layered'
@@ -116,12 +117,11 @@ export function AnnotationLayer(props: {
       <div
         data-testid="annotation-layer"
         className="absolute inset-0"
-        style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none' }}
+        style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none', mixBlendMode: 'var(--annotation-blend)' as CSSProperties['mixBlendMode'] }}
       >
-        {/* [F-A5/ADR-0019 R2] 色块=背景板：multiply 摘除+z 常量单源（canvas
-            透明底墨带恒在色块上——文字纯黑不被染，用户背景板令）；[F-A4 b]
-            lineH 归并+band 自适应（重锚带优先；[F-A5 b] 重锚失败回退存量
-            rects 亦经同一 band 单源 fallbackBands） */}
+        {/* 色块位于 canvas 之上并按主题合成；lineH 归并+band 自适应
+            （重锚带优先；重锚失败回退存量 rects 经同一 band 单源
+            fallbackBands） */}
         {pageAnnotations.map((a) =>
           mergeRects(resolved[a.id]?.rects ?? a.rects, lineH).map((r, i) => (
             <div

@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createMultiLinePdf, createMultiPagePdf, createRotatedCropPdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT, PDF_ROTATED_CROP_TEXT } from '../utils/pdf-factory'
+import { createMultiLinePdf, createMultiPagePdf, createOpaqueBackgroundPdf, createRotatedCropPdf, createTinyPdf, PDF_KNOWN_TEXT, PDF_MULTILINE_TEXT, PDF_ROTATED_CROP_TEXT } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 import { stableRel } from './stable-rel'
 
@@ -146,11 +146,10 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await expect(rect.first()).toBeVisible()
   // 计算样式防线（Q3b：opacity 0.35×浅黄在白纸对比度 ~1.1:1 低于感知阈——几何
   // 可见 ≠ 视觉可见，Playwright toBeVisible 不看 opacity/计算色）
-  // [F-A5/ADR-0019 R2] 色块垫底背景板序（用户「背景板」令）：multiply 摘除
-  // （normal——canvas 透明底，墨带恒在色块之上文字纯黑）+层序=显式 z 常量
-  // 单源（colorBlocks=1，canvas=2 之下——原 multiply/5 守卫随 R2 修订改向）
-  await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
-  await expect(win.getByTestId('annotation-layer')).toHaveCSS('z-index', '1')
+  // 新层序：canvas(z1) < 色块(z2) < 自绘选区(z3)；light 色块以 multiply 合成，
+  // 不透明 PDF 自绘背景之上的标注仍可见，黑字经 multiply 保持可读。
+  await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+  await expect(win.getByTestId('annotation-layer')).toHaveCSS('z-index', '2')
   await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
   await expect(rect.first()).toHaveCSS('opacity', '1')
   // 单行单 span 划选：行级合并后恰 1 矩形（逐 clientRect 透传回归即 >1）
@@ -169,9 +168,9 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await expect(rect2.first()).toBeVisible({ timeout: 10_000 })
   // 重锚路径（verifyQuote→findRangeAtOffset）同口径：合并后仍 1 矩形、样式仍到位
   await expect(rect2).toHaveCount(1)
-  // [F-A5/ADR-0019 R2] 背景板序第二程同锁（multiply 摘除+z=1）
-  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'normal')
-  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('z-index', '1')
+  // 重开后仍按 canvas < 色块的新层序与 light multiply 合成。
+  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+  await expect(win2.getByTestId('annotation-layer')).toHaveCSS('z-index', '2')
   // [F-R2e 修] 稳态原子测量（第二程同口径——重锚双态窗口在此程）
   const m2 = await stableRel(win2)
   // 同一渲染管线下归一化矩形应一致（相对页面盒比较，≤2px 容差吞字度量测噪声；
@@ -199,6 +198,47 @@ test('划选高亮后重开仍在原位；批注编辑与删除可用', async ()
   await expect(win2.getByTestId('annotation-rect')).toHaveCount(0)
   await app2.close()
 })
+
+for (const action of ['高亮', '下划线'] as const) {
+  test(`不透明 PDF 自绘背景上的${action}：真实文本与色块可见，关重开仍在`, async () => {
+    skipIfPending(F02_DEPS)
+    const title = `智慧水务 e2e 不透明背景${action}文献`
+    const { app, userData } = await seedAndLaunch(title, createOpaqueBackgroundPdf())
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByText(title).first().dblclick()
+    const known = win.getByText(PDF_KNOWN_TEXT).first()
+    await expect(known).toBeVisible({ timeout: 20_000 })
+    await known.selectText()
+    await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+    await win.getByTestId('selection-toolbar').getByRole('button', { name: action, exact: true }).click()
+
+    const rect = win.getByTestId('annotation-rect')
+    await expect(rect).toHaveCount(1)
+    await expect(rect.first()).toBeVisible()
+    await expect(known).toBeVisible()
+    await expect(win.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+    await expect(win.getByTestId('annotation-layer')).toHaveCSS('z-index', '2')
+    await expect(win.locator('canvas[data-pdf-canvas]').first()).toHaveCSS('z-index', '1')
+    await expect(rect.first()).toHaveCSS('background-color', 'rgb(253, 224, 71)')
+    if (action === '下划线') {
+      await expect(rect.first()).toHaveCSS('height', '2px')
+    }
+    await app.close()
+
+    const app2 = await launch(userData)
+    const win2 = await app2.firstWindow()
+    await expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win2.getByText(title).first().dblclick()
+    await expect(win2.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+    const reopened = win2.getByTestId('annotation-rect')
+    await expect(reopened).toHaveCount(1)
+    await expect(reopened.first()).toBeVisible({ timeout: 10_000 })
+    await expect(win2.getByTestId('annotation-layer')).toHaveCSS('mix-blend-mode', 'multiply')
+    await expect(win2.getByTestId('annotation-layer')).toHaveCSS('z-index', '2')
+    await app2.close()
+  })
+}
 
 /** [F-A11] 笔记编辑 UX 三支验收（输入→停顿→已保存标记 / undo·redo 按钮对 /
  *  关闭重开回读）——jsdom 单测 16 用例外的真机整链面（api+db 回读）。 */

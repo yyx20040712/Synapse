@@ -157,6 +157,8 @@
   --annotation-blue: #93c5fd;
   --annotation-red: #fca5a5;
   --annotation-purple: #d8b4fe;
+  /* 标注/搜索色块合成：亮面与护眼族压暗白底并保留黑墨；夜间族在 dark 块覆写 */
+  --annotation-blend: multiply;
   /* ── F-CSS-03 颜色 token（2026-09-09 用户双裁决零视觉差迁移：值原样入库,
      同值合并共享单 token;白→--panel/暖灰描边→--border 直接消费既有 token
      不立第二源;命名规约=基色 alpha 族 <基token>-a<两位alpha>（如 --accent-a45）
@@ -239,6 +241,11 @@
   --paper: #242830; --paper-ink: #d8dbe2;
   /* [T3-P4 §7 案 A] 夜间反位：canvas filter 单点（黑墨带→白字） */
   --canvas-filter: invert(1) hue-rotate(180deg);
+  /* 反色 canvas 上 screen 保留白字并提亮近黑底 */
+  --annotation-blend: screen;
+  /* screen 下沿用亮面浅色板会使白字对比不足；深色同色相色板供反色白字阅读 */
+  --annotation-yellow: #6f5c00; --annotation-green: #17613a; --annotation-blue: #2b4c78;
+  --annotation-red: #783c3c; --annotation-purple: #5b3b78;
   /* 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正 */
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
@@ -254,6 +261,7 @@
   --paper: #f7efdc; --paper-ink: #33291a;
   /* [T3-P4] 护眼族不反位（奶油纸正读） */
   --canvas-filter: none;
+  --annotation-blend: multiply;
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
 

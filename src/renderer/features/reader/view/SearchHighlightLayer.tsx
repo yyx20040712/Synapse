@@ -26,15 +26,15 @@
  *   pageRoot: HTMLElement | null }): JSX.Element | null
  *
  * ── 架构层 ──
- * - 层序=PAGE_LAYER_Z.colorBlocks（1——背景板语言：canvas 墨带恒在其上，文字
- *   纯黑不被染；DOM 序在 AnnotationLayer 后=叠于标注块之上，搜索为瞬态视觉
- *   合理）；取色只走 theme.css 变量（annotation-style 纪律同源）。
+ * - 层序=PAGE_LAYER_Z.colorBlocks（canvas 之上、自绘选区之下）；整层消费
+ *   --annotation-blend，与 AnnotationLayer 同批迁移，PDF 自绘不透明背景上
+ *   普通匹配与 active 描边均可见；取色只走 theme.css 变量。
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - tests/unit/renderer/reader-search-ui.test.tsx（渲染存在性+px 映射）；
  *   真几何归 e2e reader-search.spec.ts（真机 Chromium clientRects）
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { spansForItems, toPageRelative } from './reader-search'
 import { useReaderSearchStore } from './reader-search.store'
 import { PAGE_LAYER_Z } from '../state/page-layer-z'
@@ -136,7 +136,7 @@ export function SearchHighlightLayer(props: {
       ref={containerRef}
       data-testid="search-highlight-layer"
       className="absolute inset-0"
-      style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none' }}
+      style={{ zIndex: PAGE_LAYER_Z.colorBlocks, pointerEvents: 'none', mixBlendMode: 'var(--annotation-blend)' as CSSProperties['mixBlendMode'] }}
     >
       {boxes.map((b, i) => (
         <div

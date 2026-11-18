@@ -20,9 +20,9 @@
  *   pixelBoxOf(textLayer)，百分比数学与其严格同盒零换算；且页列
  *   `zoom: calc(1/var(--ui-scale))` 在档位≠1 时创建 stacking context，
  *   层必须与色块层同 context。
- * - [F-A5 c 面/ADR-0019 R2] z=PAGE_LAYER_Z.selectionPaint（3）——页内
- *   层序单源：色块背景板(1) < canvas 墨带(2) < 自绘选区(3)（选区交互视觉
- *   保持最上，票面 §0c/S4 灰块视觉在色块上）。
+ * - [F-A5 c 面/ADR-0019 R4] z=PAGE_LAYER_Z.selectionPaint（3）——页内
+ *   层序单源：text(0) < canvas 墨带(1) < 标注/搜索色块(2) < 自绘选区(3)
+ *   （选区交互视觉保持最上，票面 §0c/S4 灰块视觉在色块上）。
  * - 生命周期=选区生命周期（evaluate 置位/清除置空——INV-37 视觉-状态严格
  *   同步；Escape 只清工具条，层随选区真清除而消失）；pointer-events:none
  *   防吞划选手势。

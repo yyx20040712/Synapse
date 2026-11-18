@@ -498,9 +498,10 @@ describe('F-A5 —— band 单源自绘（a 面）+水平夹取+层序常量（c
     expect(paintLayer()!.style.zIndex).toBe(String(PAGE_LAYER_Z.selectionPaint))
   })
 
-  it('c2 层序常量单源（防回归序）：色块垫底 < canvas < 自绘最上；textLayer 官方 z0 在色块下（视觉透明无碍）', () => {
-    expect(PAGE_LAYER_Z.canvas).toBeGreaterThan(PAGE_LAYER_Z.colorBlocks)
-    expect(PAGE_LAYER_Z.selectionPaint).toBeGreaterThan(PAGE_LAYER_Z.canvas)
+  it('c2 层序常量单源（防回归序）：text < canvas < 色块 < 自绘最上', () => {
+    expect(PAGE_LAYER_Z.text).toBeLessThan(PAGE_LAYER_Z.canvas)
+    expect(PAGE_LAYER_Z.canvas).toBeLessThan(PAGE_LAYER_Z.colorBlocks)
+    expect(PAGE_LAYER_Z.colorBlocks).toBeLessThan(PAGE_LAYER_Z.selectionPaint)
     expect(PAGE_LAYER_Z.text).toBe(0)
   })
 })

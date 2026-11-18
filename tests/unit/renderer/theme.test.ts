@@ -14,7 +14,19 @@
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
+
+// jsdom 未随包提供类型；本地结构化声明只覆盖本用例的计算样式与清理接口。
+const { JSDOM } = createRequire(import.meta.url)('jsdom') as {
+  JSDOM: new (html: string) => {
+    window: {
+      document: Document
+      getComputedStyle(element: Element): CSSStyleDeclaration
+      close(): void
+    }
+  }
+}
 
 const css = readFileSync(
   fileURLToPath(new URL('../../../src/renderer/shared/theme.css', import.meta.url)),
@@ -99,6 +111,7 @@ const TOKENS: Array<[string, string]> = [
   ['--annotation-blue', '#93c5fd'],
   ['--annotation-red', '#fca5a5'],
   ['--annotation-purple', '#d8b4fe'],
+  ['--annotation-blend', 'multiply'],
   // ── P7D-01 批一：token 收敛值（registry 裁决——非 mockup :root 面）──
   ['--dur-press', '0.08s'],
   ['--dur-tint', '0.12s'],
@@ -639,6 +652,12 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--paper-ink', '#d8dbe2'],
     // [T3-P4 §7 案 A 裁定] 夜间反位=canvas filter 单点 token（dark 族块独有）
     ['--canvas-filter', 'invert(1) hue-rotate(180deg)'],
+    ['--annotation-blend', 'screen'],
+    ['--annotation-yellow', '#6f5c00'],
+    ['--annotation-green', '#17613a'],
+    ['--annotation-blue', '#2b4c78'],
+    ['--annotation-red', '#783c3c'],
+    ['--annotation-purple', '#5b3b78'],
     // 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正
     ['--panel-a35', 'transparent'],
     ['--panel-a88', 'var(--panel)'],
@@ -670,6 +689,7 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--paper-ink', '#33291a'],
     // [T3-P4] 护眼族不反色（奶油纸正读——:root 同值 none）
     ['--canvas-filter', 'none'],
+    ['--annotation-blend', 'multiply'],
     ['--panel-a35', 'transparent'],
     ['--panel-a88', 'var(--panel)'],
     ['--panel-a90', 'var(--panel)'],
@@ -686,6 +706,32 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     const block = themeBlock('sepia')
     expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')
     expect(block, `sepia 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
+  })
+
+  it.each([
+    ['light', 'multiply'],
+    ['dark', 'screen'],
+    ['sepia', 'multiply']
+  ] as const)('%s 主题计算样式取对应标注混合模式', (theme, expected) => {
+    const dom = new JSDOM('<!doctype html><html><head></head><body><div id="probe"></div></body></html>')
+    const { document } = dom.window
+    const style = document.createElement('style')
+    const probe = document.querySelector<HTMLDivElement>('#probe')!
+    style.textContent = css.replace("@import 'tailwindcss';", '')
+    document.head.appendChild(style)
+    if (theme !== 'light') {
+      document.documentElement.dataset.theme = theme
+    }
+    try {
+      // jsdom 不展开 mix-blend-mode 内的 var()：分别锁根元素计算后的 token 值，
+      // 以及该值应用到元素后的计算混合模式；var() 消费由组件测试与 e2e 锚定。
+      const blend = dom.window.getComputedStyle(document.documentElement).getPropertyValue('--annotation-blend').trim()
+      expect(blend).toBe(expected)
+      probe.style.mixBlendMode = blend
+      expect(dom.window.getComputedStyle(probe).mixBlendMode).toBe(expected)
+    } finally {
+      dom.window.close()
+    }
   })
 
   it('App.tsx 含 dataset.theme 接线锚（data-theme 单点=App effect）', () => {

@@ -119,7 +119,7 @@ describe('F-A1 AnnotationLayer 挂 B —— 渲染读时归并（INV-E）', () =
   })
 })
 
-describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面）', () => {
+describe('F-A5 —— 存量回退经 band（b 面）+色块主题合成（c 面）', () => {
   /** 页根夹具：textLayer+单 span（gBCR 桩）+canvas 度量桩——bandsNearRects 量测面 */
   function makeBandPage(): { page: HTMLElement; textLayer: HTMLElement; span: HTMLElement } {
     const page = document.createElement('div')
@@ -172,7 +172,7 @@ describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面
     expect(inlinePct(block!, 'height')).toBeCloseTo(1.625, 4)
   })
 
-  it('c 色块层=背景板序：z=层级常量 colorBlocks 且 multiply 摘除（normal）', async () => {
+  it('c 色块层在 canvas 上并消费主题混合 token（自绘选区仍最上）', async () => {
     await act(async () => {
       root!.render(
         <AnnotationLayer annotations={[defectAnnotation()]} page={0} pageRoot={null} onChanged={vi.fn()} />
@@ -181,7 +181,8 @@ describe('F-A5 —— 存量回退经 band（b 面）+色块垫底层序（c 面
     const layer = host!.querySelector<HTMLElement>('[data-testid="annotation-layer"]')
     expect(layer).not.toBeNull()
     expect(layer!.style.zIndex).toBe(String(PAGE_LAYER_Z.colorBlocks))
-    expect(layer!.style.mixBlendMode).toBe('')
+    expect(PAGE_LAYER_Z.colorBlocks).toBeGreaterThan(PAGE_LAYER_Z.canvas)
+    expect(layer!.style.mixBlendMode).toBe('var(--annotation-blend)')
   })
 })
 

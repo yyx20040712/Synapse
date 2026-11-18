@@ -21,6 +21,7 @@ import {
   createReaderSearchInitialState,
   useReaderSearchStore
 } from '../../../src/renderer/features/reader/view/reader-search.store'
+import { PAGE_LAYER_Z } from '../../../src/renderer/features/reader/state/page-layer-z'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -312,7 +313,9 @@ describe('P7E-03 SearchHighlightLayer —— 渲染面', () => {
     expect(hls[0]!.getAttribute('data-active')).toBe('true')
     expect(hls[0]!.style.outline).toContain('var(--accent)')
     const layer = host!.querySelector<HTMLElement>('[data-testid="search-highlight-layer"]')!
-    expect(layer.style.zIndex).toBe('1')
+    expect(layer.style.zIndex).toBe(String(PAGE_LAYER_Z.colorBlocks))
+    expect(PAGE_LAYER_Z.colorBlocks).toBeGreaterThan(PAGE_LAYER_Z.canvas)
+    expect(layer.style.mixBlendMode).toBe('var(--annotation-blend)')
     expect(layer.style.pointerEvents).toBe('none')
     expect(hls[0]!.style.backgroundColor).toBe('var(--accent-soft)')
   })

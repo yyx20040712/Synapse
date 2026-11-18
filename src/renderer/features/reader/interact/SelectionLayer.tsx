@@ -12,7 +12,8 @@
  *
  * **F-A4 划选视觉=自绘并集层（ADR-0019 R1 修订——取代历史原生路线，
  * 修订依据=票面 §0a 用户根治令）**：SelectionPaint（selection-paint.tsx，
- * portal 进选区所在页盒，z2 灰 0.20——标注 multiply 层已摘除〔ADR-0019 R2〕）渲染 evaluate 管线归并产物（与保存 rects 同源，所见即所存）；::
+ * portal 进选区所在页盒，z3 灰 0.20——标注色块层位于 canvas 之上、经
+ * --annotation-blend 主题混合〔ADR-0019 R4〕）渲染 evaluate 管线归并产物（与保存 rects 同源，所见即所存）；::
  * selection 转 transparent（text-layer.css）。层随**选区**真清除而消失
  * （INV-37 修订：Escape 只清 pending/工具条）。工具条定位 [c 面]：视口差值
  * ÷有效 zoom 归一到挂载盒本地+滚动容器可视区夹取+选区近顶下翻转

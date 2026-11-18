@@ -92,9 +92,9 @@ export function PdfPageCanvas(props: {
       canvas.height = Math.floor(viewport.height * dpr)
       canvas.style.width = `${Math.floor(viewport.width)}px`
       canvas.style.height = `${Math.floor(viewport.height)}px`
-      // [F-A5 c/ADR-0019 R2] 透明底渲染：pdfjs 缺省 #ffffff 填充会把垫底的
-      // 标注/AI 色块整页遮死——透明底令墨带外透出下层色块（背景板语义），
-      // 墨带（含文字）恒在色块之上=文字纯黑不被染（用户令 2026-08-31）
+      // 透明底只移除 pdfjs 缺省白底；PDF 内容流仍可能自绘不透明背景。
+      // 标注/搜索色块由 PAGE_LAYER_Z 置于 canvas 上并按主题合成，不依赖
+      // 文档背景透明；本渲染参数与 pointer-events 事件模型保持不变。
       const task = pdfPage.render({
         canvasContext: ctx,
         viewport,
@@ -137,7 +137,7 @@ export function PdfPageCanvas(props: {
   // data-pdf-canvas：ReaderPage 以此度量该页 canvas CSS 尺寸（每页自量——
   // TextLayer 的 pageWidth/pageHeight 输入）；本组件无 padding/边饰——覆盖层
   // （TextLayer/标注层）按紧邻父容器绝对定位，加了会错位
-  // [F-A5 c] z=层序常量（墨带在色块上/自绘层下）+pointer-events:none（明纸
+  // [F-A5 c] z=层序常量（canvas 在色块下/自绘层下）+pointer-events:none（明纸
   //  穿透——标注 rect 点击/文本层划选手势零回归；canvas 本身无交互面）
   return (
     <canvas

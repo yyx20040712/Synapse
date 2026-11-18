@@ -3,12 +3,13 @@
  * [F-A5 c 面] PdfPageCanvas+PageBox —— 透明底渲染+层序样式（受锁新增件，
  * [locked-change] 授权面——主控已 unlock）。
  *
- * 锁三断言（票面 §0c「canvas 透明底+色块垫底」的实现面）：
- * - pdf.js render 以 background 'transparent' 调用（透明底——墨带
- *   之外透出下层色块=背景板语义；pdfjs 默认白填充会把色块全遮死；
+ * 锁三断言（票面 §0c「canvas 透明底」实现面；层序=ADR-0019 R4：色块
+ * 位于 canvas 之上经 --annotation-blend 主题混合）：
+ * - pdf.js render 以 background 'transparent' 调用（透明底——透出
+ *   PageBox --paper 承底层，pdfjs 默认白填充会盖掉页纸底与暗色主题；
  *   [F-CSS-03] 原字面 rgba(255,255,255,0) 等价改写为 CSS 关键字）；
- * - canvas 内联 z=PAGE_LAYER_Z.canvas 且 pointer-events:none（墨在色块上，
- *   事件穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
+ * - canvas 内联 z=PAGE_LAYER_Z.canvas 且 pointer-events:none（事件
+ *   穿透明纸落在标注 rect/文本层——点击与划选手势零回归）；
  * - PageBox 页内容容器（h-fit）纸承底层+isolation（层序比较域单页内封闭，
  *   跨页不互扰；[T3-P4] 页纸底=--paper 随族——白天白/夜间暗纸/护眼奶油纸，
  *   canvas 透明底承底层）。
@@ -76,7 +77,7 @@ afterEach(() => {
 })
 
 describe('F-A5 c 面 —— 透明底 canvas+层序样式', () => {
-  it('render 以透明背景调用（background transparent——墨外透出下层色块）', async () => {
+  it('render 以透明背景调用（background transparent——透出 PageBox 页纸底）', async () => {
     await act(async () => {
       root!.render(
         <PdfPageCanvas doc={fakeDoc()} pageNo={1} zoom={1} onPageRender={() => undefined} onError={() => undefined} />

@@ -21,6 +21,24 @@ export function createTinyPdf(text = PDF_KNOWN_TEXT): Uint8Array {
   return assemblePdf(objects)
 }
 
+/**
+ * 正文下带不透明底色的单页变体：先绘 RGB(248,248,248) 全页矩形，再绘已知文本。
+ * 保留真实文本层，用于验证 PDF 自绘背景不会遮住其上的标注与搜索高亮。
+ */
+export function createOpaqueBackgroundPdf(text = PDF_KNOWN_TEXT): Uint8Array {
+  const stream = `q 0.972549 0.972549 0.972549 rg 0 0 612 792 re f Q\nBT /F1 18 Tf 72 720 Td (${esc(text)}) Tj ET`
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (${esc(text)}) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
 function esc(s: string): string {
   return s.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)')
 }

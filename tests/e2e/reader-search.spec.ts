@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { isTicketDone } from '../../tickets/registry'
-import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
+import { createMultiPagePdf, createOpaqueBackgroundPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
@@ -64,10 +64,12 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高�
   await expect(win.getByTestId('reader-search-count')).toHaveText('1/3')
 
   // 页 1 高亮块：计算样式防线（Q3b 同族——几何可见≠视觉可见）：
-  // 背景=var(--accent-soft) 解析值、层序 z=1（colorBlocks 背景板语言）、穿透
+  // 背景=var(--accent-soft) 解析值；色块层 z=2 位于 canvas(z1) 上，light 以
+  // multiply 合成且保持穿透，active 描边在同一混合容器内仍可辨。
   const hlLayer = win.locator('[data-page-box="1"] [data-testid="search-highlight-layer"]').first()
   await expect(hlLayer).toBeVisible()
-  await expect(hlLayer).toHaveCSS('z-index', '1')
+  await expect(hlLayer).toHaveCSS('z-index', '2')
+  await expect(hlLayer).toHaveCSS('mix-blend-mode', 'multiply')
   await expect(hlLayer).toHaveCSS('pointer-events', 'none')
   const activeHl = win.locator('[data-page-box="1"] [data-testid="search-hl"][data-active="true"]').first()
   await expect(activeHl).toBeVisible()
@@ -96,5 +98,50 @@ test('P7E-03 页内高亮搜索全链：Ctrl+F→小写查询→逐处跳页高�
   await expect(win.getByTestId('reader-search-box')).toHaveCount(0)
   await expect(win.getByTestId('search-hl')).toHaveCount(0)
   await expect(win.getByText(`P2 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 5_000 })
+  await app.close()
+})
+
+test('不透明 PDF 自绘背景上的搜索高亮：普通与 active 匹配均可见且文本保留', async () => {
+  test.setTimeout(120_000)
+  skipIfPending(DEPS)
+  const title = '智慧水务 e2e 不透明背景搜索文献'
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-opaque-search-'))
+  await bootstrapMigrations(userData)
+
+  // 同一文本项含两处已知短语：搜索同时产出普通与 active 两类色块。
+  const text = `${PDF_KNOWN_TEXT} ${PDF_KNOWN_TEXT}`
+  const bytes = createOpaqueBackgroundPdf(text)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, title, 'e2e-seed-opaque-search')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(text).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+  await win.keyboard.press('Control+f')
+  const input = win.getByTestId('reader-search-input')
+  await input.fill('smart water')
+  await win.keyboard.press('Enter')
+  await expect(win.getByTestId('reader-search-count')).toHaveText('1/2')
+
+  const layer = win.getByTestId('search-highlight-layer')
+  await expect(layer).toBeVisible()
+  await expect(layer).toHaveCSS('z-index', '2')
+  await expect(layer).toHaveCSS('mix-blend-mode', 'multiply')
+  await expect(win.getByTestId('search-hl')).toHaveCount(2)
+  const active = win.locator('[data-testid="search-hl"][data-active="true"]')
+  const normal = win.locator('[data-testid="search-hl"][data-active="false"]')
+  await expect(active).toHaveCount(1)
+  await expect(normal).toHaveCount(1)
+  await expect(active.first()).toBeVisible()
+  await expect(normal.first()).toBeVisible()
+  await expect(active.first()).toHaveCSS('outline-style', 'solid')
+  await expect(known).toBeVisible()
   await app.close()
 })
