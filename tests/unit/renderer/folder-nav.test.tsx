@@ -246,6 +246,18 @@ describe('F-UIRES-01 U1 右键三件菜单（§2.2）', () => {
     expect(menu?.textContent).toContain('在脉络图中打开')
   })
 
+  it('主图行（__main__）菜单无删除入口：重命名/在脉络图中打开仍在（lib-C1——服务端恒 CONFLICT，高危预告流不得进场）', async () => {
+    await render(BASE_QUERY)
+    rightClick(navRow('主图'))
+    const menu = host?.querySelector('[data-testid="folder-menu"]')
+    expect(menu).not.toBeNull()
+    expect(menu?.textContent, '主图不可删——菜单不得出现删除项').not.toContain('删除文件夹')
+    const items = menu?.querySelectorAll('button[role="menuitem"]')
+    expect(items?.length, '主图菜单=重命名+打开两件').toBe(2)
+    expect(menu?.textContent).toContain('重命名')
+    expect(menu?.textContent).toContain('在脉络图中打开')
+  })
+
   it('busy 期菜单三项禁用（重命名/删除/导航均锁——§2.1 清单）', async () => {
     await render(BASE_QUERY)
     act(() => {
@@ -427,12 +439,12 @@ describe('F-UIRES-01 U1 删除流承接（useFolderDelete 拆件原样+FolderDel
   it('W1：在途删除异目标→info toast 轻量告知+第二目标不执行（graph 预检都不发——hook 级串行语义保留）', async () => {
     const resolveGraph = hangGraph()
     stubApi.folders.delete.mockResolvedValue({ ok: true, data: { ok: true } })
-    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0)]
+    foldersNow = [folder('__main__', '主图', 2), folder('f-1', '调研计划', 0), folder('f-2', '另一领域', 0)]
     mockPaperTotal(0)
     await render(BASE_QUERY)
     await clickDeleteMenu()
-    // 在途窗内右键删除另一目标（主图）
-    rightClick(navRow('主图'))
+    // 在途窗内右键删除另一目标（普通夹——主图删除项已随 lib-C1 隐藏）
+    rightClick(navRow('另一领域'))
     await click(menuItem('删除文件夹'))
     await settle()
     expect(toastSpy).toHaveBeenCalledWith('上一次删除仍在进行，请稍候', 'info')

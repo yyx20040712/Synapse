@@ -3,8 +3,12 @@
  * 重命名[行内编辑单源]/删除文件夹…[空夹直删子标注]/在脉络图中打开[P-8]——
  * mockup S2 .menu 逐值；TagLifecycleMenu 先例形态（该件已随 TagFilter 退役）：fixed 锚点+遮罩+
  * Esc 关闭）。动作只上抛——行内编辑/删除流/跳转宿主在 FolderNav。
+ * [lib-C1] 主图行（MAIN_GRAPH_ID）删除项隐藏：服务端恒 CONFLICT——完整高危
+ * 预告流后必被拒=预告失真，删除入口不进场；重命名（S3 图名 1:1 联动）与
+ * 「在脉络图中打开」保留。
  */
 import { useEffect } from 'react'
+import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
 import type { Folder } from '@shared/models/folder'
 
@@ -69,16 +73,18 @@ export function FolderMenu(props: {
         >
           <ItemRow label="重命名" sub="F2" />
         </button>
-        <button
-          type="button"
-          role="menuitem"
-          disabled={busy}
-          className={MENU_ITEM_STYLE}
-          style={{ color: 'var(--danger)' }}
-          onClick={() => props.onDelete(folder)}
-        >
-          <ItemRow label="删除文件夹…" sub="空夹直删" />
-        </button>
+        {folder.id !== MAIN_GRAPH_ID && (
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className={MENU_ITEM_STYLE}
+            style={{ color: 'var(--danger)' }}
+            onClick={() => props.onDelete(folder)}
+          >
+            <ItemRow label="删除文件夹…" sub="空夹直删" />
+          </button>
+        )}
         <div className="lib-menu-sep" />
         <button
           type="button"
