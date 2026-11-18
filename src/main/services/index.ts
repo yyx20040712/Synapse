@@ -43,12 +43,9 @@ import {
   type FloatingNotesService
 } from './lineage/floating-notes.service'
 import { createEnrichService } from './enrich/enrich.service'
-import {
-  createCrossrefProvider,
-  type EnrichedWork
-} from './enrich/providers/crossref'
-import { createOpenalexProvider, type OpenalexWork } from './enrich/providers/openalex'
-import { createArxivProvider, type ArxivWork } from './enrich/providers/arxiv'
+import { createCrossrefProvider, type CrossrefProvider } from './enrich/providers/crossref'
+import { createOpenalexProvider, type OpenalexProvider } from './enrich/providers/openalex'
+import { createArxivProvider, type ArxivProvider } from './enrich/providers/arxiv'
 import {
   createAiSessionsService,
   type AiSessionsService
@@ -294,10 +291,11 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
   }
 }
 
+// provider 三接口单源=providers/*.ts（import type 复用——禁手写等价双写）
 function buildProviders(http: HttpFns): {
-  crossref: { byDoi(doi: string): Promise<EnrichedWork | null>; byTitle(t: string): Promise<EnrichedWork | null> }
-  openalex: { byTitle(t: string): Promise<OpenalexWork | null> }
-  arxiv: { byId(id: string): Promise<ArxivWork | null> }
+  crossref: CrossrefProvider
+  openalex: OpenalexProvider
+  arxiv: ArxivProvider
 } {
   return {
     crossref: createCrossrefProvider({ fetchJson: http.fetchJson }),
