@@ -44,8 +44,9 @@
  *
  * ── 架构层 ──
  * - 分层：ipc → services → repos → db（单向；service 持 repo+协议根路径，
- *   禁 service 直写 SQL）；fs 面仅协议根（corpus-ai 读+archive 移动，
- *   rename 保原子——Windows rename 不覆盖已存在目标，先 rm 再 rename）
+ *   禁 service 直写 SQL）；fs 面仅协议根（corpus-ai 读+archive 移动——移动
+ *   只在 imported 路径，rename 保原子，Windows rename 不覆盖已存在目标，
+ *   先 rm 再 rename）
  * - 依赖：ai_notes.repo（insert/deleteByPaper/listByPaper）、
  *   shared/models/ai-note（zod 单源）、node:crypto（sha256 零依赖）
  *
@@ -59,7 +60,9 @@
  * - 错误：篇级失败入 errors[] 不中断整批（部分成功）；目录不存在→空结果
  *   （首次无产物=合法态非错误）；文件损坏→该篇 error（中文 reason 含路径）；
  *   禁静默吞错。**失败篇产物留在 corpus-ai 不移 archive**（移走即永久掩盖
- *   损坏面——下次导入可重试修复）；skipped 路径源文件一并归档（活动区清空）
+ *   损坏面——下次导入可重试修复）；skipped 路径删源文件清活动区，archive
+ *   账本文件留档不动（dest 已验同 sha 即终态——rm(dest) 成功而 rename 失败
+ *   丢账本转 failed 的窗口消除）
  * - 测试：tests/unit/services/ai-notes-import.test.ts [受锁新增]——幂等三
  *   路径/行级 zod 拒非法 role/question/幽灵 paperId 拦截/损坏 JSON/目录不
  *   存在空结果/二跑全 skipped/Result 三桶形状；repo 交互以真库夹具
@@ -160,7 +163,7 @@ export function createAiNotesImportService(deps: AiNotesImportDeps): AiNotesImpo
     const dest = join(archiveDir, name)
     try {
       const text = await readFile(src, 'utf8')
-      // archive 账本：同 sha→skipped（源一并归档，活动区清空）
+      // archive 账本：同 sha→skipped（删源清活动区，dest 账本留档不动）
       let archivedText: string | null = null
       try {
         archivedText = await readFile(dest, 'utf8')
@@ -168,9 +171,11 @@ export function createAiNotesImportService(deps: AiNotesImportDeps): AiNotesImpo
         if (!isENOENT(e)) throw e
       }
       if (archivedText !== null && sha256Of(archivedText) === sha256Of(text)) {
-        await rm(dest, { force: true })
-        await mkdir(archiveDir, { recursive: true })
-        await rename(src, dest)
+        // dest 已读取且验同 sha（判定在前）——账本文件即终态，保留不动；
+        // 只删源清活动区。原 rm(dest)+mkdir+rename 移入序存在 rm 成功而
+        // rename 失败丢账本转 failed 的窗口，随之消除（imported 路径的
+        // rm+rename 移入不动——Windows rename 语义，见头注架构层）
+        await rm(src, { force: true })
         return 'skipped'
       }
       if (!deps.paperExists(paperId)) {
