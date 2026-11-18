@@ -22,6 +22,7 @@ import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
 import { WorkspacesPage } from '../features/workspaces/WorkspacesPage'
 import { selectDisplayWsName, isGuideState, useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { THEME_LABEL } from '../shared/ui-constants'
+import { registerKeymap, unregisterKeymap } from '../shared/keymap'
 import { Rail, type ViewId } from './Rail'
 import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
@@ -151,20 +152,19 @@ export function App(): JSX.Element {
   // 纯移动零语义改，App 行数红线；语义面见该件头注）
   useWsGuideImportBridge(wsGuide)
 
-  // T3-P2 gsearch：全局 Ctrl+K 聚焦（keydown 挂 App 单点；preventDefault 防
-  // 浏览器默认；v1 展示性控件——可聚焦可输入，无后端动作；提示语=受控空值
-  // 显隐 span.ph（mockup .ph 语汇——票面「提示语『全局搜索』」的落地形态）
+  // T3-P2 gsearch：全局 Ctrl+K 聚焦（keymap 单例注册——app-C3
+  // 归并〔D3=A 裁决〕：editable 避让（输入框内不抢焦点）+修饰精确匹配
+  // （Ctrl+Shift+K/Ctrl+Alt+K 不误触发）两语义随之生效；preventDefault 显式
+  // 声明防浏览器默认；注册/注销成对 INV-14。v1 展示性控件——可聚焦可输入，
+  // 无后端动作；提示语=受控空值显隐 span.ph（mockup .ph 语汇——票面
+  // 「提示语『全局搜索』」的落地形式）
   const gsearchRef = useRef<HTMLInputElement>(null)
   const [gsearchText, setGsearchText] = useState('')
   useEffect(() => {
-    const onKey = (ev: KeyboardEvent): void => {
-      if (ev.ctrlKey && (ev.key === 'k' || ev.key === 'K')) {
-        ev.preventDefault()
-        gsearchRef.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    registerKeymap('app-gsearch', [
+      { key: 'k', ctrl: true, preventDefault: true, handler: () => gsearchRef.current?.focus() }
+    ])
+    return () => unregisterKeymap('app-gsearch')
   }, [])
 
   return (

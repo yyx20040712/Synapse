@@ -10,7 +10,9 @@
  * - editable 避让：事件目标为 input/textarea/contentEditable 时一律不拦截不消费
  *   （原生编辑优先——ctrl+v 语义=编辑框焦点下的原生粘贴透传，本模块不接管编辑场景）
  * - 匹配：ctrlKey/metaKey 归一（Windows ctrl）+ key 大小写不敏感查表；首个命中即止
- *   （Map 插入序确定，多消费方冲突可预期）；命中且 preventDefault 显式 true 才阻断
+ *   （Map 插入序确定，多消费方冲突可预期）；命中且 preventDefault 显式 true 才阻断；
+ *   altKey 不入绑定词汇——带 Alt 组合一律不命中（系统/输入法快捷键不消费，
+ *   app-C3 修饰精确匹配语义）
  *
  * ── 接口层 ──
  * - export interface KeyBinding { key: string; ctrl?: boolean; shift?: boolean;
@@ -22,7 +24,8 @@
  *
  * ── 架构层 ──
  * - renderer 共享基建：无 Electron/Node API、无 window.api 调用、不 import 组件
- * - 消费方：ReaderShortcuts；后续 v2 快捷键面统一经此模块
+ * - 消费方：App（gsearch Ctrl+K）/ReaderShortcuts/useReaderSearch；后续 v2
+ *   快捷键面统一经此模块
  * - INV-14（输入接缝注册/注销成对，docs/invariants.md）：本模块是锚点——消费方
  *   清理函数与注册同源成对
  *
@@ -59,7 +62,9 @@ export function isEditableTarget(t: EventTarget | null): boolean {
 }
 
 function matches(b: KeyBinding, ev: KeyboardEvent): boolean {
-  // 修饰精确匹配：裸键绑定不吃修饰组合（Ctrl+n 不得触发裸 n——防误伤系统快捷键）
+  // 修饰精确匹配：裸键绑定不吃修饰组合（Ctrl+n 不得触发裸 n——防误伤系统快捷键）；
+  // altKey 无绑定词汇——带 Alt 组合一律不命中（Alt 组合留给系统/输入法）
+  if (ev.altKey) return false
   if ((b.ctrl === true) !== (ev.ctrlKey || ev.metaKey)) return false
   if ((b.shift === true) !== ev.shiftKey) return false
   return ev.key.toLowerCase() === b.key.toLowerCase()

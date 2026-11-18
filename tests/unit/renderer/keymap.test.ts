@@ -132,6 +132,15 @@ guardedDescribe('SR2-KEY-01', 'keymap —— 键盘快捷键单例', () => {
     expect(h).toHaveBeenCalledTimes(1)
   })
 
+  it('修饰精确匹配：Alt 组合一律不命中（Ctrl+Alt+x 不触发 ctrl 绑定——app-C3 精确匹配语义）', () => {
+    const h = vi.fn()
+    reg('t-alt', [{ key: 'c', ctrl: true, handler: h }])
+    press(document, { key: 'c', ctrlKey: true, altKey: true })
+    expect(h).not.toHaveBeenCalled()
+    press(document, { key: 'c', ctrlKey: true })
+    expect(h).toHaveBeenCalledTimes(1)
+  })
+
   it('shift 修饰：显式 shift 绑定仅在 shift 按下时触发', () => {
     const h = vi.fn()
     reg('t-shift', [{ key: 'x', shift: true, handler: h }])

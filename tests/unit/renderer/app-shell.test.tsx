@@ -372,7 +372,7 @@ describe('T3-P2 状态条——26px 真文本（课题名/篇数/脉络计数/�
   })
 })
 
-describe('T3-P2 gsearch——全局 Ctrl K 聚焦（keydown 挂 App，preventDefault）', () => {
+describe('T3-P2 gsearch——全局 Ctrl K 聚焦（keymap 单例注册，preventDefault）', () => {
   it('Ctrl+K：input 获得焦点且默认行为被拦截', async () => {
     mount(<App />)
     await flush()
@@ -381,10 +381,48 @@ describe('T3-P2 gsearch——全局 Ctrl K 聚焦（keydown 挂 App，preventDef
     const ev = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true })
     const spy = vi.spyOn(ev, 'preventDefault')
     act(() => {
-      window.dispatchEvent(ev)
+      document.dispatchEvent(ev)
     })
     expect(document.activeElement, '全局 Ctrl K 聚焦 gsearch 输入框').toBe(input)
     expect(spy).toHaveBeenCalled()
+  })
+
+  it('editable 焦点内 Ctrl+K 不触发（app-C3/D3=A 裁决——keymap 避让语义，原生编辑优先）', async () => {
+    mount(<App />)
+    await flush()
+    const gsearch = document.querySelector<HTMLInputElement>('.gsearch input')!
+    const ta = document.createElement('textarea')
+    document.body.append(ta)
+    ta.focus()
+    expect(document.activeElement).toBe(ta)
+    act(() => {
+      ta.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true })
+      )
+    })
+    expect(document.activeElement, 'textarea 焦点不被抢（输入框内不跳全局搜索）').toBe(ta)
+    expect(document.activeElement).not.toBe(gsearch)
+    ta.remove()
+  })
+
+  it('修饰精确匹配：Ctrl+Shift+K / Ctrl+Alt+K 不误触发全局聚焦（app-C3）', async () => {
+    mount(<App />)
+    await flush()
+    const input = document.querySelector<HTMLInputElement>('.gsearch input')!
+    const evShift = new KeyboardEvent('keydown', {
+      key: 'k', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true
+    })
+    act(() => {
+      document.dispatchEvent(evShift)
+    })
+    expect(document.activeElement, 'Ctrl+Shift+K 不聚焦').not.toBe(input)
+    const evAlt = new KeyboardEvent('keydown', {
+      key: 'k', ctrlKey: true, altKey: true, bubbles: true, cancelable: true
+    })
+    act(() => {
+      document.dispatchEvent(evAlt)
+    })
+    expect(document.activeElement, 'Ctrl+Alt+K 不聚焦').not.toBe(input)
   })
 
   it('提示语动态显隐（回炉 1 d1-N5）：空值显提示 span，输入后隐藏', async () => {
