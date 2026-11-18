@@ -1,48 +1,45 @@
-# ADR-0014：发展脉络图（lineage）数据模型与图形态边界
+# ADR-0014：lineage 图数据模型（人工策展时间树）
 
-- 日期：2026-08-25（蓝图 §4.3 第四轮裁决 E3/E4/E5）
-- 状态：已裁决——v1 时间树立项（ROADMAP P7-H，工单组 SR2-LG-01~05）
-- 关联：蓝图 D5（形态部分被本 ADR 修订）/ADR-0012（自动引文图数据模型，维持暂不做）/
-  ADR-0011（语料五件套——梳理智能体的输入面）/ADR-0015（lineage JSON 导入走文件
-  协议同精神）/ai-rescope-verification §4（算法调研）
+日期：2026-08-25 · 状态：已裁决——时间树已落地，后续演进并入正文（现行结构锚点=基线 DDL 与 invariants.md 对应 INV 条目）
+
+关联：ADR-0012（自动引文图数据模型，维持暂不做）；ADR-0011（语料接口——梳理代理的输入面）；ADR-0015（AI 笔记回灌文件协议）；ADR-0021（文件夹单归属×图绑定）；ADR-0022（草稿导入链退役）。
 
 ## 背景
 
-用户业务重述要求「发展脉络拓扑图」：上下=时间序、树状、节点含简要信息与核心
-idea、单击看笔记、双击跳阅读器、手工调节位置与逻辑线且保存逻辑同标注/笔记。
-原 D5 裁决为 md 线性时间线（图形态记 P8+ 独立决策项）；本次用户将该项提前并
-选定图形态。负面清单「知识图谱/不做网络图可视化」与 ADR-0012（复审条件「领域
-梳理落地后的真实聚类诉求」已触发）需一并辨析边界。
+用户需求：「发展脉络拓扑图」——上下=时间序、树状、节点含简要信息与核心 idea、单击看笔记、双击跳阅读器、手工调节位置与逻辑线且保存逻辑同标注/笔记。此前裁决为 md 线性时间线（图形态记为后续独立决策项），本次用户将图形态提前并选定。负面清单「知识图谱/不做网络图可视化」与 ADR-0012（自动引用关系）的边界需一并辨析。
+
+## 候选
+
+- md 线性时间线（此前裁决）：非图形态，不满足拓扑图诉求。
+- 时间树（v1）：每节点至多一个父，纵向时间分层、横向整序。
+- 跨支 DAG（v2 预留）：一篇文献影响多条线（多父）。
+- 自动引文网络图：负面清单排除（见「边界」）。
 
 ## 裁决
 
-### 形态（E3）
+### 形态
 
-- **v1=时间树**：每节点至多一个父（树约束=service 层不变量+单测）；纵向=年份
-  分层（y 天然分层，免算法分层）；横向=Reingold-Tilford tidy tree 整序（线性
-  时间，两趟扫描，零依赖手写——D3 等第三方库禁引，零新依赖红线）；SVG 渲染
-  （pan/zoom 滚轮+拖拽，INV-14 成对注册）。
-- **v2=跨支 DAG**（一篇文献影响多条线）：Sugiyama-lite（层内序 barycenter 交叉
-  最小化）；**升版条件=真实多父编辑诉求出现**，v1 不预建。
-- 不做 md 时间线中间形态（防两套方案并存红线）；梳理智能体输出改为 **lineage
-  JSON 草稿**（节点：paperId/标题/年份/核心 idea；边：主要继承关系+说明），经
-  文件协议导入（ADR-0015 同精神）后人工修订。
+- v1=时间树：纵向=年份分层；横向=树整序（线性时间、零依赖手写——第三方图形库禁引，零新依赖红线）；SVG 渲染（pan/zoom，输入接缝成对注册=INV-14）。
+- 不做 md 时间线中间形态（防两套方案并存红线）；梳理代理的产物消费走 lineage.json 导出面（确定性口径=INV-77）。
+- **后续演进（现行形态）**：v1 的树单父约束与边 kind 体系（tree/ref/manual→四值 tree/inferred/ref/manual）经用户裁决整体退役——现行边=manual 单基型、入边不限条数（「manual 不限条数」用户裁决；接缝：登记册 INV-27 仍按四 kind+树单父守卫登记为「已锚定」，与本现行裁决互斥——详见「数据模型」节接缝标注，待主控按受锁流程裁决登记册）；运行时守卫保留面=自环/悬空端点/跨图/重复边/成环/via 路点/端点锚校验。布局=年份/月份分层+月内 slot 槽位网格（INV-75、INV-SLOTGRID-01）；边携带视觉字段（dashed/color——线色双值口径=INV-108）与 via 路点、端点锚。
+- v2=跨支 DAG 曾为预留升版方向（层内序交叉最小化）；多父放行后该预留不再有独立意义。
+- AI 草稿导入协议（lineage JSON 草稿经文件协议导入后人工修订）曾是 v1 决策的一部分，该导入链已随 ADR-0022 退役（2026-09-30）。
 
-### 边界（E5）
+### 边界
 
-- **人工策展的核心 idea 时间树合法**（AI 起草+人工修订；边=策展边）；**自动
-  引文网络图可视化维持不做**（负面清单措辞随此修订）。
-- ADR-0012（自动引用关系数据模型「暂不做」）**维持**：其对象是自动引文边；
-  lineage 边是人工策展产物，数据模型另立即下——两者不复用表。
+- **人工策展的核心 idea 时间树合法**（AI 起草+人工修订；边=策展边）；**自动引文网络图可视化维持不做**（负面清单措辞随此修订——现行 AGENTS.md 负面清单已注明人工策展的核心 idea 时间树不在此列）。
+- ADR-0012（自动引用关系数据模型「暂不做」）维持：其对象是自动引文边；lineage 边是人工策展产物——两者不复用表。
 
-### 数据模型（迁移 004_lineage.sql）
+### 数据模型
+
+v1 初版 DDL 决策快照（应用层语义演进见下；现行 DDL 单源=src/main/db/migrations/026_baseline.sql——迁移链已压缩为基线单件，ADR-0030）：
 
 ```sql
 CREATE TABLE lineage_nodes (
   id         TEXT PRIMARY KEY,            -- uuid
-  paper_id   TEXT REFERENCES papers(id) ON DELETE CASCADE,  -- 可空=纯主题节点（阶段分组）
+  paper_id   TEXT REFERENCES papers(id) ON DELETE CASCADE,  -- v1 可空=纯主题节点
   title      TEXT NOT NULL,
-  core_idea  TEXT NOT NULL DEFAULT '',    -- 核心 idea（AI 草稿可填，人工可改）
+  core_idea  TEXT NOT NULL DEFAULT '',
   year       INTEGER,
   x          REAL,                        -- 手工位置覆盖；NULL=自动布局
   y          REAL,
@@ -53,118 +50,33 @@ CREATE TABLE lineage_edges (
   id         TEXT PRIMARY KEY,
   from_node  TEXT NOT NULL REFERENCES lineage_nodes(id) ON DELETE CASCADE,
   to_node    TEXT NOT NULL REFERENCES lineage_nodes(id) ON DELETE CASCADE,
-  label      TEXT NOT NULL DEFAULT '',    -- 逻辑线说明
+  label      TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE(from_node, to_node)
 );
 ```
 
-- 位置持久化采 JSON Canvas 模式（Obsidian 开放格式先例：节点 x/y 直存；MIT 开放
-  规范，jsoncanvas.org）——手工拖拽=写 x/y 覆盖，重置自动布局=清空 x/y。
-- 保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态
-  投影；**接缝**：退出拦截（TABS-04 useTabDirtyAggregate）聚合面扩图视图脏态
-  （图视图工单自带，不动 TABS-04 已冻结范围）。
+位置持久化=JSON Canvas 模式（开放格式先例：节点 x/y 直存 lineage_nodes 列）：手工拖拽=写 x/y 覆盖；重置自动布局=清空 x/y（NULL=自动布局）。现役 schema 同口径注记=src/shared/models/lineage.ts 节点 x/y 字段「手工位置覆盖（JSON Canvas 模式）；null=自动布局」。
+
+非破坏性演进清单（现行状态；`UNIQUE(from_node, to_node)` 自 v1 原样不动）：
+
+1. edges 加 `kind` 列：tree/ref/manual 三值→tree/inferred/ref/manual 四值→**现行退役为恒 'manual'**（shared schema 无 kind 字段，repo 写边界恒写 'manual'）；`sub` 列（子线型样式引用）随体系死置。
+2. edges 加 `via`（边走线路点——校验单源 validateLineageVia）、`from_anchor`/`to_anchor`（端点锚）、`dashed`/`color`（视觉字段；设计单源=docs/design/2026-10-01_f-lineage02-routing-design-final.md）。
+3. nodes 加 `month`（CHECK 1..12，NULL=未定月框）+`slot`（月内序的实现层承载——INV-75；排序契约/编号/导出确定性=INV-75/76/77）。
+4. nodes 加 `folder_id`：图=文件夹内容的投影（图名=文件夹名 1:1，无独立 graph 元数据）；文献单归属文件夹，多对多挂接退役（方案切换=删除旧方案；决策细目=ADR-0021，行为终态=INV-88~93；文献必在文件夹=INV-NEW-2、文件夹域容器与删夹域删=INV-NEW-3）。
+5. 节点唯一来源收敛：纯主题节点/手动建点在应用层全域退役——节点唯一来源=入库（挂接导入落夹建节点）/移动（moveFolder 自动建与随迁）两路（INV-NEW-1）；IPC 写通道 `lineage/upsert-node` 拆分为 `lineage/patch-node`（纯编辑 patch：id 必填+字段白名单 strict，无新建形态可表达；`lineage/import` 草稿导入通道随 ADR-0022 退役）。
+6. nodes 加 `tags`→**应用层退役**：全应用标签唯一源=文献库域（tags+paper_tags 两表），脉络卡标签=graph 读面伴生查表（INV-103）；DDL 列死置（三列退役设计单源=docs/design/2026-10-04_f-contracta01-design.md——本清单第 6/7 条与 notes.title 连带项同源）。
+7. `core_idea` **应用层全退役**（用户裁决：显示面仅详情面板、AI/FTS/卡面/筛选零依赖；「核心想法」语义由全文笔记 notes.contentMd 承接——INV-101）；DDL 列死置。连带：notes.title 列死置（INV-104）。
+8. 新表 `lineage_graph_meta`（图级 KV）：现行键=lineTypeNames（色行名恰 6 行、空名归一「待命名」——schema 单源=src/shared/models/lineage.ts lineTypeNamesSchema）；lineTypes 为历史配置（四组线型体系随 kind 退役，仅为历史留档）；现行线色口径=INV-108 线色双值。
+9. 含金量投影（现行生效）：graph 通道逐文献节点透出 paperMetrics（citedByCount/venueTier+可选 venue/impactFactor）——数据来自 papers 既有列缓存、graph join 透出（键=paperId，主题节点不入表，渲染层零额外取数）；venueTier 映射单源=shared/venue-tier.ts venueToTier。单源=src/main/services/lineage/lineage.service.ts（LineagePaperMetrics 与 graph 读面）。
+
+行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md。**接缝标注（原样保留，待裁决）**：INV-27「lineage 树单父不变量（四 kind 全景）」在 docs/invariants.md:49 仍登记且状态=已锚定，与本文现行形态「manual 单基型、入边不限条数（多父放行）」互斥——登记册尚未随本裁决改写，待主控按受锁流程裁决处理；本文不自行改写 invariants.md。
+
+保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态投影；退出拦截聚合面扩图视图脏态。
 
 ## 后果
 
-- ROADMAP 新增 P7-H 节；工单组 SR2-LG-01~05（模型+导入→布局+画布→交互编辑→
-  侧板+跳转→e2e）。
-- 前置依赖：P7-G AI-06~10（节点核心 idea 来自 AI 语料）、P7-C N1 锚点定位服务
-  （双击跳转）、P7-F 几何（F-aware 接口）。
-- AGENTS 负面清单「知识图谱」措辞修订（指针本 ADR）。
-
-## 修订记录 v1.1（2026-08-31 F-LG14：draft 节点加可选 tags 字段）
-
-> 需求源=用户反馈批图6/图7（脉络卡底行「含金量+标签组+年份」）；台账
-> 2026-08-31 四项口径裁决在档。非破坏性修订——v1 加可选字段=向后兼容
-> （ADR-0011「新增字段必须可选」规则同精神）。
-
-1. **draft 协议扩展**：lineageDraftNodeSchema 节点加可选 `tags`（字符串数组，
-   元素非空；缺省省略）。口径=草稿带为主（梳理智能体产物可带标签，导入即有），
-   旧版本草稿（无 tags）导入零破坏。
-2. **存储面**：迁移 007 lineage_nodes 加 `tags TEXT`（JSON 数组序列化；
-   NULL=无标签——存量库零迁移兼容，无数据搬迁）。同节点同名标签去重=
-   写边界单源（dedupeLineageTags，repo upsertNode 单点收口），DDL 不承担
-   行为约束（本 ADR「树约束在 service 不在 DDL」同精神）。
-3. **含金量摘要非 draft 面**：citedByCount/venueTier 来自 papers 增强缓存+
-   venue-tier 受锁映射（ENR-01/02 交付），graph 通道 join 透出（渲染层零
-   额外取数）——不进 draft 协议（草稿只承载人工策展语义字段）。
-
-## 修订记录 v1.2（2026-09-19 F-DOCGOV-01：DDL 交叉注记）
-
-> 上方「数据模型」段 DDL=**v1 初版决策快照**，非现行库结构全文。现行演进：
-> - `006_lineage_ref_edges.sql`：edges 加 `kind` 列（tree/ref/manual 三 kind
->   终态——ref=R2-LG12 综述边豁免单父、manual=F-LG15 人工补父不限条数）；
->   `UNIQUE(from_node, to_node)` 系 **004 既有约束原样不动**（006 未改）——
->   同端点对唯一天然限定同 from+to 仅一种 kind（DDL 天然收口）；树约束仍在
->   service 层非 DDL CHECK（本 ADR 原则维持）。
-> - 行为终态与跨格序列的单一真相源=**INV-27**（含三 kind 全景表）；DDL 现文
->   =`src/main/db/migrations/004/006/007`。本文保留原始决策叙述不回改。
-
-## 修订记录 v1.3（2026-09-27 T3-P5：脉络数据层 v2）
-
-> **不触发 v2 DAG 升级**（本 ADR「存储=图 schema（v2 DAG 升级免迁移）」预留
-> 面核对结论）：仍树+旁挂边——kind 扩四值属行为面非存储面演进。现行演进：
-> - `010_lineage_v2.sql`：nodes 加 `month`（CHECK 1..12，NULL=未定月框）+
->   `slot`（月内序实现层承载——窗口函数存量回填，D-P5-10「无显式字段」=
->   无用户序号语义）两列；edges 加 `sub TEXT`（子线型样式引用——引用完整性
->   守卫在 service 非 DDL，本 ADR「树约束在 service」原则同精神）；新表
->   `lineage_graph_meta`（图级 KV——lineTypes 线型组 JSON 串）。
-> - kind 四值终态=tree/**inferred**（T3-P5 新枚举——同 tree 守卫单父+拒环，
->   产生入口=P7 编辑器+后置 AI 域，枚举+守卫先行防退化）/ref/manual；draft
->   导入协议 v1.2 仅加可选 `month`（缺省=NULL 未定月——旧草稿零破坏）。
-> - 行为终态与跨格序列单一真相源=**INV-27（T3-P5 四 kind 修订版）**；排序
->   契约/编号/导出确定性=**INV-75/76/77**；DDL 现文
->   =`src/main/db/migrations/004/006/007/010`。本文保留原始决策叙述不回改。
-
-## 修订记录 v1.4（2026-09-30 F-FOLDER-01：文件夹×脉络图绑定——图维度落地）
-
-> **图维度裁决兑现**（survey 2026-09-29 §2+design-final 2026-09-30）：本 ADR
-> v1「全局单图」语义升级为「一文件夹一图」——collections 表语义由「多对多挂接」
-> 改为「文献单归属文件夹」（paper_collections M2M 退役——迁移 012 DROP；
-> **方案切换=删除旧方案**），脉络图=文件夹内容的投影（图名=文件夹名 1:1，
-> 无独立 graph 元数据）。决策细目=ADR-0021（单归属×图绑定）；行为终态=
-> **INV-88~93**；DDL 现文=`src/main/db/migrations/004/006/007/010/012`。
-> 本文保留原始决策叙述不回改。
-
-## 修订记录 v1.5（2026-10-04 F-ALIGN-01：主题节点/手动建点退役——实体面）
-
-> **节点唯一来源收敛**（design-final 2026-10-04 呈裁链终裁 D1~D6——首轮 D1/D2+三呈裁 D3/D4/D6）：本 ADR
-> v1 DDL 快照「paper_id 可空=纯主题节点（阶段分组）」语义**应用层全域退役**
-> ——节点唯一来源=入库（挂接导入落夹建节点〔D3 单跳〕）/移动（moveFolder
-> 自动建与随迁）两路，无手动创建路径（**INV-NEW-1**）。IPC 写通道
-> `lineage/upsert-node` 拆分为 `lineage/patch-node`（纯编辑 patch——id 必填+
-> 字段白名单 strict，无新建形态可表达；通道换名零增减，现数=
-> api-surface-closure 通道 pin 承载）；主题节点分支/手动建点组件
-> （LineageAddNodeDialog）/store 动作（addPaperNode/addThemeNode）全域删除
-> （回潮防御=check-quality 第 10 段负锚词表+defense-lifecycle ㉔ 登记）。
-> DDL 面：`lineage_nodes.paper_id NOT NULL` 归 D 批重建顺带（台账=
-> defense-lifecycle ㉓，附退出条件+评审触发器）；窗口期防御=zod 契约机检
-> （schema 类型测试）+负锚词表+INV-NEW-2 应用层闸三重。行为终态=
-> **INV-NEW-1/2/3**+INV-88 改写注记（两路建节点）；DDL 现文仍=
-> `src/main/db/migrations/004/006/007/010/012/013/014`（013=边 via 路点列，
-> F-LINEAGE-02——v1.4 清单后新增，本修订记录补齐收录）。本文保留原始决策
-> 叙述不回改。
-
-## 修订记录 v1.6（2026-10-04 F-CONTRACTA-01：数据契约三死列——标签唯一源/title/core_idea 应用层退役）
-
-> **同日续批**（design-final=docs/design/2026-10-04_f-contracta01-design.md，
-> 四项用户裁决 §5）：本 ADR v1 DDL 快照三列语义**应用层全退役、DB 列死置**
-> （NOT NULL/DEFAULT 兜底——清列捆绑 D 批 DB 战役，台账=defense-lifecycle
-> ㉓ 扩行）：
-> - `tags`（007 列，v1.1 修订引入）——**标签唯一源=文献库域**（tags+
->   paper_tags 两表）；脉络卡标签=graph 读面伴生 map tagNamesByPaper 查表
->   （A1a 换源——读链零回退）；lineage 私有标签编辑面五层退役（A1b）。
->   不变量锚=**INV-103**。
-> - `core_idea`（004 列，v1 原始字段）——**全退役**（用户裁决：显示面仅详情
->   面板、AI/FTS/卡面/筛选零依赖、存量零行；「核心想法」语义由全文笔记
->   notes.contentMd 承接）；编辑对话框/写链/导出字段/创建占位五面退役（A3）。
-> - `notes.title`（001 列，notes 域连带登记）——**停用**（历史残留清零+新代码
->   零消费，A2；DDL NOT NULL DEFAULT '' 死置，FTS trigram 空串零 token——
->   触发器行为主控亲验）。不变量锚=**INV-104**。
-> 笔记三域分域与片段锚不可变=**INV-101/102**（annotations kind='note'+comment
-> 数据终态，零 DDL）。导出 schema_version 不动（导出单向、无消费方——导入链
-> 已随 ADR-0022 退役）。DDL 现文=本 ADR 域清单 `004/006/007/010/012/013/014`
-> 外加 001（notes 域——title 死列所在，非本 ADR 域仅引注）。本文保留原始
-> 决策叙述不回改。
+- ROADMAP 增设「发展脉络图」节；前置依赖=标注锚点定位服务（双击跳转）、连续滚动几何接口。节点信息不依赖 AI 语料链：草稿导入链随 ADR-0022 退役，节点唯一来源=入库/移动两路（见「数据模型」演进清单第 5 条）。
+- AGENTS.md 负面清单「知识图谱」措辞随边界裁决修订（指针本 ADR）。
+- 人工策展时间树与自动引文图（ADR-0012）边界以本 ADR「边界」节为单源。
