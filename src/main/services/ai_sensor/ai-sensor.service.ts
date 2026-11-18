@@ -64,7 +64,7 @@
  *     updatedAt: string; heartbeatAt: string; running: boolean }（running=新鲜度
  *   判定输出，单源在本服务——10 三档消费不双写阈值）
  * - IPC 面：ai-sensor/request-read + ai-sensor/status 两通道（实现时
- *   [locked-change]——src/shared/ipc/schemas.ts+api-surface.ts 受锁）
+ *   提交说明申报——src/shared/ipc/schemas.ts+api-surface.ts 受锁）
  * - 交付面（多文件，file=主交付面以头注清单为准——AI-05 P8 同型）：
  *   tools/ai-sensor/companion.mjs（**整合形态声明（W06-3）：queue 之上的
  *   会话壳**——消费 planSession/markDone 既有幂等不改 queue.mjs 语义（可

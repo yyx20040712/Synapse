@@ -6,7 +6,7 @@ import { sanitizePathToken } from '../../../../src/main/services/shared/sanitize
  * 收敛前 2 处同正则副本（export.service safeId / corpus.export safeName），
  * C-02 家族：renderer 载荷自由串不裸拼路径的纵深防御（id 由应用生成本可信，
  * 防篡改载荷的路径穿越）。白名单 = [a-zA-Z0-9_-]，其余一律 '_'。新测试
- * always-active；it.each 用裸数组字面量（指纹门抽取器硬约束）。
+ * always-active；it.each 用裸数组字面量（契约面形态约定）。
  */
 
 describe('services/shared/sanitize —— 路径段清洗单源', () => {

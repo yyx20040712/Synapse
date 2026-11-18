@@ -39,7 +39,7 @@
 ## 后果
 
 - 新增受锁面：ipc/schemas+api-surface+preload+contracts 测试的 workspaces
-  域扩容（[locked-change]，契约扩展非放宽）。
+  域扩容（契约扩展非放宽，提交说明申报）。
 - 主进程 services 容器化为一次性结构调整（ipc/index.ts 的 deps 传递形态
   变更）；不变量 INV-35（课题库单活四联：同一时刻至多一个课题库打开、
   switch/create/rename 互斥单飞、首启 legacy 库迁移入 workspaces/default）

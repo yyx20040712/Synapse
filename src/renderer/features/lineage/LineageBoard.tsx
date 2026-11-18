@@ -25,7 +25,7 @@
  *   saved/saving/error+重试——notes.store save-status 先例族）；写
  *   面=**LG-01 已交付 service 四写方法（含守卫），本单接线 IPC 四
  *   通道**（[F-ALIGN-01] 节点写通道=lineage/patch-node——既有节点编辑
- *   patch；[locked-change] 扩 schemas/api-surface：契约扩展非放宽，
+ *   patch；扩 schemas/api-surface（契约扩展非放宽，提交说明申报），
  *   十一域穷举不变）
  * - **退出拦截聚合面扩**（ADR-0014 接缝条款：图视图工单自带，**不动
  *   TABS-04 已冻结行为面**）：lineage.store 导出 dirty 布尔（保存态≠

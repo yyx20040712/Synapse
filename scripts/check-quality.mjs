@@ -464,8 +464,7 @@ for (const f of walk(join(root, 'tests', 'e2e'), (p) => /\.(ts|tsx)$/.test(p))) 
 //     后缀变体（upsert-node-v2 类）在锚面——命中/逃逸不对称为精确口径固有
 //     边界；派生名/功能级重写（新名新实现）超出负锚定位，由契约机检（zod
 //     schema 类型测试）+评审承载。加词约束=新词禁含正则元字符（构造处无
-//     转义，词表为受锁常量自维护面）。治理登记=defense-lifecycle.md ㉔行
-//     （退出条件/评审触发器在册）。
+//     转义，词表为常量自维护面）。
 const NODE_SOURCE_RETIRE_WORDS = ['upsert-node', 'addPaperNode', 'addThemeNode', 'lineage-add-node', 'LineageAddNodeDialog']
 const retireWordRes = NODE_SOURCE_RETIRE_WORDS.map((w) => new RegExp(`\\b${w}\\b`))
 for (const f of srcFiles) {

@@ -18,7 +18,7 @@
  *   拒收）记 failed 计数不空整批，全败判定归 main 会话 complete。
  * - 禁 page.render（静态负锚——矢量快照路线否决，§0-7）。
  * - PNG-only（编码出口唯一）：canvas toBlob('image/png')；JPEG 有损变体若未来
- *   立项=023 加 format 列+file_ref/MIME/白名单三处随改（[locked-change]——
+ *   立项=023 加 format 列+file_ref/MIME/白名单三处随改（提交说明申报——
  *   备案锚=figure-store.service PNG 魔数守卫头注〔42 回炉①B-1〕）。
  *
  * ── 文化层 ── 测试：tests/unit/renderer/FigureExtractor.test.ts（结构桩注入）

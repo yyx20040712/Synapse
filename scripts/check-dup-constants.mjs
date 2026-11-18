@@ -125,7 +125,7 @@ function fingerprintOf(group) {
 /**
  * 主扫描：返回 { stats, redGroups, newRed, baselineHits, warnGroups, b2 }。
  * newRed 非空 = CI 红（baseline 外新增或指纹漂移——文件集/值/名任一变化即拦，
- * 棘轮：收敛与膨胀同走 [locked-change] 人类审查位）。
+ * 棘轮：收敛与膨胀同走提交说明申报的人类审查位）。
  */
 export function scanDuplicateConstants(root) {
   const { decls, fileCount } = collectDeclarations(root)

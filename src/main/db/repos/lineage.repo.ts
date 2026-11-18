@@ -54,7 +54,7 @@
  *   直写 SQL）；schemas 预编译+参数绑定（禁拼接——迁移 DDL 除 UNIQUE
  *   外无应用侧约束补写）
  * - 依赖：db（迁移执行器既有机制）、papers 只读存在性查询、shared/
- *   models/lineage（zod 单源受锁 [locked-change]）
+ *   models/lineage（zod 单源，契约面变更须申报）
  *
  * ── 生命周期层 ──
  * - 预留：v2 DAG 升级（存储免迁移——service 层放宽度=LG 组外新裁决）

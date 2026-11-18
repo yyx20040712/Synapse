@@ -42,7 +42,7 @@ annotationCount / noteCount
 ```
 
 - per-paper corpus md 的 front-matter **不含 exportedAt**（时间戳只进 manifest per-paper 条目）——保证 contentSha=文件字节 sha256 的幂等口径（同库重导逐字节稳定）。
-- 含金量指标元信息（可选字段）：`citedByCount`（OpenAlex/CrossRef 缓存值，enrich 域既有数据装配，零新增出网）与 `venueTier`（学科映射表的人工先验）。消费侧用于领域基线归一，不做跨领域原始值比较（偏倚处理归 AI 侧工具，指标口径在 INTERFACE.md 声明）。venueTier v1 实现档=受锁常量修订制：`VENUE_TIER_MAP` 种子表驻 src/shared/venue-tier.ts，全域入锁，内容增量走受锁常量修订=[locked-change]；「允许用户改」的 UI 面留后续立项。
+- 含金量指标元信息（可选字段）：`citedByCount`（OpenAlex/CrossRef 缓存值，enrich 域既有数据装配，零新增出网）与 `venueTier`（学科映射表的人工先验）。消费侧用于领域基线归一，不做跨领域原始值比较（偏倚处理归 AI 侧工具，指标口径在 INTERFACE.md 声明）。venueTier v1 实现档=常量修订制：`VENUE_TIER_MAP` 种子表驻 src/shared/venue-tier.ts，内容增量=改表+提交说明申报；「允许用户改」的 UI 面留后续立项。
 - 演进规则：**新增字段必须可选；删除或改名=破坏性变更（禁止），只能升 schemaVersion 并保留旧字段**。消费者按 schemaVersion 兼容读取。
 
 ### 正文结构

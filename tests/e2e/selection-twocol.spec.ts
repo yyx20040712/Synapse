@@ -310,7 +310,7 @@ async function sel53WaitQuiescent(win: Page, budgetMs = 1_500): Promise<void> {
 // 退化为「tap 置光标+drag 移光标」（app 零缺陷；Linux 同路径正常）。修复=刺激层 A'：
 // 真实 mousedown/mouseup+扩展期程序化选区写（双平台唯一选区源）。覆盖边界（d1-W6）：
 // 授权→管线→断言面零削弱；原生拖拽路径 CI 面不再覆盖（本地 Linux 面承载）。
-// 「慢拖」契约载体=5+1 步渐进选区变化×80ms+300ms 停顿。断言原文逐字（指纹门）。
+// 「慢拖」契约载体=5+1 步渐进选区变化×80ms+300ms 停顿。断言原文逐字。
 test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+paint 域⊆锚栏+终局工具条', async ({}, testInfo) => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-sel53-'))
   await bootstrapMigrations(userData)
@@ -413,7 +413,7 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     const during = counts.slice(firstNonZero)
     expect(during.every((n) => n > 0), `拖选全程无 0 块空帧记录（记录序=${counts.join(',')}）`).toBe(true)
 
-    // [F-VISFB-53CI-01 修复] 选区 oracle 四面（追加=指纹门超集合法）：跳写=0/
+    // [F-VISFB-53CI-01 修复] 选区 oracle 四面（追加用例合法）：跳写=0/
     // 长度下界/含 'LCOL ROW'/不含 'RCOL'（上界——跨栏写即红）。分工：oracle 验
     // 刺激层定位；app 侧判别由块记录/域断言承载——勿删其一
     const sel53FinalText = await win.evaluate(() => window.getSelection()?.toString() ?? '')

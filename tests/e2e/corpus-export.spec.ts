@@ -152,7 +152,7 @@ test('AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+
  * 再发起不再 EXPORT_BUSY，第二会话全链完成（端到端实证）。dialog 桩不随
  * renderer 重置（main 进程对象）。崩溃格（render-process-gone）同一 abort
  * 通道，e2e 不注入崩溃（同型处置单测覆盖）。always-active：实现与本测试同票
- * 原子落地，无依赖延期面（亦不新增 skipSites——指纹门 B2 口径）。
+ * 原子落地，无依赖延期面（亦不新增 skipSites（skip 纪律））。
  */
 test('F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞释放→再发起全链完成', async () => {
   test.info().annotations.push({ type: 'note', description: 'F-SESS-01 renderer 重载格' })

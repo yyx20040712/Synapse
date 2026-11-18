@@ -39,7 +39,7 @@ zcode 侧」的安全设计（蓝图 D2b）在三面冲突（触发/出网/回�
 
 - IPC 通道：`ai-notes/import`（目录扫描→解析校验→写 ai_notes；幂等：已
   导入篇按内容 sha 去重跳过）+ `ai-notes/list`（读通道）——api-surface/
-  schemas 受锁 [locked-change]。
+  schemas 为契约面（变更须提交说明申报）。
 - **写入只经应用 IPC**（蓝图 D3 保持）；工具永不写 DB；导入后产物移
   `archive/`。
 - ai_sensor 域现役 7 通道（单源=src/shared/ipc/api-surface.ts）：

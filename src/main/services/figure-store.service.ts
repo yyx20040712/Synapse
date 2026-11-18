@@ -11,7 +11,7 @@
  *   主控收紧 PNG-only：bytes 前 8 字节须为 89 50 4E 47 0D 0A 1A 0A——00B
  *   JPEG 条款是「许可」非「要求」，现状出口（file_ref .png 后缀/协议 MIME
  *   image/png/白名单形态）三处钉死 PNG；JPEG 有损变体若未来立项=023 加
- *   format 列+file_ref/MIME/白名单三处随改（[locked-change]，43 票面承载）〕
+ *   format 列+file_ref/MIME/白名单三处随改（提交说明申报）〕
  *   ⑤去重（findByDigest 命中=幂等复用 figureId，零写）⑥每篇上限
  *   FIGURE_MAX_PER_PAPER（渲染端截断契约的服务端防线——超限拒，excess 记档
  *   归 completeExtraction）。
@@ -125,7 +125,7 @@ export function createFigureStoreService(deps: FigureStoreDeps): FigureStoreServ
       }
       // 〔回炉①B-1〕PNG 魔数校验（守卫序④——digest 之后、去重之前；短于 8 字节
       // 同拒）；JPEG 有损变体若未来立项=023 加 format 列+file_ref/MIME/白名单
-      // 三处随改（[locked-change]，43 票面承载）
+      // 三处随改（提交说明申报）
       if (!isPngBytes(asset.bytes)) {
         throw new DomainError('INVALID_REQUEST', '图表资产须为 PNG 编码')
       }
