@@ -74,7 +74,9 @@ export function LineagePage(): JSX.Element {
   }, [])
 
   // [F-LGRAPH-01②U1] Ctrl+Z/Ctrl+Y 键盘撤销/重做（edit 模式；输入焦点内不
-  // 拦截——文本框原生撤销优先；saving 态锁定=no-op，store.undo/redo 内守）
+  // 拦截——文本框原生撤销优先；saving 态锁定=no-op，store.undo/redo 内守）。
+  // [ln-W3b-2] Ctrl+Shift+Z=redo（Windows/Linux 惯例——阅读器 AnnotationEditor
+  // 同语义先例；Ctrl+Shift+Y 同归 redo=无害超集）
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (!e.ctrlKey || e.isComposing) return
@@ -87,7 +89,7 @@ export function LineagePage(): JSX.Element {
       }
       e.preventDefault()
       const store = useLineageStore.getState()
-      if (e.key === 'y' || e.key === 'Y') store.redo()
+      if (e.key === 'y' || e.key === 'Y' || e.shiftKey) store.redo()
       else store.undo()
     }
     document.addEventListener('keydown', onKey)

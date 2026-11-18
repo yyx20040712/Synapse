@@ -185,4 +185,16 @@ describe('F-LGRAPH-01②U1 Ctrl+Z/Y 键盘接线（LineagePage 挂载——§2.2
     key('z', { ctrlKey: true })
     expect(useLineageStore.getState().nodes[0]?.x).toBe(22)
   })
+
+  it('edit 模式 Ctrl+Shift+Z=redo（ln-W3b-2——与阅读器 AnnotationEditor 同语义约定）', async () => {
+    await mountPage()
+    useLineageStore.setState({ nodes: [node('A')], status: 'ready' })
+    useLineageViewStore.getState().setMode('edit')
+    useLineageStore.getState().moveNode('A', 21, 21)
+    useLineageStore.getState().moveNode('A', 22, 22)
+    key('z', { ctrlKey: true })
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(21) // 撤销一步
+    key('Z', { ctrlKey: true, shiftKey: true }) // Ctrl+Shift+Z
+    expect(useLineageStore.getState().nodes[0]?.x).toBe(22) // =重做（HEAD 误落 undo 即红）
+  })
 })
