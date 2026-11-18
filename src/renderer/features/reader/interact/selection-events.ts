@@ -11,8 +11,9 @@
  *     scheduler.handler（视觉路 rAF 合帧去重+settle 防抖 200ms 双路）；
  *   · mousedown：记录落点（F-12 位移门）+S5 短路窗硬清（F-RDR-01 B 释放②）
  *     +dragCtl.onMouseDown（授权判定/会话启动）；
- *   · mouseup：工具条自身早退→dragCtl.enforce（终局钳制前置——shift+click
- *     面覆盖）→scheduler.cancel→F-12 位移门（<3px=误触早退）→[F-A12]
+ *   · mouseup：工具条自身早退（不评估但 endSession 终局——rd-C1）→
+ *     dragCtl.enforce（终局钳制前置——shift+click 面覆盖）→scheduler.cancel→
+ *     F-12 位移门（<3px=误触早退）→[F-A12]
  *     releaseAffinity 浅探重定向（dragged 门内）→enforce 二核（幂等）→
  *     markAffinityShortcutFlushed（S4 帧）→evaluate.full(true)→endSession；
  *   · keydown：Escape 只清 pending（INV-37——自绘层随选区真清除而消失）。
@@ -104,8 +105,13 @@ export function wireSelectionEvents(opts: {
   }
 
   const onMouseUp = (e: MouseEvent): void => {
-    // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click 处理）
-    if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) return
+    // 工具条自身的 mouseup 不评估（按钮 mousedown 已阻止选区坍缩，交由 click
+    // 处理），但会话须终局（rd-C1：拖选中停顿出条后松鼠落条内，残留会话会
+    // 持续 enforce 改写后续选区；endSession 幂等——常规流中会话已终为 no-op）
+    if (e.target instanceof Node && toolbarRef.current?.contains(e.target) === true) {
+      dragCtl.endSession()
+      return
+    }
     // [F-VISFB-52] 终局钳制核查（F-12 早退路径前置——shift+click 面覆盖）
     dragCtl.enforce()
     scheduler.cancel()

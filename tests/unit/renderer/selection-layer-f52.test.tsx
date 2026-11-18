@@ -7,16 +7,19 @@
  *  ②授权拖选：document 级 selectionchange 经门（echo 抑制/转发）驱动违例钳制
  *    （visual-full-mouseup 共用 effective selection 的会话内写路径）；
  *  ③mouseup 会话终局后外部选区不被拦截/清除（B4 加严 3——S5 窗内外部选区
- *    零吞：只抑制自写精确匹配事件）。
+ *    零吞：只抑制自写精确匹配事件）；
+ *  ④工具条内 mouseup：不评估但会话终局（rd-C1——拖选中停顿出条后松鼠落
+ *    条内，残留会话 enforce 改写后续选区在此红）。
  * jsdom 不自动解析拖选——选区程序化预置为 browser 已解析态（fa12 同款）；
  * Range.gBCR 零盒桩 → evaluate 深链零宽盒守卫早退（断言面=selection 终态）。
  */
-import { act } from 'react'
+import { act, type RefObject } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
 import { makeApiStub, stubUnwrap } from '../../utils/api-client-mock'
 import { SelectionLayer } from '../../../src/renderer/features/reader/interact/SelectionLayer'
+import { wireSelectionEvents } from '../../../src/renderer/features/reader/interact/selection-events'
 
 const saveMock = vi.fn()
 makeApiStub({ reader: { saveAnnotation: saveMock } })
@@ -147,5 +150,41 @@ describe('F-VISFB-52 SelectionLayer 接线态（指针授权手势）', () => {
     const sel = window.getSelection()
     expect(sel?.focusNode).toBe(f.textOf('R2'))
     expect(sel?.focusOffset).toBe(6)
+  })
+
+  it('④工具条内 mouseup：不评估但会话终局（rd-C1）——后续选区不被残留会话钳制改写', async () => {
+    const f = mountFixture()
+    // 零盒桩下 evaluate 早退、组件不渲染工具条（toolbarRef.current 恒 null——
+    // 早退分支不可达），经 wireSelectionEvents 直供 toolbarRef 使其可达（组件
+    // 挂载=本接线件的壳，事件链等价；selection-events.ts 头注「域件可单测」）
+    const bar = document.createElement('div')
+    document.body.append(bar)
+    const toolbarRef: RefObject<HTMLDivElement | null> = { current: bar }
+    const events = wireSelectionEvents({ pageRoot: f.page, paperId: 'p-1', setPaint: () => {}, setPending: () => {}, toolbarRef })
+    try {
+      // S1 会话建立+活体锚（同②：越栏 focus 投影回锚栏 L2 行尾——钳制在场）
+      fireDown(f.spanOf('L1'), 20, 15)
+      fireMove(250, 39)
+      window.getSelection()!.setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+      await act(async () => {
+        fireSelectionChange()
+      })
+      expect(window.getSelection()?.focusNode).toBe(f.textOf('L2'))
+      // mouseup 落工具条内（bubbles 冒泡至 document 级监听）：不评估但会话终局
+      await act(async () => {
+        bar.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 250, clientY: 39 }))
+      })
+      // 后续外部选区不被旧会话 enforce 投影改写（残留会话改写回 L2 在此红）
+      window.getSelection()!.setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R3'), 5)
+      await act(async () => {
+        fireSelectionChange()
+      })
+      const sel = window.getSelection()
+      expect(sel?.focusNode).toBe(f.textOf('R3'))
+      expect(sel?.focusOffset).toBe(5)
+    } finally {
+      events.dispose()
+      bar.remove()
+    }
   })
 })
