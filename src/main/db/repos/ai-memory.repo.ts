@@ -100,7 +100,8 @@ export interface AiMemoryCreateInput {
   category: string
   title: string
   content: string
-  label?: string | null
+  /** [db-C6] ''=落库空串；缺省=落库 NULL（agent 无 label 建行形态——类型收窄禁显式 null） */
+  label?: string
   origin: 'manual' | 'agent'
   sourceTaskId?: number | null
 }
@@ -110,7 +111,8 @@ export interface AiMemoryCreateInput {
 export interface AiMemoryUpdateInput {
   title?: string
   content?: string
-  label?: string | null
+  /** [db-C6] ''=清空；缺省=保持原值（COALESCE 缺席保持——原 null=保持双义已从类型面移除） */
+  label?: string
   category?: string
 }
 
@@ -165,7 +167,8 @@ export function createAiMemoryRepo(db: SqliteDb): AiMemoryRepo {
        origin, source_task_id, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
   )
-  // 部分更新=COALESCE（缺席字段 null 保持原值——label 载荷仅「出席=string」形态；
+  // 部分更新=COALESCE（缺席字段 null 保持原值——label 载荷仅「出席=string」形态
+  //  （''=清空、缺省=保持，见 AiMemoryUpdateInput 注）；
   // category 同款缺席保持〔U2 扩列〕）
   const updateStmt = db.prepare(
     `UPDATE ai_memory SET title = COALESCE(?, title), content = COALESCE(?, content),
