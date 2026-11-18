@@ -6,7 +6,9 @@
  * - jobs 状态面：setJob 全行 upsert（pending→ready/failed 终态+excess 截断
  *   记档+failed_count 单图失败计数——failed≠empty：job 行在场即可区分「提取
  *   过零资产」与「从未提取」）；getJob 缺席 null（合法态非错误）。
- * - resetJobsForPapers（快照恢复重提挂点——import-snapshot.service 事务内调）：
+ * - resetJobsForPapers（快照恢复重提挂点——[db-C8] 自事务包裹：外层在事务
+ *   〔import-snapshot.service withTransaction〕=better-sqlite3 嵌套 SAVEPOINT
+ *   语义不变，外层无事务=循环中途失败自动整体回滚，调用方无需兜底事务）：
  *   在场 paper 重置 pending 零计数+figure 行清空（派生不入快照，恢复后重提取
  *   ——无「ready 但资产缺失」态）；缺席 paper（防复活跳过面）经 INSERT…
  *   SELECT 存在性守卫自然跳过零副作用。
@@ -76,7 +78,8 @@ export interface FigureRepo {
   removeByPaper(paperId: string): number
   /** [F-VISFB-43] pending 单 paperId 集（rowid 序=导入建单序——桥件批序消费） */
   listPendingPaperIds(): string[]
-  /** 快照恢复重提：在场 paper 集重置 pending+figure 行清空（存在性守卫在 SQL 面） */
+  /** 快照恢复重提：在场 paper 集重置 pending+figure 行清空（存在性守卫在 SQL 面；
+   *  [db-C8] 自事务——单次调用原子，不依赖调用方兜底事务） */
   resetJobsForPapers(paperIds: readonly string[]): void
 }
 
@@ -127,6 +130,15 @@ export function createFigureRepo(db: SqliteDb): FigureRepo {
      ON CONFLICT(paper_id) DO UPDATE SET
        status = 'pending', excess = 0, failed_count = 0, updated_at = excluded.updated_at`
   )
+  // [db-C8] 自事务（notes.repo upsertTx 先例——db.transaction 嵌套自动 SAVEPOINT）：
+  // 重置+清空两步×多篇循环整体原子，外层事务内调用语义不变
+  const resetJobsTx = db.transaction((paperIds: readonly string[]): void => {
+    const now = new Date().toISOString()
+    for (const id of paperIds) {
+      resetJobStmt.run({ id, now })
+      removeStmt.run(id)
+    }
+  })
 
   interface FigureDbRow {
     figure_id: string
@@ -214,11 +226,7 @@ export function createFigureRepo(db: SqliteDb): FigureRepo {
     },
 
     resetJobsForPapers(paperIds): void {
-      const now = new Date().toISOString()
-      for (const id of paperIds) {
-        resetJobStmt.run({ id, now })
-        removeStmt.run(id)
-      }
+      resetJobsTx(paperIds)
     }
   }
 }
