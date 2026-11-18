@@ -23,7 +23,7 @@ const crossrefWork = {
   }
 }
 
-guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
+guardedDescribe('SR-NET-01', 'crossref provider —— byDoi', () => {
   it('byDoi：映射字段（family+given 拼接、年份取 issued、JATS 剥离）', async () => {
     const fetchJson = fakeFetchJson(crossrefWork)
     const p = createCrossrefProvider({ fetchJson })
@@ -49,26 +49,6 @@ guardedDescribe('SR-NET-01', 'crossref provider —— byDoi/byTitle', () => {
     })
     await expect(p.byDoi('10.1/nope')).resolves.toBeNull()
   })
-
-  it('byTitle：取首个结果且标题相似才采用', async () => {
-    const fetchJson = fakeFetchJson({
-      status: 'ok',
-      message: { items: [{ ...crossrefWork.message, score: 99 }] }
-    })
-    const p = createCrossrefProvider({ fetchJson })
-    const work = await p.byTitle('Deep learning for water demand forecasting')
-    expect(work?.doi).toContain('10.1016')
-    expect(fetchJson.mock.calls[0]?.[0]).toMatch(/query\.bibliographic=/)
-  })
-
-  it('byTitle：结果标题与查询不相似 → null', async () => {
-    const fetchJson = fakeFetchJson({
-      status: 'ok',
-      message: { items: [{ ...crossrefWork.message, title: ['完全不相关的标题'] }] }
-    })
-    const p = createCrossrefProvider({ fetchJson })
-    await expect(p.byTitle('water demand forecasting')).resolves.toBeNull()
-  })
 })
 
 /** SR2-ENR-01：被引数两形解析（有值形见上块；缺省形在此）——裸 describe（W4） */
@@ -91,8 +71,9 @@ describe('SR2-ENR-01 crossref provider —— is-referenced-by-count 缺省形',
   })
 })
 
-/** F-DEP-02：zod4 输入侧默认值锚——crossref 两处 .prefault({})（v3 default 语义等价物）。
- *  撤掉 prefault（message 变必带）→ parse 抛 ZodError → 两用例红（变异红证在档）。 */
+/** F-DEP-02：zod4 输入侧默认值锚——crossref workSchema 的 .prefault({})（v3 default
+ *  语义等价物）。第二处锚（标题检索路径）已随 ds-C5 裁决删除（生产零消费）。
+ *  撤掉 prefault（message 变必带）→ parse 抛 ZodError → 用例红（变异红证在档）。 */
 describe('F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值', () => {
   it('byDoi：响应缺 message → 默认形状（title 空串/authors 空）而非异常', async () => {
     const p = createCrossrefProvider({ fetchJson: fakeFetchJson({ status: 'ok' }) })
@@ -100,10 +81,5 @@ describe('F-DEP-02 crossref provider —— zod4 prefault 输入侧默认值', (
     expect(work).not.toBeNull()
     expect(work?.title).toBe('')
     expect(work?.authors).toEqual([])
-  })
-
-  it('byTitle：响应缺 message → items 默认空 → null 而非异常', async () => {
-    const p = createCrossrefProvider({ fetchJson: fakeFetchJson({ status: 'ok' }) })
-    await expect(p.byTitle('water demand forecasting')).resolves.toBeNull()
   })
 })

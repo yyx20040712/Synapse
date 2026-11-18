@@ -3,8 +3,6 @@
  *
  * ── 行为层 ──
  * - byDoi(doi)：GET https://api.crossref.org/works/{doi}（URL 编码 doi）
- * - byTitle(title)：GET https://api.crossref.org/works?query.bibliographic={title}&rows=5
- *   取 score 最高（响应序即相关性序）且标题相似度（小写去空格包含比对）通过的一项
  *
  * ── 接口层 ──
  * - export interface EnrichedWork { title; authors: string[]; year: number|null;
@@ -41,7 +39,6 @@ export interface EnrichedWork {
 
 export interface CrossrefProvider {
   byDoi(doi: string): Promise<EnrichedWork | null>
-  byTitle(title: string): Promise<EnrichedWork | null>
 }
 
 const workSchema = z.object({
@@ -64,8 +61,6 @@ const workSchema = z.object({
     .prefault({})
 })
 
-const listSchema = z.object({ message: z.object({ items: z.array(z.unknown()).default([]) }).prefault({}) })
-
 /** 双形状读取：桩返回 Response，运行时返回已校验数据（见架构层） */
 async function readBody(raw: unknown): Promise<unknown> {
   if (raw instanceof Response) {
@@ -80,13 +75,6 @@ async function readBody(raw: unknown): Promise<unknown> {
 /** 剥掉 CrossRef abstract 里的 JATS 标签（<jats:p> 等），压空白 */
 function stripJats(s: string): string {
   return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
-/** 小写去空格的包含比对（任一方向命中即算相似） */
-function titleSimilar(query: string, candidate: string): boolean {
-  const q = query.toLowerCase().replace(/\s+/g, '')
-  const c = candidate.toLowerCase().replace(/\s+/g, '')
-  return q !== '' && c !== '' && (c.includes(q) || q.includes(c))
 }
 
 function toWork(message: z.infer<typeof workSchema>['message']): EnrichedWork {
@@ -120,20 +108,6 @@ export function createCrossrefProvider(deps: {
         if (e instanceof HttpFetchError && e.status === 404) return null
         throw e
       }
-    },
-
-    async byTitle(title) {
-      const raw = await fetchJson(
-        `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(title)}&rows=5`,
-        listSchema
-      )
-      const list = listSchema.parse(await readBody(raw))
-      const first = list.message.items[0]
-      if (first === undefined) return null
-      const work = workSchema.parse({ message: first }).message
-      const candidate = work.title[0]
-      if (candidate === undefined || !titleSimilar(title, candidate)) return null
-      return toWork(work)
     }
   }
 }

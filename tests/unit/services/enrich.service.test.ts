@@ -99,9 +99,10 @@ function makeProviders(over: {
   arxiv?: Partial<ArxivProvider>
 } = {}): { crossref: CrossrefProvider; openalex: OpenalexProvider; arxiv: ArxivProvider } {
   return {
+    // [ds-C5] CrossrefProvider 已收窄为仅 byDoi（标题检索路径删除，生产零消费）：
+    // 桩同步收窄——多余成员会被 tsc 拒（瀑布只消费 byDoi，见 enrich.service.ts）
     crossref: {
       byDoi: async () => null,
-      byTitle: async () => null,
       ...over.crossref
     },
     openalex: { byTitle: async () => null, ...over.openalex },
