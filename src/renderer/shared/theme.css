@@ -54,7 +54,6 @@
   --qr-ink: #000000;
   --gold-soft: rgba(207, 174, 114, 0.16);
   --gold-bright: #e3c98f;
-  --gold-line: rgba(207, 174, 114, 0.1);
   --danger: var(--signal);
   --ok: #2e8b57;
   /* [F-LINT-04-T4PRE] 警示状态色（TabBar dirty dot）；T3-P1 桥接 --warn
@@ -147,17 +146,6 @@
   /* --paper 桥接 --panel（F-CSS-03 ② 同值合并——白天族两值同为白，族块各自覆写实值） */
   --paper: var(--panel);
   --paper-ink: #2a2f3c;
-  /* ── 夜面：脉络·命之座星象板（R2 消费预留，本单只定义不消费）── */
-  --night-bg: #171e33;
-  --night-bg2: #111728;
-  --node-face: #222c4d;
-  --node-face-hi: #2b3760;
-  --band-line: rgba(207, 174, 114, 0.12);
-  --star: rgba(222, 230, 255, 0.55);
-  --text-on-night: #e9e6db;
-  --text-mid: #c6cbdd;
-  --text-dim-on-night: #97a0bb;
-  --edge-glow: rgba(207, 174, 114, 0.4);
   /* [T3-P6→P7A 备案撤回注记] R2-LG11 脉络边色族预留 token
      （--survey-edge/--manual-edge）随 T3-P7A 删除——P6「P7 复用预设」备案
      落空（D-18 终裁：mockup 图例实证连线渲染色=--accent/--faint/--signal
@@ -222,9 +210,6 @@
      theme.css；消费面=theme-buttons.css 公共钮系段；border 引 --line 随族） */
   --btn-std-radius: 6px;
   --btn-std-border: 1px solid var(--line);
-  /* 文献库卡片纸渐变端点 */
-  --lib-paper-hi: #fffdf9;
-  --lib-paper-lo: #fdfaf3;
   /* 脉络域（node-meta/边标签色随 T3-P6 组件退役删除；note 卡描边=侧板活
      消费保留；--edge-inferred 预留随 T3-P7A 删除——D-18 备案撤回同上注）*/
   --note-border: rgba(151, 160, 187, 0.28);
@@ -265,8 +250,6 @@
   --accent: #31513f; --accent-soft: rgba(49, 81, 63, 0.1); --signal: #b3402f; --ok: #3d6b4f; --warn: #b06f1e;
   --sub2: #8a6d3b; --mini-card: #f0e8d2; --mini-card-line: var(--line);
   --month-dash: rgba(49, 81, 63, 0.55);
-  --fang: FangSong, 'STFangsong', 'Microsoft YaHei', serif;
-  --kai: KaiTi, 'STKaiti', 'Microsoft YaHei', serif;
   --shadow-card: 0 1px 3px rgba(90, 75, 40, 0.16); --shadow-drag: 0 14px 36px rgba(90, 75, 40, 0.32);
   --paper: #f7efdc; --paper-ink: #33291a;
   /* [T3-P4] 护眼族不反位（奶油纸正读） */

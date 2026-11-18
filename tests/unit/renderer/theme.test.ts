@@ -2,13 +2,12 @@
  * [R3-TH1] theme token 冒烟——防漂移锁（值源=设计定稿摸鱼图）。
  *
  * token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）
- * 与 lineage-constellation.html（夜面 :root）——设计定稿
- * docs/design/2026-08-28_visual-system.md §0 裁决。本用例把两份 :root 的
- * 关键值逐行誊录成断言：任何 token 漂移（手改/误删/回退）即红，把「视觉
- * 基建」锚定到设计稿而非口头约定。
+ * ——设计定稿 docs/design/2026-08-28_visual-system.md §0 裁决。本用例把
+ * :root 的关键值逐行誊录成断言：任何 token 漂移（手改/误删/回退）即红，
+ * 把「视觉基建」锚定到设计稿而非口头约定。
  *
- * 值冲突裁决（票面 P1）：--gold 两稿并存（亮面 #b8935a / 夜面 #cfae72）——
- * 亮面值占用 --gold（全域消费），夜面值别名 --gold-night（R2 消费预留）；
+ * 值冲突裁决（票面 P1）：--gold 取亮面 #b8935a（全域消费——夜面值别名
+ * --gold-night 已随决5 退役；夜面星象板 token 族随星象板方向否决删除）；
  * --gold-soft 取票面裁决值 rgba(207,174,114,.16)（lineage 稿）；annotation
  * 五色保持原值（e2e reader-text.spec 三处精确色断言 rgb(253,224,71) 锁定，
  * 预知必红则不制造红——预裁②口径）。
@@ -65,7 +64,6 @@ const TOKENS: Array<[string, string]> = [
   ['--gold', '#b8935a'],
   ['--gold-soft', 'rgba(207, 174, 114, 0.16)'],
   ['--gold-bright', '#e3c98f'],
-  ['--gold-line', 'rgba(207, 174, 114, 0.1)'],
   ['--danger', 'var(--signal)'],
   ['--ok', '#2e8b57'],
   ['--shadow-1', '0 1px 2px rgba(35, 38, 45, 0.06)'],
@@ -95,17 +93,6 @@ const TOKENS: Array<[string, string]> = [
   ['--shadow-drag', '0 12px 32px rgba(20, 26, 40, 0.22)'],
   ['--paper', 'var(--panel)'],
   ['--paper-ink', '#2a2f3c'],
-  // ── 夜面（lineage-constellation.html :root——R2 消费预留，本单只定义）──
-  ['--night-bg', '#171e33'],
-  ['--night-bg2', '#111728'],
-  ['--node-face', '#222c4d'],
-  ['--node-face-hi', '#2b3760'],
-  ['--band-line', 'rgba(207, 174, 114, 0.12)'],
-  ['--star', 'rgba(222, 230, 255, 0.55)'],
-  ['--text-on-night', '#e9e6db'],
-  ['--text-mid', '#c6cbdd'],
-  ['--text-dim-on-night', '#97a0bb'],
-  ['--edge-glow', 'rgba(207, 174, 114, 0.4)'],
   // ── annotation 五色：保持原值（e2e 精确色断言锁定——见文件头注）──
   ['--annotation-yellow', '#fde047'],
   ['--annotation-green', '#86efac'],
@@ -187,8 +174,6 @@ const TOKENS: Array<[string, string]> = [
   ['--accent-hi', '#3a76ab'],
   ['--accent-deep', '#234a6d'],
   ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
-  ['--lib-paper-hi', '#fffdf9'],
-  ['--lib-paper-lo', '#fdfaf3'],
   // [T3-P6→P7A] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
   // 组件退役删除（k1-W2/d1-N4）；--edge-inferred 预设随 T3-P7A 删除
   // （D-18 终裁：连线渲染色=--accent/--faint/--signal 既有 token 直用
@@ -679,8 +664,6 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--mini-card', '#f0e8d2'],
     ['--mini-card-line', 'var(--line)'],
     ['--month-dash', 'rgba(49, 81, 63, 0.55)'],
-    ['--fang', "FangSong, 'STFangsong', 'Microsoft YaHei', serif"],
-    ['--kai', "KaiTi, 'STKaiti', 'Microsoft YaHei', serif"],
     ['--shadow-card', '0 1px 3px rgba(90, 75, 40, 0.16)'],
     ['--shadow-drag', '0 14px 36px rgba(90, 75, 40, 0.32)'],
     ['--paper', '#f7efdc'],
@@ -703,10 +686,6 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     const block = themeBlock('sepia')
     expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')
     expect(block, `sepia 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
-  })
-
-  it('dark 块不含 --fang（sepia 独有字体族——防两族块互抄串值）', () => {
-    expect(themeBlock('dark')).not.toContain('--fang')
   })
 
   it('App.tsx 含 dataset.theme 接线锚（data-theme 单点=App effect）', () => {
