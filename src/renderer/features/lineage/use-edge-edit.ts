@@ -15,7 +15,10 @@
  *   reconnect 中断=端点回原锚（不入撤销栈=无快照提交）。
  * - [RR 补批 RR13] no-op 短路对称语义（R19 先例）：reconnect 落点==拖始锚
  *   =零编辑单元（不 beginUnit 不 dirty 不入队；本端卡同锚格并入）。
- * - 自动线（无 via）拖段/加点=物化首 via（routed pts 内点）转 manual-override。
+ * - 自动线（无 via）拖段=[ln-C3] 本地物化段中点进段拖会话（不写库）：同
+ *   手势可拖（法向投影+轴过滤磁吸沿承段拖口径），pointerup 恒写一
+ *   setEdgeVia=一撤销单元（零位移=物化中点=按下即松手转换末态保形）；
+ *   中断（cancel/blur/Esc）不写=不转换（RR2/W-5）；双击加点=即写沿承。
  * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=4）=dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
  *   菜单开期间保持、关闭即撤（selectedViaMenu → closeMenu 即 idle）。
@@ -34,6 +37,7 @@ import {
   segmentDrag,
   segmentViaIdx,
   viaEquals,
+  type Channels,
   type EditPolyline
 } from './edge-edit'
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
@@ -122,6 +126,27 @@ function attachReconnectAutoscroll(args: {
       recompute(ev.clientX, ev.clientY)
     }
   }
+}
+
+/**
+ * [ln-C3] 自动线物化拖段代数（会话驻留件）：单 via 链无 via 内点对——
+ * edge-edit.ts 段拖族（segmentDrag）不适用；被拖几何=物化中点，位移=法向
+ * 投影（水平骨架段仅 dy/竖直段仅 dx——斜段零位移，口径沿承 [回炉 R3]）
+ * +轴过滤磁吸（[RR3] 切向过滤同式——通道集/磁吸单源 channelSnap 复用）。
+ */
+function materializedSegDrag(
+  base: EditPolyline,
+  start: Pt,
+  target: Pt,
+  ch: Channels
+): { via: LineageViaPoint[]; snap: { axis: 'h' | 'v'; line: number } | null } {
+  const mid = base.via[0]!
+  const horiz = base.anchorA.y === base.anchorB.y
+  if (!horiz && base.anchorA.x !== base.anchorB.x) return { via: [mid], snap: null } // 斜段零位移不磁吸
+  const p: Pt = horiz ? { x: mid.x, y: mid.y + (target.y - start.y) } : { x: mid.x + (target.x - start.x), y: mid.y }
+  const axisCh: Channels = horiz ? { horizontal: ch.horizontal, vertical: [] } : { horizontal: [], vertical: ch.vertical }
+  const snap = channelSnap(p, axisCh)
+  return snap.snapped ? { via: [snap.p], snap: { axis: snap.axis!, line: snap.axis === 'h' ? snap.p.y : snap.p.x } } : { via: [p], snap: null }
 }
 
 export function useEdgeEdit(args: {
@@ -427,7 +452,8 @@ export function useEdgeEdit(args: {
     [store, polylineOf, stateRef]
   )
 
-  /** 段拖拽（selected 态按住命中层拖动——kind=segment；自动线=物化首 via） */
+  /** 段拖拽（selected 态按住命中层拖动——kind=segment；自动线=[ln-C3] 本地
+   *  物化段中点进会话，up 恒写一单元——一次拖段=一 setEdgeVia=一步撤销） */
   const onSegDown = useCallback(
     (pt: Pt, button: number): void => {
       const cur = stateRef.current
@@ -436,37 +462,43 @@ export function useEdgeEdit(args: {
       const pl = polylineOf(cur.edgeId, e?.via)
       if (e === undefined || pl === null) return
       const segIdx = nearestSegment(pl, pt)
-      // 仅 via 内点对段可拖（§2.3-2 锚端短桩不参与）——自动线（无 via）拖段=
-      // 物化首 via：以段中点预置（§2.5 自动线转换条款）
-      if (pl.via.length === 0) {
-        const materialized = addPointOnSegment(pl, segIdx).via
-        if (materialized !== undefined && materialized.length > 0) {
-          store().setEdgeVia(cur.edgeId, materialized)
-        }
-        return
-      }
+      // [ln-C3] 自动线（无 via=锚到锚直线骨架）拖段=本地物化段中点（§2.5
+      // 转换条款）不写库：同手势可拖+中断不转换（旧=按下即写拆两步且拖不动）
+      const mat = pl.via.length === 0 ? addPointOnSegment(pl, segIdx) : null
       // [回炉 R4] 全链段序→via 内点对序：锚 A 短桩（0）/锚 B 短桩（末）均
-      // 不参与（return——原 Math.min 钳位使锚 B 短桩误拖末对）
-      const vi = segmentViaIdx(pl, segIdx)
+      // 不参与（return——原 Math.min 钳位使锚 B 短桩误拖末对）；物化链=单点
+      const vi = mat !== null ? 0 : segmentViaIdx(pl, segIdx)
       if (vi === null) return
-      const base = { anchorA: pl.anchorA, anchorB: pl.anchorB, via: pl.via }
+      const base = mat ?? { anchorA: pl.anchorA, anchorB: pl.anchorB, via: pl.via }
+      const startVia = mat !== null ? [] : pl.via
       const startPt = pt
       const onMove = (ev: PointerEvent | MouseEvent): void => {
         const target = ptHook.current(ev.clientX, ev.clientY)
         const ch = channelsFrom(cardsRef.current)
         // [回炉 R3] 法向投影（水平段仅 dy/竖直段仅 dx——斜段零位移）+磁吸
-        // 输入点=被拖段几何（段中点）+吸附位移=snap 点对段原位差（单源代数）
-        const { via, snap } = segmentDrag(base, vi, target.x - startPt.x, target.y - startPt.y, ch)
-        setState({ phase: 'dragging', edgeId: cur.edgeId, kind: 'segment', idx: vi, startVia: pl.via, liveVia: via, startPt, snap })
+        // 输入点=被拖段几何（段中点）+吸附位移=snap 点对段原位差（单源代数）；
+        // [ln-C3] 物化链=单点同口径（materializedSegDrag——无 via 内点对）
+        const work =
+          mat !== null
+            ? materializedSegDrag(base, startPt, target, ch)
+            : segmentDrag(base, vi, target.x - startPt.x, target.y - startPt.y, ch)
+        setState({ phase: 'dragging', edgeId: cur.edgeId, kind: 'segment', idx: vi, startVia, liveVia: work.via, startPt, snap: work.snap })
       }
       runDragSession(onMove, () => {
         const s = stateRef.current
-        if (s.phase !== 'dragging' || s.kind !== 'segment') {
-          setState({ phase: 'selected', edgeId: cur.edgeId })
-          return
+        // [P8 返工] 会话未正常落定（Esc/切模式等已置 idle 的中断残余 up）：
+        // 不写不复活 selected——保持中断末态 idle（INV-80/RR2·W-5）
+        if (s.phase !== 'dragging' && s.phase !== 'selected') return
+        if (s.phase === 'dragging' && s.kind === 'segment') {
+          // [RR 补批 RR13] via 等值短路（vertex 同式——回原位=no-op 零单元）；
+          // [ln-C3] 物化链恒写（绕过短路——零位移=物化中点=现行转换末态保形）
+          if (mat !== null || !viaEquals(s.startVia, s.liveVia)) {
+            store().setEdgeVia(cur.edgeId, s.liveVia)
+          }
+        } else if (mat !== null) {
+          // [ln-C3] 零位移（无 move 即松手）=物化转换恒写
+          store().setEdgeVia(cur.edgeId, base.via)
         }
-        // [RR 补批 RR13] via 等值短路（vertex 同式——回原位=no-op 零单元）
-        if (!viaEquals(s.startVia, s.liveVia)) store().setEdgeVia(cur.edgeId, s.liveVia)
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },
@@ -483,8 +515,12 @@ export function useEdgeEdit(args: {
   const abortDrag = useCallback((): void => {
     setState((s) => (s.phase === 'selected' ? s : { phase: 'idle' }))
   }, [])
+  /** [P8 返工] 活跃会话拆除钩（Esc 终止用——runDocDragSession 返回的纯
+   *  监听移除；会话正常 up/abort 自清） */
+  const sessionCleanupRef = useRef<(() => void) | null>(null)
   const runDragSession = (onMove: (ev: PointerEvent | MouseEvent) => void, onUp: () => void): void => {
-    runDocDragSession({ onMove, onUp, onAbort: abortDrag })
+    const fin = (): void => { sessionCleanupRef.current = null }
+    sessionCleanupRef.current = runDocDragSession({ onMove, onUp: () => { fin(); onUp() }, onAbort: () => { fin(); abortDrag() } })
   }
 
   // Esc/点空白：selected/dragging 收尾+菜单关闭；切模式=态清空（W-5）
@@ -495,6 +531,13 @@ export function useEdgeEdit(args: {
         closeMenu()
         return
       }
+      // [P8 返工] 活跃拖拽会话=Esc 先终止（移除 document move/up 监听——
+      // 此后尾随 move/up 零反应，中断=不成立 RR2/W-5）再 idle（INV-80）
+      sessionCleanupRef.current?.()
+      // [P8 返工②] reconnect 自动滚动泵随会话终止（停泵+清引用——与卸载
+      // teardown 同型；否则 managed rAF 泄漏至卸载且 scroll 帧可复活 reconnect）
+      autoRef.current?.stop()
+      autoRef.current = null
       setState({ phase: 'idle' })
     }
     const onDown = (e: PointerEvent | MouseEvent): void => {
