@@ -322,8 +322,8 @@ describe('F-ROUTE-02 U2 ⑩确定性双跑序列化全等', () => {
   })
 })
 
-describe('F-ROUTE-02 U2 ⑪r=0 仍不清→路径仍产出（finish 收缩链现行语义锁定）', () => {
-  it('r=6/3 采样均不清→r=0 档 d 非空（无 onWarn 增配）', () => {
+describe('F-ROUTE-02 U2 ⑪圆角原语：r=0 尖角仍构造非空 d（不代表最终净空门放行）', () => {
+  it('r=6/3 采样均不清时，buildRoundedPath r=0 原语仍输出尖角 d', () => {
     const snap = snapOf(baseCards, [rect(146, 171, 4, 28)])
     const obstacles = allObstacles(snap)
     const pts = vseg(150)

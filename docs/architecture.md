@@ -209,7 +209,12 @@ flowchart TB
   - 连线层=EdgeOverlay 双层 svg（可见层+命中层 z4）+ `routing/` 纯函数族
     （gap-cells 间隙单元→slots 槽位分配→zapply Z 形施加→residual 残余→chain
     五态链编排 direct→h-slip→detour→band→overlap；坐标集封闭=段坐标∈锚/桩∪槽位集
-    ——ADR-0023/0024；detour=网格通道模型）。
+    ——ADR-0023/0024；detour=网格通道模型）。钉定端按锚外法线起落；自动路径在
+    槽位与 jog 施加后经 finalize 的 r=6→3→0 最终采样净空门，三档均碰障则
+    clearance='blocked'、d=''，可见/命中两层及编辑手柄、警示、虚影均撤销，
+    按边提示一次，布局重算自动重试；selected 保留以便恢复后手柄回归，边数据不删，
+    blocked 无几何元数据节点保留 data-anchors，占用发布跟随边数据而非路由成功。
+    overlap 只豁免线-线槽位重合，不豁免线-卡相交；manual-override 本段保持免检。
   - 交互=use-edge-edit 调线态机+useDrawLine 画线+12 锚吸附
     （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
     drag-autoscroll 四会话统一自动滚动（INV-80）。

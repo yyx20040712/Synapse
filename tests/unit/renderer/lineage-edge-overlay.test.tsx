@@ -161,7 +161,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
   it('[F-LGRAPH-01②U8] 视觉字段内联（A3）：dashed/color inline 直渲染（stroke/strokeDasharray）', () => {
     mountOverlay(
       [node('A'), node('B')],
-      [edge('e1', 'A', 'B', true, '#c07a2a'), edge('e2', 'B', 'A')]
+      [edge('e1', 'A', 'B', true, '#c07a2a'), edge('e2', 'B', 'A')],
+      0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10]]
     )
     const dashedPath = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e1"]')
     expect(dashedPath?.style.stroke).toBe('#c07a2a')
@@ -225,17 +226,19 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(dOf()).toBe(d2)
   })
 
-  it('[F-SLOTGRID-01 U2] data-route 五态域负锚：退化几何全边 overlap 兜底（corridor/fallback DOM 零出现）+零 console.warn', () => {
+  it('[F-SLOTGRID-01 U2] data-route 五态域正锚：direct/h-slip 非空读出（corridor/fallback DOM 零出现）+零 console.warn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    // 两卡同位（零 rect）+第三卡 S 拦直连→全边落 overlap 兜底（忽略占用终态
-    // ——走廊族退役后无 warn 面：路由降级观测=data-overlap-exempt 属性）
+    // 非零卡矩形避免 blocked 安全网撤销全部 path，确保路由域断言读取真实节点。
     mountOverlay(
       [node('A'), node('B'), node('S')],
-      [edge('e1', 'A', 'B'), edge('e2', 'A', 'S')]
+      [edge('e1', 'A', 'B'), edge('e2', 'A', 'S')],
+      0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10], ['S', 200, 0, 10, 10]]
     )
     const routes = Array.from(host?.querySelectorAll('path.tl-edge') ?? []).map(
       (el) => (el as SVGPathElement).dataset.route ?? ''
     )
+    expect(routes).toHaveLength(2)
+    expect(routes).toEqual(['direct', 'h-slip'])
     expect(routes.every((r) => r !== ''), 'route 非空卫').toBe(true)
     const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'overlap', 'manual-override'])
     for (const r of routes) {
@@ -252,7 +255,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
         edge('e0', 'A', 'B'),
         edge('e1', 'A', 'B', false, '#1e3a8a', [{ x: 40, y: 30 }, { x: 40, y: 60 }]),
         edge('e2', 'B', 'A')
-      ]
+      ],
+      0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10]]
     )
     const visible = [...(host?.querySelectorAll('path.tl-edge') ?? [])]
     expect(visible.length).toBe(3)
@@ -346,6 +350,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       const card = document.createElement('div')
       card.className = 'tl-card'
       card.dataset.nodeId = n.id
+      const y = n.id === 'A' ? 0 : 100
+      Object.defineProperty(card, 'getBoundingClientRect', { value: () => ({ left: 0, top: y, right: 10, bottom: y + 10, width: 10, height: 10, x: 0, y, toJSON: () => ({}) }) as DOMRect, configurable: true })
       host.appendChild(card)
     }
     flushRafs()
@@ -384,6 +390,8 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       const card = document.createElement('div')
       card.className = 'tl-card'
       card.dataset.nodeId = n.id
+      const y = n.id === 'A' ? 0 : 100
+      Object.defineProperty(card, 'getBoundingClientRect', { value: () => ({ left: 0, top: y, right: 10, bottom: y + 10, width: 10, height: 10, x: 0, y, toJSON: () => ({}) }) as DOMRect, configurable: true })
       host.appendChild(card)
     }
     flushRafs()
@@ -414,9 +422,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     mountOverlay(
       [node('A'), node('B'), node('C'), node('D')],
       [edge('e1', 'A', 'B'), edge('e2', 'C', 'D')],
-      0,
-      0,
-      [],
+      0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10], ['C', 200, 0, 10, 10], ['D', 200, 100, 10, 10]],
       { focusDim: true, brightIds: new Set(['A', 'B']) }
     )
     // 根态标记沿承（dimmed-focus——聚焦 dim 态 e2e/单测锚）

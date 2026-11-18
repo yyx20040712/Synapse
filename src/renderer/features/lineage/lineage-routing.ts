@@ -10,11 +10,14 @@
  *   彻底退役删除）+同锚散开
  * - routing/detour.ts —— [F-SLOTGRID-01 U2] 段式近绕专态+网格通道模型
  * - routing/slots.ts+gap-cells.ts+zapply.ts+residual.ts —— 走线候选位分配族
+ * - routing/finalize.ts —— 槽位后圆角采样终门（r=6→3→0）+blocked 显式态
  * 旧五级链与 corridor/fallback/defaultCorridor/CORRIDOR_* 常量族已随方案切换
  * 整体退役删除（宪法 E5/B3；测试数据可清授权 v95 §2-1）。
  * 快照采集 buildSnapshot 驻 EdgeOverlay hook 层=唯一不纯点（本桶零 DOM）。
  */
 export { routeAll, routeEdge } from './routing/chain'
+export { finalizePath } from './routing/finalize'
+export type { FinalizedPath, RouteClearance } from './routing/finalize'
 export type {
   EdgeGeomInput,
   LayoutSnapshot,

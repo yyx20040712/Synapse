@@ -4,20 +4,21 @@
  * 两态+走廊常量族+车道基道序号随走廊彻底退役删除——2026-10-07 用户裁决③
  * 「corridor 右缘车道彻底退役、兜底=最短路线重叠」）。**链序本身=拐弯数
  * 升序（direct/h-slip 0 拐→detour 门形
- * →band 阶梯→overlap 不避让）——用户裁决「形态上尽量少拐弯」由链序+候选
+ * →band 阶梯→overlap 线-线重叠）——用户裁决「形态上尽量少拐弯」由链序+候选
  * 全序拐弯数键双层承载**。同锚多边先散锚点（12 锚全满=共享原锚）；detour
- * 通道槽占用经 ChannelUse 槽位级空槽判定。曲化后采样复检+半径收缩链
- * （r=6→3→尖角）。确定性红线：无随机/无 Date/无三角函数；并列取字典序/
+ * 通道槽占用经 ChannelUse 槽位级空槽判定。槽位与 jog 施加后，自动路径经
+ * r=6→3→0 最终采样净空门；三档均碰障=blocked 空 d，不再输出尖角非法线。
+ * 确定性红线：无随机/无 Date/无三角函数；并列取字典序/
  * 几何序。纯函数零 DOM import（快照采集驻 EdgeOverlay hook 层）。
  * [F-ROUTE-02 U3] 接线沿承：routeOne 循环→slotAssign（槽位分配+残余子
- * pass）→回写 skel→finish；detour/band 骨架携桩段（stubs）入谓词复检。
+ * pass）→回写 skel→finalizePath；detour/band 骨架携桩段（stubs）入谓词复检。
  */
 import { AnchorUse, anchorId, anchorPick, anchorPoint, selectAnchor, sideAnchor, stubEnd, type Pt, type Rect, type Side } from './anchors'
 import { bandSkeleton } from './bands'
 import { PAD, polylineClearStubs } from './avoid'
 import { ChannelUse, detourSkeleton } from './detour'
 import { CELL_EPS } from './gap-cells'
-import { buildRoundedPath, stripCollinear } from './rounding'
+import { finalizePath, type RouteClearance } from './finalize'
 import { slotAssign, type AssignEdge } from './slots'
 import type { LineageAnchor, LineageViaPoint } from '@shared/models/lineage'
 
@@ -65,8 +66,8 @@ export interface RoutedPath {
   route: RouteTag
   /** [F-ROUTE-02 U4] 观测钩子三槽（主控预裁定语义）：slotMarks=recs 中非
    *  残余且有 slotIdx 者「cellId:slotIdx」逗号连接（retain+landed 都占槽）；
-   *  overlapExempt=任一 rec.overlapExempt∨overlap 兜底态；slotFallback=存在
-   *  L3 穷尽豁免 rec。均缺省=无该态 */
+   *  overlapExempt=任一 rec.overlapExempt∨overlap 兜底态（仅线-线槽位重叠，
+   *  不豁免线-卡相交）；slotFallback=存在 L3 穷尽豁免 rec。均缺省=无该态 */
   pts: Pt[]
   slotMarks?: string
   overlapExempt?: boolean
@@ -76,9 +77,9 @@ export interface RoutedPath {
   /** [F-SLOTGRID-01 U2] detour 被阻段观测串（「槽位 x:Δx」逗号连接——设计
    *  §5.3-⑦ 观测步；INV-120 面沿用）。缺省=非 detour 态 */
   detourMarks?: string
+  /** 自动路径三个半径的最终采样均碰障；d 恒空，渲染层与命中层均撤销 */
+  clearance?: RouteClearance
 }
-
-const ROUND_R = 6
 
 // ── 内部中间态（routeOne 循环→slotAssign 施加后产 d）──
 interface SkelResult {
@@ -131,19 +132,6 @@ const stubsOf = (e: EdgeGeomInput, src: Rect, tgt: Rect, picks: ReadonlyArray<[s
   })
 const isVerticalSide = (side: Side): boolean => side === 'top' || side === 'bottom'
 
-/** 骨架→终态 d（共线剔除+圆角化+采样复检收缩链 r=6→3→尖角）；
- *  manual-override=纯圆角化 pass 不走避让复检（design-final §2.2——用户
- *  排位主权，穿卡警示归 F-LGRAPH-01 ②渲染面） */
-function finish(skel: readonly Pt[], stubExcluded: readonly Rect[], obstacles: readonly Rect[], manual: boolean): string {
-  const stripped = stripCollinear(skel)
-  if (manual) return buildRoundedPath(stripped, ROUND_R).d
-  for (const r of [ROUND_R, ROUND_R / 2]) {
-    const built = buildRoundedPath(stripped, r)
-    if (polylineClearStubs(built.samples, stubExcluded, obstacles)) return built.d
-  }
-  return buildRoundedPath(stripped, 0).d
-}
-
 function routeOne(
   e: EdgeGeomInput,
   snap: LayoutSnapshot,
@@ -163,7 +151,8 @@ function routeOne(
   // override 不 commit」沿承 N-05r2）
   const fromPin = e.fromAnchor !== undefined ? pinnedPick(src, e.fromAnchor) : undefined
   const toPin = e.toAnchor !== undefined ? pinnedPick(tgt, e.toAnchor) : undefined
-  // manual-override：via 在场（锚=端点卡按主向定边规则定；不参与避让/车道）
+  // manual-override：via 在场（锚=端点卡按主向定边规则定；不参与避让/车道）。
+  // 本段保持最终门免检，提交门另行登记。
   if (e.via !== undefined && e.via.length > 0) {
     const a = fromPin ?? selectAnchor(src, e.via[0]!)
     const b = toPin ?? selectAnchor(tgt, e.via[e.via.length - 1]!)
@@ -241,10 +230,10 @@ function routeOne(
       anchorMarks: anchorMarksOf(band.picks)
     }
   }
-  // ⑤ overlap 兜底：最短路线+忽略占用+overlapExempt 透出（设计 §2 overlap
-  //  行——x_s≠x_t 时 L 形先横后竖〔H<V 字典序 tie-break〕；同柱判定=同 ① 门
-  //  CELL_EPS 容差口径〔ln-C1〕；确定性红线=形态唯一，无随机；C 桥触发器
-  //  观测面=overlapExempt 占比）
+  // ⑤ overlap 兜底：保留最短路线骨架与线-线槽位重叠标记（忽略占用，
+  //  x_s≠x_t 时 L 形先横后竖〔H<V 字典序 tie-break〕；同柱判定=同 ① 门
+  //  CELL_EPS 容差口径〔ln-C1〕；确定性红线=形态唯一，无随机）。overlapExempt
+  //  不再豁免线-卡相交：与其他自动态相同，最终采样门不过即 blocked。
   const picks: ReadonlyArray<[string, Side, number]> = [
     [e.sourceId, pa.side, pa.slot],
     [e.targetId, pb.side, pb.slot]
@@ -263,7 +252,7 @@ export function routeEdge(
   const tgt = snap.cards.get(e.targetId)
   if (src === undefined || tgt === undefined) {
     onWarn(`lineage-routing：边 ${e.edgeId} 端点卡缺失（${e.sourceId}/${e.targetId}），跳过路由`)
-    return { edgeId: e.edgeId, d: '', route: 'overlap', pts: [], overlapExempt: true }
+    return { edgeId: e.edgeId, d: '', route: 'overlap', pts: [], overlapExempt: true, clearance: 'blocked' }
   }
   const r = routeOne(e, snap, src, tgt, onWarn, undefined, new ChannelUse())
   assignStages([r], snap) // [F-ROUTE-02 U3] 单边数组接线=与 routeAll 同型
@@ -295,17 +284,21 @@ function assignStages(results: SkelResult[], snap: LayoutSnapshot): void {
   })
 }
 
-const toPath = (r: SkelResult, all: readonly Rect[]): RoutedPath => ({
-  edgeId: r.edgeId,
-  d: finish(r.skel, r.stubExcluded, all, r.route === 'manual-override'),
-  route: r.route,
-  pts: r.skel,
-  ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
-  ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
-  ...(r.slotFallback === true ? { slotFallback: true } : {}),
-  ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {}),
-  ...(r.detourMarks !== undefined ? { detourMarks: r.detourMarks } : {})
-})
+const toPath = (r: SkelResult, all: readonly Rect[]): RoutedPath => {
+  const finalized = finalizePath(r.skel, r.stubExcluded, all, r.route === 'manual-override')
+  return {
+    edgeId: r.edgeId,
+    d: finalized.d,
+    route: r.route,
+    pts: r.skel,
+    ...(finalized.clearance !== undefined ? { clearance: finalized.clearance } : {}),
+    ...(r.slotMarks !== undefined ? { slotMarks: r.slotMarks } : {}),
+    ...(r.overlapExempt === true ? { overlapExempt: true } : {}),
+    ...(r.slotFallback === true ? { slotFallback: true } : {}),
+    ...(r.anchorMarks !== undefined ? { anchorMarks: r.anchorMarks } : {}),
+    ...(r.detourMarks !== undefined ? { detourMarks: r.detourMarks } : {})
+  }
+}
 
 export function routeAll(
   edges: readonly EdgeGeomInput[],

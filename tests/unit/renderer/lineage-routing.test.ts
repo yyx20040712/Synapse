@@ -156,7 +156,7 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
     expect(r.d).toBe('M 208 172 L 208 202 Q 208 208 214 208 L 238 208 Q 244 208 244 214 L 244 244')
   })
 
-  it('⑤ overlap：通道全集封死（巨墙覆全部网格通道）→ 最短路线重叠兜底+overlapExempt 透出（x_s=x_t → 单竖段）', () => {
+  it('⑤ overlap：通道全集封死（巨墙覆全部网格通道）→ 保留最短骨架与线-线重叠标记，但最终净空门显式 blocked', () => {
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(112, 100, CARD_W, CARD_H)],
@@ -167,15 +167,15 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('overlap')
-    // 手推：x₀=176；WALL 膨胀 [96,704] 覆 row1 全部通道候选（左缘/col0|1/右缘
-    // 槽 575.3..651.3 全灭、676.7<704 亦灭）→detour 枚举尽→band 下降候选同灭
-    // →overlap 最短路线（x 相等=单竖段穿墙——忽略避让沿承 finish r=0 尖角）
+    // 手推：x₀=176；WALL 膨胀 [96,704] 覆全部通道候选，路由搜索降级 overlap。
+    // 骨架仍供诊断与后续布局重试；r=6/3/0 最终采样均穿墙，禁止输出 d。
     expect(r.pts).toEqual([{ x: 176, y: 172 }, { x: 176, y: 388 }])
-    expect(r.d).toBe('M 176 172 L 176 388')
+    expect(r.clearance).toBe('blocked')
+    expect(r.d).toBe('')
     expect(r.overlapExempt).toBe(true)
   })
 
-  it('⑤ overlap L 形先横后竖（H<V 字典序 tie-break）：x_s≠x_t 且带封闭 → 骨架 [a,(b.x,a.y),b]', () => {
+  it('⑤ overlap L 形先横后竖（H<V 字典序 tie-break）：保留线-线重叠骨架；线-卡相交不豁免，r=0 仍穿卡即 blocked', () => {
     // 矮墙横贯+上下卡错列：行隙带 24px<36 封闭→band 无带；x_s=228≠x_t=400
     const snap = makeSnap({
       cards: new Map<string, Rect>([
@@ -188,10 +188,11 @@ describe('F-SLOTGRID-01 U2 甲链五态（direct→h-slip→detour→band→over
     expect(r.route).toBe('overlap')
     // 手推：direct 锚=selectAnchor：sa=A 右 ¾ (228,154)（tc=(464,232)→dx=300>
     // dy=96→横；proj y=232−100=132→¾ 序 54 最近）；sb=B 左 ¼ (400,214)（sc=
-    // (164,136)：proj y=−60→¼ 序最近）。L 形先横后竖：(228,154)→(400,154)→
-    // (400,214)（穿 X——忽略避让；r=6/3 采样红→r=0 尖角）
+    // (164,136)：proj y=−60→¼ 序最近）。L 形先横后竖穿 X；overlapExempt 只表示
+    // 线-线槽位重叠，不再豁免线-卡相交，三个半径均不过最终门。
     expect(r.pts).toEqual([{ x: 228, y: 154 }, { x: 400, y: 154 }, { x: 400, y: 214 }])
-    expect(r.d).toBe('M 228 154 L 400 154 L 400 214')
+    expect(r.clearance).toBe('blocked')
+    expect(r.d).toBe('')
     expect(r.overlapExempt).toBe(true)
   })
 

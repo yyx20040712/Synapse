@@ -4,15 +4,15 @@
  * 带模型（卡 y 区间夹缝）沿承：框边界在缝内→s=9，否则 s=6（残余子 pass 偏移
  * 参数族——residual.ts 消费）；**横移 y=带槽位中位（gap-cells midSlotOf 单源
  * ——坐标集封闭 INV-SLOTGRID-02；带封闭〔高<36⇔n=0〕不可横移=带剔除）**；
- * 72px 行隙带中位槽=带中心（k=3 位）。zigzag 骨架：每带先试目标 x 终落（末
- * 10px 桩区排除源/目标卡——D-L2-4），终落受阻经同边 slot 近序散开重试（
+ * 72px 行隙带中位槽=带中心（k=3 位）。zigzag 骨架：每带先试目标锚外法线
+ * 短桩终落（首末 10px 桩区排除源/目标卡——D-L2-4），终落受阻经同边 slot 近序散开重试（
  * INV-79 标注属障碍集，散开=绕开非豁免）；阻塞横移目标=**下一段顺位首空槽
  * （网格通道槽位候选·同全序——byTotalOrder 字典序：拐弯数→|x−目标锚 x|→x；
  * 框外空白候选随走廊退役删除——探针 x=43 框外逃逸形态结构性禁绝）**。
  * 确定性红线：无随机/无 Date/无三角函数。纯函数零 DOM import。
  */
 import { anchorPick, anchorPoint, sideAnchor, stubEnd, type AnchorUse, type PickedAnchor, type Pt, type Rect, type Side } from './anchors'
-import { PAD, segHitsAny } from './avoid'
+import { PAD, polylineClearStubs, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
 import { byTotalOrder, gridChannelsOf, type ChannelUse } from './detour'
 import { midSlotOf } from './gap-cells'
@@ -128,8 +128,26 @@ export function bandSkeleton(
   const aS = stubEnd(A, pa.side)
   const moveYOf = (b: Band): number => midSlotOf('y', { x: 0, y: b.top, w: 0, h: b.bottom - b.top })!
   const first = bands[0]!
-  const skel: Pt[] = [A, aS, { x: aS.x, y: moveYOf(first) }]
+  const firstY = moveYOf(first)
+  const pendingSlots: Array<{ key: string; idx: number }> = []
+  let skel: Pt[] = [A, aS, { x: aS.x, y: firstY }]
   let curX = aS.x
+  // 钉定锚可能与主行进向相反。此时从短桩外端横移到既有网格通道，再进入
+  // 首带；若仍从锚 x 直落，首末 10px 豁免之外会回穿源卡。
+  const sourceReverses = (down && pa.side === 'top') || (!down && pa.side === 'bottom')
+  if (sourceReverses) {
+    let moved = false
+    for (const c of descendCandidates(snap, aS.y, firstY, tc.x, aS.x, chanUse)) {
+      const candidate: Pt[] = [A, aS, { x: c.x, y: aS.y }, { x: c.x, y: firstY }]
+      if (!polylineClearStubs(candidate, [src, tgt], obstacles)) continue
+      skel = candidate
+      curX = c.x
+      pendingSlots.push({ key: c.key, idx: c.idx })
+      moved = true
+      break
+    }
+    if (!moved) return null
+  }
   const thirdParty = obstacles.filter((o) => o !== src && o !== tgt)
   // 终落锚散开：首选锚受阻（月标封堵首选 slot——INV-79 标注属障碍集，散开=
   // 绕开障碍非豁免）时按 slot 近序重试——同边 [base,(base+1)%3,(base+2)%3]
@@ -145,7 +163,6 @@ export function bandSkeleton(
   // descend 目标 x=几何首选锚 x（use=undefined 时数值全等，routeAll 语义取
   // 几何首选与占用正交一致——[回炉 W2] 沿承）
   const tgtAnchorX = anchorPoint(tgt, endSide, base).x
-  const pendingSlots: Array<{ key: string; idx: number }> = []
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i]!
     const by = moveYOf(band)
@@ -154,9 +171,11 @@ export function bandSkeleton(
     // 禁散开到其他槽）；全带尽=band 不可用（chain 降 overlap 兜底直取）
     if (toPin !== undefined) {
       const pinPt = toPin.pt
-      const pinStub = down ? pinPt.y - 10 : pinPt.y + 10
-      if (vClear(pinPt.x, by, pinStub, obstacles) && !segHitsAny({ x: pinPt.x, y: pinStub }, pinPt, thirdParty)) {
-        skel.push({ x: pinPt.x, y: by }, pinPt)
+      const pinStub = stubEnd(pinPt, toPin.side)
+      // 先落到真实外法线短桩外端，再沿短桩进锚。右/左锚不能用目标上方的
+      // 竖直终落代替，否则目标卡自身会把中段检查封死。
+      if (vClear(pinStub.x, by, pinStub.y, obstacles) && !segHitsAny(pinStub, pinPt, thirdParty)) {
+        skel.push({ x: pinStub.x, y: by }, pinStub, pinPt)
         const pinCap = Math.floor((band.bottom - band.top - 2 * PAD) / band.s)
         const pinPicks: Array<[string, Side, number]> = [
           [srcId, pa.side, pa.slot],
@@ -186,10 +205,10 @@ export function bandSkeleton(
     for (const [side, slot] of spread) {
       if (use !== undefined && use.has(tgtId, side, slot)) continue
       const pt = anchorPoint(tgt, side, slot)
-      const stubTop = down ? pt.y - 10 : pt.y + 10
-      if (!vClear(pt.x, by, stubTop, obstacles)) continue
-      if (segHitsAny({ x: pt.x, y: stubTop }, pt, thirdParty)) continue
-      // 终段=生效锚外法线桩（竖边锚共线）
+      const targetStub = stubEnd(pt, side)
+      if (!vClear(targetStub.x, by, targetStub.y, obstacles)) continue
+      if (segHitsAny(targetStub, pt, thirdParty)) continue
+      // 竖边锚短桩与终落共线；保留原有点链形态，圆角化前会剔除共线顶点。
       skel.push({ x: pt.x, y: by }, pt)
       const cap = Math.floor((band.bottom - band.top - 2 * PAD) / band.s)
       const picks: Array<[string, Side, number]> = [

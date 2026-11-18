@@ -2,7 +2,8 @@
  * [F-ANCHFIX-01 批 1c] anchor-occupancy —— 锚占用态模块级外部存储
  * （INV-120：armed 态锚显示域=可吸附判定域〔CardAnchorDots 12 dot≡
  * anchors.ts Side×SLOT_FRACTIONS〕；占用标记单源=routeAll anchorMarks/
- * EdgeOverlay data-anchors 透出）。
+ * EdgeOverlay data-anchors 透出；blocked 边由无几何元数据节点保留，发布不
+ * 以路由成功为条件）。
  *
  * 态空间声明：{∅ 初态（Map 空）, Map 已发布}——写入=EdgeOverlay run() rAF
  * 单写者 wholesale（setPaths 后同步 publish，全图一次置换，无增量写、无

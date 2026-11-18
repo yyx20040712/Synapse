@@ -65,6 +65,7 @@ export function EdgeHitLayer(props: {
       let bestId: string | null = null
       let bestD = SCAN_HOVER_R
       for (const path of props.paths) {
+        if (path.clearance === 'blocked') continue
         for (let i = 0; i < path.pts.length - 1; i++) {
           const a = path.pts[i]!
           const b = path.pts[i + 1]!
@@ -124,6 +125,7 @@ export function EdgeHitLayer(props: {
       let bestId: string | null = null
       let bestD = SCAN_HOVER_R
       for (const path of props.paths) {
+        if (path.clearance === 'blocked') continue
         for (let i = 0; i < path.pts.length - 1; i++) {
           const a = path.pts[i]!
           const b = path.pts[i + 1]!
@@ -175,6 +177,7 @@ export function EdgeHitLayer(props: {
   return (
     <svg className="tl-edge-hits" data-testid="tl-edge-hits">
       {props.paths.map((p) => {
+        if (p.clearance === 'blocked') return null
         const e = props.edgeById.get(p.edgeId)
         if (e === undefined) return null
         return (

@@ -4,10 +4,10 @@
  *
  * - 载体=svg.tl-edges（absolute inset:0 overflow:visible——D-1/D-2：挂
  *   .tl-content 内覆盖全内容高，与卡同文档流滚动零跟随；z 低于卡=连线
- *   永不遮卡）。每边两 path：tl-edge 可见（[F-LGRAPH-01②U8] 色纹=边内联
+ *   永不遮卡）。每条可行走线边两 path：tl-edge 可见（[F-LGRAPH-01②U8] 色纹=边内联
  *   dashed/color——A3 视觉字段直渲染，data-dashed 软标记）+tl-edge-hit
  *   透明命中层（stroke 8——D-15；**P7a 期 pointer-events:none**，编辑交互
- *   P7b 开启）。
+ *   P7b 开启）。blocked 线/命中区不渲染，无几何元数据保留锚占用；提示与重算归 use-lineage-routes。
  * - buildSnapshot/edgeVisualStyle=拆件 edge-overlay-geom.ts（路由层零 DOM import）。
  * - 重算触发 rAF 合并：shiftedIds/groups/RO(.tl-content)/edges/nodes/routeEpoch
  *   （父布局变更 bump——use-capacity-layout W 变/拖拽 settle；[F-SLOTGRID-01
@@ -18,14 +18,13 @@
  * - routeAll 降级 onWarn=console.warn（回炉 1 W2/k1-N5——生产不静默）；
  *   paths 按 edgeId Map 配对渲染（回炉 1 W5——禁下标 zip）。
  */
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
 import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
-import { routeAll } from './lineage-routing'
-import { buildSnapshot, edgeVisualOpacity, edgeVisualStyle, pinOf } from './edge-overlay-geom'
+import { edgeVisualOpacity, edgeVisualStyle, pinOf } from './edge-overlay-geom'
 import { isEdgeDimmed } from './focus-bright'
-import { publish } from './anchor-occupancy'
+import { useLineageRoutes } from './use-lineage-routes'
 import { useEdgeEdit } from './use-edge-edit'
 import { EdgeHitLayer, type BrowseEdgeHover } from './EdgeHitLayer'
 import { EdgeMenuHost } from './EdgeMenuHost'
@@ -62,7 +61,6 @@ export function EdgeOverlay(props: {
   uiScale?: number
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
-  const [paths, setPaths] = useState<RoutedPath[]>([])
   // [回炉 R2] 悬停高亮=命中层驱动：可见层 pointer-events:none 使 :hover 恒
   // 不触发（死样式）——命中层 pointerover/out 联动可见层同键类 .hovered
   //（视觉值不变 v95-6B：宽 2.6+opacity .65 CSS 承载）；[RR5] focus 态经
@@ -77,17 +75,6 @@ export function EdgeOverlay(props: {
   const [browseHover, setBrowseHover] = useState<BrowseEdgeHover | null>(null)
   const handleBrowseHover = useCallback((h: BrowseEdgeHover | null): void => setBrowseHover(h), [])
   const focused = props.focusDim === true
-  // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
-  const pathsRef = useRef<RoutedPath[]>([])
-  pathsRef.current = paths
-  // [RR8] 调线域重采集键（布局/路由变化信号——卡 rect/换算器刷新闸；状态
-  // only 渲染[拖拽 move/悬停]不重采集）；[F-VISFB-31] uiScale 入键（own 域
-  // 采集因子随档重读）
-  const editRecomputeKey = useMemo(
-    () => [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale] as const,
-    [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale]
-  )
-  const edit = useEdgeEdit({ enabled: props.editEnabled === true, pathsRef, hostRef: svgRef, recomputeKey: editRecomputeKey })
   // 端点在场的边才路由（写过渡态悬空边不渲染——nodes=防御消费面）
   const live = useMemo(() => {
     const ids = new Set(props.nodes.map((n) => n.id))
@@ -109,6 +96,25 @@ export function EdgeOverlay(props: {
     })
     return { edges, inputs }
   }, [props.nodes, props.edges])
+  const paths = useLineageRoutes({
+    hostRef: svgRef,
+    inputs: live.inputs,
+    shiftedIds: props.shiftedIds,
+    groups: props.groups,
+    routeEpoch: props.routeEpoch,
+    uiScale: props.uiScale
+  })
+  // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
+  const pathsRef = useRef<RoutedPath[]>([])
+  pathsRef.current = paths
+  // [RR8] 调线域重采集键（布局/路由变化信号——卡 rect/换算器刷新闸；状态
+  // only 渲染[拖拽 move/悬停]不重采集）；[F-VISFB-31] uiScale 入键（own 域
+  // 采集因子随档重读）
+  const editRecomputeKey = useMemo(
+    () => [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale] as const,
+    [props.nodes, props.edges, props.groups, props.routeEpoch, props.shiftedIds, paths, props.uiScale]
+  )
+  const edit = useEdgeEdit({ enabled: props.editEnabled === true, pathsRef, hostRef: svgRef, recomputeKey: editRecomputeKey })
   // 回炉 1 W5：paths 按.edgeId 配对（Map 查找替下标 zip）
   const edgeById = useMemo(() => new Map(live.edges.map((e) => [e.id, e] as const)), [live])
   // [F-LINEAGE-02 裁决 6/W-4] manual 边渲染序排 DOM 末位（同层组内稳定分区
@@ -117,41 +123,16 @@ export function EdgeOverlay(props: {
   const orderedPaths = useMemo(() => {
     const auto: RoutedPath[] = []
     const manual: RoutedPath[] = []
-    for (const p of paths) (p.route === 'manual-override' ? manual : auto).push(p)
+    for (const p of paths) {
+      if (p.clearance === 'blocked') continue
+      const bucket = p.route === 'manual-override' ? manual : auto
+      bucket.push(p)
+    }
     return [...auto, ...manual]
   }, [paths])
   // [F-SLOTGRID-01 U2] 同道错峰 laneRank（走廊 lane≥0 字典序 opacity 递减）
   // 随走廊车道族退役删除——五态链 lane 全退役，重叠分离=槽位级空槽分配
   // （ChannelUse/slotAssign）承载
-
-  useLayoutEffect(() => {
-    const content = svgRef.current?.parentElement
-    if (!(content instanceof HTMLElement)) return
-    let raf = 0
-    const run = (): void => {
-      raf = 0
-      const next = routeAll(live.inputs, buildSnapshot(content), (msg) => console.warn(msg))
-      setPaths(next)
-      // [F-ANCHFIX-01 批 1c] 占用态 rAF 单写者 wholesale 发布（setPaths 后
-      // 同步——CardAnchorDots getOcc 消费；卸载不清场=同树同亡，头注申报）
-      publish(next)
-    }
-    raf = requestAnimationFrame(run)
-    const ro =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(() => {
-            if (raf !== 0) cancelAnimationFrame(raf)
-            raf = requestAnimationFrame(run)
-          })
-    ro?.observe(content)
-    return () => {
-      if (raf !== 0) cancelAnimationFrame(raf)
-      ro?.disconnect()
-    }
-    // [F-VISFB-31] uiScale 入重算键：W 不变时快照÷s_eff 因子仍须重算
-    //（00A §四——各档布局真实重排，RO 面覆盖 W 变更；同宽形由此键兜底）
-  }, [live, props.shiftedIds, props.groups, props.routeEpoch, props.uiScale])
 
   /** [②U5] 菜单动作收口（store 单口——一动作=一编辑单元沿 store 各方法） */
   const selEdge =
@@ -172,6 +153,12 @@ export function EdgeOverlay(props: {
       ref={svgRef}
       data-testid="tl-edges"
     >
+      {paths.map((p) =>
+        p.clearance === 'blocked' ? (
+          // 无几何元数据节点：锚占用跟随边数据，不复活可见线或命中区。
+          <g key={`blocked-${p.edgeId}`} className="tl-edge-blocked" data-edge-id={p.edgeId} data-anchors={p.anchorMarks} data-clearance="blocked" />
+        ) : null
+      )}
       {orderedPaths.map((p) => {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null

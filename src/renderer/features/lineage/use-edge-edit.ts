@@ -43,6 +43,7 @@ import {
 import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
 import { DRAW_SNAP_R } from './useDrawLine'
 import { runDocDragSession } from './edge-drag-session'
+import { useBlockedEdgeEdit } from './use-blocked-edge-edit'
 import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 import { useLineageStore } from './lineage.store'
 import { showToast } from '../../shared/ui/toast-store'
@@ -186,9 +187,8 @@ export function useEdgeEdit(args: {
 } {
   const [state, setState] = useState<EdgeEditState>({ phase: 'idle' })
   const [menu, setMenu] = useState<EdgeMenuTarget | null>(null)
-  // [②U5] 内容坐标卡 rect（锚/磁吸/穿卡判定源）+视口→内容换算器（host 承载）
-  // [RR8] deps 收敛：采集键=布局/路由变化（原无 deps 逐渲染采集——会话期
-  // 每次 move 重查全卡 rect）；换算器 z/u 走默认参判定时点取值（缩放后不滞留）
+  // [②U5/RR8] 卡 rect 与坐标换算锚驻 host；采集键=布局/路由变化，避免逐渲染采集。
+  // 换算器 z/u 在判定时取值（缩放后不滞留）。
   // [F-VISFB-31] 采集/换算÷s_eff=own 域——与路由快照（pathsRef pts）及
   // SNAP_R/PAD 常量族同系（旧 ÷z 与 own 域路由 pts 混算=u≠1 档调线错位）
   const cardsRef = useRef<Array<{ nodeId: string; rect: Rect }>>([])
@@ -221,9 +221,11 @@ export function useEdgeEdit(args: {
       const cards = cardsRef.current
       const src = cards.find((c) => c.nodeId === e.fromNode)
       const tgt = cards.find((c) => c.nodeId === e.toNode)
+      const routed = args.pathsRef.current.find((x) => x.edgeId === edgeId)
+      if (routed?.clearance === 'blocked') return null
       if (via === undefined || via.length === 0 || src === undefined || tgt === undefined) {
         // 自动线/端点缺席：取路由骨架（routed pts——物化与手柄几何源）
-        const p = args.pathsRef.current.find((x) => x.edgeId === edgeId)
+        const p = routed
         if (p === undefined || p.pts.length < 2) return null
         return { anchorA: p.pts[0]!, anchorB: p.pts[p.pts.length - 1]!, via: p.pts.slice(1, -1) as LineageViaPoint[] }
       }
@@ -505,8 +507,7 @@ export function useEdgeEdit(args: {
     [store, polylineOf, nearestSegment, stateRef, cardsRef]
   )
 
-  // ── 拖拽会话基建（document 级 move/up+中断 abort——[回炉轮 2 拆件
-  // edge-drag-session.runDocDragSession：use-edge-edit ≤500 行红线]）─────
+  // ── 拖拽会话基建：document 级 move/up+中断 abort（edge-drag-session 拆件）──
   const ptHook = useRef<(x: number, y: number) => Pt>(() => ({ x: 0, y: 0 }))
   const setPointConverter = useCallback((fn: (clientX: number, clientY: number) => Pt): void => {
     ptHook.current = fn
@@ -562,21 +563,14 @@ export function useEdgeEdit(args: {
     if (!args.enabled) setState({ phase: 'idle' })
   }, [args.enabled])
 
-  // [回炉 R28] 换端拖拽自动滚动会话卸载 teardown：卸载/失能=停泵（防泄漏）
+  // [回炉 R28] 换端拖拽自动滚动卸载 teardown：停泵并清引用，防卸载后复活。
   const autoRef = useRef<AutoScrollHandle | null>(null)
-  useEffect(
-    () => () => {
-      autoRef.current?.stop()
-      autoRef.current = null
-    },
-    []
-  )
+  useEffect(() => () => { autoRef.current?.stop(); autoRef.current = null }, [])
 
-  // 边消失（删除/切图）=selected 态失效防御
-  // [RR8] 响应式订阅（原 deps getState().edges 渲染期直读=静态 props 挂载下
-  // 边删除不触发重渲染——选中悬挂；订阅后 store 写即时驱动）
+  // 边消失（删除/切图）=selected 失效防御；[RR8] 响应式订阅驱动即时清理。
   const selId = state.phase === 'idle' ? null : state.edgeId
   const storeEdges = useLineageStore((s) => s.edges)
+  useBlockedEdgeEdit(args.pathsRef, selId, stateRef, sessionCleanupRef, autoRef, setMenu, setState)
   useEffect(() => {
     if (selId === null) return
     if (!storeEdges.some((e) => e.id === selId)) setState({ phase: 'idle' })

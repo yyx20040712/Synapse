@@ -235,22 +235,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t3-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
-    // [F-UIRES-03 C3] 种子改局部载荷：甲/乙同月组（2022-05——写失败触发段=
-    // 月内拖拽调序承载，改月写通道随改月链退役 INV-107）；根/乙/边型语义
-    // 沿承（重复加边对+边数 2 不变）。〔CI 收口四修〕root 由 2020 顶段移入
-    // 同月 slot0（旧理=root↔乙跨年纵向不可共视→同月 [2,1] 分行 span 144）。
-    // 〔F-VISFB-67 轮 3 N4 注释更新〕地板化后 1024 三卡=**[3] 单行**（窄视口
-    // 分行退役——旧 [2,1] 前提失效）：root(col0)↔乙(col2) 横向 span=12+2×200
-    // +128=540+内容左偏≈80→~620>CI scrollport 461=**横向不可共视**——画线径
-    // =文档级指针+内容域换算（目标卡可见性非前提），两轮 1024 全量实证绿；
-    // scrollIntoView 已补 inline 维（下方 root 锚）。种子级横向共视改
-    // （root→甲 相邻对 span 328）列呈批项，未自行改种子（用例语义面）。
-    // 运行时自适应补救径已删（三现 CI 实测均被末位卡几何否决——v214 §6-1
-    // 死码纪律；共视前提改由拖拽前置断言锁死，失守即红回种子级设计）
+    // 三卡同月单行：root 居中、甲左、乙右，根→甲/乙均为相邻边，最终门前置
+    // 几何合法。重复加边对、边数 2、后续拖拽调序与保存失败语义不变；同月
+    // 共视继续锁定 CI 画线前置，禁运行时自适应补救。
     await seedLineageGraph(userData, {
       nodes: [
-        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2022, month: 5, slot: 0 },
-        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2022, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-root', title: '脉络根文献', year: 2022, month: 5, slot: 1 },
+        { paperId: 'e2e-lg-a', title: '脉络甲文献', year: 2022, month: 5, slot: 0 },
         { paperId: 'e2e-lg-b', title: '脉络乙文献', year: 2022, month: 5, slot: 2 }
       ],
       edges: [
@@ -2652,7 +2643,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await win.getByTestId('lineage-mode-edit').click()
-    // 建一条边（拖拽径）供 yDiff 几何断言
+    // 建一条源右中→目标右中的合法 band 边供 yDiff 断言；目标左中进线会穿年份头。
     await win.getByTestId('lineage-tool-solid').click()
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
@@ -2661,7 +2652,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     if (rb === null || ab === null) throw new Error('T1M 双卡不可见')
     await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
     await win.mouse.down()
-    await win.mouse.move(ab.x + 2, ab.y + ab.height / 2, { steps: 8 })
+    await win.mouse.move(ab.x + ab.width - 2, ab.y + ab.height / 2, { steps: 8 })
     await win.mouse.up()
     await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 10_000 })
     // ①滚动容器锚：注入临时高度制造可滚面（evaluate 探针——T1 先例）

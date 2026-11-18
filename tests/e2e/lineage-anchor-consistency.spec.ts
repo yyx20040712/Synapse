@@ -18,15 +18,13 @@
  * 规则」的同源耦合（裁决 D 翻案：两端锚用户钉定，预览不 morph）。from 侧
  * 恒等新增格：mid-drag 掠动后 x1 恒=按下锚。散开态（多边同锚）=域外沿承。
  *
- * ── R-锚级一致（C2 挂账销项——六态矩阵以实测 route 断言〔设计 v1.2 勘正③〕）──
- * 播种 direct 意图/h-slip/band/corridor/manual-override（via 直写两相——
- * route-slots R4 型）五态（fallback=全部探测失败态，夹具不可稳定构造，申报
- * 在案）；各边断言：data-route 非空+path 首末点对持卡 rect 法向距 ≤1+沿框
+ * ── R-锚级一致（可行走线锚几何+blocked 安全网）──
+ * 可行走线边断言：data-route 非空+path 首末点对持卡 rect 法向距 ≤1+沿框
  * 命中 ¼/½/¾ 位 ±1（无桩族 direct/h-slip/manual-override——端点=锚直落）
- * +带桩族（band/corridor/fallback）首段方向沿命中边外法线（|sin|≤0.0349
- * =±2°——设计 v1.2 随裁修正①：stripCollinear+圆角切点截短使「次点=stubEnd」
- * 结构性不成立，改断首段方向）。zoom 三档 {1.0, 0.8, 1.5}（0.75 不可达——
- * badge 步进 0.1，探针 P2 实测）。
+ * +带桩族（band/detour）首段方向沿命中边外法线（|sin|≤0.0349=±2°——
+ * stripCollinear+圆角切点截短使「次点=stubEnd」结构性不成立，改断首段方向）。
+ * R1 的 overlap 竖段穿目标月标，按最终门合同改断真实提示文本+两层 path 撤销。
+ * zoom 三档 {1.0, 0.8, 1.5}（0.75 不可达——badge 步进 0.1，探针 P2 实测）。
  *
  * ── R-占用协同（批 1c——呈裁 C 落点：armed 12 锚小型化全显+占用槽高亮）──
  * armed 态每卡 .card-anchor-dot 恰 12；解析全 path data-anchors→逐锚断言
@@ -414,7 +412,7 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     }
   }
 
-  test('R-锚级一致①（钉定基座）：直意对落端=钉定锚（zoom 1.0/0.8/1.5）', async () => {
+  test('R-锚级一致①（不可布通安全网）：相邻月钉定边穿目标月标→blocked 两层撤销（zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r1-'))
     await seedFixture(userData, ['af-c1-a', 'af-c1-b'], ['直意甲', '直意乙'], {
@@ -428,21 +426,15 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '直意甲')
-    await waitForPaths(win, 1)
-    const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    // [S15] 预期态固化：该夹具（5月→6月跨月直列+钉定 ¾→¼ 错列）真实基线=
-    // 'overlap'（钉定错列 x 不等→direct/detour 门不入；band 带封闭→兜底态。
-    // 探针实测定死——禁启动时实测自引用；变异路由器即红）
-    expect(route0, 'R1 route=overlap（固定字面值——夹具真实基线族 [S15]）').toBe('overlap')
-    await zoomProbe(win, 1.0, async () => {
-      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=1.0')
-    })
-    await zoomProbe(win, 0.8, async () => {
-      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=0.8')
-    })
-    await zoomProbe(win, 1.5, async () => {
-      await expectPinnedEndpoints(win, [{ fromTitle: '直意甲', toTitle: '直意乙', fa: { side: 'bottom', slot: 2 }, ta: { side: 'top', slot: 0 }, expectRoute: 'overlap' }], 'R1 z=1.5')
-    })
+    // 带封闭使路由落 overlap；L 形竖段穿目标月标，最终门必须撤销非法线。
+    // 等待真实提示文本以确认首轮路由已完成，避免空 NodeList 假绿。
+    await expect(win.getByText('该连线暂无可行走线', { exact: true })).toBeVisible({ timeout: 10_000 })
+    for (const z of [1.0, 0.8, 1.5]) {
+      await zoomProbe(win, z, async () => {
+        await expect(win.locator('svg.tl-edges path.tl-edge'), `R1 z=${z} blocked 可见层撤销`).toHaveCount(0)
+        await expect(win.locator('svg.tl-edge-hits path.tl-edge-hit'), `R1 z=${z} blocked 命中层撤销`).toHaveCount(0)
+      })
+    }
     await app.close()
   })
 
@@ -589,7 +581,7 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
    * 判定域）；解析全 path data-anchors→逐锚断言对应卡 dot[data-anchor-side]
    * [data-anchor-slot] 挂 data-occupied="1"；无锚 dot 不挂（占用集精确相等
    * ——多标/漏标即红）。占用标记单源=routeAll anchorMarks（EdgeOverlay
-   * data-anchors 透出）。SYNAPSE_SHOT_DIR 在场时落 armed/edit-hover 两态
+   * data-anchors 透出，blocked 边由无几何元数据节点保留）。SYNAPSE_SHOT_DIR 在场时落 armed/edit-hover 两态
    * 视觉存证截图（⑤b——CI 未设即跳过）。
    */
   test('1c 占用协同：armed 每卡 12 dot+data-anchors 逐锚占用标记+无锚不挂', async () => {
@@ -624,7 +616,6 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '占协甲')
-    await waitForPaths(win, 1)
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
     // armed：每卡恰 12 dot 且可见（显示域=判定域）
@@ -639,7 +630,9 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
       .poll(async () => await win.evaluate(() => document.querySelectorAll('.card-anchor-dot[data-occupied="1"]').length), { timeout: 10_000 })
       .toBeGreaterThan(0)
     // in-page 取数：每卡占用标记清单（side 名→字母映射=data-anchors token 形）
-    // +全 path data-anchors
+    // +可见线/blocked 元数据节点的 data-anchors
+    // blocked 边也须有一个无几何 data-anchors 节点；空集合不得进入后续映射。
+    await expect(win.locator('svg.tl-edges [data-anchors]')).toHaveCount(1)
     const data = await win.evaluate(() => {
       const LETTER: Record<string, string> = { top: 't', bottom: 'b', left: 'l', right: 'r' }
       const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]')) as HTMLElement[]
@@ -649,7 +642,7 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
           (d) => `${LETTER[(d as HTMLElement).dataset.anchorSide ?? ''] ?? '?'}${(d as HTMLElement).dataset.anchorSlot}`
         )
       }
-      const anchors = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')).map((p) => (p as SVGPathElement).dataset.anchors ?? '')
+      const anchors = Array.from(document.querySelectorAll('svg.tl-edges [data-anchors]')).map((p) => (p as SVGElement).dataset.anchors ?? '')
       return { occ, anchors }
     })
     // 期望占用集=解析 data-anchors（token=cardId:side字母+slot——末冒号切分）
@@ -724,7 +717,6 @@ test.describe('F-ANCHFIX-01 批 1c 占用协同（armed 12 锚全显+占用槽�
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '钉占甲')
-    await waitForPaths(win, 1)
     await win.getByTestId('lineage-mode-edit').click()
     await win.getByTestId('lineage-tool-solid').click()
     await expect
