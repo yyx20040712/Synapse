@@ -113,7 +113,7 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
     const p = payload as { data?: unknown; deletions?: unknown; pdf_refs?: unknown }
     if (p.data === null || typeof p.data !== 'object' || Array.isArray(p.data)) return 'struct_invalid'
     const data = p.data as Record<string, unknown>
-    if (JSON.stringify(Object.keys(data).sort()) !== JSON.stringify([...SNAPSHOT_TABLES].sort())) {
+    if (!sameKeySet(Object.keys(data), SNAPSHOT_TABLES)) {
       return 'struct_invalid'
     }
     if (!Array.isArray(p.deletions) || !Array.isArray(p.pdf_refs)) return 'struct_invalid'
@@ -121,10 +121,10 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
     for (const table of SNAPSHOT_TABLES) {
       const rows = data[table]
       if (!Array.isArray(rows)) return 'struct_invalid'
-      const cols = [...(COLUMNS_OF.get(table) ?? [])].sort()
+      const cols = COLUMNS_OF.get(table) ?? []
       for (const row of rows) {
         if (row === null || typeof row !== 'object' || Array.isArray(row)) return 'struct_invalid'
-        if (JSON.stringify(Object.keys(row as Record<string, unknown>).sort()) !== JSON.stringify(cols)) {
+        if (!sameKeySet(Object.keys(row as Record<string, unknown>), cols)) {
           return 'struct_invalid'
         }
       }
@@ -241,10 +241,7 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       if ((obj.schema_version as number) > repos.snapshot.readSchemaVersion()) {
         return reject('schema_newer', claimed)
       }
-      if (
-        JSON.stringify(Object.keys(obj.table_counts as Record<string, unknown>).sort()) !==
-        JSON.stringify([...SNAPSHOT_TABLES].sort())
-      ) {
+      if (!sameKeySet(Object.keys(obj.table_counts as Record<string, unknown>), SNAPSHOT_TABLES)) {
         return reject('struct_invalid', claimed)
       }
       // 验签钥（未配对=不可验签→hmac_fail——自裁③收窄口径；owner 已过形状门）
@@ -290,6 +287,11 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       return { outcome: 'applied', ownerId: body.owner_id, snapshotSeq: body.snapshot_seq, stats }
     }
   }
+}
+
+/** 键集同集判定（两键列各自排序后序列化比较——表集校验×2+行键集校验×1 三处单源） */
+function sameKeySet(a: readonly string[], b: readonly string[]): boolean {
+  return JSON.stringify([...a].sort()) === JSON.stringify([...b].sort())
 }
 
 /** 内容全等：整行所有列（[R1] kind/tags 全列入写面后全列同集比较——§13.2⑤ 字面） */
