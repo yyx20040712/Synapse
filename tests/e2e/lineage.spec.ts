@@ -254,6 +254,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 默认 seam（SYNAPSE_E2E_QUIT_AUTOCONFIRM=1 短路 confirmQuit 使 cancel 态不可达）。
     const app = await launch(userData, { SYNAPSE_E2E_QUIT_AUTOCONFIRM: '0' })
     const win = await app.firstWindow()
+    // [T3 CI 修] 视口固定 1024×768=CI runner 虚拟屏档（本地默认 1280×860 与
+    // CI 布局分叉——两平台统一直拖径先例 F-CIFLK-01；调序落点安全带随档锁定）
+    await win.setViewportSize({ width: 1024, height: 768 })
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
     await expect(nodeG(win, '脉络根文献')).toBeVisible({ timeout: 10_000 })
@@ -351,7 +354,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     }
     await win.mouse.move(bBox.x + bBox.width / 2, bBox.y + bBox.height / 2)
     await win.mouse.down()
-    await win.mouse.move(aBox.x + aBox.width * 0.25, aBox.y + aBox.height / 2, { steps: 6 })
+    // [T3 CI 修] 落点=甲右 1/4（插甲后=真调序 [甲,乙,root]）。旧左 1/4（插甲前）
+    // 在 1024 档 x≈158 压在时间线容器左缘横滚自动滚动带+nav 覆盖区：拖拽驻留期
+    // 横滚持续左滚推框左缘越过指针→松手按 INV-98「源月框外=回弹不写」正确触发
+    // →零 dirty 恒 disabled（CI 44315413077 实测+本地压视口插桩复现）。右 1/4
+    // x≈281 距左右两缘均远，两视口档均无横滚带介入。
+    await win.mouse.move(aBox.x + aBox.width * 0.75, aBox.y + aBox.height / 2, { steps: 6 })
     await expect(win.locator('.drag-slot:not(.cand)')).toHaveText('置 入', { timeout: 5_000 })
     await win.mouse.up()
     await expect(win.getByTestId('lineage-save-btn')).toBeEnabled({ timeout: 10_000 })
