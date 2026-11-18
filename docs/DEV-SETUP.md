@@ -106,5 +106,4 @@ npm run build && npm run test:e2e   # 预期全量用例以实际输出为准（
 ## 6. 首会话开工
 
 按 `docs/prompts/` 下**编号最大**的 handoff 开工（历史交接书在仓外档案区，
-见 registry 头部迁移注记的路径）。宪法纪律（技能清点/分级阅读/三阶段流程）
-不变——见 AGENTS.md。
+见 registry 头部迁移注记的路径）。工作纪律（工作流/设计先行/测试纪律）见 AGENTS.md。

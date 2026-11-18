@@ -15,7 +15,7 @@ invariants.md「术语说明」。
   - 安全禁令：sandbox/contextIsolation 双开、renderer 禁 Node/路径、SQL 全预编译、
     CSP 无 unsafe-eval、出网白名单（详见 docs/security.md）。
   - 分层单向：`ipc → services → repos → db`；`renderer → window.api → ipc`。
-  - 契约冻结：跨进程类型单源 `src/shared/`；测试/契约/迁移/配置受锁（sha256）。
+  - 契约冻结：跨进程类型单源 `src/shared/`；测试/契约/迁移/配置变更须在提交说明申报（原 sha256 锁已退役）。
   - 明确不做清单：见 AGENTS.md「明确不做」。
 
 ## 2. 系统边界与方案策略
@@ -395,9 +395,9 @@ flowchart TB
 
 - `npm run verify` 全绿=合并门槛（共有检查与 CI 同口径——CI 另跑覆盖率与
   e2e）；收尾 push 后以 CI conclusion 复核（完成定义条款）。
-- 覆盖率门槛：全局 70 / repos 85 / renderer 逻辑层 60（vitest.config.ts 受锁）。
+- 覆盖率门槛：全局 70 / repos 85 / renderer 逻辑层 60（改 vitest.config.ts 须提交说明申报）。
 - e2e 断言「看得见」=真实文本+计算样式（INV-06）；e2e 禁截图比对（INV-64）。
-- 测试面单调性：契约面只增不减，有意收紧走豁免流程（INV-63）。
+- 测试面单调性：契约面只增不减，有意收紧须用户裁决（INV-63）。
 
 **已知风险与遗留**
 

@@ -24,7 +24,7 @@
  * 一律 make* 前缀+领域名词；跨 ≥2 文件重复的先入 tests/utils/factories.ts
  * （renderer 域）或 fixtures.ts（node/通用域）再引用，禁第三处手抄。
  *
- * 红线：R1 零 src 变更；C 面零变化由指纹门对拍。受锁文件。
+ * 红线：R1 零 src 变更。
  * 契约面（变更须提交说明申报）。
  */
 import { vi, type MockInstance } from 'vitest'

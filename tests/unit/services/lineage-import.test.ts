@@ -5,7 +5,7 @@
  * [F-ALIGN-01] upsertNode 幽灵 paperId 拒用例随 upsert-node 通道新建形态退役
  * 删除（2026-10-04——服务层新建分支消亡；透传断言保留）。
  * 保留覆盖面：repo 方法真库夹具（upsert 往返/级联链/UNIQUE 拒/空图合法）/
- * upsertEdge 运行时守卫（W1 宿主用例：自环/多父/成环三拒绝+重复边中文收口+
+ * upsertEdge 运行时守卫（W1 宿主用例：自环/成环两拒绝+重复边中文收口+
  * 节点不存在拒）/removeNode/removeEdge 透传。
  * repo 交互=真库夹具（AI-01 测试同型）；always-active（ADR-0017 裁决 3）。
  */

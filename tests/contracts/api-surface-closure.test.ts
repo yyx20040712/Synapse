@@ -61,15 +61,14 @@ const DOMAIN_PINS: readonly [string, readonly string[]][] = [
   ['workspaces', ['create', 'list', 'rename', 'switch']]
 ]
 
-// 组名数字=活锚同步（[r1 R4 k3-N6/d1-N1] 55→75 陈旧计数同步——describePath 入
-// test-surface 基线指纹 key，组名变=全组旧身份淘汰（豁免随批登记，新基线登账）；
+// 组名数字=活锚同步（陈旧计数随通道扩展更新）；
 // 沿革：[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（域 21 不变）；
 // [F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2]
 // 62→75 +AI 六域 13 通道；[F-FOLDER-01]
 // 56→61：+folders 四通道+papers/move-folder；[F-UIRES-01 批 B] 60→61：+papers/delete；
 // [F-BAKRET-01] 61→60：lineage/import 退役——用户裁决 2026-09-30）
 describe('contracts/api-surface-closure —— 接线表闭合性（93 通道 pin）', () => {
-  it('通道总数=93（接线表闭合性：增删通道须意识化更新本 pin+[locked-change]——[F-VISFB-65] 89→93：+recovery 域四通道（恢复副本 peek/save/read/release，域 23）；[F-VISFB-61] 87→89：+lineage/upsert-floating-note+lineage/remove-floating-note（悬浮笔记数据与会话面，域 22 不变）；[F-VISFB-14] 86→87：+system/report-quit-flush（退出握手回执）；[F-VISFB-43] 81→86：+figures 域五通道（图表提取管线）；[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75 +AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
+  it('通道总数=93（接线表闭合性：增删通道须意识化更新本 pin（提交说明申报）——[F-VISFB-65] 89→93：+recovery 域四通道（恢复副本 peek/save/read/release，域 23）；[F-VISFB-61] 87→89：+lineage/upsert-floating-note+lineage/remove-floating-note（悬浮笔记数据与会话面，域 22 不变）；[F-VISFB-14] 86→87：+system/report-quit-flush（退出握手回执）；[F-VISFB-43] 81→86：+figures 域五通道（图表提取管线）；[F-DBCAMP-01 DB-3 U3] 80→81：+snapshot/import-from-file（导入合并面）；[F-DBCAMP-01 DB-3 U2] 75→80：+snapshot 域五通道；[F-DBCAMP-01 DB-2 U2] 62→75 +AI 六域 13 通道；[F-DBCAMP-01 DB-1 U2] 61→62：+papers/set-starred；[F-UIRES-01 批 B] 60→61：+papers/delete）', () => {
     expect(allChannels().length).toBe(93)
   })
 

@@ -9,7 +9,7 @@ $template = @"
  * - <做什么；验收标准写进 tests 对应文件（已锁定，先读测试再实现）>
  * - 涉及 store+异步+用户输入时：先给状态/迁移表（态空间×事件→迁移，跨格序列
  *   显式枚举后再实现），异步 load 一律带请求序号 stale-guard（成功/失败两路径
- *   都守；形状与先例见 docs/DEVELOPMENT.md §8、AGENTS.md「状态与不变量纪律」）
+ *   都守；形状与先例见 docs/DEVELOPMENT.md §8、AGENTS.md「设计先行」）
  *
  * ── 接口层 ──
  * - export <签名>

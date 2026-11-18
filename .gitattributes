@@ -1,5 +1,4 @@
-# 统一 LF：locks/manifest.json 的 sha256 以 LF 字节为基准。
-# 任何平台 checkout 都必须还原为 LF，否则 CRLF 会让受锁文件对账全部误报「被修改」。
+# 统一 LF：行尾跨平台一致，避免 CRLF 漂移污染 diff 与脚本对账。
 * text=auto eol=lf
 
 # 二进制类型显式声明（防 auto 误判）

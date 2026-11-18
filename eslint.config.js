@@ -76,7 +76,7 @@ export default tseslint.config(
               // ——本条对白名单外 renderer 文件生效；白名单 override 块在下方重申
               // 完整 patterns（flat config 同规则后块覆盖，无法只豁免一条）
               group: ['pdfjs-dist', 'pdfjs-dist/**'],
-              message: 'pdfjs-dist 只许白名单五文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/FigureExtractor，INV-16——白名单变更=[locked-change]）'
+              message: 'pdfjs-dist 只许白名单五文件 import（PdfDocProvider/PdfPageCanvas/TextLayer/CorpusExtractor/FigureExtractor，INV-16——白名单变更须提交说明申报）'
             }
           ]
         }

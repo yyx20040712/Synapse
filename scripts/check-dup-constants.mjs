@@ -180,7 +180,7 @@ export function scanDuplicateConstants(root) {
     if (recordedFiles && recordedFiles.size === fp.files.length && fp.files.every((f) => recordedFiles.has(f))) {
       baselineHits.push(fp)
     } else {
-      const drift = recordedFiles ? `（baseline 指纹漂移：登记 ${[...recordedFiles].sort()} vs 实测 ${fp.files}——收敛请更新 baseline+[locked-change]）` : ''
+      const drift = recordedFiles ? `（baseline 指纹漂移：登记 ${[...recordedFiles].sort()} vs 实测 ${fp.files}——收敛请更新 baseline，提交说明申报）` : ''
       newRed.push(
         `${fp.name} = ${displayValue(fp.kind, fp.value)} 跨 ${fp.files.length} 文件（${fp.files.join(', ')}）——` +
         `同名同值跨文件${drift || '（baseline 外新增——收敛到 src/shared 唯一定义点）'}`

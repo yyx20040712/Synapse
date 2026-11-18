@@ -97,8 +97,8 @@ electron-builder 安装包产物与 installer smoke 链未在 Linux 验证——
 
 ## 8. 工程惯例速查（时序/接缝/不变量——防三类骨架盲区）
 
-> 工单和五层规约治理静态结构；以下惯例治理它们管不到的三个维度。宪法对应条款
-> 见 AGENTS.md「状态与不变量纪律」；跨模块不变量登记册见 `docs/invariants.md`。
+> 工单和五层规约治理静态结构；以下惯例治理它们管不到的三个维度。对应条款
+> 见 AGENTS.md「设计先行」；跨模块不变量登记册见 `docs/invariants.md`。
 
 - **异步 store 一律带请求序号 stale-guard**（闭包 `let loadSeq = 0`，落地前
   `if (seq !== loadSeq) return`，成功/失败两路径都要守）。先例：library / notes /

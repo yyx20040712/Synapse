@@ -25,7 +25,10 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 
 - 分层单向：`ipc → services → repos → db`；`renderer → window.api → ipc`
   （ESLint 强制）
-- 文件 ≤500 行（ESLint max-lines）；出现第二职责就拆文件
+- 文件 ≤500 行（ESLint max-lines 硬上限）；repo ≤300 行、renderer 组件
+  ≤250 行（分级上限，quality 强制）；出现第二职责就拆文件
+- src 产物零外部模型代号（quality 负锚扫描，词表单源=
+  scripts/check-model-names.mjs）
 - 方案切换时删除旧方案；死代码即删，提交前确认新文件被引用
 - 跨进程类型单一真相源=`src/shared/`；禁止手写两份等价类型
 - 同一逻辑第三次出现时抽函数（Rule of Three）
@@ -58,12 +61,13 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 - 复杂任务由主控（唯一对接用户的会话）编排：派发实现者子代理 →
   独立审查 → 主控收尾（verify、提交、报告）。小任务主控直接做，
   不强制派发
-- 实现者不运行 git、不改契约文件（`src/shared`、测试、migrations、
-  CI）；超出发范围的决定如实申报，不自行裁决
+- 实现者不运行 git；超出发范围的决定如实申报，不自行裁决。强流程
+  实现者可以新增测试（在提交说明中申报）；修改既有断言或共享契约
+  （`src/shared`、migrations、CI）须主控或用户裁决
 - 卡住就停下报告卡点；不删检查、不放宽断言、不引入新依赖
 - 弱模型领单：读 `tickets/registry.ts` 找 `status: 'open'` 且
-  `owner: 'weak'` 的工单，只改工单指向的文件，`npm run verify` 绿后
-  报告人类审查 diff，由人类更新状态并提交
+  `owner: 'weak'` 的工单，只改工单指向的文件（禁改测试与契约文件），
+  `npm run verify` 绿后报告人类审查 diff，由人类更新状态并提交
 
 ## 文档
 
@@ -96,8 +100,10 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 - 判定命令链通过看退出码（verify 以日志内退出码行为准），不看 grep
   是否命中
 - 审计证据、探针工具件写仓外档案区
-  `/home/yyx/synapse-archive/scripts-audits/`，不入库；变异还原后
-  备份即删
+  `/home/yyx/synapse-archive/scripts-audits/`，不入库
+- 对未提交的实现做临时变异验证时，禁用 git checkout 还原（会连带
+  抹掉未提交实现）；用文件备份法：cp 备份 → 变异 → 测试 → cp 还原 →
+  diff 确认为空，备份即删
 - 中文一律 UTF-8，写文件后确认可读
 
 ## 完成定义
@@ -130,6 +136,8 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 - 仓库根 `.gitattributes` 强制 LF，勿删
 - 显式路径过滤跑测试后核对执行数——拼错路径会静默零执行呈假绿
 - 探针代码写成文件后 `node 文件` 运行；`node -e` 仅限纯 ASCII 单行
+- Linux 无 PowerShell：`npm run ticket:new` 不可用——建工单手工复制
+  registry 既有行改字段，typecheck 绿后提交
 
 ## 明确不做（防止顺手实现）
 

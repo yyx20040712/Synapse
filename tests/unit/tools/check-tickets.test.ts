@@ -136,15 +136,15 @@ describe('[F-CONSOL-09] check-tickets CLI 探针（F-CONSOL-08 修复面行为�
     expect(r.stderr).toContain('F-TEST-01 已 done，但文件仍含未实现占位：code.ts')
   })
 
-  it('T3 存在性前置：done 票 file 不存在 → EXIT=1 文件不存在红（guard 不吞存在性检查）', async () => {
+  it('T3 存在性前置：done 票 file 不存在 → 降级 note 观测 EXIT=0（机制退役遗留定位符不卡 CI）', async () => {
     const root = await makeFixture([{ id: 'F-TEST-01', file: 'missing.ts', status: 'done' }], {})
     const r = await cli(root)
-    expect(r.code).toBe(1)
-    expect(r.stderr).toContain('F-TEST-01 指向的文件不存在：missing.ts')
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('F-TEST-01→missing.ts')
   })
 
-  it('T3b 规则 1 存在性回归锁：不存在的 json file → EXIT=1（guard 前移=等价变异体——规则 1 独立兜底，M-3 实证无判别差）', async () => {
-    const root = await makeFixture([{ id: 'F-TEST-01', file: 'missing.json', status: 'done' }], {})
+  it('T3b 规则 1 存在性回归锁：open 票 file 不存在 → EXIT=1（done 降级后 open 仍强制存在）', async () => {
+    const root = await makeFixture([{ id: 'F-TEST-01', file: 'missing.json', status: 'open' }], {})
     const r = await cli(root)
     expect(r.code).toBe(1)
     expect(r.stderr).toContain('F-TEST-01 指向的文件不存在：missing.json')

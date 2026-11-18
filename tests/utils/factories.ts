@@ -18,7 +18,7 @@
  * 边界：本件含 renderer store 值依赖（useLineageStore/usePageItemsStore+act）
  * ——node 环境 db 域测试禁 import 本件（用 fixtures.ts）；盒几何桩看
  * tests/utils/geometry.ts。
- * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更；C 面零变化指纹门。
+ * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更。
  * 契约面文件（变更须提交说明申报）。
  */
 import { act } from 'react'
