@@ -110,11 +110,23 @@ for (const t of tickets) {
   }
 }
 
-// 1) 工单文件必须存在
+// 1) 工单文件必须存在（open 票强制；done 票=历史记录，其机制退役后定位符
+//    允许悬空——可见性 note 观测，不卡 CI）
+const retiredFileTickets = []
 for (const t of tickets) {
   if (!existsSync(join(root, t.file.replaceAll('\\', '/')))) {
-    violations.push(`工单 ${t.id} 指向的文件不存在：${t.file}`)
+    if (t.status === 'open') {
+      violations.push(`工单 ${t.id} 指向的文件不存在：${t.file}`)
+    } else {
+      retiredFileTickets.push(`${t.id}→${t.file}`)
+    }
   }
+}
+if (retiredFileTickets.length > 0) {
+  console.log(
+    `note: ${retiredFileTickets.length} 张 done 票的 file 指向已删除文件（机制退役遗留定位符，不卡 CI）：` +
+      retiredFileTickets.join('、')
+  )
 }
 
 // 2) 代码中的工单号引用一致性（src 与 tests 规则不同）：
@@ -185,8 +197,8 @@ for (const t of tickets.filter((x) => x.status === 'done')) {
     continue
   }
   // [F-CONSOL-08] 占位桩是代码调用形态——非代码后缀（数据快照 json 等）内的
-  // 同名字样是测试标题/断言的镜像非声明（首个 file 指向 test-surface.baseline.
-  // json 的 done 票实测误报：快照镜像历史用例标题字样），跳过内容扫描。
+  // 同名字样是测试标题/断言的镜像非声明（历史先例：file 指向已退役的
+  // test-surface.baseline.json 的 done 票实测误报——快照镜像历史用例标题字样），跳过内容扫描。
   // DIR/存在性/豁免清单检查（上方）不受此后缀门影响；本 continue 仅豁免本循环
   // 的内容扫描——未来在本循环 readFileSync 后追加的第二检查不受此门保护
   if (!/\.(ts|tsx|mjs)$/.test(t.file)) { skippedNonCode.push(t.file); continue }

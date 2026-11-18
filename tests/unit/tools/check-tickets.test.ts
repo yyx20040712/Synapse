@@ -1,6 +1,6 @@
 /**
- * [F-CONSOL-09] check-tickets.mjs —— CLI 探针姊妹件（check-test-surface.test.ts
- * 探针法同型：execFile 真子进程+mkdtemp fixture 根+受控 exit code 捕获）。
+ * [F-CONSOL-09] check-tickets.mjs —— CLI 探针测试件（execFile 真子进程
+ * +mkdtemp fixture 根+受控 exit code 捕获）。
  * check-tickets 的 root=process.cwd()，cwd 指 fixture 根即读 fixture registry
  * ——真 registry/真票面零触碰。fixture 预建空 src/+tests/（walk=readdirSync
  * 对缺失目录 throw——空目录=规则 2/5 扫描面空数组）。

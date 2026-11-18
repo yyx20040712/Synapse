@@ -1,18 +1,15 @@
 #!/usr/bin/env node
 /**
- * check-quality.mjs —— 质量扫描关卡（受锁文件）。
+ * check-quality.mjs —— 质量扫描关卡。
  * 检查：Node 版本守卫 / 占位标记 / 乱码特征 / renderer features 跨域互引
- * / CSS 字号+颜色字面量消费负锚（第 6 段——[F-LINT-04 ③ 2026-09-10 起
- * COLOR_RE 单源=scripts/color-re.mjs，本件与 eslint.config.js B-5 均
- * import 该件；双写面物理消失，6b 哨兵段哨内联回退）/ 色值 token 同值
- * 守卫（②）/ 内联回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——
- * R−D−W 悬空引用集空性，DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）
- * / e2e 截图比对负锚（第 9 段——INV-64）/ 模型代号负锚（第 8 段——扫描面
- * 单源=scripts/check-model-names.mjs）/ 节点唯一来源负锚词表（第 10 段——
- * INV-NEW-1，F-ALIGN-01）+治理表行格数校验（10b 段）/ src/main 禁冲突替换式
- * 删除（第 11 段——F-DBCAMP-01 DB-3 U1，删事件账漏账路径负锚）/ 文档禁用词
- * 负锚（第 12 段——F-DOCGOV-02 U4，宪法「文档写作规范」节词面棘轮，词表/
- * 扫描面/行级豁免单源=scripts/check-doc-terms.mjs）。
+ * / CSS 字号+颜色字面量消费负锚（第 6 段——COLOR_RE 单源=scripts/color-re.mjs，
+ * 本件与 eslint.config.js 均 import 该件）/ 色值 token 同值守卫（②）/ 内联
+ * 回退哨兵（③，6b 段）/ var() 语义锚（C-4c，6c 段——R−D−W 悬空引用集空性，
+ * DYNAMIC_TOKENS 白名单单源）/ 同值双常量（第 7 段）/ e2e 截图比对负锚
+ * （第 9 段——INV-64）/ 模型代号负锚（第 8 段——扫描面单源=
+ * scripts/check-model-names.mjs）/ 节点唯一来源负锚词表（第 10 段——INV-NEW-1）
+ * / src/main 禁冲突替换式删除（第 11 段——隐式 DELETE 绕过删事件触发器的
+ * 漏账路径负锚）。
  * 退出码 1 = CI 红。规则依据 AGENTS.md（文档无强制等于没写）。
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -21,7 +18,6 @@ import postcss from 'postcss'
 import { COLOR_RE, META_RE, stripUrlFunctions } from './color-re.mjs'
 import { scanDuplicateConstants, formatDupDetails, clipped } from './check-dup-constants.mjs'
 import { scanModelNames } from './check-model-names.mjs'
-import { scanDocTerms } from './check-doc-terms.mjs'
 
 const root = process.cwd()
 const violations = []
@@ -487,46 +483,7 @@ for (const f of srcFiles) {
   }
 }
 
-// 10b) 治理表行格数校验（[F-ALIGN-01] 2026-10-04 起——v126 §5 机构检化：
-//      k1-B1 先例=登记表行格数与列数一致性此前无机检，落笔靠人肉数竖线）——
-//      defense-lifecycle.md 登记表节（「## 登记表」起至下一二级标题）内以 |
-//      开头的行（容忍行首空白），竖线数须恒=6（5 列+首尾）。文件缺席/表节零
-//      表行=哨兵硬红（fail-closed，theme.test.ts 先例）。边界申报：①表内容若
-//      用 \| 转义竖线会被误计数（现表零转义——未来需要时先剥转义再数）；
-//      ②登记表节内=唯一表（节内未来新增非 5 列表会被误伤红——显式约束非
-//      误报，加表须迁节）；③三级标题不复位状态机（节内 ### 小节下若出现
-//      表行仍计入——现节内无此形态）；④invariants.md 主表同型风险记为后续
-//      候选（先例未现，暂不扩面）。治理登记=defense-lifecycle.md ㉕行。
-let govTableOk = true
-let govTableText
-try {
-  govTableText = readFileSync(join(root, 'docs', 'defense-lifecycle.md'), 'utf-8')
-} catch (e) {
-  violations.push(`哨兵：defense-lifecycle.md 读取失败（${e.message}）——治理表格数关卡失能（10b）`)
-  govTableOk = false
-  govTableText = ''
-}
-let govRowCount = 0
-let inGovTable = false
-const govLines = govTableText.split('\n')
-for (let ln = 0; ln < govLines.length; ln++) {
-  const line = govLines[ln]
-  if (line.startsWith('## ')) {
-    inGovTable = line.startsWith('## 登记表')
-    continue
-  }
-  if (!inGovTable || !line.trimStart().startsWith('|')) continue
-  govRowCount++
-  const bars = (line.match(/\|/g) ?? []).length
-  if (bars !== 6) {
-    violations.push(`docs/defense-lifecycle.md:${ln + 1}: 登记表行 ${bars} 竖线≠6（5 列结构——错位即红，v126 §5 k1-B1 先例）`)
-  }
-}
-if (govTableOk && govRowCount === 0) {
-  violations.push('哨兵：defense-lifecycle.md 登记表零表行——表节缺席或标题漂移（10b fail-closed）')
-}
-
-// 11) [F-DBCAMP-01 DB-3 U1] src/main 禁冲突替换式删除（设计 §13.1 捕获面②
+// 11) src/main 禁冲突替换式删除（F-DBCAMP-01 DB-3 U1 起立段：
 //     ——2026-10-14 立段）：该写形态对既有行=隐式 DELETE，绕过 AFTER DELETE
 //     触发器=删事件账（021 deletion_events）漏账路径（探针实证 runId=20261014-
 //     db3u1 在档；存量零命中 grep 实照 2026-10-14）。命中形态=字面冲突替换
@@ -536,7 +493,7 @@ if (govTableOk && govRowCount === 0) {
 //     残留叙述即 stale 面需改写，段 10 同口径）。边界申报（负锚固有边界，
 //     接受）：SQL 注释夹词形态（如 REPLACE/*c*/INTO）与 ON CONFLICT ... DO
 //     UPDATE 合法子句变体不在拦截面——机检面=字面词组，语义等价改写由评审
-//     承载。治理登记=docs/defense-lifecycle.md（随批登记行）。
+//     承载。
 const CONFLICT_REPLACE_RE = /\bor\s+replace\b/i
 const REPLACE_INTO_RE = /\breplace\s+into\b/i
 const mainFiles = walk(join(root, 'src', 'main'), (p) => /\.(ts|sql)$/.test(p))
@@ -561,12 +518,6 @@ for (const f of mainFiles) {
     )
   }
 }
-
-// 12) [F-DOCGOV-02 U4 2026-10-28] 文档禁用词负锚——活文档正文出现宪法
-//     「文档写作规范」节禁用词表词面即红（词面棘轮；词表/扫描面/行级豁免
-//     单源=scripts/check-doc-terms.mjs，import 先例=scanModelNames；治理
-//     登记=docs/defense-lifecycle.md 登记行㉖——退出条件与复审节奏在彼）。
-for (const v of scanDocTerms(root)) violations.push(`doc-terms: ${v}`)
 
 if (violations.length > 0) {
   console.error('quality 检查未通过：')

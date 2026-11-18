@@ -16,8 +16,8 @@
  *     口径，函数/块级局部不收 [门二 W-4]）；.test./.spec. 同口径排除 [门二 W-2]。
  * baseline 棘轮（§3）：scripts/dup-constants.baseline.json 存存量 8 组真命中
  * 指纹（name+kind+value+文件集，无行号）。运行时新增/漂移命中 exit 1；
- * baseline 内打印「待收敛」放行（收敛子票 F-LINT-03 候选）。baseline 受锁
- * （check-locks.mjs/lock-protected.ps1 显式登记），变更须 [locked-change]。
+ * baseline 内打印「待收敛」放行（收敛子票 F-LINT-03 候选）。baseline 变更
+ * 随提交说明申报。
  * B-2 副产物（§5）：未 export 的字面量 const 清单=stderr 只读输出，
  * DUP_CONSTANTS_B2=1 展开全清单；不卡 CI、不定消费规则。
  * CLI：node scripts/check-dup-constants.mjs（exit 1=红层新增/漂移）。

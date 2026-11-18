@@ -1,8 +1,7 @@
 /**
  * [F-RECOV-01] recoveryEntry —— ws-entry 屏障与确认条决策族（终裁 W1/W6 拆件：
  * 自 recoveryScheduler 迁入；构造注入 SchedulerPorts，entry 零 import scheduler
- * ——依赖方向 scheduler→entry 单向无环；scheduler 门面委托，公共 API 不变，
- * test-surface C_after ⊇ C_before 由此满足）。
+ * ——依赖方向 scheduler→entry 单向无环；scheduler 门面委托，公共 API 不变）。
  *
  * ── 行为面（确认条状态机：checking→{open|await-decision}；await-decision→
  *    {restore 成功→open|discard→open|defer→open+pendingChip|deadFolder（冻结
