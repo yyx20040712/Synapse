@@ -270,6 +270,15 @@
    "first_seen": "2026-10-19",
    "resolution": "立案（同用例 2 次非确定失败通则线触发——**双机同指纹**：本地 VMware Linux 07:59 全量〔单例复跑 3 passed/22.5s 定绿〕+CI windows-latest run 39180552705〔docs-only 零代码变更面——纯环境无关非确定性〕；与时段无关〔2026-10-19 用户裁决废除窗口口径后首例——恰证口径废除方向正确〕；承接=F-E2EFLK-01 FLK 三族根治票——E5 并入输入事件族排查面）",
    "note": "；[F-VISFB-67 批追记 2026-10-19] 1280 全量负载单现→定向复跑 3/3 定绿（observing 口径不变，不销项）；[2026-10-21 追记（runId=20261021-evctx-detourw 场次 2 门二实证面）] 同指纹再两现：本地全量（154 例面）exit=1 一红 + 同日单例复跑同 :83 同 detached 签名 exit=1——双轮 error-context.md 指纹经 F-EVCTX-01 保号面双目录并存零覆写实测归档（run-2026-10-21T10-53-41-198Z/run-2026-10-21T11-16-09-133Z）；第三跑（同日晚些）exit=0 转绿=非确定失败族定性支持。立案状态维持（承接 F-E2EFLK-01 输入事件族排查面不变）；[2026-10-28 追记（F-DEP-02 zod4 升级批）] 本地 VMware 全量 154 例面 exit=1 单红（新亚型=一步下游型：:83 tab click 过后消息 getByText toBeVisible 10s not found——重挂载竞态下游表现）+定向复跑窗三红（click 60s detach 原签名×1+同下游亚型×2）——计数=再两现（全量 1+复跑窗 1，count 5→7）；zod3 对照实验同红同落点（临时降 3.25.76 定向复跑——与依赖升级无关定性实证；实验毕全量还原+typecheck 绿+定向单测 7/7 绿自证）；同日 CI windows-latest zod3 面（run 40629263463）同用例绿=平台侧对照。立案状态维持（承接 F-E2EFLK-01 输入事件族排查面不变）"
+  },
+  {
+   "spec": "tests/e2e/lineage.spec.ts",
+   "case": "γ1 [F-SLOTGRID-01 U3] 算术落点+FLIP 3 帧回评：拖奇行卡跨行插入→settle 落位格=positionOf 同源（连续 3 帧 ≤1px）（:1764）",
+   "count": 1,
+   "fingerprint": "拖中邻卡读取空型（:1818 nb.prev 期待「脉络根文献」实得空串——拖拽中实态槽邻位查询空；未达 settle 断言面）",
+   "first_seen": "2026-11-18",
+   "resolution": "observing（单现；同日单例复跑 1 passed/7.9s 定绿放行；输入事件拖拽族=F-E2EFLK-01 排查面沿用）",
+   "note": "[2026-11-18 视检轮 R2-C2 验收批] lineage.spec 全文件 26 过 1 红本地 VMware 首现——与本批改动零共享断言面（γ1=卡拖插入几何，C2=边路由候选域）；error-context 快照 run-2026-11-18T15-31-58-725Z 保号目录在档"
   }
  ]
 }
