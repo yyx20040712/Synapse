@@ -82,9 +82,6 @@ export type EdgeEditState =
       cursor: Pt
     }
 
-/** 全图 12 锚命中（±SNAP_R 内容坐标——nearestAnchor 与 useDrawLine 同式；带 side） */
-
-
 /**
  * [回炉 R16] 换端拖拽自动滚动+解锚重算装配（自 onEndDown 拆出——行数债）：
  * 返回 {auto, onMove}——onMove=指针采样（首采样前 hasClient 闸不施滚）；

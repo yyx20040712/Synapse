@@ -166,7 +166,7 @@ export function gridChannelsOf(snap: LayoutSnapshot): GridChannel[] {
 }
 
 /** 阻挡带集（主轴竖线 x₀×障碍集 PAD 膨胀求交→裁剪至桩端域→夹缝<28 合并） */
-export function blockingBands(x0: number, y1: number, y2: number, obstacles: readonly Rect[]): Array<[number, number]> {
+function blockingBands(x0: number, y1: number, y2: number, obstacles: readonly Rect[]): Array<[number, number]> {
   const lo = Math.min(y1, y2)
   const hi = Math.max(y1, y2)
   const ivs: Array<[number, number]> = []

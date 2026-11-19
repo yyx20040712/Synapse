@@ -21,7 +21,7 @@ const eq = (a: Pt, b: Pt): boolean => a.x === b.x && a.y === b.y
 const dup = (p: Pt): Pt => ({ x: p.x, y: p.y })
 
 /** 全点链展开（代数判定工作形） */
-export function fullPoints(p: EditPolyline): Pt[] {
+function fullPoints(p: EditPolyline): Pt[] {
   return [p.anchorA, ...p.via, p.anchorB]
 }
 

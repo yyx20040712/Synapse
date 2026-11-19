@@ -22,7 +22,7 @@
 export type AnchorSlotKey = 't0' | 't1' | 't2' | 'b0' | 'b1' | 'b2' | 'l0' | 'l1' | 'l2' | 'r0' | 'r1' | 'r2'
 
 /** 消费面结构类型（RoutedPath 子集——仅 anchorMarks 观测字段） */
-export interface OccupancySource {
+interface OccupancySource {
   anchorMarks?: string
 }
 

@@ -131,9 +131,6 @@ export function EdgeOverlay(props: {
     }
     return [...auto, ...manual]
   }, [paths])
-  // [F-SLOTGRID-01 U2] 同道错峰 laneRank（走廊 lane≥0 字典序 opacity 递减）
-  // 随走廊车道族退役删除——五态链 lane 全退役，重叠分离=槽位级空槽分配
-  // （ChannelUse/slotAssign）承载
 
   /** [②U5] 菜单动作收口（store 单口——一动作=一编辑单元沿 store 各方法） */
   const selEdge =
@@ -178,7 +175,7 @@ export function EdgeOverlay(props: {
         // bright 常亮——判定集=brightIds；缺省回落全 dim=独立渲染防御面）
         const dimmed = focused && (props.brightIds == null || isEdgeDimmed(e, props.brightIds))
         // [RR10] hovered 回升 0.65 并入 inline（单源 edge-overlay-geom
-        //  edgeVisualOpacity；dim 态恒类承载；错峰 fade 源随 lane 退役空缺）
+        //  edgeVisualOpacity；dim 态恒类承载）
         const opacity = edgeVisualOpacity({ hovered, focusDim: dimmed })
         const visual = opacity === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity }
         const cls = selected
