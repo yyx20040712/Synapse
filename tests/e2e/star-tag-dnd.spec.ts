@@ -87,6 +87,8 @@ test('DnD 打标：标签下拉行拖到文献行→attach 落库+行徽标刷�
   // 面（TagEditor/Dropdown mount）——页载后建的标签需重挂载才入下拉（既有
   // 刷新时序面，非本批行为）：reload 一次后开面板
   await row.getByText('打标丙文献').click()
+  // [v2 第二期] 窄窗首进默认收起——详情面板打标面前置展开（既有断言意图不变）
+  await win.locator('.lib-detail-toggle').click()
   const tagInput = win.getByLabel('新增标签')
   await tagInput.fill('拖拽打标')
   await tagInput.press('Enter')

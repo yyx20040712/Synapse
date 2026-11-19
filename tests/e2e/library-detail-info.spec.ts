@@ -61,6 +61,9 @@ async function openDrawerOn(userData: string): Promise<{ app: ElectronApplicatio
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.setViewportSize({ width: 1280, height: 860 })
+  // [v2 第二期] 窄窗首进默认收起（≤1320）——抽屉断言面前置展开（行为源=
+  // 计划 §4 第二期状态表；既有断言意图不变）
+  await win.locator('.lib-detail-toggle').click()
   await win.locator('.lib-row', { hasText: A.title }).click()
   return { app, win }
 }

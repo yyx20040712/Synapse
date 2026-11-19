@@ -235,6 +235,10 @@
    head 不吸顶=字面默认随内容滚，视检轮用户定；原 .lib-dr-body 局部承载
    退役——元数据+图片内容多，DrActions 亦随内容滚=用户字面顺序） */
 .lib-dr { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+/* [2026-11-19 v2 定案交办] 文献库详情图表条：上下间距放大+图高 64→96
+   （仅库域抽屉覆盖——脉络侧板 SidePaperInfo 共用 .pi-strip 基础样式不变） */
+.lib-dr .pi-strip { padding: 10px 0 12px; }
+.lib-dr .pi-strip img { height: 96px; }
 .lib-dr-head { padding: 15px 18px 11px; border-bottom: 1px solid var(--line-soft); }
 .lib-dr-id {
   font-family: var(--mono);
@@ -248,6 +252,21 @@
 .lib-dr-status-ok { color: var(--ok); }
 .lib-dr-status-faint { color: var(--faint); }
 .lib-dr-status-signal { color: var(--signal); }
+/* [v2 第二期] 详情头右组（状态点+收起钮）与收起钮规格（28px 图标钮同语汇） */
+.lib-dr-id-r { display: flex; align-items: center; gap: 8px; }
+.lib-dr-collapse {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  color: var(--dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.lib-dr-collapse:hover { background: var(--line-soft); color: var(--ink); }
+.lib-dr-collapse svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; }
 .lib-dr-title { font-size: var(--fs-title); line-height: 1.6; color: var(--ink); margin-top: 8px; font-weight: 600; }
 /* 四格指标（引用/通读/标注/笔记——格间 dashed line，底缘 line-soft 分隔） */
 .lib-dr-metrics {

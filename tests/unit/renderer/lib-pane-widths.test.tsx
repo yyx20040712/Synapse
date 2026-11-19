@@ -106,6 +106,7 @@ function mount(): void {
 }
 
 async function mountPage(): Promise<void> {
+  window.innerWidth = 1440 // [v2 第二期] 宽视口默认展开（jsdom 缺省 1024 落窄档收起——走真实默认推导路径）
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
@@ -113,7 +114,6 @@ async function mountPage(): Promise<void> {
     root?.render(<LibraryPage />)
   })
 }
-
 const text = (tid: string): string => host?.querySelector(`[data-testid="${tid}"]`)?.textContent ?? ''
 const el = (tid: string): HTMLElement => host?.querySelector(`[data-testid="${tid}"]`) as HTMLElement
 const page = (): HTMLElement => host?.querySelector('.lib-page') as HTMLElement

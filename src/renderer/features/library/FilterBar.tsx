@@ -48,6 +48,11 @@ export function FilterBar(props: {
   onChange: (patch: Partial<LibraryQuery>) => void
   /** [F-TAGS-01] 标签颜色映射上抛（TagDropdown 透传——组合根接力） */
   onTagColorMap?: (map: ReadonlyMap<string, string | null>) => void
+  /** [v2 第二期] 详情抽屉开关（行尾「详情」钮——窄视口首进默认收起后的展开
+   *  入口；两键可选=缺省不渲染钮（PaperDetailPanel onCollapse 同型——既有
+   *  单测夹具零改动）） */
+  detailOpen?: boolean
+  onDetailToggle?: () => void
 }): JSX.Element {
   const { query, onChange } = props
   const papers = useLibraryStore((s) => s.papers)
@@ -124,6 +129,18 @@ export function FilterBar(props: {
         onColorMapChange={props.onTagColorMap}
       />
       <div className="lib-filter-spacer" />
+      {/* [v2 第二期] 详情开关（aria-pressed=当前开态；与详情头「收起详情」
+          钮双入口——v2 稿 heading「详情」钮+inspector close 同构） */}
+      {props.detailOpen !== undefined && props.onDetailToggle !== undefined && (
+        <button
+          type="button"
+          className={`lib-sort lib-detail-toggle${props.detailOpen ? ' lib-sort-on' : ''}`}
+          aria-pressed={props.detailOpen}
+          onClick={props.onDetailToggle}
+        >
+          详情
+        </button>
+      )}
     </div>
   )
 }

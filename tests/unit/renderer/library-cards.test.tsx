@@ -37,6 +37,7 @@ stubApiEvents({
 })
 
 import { PaperList } from '../../../src/renderer/features/library/PaperList'
+import { useLibraryStore } from '../../../src/renderer/features/library/library.store'
 import { FilterBar } from '../../../src/renderer/features/library/FilterBar'
 import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
 import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
@@ -372,6 +373,9 @@ describe('T3-P3 密度列表 CSS 逐值锁（library.css——mockup L80-139 誊
 
 describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', () => {
   it('.lib-page/.lib-cols/.lib-list/.lib-drawer 在场；DiamondRule 库域退役（.lib-rule 零挂载）', async () => {
+    // [v2 第二期] jsdom 窄视口→抽屉默认收起；组装断言抽屉在场，预置展开
+    // 会话态（状态机=library-detail-collapse 单独锁）
+    useLibraryStore.setState({ detailOpen: true })
     await render(<LibraryPage />)
     expect(host?.querySelector('.lib-page')).not.toBeNull()
     expect(host?.querySelector('.lib-body')).not.toBeNull()

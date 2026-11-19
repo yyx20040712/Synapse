@@ -27,10 +27,6 @@
  * - 布局：FolderNav+列表+抽屉；测试见 tests/unit/renderer/folder-nav.test.tsx
  */
 import { useEffect, useState } from 'react'
-import type {
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent
-} from 'react'
 import type { PaperSummary } from '@shared/models/paper'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { useAsync } from '../../shared/hooks/useAsync'
@@ -42,10 +38,12 @@ import { ImportDropZone } from './ImportDropZone'
 import { LibraryDragGhost } from './LibraryDragGhost'
 import { PaperDeleteDialog } from './PaperDeleteDialog'
 import { PaperDetailPanel } from './PaperDetailPanel'
+import { PaneSeparator } from './PaneSeparator'
 import { PaperList } from './PaperList'
 import { PaperRowMenu } from './PaperRowMenu'
 import { useLibraryDnd } from './library-dnd.store'
 import { useLibraryStore } from './library.store'
+import { useDetailOpen } from './use-detail-open'
 import { movePaperToFolder } from './paper-move'
 import { togglePaperStar } from './paper-star'
 import { useCascadeGuard } from './useCascadeGuard'
@@ -109,6 +107,8 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
 
   // [F-VISFB-41] 双侧栏拖宽会话（宽=页根 CSS 变量载体；拖拽期直写零 setState）
   const panes = useLibPaneWidths()
+  // [v2 第二期] 详情抽屉收起/展开会话态（默认=首进视口推导；选择后 resize 不覆盖）
+  const detail = useDetailOpen()
 
   return (
     <div className="lib-page" ref={panes.pageRef} style={panes.pageStyle}>
@@ -138,7 +138,13 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
             query.folderScope?.kind === 'folder' ? query.folderScope.folderId : MAIN_GRAPH_ID
           }
         />
-        <FilterBar query={query} onChange={setQuery} onTagColorMap={setTagColorByName} />
+        <FilterBar
+          query={query}
+          onChange={setQuery}
+          onTagColorMap={setTagColorByName}
+          detailOpen={detail.open}
+          onDetailToggle={detail.toggle}
+        />
         {error !== null && (
           <div
             className="mx-[18px] mb-2 flex items-center justify-between rounded border px-3 py-2 text-xs"
@@ -168,18 +174,22 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
               onRowContextMenu={(paper, pos) => setRowMenu({ paper, anchor: pos })}
             />
           </div>
-          <PaneSeparator
-            label="右栏宽度"
-            now={panes.drawerWidth}
-            min={LIB_DRAWER_MIN_WIDTH}
-            max={LIB_DRAWER_MAX_WIDTH}
-            onPointerDown={(ev) => panes.onResizeStart('drawer', ev)}
-            onKeyDown={(ev) => panes.onResizeKey('drawer', ev)}
-            onReset={() => panes.onReset('drawer')}
-          />
-          <aside className="lib-drawer">
-            <PaperDetailPanel paperId={selectedId} />
-          </aside>
+          {detail.open && (
+            <>
+              <PaneSeparator
+                label="右栏宽度"
+                now={panes.drawerWidth}
+                min={LIB_DRAWER_MIN_WIDTH}
+                max={LIB_DRAWER_MAX_WIDTH}
+                onPointerDown={(ev) => panes.onResizeStart('drawer', ev)}
+                onKeyDown={(ev) => panes.onResizeKey('drawer', ev)}
+                onReset={() => panes.onReset('drawer')}
+              />
+              <aside className="lib-drawer">
+                <PaperDetailPanel paperId={selectedId} onCollapse={detail.close} />
+              </aside>
+            </>
+          )}
         </div>
       </div>
       {rowMenu !== null && (
@@ -207,36 +217,5 @@ export function LibraryPage(props: { guideHidden?: boolean }): JSX.Element {
       {cascade.dialog}
       <LibraryDragGhost />
     </div>
-  )
-}
-
-/** [F-VISFB-41] 双侧栏分隔条（模块内局部件）：拖拽热区+键盘调宽（APG
- * separator——aria 三件+tabIndex）+双击复位默认宽；会话逻辑驻
- * useLibPaneWidths，本件纯承载。视觉线=.lib-sep::after 中央 1px（fnav/
- * drawer 旧 border 迁此承载——消双线，皮肤驻 library.css） */
-function PaneSeparator(props: {
-  label: string
-  now: number
-  min: number
-  max: number
-  onPointerDown(ev: ReactPointerEvent<HTMLDivElement>): void
-  onKeyDown(ev: ReactKeyboardEvent<HTMLDivElement>): void
-  onReset(): void
-}): JSX.Element {
-  return (
-    <div
-      className="lib-sep"
-      role="separator"
-      aria-orientation="vertical"
-      aria-label={props.label}
-      aria-valuenow={Math.round(props.now)}
-      aria-valuemin={props.min}
-      aria-valuemax={props.max}
-      tabIndex={0}
-      title="拖拽调宽；双击复位默认宽"
-      onPointerDown={props.onPointerDown}
-      onKeyDown={props.onKeyDown}
-      onDoubleClick={props.onReset}
-    />
   )
 }

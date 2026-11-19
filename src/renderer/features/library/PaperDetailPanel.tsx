@@ -21,7 +21,9 @@
  *   退役——简文案居中，settings 域消费保留）
  *
  * ── 接口层 ──
- * - export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element（签名不变）
+ * - export function PaperDetailPanel(props: { paperId: string | null;
+ *     onCollapse?: () => void }): JSX.Element（[v2 第二期] +onCollapse——详情
+ *   头「收起详情」钮挂接，缺省不渲染钮=既有单测夹具零改动）
  *
  * ── 架构层 ──
  * - 改动面：本文件+DrKeyVals/DrPaperInfo（3c 拆件）/DrMetrics（前批拆件）
@@ -36,6 +38,7 @@ import { useEffect, useState } from 'react'
 import type { EnrichStatus } from '@shared/models/paper'
 import { api, unwrap } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
+import { ICON_X } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { TagEditor } from '../tags/TagEditor'
 import { DrActions } from './DrActions'
@@ -59,7 +62,11 @@ function shortId(id: string): string {
   return id.length > 8 ? `${id.slice(0, 8)}…` : id
 }
 
-export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element {
+export function PaperDetailPanel(props: {
+  paperId: string | null
+  /** [v2 第二期] 收起详情（宿主 LibraryPage 注入 detail.close；缺省不渲染钮） */
+  onCollapse?: () => void
+}): JSX.Element {
   const { paperId } = props
   // 元数据/标签变更后 bump 触发重读（TagEditor onChanged 亦走这里）
   const [reloadKey, setReloadKey] = useState(0)
@@ -140,7 +147,22 @@ export function PaperDetailPanel(props: { paperId: string | null }): JSX.Element
       <div className="lib-dr-head">
         <div className="lib-dr-id">
           <span>{idBadge}</span>
-          <span className={status.cls}>{`● ${status.text}`}</span>
+          <span className="lib-dr-id-r">
+            <span className={status.cls}>{`● ${status.text}`}</span>
+            {/* [v2 第二期] 详情头收起钮（与 FilterBar 行尾「详情」开关双入口——
+                v2 稿 inspector heading close 同构；收起态驻会话 store 不重置） */}
+            {props.onCollapse !== undefined && (
+              <button
+                type="button"
+                className="lib-dr-collapse"
+                aria-label="收起详情"
+                title="收起详情"
+                onClick={props.onCollapse}
+              >
+                {ICON_X}
+              </button>
+            )}
+          </span>
         </div>
         <h2 className="lib-dr-title">{detail.title}</h2>
       </div>

@@ -41,8 +41,9 @@ import { isGuideState, selectDisplayWsName, useWorkspaceStore } from '../feature
 
 export type ViewId = 'library' | 'reader' | 'lineage' | 'settings' | 'workspaces'
 
-/** 下载占位文案（A8——mockup L766 逐字；[F-WS-02] 随 rail-shared 退役回迁本件） */
-const DL_TOAST_TEXT = '文献搜索与下载引擎 · 规划中（未实现）'
+/** 下载占位文案（[v2 第二期] 入口语义统一「下载文献 PDF 到相应文件夹」——
+ *  功能未完成仍如实标规划中，不假装已下载） */
+const DL_TOAST_TEXT = '下载文献 PDF 到相应文件夹 · 规划中（未实现）'
 
 /** 视图四项（顺序=mockup rail：文献库→阅读器→脉络；设置贴底独立渲染） */
 const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
@@ -120,6 +121,16 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void }): JSX.
 
   return (
     <nav className="rail" aria-label="主导航">
+      {/* 轨顶品牌 logo（[v2 第二期] A15「无 logo」裁决随 v2 定案翻转——
+          v2 稿 .brand 29px 三节点图形，非交互纯标识） */}
+      <div className="rail-brand" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="6" cy="6" r="2.2" />
+          <circle cx="18" cy="6" r="2.2" />
+          <circle cx="12" cy="18" r="2.2" />
+          <path d="M7.8 7.2 10.6 16M16.2 7.2 13.4 16M8.2 6h7.6" />
+        </svg>
+      </div>
       {/* 课题项（[F-WS-02] 视图路由钮——管理页入口；引导态=唯一可用钮） */}
       <button
         type="button"
@@ -135,7 +146,7 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void }): JSX.
         type="button"
         className="rail-item"
         aria-label="下载"
-        title="文献搜索与下载引擎（规划中）"
+        title="下载文献 PDF 到相应文件夹（规划中）"
         disabled={guide}
         onClick={() => showToast(DL_TOAST_TEXT, 'info')}
       >

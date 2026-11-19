@@ -215,8 +215,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 0 10px;
+  padding: 0 0 10px;
   gap: 3px;
+}
+/* [v2 第二期] 轨顶品牌区：高对齐顶栏 38px+底线，三节点 logo（svg 规格沿
+   .rail-item svg 消费面同源——stroke currentColor/1.6，色走 accent） */
+.rail-brand {
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  margin-bottom: 11px;
+}
+.rail-brand svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .rail-item {
   width: 60px;

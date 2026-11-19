@@ -42,10 +42,16 @@ export interface LibraryStore {
   selectedId: string | null
   loading: boolean
   error: string | null
+  /** [v2 第二期 2026-11-19] 详情抽屉收起/展开会话态（null=本会话未定——
+   *  首次进入按视口推导默认；定值后 resize 永不覆盖；不落 settings/
+   *  localStorage/DB——重启回 null。状态机单源=use-detail-open.ts） */
+  detailOpen: boolean | null
   load(): Promise<void>
   setQuery(patch: Partial<LibraryQuery>): void
   selectPaper(id: string | null): void
   openPaper(id: string): void
+  /** [v2 第二期] 会话选择记录（FilterBar「详情」钮/详情头「收起详情」钮） */
+  setDetailOpen(open: boolean): void
   /** [F-DBCAMP-01 DB-4 / F-STAR-01 A1] 行星标本地态直写（无广播口径——
    *  U2 简报裁决⑧：setStarred 非图/夹结构面，列表行本地状态即可；乐观先行
    *  +失败回滚的编排收口=paper-star.ts togglePaperStar） */
@@ -59,7 +65,8 @@ export function createLibraryStoreInitialState() {
     query: { sort: 'added_desc', offset: 0, limit: 50 } as LibraryQuery,
     selectedId: null as string | null,
     loading: false,
-    error: null as string | null
+    error: null as string | null,
+    detailOpen: null as boolean | null
   }
 }
 
@@ -117,6 +124,10 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => {
     },
     selectPaper: (id) => {
       set({ selectedId: id })
+    },
+    // [v2 第二期] 会话选择记录（默认值推导只在 use-detail-open 挂载沿）
+    setDetailOpen: (open) => {
+      set({ detailOpen: open })
     },
     // 切 reader tab（经 open-paper-bus 事件；文档加载由 reader.store.openPaper 负责）
     openPaper: (id) => {

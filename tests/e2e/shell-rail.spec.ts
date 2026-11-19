@@ -69,9 +69,9 @@ test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K
   await win.keyboard.press('Control+K')
   await expect(win.locator('.gsearch input')).toBeFocused()
 
-  // 下载占位 toast（A8——mockup L766 逐字；种子后引导态不成立→下载钮可用）
+  // 下载占位 toast（[v2 第二期] 入口语义统一文案；种子后引导态不成立→下载钮可用）
   await win.getByRole('button', { name: '下载', exact: true }).click()
-  await expect(win.getByText('文献搜索与下载引擎 · 规划中（未实现）')).toBeVisible()
+  await expect(win.getByText('下载文献 PDF 到相应文件夹 · 规划中（未实现）')).toBeVisible()
 
   // 状态条真实文本（课题名+主题名——THEME_LABEL 单源；种子后 paperCount=1）
   await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇')

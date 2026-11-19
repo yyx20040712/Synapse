@@ -44,6 +44,10 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 
+  // [v2 第二期] 抽屉窄窗首进默认收起（≤1320）——抽屉四格/动作区断言面前置
+  // 展开（行为源=计划 §4 第二期状态表；既有断言意图不变）
+  await win.locator('.lib-detail-toggle').click()
+
   // —— [libfix2·RR1] 五列形态断言前置：升 1285 正常宽档（本机/宽屏走全形态；
   //    CI 虚拟屏 1024 钳制态走降级档=「标签」列收 0 锁 libfix1 语义）。
   //    resize throw 守卫同窄窗用例形态；表头「标签」分档=**语义断言**（实测
