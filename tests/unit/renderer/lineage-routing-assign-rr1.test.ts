@@ -36,21 +36,22 @@ const band = (edgeId: string, pts: Pt[], bandY: number, bandS: number, bandCap: 
   bandCap
 })
 
-/** 基准行隙单元夹具：单元 [100,220]×[170,200]，槽位 126.7/143.3/160/176.7/193.3（域=宽−20），j1=175/j2=195 */
+/** 基准行隙单元夹具：单元 [100,220]×[170,200]，槽位 126.7/143.3/160/176.7/193.3（域=宽−20），
+ *  j1=170+PAD+1=177/j2=200−PAD−1=193（[R2-C4] PAD=6 重推——旧 175/195） */
 const baseCards: Array<[string, Rect]> = [['a', rect(100, 100, 120, 70)], ['b', rect(100, 200, 120, 70)]]
 
 describe('F-SLOTGRID-01 U2 件① rebuildPts 反向段（t2<t1）方向无关化', () => {
-  it('上行竖段带 Z 落位：pts=[(152,210),(152,160)]→Z 序 (210→195 入槽 160→175→160) 逐点正确', () => {
+  it('上行竖段带 Z 落位：pts=[(152,210),(152,160)]→Z 序 (210→193 入槽 160→177→160) 逐点正确', () => {
     const out = slotAssign([ed('e1', [pt(152, 210), pt(152, 160)])], snapOf(baseCards))
     expect(out[0]!.recs[0]).toMatchObject({ cellId: 0, axis: 'x', ideal: 152, slotIdx: 2, overlapExempt: false })
-    // 行进序（自起点 210 向终点 160）：先触 j2=195——jog 对按实际方向排列；
+    // 行进序（自起点 210 向终点 160）：先触 j2=193——jog 对按实际方向排列；
     // ideal=152→|160−152|=8<|143.3−152|=8.7 → 落 idx2=160
     expect(out[0]!.pts).toEqual([
       pt(152, 210),
-      pt(152, 195),
-      pt(160, 195),
-      pt(160, 175),
-      pt(152, 175),
+      pt(152, 193),
+      pt(160, 193),
+      pt(160, 177),
+      pt(152, 177),
       pt(152, 160)
     ])
   })
@@ -89,8 +90,8 @@ describe('F-SLOTGRID-01 U2 件②：回折分支 segApps 施加+起点端 appAt 
     // 残余 pass：两簇 [80,160]/[300,340] 各 off=(i−0.5)·6=∓3
     expect(out[0]!.recs.filter((r) => r.residual).length).toBe(2)
     expect(out[0]!.pts).toEqual([
-      pt(80, 166), pt(160, 166), pt(160, 169), pt(165, 169), pt(165, 170), pt(295, 170),
-      pt(295, 169), pt(300, 169), pt(300, 166), pt(340, 166)
+      pt(80, 166), pt(160, 166), pt(160, 169), pt(167, 169), pt(167, 170), pt(293, 170),
+      pt(293, 169), pt(300, 169), pt(300, 166), pt(340, 166)
     ])
     for (let i = 1; i < out[0]!.pts.length; i++) {
       const a = out[0]!.pts[i - 1]!
@@ -109,8 +110,8 @@ describe('F-SLOTGRID-01 U2 件②：回折分支 segApps 施加+起点端 appAt 
       { edgeId: 'e2', segIdx: 0, cellId: 0, axis: 'y', ideal: 169, slotIdx: 2, overlapExempt: false, residual: false }
     ])
     expect(out[1]!.recs.filter((r) => r.residual).length).toBe(2)
-    // 回折结构锁：链含两槽电平 156.7/145 的行进段+x 回折（295→165 折返——
-    // 重叠 jog 区病理态按行进序施加；起点端随残余 app 迁移至 172 无残留原顶点）
+    // 回折结构锁：链含两槽电平 156.7/145 的行进段+x 回折（293→167 折返——
+    // jog 区 [167,293]〔[R2-C4] PAD=6〕；重叠 jog 区病理态按行进序施加；起点端随残余 app 迁移至 172 无残留原顶点）
     const xs = out[1]!.pts.map((p) => p.x)
     const ys = out[1]!.pts.map((p) => p.y)
     expect(ys).toContain(156.7)
@@ -136,7 +137,7 @@ describe('F-SLOTGRID-01 U2 件③：route 门（五态制——detour 入槽/ove
     expect(out[0]!.pts).toEqual([pt(150, 160), pt(150, 210)])
     // 传递证：x1 未占任何槽——z1 仍落最近槽 idx1(143.3)
     expect(out[1]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
-    expect(out[1]!.pts[2]).toEqual(pt(143.3, 175))
+    expect(out[1]!.pts[2]).toEqual(pt(143.3, 177))
   }
 
   it('overlap 态穿越单元轴对齐段→recs 空+pts 原样+槽位零占用（忽略占用终态不入槽）', () => {
@@ -155,7 +156,7 @@ describe('F-SLOTGRID-01 U2 件③：route 门（五态制——detour 入槽/ove
     // d1 ideal=150→|143.3−150|=6.7<|160−150|=10 → 落 idx1；d2 同 ideal→idx2=160
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
     expect(out[1]!.recs[0]).toMatchObject({ slotIdx: 2, overlapExempt: false })
-    expect(out[1]!.pts[2]).toEqual(pt(160, 175))
+    expect(out[1]!.pts[2]).toEqual(pt(160, 177))
   })
 })
 

@@ -64,25 +64,25 @@ describe('F-LINEAGE-02 anchors：12 锚点（每边 ¼/½/¾）+主向定边+投
   })
 })
 
-describe('F-LINEAGE-02 avoid：PAD=4 命中语义+短桩/中段分治（D-L2-4）', () => {
-  it('segHitsAny：距障碍恰 4=命中（含边界）、4.1=出界、3.9=命中（D-6 沿承）', () => {
+describe('F-LINEAGE-02 avoid：PAD=6 命中语义+短桩/中段分治（D-L2-4）', () => {
+  it('segHitsAny：距障碍恰 6=命中（含边界）、6.1=出界、5.9=命中（D-6 沿承——[R2-C4] PAD=6 重推，旧判别距 4/4.1/3.9）', () => {
     const seg: [Pt, Pt] = [{ x: 0, y: 100 }, { x: 100, y: 100 }]
-    expect(segHitsAny(seg[0], seg[1], [rect(104, 92, 50, 16)])).toBe(true)
-    expect(segHitsAny(seg[0], seg[1], [rect(104.1, 92, 50, 16)])).toBe(false)
-    expect(segHitsAny(seg[0], seg[1], [rect(103.9, 92, 50, 16)])).toBe(true)
-    expect(PAD).toBe(4)
+    expect(segHitsAny(seg[0], seg[1], [rect(106, 92, 50, 16)])).toBe(true)
+    expect(segHitsAny(seg[0], seg[1], [rect(106.1, 92, 50, 16)])).toBe(false)
+    expect(segHitsAny(seg[0], seg[1], [rect(105.9, 92, 50, 16)])).toBe(true)
+    expect(PAD).toBe(6)
   })
 
   it('polylineClearStubs：首末 s0 段排除源/目标卡；中段含全卡（穿第三方卡=红）', () => {
     // 源卡 (100,200,128,72)：底锚 (164,272) 竖下 40px 出框——源卡膨胀带覆盖
-    // [96,336]×[104,276]（PAD=4），首 10px 桩恒命中源卡本体=排除面证据
+    // [94,234]×[194,278]（PAD=6），首 10px 桩恒命中源卡本体=排除面证据
     const src = rect(100, 200, 128, 72)
     const pts: Pt[] = [
       { x: 164, y: 272 },
       { x: 164, y: 312 }
     ]
     expect(polylineClearStubs(pts, [src], [])).toBe(true)
-    // 第三方卡横亘 y=300（中段——距桩端 28px > s0）：膨胀带 [y=296,304] 竖段命中 → false
+    // 第三方卡横亘 y=300（中段——距桩端 28px > s0）：膨胀带 [y=294,310]（y∈[300,304]±6——[R2-C4]）竖段命中 → false
     const third = rect(140, 300, 20, 4)
     expect(polylineClearStubs(pts, [src], [third])).toBe(false)
     // 第三方卡挤进桩区（y∈[272,282] 内的 276..280）：仍在排除集外=中段外但非源/目标 → false

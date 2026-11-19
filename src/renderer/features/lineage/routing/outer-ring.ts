@@ -3,7 +3,7 @@
  * 用后、overlap 兜底前（用户裁决「不可能没有路径」：稀疏图 blocked=缺陷；
  * 同行被挡零带、同列月标封顶锚、序内槽位竞争三类残余形态的合法承接）。
  * 车道四条：top/bottom 横车道 y=quant(最外障碍边∓RING_MARGIN)、left/right
- * 纵车道 x 同式——RING_MARGIN=PAD+STUB_S0（障碍外让 14px>PAD，车道全程对
+ * 纵车道 x 同式——RING_MARGIN=PAD+STUB_S0（障碍外让 16px>PAD，车道全程对
  * 障碍集净空由构造成立，连接段/行程段仍经全链 polylineClearStubs 复检）。
  * 外圈车道坐标=坐标集封闭（INV-SLOTGRID-02）第四类坐标源，随批登记
  * architecture/INV。锚候选（每端有序，钉定端直取禁动 INV-119③）：横车道=
@@ -17,7 +17,7 @@ import { anchorPick, sideAnchor, stubEnd, STUB_S0, type AnchorUse, type PickedAn
 import { PAD, polylineClearStubs } from './avoid'
 import { quant } from './gap-cells'
 
-/** 外圈车道让距（障碍外让 PAD+短桩 10=14px——对障碍净空恒 >PAD） */
+/** 外圈车道让距（障碍外让 PAD+短桩 10=16px——对障碍净空恒 >PAD） */
 const RING_MARGIN = PAD + STUB_S0
 
 /** 外圈路由结果（picks=生效锚注册——chain commit 消费） */

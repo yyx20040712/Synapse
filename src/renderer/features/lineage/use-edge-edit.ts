@@ -21,7 +21,7 @@
  *   via 提交（[R2-C3] 提交门）=一撤销单元（零位移=物化中点=按下即松手
  *   转换末态保形）；
  *   中断（cancel/blur/Esc）不写=不转换（RR2/W-5）；双击加点=即写沿承。
- * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=4）=dragging/selected 渲染态零持久化。
+ * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=6）=dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
  *   菜单开期间保持、关闭即撤（selectedViaMenu → closeMenu 即 idle）。
  */

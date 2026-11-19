@@ -73,7 +73,7 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
   // [回炉 R-3] h-slip/band/overlap 三态补面（[F-SLOTGRID-01 U2] corridor 态
   // 随走廊退役→兜底态=overlap 最短路线；夹具=带封闭几何〔X 并合卡行距
   // ≤2·PAD→无带可横移+通道候选全灭〕——U2 重基线）
-  it('h-slip 态：x 带分离+竖偏斜段 A(100,100)/B(700,710) → anchorMarks=A:r2,B:l0（近侧 sideAnchor 锚——与 selectAnchor 直连锚判别位）', () => {
+  it('[R2-C4] 陡斜 h-slip 失守降 band：A(100,100)/B(700,710)（x 进程占比 472/1046=0.451<PAD/10=0.6）→ anchorMarks=A:b2,B:t0', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
@@ -81,14 +81,36 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
       ])
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
+    expect(paths[0]!.route).toBe('band')
+    // 手推（[R2-C4] PAD=6 重基线——主控裁决选项 a；旧 PAD=4 时本夹具为
+    // h-slip=A:r2,B:l0）：h-slip 锚 ha=(228,154)r2/hb=(700,728)l0 的斜段
+    // Δx=472/Δy=574、x 进程占比 0.451<0.6——末桩 x 进程 4.51px<PAD 6，
+    // 中段起/止点 (232.5,159.5)/(695.5,722.5) 各落 A/B 膨胀框 → h-slip 废；
+    // band 承接：pa=sideAnchor(A,'bottom',tc=(764,746)) 投影 x 越右界取最近
+    // ¾ 序 b2（196,172）；终落 sb=sideAnchor(B,'top',sc=(164,136)) 投影 x
+    // 越左界取最近 ¼ 序 t0（732,710）；带 [172,710] h=538 无框横贯 s=6、
+    // 槽位域 518→n=5 中位槽 y=441 横移（A/B 无投影重叠=零单元，单成员
+    // 残余簇跳过=零偏移）
+    expect(paths[0]!.anchorMarks).toBe('A:b2,B:t0')
+  })
+
+  it('[R2-C4] h-slip 态（扁平 share>0.6 形态承载锚锁）：A(100,100)/B(700,200)（占比 472/536=0.881）→ anchorMarks=A:r2,B:l0（近侧 sideAnchor 锚）', () => {
+    const snap = makeSnap(
+      new Map<string, Rect>([
+        ['A', rect(100, 100, 128, 72)],
+        ['B', rect(700, 200, 128, 72)]
+      ])
+    )
+    const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
     expect(paths[0]!.route).toBe('h-slip')
-    // 手算：x 带分离 100+128+8=236<700 ✓；ha=sideAnchor(A,'right',tc=
-    // (764,746))：投影 y=646 越上界取最近 ¾ 序 r2（228,154）；hb=
-    // sideAnchor(B,'left',sc=(164,136))：投影 y=−574 越上界取最近 ¼ 序 l0
-    // （700,728）。桩/中段分治（中段复检含全卡、桩长=曼哈顿累计）：段
-    // Δx=472/Δy=574、全长 1046，出源卡膨胀框（x>232）耗 4.51px<桩区 10、
-    // 中段止点 x=695.5<B 膨胀框 696——h-slip 成立。对照直连判别锚（本态
-    // 不用）：sa=selectAnchor(A,tc)：dy=610>|dx|=600→竖向 b2≠r2
+    // 手推：x 带分离 100+128+12=240<700 ✓；ha=sideAnchor(A,'right',tc=
+    // (764,236))：投影 y 越下界取最近 ¾ 序 r2（228,154)；hb=sideAnchor(B,
+    // 'left',sc=(164,136))：投影 y 越上界取最近 ¼ 序 l0（700,218）。斜段
+    // 占比 0.881>0.6：双侧膨胀边距 10·0.881−6=2.81px（cutA.x=236.81>A
+    // 膨胀右缘 234；cutB.x=691.19<B 膨胀左缘 694）→ h-slip 成立。旧用例
+    // 的 selectAnchor 陡斜判别位子句（dy>|dx| 且 x 带分离）与 PAD=6 存活律
+    //（|dx|>1.5·|dy|）不相交，随 [R2-C4] 主控裁决退役（selectAnchor 竖向
+    // 分支本身经 direct/manual-override/编辑链仍可达，见结构排查批）
     expect(paths[0]!.anchorMarks).toBe('A:r2,B:l0')
   })
 
@@ -110,7 +132,7 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
   })
 
   it('overlap 态：带封闭+通道候选全灭+外圈连接段全灭（X 纵贯全域高墙——[R2-C2] 后 overlap 仅存于外圈亦不可行时）→ anchorMarks=A:b1,B:t1（direct 判别锚沿承）+overlapExempt', () => {
-    // X [90,690]×[60,380]：纵贯 A/B 全高（膨胀 [86,694]×[56,384]）——无框无
+    // X [90,690]×[60,380]：纵贯 A/B 全高（膨胀 [84,696]×[54,386]——±6〔R2-C4〕）——无框无
     // 通道（detour null）、卡区间并合零带（band null）、[R2-C2] 外圈四车道
     // 连接段必穿墙（outer-ring null）——仅剩 overlap 兜底
     const snap = makeSnap(

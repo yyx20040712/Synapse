@@ -44,8 +44,8 @@ import Database from 'better-sqlite3'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 import { zoomProbe } from './geo-probes'
 
-/** 避让 PAD（avoid.ts 单源同值——内容 px；屏幕域断言乘 z） */
-const PAD = 4
+/** 避让 PAD（avoid.ts 单源同值——内容 px；屏幕域断言乘 z；[R2-C4] 4→6 镜面同步） */
+const PAD = 6
 
 /** 幽灵文献行（seedPaperRow——lineage.spec seedLineagePapers 同型） */
 async function seedGhosts(userData: string, ids: string[], titles: string[]): Promise<void> {
@@ -488,7 +488,8 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
    * 两态皆网格通道槽位横移〕；（b）坐标集封闭：路径全部竖直段 x∈锚集（卡
    * ¼/½/¾ 位）∪通道槽位集（col0|1 段=卡右缘 +72 域分点——INV-SLOTGRID-02）；
    * （c）标注覆盖：path 采样避全部 .month-tag rect±PAD（x₀=½ 与标注左缘
-   * 实测余量 3.6px<4——½ 入桩净空以实测值入判定，非设计书参照值）。
+   * 实测余量 3.6px<6〔R2-C4 PAD=6——旧口径 <4；3.6px 为夹具持久实测值，
+   * ½ 入桩带命中结论在两口径下均成立〕——½ 入桩净空以实测值入判定，非设计书参照值）。
    */
   test('R5 三卡同列 1→3：竖直段 x∈锚∪通道槽位集（坐标集封闭）+标注覆盖+绕行族', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u2-r5-'))

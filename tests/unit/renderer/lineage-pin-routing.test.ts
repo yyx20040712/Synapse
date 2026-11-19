@@ -196,7 +196,7 @@ describe('F-VISFB-66·[回炉 R4] band 钉定族（bandSkeleton fromPin/toPin �
 
   it('钉定不可达→band 降级 [R2-C2] 外圈底环承接（端点仍=钉定锚——底环沿 bottom 外法线进锚）', () => {
     // toAnchor bottom/0：band 域终落桩自上方撞 B 卡身（vClear 不过）；[R2-C2]
-    // 外圈底车道 y=472+14=486：源右锚下行→底车道→自下方回桩进钉定锚合法
+    // 外圈底车道 y=472+16=488（RING_MARGIN=PAD+10=16——[R2-C4]）：源右锚下行→底车道→自下方回桩进钉定锚合法
     // （旧=overlap 兜底；端点主权不变）
     const r = routeEdge(
       { edgeId: 'e1', sourceId: 'A', targetId: 'B', toAnchor: { side: 'bottom', slot: 0 } },

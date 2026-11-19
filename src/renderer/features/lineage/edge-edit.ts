@@ -253,7 +253,7 @@ export function channelSnap(p: Pt, ch: Channels): { p: Pt; axis: 'h' | 'v' | nul
   }
 }
 
-/** 穿卡警示命中段（§2.3-8/PAD=4 口径）：返回穿卡段序（全链段序）；源/目标
+/** 穿卡警示命中段（§2.3-8/PAD=6 口径）：返回穿卡段序（全链段序）；源/目标
  *  卡=excluded（短桩贴卡放行——avoid stubExcluded 同义）；零持久化（渲染期） */
 export function crossCardSegments(
   p: EditPolyline,

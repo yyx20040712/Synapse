@@ -3,7 +3,7 @@
  * [F-LINEAGE-02 ①a] lineage-routing —— 甲走线器桶文件（消费面平滑 re-export）。
  * 实现拆件（各 ≤300 行）：
  * - routing/anchors.ts —— 12 锚点（每边 ¼/½/¾）+主向定边+投影定序+短桩 s0
- * - routing/avoid.ts —— PAD=4 命中原语+桩/中段分治避让（D-L2-4）
+ * - routing/avoid.ts —— PAD=6 命中原语+桩/中段分治避让（D-L2-4）
  * - routing/rounding.ts —— 共线剔除（D-L2-14）+r=6 圆角化+边界表（W-5）
  * - routing/chain.ts —— 六态编排（direct→h-slip→detour→band→outer-ring
  *   →overlap +manual-override——[F-SLOTGRID-01 U2] corridor/fallback/车道族

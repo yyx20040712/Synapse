@@ -508,10 +508,12 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '跨年甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(['band', 'detour'], `R4 实测 route=${route0}（跨年绕行族——[回炉 R4] 收回放宽）`).toContain(route0)
+    // [R2-C4] PAD=6：年头膨胀 +2px 封死 band 终落竖直线（三槽全灭）→链降级 outer-ring
+    //（合法拓扑迁移——v231 §4-1 预测面；绕行族仍非 direct/overlap，钉定端点不变量由 zoom 循环承载）
+    expect(['band', 'detour', 'outer-ring'], `R4 实测 route=${route0}（跨年绕行族——[回炉 R4] 收回放宽；[R2-C4] 扩 outer-ring）`).toContain(route0)
     for (const z of [1.0, 0.8, 1.5]) {
       await zoomProbe(win, z, async () => {
-        await expectPinnedEndpoints(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙', fa: { side: 'bottom', slot: 0 }, ta: { side: 'top', slot: 2 }, expectRoute: ['band', 'detour'] }], `R4 z=${z}`)
+        await expectPinnedEndpoints(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙', fa: { side: 'bottom', slot: 0 }, ta: { side: 'top', slot: 2 }, expectRoute: ['band', 'detour', 'outer-ring'] }], `R4 z=${z}`)
       })
     }
     await app.close()

@@ -115,7 +115,7 @@ describe('F-ROUTE-02 U1 slots：⑧非卡障碍（月标注∪年份头）closed
     expect(segConsumesCell(cells[0]!, pt(150, 160), pt(150, 190))).toBe(false)
   })
 
-  it('障碍仅盖槽 idx1 走廊（x∈[137,146] 盖新槽位 [139.3,147.3]）→ 该槽 blocked、余槽 free', () => {
+  it('障碍仅盖槽 idx1 走廊（x∈[137,146] 盖走廊 [137.3,149.3]=143.3±PAD=6〔R2-C4〕）→ 该槽 blocked、余槽 free', () => {
     const label = rect(137, 180, 9, 10)
     const cells = extractGapCells(snapOf(baseCards, [label]))
     expect(cells.length).toBe(1)
@@ -168,9 +168,11 @@ describe('F-ROUTE-02 U1 slots：提取面（相邻性/极大性/去重/gap 边�
       snapOf([['a', rect(100, 100, 120, 70)], ['c', rect(140, 185, 40, 10)], ['b', rect(100, 210, 120, 70)]])
     )
     expect(cells.length).toBe(2)
-    // 带 [170,185]=band0、[195,210]=band1；槽轴区间同 [140,180] → bandId 定序
-    expect(cells[0]).toMatchObject({ id: 0, bandId: 0, axis: 'x', rect: rect(140, 170, 40, 15), closed: false })
-    expect(cells[1]).toMatchObject({ id: 1, bandId: 1, axis: 'x', rect: rect(140, 195, 40, 15), closed: false })
+    // 带 [170,185]/[195,210] 高 15：⌊(15−2·PAD)/s⌋=⌊3/6⌋=0 道 → bandsOf 跳过
+    //（[R2-C4] PAD=6 重推——旧 PAD=4 时 ⌊7/6⌋=1 道成 band0/1）；槽轴区间同
+    // [140,180] → bandId 均 −1 由 idA 字典序定序（a,c 对先于 c,b 对）
+    expect(cells[0]).toMatchObject({ id: 0, bandId: -1, axis: 'x', rect: rect(140, 170, 40, 15), closed: false })
+    expect(cells[1]).toMatchObject({ id: 1, bandId: -1, axis: 'x', rect: rect(140, 195, 40, 15), closed: false })
   })
 
   it('去重+极大性：共享空白多对（a1,d)/(a2,d) 量化后同 rect → 一单元（代表对=字典序最小）', () => {
@@ -184,15 +186,15 @@ describe('F-ROUTE-02 U1 slots：提取面（相邻性/极大性/去重/gap 边�
     expect(slotsOf(cells[0]!).length).toBe(5)
   })
 
-  it('gap 边界三态：gap=6<9→closed；gap=9→open（严格小于）；gap=0.03≤ε→不生成', () => {
+  it('gap 边界三态：gap=6<13→closed；gap=13→open（严格小于）；gap=0.03≤ε→不生成', () => {
     const narrow = extractGapCells(snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 176, 100, 70)]]))
     expect(narrow.length).toBe(1)
     expect(narrow[0]!.closed).toBe(true)
     expect(slotsOf(narrow[0]!)).toEqual([])
-    expect(narrow[0]!.bandId).toBe(-1) // 带 [170,176] 高 6≤2·PAD=8 → bandsOf 跳过
-    const edge = extractGapCells(snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 179, 100, 70)]]))
+    expect(narrow[0]!.bandId).toBe(-1) // 带 [170,176] 高 6≤2·PAD=12 → bandsOf 跳过
+    const edge = extractGapCells(snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 183, 100, 70)]]))
     expect(edge.length).toBe(1)
-    expect(edge[0]!.closed).toBe(false) // 2·PAD+1=9：严格小于才封闭
+    expect(edge[0]!.closed).toBe(false) // 2·PAD+1=13：严格小于才封闭（[R2-C4] PAD=6 重推——边界值 9→13，q y 179→183）
     expect(slotsOf(edge[0]!).length).toBe(5)
     const touching = extractGapCells(snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 170.03, 100, 70)]]))
     expect(touching.length).toBe(0)
@@ -246,8 +248,10 @@ describe('F-ROUTE-02 U1 slots：带归属（行隙/列缝正例+列带合并=−
     )
     expect(cells.length).toBe(3)
     // 排序：(−1,100,170) 列缝 → (0,100,200) 行隙 → (0,210,310) 行隙
-    expect(cells[0]).toMatchObject({ id: 0, bandId: -1, axis: 'y', rect: rect(200, 100, 10, 70), closed: false })
-    expect(slotsOf(cells[0]!)).toEqual([118.3, 126.7, 135, 143.3, 151.7]) // pos=110+k·50/6（域=50）
+    // 列缝宽 10<2·PAD+1=13 → closed（[R2-C4] PAD=6 重推——旧 10≥9 open；
+    // closed 单元 slotsOf=[]且不消费，排序面不变）
+    expect(cells[0]).toMatchObject({ id: 0, bandId: -1, axis: 'y', rect: rect(200, 100, 10, 70), closed: true })
+    expect(slotsOf(cells[0]!)).toEqual([])
     expect(cells[1]).toMatchObject({ id: 1, bandId: 0, axis: 'x', rect: rect(100, 170, 100, 30) })
     expect(cells[2]).toMatchObject({ id: 2, bandId: 0, axis: 'x', rect: rect(210, 170, 100, 30) })
   })
@@ -266,7 +270,7 @@ describe('F-ROUTE-02 U1 slots：SlotUse/zChainClear/jogClearOfStub', () => {
   it('zChainClear：全子段避让——穿越障碍子段 false；净空 true；第二子段命中 false', () => {
     expect(zChainClear([pt(0, 0), pt(50, 0)], [rect(100, -10, 20, 20)])).toBe(true)
     expect(zChainClear([pt(0, 0), pt(50, 0)], [rect(20, -5, 10, 10)])).toBe(false)
-    // 折线第二子段 (50,0)→(50,50) 过障碍膨胀带 [42,60]×[26,44]（rect(46,30,10,10) 经 PAD=4 四边膨胀）；第一子段净空
+    // 折线第二子段 (50,0)→(50,50) 过障碍膨胀带 [40,62]×[24,46]（rect(46,30,10,10) 经 PAD=6 四边膨胀——[R2-C4]）；第一子段净空
     const chain = [pt(0, 0), pt(50, 0), pt(50, 50)]
     expect(zChainClear(chain, [rect(46, 30, 10, 10)])).toBe(false)
     expect(zChainClear(chain, [rect(100, 30, 10, 10)])).toBe(true)
@@ -307,7 +311,7 @@ describe('F-ROUTE-02 U1 回炉轮1：列缝判定面+排序判别+侧挂第三�
     expect(slotsOf(cells[0]!)).toEqual([])
   })
 
-  it('[k1-W1c] 列缝走廊预过滤：障碍仅盖 y 槽 idx2 走廊（y∈[195,205] 盖 [196,204]）→ 该槽 blocked、余槽 free', () => {
+  it('[k1-W1c] 列缝走廊预过滤：障碍仅盖 y 槽 idx2 走廊（y∈[195,205] 盖 [194,206]=200±PAD=6〔R2-C4〕）→ 该槽 blocked、余槽 free', () => {
     const label = rect(200, 195, 50, 10)
     const cells = extractGapCells(snapOf(lrCards, [label]))
     expect(cells.length).toBe(1)
@@ -320,17 +324,19 @@ describe('F-ROUTE-02 U1 回炉轮1：列缝判定面+排序判别+侧挂第三�
     for (const idx of [0, 1, 3, 4]) expect(slotFree(use, cell, idx)).toBe(true)
   })
 
-  it('[k1-W1d] frames 横贯列带判别：列缝宽 15（w−2·PAD=7：⌊7/9⌋=0 跳 vs ⌊7/6⌋=1 留）→ bandId=−1 vs 0', () => {
-    // L=[100,160]、R=[175,235] → 列缝 [160,175] 宽 15；槽沿 y（W=200→n=5）行进净距 15≥9 恒 open
+  it('[k1-W1d] frames 横贯列带判别：列缝宽 19（w−2·PAD=7 同值：⌊7/9⌋=0 跳 vs ⌊7/6⌋=1 留）→ bandId=−1 vs 0', () => {
+    // L=[100,160]、R=[179,239] → 列缝 [160,179] 宽 19；槽沿 y（W=200→n=5）行
+    // 进净距 19≥2·PAD+1=13 恒 open（[R2-C4] PAD=6 重推——判别量 w−2·PAD=7
+    // 保持同值，缝宽 15→19、R x 175→179）
     const cards: Array<[string, Rect]> = [
       ['L', rect(100, 100, 60, 200)],
-      ['R', rect(175, 100, 60, 200)]
+      ['R', rect(179, 100, 60, 200)]
     ]
     const noFrame = extractGapCells(snapOf(cards))
     expect(noFrame.length).toBe(1)
-    expect(noFrame[0]!.bandId).toBe(0) // s=6 → ⌊7/6⌋=1 道留带 → x 中点 167.5 落带
+    expect(noFrame[0]!.bandId).toBe(0) // s=6 → ⌊7/6⌋=1 道留带 → x 中点 169.5 落带
     expect(noFrame[0]!.closed).toBe(false)
-    const framed = extractGapCells(snapOf(cards, [], [], [frame(165, 0, 10, 50)])) // 框竖边 x=165∈(160,175) 横贯（列带横贯判别=框 x 投影、y 无关——竖边整列语义）
+    const framed = extractGapCells(snapOf(cards, [], [], [frame(165, 0, 10, 50)])) // 框竖边 x=165∈(160,179) 横贯（列带横贯判别=框 x 投影、y 无关——竖边整列语义）
     expect(framed.length).toBe(1)
     expect(framed[0]!.bandId).toBe(-1) // s=9 → ⌊7/9⌋=0 道跳带
     expect(framed[0]!.closed).toBe(false) // 带跳过仅失归属，单元不封闭
@@ -357,7 +363,9 @@ describe('F-ROUTE-02 U1 回炉轮1：列缝判定面+排序判别+侧挂第三�
 
   it('[d1-W1] 侧挂第三卡：仅右侧重叠窗两单元；左侧连通空白无单元=残余子 pass 域（§5 W-4）', () => {
     // A=[100,220]×[100,170]、c=[180,300]×[180,190]、B=[100,220]×[200,270]：
-    // (A,B) 大对被 c 条带阻隔；(A,c)/(c,B) 各成 10px 净距单元（行进 10≥9 open，n=4）
+    // (A,B) 大对被 c 条带阻隔；(A,c)/(c,B) 各成 10px 净距单元（[R2-C4] PAD=6
+    // 新阈：行进 10<2·PAD+1=13 → 两单元 closed〔见下方断言〕；closed 单元
+    // slotsOf=[]，n 不再入判）
     const cells = extractGapCells(
       snapOf([['A', rect(100, 100, 120, 70)], ['c', rect(180, 180, 120, 10)], ['B', rect(100, 200, 120, 70)]])
     )
@@ -365,8 +373,10 @@ describe('F-ROUTE-02 U1 回炉轮1：列缝判定面+排序判别+侧挂第三�
     // 左侧连通空白 [100,180]×[170,200] 无单元——未被单元消费的 band 段归 U2 残余子
     // pass 域=旧机制分离零丢失（设计 §5 W-4）
     expect(cells.every((c) => c.rect.x >= 180)).toBe(true)
-    expect(cells[0]).toMatchObject({ bandId: -1, axis: 'x', rect: rect(180, 170, 40, 10), closed: false })
-    expect(cells[1]).toMatchObject({ bandId: -1, axis: 'x', rect: rect(180, 190, 40, 10), closed: false })
+    // 行进净距 10<2·PAD+1=13 → closed（[R2-C4] PAD=6 重推——旧 10≥9 open；
+    // 单元仍在册（提取面不变），closed 不消费归残余域语义不变）
+    expect(cells[0]).toMatchObject({ bandId: -1, axis: 'x', rect: rect(180, 170, 40, 10), closed: true })
+    expect(cells[1]).toMatchObject({ bandId: -1, axis: 'x', rect: rect(180, 190, 40, 10), closed: true })
   })
 
   it('[d1-N4①] 四卡围空：行隙对与列缝对量化后同 rect 但 axis 不同 → 两单元并存（去重键含 axis）', () => {

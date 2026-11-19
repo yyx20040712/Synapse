@@ -1,6 +1,6 @@
 /**
  * [F-LINEAGE-02 ①a] avoid —— 甲链公共几何底座·避让件（options §1.4/§1.7；
- * design-final §1）。障碍=全部卡∪月标注（INV-79），PAD=4 膨胀，线段-矩形
+ * design-final §1）。障碍=全部卡∪月标注（INV-79），PAD=6 膨胀，线段-矩形
  * Liang-Barsky（含边界 d≤PAD=命中——D-6 沿承）。短桩/中段分治（D-L2-4）：
  * 首末短桩（沿路径 s0）校验排除源/目标卡（桩区段仅查第三方障碍），中段
  * 复检含全卡∪标注。曲化后采样复检由 finalize 编排（r=6→3→0 全档复检；
@@ -9,8 +9,8 @@
  */
 import type { Pt, Rect } from './anchors'
 
-/** 障碍膨胀：命中 d≤PAD 含边界（D-6） */
-export const PAD = 4
+/** 障碍膨胀：命中 d≤PAD 含边界（D-6；[R2-C4] 用户裁决 4→6——走线避让膨胀常量重基线） */
+export const PAD = 6
 
 /** 桩区路径长（沿折线自两端各此长度的区段=短桩免检源/目标卡区） */
 export const STUB_PATH = 10

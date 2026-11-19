@@ -11,7 +11,7 @@
  *   共线邻点顺带消除+删空回自动（undefined）。
  * - 端点重连：via 全保留+首/末段 L 重正交（新锚→第一 via 入轴=锚法线向）。
  * - 磁吸±6：先横通道后竖通道并列取近。
- * - 穿卡检测：PAD=4 口径（dragging+selected 态渲染零持久化——检测函数面）。
+ * - 穿卡检测：PAD=6 口径（dragging+selected 态渲染零持久化——检测函数面）。
  * always-active 裸 describe。
  */
 import { describe, expect, it } from 'vitest'
@@ -240,12 +240,20 @@ describe('U5 编辑代数：磁吸±6（§2.3-7 先横后竖取近）', () => {
   })
 })
 
-describe('U5 编辑代数：穿卡检测（口径 PAD=4）', () => {
+describe('U5 编辑代数：穿卡检测（口径 PAD=6）', () => {
   const cards = [{ x: 200, y: 100, w: 128, h: 72 }]
-  it('穿卡段命中（膨胀 4——边界 132 内即中）', () => {
+  it('穿卡段命中（膨胀 6——段 y=136 穿卡本体膨胀带）', () => {
     const p = line(pt(0, 136), [pt(300, 136)], pt(400, 136))
     const hits = crossCardSegments(p, cards, [])
     expect(hits.length).toBeGreaterThan(0)
+  })
+
+  it('[R2-C4 low-1] PAD=6 边界对：y=178 恰触卡膨胀下缘命中（PAD=4 时不命中）／y=178.1 出界零命中', () => {
+    // 卡 (200,100,128,72) PAD=6 膨胀 y∈[94,178]（100−6/172+6）——含边界命中
+    //（D-6）；y=178.1>178 出界。变异验证（R2-C4 报告载退出码证据）：PAD 临时
+    // 回 4（膨胀 y∈[96,176]）时 y=178 例转红（length=0）=4/6 判别力实证
+    expect(crossCardSegments(line(pt(0, 178), [pt(300, 178)], pt(400, 178)), cards, []).length).toBeGreaterThan(0)
+    expect(crossCardSegments(line(pt(0, 178.1), [pt(300, 178.1)], pt(400, 178.1)), cards, [])).toEqual([])
   })
   it('源/目标卡排除（stubExcluded 语义）', () => {
     const src = { x: 0, y: 100, w: 128, h: 72 }

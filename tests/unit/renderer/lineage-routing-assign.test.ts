@@ -8,7 +8,7 @@
  * ⑧分配侧 blockedSlots 消费、⑨残余子 pass 旧式等价（对照旧 chain.ts
  * applyBandLanes 字面语义手推）、⑩确定性双跑序列化全等、⑪r=0 仍不清→
  * 路径仍产出（finish 收缩链复现）；专项 A=N-3 部分穿越段 [j1,j2]⊆交、
- * 专项 B=d1-N2 slotFree 调用侧索引域、S2=H∈[9,12) 开放但全槽不可用、
+ * 专项 B=d1-N2 slotFree 调用侧索引域、S2=H∈[13,16) 开放但全槽不可用（[R2-C4] PAD=6 新阈，旧 [9,12)）、
  * Δ<1 豁免保留占用（防后段重取）、桩区禁入（有桩续扫/无桩直入）。
  * 期望值全部从夹具几何手推（禁抄实现输出）。always-active 裸 describe（K3）。
  */
@@ -40,7 +40,8 @@ function snapOf(
 }
 
 /** 基准行隙单元夹具：a/b 卡对 → 单元 [100,220]×[170,200]（axis='x'，band0，
- *  槽位 126.7/143.3/160/176.7/193.3〔U2 域=宽−20 公式〕，j1=175/j2=195） */
+ *  槽位 126.7/143.3/160/176.7/193.3〔U2 域=宽−20 公式〕，j1=170+PAD+1=177/
+ *  j2=200−PAD−1=193〔R2-C4 PAD=6 重推——旧 175/195〕） */
 const baseCards: Array<[string, Rect]> = [['a', rect(100, 100, 120, 70)], ['b', rect(100, 200, 120, 70)]]
 /** 整数槽位变体（tie 判别专用浮点安全）：W=116→域=96 → 槽位 126/142/158/174/190 */
 const tieCards: Array<[string, Rect]> = [['a', rect(100, 100, 116, 70)], ['b', rect(100, 200, 116, 70)]]
@@ -65,15 +66,15 @@ describe('F-ROUTE-02 U2 ③先占次序+tie→小索引', () => {
     expect(out.length).toBe(2)
     // 处理序=edgeId 字典序：e1 先占最近槽 142（|145−142|=3<|145−158|=13）
     expect(out[1]!.recs[0]).toMatchObject({ edgeId: 'e1', segIdx: 0, axis: 'x', ideal: 145, slotIdx: 1, overlapExempt: false, residual: false })
-    expect(out[1]!.pts).toEqual([pt(145, 160), pt(145, 175), pt(142, 175), pt(142, 195), pt(145, 195), pt(145, 210)])
+    expect(out[1]!.pts).toEqual([pt(145, 160), pt(145, 177), pt(142, 177), pt(142, 193), pt(145, 193), pt(145, 210)])
     expect(out[0]!.recs[0]).toMatchObject({ edgeId: 'e2', slotIdx: 2 })
-    expect(out[0]!.pts[2]).toEqual(pt(158, 175))
+    expect(out[0]!.pts[2]).toEqual(pt(158, 177))
   })
 
   it('两槽等距 ideal=150（|150−142|=|150−158|=8）→ tie 取小索引 idx1=142', () => {
     const out = slotAssign([ed('t1', vseg(150))], snapOf(tieCards))
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
-    expect(out[0]!.pts).toEqual([pt(150, 160), pt(150, 175), pt(142, 175), pt(142, 195), pt(150, 195), pt(150, 210)])
+    expect(out[0]!.pts).toEqual([pt(150, 160), pt(150, 177), pt(142, 177), pt(142, 193), pt(150, 193), pt(150, 210)])
   })
 })
 
@@ -94,7 +95,7 @@ describe('F-ROUTE-02 U2 ④邻缝扫描左/上先（L2 同带域：axis+bandId �
     expect(slotsOf(Cb)).toEqual([273.3, 286.7, 300, 313.3, 326.7])
     const out = slotAssign([ed('e1', vseg(285))], snapOf(gridCards))
     expect(out[0]!.recs[0]).toMatchObject({ cellId: Cb.id, slotIdx: 1 })
-    expect(out[0]!.pts).toEqual([pt(285, 160), pt(285, 175), pt(286.7, 175), pt(286.7, 195), pt(285, 195), pt(285, 210)])
+    expect(out[0]!.pts).toEqual([pt(285, 160), pt(285, 177), pt(286.7, 177), pt(286.7, 193), pt(285, 193), pt(285, 210)])
   })
 
   it('L1 穷尽→L2 左右等距邻缝 tie → 几何小侧（左）先：中单元 C_b 满员后落 C_a 而非 C_c', () => {
@@ -109,7 +110,7 @@ describe('F-ROUTE-02 U2 ④邻缝扫描左/上先（L2 同带域：axis+bandId �
     expect(r6).toMatchObject({ edgeId: 'e6', ideal: 285, overlapExempt: false })
     expect(r6.cellId).toBe(Ca.id)
     expect(r6.slotIdx).toBe(4) // C_a 槽位 [123.3,136.7,150,163.3,176.7] 中距 285 最近=176.7
-    expect(out[5]!.pts).toEqual([pt(285, 160), pt(285, 175), pt(176.7, 175), pt(176.7, 195), pt(285, 195), pt(285, 210)])
+    expect(out[5]!.pts).toEqual([pt(285, 160), pt(285, 177), pt(176.7, 177), pt(176.7, 193), pt(285, 193), pt(285, 210)])
   })
 
   it('列缝对称（上先）：三行 y 单元（y=100/220/340）满中带后 tie 落上侧 Y0', () => {
@@ -135,10 +136,10 @@ describe('F-ROUTE-02 U2 ④邻缝扫描左/上先（L2 同带域：axis+bandId �
     expect(r5.slotIdx).toBe(3) // Y0 槽位 [118,126,134,142] 距 ideal=240 最近=142
     expect(out[4]!.pts).toEqual([
       pt(150, 240),
-      pt(165, 240),
-      pt(165, 142),
-      pt(295, 142),
-      pt(295, 240),
+      pt(167, 240),
+      pt(167, 142),
+      pt(293, 142),
+      pt(293, 240),
       pt(350, 240)
     ])
   })
@@ -159,8 +160,9 @@ describe('F-ROUTE-02 U2 ⑤L3 双态触发（全占∨全不可达→overlapExem
 })
 
 describe('F-ROUTE-02 U2 ⑥谓词复检失败流（pre-commit 权威门）', () => {
-  // 标签 x∈[150,154]：静态走廊全不沾（corridor 隅 [139.3,147.3]/[156,164] 均无正叠）
-  // 但膨胀后 [146,158] 覆盖 ideal=148 的 jog 起点 (148,175) → 全槽谓词失败
+  // 标签 x∈[150,154]：静态走廊全不沾（corridor 隅 [137.3,149.3]/[154,166] 均
+  // 无正叠——±6 走廊〔R2-C4〕，154 恰触边界不计）
+  // 但膨胀后 [144,160] 覆盖 ideal=148 的 jog 起点 (148,177) → 全槽谓词失败
   const snap = snapOf(baseCards, [rect(150, 171, 4, 28)])
 
   it('前置：单元开放、无 blocked、五槽 slotFree 全 true（失败源=谓词非静态）', () => {
@@ -206,27 +208,31 @@ describe('F-ROUTE-02 U2 ⑦跨单元穿越逐单元独立（同带重叠单元�
     expect(recs[2]).toMatchObject({ cellId: cC.id, slotIdx: 0 })
     expect(out[0]!.pts).toEqual([
       pt(149, 160),
-      pt(149, 175), pt(150, 175), pt(150, 195), pt(149, 195),
-      pt(149, 175), pt(146, 175), pt(146, 195), pt(149, 195),
-      pt(149, 175), pt(160, 175), pt(160, 195), pt(149, 195),
+      pt(149, 177), pt(150, 177), pt(150, 193), pt(149, 193),
+      pt(149, 177), pt(146, 177), pt(146, 193), pt(149, 193),
+      pt(149, 177), pt(160, 177), pt(160, 193), pt(149, 193),
       pt(149, 198)
     ])
   })
 })
 
 describe('F-ROUTE-02 U2 ⑧分配侧 blockedSlots 消费（主循环跳过 blocked 槽）', () => {
-  it('blocked 槽（U1 标签 x∈[137,146] 盖 idx1 走廊）被主循环跳过→次近槽落位；对照无标签=Δ<1 保留', () => {
-    const snapBlocked = snapOf(baseCards, [rect(137, 180, 9, 10)])
+  it('blocked 槽（标签 x∈[148,153] 盖 idx1 走廊 [137.3,149.3]）被主循环跳过→次近槽落位；对照无标签=Δ<1 保留', () => {
+    // [R2-C4] PAD=6 重推导：旧标签 [137,146] 膨胀 [131,152] 盖 idx0 Z 链 jog
+    // 横段（x∈[126.7,141]）致全槽不可用→豁免，本契约形态消失；新标签
+    // [148,153]=盖 idx1 走廊（143.3±6）∧ 膨胀缘 x≥142>jog 缘 141（idx0
+    // Z 链净空）∧ 不触 idx2 走廊 [154,166]
+    const snapBlocked = snapOf(baseCards, [rect(148, 180, 5, 10)])
     const cell = extractGapCells(snapBlocked)[0]!
     expect(cell.blockedSlots.has(1)).toBe(true)
     const out = slotAssign([ed('e1', vseg(141))], snapBlocked)
     // idx1(143.3, Δ=2.3) blocked 跳过 → 次近=idx0(126.7, Δ=14.3) 落位
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 0, overlapExempt: false })
-    expect(out[0]!.pts).toEqual([pt(141, 160), pt(141, 175), pt(126.7, 175), pt(126.7, 195), pt(141, 195), pt(141, 210)])
+    expect(out[0]!.pts).toEqual([pt(141, 160), pt(141, 177), pt(126.7, 177), pt(126.7, 193), pt(141, 193), pt(141, 210)])
     // 对照：无标签时 idx1 Δ=2.3≥1 → Z 落位 idx1（jog x 换 y 轴对称施加）
     const outCtl = slotAssign([ed('e1', vseg(141))], snapOf(baseCards))
     expect(outCtl[0]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
-    expect(outCtl[0]!.pts).toEqual([pt(141, 160), pt(141, 175), pt(143.3, 175), pt(143.3, 195), pt(141, 195), pt(141, 210)])
+    expect(outCtl[0]!.pts).toEqual([pt(141, 160), pt(141, 177), pt(143.3, 177), pt(143.3, 193), pt(141, 193), pt(141, 210)])
   })
 })
 
@@ -295,18 +301,19 @@ describe('F-ROUTE-02 U2 ⑨残余子 pass 旧式等价（对照旧 applyBandLane
     const e1 = band('e1', [pt(80, 185), pt(340, 185)], 185, 6, 3)
     const e2 = band('e2', [pt(80, 185), pt(340, 185)], 185, 6, 3)
     const out = slotAssign([e1, e2], snapOf(cards))
-    // 槽 pass：e1→idx2(195, Δ=10)、e2→idx1(164.7, Δ=20.3)；jog 区 [165,295]
+    // 槽 pass：e1→idx2(195, Δ=10)、e2→idx1(166.7, Δ=20.3)；jog 区 [167,293]
+    //（=160+PAD+1/300−PAD−1——[R2-C4] PAD=6 重推，旧 [165,295]）
     expect(out[0]!.recs[0]).toMatchObject({ cellId: cell.id, axis: 'y', ideal: 185, slotIdx: 2, overlapExempt: false, residual: false })
     expect(out[1]!.recs[0]).toMatchObject({ slotIdx: 1 })
     // 残余 pass：两簇 [80,160]/[300,340] 各 off=(i−0.5)·6=∓3（cellId=−1/axis='y'/residual）
     expect(out[0]!.recs.filter((r) => r.residual).length).toBe(2)
     expect(out[0]!.pts).toEqual([
-      pt(80, 182), pt(160, 182), pt(160, 185), pt(165, 185), pt(165, 195),
-      pt(295, 195), pt(295, 185), pt(300, 185), pt(300, 182), pt(340, 182)
+      pt(80, 182), pt(160, 182), pt(160, 185), pt(167, 185), pt(167, 195),
+      pt(293, 195), pt(293, 185), pt(300, 185), pt(300, 182), pt(340, 182)
     ])
     expect(out[1]!.pts).toEqual([
-      pt(80, 188), pt(160, 188), pt(160, 185), pt(165, 185), pt(165, 166.7),
-      pt(295, 166.7), pt(295, 185), pt(300, 185), pt(300, 188), pt(340, 188)
+      pt(80, 188), pt(160, 188), pt(160, 185), pt(167, 185), pt(167, 166.7),
+      pt(293, 166.7), pt(293, 185), pt(300, 185), pt(300, 188), pt(340, 188)
     ])
   })
 })
@@ -339,7 +346,7 @@ describe('F-ROUTE-02 U2 ⑪圆角原语：r=0 尖角仍构造非空 d（不代�
 })
 
 describe('F-ROUTE-02 U2 专项 A（N-3 验收勾）：部分穿越段 [j1,j2]⊆段∩单元跨度', () => {
-  it('仅覆盖上部（段止于 185<[j2]=195）→ 全槽不可用→豁免、几何不变', () => {
+  it('仅覆盖上部（段止于 185<[j2]=193）→ 全槽不可用→豁免、几何不变', () => {
     const out = slotAssign([ed('u1', [pt(150, 160), pt(150, 185)])], snapOf(baseCards))
     const r = out[0]!.recs[0]!
     expect(r).toMatchObject({ overlapExempt: true, residual: false })
@@ -347,16 +354,16 @@ describe('F-ROUTE-02 U2 专项 A（N-3 验收勾）：部分穿越段 [j1,j2]⊆
     expect(out[0]!.pts).toEqual([pt(150, 160), pt(150, 185)])
   })
 
-  it('仅覆盖下部（段起于 185>[j1]=175）→ 全槽不可用→豁免、几何不变', () => {
+  it('仅覆盖下部（段起于 185>[j1]=177）→ 全槽不可用→豁免、几何不变', () => {
     const out = slotAssign([ed('d1', [pt(150, 185), pt(150, 230)])], snapOf(baseCards))
     expect(out[0]!.recs[0]).toMatchObject({ overlapExempt: true })
     expect(out[0]!.pts).toEqual([pt(150, 185), pt(150, 230)])
   })
 
-  it('边界恰容（段 [175,195]===jog 区）→ 可行落位（⊆ 含等号）；正控：全穿落位', () => {
-    const edge = slotAssign([ed('b1', [pt(150, 175), pt(150, 195)])], snapOf(baseCards))
+  it('边界恰容（段 [177,193]===jog 区——[R2-C4] PAD=6 重推）→ 可行落位（⊆ 含等号）；正控：全穿落位', () => {
+    const edge = slotAssign([ed('b1', [pt(150, 177), pt(150, 193)])], snapOf(baseCards))
     expect(edge[0]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
-    expect(edge[0]!.pts).toEqual([pt(150, 175), pt(143.3, 175), pt(143.3, 195), pt(150, 195)])
+    expect(edge[0]!.pts).toEqual([pt(150, 177), pt(143.3, 177), pt(143.3, 193), pt(150, 193)])
     const full = slotAssign([ed('b2', vseg(150))], snapOf(baseCards))
     expect(full[0]!.recs[0]).toMatchObject({ slotIdx: 1 })
   })
@@ -391,13 +398,14 @@ describe('F-ROUTE-02 U2 专项 B（d1-N2 验收勾）：slotFree 调用侧索引
   })
 })
 
-describe('F-ROUTE-02 U2 S2 例：H∈[9,12) 单元开放但全槽不可用→续扫', () => {
-  it('gap=9（净距=2·PAD+1 边界开放）：j2−j1=9−10<2→全槽不可行→豁免（无邻缝可续→L3）', () => {
-    const snap = snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 179, 100, 70)]])
+describe('F-ROUTE-02 U2 S2 例：H∈[13,16) 单元开放但全槽不可用→续扫', () => {
+  it('gap=13（净距=2·PAD+1=13 边界开放——[R2-C4] PAD=6 重推，旧 gap=9）：j2−j1=13−14<2→全槽不可行→豁免（无邻缝可续→L3）', () => {
+    const snap = snapOf([['p', rect(100, 100, 100, 70)], ['q', rect(100, 183, 100, 70)]])
     const cell = extractGapCells(snap)[0]!
-    expect(cell.rect).toEqual(rect(100, 170, 100, 9))
-    expect(slotsOf(cell).length).toBe(5) // 开放（travel=9 不封闭）
-    // ideal=142 距各槽均≥1（Δ<1 保留不触发）→全槽 Z 不可行→穷尽豁免
+    expect(cell.rect).toEqual(rect(100, 170, 100, 13))
+    expect(slotsOf(cell).length).toBe(5) // 开放（travel=13 不<13 封闭阈）
+    // ideal=142 距各槽均≥1（Δ<1 保留不触发）→全槽 Z 不可行（jog 高 H=13<
+    // 2·PAD+4=16）→穷尽豁免
     const out = slotAssign([ed('e1', [pt(142, 160), pt(142, 178)])], snap)
     const r = out[0]!.recs[0]!
     expect(r).toMatchObject({ overlapExempt: true, residual: false })
@@ -413,7 +421,7 @@ describe('F-ROUTE-02 U2 Δ<1 豁免保留占用（防后段重取）', () => {
     expect(out[0]!.pts).toEqual(vseg(143.3))
     // idx1 被保留占用 → e2 不可重取：次近=idx0(126.7, Δ=16.6) 先于 idx2(160, Δ=16.7)
     expect(out[1]!.recs[0]).toMatchObject({ slotIdx: 0, overlapExempt: false })
-    expect(out[1]!.pts[2]).toEqual(pt(126.7, 175))
+    expect(out[1]!.pts[2]).toEqual(pt(126.7, 177))
   })
 })
 
@@ -422,16 +430,16 @@ describe('F-ROUTE-02 U2 桩区禁入（有桩段续扫/无桩段直入）', () =
     ['e1', [{ a: pt(155, 174), b: pt(165, 196) }]] // AABB [155,165]×[174,196] 盖 idx2 槽线 jog 角
   ])
 
-  it('有桩边：最近槽 idx2(160, Δ=5) 拐点 (160,175) 入桩 AABB 严格内部→不可用→续扫落 idx1(143.3)', () => {
+  it('有桩边：最近槽 idx2(160, Δ=5) 拐点 (160,177) 入桩 AABB 严格内部→不可用→续扫落 idx1(143.3)', () => {
     const out = slotAssign([ed('e1', vseg(155))], snapOf(baseCards), stubs)
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 1, overlapExempt: false })
-    expect(out[0]!.pts).toEqual([pt(155, 160), pt(155, 175), pt(143.3, 175), pt(143.3, 195), pt(155, 195), pt(155, 210)])
+    expect(out[0]!.pts).toEqual([pt(155, 160), pt(155, 177), pt(143.3, 177), pt(143.3, 193), pt(155, 193), pt(155, 210)])
   })
 
   it('无桩边同几何：无桩区约束→最近槽 idx2(160) 直入（对照）', () => {
     const out = slotAssign([ed('e1', vseg(155))], snapOf(baseCards))
     expect(out[0]!.recs[0]).toMatchObject({ slotIdx: 2, overlapExempt: false })
-    expect(out[0]!.pts[2]).toEqual(pt(160, 175))
+    expect(out[0]!.pts[2]).toEqual(pt(160, 177))
   })
 })
 
@@ -451,8 +459,9 @@ describe('F-ROUTE-02 U3 挂账③：同边多残余区间入同簇（桥接态�
     // e1 跑段 [120,480]@145：穿 CELL_A（retain idx2=145）+CELL_B（retain
     // idx2=145）→消费区间 [160,260]/[380,480]→残余 [120,160]+[260,380]；
     // e2 跑段 [150,430]@145：CELL_A idx2 被占→次近 tie idx1=131.3 Z 落位
-    // （jog x[165,255]——P1 膨胀 x≤164/Q1 膨胀 x≥256 各 1px 净空）；CELL_B
-    // 段止于 430<j2=475→N-3 不可行全槽→L3 豁免+消费区间 [380,430]→残余
+    // （jog x[167,253]=160+PAD+1/260−PAD−1〔R2-C4 PAD=6 重推〕——P1 膨胀
+    // x≤166/Q1 膨胀 x≥254 各 1px 净空）；CELL_B
+    // 段止于 430<j2=473→N-3 不可行全槽→L3 豁免+消费区间 [380,430]→残余
     // [150,160]+[260,380]。同 bandY=145 双簇（e2 两侧区间各与 e1 同侧成簇）：
     // 每簇 k=2→(i−0.5)·6=∓3→e1 两区间均 142、e2 均 148（消费区间槽电平
     // 145/131.3 与残余电平 142/148 并存）——pts 逐点手推
@@ -477,11 +486,11 @@ describe('F-ROUTE-02 U3 挂账③：同边多残余区间入同簇（桥接态�
       pt(120, 142), pt(160, 142), pt(160, 145), pt(260, 145),
       pt(260, 142), pt(380, 142), pt(380, 145), pt(480, 145)
     ])
-    // e2：[150,160]→148；CELL_A Z 段 131.3（x[165,255]）；[260,380]→148；
+    // e2：[150,160]→148；CELL_A Z 段 131.3（x[167,253]）；[260,380]→148；
     // CELL_B 豁免段 145 原位（x[380,430]）
     expect(out[1]!.pts).toEqual([
-      pt(150, 148), pt(160, 148), pt(160, 145), pt(165, 145),
-      pt(165, 133.3), pt(255, 133.3), pt(255, 145), pt(260, 145),
+      pt(150, 148), pt(160, 148), pt(160, 145), pt(167, 145),
+      pt(167, 133.3), pt(253, 133.3), pt(253, 145), pt(260, 145),
       pt(260, 148), pt(380, 148), pt(380, 145), pt(430, 145)
     ])
   })

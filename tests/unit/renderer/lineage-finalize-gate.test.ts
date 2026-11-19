@@ -79,7 +79,7 @@ describe('R2-C1 钉定锚方向化起落', () => {
     }
     const input = geom('e1', 'A', 'B', { side: 'bottom', slot: 1 }, { side: 'top', slot: 1 })
     const [path] = routeAll([input], snap)
-    // 目标锚 (143,219.5) 位于月标膨胀区 [75,145.906]×[198,226]，任何进锚路径都碰障。
+    // 目标锚 (143,219.5) 位于月标膨胀区 [73,147.906]×[196,228]（±6——[R2-C4]），任何进锚路径都碰障。
     expect(path).toMatchObject({ route: 'overlap', clearance: 'blocked', d: '', anchorMarks: 'A:b1,B:t1' })
   })
 })
@@ -140,7 +140,10 @@ describe('R2-C1 最终净空门半径分档', () => {
   it('r=6/r=3 圆弧碰障但 r=0 尖角净空时，保留 r=0 救通档且非 blocked', async () => {
     const { finalizePath } = await import('../../../src/renderer/features/lineage/routing/finalize')
     const skeleton = [pt(0, 0), pt(0, 40), pt(40, 40)]
-    const obstacles = [rect(4.4, 34, 1, 1.9)]
+    // [R2-C4] PAD=6 重推：障碍平移 (+2,−2) 保持膨胀缘边距同值——旧 (4.4,34)
+    // 膨胀 [0.4,9.4]×[30,39.9]；新 (6.4,32) 膨胀 [0.4,13.4]×[26,39.9]（直角边
+    // x=0/y=40 仍各距 0.4/0.1 外净空，r=6/3 弧内切点 (1.5,38.5)/(0.9,39.4) 仍命中）
+    const obstacles = [rect(6.4, 32, 1, 1.9)]
     const r6 = buildRoundedPath(skeleton, 6)
     const r3 = buildRoundedPath(skeleton, 3)
     const r0 = buildRoundedPath(skeleton, 0)

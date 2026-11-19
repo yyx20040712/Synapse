@@ -6,7 +6,7 @@
  * json，授权=设计 §6 2026-10-07 用户裁决③）；旧 legacy 20px 行隙夹具随 U2
  * 槽位封闭判据（带高<36⇔n=0 不可横移）重基线为 72px 行隙网格几何）。
  * 真相源=docs/design/2026-10-07_f-slotgrid01-design.md §2/§5.3。**d/pts 值
- * 独立推导**：全部期望值自夹具几何手推（锚 ¼/½/¾×128×72、桩 10、PAD 4、
+ * 独立推导**：全部期望值自夹具几何手推（锚 ¼/½/¾×128×72、桩 10、PAD 6、
  * 槽位域=宽−20/n=clamp(⌊(域−8)/8⌋,0,5)/k/(n+1) 分点、r=6 圆角），禁抄实现
  * 输出。基准卡=128×72（P-15）。always-active 裸 describe（K3）。
  */
@@ -76,13 +76,14 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
-    // 手推：x₀=½=176（两侧投影同列）；阻挡带=W 膨胀 [240,320]（A/B 带裁剪出界）；
-    // row1 通道（φ=100）：左缘 [100,212) 槽 125.3..186.7 全落 W 膨胀 x[96,232] 弃；
-    // col0|1 [340,412) 首槽 358.7（Δx=182.7）胜出。上夹缝 [182,240] h=58→n=3
-    // 中位槽 211；下夹缝 [320,378] 中位槽 349
+    // 手推：x₀=½=176（两侧投影同列）；阻挡带=W 膨胀 [238,322]（A/B 带裁剪出界）；
+    // row1 通道（φ=100）：左缘 [100,212) 槽 125.3..186.7 全落 W 膨胀 x[94,234] 弃；
+    // col0|1 [340,412) 首槽 358.7（Δx=182.7）胜出。上夹缝 [182,238] h=56→n=3
+    // 中位槽 210；下夹缝 [322,378] h=56→n=3 中位槽 350（[R2-C4] PAD=6 重推：
+    // 夹缝=阻挡带膨胀缘〔±6〕到桩端，域=h−20、pos=小端+10+k·域/(n+1)）
     expect(r.pts).toEqual([
-      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 211 }, { x: 358.7, y: 211 },
-      { x: 358.7, y: 349 }, { x: 176, y: 349 }, { x: 176, y: 378 }, { x: 176, y: 388 }
+      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 210 }, { x: 358.7, y: 210 },
+      { x: 358.7, y: 350 }, { x: 176, y: 350 }, { x: 176, y: 378 }, { x: 176, y: 388 }
     ])
     expect(r.detourMarks).toBe('358.7:182.7')
   })
@@ -101,9 +102,10 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
-    // 手推：x₀=164 穿 D →阻挡带 [188,268]；上夹缝 [182,188] h=6<36→桩端线 y=182、
-    // 下夹缝 [268,274]→桩端线 y=274；D 归 row1（中心聚整）：左缘槽全落 D 膨胀
-    // x[96,232] 弃 → col0|1 [331.6,403.6) 首槽 350.3（Δ=186.3）
+    // 手推：x₀=164 穿 D →阻挡带 [186,270]（D ±6 膨胀——[R2-C4]）；上夹缝
+    // [182,186] h=4<36→桩端线 y=182、
+    // 下夹缝 [270,274] h=4→桩端线 y=274；D 归 row1（中心聚整）：左缘槽全落 D 膨胀
+    // x[94,234] 弃 → col0|1 [331.6,403.6) 首槽 350.3（Δ=186.3）
     expect(r.pts).toEqual([
       { x: 164, y: 172 }, { x: 164, y: 182 }, { x: 350.3, y: 182 },
       { x: 350.3, y: 274 }, { x: 164, y: 274 }, { x: 164, y: 284 }
@@ -129,12 +131,24 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(400, 100, CARD_W, CARD_H)],
-        ['B', rect(100, 300, CARD_W, CARD_H)]
+        // [R2-C4] PAD=6 夹具重推导（主控裁决选项 b）：B y 300→200 改扁平。
+        // 结构性规律（PAD=6 新契约知识，随测试留档）：
+        // ① h-slip 斜段存活 ⇔ x 进程占比 dx/(|dx|+|dy|)>PAD/10（PAD=6 时
+        //   0.6）——末 10px 桩区的 x 进程 10·dx/L 须越过障碍膨胀 PAD，两侧
+        //   膨胀边距=10·share−PAD；旧夹具 share=172/336=0.512<0.6（边距
+        //   −0.88px）中段末入 B 膨胀带降 band；
+        // ② 新夹具 share=172/236=0.729 → 双侧膨胀边距 10·0.729−6=1.29px
+        //   （cutA.x=392.71<A 膨胀左缘 394；cutB.x=235.29>B 膨胀右缘 234）
+        ['B', rect(100, 200, CARD_W, CARD_H)]
       ])
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('h-slip')
-    expect(r.d).toBe('M 400 154 L 228 318')
+    // 手推：tc=(164,236)/sc=(464,136)；ha=A 左侧投影 tc.y=236 越下界取最近
+    // ¾ 序 (400,154)=l2；hb=B 右侧投影 sc.y=136 越上界取最近 ¼ 序
+    // (228,218)=r0；斜段非轴对齐不入槽（segConsumesCell 早退）零 jog、
+    // 单段无拐零 Q → d=M 400 154 L 228 218
+    expect(r.d).toBe('M 400 154 L 228 218')
   })
 
   it('④ band：同行带近侧不可直连+错列（x_s≠x_t）→ 行隙带 zigzag（72px 网格夹具——横移 y=带槽位中位 208）', () => {
@@ -168,15 +182,16 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('outer-ring')
-    // 手推：x₀=176；WALL 膨胀 [96,704] 覆全部通道候选——detour/band 不可行；
-    // [R2-C2] 外圈左车道 x=minLeft−14=86（WALL 左缘 100——右环 714 更长，左环
+    // 手推：x₀=176；WALL 膨胀 [94,706]（x∈[100,700]±6）覆全部通道候选——detour/band 不可行；
+    // [R2-C2] 外圈左车道 x=minLeft−16=84（WALL 左缘 100——RING_MARGIN=PAD+10
+    // =16〔R2-C4 PAD=6 重推〕；右环 716 更长，左环
     // 胜）：A 左 ¾ (112,154)→桩 (102,154)→车道→B 左 ¼ 桩 (102,406)→锚
     // (112,406)。d=共线剔除后两拐 r=min(6,…) 圆角
     expect(r.pts).toEqual([
-      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 86, y: 154 },
-      { x: 86, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 84, y: 154 },
+      { x: 84, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
     ])
-    expect(r.d).toBe('M 112 154 L 92 154 Q 86 154 86 160 L 86 400 Q 86 406 92 406 L 112 406')
+    expect(r.d).toBe('M 112 154 L 90 154 Q 84 154 84 160 L 84 400 Q 84 406 90 406 L 112 406')
     expect(r.clearance).toBeUndefined()
     expect(r.anchorMarks).toBe('A:l2,B:l0')
   })
@@ -270,7 +285,7 @@ describe('F-SLOTGRID-01 U2 detour 段式（占用/方向/降级）', () => {
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
     // 手推：源=A 底下目标 B 在上→源顶锚 (176,388)/目标底锚 (176,172)；阻挡带
-    // [240,320] 同款；槽位/夹缝对称（近源先=row1 下缘序）；skel 首点=源顶锚
+    // [238,322] 同款（W y∈[244,316]±6——[R2-C4]）；槽位/夹缝对称（近源先=row1 下缘序）；skel 首点=源顶锚
     expect(r.pts[0]).toEqual({ x: 176, y: 388 })
     expect(r.pts[r.pts.length - 1]).toEqual({ x: 176, y: 172 })
     expect(r.detourMarks).toBe('358.7:182.7')
@@ -287,7 +302,7 @@ describe('F-SLOTGRID-01 U2 detour 段式（占用/方向/降级）', () => {
       frames: [gridFrame()]
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
-    // 右缘末槽 676.7>704−560=…：wall 膨胀 [96,664]→676.7 净空 → detour 承接
+    // 右缘末槽 676.7>…：wall 膨胀 [94,666]（±6——[R2-C4]）→676.7 净空 → detour 承接
     expect(r.route).toBe('detour')
     expect(r.detourMarks).toBe('676.7:500.7')
   })
@@ -318,13 +333,14 @@ describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返
     const snap = makeSnap({ cards: twoBandCards(true), frames: [gridFrame()] })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
-    // 手推：x₀=176；阻挡带（行进序近源先）=[528,608]（W2 膨胀）→[240,320]（W1）；
-    // W2 x 膨胀 [92,656] 灭 row3 左缘/col0|1/右缘≤651.3 → row3 唯一候选 676.7；
+    // 手推：x₀=176；阻挡带（行进序近源先）=[526,610]（W2 膨胀）→[238,322]（W1）；
+    // W2 x 膨胀 [90,658] 灭 row3 左缘/col0|1/右缘≤651.3 → row3 唯一候选 676.7；
     // row1 候选 col0|1 族+右缘族——贯通解=全程 676.7（见 W1 例）。源侧夹缝
-    // [608,666] h=58→n=3 中位槽 637；目标侧夹缝 [182,240]→211
+    // [610,666] h=56→n=3 中位槽 638；目标侧夹缝 [182,238] h=56→中位槽 210
+    //（[R2-C4] PAD=6 重推：阻挡带=障碍 y±6，夹缝槽位=域 h−20 的 k/(n+1) 分点）
     expect(r.pts).toEqual([
-      { x: 176, y: 676 }, { x: 176, y: 666 }, { x: 176, y: 637 }, { x: 676.7, y: 637 },
-      { x: 676.7, y: 211 }, { x: 176, y: 211 }, { x: 176, y: 182 }, { x: 176, y: 172 }
+      { x: 176, y: 676 }, { x: 176, y: 666 }, { x: 176, y: 638 }, { x: 676.7, y: 638 },
+      { x: 676.7, y: 210 }, { x: 176, y: 210 }, { x: 176, y: 182 }, { x: 176, y: 172 }
     ])
     expect(r.detourMarks).toBe('676.7:500.7,676.7:500.7')
   })
@@ -348,21 +364,22 @@ describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返
         ['A', rect(112, 100, CARD_W, CARD_H)],
         ['B', rect(112, 388, CARD_W, CARD_H)]
       ]),
-      // label 落 row1 空行带 [244,316]：膨胀 [146,234]×[246,294] 覆 x₀=176
+      // label 落 row1 空行带 [244,316]：膨胀 [144,256]×[244,296] 覆 x₀=176
       labels: [rect(150, 250, 80, 40)],
       frames: [gridFrame()]
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
-    // 手推：阻挡带=[246,294]（label）；行1 无实卡（实卡反推=无通道→假阴性
-    // 降级 overlap）——容量派生行集：row1（φ=100）左缘通道 [100,212) 槽
-    // {125.3..186.7}，label 膨胀 [146,234] 灭 {156,171.3,186.7}——就近存
+    // 手推：阻挡带=[244,296]（label ±6 膨胀）；行1 无实卡（实卡反推=无通道→
+    // 假阴性降级 overlap）——容量派生行集：row1（φ=100）左缘通道 [100,212) 槽
+    // {125.3..186.7}，label 膨胀 [144,256] 灭 {156,171.3,186.7}——就近存
     // 140.7（Δ=35.3；125.3 次近——col0|1 [340,412) 族 Δ≥182 较远）；上夹缝
-    // [182,246] h=64→n=4 中位 209.6；下夹缝 [294,378] h=84→n=5 中位 336
+    // [182,244] h=62→n=4 中位 208.8；下夹缝 [296,378] h=82→n=5 中位 337
+    //（[R2-C4] PAD=6 重推：label 膨胀 y±6、夹缝槽位=域 h−20 分点）
     expect(r.detourMarks).toBe('140.7:35.3')
     expect(r.pts).toEqual([
-      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 209.6 }, { x: 140.7, y: 209.6 },
-      { x: 140.7, y: 336 }, { x: 176, y: 336 }, { x: 176, y: 378 }, { x: 176, y: 388 }
+      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 208.8 }, { x: 140.7, y: 208.8 },
+      { x: 140.7, y: 337 }, { x: 176, y: 337 }, { x: 176, y: 378 }, { x: 176, y: 388 }
     ])
   })
 
@@ -415,14 +432,19 @@ describe('F-SLOTGRID-01 U2 RR1 回炉轮 1（B1/B2/B3/W1/W3——门一双席返
         ['A', rect(112, 100, CARD_W, CARD_H)],
         ['W1', rect(100, 244, CARD_W, CARD_H)],
         ['W1b', rect(536, 244, 140, CARD_H)],
-        ['W2', rect(96, 354, 590, CARD_H)],
+        // [R2-C4] PAD=6 重推导：W2 y 354→358（膨胀缘 [352,436]——y∈[358,430]
+        // ±6；与 W1 膨胀
+        // 缘 [238,322] 的夹缝保持 h=30、膨胀缝净距 30≥BLOCK_MERGE_GAP 28 不
+        // 合并；旧 y=354 在 PAD=6 下膨胀缝 26<28 两带合并且右缘 693.3 槽
+        // （>W2 膨胀右缘 692）存活→贯通单带解非 null，本契约形态消失）
+        ['W2', rect(96, 358, 590, CARD_H)],
         ['B', rect(112, 532, CARD_W, CARD_H)]
       ]),
       frames: [gridFrame()]
     })
-    // 手推：x₀=176 阻挡带=[240,320]（W1）与 [350,430]（W2 x[92,690]∋176）——
-    // 中夹缝 [320,350] h=30∈[28,36) 不合并不开槽；band1 候选={358.7..393.3}
-    //（W1b [532,680] 灭右缘族）；band2 候选={693.3}（W2 灭其余右缘槽）——
+    // 手推：x₀=176 阻挡带=[238,322]（W1）与 [352,436]（W2 y∈[358,430]±6；x[90,692]∋176）——
+    // 中夹缝 [322,352] h=30∈[28,36) 不合并不开槽；band1 候选={358.7..393.3}
+    //（W1b [530,682] 灭右缘族）；band2 候选={693.3}（W2 灭其余右缘槽）——
     // 全组合异槽必经中夹缝横移而夹缝封闭 → 组合不可行 → null（降 band）
     const pa: PickedAnchor = { pt: { x: 176, y: 172 }, side: 'bottom', slot: 1 }
     const pb: PickedAnchor = { pt: { x: 176, y: 532 }, side: 'top', slot: 1 }
@@ -521,7 +543,7 @@ describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪
   })
 
   it('year-head 拦 direct 中段→降级链触发（route≠direct+有产出）', () => {
-    // yearHead(144,224,40,10) 膨胀 [140,192]×[220,234]——竖段 x=164 穿 y 段
+    // yearHead(144,224,40,10) 膨胀 [138,194]×[218,236]（±6——[R2-C4]）——竖段 x=164 穿 y 段
     // →direct 废；年份头入障碍集（不并入=仍 direct 穿头即缺陷本体）
     const r = routeEdge(geom('e1', 'A', 'B'), columnSnap([rect(144, 224, 40, 10)]))
     expect(r.route).not.toBe('direct')
@@ -539,7 +561,7 @@ describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪
   })
 
   it('manual-override 终门承接（via 穿 yearHead → route 仍 manual-override 但 clearance=blocked 空 d——[R2-C3]）', () => {
-    // yearHead(290,224,40,10) 膨胀 [286,334]×[220,234]——via 竖段 x=300 穿头
+    // yearHead(290,224,40,10) 膨胀 [284,336]×[218,236]（±6——[R2-C4]）——via 竖段 x=300 穿头
     //（原夹具 x=144 头在 via 侧旁未相交，断言仅锁 route 态；本例把头移进
     // via 行进带，锁终门承接合同：三档均碰障=blocked，数据保留不删边）
     const r = routeEdge(
@@ -571,7 +593,7 @@ describe('F-UIRES-03 C2·P7 穿年份头避让（障碍集扩=卡∪月标注∪
       expect(r.clearance, `dy=${dy}`).toBeUndefined()
       expect(r.d.length, `dy=${dy}`).toBeGreaterThan(0)
     }
-    // 贴自家端卡边（竖段 x=230 距卡缘 2px，在 PAD=4 带内）=用户主权放行
+    // 贴自家端卡边（竖段 x=230 距卡缘 2px，在 PAD=6 带内）=用户主权放行
     const hug = routeEdge(
       geom('h1', 'A2', 'B2', [
         { x: 230, y: 136 },
@@ -648,7 +670,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
   // 夹具手推：A(112,100,128,72) 下行 B(160,244,128,72)；行隙带 [172,244] h=72
   // →横移 y=槽位中位 208；A 底锚=投影 tc.x=224→proj 112→¾ 序 (208,172)；B 顶
   // 首选锚=投影 sc.x=176→proj 16→¼ (192,244)；月标形 label(113,236,77,8)
-  // （膨胀 [109,194]×[232,248]）封堵首选直落竖段；散开序 [0,1,2]→slot1
+  // （膨胀 [107,196]×[230,250]——±6〔R2-C4〕）封堵首选直落竖段；散开序 [0,1,2]→slot1
   // (224,244) 净空承接
   const spreadSnap = (label: Rect): LayoutSnapshot =>
     makeSnap({
@@ -668,7 +690,7 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const band = bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')
     expect(band).not.toBeNull()
     // 终落锚=散开第二候选 slot1：手算 x=160+128×½=224（首选 x=192 被月标
-    // 膨胀带 [109,194] 封堵）——骨架末点即生效锚点
+    // 膨胀带 [107,196] 封堵——±6〔R2-C4〕）——骨架末点即生效锚点
     expect(band!.skel[band!.skel.length - 1]).toEqual({ x: 224, y: 244 })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('band')
@@ -682,13 +704,14 @@ describe('F-SLOTGRID-01 U2 band 终落锚散开（月标封堵首选 slot——I
     const obstacles = [...snap.cards.values(), ...snap.labels]
     const cards = [...snap.cards.values()]
     expect(bandSkeleton(snap.cards.get('A')!, snap.cards.get('B')!, true, snap, obstacles, cards, undefined, new ChannelUse(), 'A', 'B', 'e1')).toBeNull()
-    // 带域终落全挡（月标膨胀覆三顶槽）——[R2-C2] 外圈左车道 x=112−14=98：
+    // 带域终落全挡（月标膨胀覆三顶槽）——[R2-C2] 外圈左车道 x=112−16=96
+    //（RING_MARGIN=PAD+10=16——[R2-C4] PAD=6 重推）：
     // A 左 ¾ (112,154)→车道→B 左 ¼ (160,262)——绕标合法（旧=overlap 兜底）
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('outer-ring')
     expect(r.pts).toEqual([
-      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 98, y: 154 },
-      { x: 98, y: 262 }, { x: 150, y: 262 }, { x: 160, y: 262 }
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 96, y: 154 },
+      { x: 96, y: 262 }, { x: 150, y: 262 }, { x: 160, y: 262 }
     ])
     expect(r.clearance).toBeUndefined()
   })
@@ -732,16 +755,17 @@ describe('F-ROUTE-02 [U3] 槽位分配对照（槽位新公式重基线——域
     const paths = routeAll([geom('e1', 'A', 'B'), geom('e2', 'A', 'B')], snap)
     expect(paths.map((p) => p.route)).toEqual(['direct', 'direct'])
     // 行隙单元 [100,228]×[172,300]（W=128→域 108→n=5 分点 110+108k/6=
-    // 128/146/164/182/200，j1=177/j2=295）：e1（½/½）ideal=164 恰中槽 idx2
+    // 128/146/164/182/200，j1=172+PAD+1=179/j2=300−PAD−1=293〔R2-C4 PAD=6
+    // 重推〕）：e1（½/½）ideal=164 恰中槽 idx2
     // （Δ=0<1）→retain 豁免；e2（散开 ¾/¾）ideal=196→|200−196|=4<|182−196|=14
-    // →落 idx4=200：Z 链 (196,177)(200,177)(200,295)(196,295)
+    // →落 idx4=200：Z 链 (196,179)(200,179)(200,293)(196,293)
     expect(paths[0]!.d).toBe('M 164 172 L 164 300')
     expect(paths[1]!.pts).toEqual([
       { x: 196, y: 172 },
-      { x: 196, y: 177 },
-      { x: 200, y: 177 },
-      { x: 200, y: 295 },
-      { x: 196, y: 295 },
+      { x: 196, y: 179 },
+      { x: 200, y: 179 },
+      { x: 200, y: 293 },
+      { x: 196, y: 293 },
       { x: 196, y: 300 }
     ])
     // INV-1XX 单元内断言：两竖直段 x 电平互异且均∈分点集 {128,146,164,182,200}
@@ -800,14 +824,15 @@ describe('F-ROUTE-02 [U3] 槽位分配对照（槽位新公式重基线——域
     expect(paths.map((p) => p.route)).toEqual(['direct', 'direct', 'direct'])
     // 散开序 bottom ½=slot1→[1,2,0]=½→¾→¼；e1 retain idx2（164）；e2→200
     // （|200−196|=4<|182−196|=14）；e3→128（|128−132|=4<|146−132|=12）
+    //（jog 缘 j1=179/j2=293——[R2-C4] PAD=6 重推）
     expect(paths[0]!.d).toBe('M 164 172 L 164 300')
     expect(paths[1]!.pts).toEqual([
-      { x: 196, y: 172 }, { x: 196, y: 177 }, { x: 200, y: 177 },
-      { x: 200, y: 295 }, { x: 196, y: 295 }, { x: 196, y: 300 }
+      { x: 196, y: 172 }, { x: 196, y: 179 }, { x: 200, y: 179 },
+      { x: 200, y: 293 }, { x: 196, y: 293 }, { x: 196, y: 300 }
     ])
     expect(paths[2]!.pts).toEqual([
-      { x: 132, y: 172 }, { x: 132, y: 177 }, { x: 128, y: 177 },
-      { x: 128, y: 295 }, { x: 132, y: 295 }, { x: 132, y: 300 }
+      { x: 132, y: 172 }, { x: 132, y: 179 }, { x: 128, y: 179 },
+      { x: 128, y: 293 }, { x: 132, y: 293 }, { x: 132, y: 300 }
     ])
     const lv = [paths[0]!.pts[0]!.x, paths[1]!.pts[2]!.x, paths[2]!.pts[2]!.x]
     expect(new Set(lv).size).toBe(3)
@@ -833,12 +858,14 @@ describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('detour')
     // 手推：Phase B 首组合=（带1 就近 358.7，带2 就近 575.3）——中夹缝
-    // [320,528] h=208→n=5 中位槽 424 回 x₀ 再移出；源侧夹缝 211/目标侧 637
+    // [322,526] h=204→n=5 中位槽 424 回 x₀ 再移出；源侧夹缝 [182,238] h=56
+    // →中位槽 210/目标侧夹缝 [610,666] h=56→中位槽 638（[R2-C4] PAD=6 重推：
+    // 阻挡带=W1a [238,322]/W2 [526,610]，夹缝槽位=域 h−20 分点）
     expect(r.detourMarks).toBe('358.7:182.7,575.3:399.3')
     expect(r.pts).toEqual([
-      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 211 }, { x: 358.7, y: 211 },
+      { x: 176, y: 172 }, { x: 176, y: 182 }, { x: 176, y: 210 }, { x: 358.7, y: 210 },
       { x: 358.7, y: 424 }, { x: 176, y: 424 }, { x: 575.3, y: 424 },
-      { x: 575.3, y: 637 }, { x: 176, y: 637 }, { x: 176, y: 666 }, { x: 176, y: 676 }
+      { x: 575.3, y: 638 }, { x: 176, y: 638 }, { x: 176, y: 666 }, { x: 176, y: 676 }
     ])
     // 混合形态锚：双外槽电平互异（358.7/575.3 各承一带）+中段 x₀ 触点在场
     expect(r.pts.filter((q) => q.x === 358.7).length).toBeGreaterThanOrEqual(2)
@@ -846,11 +873,12 @@ describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1
   })
 
   it("[k1-W3′·N12] 横边锚同柱防御：4 边同端点（底/顶三槽满员）→第 4 边散开至右锚（x 全等 240）→ detour 不入场→[R2-C2] 外圈左环承接", () => {
-    // W 覆 x₀ 全族（[96,304] ∋ 144/176/208/240）：e1-e3 竖边锚各承 detour；
-    // e4 生效锚散开至 right ½（aPt=bPt=(240,·) x 全等）——sa/sb 竖侧+x 等
-    // 但 pa/pb 横边：入口约束=生效锚恒竖侧→跳过 detour→band 终落槽满员
+    // W 覆 x₀ 全族（[94,306] ∋ 144/176/208/240——PAD=6）：e1-e3 竖边锚各承
+    // detour；e4 生效锚散开至 right ½（aPt=bPt=(240,·) x 全等）——sa/sb 竖侧
+    // +x 等但 pa/pb 横边：入口约束=生效锚恒竖侧→跳过 detour→band 终落槽满员
     // null→旧 overlap 兜底（x=240 贴卡缘穿 PAD 最终门 blocked）；[R2-C2] 外圈
-    // 右车道 x=254∈W 膨胀 [96,304] 撞墙不可行——左车道 x=86 绕行合法
+    // 右车道 x=316 不撞墙但曼哈顿更长——左车道 x=84（RING_MARGIN=16——
+    // [R2-C4] PAD=6 重推）绕行合法且更短
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(112, 100, CARD_W, CARD_H)],
@@ -863,8 +891,8 @@ describe('F-SLOTGRID-01 U2 RR2 回炉轮 2（k1-W2′ Phase B 混合解直测/k1
     expect(paths.slice(0, 3).map((p) => p.route)).toEqual(['detour', 'detour', 'detour'])
     expect(paths[3]!.route).toBe('outer-ring')
     expect(paths[3]!.pts).toEqual([
-      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 86, y: 154 },
-      { x: 86, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
+      { x: 112, y: 154 }, { x: 102, y: 154 }, { x: 84, y: 154 },
+      { x: 84, y: 406 }, { x: 102, y: 406 }, { x: 112, y: 406 }
     ])
     expect(paths[3]!.clearance).toBeUndefined()
   })
