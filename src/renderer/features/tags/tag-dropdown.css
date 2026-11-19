@@ -3,7 +3,9 @@
  * 样式（自 library-explorer.css 分域拆件[CSS 450 上限]；TagDropdown.tsx 消费）。
  * B1 批形态：头=全选框三态+删除 danger 钮；行常态=[勾选框][椭圆 chip][mono
  * 计数][「编辑」钮]；行编辑态=input+保存钮+色点阵；脚=清空已选。TagColorPopover
- * 行内色板族（.lib-dd-pop*）与名称区/色点框（.lib-dd-nm*/.lib-dd-dot）随批退役。
+ * 行内色板族（.lib-dd-pop 系）与名称区、色点框（.lib-dd-nm 系、.lib-dd-dot 系）
+ * 随批退役。（CSS 注释内禁写字面「星斜杠」序列——会把注释提前闭合，
+ * 残文吞掉下一条规则：2026-11-20 标签面板掉出视口缺陷根因）
  */
 /* ── 标签下拉（TagDropdown——F-UIRES-03 B1 批：头=全选+删除/行=chip+编辑钮）── */
 .lib-dd { position: relative; display: inline-flex; flex: none; }

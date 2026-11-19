@@ -58,6 +58,17 @@ test('标签多选过滤：面板勾选两标签交集→取消一个→清空�
   await win.locator('.lib-dd-btn').click()
   const panel = win.locator('.lib-dd-panel')
   await expect(panel).toBeVisible({ timeout: 10_000 })
+  // [tagpage-2026-11-20] 面板必须锚在按钮正下方（.lib-dd 宿主 relative 失效时
+  // top:calc(100%+6px) 会相对整页定位——面板落在视口外=用户「点不开」；
+  // toBeVisible 不查视口内，须以几何锚定断言接防）
+  const btnBox = await win.locator('.lib-dd-btn').boundingBox()
+  const panelBox = await panel.boundingBox()
+  if (btnBox !== null && panelBox !== null) {
+    expect(panelBox.y).toBeGreaterThan(btnBox.y + btnBox.height - 1)
+    expect(panelBox.y).toBeLessThan(btnBox.y + btnBox.height + 60)
+  } else {
+    throw new Error('标签钮或面板 boundingBox 为空——无法校验锚定')
+  }
   const selectAll = panel.getByLabel('全选')
   await expect(selectAll).toHaveAttribute('aria-checked', 'false')
   const rowA = panel.locator('.lib-dd-row').filter({ hasText: '多选A' })
