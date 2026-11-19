@@ -30,7 +30,9 @@
  * - 不做：下载引擎本体（A8 占位）；课题管理本体（workspaces 管理页）
  *
  * ── 文化层 ──
- * - SVG path 逐值誊自 mockup 2026-09-26_v2_theme-light.html L351-364（禁新依赖）
+ * - SVG path 逐值誊自 v2 设计稿（2026-11-19 定案 synapse-redesign-v2.html
+ *   symbol 库 i-library/i-reader/i-lineage/i-settings/i-folder/i-download——
+ *   前端改造第一期图标统一批；禁新依赖）
  * - 测试：tests/unit/renderer/app-shell.test.tsx（窄轨结构+视图页）
  *   +ws-guide-state.test.tsx（引导态锁——R1 勘正拆件实驻）+tests/e2e/shell-rail.spec.ts（真 Chromium 渲染）
  */
@@ -49,7 +51,7 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
     label: '文献库',
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
+        <path d="M5 4h4v16H5zM10 4h4v16h-4zM15.5 5l3.6-.8 3 14.8-3.6.8z" />
       </svg>
     )
   },
@@ -58,8 +60,7 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
     label: '阅读器',
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M4 5c0-1 1-2 2-2h12c1 0 2 1 2 2v13l-3-2H6c-1 0-2-1-2-2z" />
-        <path d="M8 8h8M8 11h6" />
+        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5zM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z" />
       </svg>
     )
   },
@@ -68,10 +69,10 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
     label: '脉络',
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24">
-        <circle cx="6" cy="6" r="2.4" />
-        <circle cx="18" cy="6" r="2.4" />
-        <circle cx="12" cy="18" r="2.4" />
-        <path d="M8 7.4l3 8M16 7.4l-3 8M8.4 6h7.2" />
+        <circle cx="6" cy="6" r="2" />
+        <circle cx="18" cy="6" r="2" />
+        <circle cx="12" cy="18" r="2" />
+        <path d="m7.5 7.5 3 8.5M16.5 7.5l-3 8.5M8 6h8" />
       </svg>
     )
   }
@@ -81,23 +82,21 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
 const ICON_SETTINGS = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="3" />
-    <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" />
   </svg>
 )
 
-/** 课题图标（mockup L353 文件夹形——描边风格与视图图标一致） */
+/** 课题图标（v2 i-folder——文件夹形） */
 const ICON_WS = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M4 6c0-1 1-2 2-2h4l2 2h6c1 0 2 1 2 2v9c0 1-1 2-2 2H6c-1 0-2-1-2-2z" />
-    <path d="M4 11h16" />
+    <path d="M3.5 7A2.5 2.5 0 0 1 6 4.5h4l2 2h5.5A2.5 2.5 0 0 1 20 9v8.5a2.5 2.5 0 0 1-2.5 2.5h-12A2.5 2.5 0 0 1 3 17.5z" />
   </svg>
 )
 
-/** 下载图标（mockup L357 取——A8 文献搜索与下载引擎占位） */
+/** 下载图标（v2 i-download——落盘箭头；A8 文献搜索与下载引擎占位） */
 const ICON_DL = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <circle cx="11" cy="11" r="6.5" />
-    <path d="M15.5 15.5L21 21M11 8.5v5M8.5 11h5" />
+    <path d="M12 3v12M7 10l5 5 5-5M4 17v4h16v-4" />
   </svg>
 )
 

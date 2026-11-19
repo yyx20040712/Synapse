@@ -11,8 +11,9 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * T3-P1 主题三族 e2e（always-active）：设置页三选项（枚举退役 'system'）→
  * 保存后 data-theme 挂 documentElement + body computed backgroundColor 三族
  * 终值实测（真实渲染断言——INV-06 口径，禁只断言 attr 不见色）。值源=
- * docs/design/2026-09-26_theme-trio-final-design.md §0：
- * light #f4f6f9 / dark #14161a / sepia #e8dcc2。收尾恢复白天（终态=白天，
+ * docs/design/2026-09-26_theme-trio-final-design.md §0；light/sepia 值随
+ * 2026-11-19 v2 定案第一期更新（synapse-redesign-v2.html）：
+ * light #f2f4f1 / dark #14161a / sepia #eee6d6。收尾恢复白天（终态=白天，
  * 防污染其他 spec 的视觉断言面）。
  */
 
@@ -49,7 +50,7 @@ test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保�
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
-    .toBe('rgb(244, 246, 249)')
+    .toBe('rgb(242, 244, 241)')
 
   // 夜间 · 深灰：保存落地 → data-theme=dark + body 真实渲染色 #14161a
   await select.selectOption({ label: '夜间 · 深灰' })
@@ -65,13 +66,13 @@ test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保�
     .poll(() => win.evaluate(() => getComputedStyle(document.body).color))
     .toBe('rgb(230, 233, 239)')
 
-  // 护眼 · 牛皮纸：保存落地 → data-theme=sepia + body 真实渲染色 #e8dcc2
+  // 护眼 · 牛皮纸：保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
   await select.selectOption({ label: '护眼 · 牛皮纸' })
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'sepia')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
-    .toBe('rgb(232, 220, 194)')
+    .toBe('rgb(238, 230, 214)')
 
   // 收尾恢复白天（终态=白天——防污染其他 spec）
   await select.selectOption({ label: '白天 · 精密仪表' })
@@ -79,7 +80,7 @@ test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保�
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
-    .toBe('rgb(244, 246, 249)')
+    .toBe('rgb(242, 244, 241)')
 
   await app.close()
 })
@@ -88,8 +89,9 @@ test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保�
  * [T3-P4] 阅读器纸面三态 e2e（always-active）：种子 PDF（seed-paper 先例+
  * reader-text 批 1 配方）→开阅读器渲染出真实文本→三主题下 [data-page-box]
  * computed backgroundColor + canvas[data-pdf-canvas] computed filter 实测。
- * 值源=final-design §0 --paper 三族（light=白桥接 rgb(255,255,255)/dark=
- * #242830=rgb(36,40,48)/sepia=#f7efdc=rgb(247,239,220)）+§7 案 A（dark=
+ * 值源=final-design §0 --paper 三族；light/sepia 随 v2 第一期更新
+ * （light=#fffefb=rgb(255,254,251)/dark=#242830=rgb(36,40,48)/sepia=
+ * #fdf8ec=rgb(253,248,236)）+§7 案 A（dark=
  * invert(1) hue-rotate(180deg) 黑墨带→白字）。收尾必恢复白天（防污染
  * 他 spec——本 spec 首测同纪律）。
  */
@@ -156,30 +158,30 @@ test('T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白�
   expect(dark.canvasFilter).toContain('invert')
   expect(dark.canvasFilter).toBe('invert(1) hue-rotate(180deg)')
 
-  // —— 白天 · 回归锚：页盒白（--paper=白桥接不变——reader-text.spec:643 同源）
+  // —— 白天 · 回归锚：页盒暖白纸（--paper=#fffefb v2 实值——reader-text.spec 同源）
   await switchTheme(win, '白天 · 精密仪表')
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
-  await waitForPaperState('rgb(255, 255, 255)', 'none')
+  await waitForPaperState('rgb(255, 254, 251)', 'none')
   const light = await snapshot()
-  expect(light.boxBg).toBe('rgb(255, 255, 255)')
+  expect(light.boxBg).toBe('rgb(255, 254, 251)')
   expect(light.canvasFilter).toBe('none')
 
-  // —— 护眼 · 牛皮纸：页盒=--paper #f7efdc 奶油纸（不反位——filter 仍 none）
+  // —— 护眼 · 牛皮纸：页盒=--paper #fdf8ec 奶油纸（不反位——filter 仍 none）
   await switchTheme(win, '护眼 · 牛皮纸')
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'sepia')
   await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
-  await waitForPaperState('rgb(247, 239, 220)', 'none')
+  await waitForPaperState('rgb(253, 248, 236)', 'none')
   const sepia = await snapshot()
-  expect(sepia.boxBg).toBe('rgb(247, 239, 220)')
+  expect(sepia.boxBg).toBe('rgb(253, 248, 236)')
   expect(sepia.canvasFilter).toBe('none')
 
   // 收尾恢复白天（终态=白天——防污染其他 spec，本文件两测同纪律）
   await switchTheme(win, '白天 · 精密仪表')
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
-  await waitForPaperState('rgb(255, 255, 255)', 'none')
+  await waitForPaperState('rgb(255, 254, 251)', 'none')
   const restored = await snapshot()
-  expect(restored.boxBg).toBe('rgb(255, 255, 255)')
+  expect(restored.boxBg).toBe('rgb(255, 254, 251)')
 
   await app.close()
 })

@@ -17,6 +17,9 @@
  * - D7=24×24 单色描边简笔画，viewBox 24×24+aria-hidden——stroke 走 CSS 类
  *   （theme-reader.css .rdr-toolbar button svg / .rdr-aside-tabs button svg：
  *   stroke currentColor/fill none/统一线宽 1.6），禁内联色/禁新依赖
+ * - [v2 第一期 2026-11-19] PREV/NEXT/FIT_WIDTH path 逐值换 v2 设计稿
+ *   symbol 库（i-prev/i-next/i-fit 四角收缩形）；单双页与 I-beam 为产品
+ *   自有语义保留原图形
  * - 独立文件：图标常量表拆件保持 ReaderToolbar ≤250（改造前 233 行+常量
  *   将超限——拆后工具栏终态 248 行；宪法组件行数红线）
  *
@@ -26,19 +29,19 @@
  */
 export const ICON_PREV = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M15 5l-7 7 7 7" />
+    <path d="m15 6-6 6 6 6" />
   </svg>
 )
 
 export const ICON_NEXT = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M9 5l7 7-7 7" />
+    <path d="m9 6 6 6-6 6" />
   </svg>
 )
 
 export const ICON_FIT_WIDTH = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M4 12h16M7 8l-4 4 4 4M17 8l4 4-4 4" />
+    <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
   </svg>
 )
 

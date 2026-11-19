@@ -10,29 +10,26 @@
 }
 
 /* 主题变量 v2（R3-TH1 视觉系统基建）：组件统一从这里取色，禁止散落硬编码色值。
-   token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）+
-   lineage-constellation.html（夜面 :root，R2 消费预留）——逐值誊录，
-   防漂移锁 = tests/unit/renderer/theme.test.ts（值漂移即红）。
-   值冲突裁决（票面 P1）：--gold 亮面值占用（夜面值别名 --gold-night
-   已随 R2-SH2 决5 别名退役删除——LG10 结案：全仓消费=0，死代码即删）；
-   --gold-soft 取夜面稿值；annotation 五色保持原值——e2e reader-text.spec 三处
-   黄色精确断言锁死（预知必红则不制造红，预裁②口径）。
-   T3-P1 主题三族（2026-09-26）：三族值源 = docs/design/mockups/
-   2026-09-26_v2_theme-{light,dark,sepia}.html（终值表=docs/design/
-   2026-09-26_theme-trio-final-design.md §0）；:root=白天族裸值，
-   :root[data-theme='dark'|'sepia']=覆写族块（App.tsx effect 单点写
-   documentElement.dataset.theme，不跟随系统 A6）；旧词表（--text/--border/
-   --surface-cool 等）经 var() 桥接随族重解析。legacy 残留 token（金族、
-   annotation 五色等）仍溯旧稿；--nav-* 阶梯+--ink-deep/--ink-hi/--ink-legacy
-   已随 T3-P2 窄轨壳层退役删除。（注：本注释内禁用星号后
-   接斜杠的写法——会把 CSS 注释提前终结） */
+   token 终值单一来源 = 前端改造 v2 设计稿（2026-11-19 定案，设计输入=
+   /home/yyx/.zcode/v2/visualizations/4092de50854a007cbca278b8982c0e01
+   4d47d6c0b4271c6344a74f75a8d9a01/synapse-redesign-v2.html——亮面 :root
+   与 sepia 覆写块逐值誊录；计划=docs/design/2026-11-19_frontend-rework-
+   plan.md 第一期）——防漂移锁 = tests/unit/renderer/theme.test.ts。
+   v2 无对应 token（--warn/--ok/--sub2/--border-gold 细族/--gold-bright/
+   阴影 tint 族/annotation 五色）保持原值；dark 族块第四期整体删除，
+   中间态只做引用型补值不调色。
+   旧裁决链（--gold 亮面占用/annotation 五色 e2e 锁定）沿承；:root=白天族
+   裸值，:root[data-theme='dark'|'sepia']=覆写族块（App.tsx effect 单点写
+   documentElement.dataset.theme）；旧词表（--text/--border/--surface-cool
+   等）经 var() 桥接随族重解析。（注：本注释内禁用星号后接斜杠的写法——
+   会把 CSS 注释提前终结） */
 :root {
-  /* ── 亮面（白天族=裸 :root 值；T3-P1 六 token 换白天终值+桥接 var 形态）── */
+  /* ── 亮面（白天族=裸 :root 值；v2 稿 L8-48 逐值）── */
   /* [F-VISFB-67] 时间线最小布局宽（ADR-0028/INV-169）：布局常量非主题族——
      置 token 权威区供 C-4c 锚（消费=theme-lineage.css 月框/内容层双消费式；
      577=默认窗 1280 月框 border-box computed width 实测，改值只动此一处） */
   --tl-frame-min: 577px;
-  --bg: #f4f6f9;
+  --bg: #f2f4f1;
   --panel: #ffffff;
   --panel-glass: var(--panel);
   /* 顶栏/主区背景冷雾灰（F-UI-04——用户 2026-09-20 反馈 P4 图四取样；D1=全局挂
@@ -43,16 +40,18 @@
   --border-gold: #c9a86a;
   --text: var(--ink);
   --text-dim: var(--dim);
-  --accent: #3a5bd9;
-  --accent-soft: #eaeefc;
-  --gold: #b8935a;
+  --accent: #2f6f64;
+  --accent-soft: #e4eeea;
+  --accent-hover: #275e55;
+  --sidebar: #ecefeb;
+  --gold: #a67c3f;
   /* [F-DBCAMP-01 DB-3 U2] QR 码功能色（扫描对比度要求=恒白底黑模块，跨主题
      不变——非主题装饰色；token 化=INV-11 颜色消费单源）。--qr-bg 纯白三族
      恒定，与 --panel 白天族值恰白=语义隔离合法共存（T3-P2 d1-W6 豁免判例
      --accent-ink 同型——check-quality SAME_VALUE_EXEMPT_PROPS 注释互指） */
   --qr-bg: #ffffff;
   --qr-ink: #000000;
-  --gold-soft: rgba(207, 174, 114, 0.16);
+  --gold-soft: rgba(166, 124, 63, 0.16);
   --gold-bright: #e3c98f;
   --danger: var(--signal);
   --ok: #2e8b57;
@@ -97,10 +96,11 @@
   --fs-metric: 16px;   /* 指标读数（规格表抽屉四格值——mockup L123 .dr-metrics .v） */
   --fs-nano: 9px;      /* 极微（后置章虚线徽标——值源=mockup L311 .postpone，脉络
      检查面板后置章语汇同源，文献库抽屉随 T3-P3 先引） */
-  --shadow-sel-glow: 0 2px 8px rgba(58, 91, 217, 0.14); /* 选中行外辉（三族恒定） */
-  --shadow-cta: 0 2px 6px rgba(58, 91, 217, 0.3);       /* 抽屉主钮投影（三族恒定） */
-  --accent-ink: #ffffff; /* accent 底上的字色（三族恒定白——与 --close-red-ink
-     同值=语义隔离合法共存，check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指） */
+  --shadow-sel-glow: 0 2px 8px rgba(47, 111, 100, 0.14); /* 选中行外辉（基色随 accent） */
+  --shadow-cta: 0 2px 6px rgba(47, 111, 100, 0.3);       /* 抽屉主钮投影（基色随 accent） */
+  --accent-ink: #ffffff; /* accent 底上的字色（亮/dark 族恒定白；sepia 族 v2 覆写
+     暖白（值见族块）；与 --close-red-ink 亮族同值=语义隔离合法共存，
+     check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指） */
   /* [T3-P6] 脉络时间线小卡族（值源=mockups/2026-09-26_v2_theme-light.html
      L203-262 逐值；INV-61 档位增补——主控裁决 d 授权；10px 月标签/年计数
      复用 --fs-micro 同值不另立；主控裁决 e：shadow 命名独立 --shadow-tl-sel
@@ -110,7 +110,7 @@
   --fs-tl-idea: 8.2px;  /* 8px 级小字（消费=标签 pill .c-tag/+N 骑缝 .c-tag-more/L3 期刊 .c-venue——token 名承旧 .c-idea 史，[A3 F-CONTRACTA-01] 皮肤消费面随该区退役已清） */
   --fs-tl-meta: 7.5px;  /* 小卡骑缝号/徽章/年月引用行（.c-no/.mb/.c-meta） */
   --fs-tl-hint: 10.5px; /* 空月框拖入提示（.frame-hint——P8 预留样式类） */
-  --shadow-tl-sel: 0 3px 10px rgba(58, 91, 217, 0.18); /* 时间线小卡选中外辉（三族恒定——mockup .tl-card.sel） */
+  --shadow-tl-sel: 0 3px 10px rgba(47, 111, 100, 0.18); /* 时间线小卡选中外辉（基色随 accent） */
   --anchor-dot-r: 4px; /* 画线锚 dot 半径基值（直径 8 画布 px——theme-lineage-tools
      .card-anchor-dot var() 消费/12 锚定位同源；armed 通道局部覆写 2.5px=直径 5
      〔F-ANCHFIX-01 批 1c 裁决 C——通道覆写驻彼件〕C-4c 语义锚：基值定义单源本表） */
@@ -119,33 +119,33 @@
      --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；--signal-a08=mockup 直值
      （三稿同值）不随族 --signal 漂移；零新 fs token=最近值映射见
      theme-lineage.css [T3-P7B] 段注） */
-  --shadow-lg-btn: 0 2px 6px rgba(58, 91, 217, 0.28); /* .lg-btn 主钮投影（三族恒定——mockup L206 三稿同值） */
-  --shadow-lg-edit: 0 2px 6px rgba(240, 96, 48, 0.3); /* .lg-btn.editing 编辑态投影（三族恒定——mockup L208） */
-  --signal-a08: rgba(240, 96, 48, 0.08); /* drag-hint 编辑态底（三族恒定——mockup L219 直值） */
-  --pop-danger: #d64545; /* 线型弹层「移除连线」钮字色（三族恒定——mockup L302） */
-  --pop-danger-a50: rgba(214, 69, 69, 0.5); /* 同钮描边（三族恒定——mockup L302） */
+  --shadow-lg-btn: 0 2px 6px rgba(47, 111, 100, 0.28); /* .lg-btn 主钮投影（基色随 accent） */
+  --shadow-lg-edit: 0 2px 6px rgba(166, 75, 67, 0.3); /* .lg-btn.editing 编辑态投影（基色随 signal） */
+  --signal-a08: var(--danger-a08); /* drag-hint 编辑态底（signal 桥 danger 后同基色——F-LINT-04 ② 同值合并引用载体） */
+  --pop-danger: var(--signal); /* 线型弹层「移除连线」钮字色（v2 后与 signal 同基色——同值合并引用载体） */
+  --pop-danger-a50: rgba(166, 75, 67, 0.5); /* 同钮描边（基色随 signal） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
-  --ink: #1c2333;
-  /* ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
+  --ink: #242a27;
+  /* ── 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
      --mono/--serif 三族同值只此一处定义，族块不重复）── */
-  --panel-2: #fbfcfe;
-  --line: #e3e7ee;
-  --line-soft: #edf0f5;
-  --dim: #5d6577;
-  --faint: #9aa3b5;
-  --signal: #f06030;
+  --panel-2: #f7f8f6;
+  --line: #d9dfda;
+  --line-soft: #e9ede9;
+  --dim: #4f5954;
+  --faint: #98a09b;
+  --signal: #a64b43;
   --warn: #e8a33d;
   --sub2: #0e9488;
-  --mini-card: #e9edf4;
-  --mini-card-line: #d6dce8;
-  --month-dash: rgba(58, 91, 217, 0.55);
+  --mini-card: var(--panel-2);
+  --mini-card-line: var(--line);
+  --month-dash: var(--accent-a55); /* 月框虚线（accent 55% 透明——同值合并引用载体） */
   --mono: Consolas, 'Courier New', monospace;
   --serif: Georgia, SimSun, serif;
   --shadow-card: 0 1px 3px rgba(20, 26, 40, 0.08);
   --shadow-drag: 0 12px 32px rgba(20, 26, 40, 0.22);
-  /* --paper 桥接 --panel（F-CSS-03 ② 同值合并——白天族两值同为白，族块各自覆写实值） */
-  --paper: var(--panel);
-  --paper-ink: #2a2f3c;
+  /* --paper 亮面 v2 实值（暖白纸面≠纯白 panel——v2 稿 L17；族块各自覆写） */
+  --paper: #fffefb;
+  --paper-ink: #292d2a;
   /* [T3-P6→P7A 备案撤回注记] R2-LG11 脉络边色族预留 token
      （--survey-edge/--manual-edge）随 T3-P7A 删除——P6「P7 复用预设」备案
      落空（D-18 终裁：mockup 图例实证连线渲染色=--accent/--faint/--signal
@@ -166,15 +166,15 @@
      scripts/audits/f-css03-impl.report.md 附录;消费负锚=check-quality C-4
      [CSS 行级,--name: 定义行豁免]+eslint B-5 [tsx inline style];值防漂移=
      theme.test.ts TOKENS 正锚）── */
-  /* accent 透明度族（基色=--accent）*/
-  --accent-a10: rgba(44, 95, 138, 0.1);
-  --accent-a12: rgba(44, 95, 138, 0.12);
-  --accent-a15: rgba(44, 95, 138, 0.15);
-  --accent-a20: rgba(44, 95, 138, 0.2);
-  --accent-a22: rgba(44, 95, 138, 0.22);
-  --accent-a35: rgba(44, 95, 138, 0.35);
-  --accent-a45: rgba(44, 95, 138, 0.45);
-  --accent-a55: rgba(44, 95, 138, 0.55);
+  /* accent 透明度族（基色=--accent——v2 第一期随族）*/
+  --accent-a10: rgba(47, 111, 100, 0.1);
+  --accent-a12: rgba(47, 111, 100, 0.12);
+  --accent-a15: rgba(47, 111, 100, 0.15);
+  --accent-a20: rgba(47, 111, 100, 0.2);
+  --accent-a22: rgba(47, 111, 100, 0.22);
+  --accent-a35: rgba(47, 111, 100, 0.35);
+  --accent-a45: rgba(47, 111, 100, 0.45);
+  --accent-a55: rgba(47, 111, 100, 0.55);
   /* 金族透明度（基色=--border-gold/--gold-bright;第三基色按按压用途取
      语义名 --gold-press——与 --gold-soft 同基不同 alpha 档，按零视觉差
      口径不合并[alpha 档压缩不做]）*/
@@ -183,11 +183,11 @@
   --border-gold-a45: rgba(201, 168, 106, 0.45);
   --border-gold-a50: rgba(201, 168, 106, 0.5);
   --gold-bright-a70: rgba(227, 201, 143, 0.7);
-  --gold-press: rgba(207, 174, 114, 0.3);
-  /* danger 透明度族（基色=--danger）*/
-  --danger-a08: rgba(179, 64, 58, 0.08);
-  --danger-a12: rgba(179, 64, 58, 0.12);
-  --danger-a25: rgba(179, 64, 58, 0.25);
+  --gold-press: rgba(166, 124, 63, 0.3);
+  /* danger 透明度族（基色=--signal——v2 第一期随族）*/
+  --danger-a08: rgba(166, 75, 67, 0.08);
+  --danger-a12: rgba(166, 75, 67, 0.12);
+  --danger-a25: rgba(166, 75, 67, 0.25);
   /* 白透明度族（基色=--panel;--panel-glass 0.72 为既存语义名）*/
   --panel-a06: rgba(255, 255, 255, 0.06);
   --panel-a07: rgba(255, 255, 255, 0.07);
@@ -202,10 +202,11 @@
   --close-red: #e81123;
   --close-red-press: #f1707a;
   --close-red-ink: #ffffff;
-  --ink-a18: rgba(27, 35, 51, 0.18);
-  /* syn-btn primary 渐变端点+按压内影色 */
-  --accent-hi: #3a76ab;
-  --accent-deep: #234a6d;
+  --ink-a18: rgba(36, 42, 39, 0.18);
+  /* syn-btn primary 渐变端点+按压内影色（v2 第一期：端点改 var() 载体=随
+     accent 族单源，150deg 渐变呈 accent→accent-hover 微过渡） */
+  --accent-hi: var(--accent);
+  --accent-deep: var(--accent-hover);
   --btn-press-tint: rgba(11, 26, 40, 0.45);
   /* [F-UIRES-04 批 3d D8+SETSTYLE-01] 公共钮系公共变量：.collapse-btn（收起
      钮款）/.btn-std（标准文字钮款）radius/border 同源单源（C-4c token 锚=
@@ -230,12 +231,14 @@
   --shadow-pop-md: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
-/* ── T3-P1 夜间·深灰族（纸页反色 A7）——data-theme=dark 覆写 ── */
+/* ── T3-P1 夜间·深灰族（纸页反色 A7）——data-theme=dark 覆写（第四期整体
+   删除；v2 第一期新 token 在此只做引用型补值防浅色漏底，不调色）── */
 :root[data-theme='dark'] {
   --bg: #14161a; --panel: #1d2026; --panel-2: #181b20; --line: #2c313a; --line-soft: #23272e;
   --ink: #e6e9ef; --dim: #a6adba; --faint: #6f7684;
   --accent: #7b93f5; --accent-soft: rgba(123, 147, 245, 0.15); --signal: #ff7a45; --ok: #4ade80; --warn: #e8a33d;
   --sub2: #2dd4bf; --mini-card: #171a21; --mini-card-line: #2e343f;
+  --sidebar: var(--panel-2); --accent-hover: var(--accent);
   --month-dash: rgba(123, 147, 245, 0.5);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4); --shadow-drag: 0 14px 36px rgba(0, 0, 0, 0.6);
   --paper: #242830; --paper-ink: #d8dbe2;
@@ -250,15 +253,17 @@
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
 
-/* ── T3-P1 护眼·牛皮纸族（档案语汇）——data-theme=sepia 覆写 ── */
+/* ── 护眼·牛皮纸族（档案语汇）——data-theme=sepia 覆写（v2 稿 L50-73 逐值）── */
 :root[data-theme='sepia'] {
-  --bg: #e8dcc2; --panel: #fbf7ec; --panel-2: #efe6d1; --line: #d0c4a6; --line-soft: #e5dcc6;
-  --ink: #2d2618; --dim: #5c5244; --faint: #8a7d63;
-  --accent: #31513f; --accent-soft: rgba(49, 81, 63, 0.1); --signal: #b3402f; --ok: #3d6b4f; --warn: #b06f1e;
-  --sub2: #8a6d3b; --mini-card: #f0e8d2; --mini-card-line: var(--line);
-  --month-dash: rgba(49, 81, 63, 0.55);
+  --bg: #eee6d6; --panel: #faf5e9; --panel-2: #f4eddf; --line: #d6cbb5; --line-soft: #e5dccb;
+  --ink: #3f392e; --dim: #5d5444; --faint: #9a8d73;
+  --accent: #596b4e; --accent-soft: #e5e6d5; --accent-hover: #485b3f; --accent-ink: #fffaf0;
+  --signal: #965348; --ok: #3d6b4f; --warn: #b06f1e;
+  --sub2: #8a6d3b; --sidebar: #e8decb;
+  --gold: #8b693d; --gold-soft: rgba(139, 105, 61, 0.16); --gold-press: rgba(139, 105, 61, 0.3);
+  --month-dash: rgba(89, 107, 78, 0.55);
   --shadow-card: 0 1px 3px rgba(90, 75, 40, 0.16); --shadow-drag: 0 14px 36px rgba(90, 75, 40, 0.32);
-  --paper: #f7efdc; --paper-ink: #33291a;
+  --paper: #fdf8ec; --paper-ink: #403a2e;
   /* [T3-P4] 护眼族不反位（奶油纸正读） */
   --canvas-filter: none;
   --annotation-blend: multiply;

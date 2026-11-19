@@ -1,16 +1,16 @@
 /**
  * [R3-TH1] theme token 冒烟——防漂移锁（值源=设计定稿摸鱼图）。
  *
- * token 终值单一来源 = docs/design/mockups/shell-library.html（亮面 :root）
- * ——设计定稿 docs/design/2026-08-28_visual-system.md §0 裁决。本用例把
- * :root 的关键值逐行誊录成断言：任何 token 漂移（手改/误删/回退）即红，
- * 把「视觉基建」锚定到设计稿而非口头约定。
+ * token 终值单一来源 = 前端改造 v2 设计稿（2026-11-19 定案，设计输入
+ * synapse-redesign-v2.html——亮面 :root 与 sepia 覆写块逐值誊录；计划=
+ * docs/design/2026-11-19_frontend-rework-plan.md 第一期）。本用例把 :root
+ * 与 sepia 族块的关键值逐行誊录成断言：任何 token 漂移（手改/误删/回退）
+ * 即红，把「视觉基建」锚定到设计稿而非口头约定。
  *
- * 值冲突裁决（票面 P1）：--gold 取亮面 #b8935a（全域消费——夜面值别名
- * --gold-night 已随决5 退役；夜面星象板 token 族随星象板方向否决删除）；
- * --gold-soft 取票面裁决值 rgba(207,174,114,.16)（lineage 稿）；annotation
- * 五色保持原值（e2e reader-text.spec 三处精确色断言 rgb(253,224,71) 锁定，
- * 预知必红则不制造红——预裁②口径）。
+ * v2 无对应 token 的处理（2026-11-19 第一期裁决）：--warn/--ok/--sub2/
+ * --border-gold 细族/--gold-bright/阴影 tint 族/annotation 五色保持原值
+ * （annotation 五色另有 e2e reader-text.spec 三处精确色断言 rgb(253,224,71)
+ * 锁定——预知必红则不制造红）。dark 族块第四期整体删除，本批不动。
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -61,20 +61,22 @@ const lineageCss = readFileSync(
 
 /** [token 声明, 期望值]——css 内应含 "<token>: <value>;"（含尾分号防 --gold 匹配到 --gold-soft 系前缀） */
 const TOKENS: Array<[string, string]> = [
-  // ── 亮面（shell-library.html :root；T3-P1 六 token 换白天族终值+桥接改 var()
-  //    形态——值源补 docs/design/2026-09-26_theme-trio-final-design.md §0
-  //    三族终值表，逐值誊录自 mockups/2026-09-26_v2_theme-light.html）──
-  ['--bg', '#f4f6f9'],
+  // ── 亮面（v2 设计稿 :root——synapse-redesign-v2.html L8-48 逐值誊录；
+  //    2026-11-19 定案第一期。--accent-hi/deep 改 var() 载体=渐变端点随
+  //    accent 族单源；--mini-card/-line 改 var() 载体=脉络小卡面随族）──
+  ['--bg', '#f2f4f1'],
   ['--panel', '#ffffff'],
   ['--panel-glass', 'var(--panel)'],
   ['--border', 'var(--line)'],
   ['--border-gold', '#c9a86a'],
   ['--text', 'var(--ink)'],
   ['--text-dim', 'var(--dim)'],
-  ['--accent', '#3a5bd9'],
-  ['--accent-soft', '#eaeefc'],
-  ['--gold', '#b8935a'],
-  ['--gold-soft', 'rgba(207, 174, 114, 0.16)'],
+  ['--accent', '#2f6f64'],
+  ['--accent-soft', '#e4eeea'],
+  ['--accent-hover', '#275e55'],
+  ['--sidebar', '#ecefeb'],
+  ['--gold', '#a67c3f'],
+  ['--gold-soft', 'rgba(166, 124, 63, 0.16)'],
   ['--gold-bright', '#e3c98f'],
   ['--danger', 'var(--signal)'],
   ['--ok', '#2e8b57'],
@@ -85,26 +87,26 @@ const TOKENS: Array<[string, string]> = [
   ['--radius-m', '12px'],
   ['--radius-l', '16px'],
   ['--font-display', "Georgia, 'Times New Roman', 'Songti SC', SimSun, serif"],
-  ['--ink', '#1c2333'],
-  // ── T3-P1 三族族源 token（白天族=裸 :root 值；dark/sepia 族块在下方
+  ['--ink', '#242a27'],
+  // ── 三族族源 token（白天族=裸 :root 值；dark/sepia 族块在下方
   //    describe 块内断言——防值串位到别的块）──
-  ['--panel-2', '#fbfcfe'],
-  ['--line', '#e3e7ee'],
-  ['--line-soft', '#edf0f5'],
-  ['--dim', '#5d6577'],
-  ['--faint', '#9aa3b5'],
-  ['--signal', '#f06030'],
+  ['--panel-2', '#f7f8f6'],
+  ['--line', '#d9dfda'],
+  ['--line-soft', '#e9ede9'],
+  ['--dim', '#4f5954'],
+  ['--faint', '#98a09b'],
+  ['--signal', '#a64b43'],
   ['--warn', '#e8a33d'],
   ['--sub2', '#0e9488'],
-  ['--mini-card', '#e9edf4'],
-  ['--mini-card-line', '#d6dce8'],
-  ['--month-dash', 'rgba(58, 91, 217, 0.55)'],
+  ['--mini-card', 'var(--panel-2)'],
+  ['--mini-card-line', 'var(--line)'],
+  ['--month-dash', 'var(--accent-a55)'],
   ['--mono', "Consolas, 'Courier New', monospace"],
   ['--serif', 'Georgia, SimSun, serif'],
   ['--shadow-card', '0 1px 3px rgba(20, 26, 40, 0.08)'],
   ['--shadow-drag', '0 12px 32px rgba(20, 26, 40, 0.22)'],
-  ['--paper', 'var(--panel)'],
-  ['--paper-ink', '#2a2f3c'],
+  ['--paper', '#fffefb'],
+  ['--paper-ink', '#292d2a'],
   // ── annotation 五色：保持原值（e2e 精确色断言锁定——见文件头注）──
   ['--annotation-yellow', '#fde047'],
   ['--annotation-green', '#86efac'],
@@ -139,8 +141,8 @@ const TOKENS: Array<[string, string]> = [
   //    --shadow-sel-glow/--shadow-cta/--accent-ink=三族恒定值）──
   ['--fs-metric', '16px'],
   ['--fs-nano', '9px'],
-  ['--shadow-sel-glow', '0 2px 8px rgba(58, 91, 217, 0.14)'],
-  ['--shadow-cta', '0 2px 6px rgba(58, 91, 217, 0.3)'],
+  ['--shadow-sel-glow', '0 2px 8px rgba(47, 111, 100, 0.14)'],
+  ['--shadow-cta', '0 2px 6px rgba(47, 111, 100, 0.3)'],
   ['--accent-ink', '#ffffff'],
   // ── [T3-P6] 脉络时间线小卡族档位与恒定 token（mockup
   //    2026-09-26_v2_theme-light.html L203-262 逐值——INV-61 档位增补，
@@ -150,29 +152,29 @@ const TOKENS: Array<[string, string]> = [
   ['--fs-tl-idea', '8.2px'],
   ['--fs-tl-meta', '7.5px'],
   ['--fs-tl-hint', '10.5px'],
-  ['--shadow-tl-sel', '0 3px 10px rgba(58, 91, 217, 0.18)'],
+  ['--shadow-tl-sel', '0 3px 10px rgba(47, 111, 100, 0.18)'],
   // ── F-CSS-03 颜色 token 化（2026-09-09 用户双裁决：零视觉差口径[值原样
   //    入库,同值合并共享]+语义命名优先[一值一 token,名取主导用途,多用途
   //    中性名]——50 值=48 新 token+2 既有 token 消费[#ffffff→--panel/
   //    #e4ded1→--border,不立第二源]；命名表=scripts/audits/f-css03-impl.
   //    report.md 附录；消费负锚=check-quality C-4+eslint B-5）──
-  ['--accent-a10', 'rgba(44, 95, 138, 0.1)'],
-  ['--accent-a12', 'rgba(44, 95, 138, 0.12)'],
-  ['--accent-a15', 'rgba(44, 95, 138, 0.15)'],
-  ['--accent-a20', 'rgba(44, 95, 138, 0.2)'],
-  ['--accent-a22', 'rgba(44, 95, 138, 0.22)'],
-  ['--accent-a35', 'rgba(44, 95, 138, 0.35)'],
-  ['--accent-a45', 'rgba(44, 95, 138, 0.45)'],
-  ['--accent-a55', 'rgba(44, 95, 138, 0.55)'],
+  ['--accent-a10', 'rgba(47, 111, 100, 0.1)'],
+  ['--accent-a12', 'rgba(47, 111, 100, 0.12)'],
+  ['--accent-a15', 'rgba(47, 111, 100, 0.15)'],
+  ['--accent-a20', 'rgba(47, 111, 100, 0.2)'],
+  ['--accent-a22', 'rgba(47, 111, 100, 0.22)'],
+  ['--accent-a35', 'rgba(47, 111, 100, 0.35)'],
+  ['--accent-a45', 'rgba(47, 111, 100, 0.45)'],
+  ['--accent-a55', 'rgba(47, 111, 100, 0.55)'],
   ['--border-gold-a15', 'rgba(201, 168, 106, 0.15)'],
   ['--border-gold-a28', 'rgba(201, 168, 106, 0.28)'],
   ['--border-gold-a45', 'rgba(201, 168, 106, 0.45)'],
   ['--border-gold-a50', 'rgba(201, 168, 106, 0.5)'],
   ['--gold-bright-a70', 'rgba(227, 201, 143, 0.7)'],
-  ['--gold-press', 'rgba(207, 174, 114, 0.3)'],
-  ['--danger-a08', 'rgba(179, 64, 58, 0.08)'],
-  ['--danger-a12', 'rgba(179, 64, 58, 0.12)'],
-  ['--danger-a25', 'rgba(179, 64, 58, 0.25)'],
+  ['--gold-press', 'rgba(166, 124, 63, 0.3)'],
+  ['--danger-a08', 'rgba(166, 75, 67, 0.08)'],
+  ['--danger-a12', 'rgba(166, 75, 67, 0.12)'],
+  ['--danger-a25', 'rgba(166, 75, 67, 0.25)'],
   ['--panel-a06', 'rgba(255, 255, 255, 0.06)'],
   ['--panel-a07', 'rgba(255, 255, 255, 0.07)'],
   ['--panel-a35', 'rgba(255, 255, 255, 0.35)'],
@@ -183,10 +185,15 @@ const TOKENS: Array<[string, string]> = [
   ['--close-red-press', '#f1707a'],
   // [回炉 1 d1-W6] 红底字色 token（三族不变——Windows 系统观感恒定）
   ['--close-red-ink', '#ffffff'],
-  ['--ink-a18', 'rgba(27, 35, 51, 0.18)'],
-  ['--accent-hi', '#3a76ab'],
-  ['--accent-deep', '#234a6d'],
+  ['--ink-a18', 'rgba(36, 42, 39, 0.18)'],
+  ['--accent-hi', 'var(--accent)'],
+  ['--accent-deep', 'var(--accent-hover)'],
   ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
+  // ── v2 第一期信号色系派生（同值合并=var() 引用载体——F-LINT-04 ②）──
+  ['--pop-danger', 'var(--signal)'],
+  ['--signal-a08', 'var(--danger-a08)'],
+  ['--shadow-lg-edit', '0 2px 6px rgba(166, 75, 67, 0.3)'],
+  ['--shadow-lg-btn', '0 2px 6px rgba(47, 111, 100, 0.28)'],
   // [T3-P6→P7A] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
   // 组件退役删除（k1-W2/d1-N4）；--edge-inferred 预设随 T3-P7A 删除
   // （D-18 终裁：连线渲染色=--accent/--faint/--signal 既有 token 直用
@@ -244,8 +251,8 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(shellCss, '.app-main 规则应在场且背景=var(--bg)（mockup .content）').toMatch(
       /\.app-main\s*\{[^}]*background:\s*var\(--bg\);/
     )
-    expect(shellCss, '.rail 宽 72px+--panel-2 底（B站式窄轨）').toMatch(
-      /\.rail\s*\{[^}]*width:\s*72px;[^}]*background:\s*var\(--panel-2\);/
+    expect(shellCss, '.rail 宽 72px+--sidebar 底（v2 设计稿侧栏色）').toMatch(
+      /\.rail\s*\{[^}]*width:\s*72px;[^}]*background:\s*var\(--sidebar\);/
     )
     // [回炉 1 d1-N5 强化] 状态条规则体锁（原存在性锚规则体清空仍绿）：
     // --panel-2 底+--line 顶边+等宽字（mockup .statusbar 三要素——声明序不锚，
@@ -666,27 +673,32 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
   ]
 
   const SEPIA_TOKENS: Array<[string, string]> = [
-    ['--bg', '#e8dcc2'],
-    ['--panel', '#fbf7ec'],
-    ['--panel-2', '#efe6d1'],
-    ['--line', '#d0c4a6'],
-    ['--line-soft', '#e5dcc6'],
-    ['--ink', '#2d2618'],
-    ['--dim', '#5c5244'],
-    ['--faint', '#8a7d63'],
-    ['--accent', '#31513f'],
-    ['--accent-soft', 'rgba(49, 81, 63, 0.1)'],
-    ['--signal', '#b3402f'],
+    ['--bg', '#eee6d6'],
+    ['--panel', '#faf5e9'],
+    ['--panel-2', '#f4eddf'],
+    ['--sidebar', '#e8decb'],
+    ['--line', '#d6cbb5'],
+    ['--line-soft', '#e5dccb'],
+    ['--ink', '#3f392e'],
+    ['--dim', '#5d5444'],
+    ['--faint', '#9a8d73'],
+    ['--accent', '#596b4e'],
+    ['--accent-soft', '#e5e6d5'],
+    ['--accent-hover', '#485b3f'],
+    ['--accent-ink', '#fffaf0'],
+    ['--signal', '#965348'],
     ['--ok', '#3d6b4f'],
     ['--warn', '#b06f1e'],
     ['--sub2', '#8a6d3b'],
-    ['--mini-card', '#f0e8d2'],
-    ['--mini-card-line', 'var(--line)'],
-    ['--month-dash', 'rgba(49, 81, 63, 0.55)'],
+    ['--gold', '#8b693d'],
+    ['--gold-soft', 'rgba(139, 105, 61, 0.16)'],
+    ['--gold-press', 'rgba(139, 105, 61, 0.3)'],
+    // --mini-card/-line 随 v2 第一期改 :root var() 载体，族内解析 sepia 值
+    ['--month-dash', 'rgba(89, 107, 78, 0.55)'],
     ['--shadow-card', '0 1px 3px rgba(90, 75, 40, 0.16)'],
     ['--shadow-drag', '0 14px 36px rgba(90, 75, 40, 0.32)'],
-    ['--paper', '#f7efdc'],
-    ['--paper-ink', '#33291a'],
+    ['--paper', '#fdf8ec'],
+    ['--paper-ink', '#403a2e'],
     // [T3-P4] 护眼族不反色（奶油纸正读——:root 同值 none）
     ['--canvas-filter', 'none'],
     ['--annotation-blend', 'multiply'],

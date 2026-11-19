@@ -706,13 +706,13 @@ test('F-06 视觉小票：页盒 panel 底+阴影页缘可辨；划选视觉=自
   })
   // —— 缺陷 B：页盒=--paper 不透明白 + 柔和阴影（页缘在阅读区上视觉可辨的两要素；
   //    渲染/占位同底消色差跳动——背景在页盒 div 上与渲染态无关；[T3-P4] 页纸底
-  //    =--paper 随族，本断言=light 前提：--paper 桥接 var(--panel)=白不变）——
-  expect(visual.pageBg, 'B: 页盒背景=var(--paper)（light=白桥接）不透明白').toBe('rgb(255, 255, 255)')
+  //    =--paper 随族，本断言=light 前提：--paper v2 实值 #fffefb 暖白）——
+  expect(visual.pageBg, 'B: 页盒背景=var(--paper)（light=#fffefb 暖白）不透明').toBe('rgb(255, 254, 251)')
   expect(visual.pageShadow, 'B: 页盒阴影非 none').not.toBe('none')
   // 阅读区视觉底：滚动容器自身透明、透出 body --bg（theme.css 单源声明面）
   expect(visual.scrollBg, 'B: 滚动容器透明（视觉底=body --bg）').toBe('rgba(0, 0, 0, 0)')
-  // body 背景=--bg（T3-P1 白天族 #f4f6f9——[locked-change] 同步断言值）
-  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(244, 246, 249)')
+  // body 背景=--bg（v2 第一期白天族 #f2f4f1——[locked-change] 同步断言值）
+  expect(visual.bodyBg, 'B: body 背景=--bg').toBe('rgb(242, 244, 241)')
   expect(visual.pageBg, 'B: 页盒与阅读区两值可辨').not.toBe(visual.scrollBg)
 
   // —— 缺陷 C（[F-A4] ADR-0019 R1 修订：SR2-F-08 原生路线的两病根已解——

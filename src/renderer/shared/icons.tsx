@@ -16,6 +16,9 @@
  * - D7 形态同源：24×24 单色描边简笔画+viewBox 24×24+aria-hidden——stroke
  *   走 CSS 类（theme-buttons.css .syn-icon-btn svg：stroke currentColor/
  *   fill none/统一线宽 1.6——titlebar-btn 先例），禁内联色/禁新依赖
+ * - [v2 第一期 2026-11-19] 有 v2 对应图形的常量（check/chevron 四向/undo/
+ *   highlight/note）path 逐值换 v2 设计稿 symbol 库；v2 无对应者（retry/
+ *   pencil/hand/trash/underline/save/双 chevron）保留原图形
  * - 消费面自行追加 .syn-icon-btn 类取 svg 规格；特例尺寸（TitleBarControls
  *   10×10 件）沿其既有规格不迁（票面 R1 明文）
  *
@@ -32,31 +35,31 @@ export const ICON_X = (
 
 export const ICON_CHECK = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M4.5 12.5l5 5 10-11" />
+    <path d="m5 12 4 4L19 6" />
   </svg>
 )
 
 export const ICON_CHEVRON_LEFT = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M15 4l-8 8 8 8" />
+    <path d="m15 6-6 6 6 6" />
   </svg>
 )
 
 export const ICON_CHEVRON_RIGHT = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M9 4l8 8-8 8" />
+    <path d="m9 6 6 6-6 6" />
   </svg>
 )
 
 export const ICON_CHEVRON_UP = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M4 15l8-8 8 8" />
+    <path d="m6 15 6-6 6 6" />
   </svg>
 )
 
 export const ICON_CHEVRON_DOWN = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M4 9l8 8 8-8" />
+    <path d="m6 9 6 6 6-6" />
   </svg>
 )
 
@@ -79,11 +82,10 @@ export const ICON_PLUS = (
   </svg>
 )
 
-/** 撤销（回转箭头） */
+/** 撤销（回转箭头——v2 i-undo） */
 export const ICON_UNDO = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M8 5L3 10l5 5" />
-    <path d="M3 10h11a6 6 0 0 1 6 6v1" />
+    <path d="M9 7 4 12l5 5M5 12h8a6 6 0 0 1 6 6" />
   </svg>
 )
 
@@ -127,12 +129,10 @@ export const ICON_TRASH = (
   </svg>
 )
 
-/** 荧光笔（高亮——笔身斜置+笔头） */
+/** 荧光笔（高亮——v2 i-highlight：斜置笔身+底线） */
 export const ICON_HIGHLIGHT = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M9 15l-3.5 3.5H2L5.5 15z" />
-    <path d="M9 15l9.5-9.5a2 2 0 0 1 2.8 2.8L12 17.5" />
-    <path d="M6.5 12.5L13 6" />
+    <path d="m14 4 6 6-9 9H5v-6zM4 21h16M8 13l6 6" />
   </svg>
 )
 
@@ -144,12 +144,10 @@ export const ICON_UNDERLINE = (
   </svg>
 )
 
-/** 便签（备注——折角便签） */
+/** 便签（备注——v2 i-note：折角便签+两行文） */
 export const ICON_NOTE = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
-    <path d="M5 4h14v10l-6 6H5z" />
-    <path d="M19 14h-6v6" />
-    <path d="M8.5 8h7M8.5 11h4" />
+    <path d="M5 3h14v13l-5 5H5zM14 21v-5h5M8 8h8M8 12h6" />
   </svg>
 )
 
