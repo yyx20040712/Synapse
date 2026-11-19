@@ -279,6 +279,14 @@
    "first_seen": "2026-11-18",
    "resolution": "observing（单现；同日单例复跑 1 passed/7.9s 定绿放行；输入事件拖拽族=F-E2EFLK-01 排查面沿用）",
    "note": "[2026-11-18 视检轮 R2-C2 验收批] lineage.spec 全文件 26 过 1 红本地 VMware 首现——与本批改动零共享断言面（γ1=卡拖插入几何，C2=边路由候选域）；error-context 快照 run-2026-11-18T15-31-58-725Z 保号目录在档"
+  },
+  {
+   "spec": "tests/e2e/ai-tasks-card.spec.ts",
+   "case": "R1-B1 跨格序列：开 paper A 抽屉→双击换 paper B（换锚重挂）→新面板无抽屉浮现（:99）",
+   "count": 1,
+   "fingerprint": "CI 超时型（90s test timeout exceeded 于 R1-B1，Playwright retries 同 run attempt2 转绿〔157 passed+1 flaky〕；首次尝试的孤儿错误使 workflow 退出码 1——路由域零关联〔本场=PAD 4→6 重基线，ai-tasks 面未动〕）。首现=2026-11-19 00:38Z CI windows runner run 44430207560 attempt1 @4a7b248f；本地全量 e2e 同日 158/158（19.8m）无此红=跨环境非确定。同 spec E2（:33）前科在案〔cases[25]，挂起/worker-teardown 型 observing〕——同 spec 不同用例，不并案。分类=非确定失败单现 observing（同用例 2 次触发立案线）。error-context=CI test-results 产物 run-2026-11-19T00-38-50-291Z",
+   "status": "observing",
+   "first_seen": "2026-11-19"
   }
  ]
 }
