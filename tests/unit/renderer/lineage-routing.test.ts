@@ -196,8 +196,12 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
     expect(r.anchorMarks).toBe('A:l2,B:l0')
   })
 
-  it('⑤ overlap L 形先横后竖（H<V 字典序 tie-break）：保留线-线重叠骨架；线-卡相交不豁免，r=0 仍穿卡即 blocked', () => {
-    // 矮墙横贯+上下卡错列：行隙带 24px<36 封闭→band 无带；x_s=228≠x_t=400
+  it('⑤ 巨墙夹具 [R2-C5 缺陷修复] 外圈候选扩面救活：左车道 top/bottom 锚环绕净空合法（原窄面四向皆堵误降 overlap）', () => {
+    // 矮墙横贯+上下卡错列：direct L 形穿墙；detour/band 封死（沿承原 ⑤ 夹具）。
+    // [R2-C5] 外圈端锚候选侧扩全四侧后：左车道 x=quant(90−16)=74（最左障碍
+    // 边=X.x=90）承载 A top slot2 (196,100)→桩 (196,90)→车道→(74,214)→横段
+    // →B left slot0 桩 (390,214)→(400,214)，净空合法胜出（审查反例族回归锚
+    // ——候选窄面时代该边误降 overlap 兜底）。
     const snap = makeSnap({
       cards: new Map<string, Rect>([
         ['A', rect(100, 100, CARD_W, CARD_H)],
@@ -206,11 +210,34 @@ describe('F-SLOTGRID-01 U2 甲链六态（direct→h-slip→detour→band→oute
       ])
     })
     const r = routeEdge(geom('e1', 'A', 'B'), snap)
+    expect(r.route).toBe('outer-ring')
+    expect(r.pts).toEqual([
+      { x: 196, y: 100 }, { x: 196, y: 90 }, { x: 74, y: 90 },
+      { x: 74, y: 214 }, { x: 390, y: 214 }, { x: 400, y: 214 }
+    ])
+    expect(r.anchorMarks).toBe('A:t2,B:l0')
+  })
+
+  it('⑤b 外圈四向皆堵（围墙夹具）→overlap L 形先横后竖（H<V 字典序 tie-break）：保留线-线重叠骨架；线-卡相交不豁免，r=0 仍穿卡即 blocked', () => {
+    // 原 ⑤ 巨墙夹具加四围墙封死外圈四车道（任何卡→墙外车道的连接段必穿墙：
+    // 上墙 y∈[0,20] 封 top=−16、左墙 x∈[0,20] 封 left=−16、下墙 y∈[290,310]
+    // 封 bottom=326、右墙 x∈[950,1000] 封 right=1016）——六态全灭→overlap
+    // 兜底。selectAnchor 只依赖两端卡，L 形锚与原 ⑤ 同构：
+    // sa=A 右 ¾ (228,154)、sb=B 左 ¼ (400,214)；L 形先横后竖穿 X；
+    // overlapExempt 只表示线-线槽位重叠，不豁免线-卡相交，r=0 仍穿卡=blocked。
+    const snap = makeSnap({
+      cards: new Map<string, Rect>([
+        ['A', rect(100, 100, CARD_W, CARD_H)],
+        ['X', rect(90, 110, 600, 60)],
+        ['B', rect(400, 196, CARD_W, CARD_H)],
+        ['W1', rect(0, 0, 1000, 20)],
+        ['W2', rect(0, 0, 20, 300)],
+        ['W3', rect(0, 290, 1000, 20)],
+        ['W4', rect(950, 0, 50, 400)]
+      ])
+    })
+    const r = routeEdge(geom('e1', 'A', 'B'), snap)
     expect(r.route).toBe('overlap')
-    // 手推：direct 锚=selectAnchor：sa=A 右 ¾ (228,154)（tc=(464,232)→dx=300>
-    // dy=96→横；proj y=232−100=132→¾ 序 54 最近）；sb=B 左 ¼ (400,214)（sc=
-    // (164,136)：proj y=−60→¼ 序最近）。L 形先横后竖穿 X；overlapExempt 只表示
-    // 线-线槽位重叠，不再豁免线-卡相交，三个半径均不过最终门。
     expect(r.pts).toEqual([{ x: 228, y: 154 }, { x: 400, y: 154 }, { x: 400, y: 214 }])
     expect(r.clearance).toBe('blocked')
     expect(r.d).toBe('')

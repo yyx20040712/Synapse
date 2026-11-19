@@ -6,8 +6,9 @@
  * 纵车道 x 同式——RING_MARGIN=PAD+STUB_S0（障碍外让 16px>PAD，车道全程对
  * 障碍集净空由构造成立，连接段/行程段仍经全链 polylineClearStubs 复检）。
  * 外圈车道坐标=坐标集封闭（INV-SLOTGRID-02）第四类坐标源，随批登记
- * architecture/INV。锚候选（每端有序，钉定端直取禁动 INV-119③）：横车道=
- * [朝向对端横边锚，车道侧竖边锚]；纵车道=[车道侧横边锚]——散开经
+ * architecture/INV。锚候选（每端有序，钉定端直取禁动 INV-119③）=全部四侧
+ * ['top','bottom','left','right'] 固定序（不按车道特判——几何不相容组合由
+ * 净空门 polylineClearStubs 过滤，全序 tie-break 保持确定性）——散开经
  * AnchorUse.pick（12 锚域），胜出由 chain commit。构线=锚→短桩→车道连接段
  * →车道行程→对端连接段→短桩→锚。候选全序=（曼哈顿长，车道序
  * top<bottom<left<right，源候选序，目标候选序）字典序。确定性红线：无随机/
@@ -64,6 +65,10 @@ const endCandidates = (
 /** 车道序（枚举序=车道序 tie-break：top<bottom<left<right） */
 const LANE_ORDER = ['top', 'bottom', 'left', 'right'] as const
 
+/** 端锚候选侧全集（固定序=候选全序端内序载体；不按车道特判——不相容组合
+ *  由净空门 polylineClearStubs 过滤） */
+const ALL_SIDES = ['top', 'bottom', 'left', 'right'] as const
+
 const manhattan = (pts: readonly Pt[]): number => {
   let sum = 0
   for (let i = 1; i < pts.length; i++) {
@@ -93,15 +98,12 @@ export function ringSkeleton(
   if (!Number.isFinite(lanes.top)) return null
   const sc = center(src)
   const tc = center(tgt)
-  // 朝向对端横边（并列取 right——与 selectAnchor 横判 dx≥0 同口径）
-  const hToward = (from: boolean): Side => ((from ? tc.x >= sc.x : sc.x >= tc.x) ? 'right' : 'left')
+  // 候选与车道无关（全四侧×全车道组合）——端列表循环外一次构足
+  const srcList = endCandidates(srcId, src, tc, ALL_SIDES, fromPin, use)
+  const tgtList = endCandidates(tgtId, tgt, sc, ALL_SIDES, toPin, use)
   const cands: Array<{ skel: Pt[]; picks: Array<[string, Side, number]>; len: number }> = []
   for (const lane of LANE_ORDER) {
     const horizontal = lane === 'top' || lane === 'bottom'
-    const srcSides: Side[] = horizontal ? [hToward(true), lane] : [lane]
-    const tgtSides: Side[] = horizontal ? [hToward(false), lane] : [lane]
-    const srcList = endCandidates(srcId, src, tc, srcSides, fromPin, use)
-    const tgtList = endCandidates(tgtId, tgt, sc, tgtSides, toPin, use)
     for (const pa of srcList) {
       for (const pb of tgtList) {
         const aS = stubEnd(pa.pt, pa.side)

@@ -9,10 +9,14 @@
  * blocked 呈现语义零改动（INV-79 合同不变）。全部期望值独立手推/探针几何，
  * 禁抄实现输出；43 节点烘焙布局=2026-11-18 仓外探针自诊断 DB 重建快照
  * （10 年头+10 月框+43 卡 128×72——layout 与 capacity.partitionRows 同式）。
+ * ⑧⑨ [R2-C5 审查回炉] 外圈端锚候选侧扩面回归（旧窄面横车道=[hToward,
+ * lane]/纵车道=[lane] 遗漏可行锚侧→误 blocked）；20 卡单月压力布局=2026-11-19
+ * 仓外探针 observed.json 快照（e2e stress spec 同源 2020-05 单月夹具）。
  */
 import { describe, expect, it } from 'vitest'
 import { polylineClearStubs } from '../../../src/renderer/features/lineage/routing/avoid'
 import { allObstacles, routeAll, type EdgeGeomInput, type LayoutSnapshot, type Rect } from '../../../src/renderer/features/lineage/routing/chain'
+import { ringSkeleton } from '../../../src/renderer/features/lineage/routing/outer-ring'
 
 const CARD_W = 128
 const CARD_H = 72
@@ -79,6 +83,31 @@ const STRESS: Array<[string, string, string]> = [
   ['s27', '2c79546f-4e61-4e29-82ab-5cda50cfb508', 'd9e462f9-6b0a-4826-b17d-2987d2283f26'],
   ['s28', '37f3fa16-e666-4b68-884f-70695eb0750f', '3db44639-a6fe-43bb-a22b-a7e351781996'],
   ['s29', '0d11ac6f-232f-4c2d-942e-4412c8ed80e9', 'b58a9a27-42dc-4604-b45f-cbf714f4138c']
+]
+
+// ── 20 卡单月压力布局（⑧⑨ 夹具——探针 observed.json 2026-11-19：卡
+// [title,x,y] 128×72 砖砌 8 行 3/2 交替；月标 (79,72,68.547,20)；年头两区
+// (20,18,55.297,34.5)/(87.297,34,28.031,15)。障碍集=allObstacles 同式
+// 卡∪月标∪年头；车道 ringLanesOf：top=2/bottom=1185.5/left=4/right=623）──
+const STRESS20: ReadonlyArray<readonly [string, number, number]> = [
+  ['压1', 79, 89.5], ['压2', 279, 89.5], ['压3', 479, 89.5],
+  ['压4', 179, 233.5], ['压5', 379, 233.5],
+  ['压6', 79, 377.5], ['压7', 279, 377.5], ['压8', 479, 377.5],
+  ['压9', 179, 521.5], ['压10', 379, 521.5],
+  ['压11', 79, 665.5], ['压12', 279, 665.5], ['压13', 479, 665.5],
+  ['压14', 179, 809.5], ['压15', 379, 809.5],
+  ['压16', 79, 953.5], ['压17', 279, 953.5], ['压18', 479, 953.5],
+  ['压19', 179, 1097.5], ['压20', 379, 1097.5]
+]
+
+/** 卡表（桩区豁免按对象引用匹配——源/目标卡须与障碍集内同一对象） */
+const stress20Cards = (): Map<string, Rect> => new Map(STRESS20.map(([t, x, y]) => [t, rect(x, y)]))
+
+const stress20Obstacles = (cards: Map<string, Rect>): Rect[] => [
+  ...cards.values(),
+  rect(79, 72, 68.547, 20),
+  rect(20, 18, 55.297, 34.5),
+  rect(87.297, 34, 28.031, 15)
 ]
 
 describe('R2-C2 走线搜索空间增强——blocked 接近不发生', () => {
@@ -199,5 +228,53 @@ describe('R2-C2 走线搜索空间增强——blocked 接近不发生', () => {
     const run = (): string => JSON.stringify(routeAll(STRESS.map(([id, s, t]) => geom(id, s, t)), realSnap()))
     expect(run()).toBe(run())
     expect(run()).toBe(run())
+  })
+
+  it('⑧ [R2-C5 审查] 纵车道端锚候选含 top/bottom 侧：压7→压2 同列中障边外圈非 null 且走右纵车道（旧窄面纵=[lane] 误 blocked）', () => {
+    // 手推（每端四侧 sideAnchor 最近槽，竖边按 toward.x 投影）：源压7
+    // top/bottom slot1 x=343、left/right slot0 y=395.5；目标压2 top/bottom
+    // slot1 x=343（left/right slot2）。top/bottom 横车道源侧竖线全撞（top
+    // 车道穿压2/压5、bottom 车道穿压7 自身/压12）；纵车道源 left 横线穿压6
+    // 或压7 自身、right 横线穿压8——旧窄面纵=[left/right] 全死=误 blocked。
+    // 扩面后活组合族（右纵车道 top/bottom↔top/bottom 四条 776/868/868/960、
+    // 左纵车道 top→bottom 894/bottom→bottom 986）最短=右纵车道 top→bottom
+    // 曼哈顿 776：(343,377.5)→桩 (343,367.5)→(623,367.5)→(623,171.5)→
+    // (343,171.5)→(343,161.5)——逐段净空（压6/7/8 行 y 膨胀 371.5 起被
+    // 367.5 上避；末横线 y=171.5 过压1/2/3 行 y 膨胀上界 167.5）
+    const cards = stress20Cards()
+    const obstacles = stress20Obstacles(cards)
+    const r = ringSkeleton(cards.get('压7')!, cards.get('压2')!, obstacles, undefined, '压7', '压2')
+    expect(r, '同列中障边外圈承接非 null（纵车道候选含 top/bottom 锚侧）').not.toBeNull()
+    expect(r!.skel.some((p) => p.x === 623), 'skel 走右纵车道电平 x=623').toBe(true)
+    expect(r!.picks).toEqual([['压7', 'top', 1], ['压2', 'bottom', 1]])
+    expect(r!.skel).toEqual([
+      { x: 343, y: 377.5 }, { x: 343, y: 367.5 }, { x: 623, y: 367.5 },
+      { x: 623, y: 171.5 }, { x: 343, y: 171.5 }, { x: 343, y: 161.5 }
+    ])
+    expect(polylineClearStubs(r!.skel, [cards.get('压7')!, cards.get('压2')!], obstacles), 'skel 独立复核净空').toBe(true)
+  })
+
+  it('⑨ [R2-C5 审查] 横车道端锚候选含背离横边侧：压20→压1 跨 8 行边外圈非 null 且走下横车道（旧窄面横=[hToward,lane] 误 blocked）', () => {
+    // 手推：源压20 四侧最近槽 top/bottom slot0 x=411、left/right slot0
+    // y=1115.5；目标压1 四侧 slot2（top (175,89.5)/bottom (175,161.5)/
+    // left (79,143.5)/right (207,143.5)）。top 车道源竖线全撞（x=411 穿压15、
+    // x=369 穿压7/压12、x=517 穿压18）；下横车道目标 right/bottom 竖线穿压4、
+    // top 竖线穿压1 自身——唯 left（背离横边，hToward=right 未枚举）活；
+    // 纵车道源 left/right 横线穿压19。旧窄面全死=误 blocked。扩面后活组合族
+    // 最短=下横车道 bottom→left 曼哈顿 1410（left 车道 top→left 1436、right
+    // 车道 right→bottom 1518 均长）：(411,1169.5)→桩 (411,1179.5)→
+    // (411,1185.5)→(69,1185.5)→(69,143.5)→(79,143.5)——竖线 x=69 在最左
+    // 列膨胀界 73 外、横线 y=1185.5 在最下行膨胀下界 1175.5 外
+    const cards = stress20Cards()
+    const obstacles = stress20Obstacles(cards)
+    const r = ringSkeleton(cards.get('压20')!, cards.get('压1')!, obstacles, undefined, '压20', '压1')
+    expect(r, '跨 8 行边外圈承接非 null（横车道候选含背离横边锚侧）').not.toBeNull()
+    expect(r!.skel.some((p) => p.y === 1185.5), 'skel 走下横车道电平 y=1185.5').toBe(true)
+    expect(r!.picks).toEqual([['压20', 'bottom', 0], ['压1', 'left', 2]])
+    expect(r!.skel).toEqual([
+      { x: 411, y: 1169.5 }, { x: 411, y: 1179.5 }, { x: 411, y: 1185.5 },
+      { x: 69, y: 1185.5 }, { x: 69, y: 143.5 }, { x: 79, y: 143.5 }
+    ])
+    expect(polylineClearStubs(r!.skel, [cards.get('压20')!, cards.get('压1')!], obstacles), 'skel 独立复核净空').toBe(true)
   })
 })
