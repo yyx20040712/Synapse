@@ -1,7 +1,8 @@
 /**
  * [F-VISFB-66 单元一] 钉定锚路由面（设计书 v1.2 §F——AnchorUse.pin 三格/
  * W-04 manual 优先级三格/N-01 全 NULL 夹具零回归/N-06 水合边往返端点断言）
- * +装配自检降级（pinOf：非法锚按未钉定+console warn）。always-active。
+ * +装配自检降级（pinOf：非法锚按未钉定+console warn）+[R2-C5] 12 锚全满
+ * 回退共享原锚（INV-119③ 散开兜底锚）。always-active。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -49,6 +50,17 @@ describe('F-VISFB-66·AnchorUse.pin 三格（禁动/避让/共享）', () => {
     use.pin('A', 'bottom', 1)
     expect(() => use.pin('A', 'bottom', 1)).not.toThrow()
     expect(use.has('A', 'bottom', 1)).toBe(true)
+  })
+})
+
+describe('R2-C5·F2 12 锚全满回退共享原锚（INV-119③ 散开兜底）', () => {
+  it('全侧全槽 commit 后 pick 回退首选 (side,slot)=共享原锚（后边与占锚边几何共点）', () => {
+    const use = new AnchorUse()
+    for (const s of ['top', 'bottom', 'left', 'right'] as const) {
+      for (const k of [0, 1, 2]) use.commit('A', s, k)
+    }
+    expect(use.pick('A', 'bottom', 1)).toEqual({ side: 'bottom', slot: 1 })
+    expect(use.pick('A', 'left', 0)).toEqual({ side: 'left', slot: 0 })
   })
 })
 
