@@ -83,6 +83,16 @@ function mount(editEnabled = false): void {
   document.body.appendChild(host)
   root = createRoot(host)
   renderAt(0, editEnabled)
+  // [F-LANEGRID-01 B2b] 月框伴生（快照 frames 源——车道 x 域；无框即空表全
+  // blocked，净空恢复对照面失效）
+  const frameEl = document.createElement('div')
+  frameEl.className = 'month-frame'
+  frameEl.dataset.frameKey = 'k'
+  Object.defineProperty(frameEl, 'getBoundingClientRect', {
+    value: () => ({ left: 66, top: 40, right: 766, bottom: 540, width: 700, height: 500, x: 66, y: 40, toJSON: () => ({}) }) as DOMRect,
+    configurable: true
+  })
+  host.appendChild(frameEl)
   for (const n of nodes) {
     const card = document.createElement('div')
     card.className = 'tl-card'

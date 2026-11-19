@@ -14,33 +14,29 @@
  *   band（row0→row4 族——通道竞争）、同行被挡（(0,2)/(5,7)/(10,12)/(15,17)）、
  *   同月邻卡 h-slip（(10,11)/(15,16)/(18,19)）、远跨上行（(19,0)）。
  *
- * ── 断言口径（七不变量）──
+ * ── 断言口径（[F-LANEGRID-01 B2b] 重推导后）──
  * ① 全覆盖：36 边各恰一渲染产物（path 或 blocked 无几何 g）+20 卡；② 坐标集
- * 封闭（INV-SLOTGRID-02）：采样横/纵段电平 ∈ 锚/桩∪槽位∪外圈车道∪Z-jog 电平
- * ∪残余电平∪detour 夹缝中位槽——期望集由 src 单源 import 公式派生
- * （anchorPoint/stubEnd/slotPositions/midSlotOf/extractGapCells/gridChannelsOf
- * /bandsOf/ringLanesOf/zInterior+PAD/SLOT_* 常量——零镜面）；③ 占用互斥：
- * data-anchors 层（含 blocked）逐锚互斥+data-slot 逐 (cellId,slotIdx) 互斥
- * （豁免面常量表=ANCHOR/SLOT_EXEMPTIONS——夹具设计规避，红即未登记形态）；
- * ④ 容量：每卡锚占用 ≤12、每单元槽位消费 ≤min(n,SLOT_MAX) 且 idx<n、残余
- * |off|≤maxOff（s/cap 由 bandsOf+PAD 公式派生）；⑤ 第三方净空（INV-79/110）：
- * 逐 path 128 点采样 vs 第三方卡∪月标注∪年份头两文本区 ±PAD（源/目标卡按桩
- * 区语义不入第三方集；空卡位非障碍——INV-79；同型探针驻本 spec——geo-probes
- * 单源边界=三类 rect 断言，route-slots 头注申报沿承）；⑥ 平行间距 ≥s（INV-115
- * 登记域=残余簇内分离度；s=bandsOf 单源 Band.s）：x 投影互达残余对 |Δ电平|
- * ≥s，豁免=cap 溢出边界对（INV-115）+overlapExempt 对（INV-112）——豁免对
- * 显式列边 ID 不静默跳过；⑥b 重合对（|Δ|≈0——INV-112 共线面，任意类对）
- * 须一方 data-overlap-exempt=1；⑦ 确定性：切视图往返两次完整渲染，全部边
- * 观测属性序列化逐字节全等。
+ * 封闭（INV-SLOTGRID-02 重写口径）：采样横/纵段电平 ∈ 锚坐标∪车道表坐标
+ * ——期望集由 src 单源 import 公式派生（anchorPoint/stubEnd/buildLaneTable
+ * ——零镜面）；③ 占用互斥：data-anchors 层（含 blocked）逐锚互斥（INV-119③
+ * 豁免面=钉定共享/12 锚全满回退/12 锚观测共享——夹具设计规避，红即未登记
+ * 形态）；④ 容量：每卡锚占用 ≤12；⑤ 第三方净空（INV-79/110）：逐 path 128
+ * 点采样 vs 第三方卡∪月标注∪年份头两文本区 ±PAD（源/目标卡按桩区语义不入
+ * 第三方集；空卡位非障碍——INV-79；同型探针驻本 spec——geo-probes 单源边界
+ * =三类 rect 断言，route-slots 头注申报沿承）；⑥b/⑥ 槽域/残余族断言随槽位
+ * 与残余机制退役删除（头注申报面）；⑥c 全域防贴合 ≥1px 保留；⑦ 确定性：
+ * 切视图往返两次完整渲染，全部边观测属性序列化逐字节全等。
  *
  * ── 断言域申报（impl-report 未决事项对应）──
- * INV-SLOTGRID-02 正文三源枚举未点名 Z-jog 电平（zapply.zInterior——INV-112
- * 机制）与残余偏移电平（INV-115 机制）及 detour 夹缝中位槽（detour.ts
- * moveYOf——midSlotOf 于阻挡带夹缝区间）三类坐标源；本 spec 以单源公式派生
- * 纳入期望集（夹缝族取障碍缘±PAD 界值对超集——横段判别力弱于纵段，如实
- * 申报）。⑥ 的 s 承诺按 INV-115 登记域（残余簇内）实施；跨机制对（残余 vs
- * 落位槽/桩/jog，实测可 <s）无 INV 承诺载体，不入断言。blocked 边口径=
- * 豁免面报告 §6：锚占用计入（data-anchors 层）/path 几何断言排除。
+ * [F-LANEGRID-01 B2b] 六态构线器删除连带面：② 坐标集期望源改锚∪车道表
+ * （grid.buildLaneTable 直算——INV-SLOTGRID-02 重写口径）；③ data-slot 槽位
+ * 互斥与 ④ 槽位容量断言随槽位机制退役删除（镜像两处同删——设计 §9 关账
+ * 行；B4 重基线时以 data-lane 段级互斥升硬承接）；⑥b seamRects 槽域共线
+ * 判据同退役（承接=overlapSpans 段级登记——B2b 单测 lineage-routing-outer
+ * expectSpacing 已承载）；⑥/④b 残余族（bandCap/maxOff）随残余机制退役
+ * （设计 §5）；⑥c 全域防贴合保留（SHARED_LEVEL_ROUTES 豁免值域随六态退役
+ * 恒不命中——B4 ⑥c 升硬去豁免）。blocked 边口径=豁免面报告 §6：锚占用
+ * 计入（data-anchors 层）/path 几何断言排除。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -49,14 +45,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { anchorPoint, stubEnd, type Rect, type Side } from '../../src/renderer/features/lineage/routing/anchors'
 import { PAD } from '../../src/renderer/features/lineage/routing/avoid'
-import { bandsOf } from '../../src/renderer/features/lineage/routing/bands'
-import type { LayoutSnapshot } from '../../src/renderer/features/lineage/routing/chain'
-import { gridChannelsOf } from '../../src/renderer/features/lineage/routing/detour'
-import { extractGapCells, midSlotOf, quant, SLOT_L_MIN, SLOT_MAX, SLOT_STUB, slotPositions } from '../../src/renderer/features/lineage/routing/gap-cells'
-import { ringLanesOf } from '../../src/renderer/features/lineage/routing/outer-ring'
-import { zInterior } from '../../src/renderer/features/lineage/routing/zapply'
+import { buildLaneTable, quant } from '../../src/renderer/features/lineage/routing/grid'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
-import { assertParallelFamily, inSet, RUN_MIN_EXTENT, TOL, type BandInfo, type ObservedPath, type Run } from './route-stress-assert'
+import { assertParallelFamily, inSet, RUN_MIN_EXTENT, TOL, type ObservedPath, type Run } from './route-stress-assert'
 
 /** 单月卡数（20 文献——压力面） */
 const N_CARDS = 20
@@ -66,8 +57,6 @@ const ANCHORS_PER_CARD = 12
 const MAX_HITS = 40
 /** ③ 豁免面常量表（锚域——夹具规避 F1/F2/F3；violations=未登记形态停呈报） */
 const ANCHOR_EXEMPTIONS: ReadonlyArray<string> = ['INV-119③ pin 共享（F1）', 'INV-119③ 12 锚全满回退共享（F2）', 'INV-120 manual 派生显示占用（F3）']
-/** ③ 豁免面常量表（槽域——F4-F6 携 data-overlap-exempt=1 观测位） */
-const SLOT_EXEMPTIONS: ReadonlyArray<string> = ['INV-112 retain 恰中槽豁免（F4）', 'INV-112 L3 穷尽豁免（F5）', 'INV-112 overlap 兜底（F6）']
 
 const idOf = (i: number): string => `r2c5-a${String(i + 1).padStart(2, '0')}`
 const titleOf = (i: number): string => `压${i + 1}`
@@ -277,111 +266,58 @@ async function observe(win: Page): Promise<Obs> {
   )
 }
 
-/** 期望坐标全集（②/④/⑥ 单源 import 公式派生——文件头申报面） */
+/** 期望坐标全集（② 单源 import 公式派生——锚∪车道表，文件头申报面；
+ *  ⑥ 族 ParallelUniverse 面随残余机制退役=空带/槽域（头注申报）） */
 function buildUniverse(obs: Obs): {
   xs: Set<number>
   ys: Set<number>
+  bands: never[]
   landedYs: Set<number>
   fixedYs: Set<number>
-  bands: BandInfo[]
-  cellSlotCount: Map<number, number>
   seamRects: Rect[]
 } {
-  const snap: LayoutSnapshot = {
+  const snap = {
     cards: new Map(obs.cards.map((c) => [c.id, { x: c.x, y: c.y, w: c.w, h: c.h }])),
     labels: obs.labels,
     frames: obs.frames,
     yearHeads: obs.yearHeads,
-    contentW: obs.contentW
+    contentW: obs.contentW,
+    contentH: obs.frames.length > 0 ? Math.max(...obs.frames.map((f) => f.y + f.h)) : 0,
+    cardFrame: new Map()
   }
-  const cardRects = [...snap.cards.values()]
-  const xs = new Set<number>()
-  const ys = new Set<number>()
-  const landedYs = new Set<number>()
-  const fixedYs = new Set<number>()
-  for (const c of cardRects) {
+  const lanes = buildLaneTable({
+    cards: [...snap.cards.values()],
+    labels: snap.labels,
+    yearHeads: snap.yearHeads,
+    frames: snap.frames,
+    contentH: snap.contentH
+  })
+  const xs = new Set<number>(lanes.v.map((l) => l.coord))
+  const ys = new Set<number>(lanes.h.map((l) => l.coord))
+  for (const c of snap.cards.values()) {
     for (const side of SIDES) {
       for (let k = 0; k < 3; k++) {
         const a = anchorPoint(c, side, k)
         const st = stubEnd(a, side)
-        for (const v of [a.x, st.x]) {
-          xs.add(quant(v))
-        }
-        for (const v of [a.y, st.y]) {
-          ys.add(quant(v))
-          fixedYs.add(quant(v))
-        }
+        for (const v of [a.x, st.x]) xs.add(quant(v))
+        for (const v of [a.y, st.y]) ys.add(quant(v))
       }
     }
+    xs.add(quant(c.x))
+    xs.add(quant(c.x + c.w))
+    ys.add(quant(c.y))
+    ys.add(quant(c.y + c.h))
   }
-  const cells = extractGapCells(snap)
-  const cellSlotCount = new Map<number, number>()
-  const seamRects: Rect[] = cells.filter((c) => c.axis === 'y').map((c) => c.rect)
-  for (const cell of cells) {
-    const ps = slotPositions(cell.axis, cell.rect)
-    cellSlotCount.set(cell.id, ps.length)
-    for (const p of ps) {
-      if (cell.axis === 'x') xs.add(p)
-      else {
-        ys.add(p)
-        landedYs.add(p)
-      }
-    }
-    if (ps.length > 0) {
-      const a = cell.axis === 'x' ? { x: ps[0]!, y: cell.rect.y } : { x: cell.rect.x, y: ps[0]! }
-      const b = cell.axis === 'x' ? { x: ps[0]!, y: cell.rect.y + cell.rect.h } : { x: cell.rect.x + cell.rect.w, y: ps[0]! }
-      const z = zInterior(cell, ps[0]!, ps[0]!, a, b)
-      if (z !== null) {
-        const lv = cell.axis === 'x' ? ys : xs
-        const fx = cell.axis === 'x' ? fixedYs : xs
-        lv.add(quant(z.jogLo))
-        lv.add(quant(z.jogHi))
-        fx.add(quant(z.jogLo))
-        fx.add(quant(z.jogHi))
-      }
-    }
+  return {
+    xs,
+    ys,
+    // ④b/⑥ 残余族断言随残余机制退役（bands 空集=恒过——头注申报）；
+    // ⑥b seamRects 槽域判据同退役；⑥c 全域防贴合仍全效
+    bands: [],
+    landedYs: ys,
+    fixedYs: ys,
+    seamRects: []
   }
-  for (const ch of gridChannelsOf(snap)) for (const p of ch.slots) xs.add(p)
-  const bands: BandInfo[] = bandsOf(snap, cardRects).map((b) => {
-    const rect = { x: 0, y: b.top, w: 0, h: b.bottom - b.top }
-    for (const p of slotPositions('y', rect)) {
-      ys.add(p)
-      landedYs.add(p)
-    }
-    const cap = Math.max(1, Math.floor((b.bottom - b.top - 2 * PAD) / b.s))
-    const maxOff = ((cap - 1) / 2) * b.s
-    for (let j = -Math.floor((2 * maxOff) / b.s); j <= Math.floor((2 * maxOff) / b.s); j++) ys.add(quant(b.center + (j * b.s) / 2))
-    return { top: b.top, bottom: b.bottom, s: b.s, center: b.center, cap, maxOff }
-  })
-  // detour 夹缝中位槽族（阻挡带界=障碍缘±PAD∪卡缘±短桩——超集，文件头申报）
-  const bounds = new Set<number>()
-  for (const o of [...cardRects, ...snap.labels, ...snap.yearHeads]) {
-    bounds.add(quant(o.y - PAD))
-    bounds.add(quant(o.y + o.h + PAD))
-    if ('w' in o) {
-      bounds.add(quant(o.y - SLOT_STUB))
-      bounds.add(quant(o.y + o.h + SLOT_STUB))
-    }
-  }
-  for (const lo of bounds) {
-    for (const hi of bounds) {
-      const w = hi - lo
-      if (w < 2 * SLOT_STUB + 2 * SLOT_L_MIN) continue
-      const mid = midSlotOf('y', { x: 0, y: lo, w: 0, h: w })
-      if (mid !== null) {
-        ys.add(mid)
-        landedYs.add(mid)
-      }
-    }
-  }
-  const lanes = ringLanesOf([...cardRects, ...snap.labels, ...snap.yearHeads])
-  xs.add(lanes.left)
-  xs.add(lanes.right)
-  ys.add(lanes.top)
-  ys.add(lanes.bottom)
-  fixedYs.add(lanes.top)
-  fixedYs.add(lanes.bottom)
-  return { xs, ys, landedYs, fixedYs, bands, cellSlotCount, seamRects }
 }
 
 test.describe('R2-C5 走线压力（单月 20 文献×36 边——七不变量）', () => {
@@ -420,14 +356,6 @@ test.describe('R2-C5 走线压力（单月 20 文献×36 边——七不变量�
         anchorOwner.set(key, a.edgeId)
       }
     }
-    const slotOwner = new Map<string, string>()
-    for (const p of obs.paths) {
-      if (p.slot === '') continue
-      for (const mark of p.slot.split(',')) {
-        expect(slotOwner.has(mark), `③ 槽 ${mark} 互斥（后到边 ${p.edgeId.slice(0, 8)}；豁免面=${SLOT_EXEMPTIONS.join('/')}）`).toBe(false)
-        slotOwner.set(mark, p.edgeId)
-      }
-    }
 
     // ④ 容量：每卡锚占用 ≤12；data-slot 单元 ∈实测提取集且 idx<n、消费 ≤min(n,SLOT_MAX)
     const perCard = new Map<string, Set<string>>()
@@ -443,25 +371,7 @@ test.describe('R2-C5 走线压力（单月 20 文献×36 边——七不变量�
       expect(set.size, `④ 卡 ${id.slice(0, 8)} 锚占用 ≤${ANCHORS_PER_CARD}（INV-119③）`).toBeLessThanOrEqual(ANCHORS_PER_CARD)
     }
     const uni = buildUniverse(obs)
-    const perCell = new Map<number, Set<number>>()
-    for (const p of obs.paths) {
-      if (p.slot === '') continue
-      for (const mark of p.slot.split(',')) {
-        const [cs, is] = mark.split(':')
-        const cell = Number(cs)
-        const idx = Number(is)
-        const n = uni.cellSlotCount.get(cell)
-        expect(n, `④ data-slot 单元 ${cell} ∈实测提取单元集`).toBeDefined()
-        expect(idx, `④ 槽 idx≥0（单元 ${cell}）`).toBeGreaterThanOrEqual(0)
-        expect(idx, `④ 槽 idx<${n ?? '?'}（单元 ${cell}）`).toBeLessThan(n ?? 0)
-        const set = perCell.get(cell) ?? new Set<number>()
-        set.add(idx)
-        perCell.set(cell, set)
-      }
-    }
-    for (const [cell, set] of perCell) {
-      expect(set.size, `④ 单元 ${cell} 槽位消费 ≤min(n,SLOT_MAX=${SLOT_MAX})`).toBeLessThanOrEqual(Math.min(SLOT_MAX, uni.cellSlotCount.get(cell) ?? 0))
-    }
+    // ③/④ 槽位互斥与容量断言随槽位机制退役删除（头注申报——B4 data-lane 升硬承接）
 
     // ⑤ 第三方净空（INV-79/110——探针内判定；源/目标卡不入第三方集、空卡位非障碍）
     expect(obs.clearanceHits, `⑤ path 采样避第三方障碍±PAD（命中=${JSON.stringify(obs.clearanceHits.slice(0, 6))}）`).toEqual([])

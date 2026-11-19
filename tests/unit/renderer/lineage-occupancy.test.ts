@@ -8,7 +8,7 @@
  * describe。
  */
 import { describe, expect, it } from 'vitest'
-import { CELL_EPS } from '../../../src/renderer/features/lineage/routing/gap-cells'
+import { CELL_EPS } from '../../../src/renderer/features/lineage/routing/grid'
 import {
   LANE_PITCH,
   type Interval

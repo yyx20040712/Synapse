@@ -11,19 +11,26 @@
  * 不透出，坐标即身份）。死区=障碍三源（实卡∪月标注∪年份头）按 avoid.PAD
  * 膨胀后与车道求交，alive=域内补集（障碍切口端开——收缩 CELL_EPS，与
  * avoid.segHitsRect 边界相触=命中口径一致；内容域端闭；空数组的道仍
- * 保留）。B2 删 gap-cells 时
- * quant/CELL_EPS/QUANT 迁入本件单源（本批再导出锚定迁移面）。确定性红线：
- * 无随机/无 Date/无三角函数、全序枚举。纯函数零 DOM import。
+ * 保留）。[F-LANEGRID-01 B2b] gap-cells 随六态构线器删除，
+ * quant/CELL_EPS/QUANT 迁入本件单源（allocate/occupancy/chain 自本件取）。
+ * 确定性红线：无随机/无 Date/无三角函数、全序枚举。纯函数零 DOM import。
  */
 import type { Rect } from './anchors'
 import { PAD } from './avoid'
-import { CELL_EPS, QUANT, quant } from './gap-cells'
 import { FRAME_BORDER } from '../capacity'
 
 /** 车道步长（设计 §2.1：s=6/9 双值统一为 8——间距承诺由分配规则 §3.3 消费） */
 export const LANE_PITCH = 8
-/** 首道离卡距离（=gap-cells.SLOT_STUB 同值——B2 随 gap-cells 退役在本件收敛单源） */
+/** 首道离卡距离（桩最短长=§2.3 锚定公式首道项；错峰桩长=LANE_INSET+LANE_PITCH·k） */
 export const LANE_INSET = 10
+
+/** 相等类判定容差（间距≤ε 不蚀道身份/覆盖判定逐点桥接——量化域容差族单源=grid〔B2 回炉 m-2：主控裁决保留，值沿承 gap-cells 迁移；消费面=allocate 同柱直连/道身份/覆盖与堆比较〕） */
+export const CELL_EPS = 0.05
+/** 坐标量化步进（车道坐标/观测串——×10 取整再回除；量化域容差族单源=grid） */
+export const QUANT = 0.1
+
+/** 0.1 步进量化（×10 整数化再回除——避免 0.1 乘法浮点漂移） */
+export const quant = (v: number): number => Math.round(v * 10) / 10
 
 /** 网格输入（布局派生面：车道表仅依赖布局，边集变化不重建——裁决②） */
 export interface GridInput {
@@ -59,10 +66,17 @@ export interface Lane {
 export interface LaneTable {
   v: Lane[]
   h: Lane[]
+  /** [F-LANEGRID-01 B2 回炉 B-1] 强制绕行族坐标界（§2.3 族 3 边侧道/族 4 外区
+   *  带的生成域端界——allocate 搜索域窗口以此把强制绕行族恒置窗内；缺席=
+   *  该侧族空）。vLeft/vRight=边侧道内缘（最左/最右族员坐标），hTop/hBottom=
+   *  外区带内缘（最上/最下族员坐标）；族 5 帧带为帧内派生不入强制族 */
+  bands?: {
+    vLeft?: number
+    vRight?: number
+    hTop?: number
+    hBottom?: number
+  }
 }
-
-/** [B2 迁移锚点] 量化步进/相等容差单源=gap-cells（B2 删 gap-cells 时迁入本件——本批不复制常量，再导出承接） */
-export { CELL_EPS, QUANT }
 
 /** 锚定公式道位系数（锚道 ¼/½/¾ 位——128 卡=左+32/64/96、72 高=顶+18/36/54 同值） */
 const ANCHOR_FRACTIONS = [0.25, 0.5, 0.75] as const
@@ -212,20 +226,33 @@ export function buildLaneTable(inp: GridInput): LaneTable {
   }
   // ── 族 3 边侧道（竖道专属）：全局最左/最右卡外法线带至 x 域界；无卡 → 无
   //    （跨相位额外空带不生成——设计决策已备案）──
+  let vLeftBand: number | undefined
+  let vRightBand: number | undefined
   if (inp.cards.length > 0) {
     const minLeft = Math.min(...inp.cards.map((c) => c.x))
     const maxRight = Math.max(...inp.cards.map((c) => c.x + c.w))
-    for (const x of lanesDown(minLeft, xLo)) push(vCand, x, xLo, xHi)
-    for (const x of lanesUp(maxRight, xHi)) push(vCand, x, xLo, xHi)
+    const leftLanes = lanesDown(minLeft, xLo)
+    const rightLanes = lanesUp(maxRight, xHi)
+    for (const x of leftLanes) push(vCand, x, xLo, xHi)
+    for (const x of rightLanes) push(vCand, x, xLo, xHi)
+    // 强制绕行族内缘（band 首道=锚定边±LANE_INSET；供 allocate 搜索域窗口消费）
+    vLeftBand = leftLanes.length > 0 ? Math.max(...leftLanes) : undefined
+    vRightBand = rightLanes.length > 0 ? Math.min(...rightLanes) : undefined
   }
   // ── 族 4 外区带（横道专属）：障碍三源并集最上/最下缘外法线带（上≥0 止/
   //    下≤contentH−LANE_INSET 止）；障碍空或 contentH 非有限/≤0 → 空集
   //    （退化防御——空图不产生无锚定边外区）──
+  let hTopBand: number | undefined
+  let hBottomBand: number | undefined
   if (obstacles.length > 0 && Number.isFinite(inp.contentH) && inp.contentH > 0) {
     const minTop = Math.min(...obstacles.map((o) => o.y))
     const maxBottom = Math.max(...obstacles.map((o) => o.y + o.h))
-    for (const y of lanesDown(minTop, 0)) push(hCand, y, 0, yHi)
-    for (const y of lanesUp(maxBottom, yHi - LANE_INSET)) push(hCand, y, 0, yHi)
+    const topLanes = lanesDown(minTop, 0)
+    const bottomLanes = lanesUp(maxBottom, yHi - LANE_INSET)
+    for (const y of topLanes) push(hCand, y, 0, yHi)
+    for (const y of bottomLanes) push(hCand, y, 0, yHi)
+    hTopBand = topLanes.length > 0 ? Math.max(...topLanes) : undefined
+    hBottomBand = bottomLanes.length > 0 ? Math.min(...bottomLanes) : undefined
   }
   // ── 族 5 帧顶底带（横道专属）：逐帧首行上带 y=firstRowTop−LANE_INSET−
   //    PITCH·k（≥0 止）/末行下带 y=lastRowBottom+LANE_INSET+PITCH·k（≤
@@ -262,5 +289,12 @@ export function buildLaneTable(inp: GridInput): LaneTable {
         alive: complementOf(mergeIntervals(deadOf(axis, coord, inflated)), spanLo, spanHi)
       }))
   }
-  return { v: finalize(vCand, 'v'), h: finalize(hCand, 'h') }
+  return {
+    v: finalize(vCand, 'v'),
+    h: finalize(hCand, 'h'),
+    bands:
+      vLeftBand === undefined && vRightBand === undefined && hTopBand === undefined && hBottomBand === undefined
+        ? undefined
+        : { vLeft: vLeftBand, vRight: vRightBand, hTop: hTopBand, hBottom: hBottomBand }
+  }
 }

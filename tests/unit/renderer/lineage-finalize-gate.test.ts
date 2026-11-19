@@ -1,30 +1,34 @@
 /**
  * R2-C1 自动路径最终净空门：钉定锚外法线起落、真实网格形状回归、
- * r=6→3→0 全半径复检与槽位施加后阻断。夹具均为合成数据，不读用户库。
+ * r=6→3→0 全半径复检。[F-LANEGRID-01 B2b] 按 route='grid' 重推导（六态枚举
+ * 退役）；夹具全量补齐 contentH/cardFrame/frameKey（快照必填面）。
+ * 夹具均为合成数据，不读用户库。期望值从夹具几何+车道表手推（判式注于
+ * 断言旁），禁抄实现输出。
  */
 import { describe, expect, it } from 'vitest'
 import type { LineageAnchor } from '../../../src/shared/models/lineage'
 import { allObstacles, routeAll, routeEdge, type EdgeGeomInput, type LayoutSnapshot, type RoutedPath } from '../../../src/renderer/features/lineage/routing/chain'
 import { polylineClearStubs } from '../../../src/renderer/features/lineage/routing/avoid'
 import { buildRoundedPath, stripCollinear } from '../../../src/renderer/features/lineage/routing/rounding'
-import { slotAssign } from '../../../src/renderer/features/lineage/routing/slots'
 import type { Pt, Rect } from '../../../src/renderer/features/lineage/routing/anchors'
 
 const rect = (x: number, y: number, w = 128, h = 72): Rect => ({ x, y, w, h })
 const pt = (x: number, y: number): Pt => ({ x, y })
-const frame = (y: number, rows: number): LayoutSnapshot['frames'][number] => ({ x: 66, y, w: 577, h: 144 * rows - 40, year: 2026 })
+const frame = (y: number, rows: number): LayoutSnapshot['frames'][number] => ({ x: 66, y, w: 577, h: 144 * rows - 40, year: 2026, frameKey: `f${y}` })
 
 function geom(edgeId: string, sourceId: string, targetId: string, fromAnchor?: LineageAnchor, toAnchor?: LineageAnchor): EdgeGeomInput {
   return { edgeId, sourceId, targetId, ...(fromAnchor !== undefined ? { fromAnchor } : {}), ...(toAnchor !== undefined ? { toAnchor } : {}) }
 }
 
-function snapOf(cards: Map<string, Rect>, frames: LayoutSnapshot['frames'] = []): LayoutSnapshot {
+function snapOf(cards: Map<string, Rect>, frames: LayoutSnapshot['frames'] = [], contentH = 551): LayoutSnapshot {
   return {
     cards,
     labels: frames.map((f) => rect(f.x + 12, f.y + 0.5, 100, 18)),
     frames,
     yearHeads: [],
-    contentW: 551
+    contentW: 551,
+    contentH,
+    cardFrame: new Map()
   }
 }
 
@@ -46,22 +50,40 @@ function expectFinalClear(path: RoutedPath, snap: LayoutSnapshot, input: EdgeGeo
 }
 
 describe('R2-C1 钉定锚方向化起落', () => {
-  it('bottom→right：先到右锚短桩外端，再沿水平短桩进锚，不回穿目标卡', () => {
+  it('bottom→right：桩下 10 到行隙首道 201，右行至目标右缘带 417，下行入水平短桩进锚（全点列手推）', () => {
     const snap = snapOf(new Map([['A', rect(79, 119)], ['B', rect(279, 263)]]), [frame(100, 2)])
     const input = geom('e1', 'A', 'B', { side: 'bottom', slot: 1 }, { side: 'right', slot: 1 })
     const path = routeEdge(input, snap)
-    expect(path.route).toBe('band')
-    expect(path.pts.slice(-3)).toEqual([pt(417, 227), pt(417, 299), pt(407, 299)])
+    expect(path.route).toBe('grid')
+    // 手推：A:b1=(143,191) 走廊 i=0=行隙首道 201（[191,201] 桩，余段 [201,cand]
+    // 存活）；h-201 [143,417] 净空（B y 带 [257,341] ∌201）；B:r1=(407,299) 末桩
+    // 须 x2≥417 且 v-x2 存活——右缘带首道 417（B x 膨胀 [273,413] 外）唯一最短
+    //（425 起 +16/步）；末桩 (417,299)→(407,299) 长 10（[407,413] 自卡豁免）
+    expect(path.pts).toEqual([
+      pt(143, 191), pt(143, 201), pt(417, 201), pt(417, 299), pt(407, 299)
+    ])
+    // d 手推：三拐 r=min(6,10/2,·)=5/6/5（首/末拐贴 10px 桩段钳 5）
+    expect(path.d).toBe('M 143 191 L 143 196 Q 143 201 148 201 L 411 201 Q 417 201 417 207 L 417 294 Q 417 299 412 299 L 407 299')
+    expect(path.laneMarks).toBe('v143:191-201,h201:143-417,v417:201-299,h299:407-417')
+    expect(path.anchorMarks).toBe('A:b1,B:r1')
     expectFinalClear(path, snap, input)
   })
 
-  it('背向源锚：下行边钉在源顶锚时先离卡，再经网格通道进入首带', () => {
-    const snap = snapOf(new Map([['A', rect(112, 100)], ['B', rect(212, 388)]]), [{ x: 98.4, y: 80.4, w: 627.2, h: 720, year: 2026 }])
-    snap.labels = []
-    snap.contentW = 600
+  it('背向源锚：下行边钉在源顶锚时先离卡，再经车道进入（桩上 10 到顶带 90）', () => {
+    const snap: LayoutSnapshot = {
+      cards: new Map([['A', rect(112, 100)], ['B', rect(212, 388)]]),
+      labels: [],
+      frames: [{ x: 98.4, y: 80.4, w: 627.2, h: 720, year: 2026, frameKey: 'f1' }],
+      yearHeads: [],
+      contentW: 600,
+      contentH: 800.4,
+      cardFrame: new Map()
+    }
     const input = geom('e1', 'A', 'B', { side: 'top', slot: 1 }, { side: 'top', slot: 1 })
     const path = routeEdge(input, snap)
-    expect(path.route).toBe('band')
+    expect(path.route).toBe('grid')
+    // 手推：A:t1=(176,100) 上行走廊 i=0=90（100−10；[90,94) 存活+[94,100) 自卡
+    // 豁免——A y 膨胀 [94,178]）；越段 (176,90)→(x,90) 转竖入 B:t1=(284,388)
     expect(path.pts[0]).toEqual(pt(176, 100))
     expect(path.pts[1]).toEqual(pt(176, 90))
     expect(path.pts[2]?.y).toBe(90)
@@ -73,14 +95,16 @@ describe('R2-C1 钉定锚方向化起落', () => {
     const snap: LayoutSnapshot = {
       cards: new Map([['A', rect(79, 89.5)], ['B', rect(79, 219.5)]]),
       labels: [rect(79, 72, 62.90625, 20), rect(79, 202, 62.90625, 20)],
-      frames: [rect(66, 70.5, 592, 104), rect(66, 200.5, 592, 104)].map((f) => ({ ...f, year: 2020 })),
+      frames: [rect(66, 70.5, 592, 104), rect(66, 200.5, 592, 104)].map((f, i) => ({ ...f, year: 2020, frameKey: `f${i}` })),
       yearHeads: [rect(20, 18, 55.296875, 34.5), rect(87.296875, 34, 22.03125, 15)],
-      contentW: 566
+      contentW: 566,
+      contentH: 340,
+      cardFrame: new Map()
     }
     const input = geom('e1', 'A', 'B', { side: 'bottom', slot: 1 }, { side: 'top', slot: 1 })
     const [path] = routeAll([input], snap)
     // 目标锚 (143,219.5) 位于月标膨胀区 [73,147.906]×[196,228]（±6——[R2-C4]），任何进锚路径都碰障。
-    expect(path).toMatchObject({ route: 'overlap', clearance: 'blocked', d: '', anchorMarks: 'A:b1,B:t1' })
+    expect(path).toMatchObject({ route: 'grid', clearance: 'blocked', d: '', anchorMarks: 'A:b1,B:t1' })
   })
 })
 
@@ -122,16 +146,16 @@ function realShapeFixture(): { snap: LayoutSnapshot; edges: EdgeGeomInput[] } {
     geom('edge-4', 'D', 'target-last', { side: 'bottom', slot: 0 }, { side: 'right', slot: 1 }),
     geom('edge-5', 'E', 'target-up', { side: 'right', slot: 1 }, { side: 'right', slot: 1 })
   ]
-  return { snap: snapOf(cards, frames), edges }
+  return { snap: snapOf(cards, frames, 3534), edges }
 }
 
 describe('R2-C1 真实图形状的 43 节点合成回归', () => {
-  it('5/5 自动路径经槽位分配与圆角化后仍净空，四条右锚目标均落 band', () => {
+  it('5/5 自动路径经分配与圆角化后仍净空（route 全=grid——四条右锚目标沿右缘带入锚）', () => {
     const { snap, edges } = realShapeFixture()
     expect(snap.cards.size).toBe(43)
     expect(snap.frames).toHaveLength(10)
     const paths = routeAll(edges, snap)
-    expect(paths.map((p) => p.route)).toEqual(['band', 'band', 'band', 'band', 'band'])
+    expect(paths.map((p) => p.route)).toEqual(['grid', 'grid', 'grid', 'grid', 'grid'])
     paths.forEach((path, i) => expectFinalClear(path, snap, edges[i]!))
   })
 })
@@ -159,23 +183,6 @@ describe('R2-C1 最终净空门半径分档', () => {
     const skeleton = [pt(0, 0), pt(100, 0)]
     expect(polylineClearStubs(buildRoundedPath(skeleton, 0).samples, [], obstacles)).toBe(false)
     expect(finalizePath(skeleton, [], obstacles)).toEqual({ d: '', clearance: 'blocked' })
-  })
-
-  it('slotAssign 施加的非法回折 jog 由最终门阻断，而非只看分配前骨架', async () => {
-    const { finalizePath } = await import('../../../src/renderer/features/lineage/routing/finalize')
-    const cards: Array<[string, Rect]> = [
-      ['T1', rect(100, 100, 100, 70)],
-      ['T2', rect(120, 100, 100, 70)],
-      ['T3', rect(140, 100, 120, 70)],
-      ['B', rect(100, 200, 80, 70)]
-    ]
-    const snap = snapOf(new Map(cards))
-    const before = [pt(149, 160), pt(149, 198)]
-    const assigned = slotAssign([{ edgeId: 'jog', route: 'direct', pts: before }], snap)[0]!
-    expect(assigned.pts).not.toEqual(before)
-    expect(assigned.pts.length).toBeGreaterThan(6)
-    expect(polylineClearStubs(buildRoundedPath(stripCollinear(assigned.pts), 0).samples, [], allObstacles(snap))).toBe(false)
-    expect(finalizePath(assigned.pts, [], allObstacles(snap))).toEqual({ d: '', clearance: 'blocked' })
   })
 
   it('[R2-C3] manual-override 同上终门：碰障骨架三档均 blocked 空 d（终门对所有 route 态统一）', async () => {

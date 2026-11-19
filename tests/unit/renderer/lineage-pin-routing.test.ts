@@ -12,13 +12,22 @@ import { AnchorUse, anchorIdOf, anchorPoint, parseAnchorId } from '../../../src/
 import { routeAll, routeEdge, type EdgeGeomInput, type LayoutSnapshot } from '../../../src/renderer/features/lineage/lineage-routing'
 import { pinOf } from '../../../src/renderer/features/lineage/edge-overlay-geom'
 
-/** 两卡上下排布夹具（own 域 rect——direct 态可达） */
+/** 两卡上下排布夹具（own 域 rect——直连态可达；[B2b] 补帧/contentH/cardFrame
+ *  必填面：帧 {66,60,700,460} → 车道 x 域 [67.6,764.4]、y 域 [0,520]） */
 function snapshotTwoCards(): LayoutSnapshot {
   const cards = new Map<string, { x: number; y: number; w: number; h: number }>([
     ['A', { x: 100, y: 100, w: 128, h: 72 }],
     ['B', { x: 100, y: 400, w: 128, h: 72 }]
   ])
-  return { cards, labels: [], frames: [], yearHeads: [], contentW: 1000 }
+  return {
+    cards,
+    labels: [],
+    frames: [{ x: 66, y: 60, w: 700, h: 460, year: null, frameKey: 'k' }],
+    yearHeads: [],
+    contentW: 1000,
+    contentH: 520,
+    cardFrame: new Map()
+  }
 }
 
 function edgeInput(patch: Partial<EdgeGeomInput> = {}): EdgeGeomInput {
@@ -94,17 +103,40 @@ describe('F-VISFB-66·W-04 manual-override 端点优先级三格（钉定＞主�
   })
 })
 
-describe('F-VISFB-66·N-01 全 NULL 锚夹具零回归（[回炉 R8] 金标冻结——自比较形态已删）', () => {
+describe('F-VISFB-66·N-01 全 NULL 锚夹具零回归（[B2b] 金标重冻结——车道网格分配基线）', () => {
+  /** [B2b 重冻结·B2 回炉 M-2 更正] 夹具重设计理由=取简单可手推形态（C 与
+   *  A 同排→直连/L 两种 0-2 拐形态）；旧 C(500,250) 场景在新几何下仍可达
+   *  （4/4 非 blocked——B2 审查探针实测），不因重冻结丢失：旧场景另立可达
+   *  性契约例（本 describe 下方「旧 C 场景可达性」）。车道表（手推）：
+   *  v={74,82,90,132,164,196,238..486(32),532,564,596,638..758}、
+   *  h={10..90,118,136,154,182..390(27),418,436,454,482..542}
+   *  逐边期望路径手推算式（禁抄实现输出——金标字节=算式结论冻结）：
+   *  - e-direct A→B：selectAnchor 竖向→A:b1(164,172)/B:t1(164,400) 同道 v164
+   *    相向、中段 [182,390] 存活（A/B 死区 [94,178]/[394,478] 外）→0 拐直连
+   *    v164:172-400；
+   *  - e-manual A→B via：manual 早退折线 [(164,172),(164,200),(164,300),
+   *    (164,400)]，共线剔除→d='M 164 172 L 164 400'；
+   *  - e-hslip A→C：|dx|>|dy| 横向→A:r1(228,136)/C:l1(500,136)（tc.y=sc.y=
+   *    136 恰 ½ 位锚道）同道 h136 相向→0 拐直连 h136:228-500；
+   *  - e-hslip2 B→C：B:r0=投影 136 越上界取最近 ¼ 序 (228,418)；C:l2=投影
+   *    436 越下界取最近 ¾ 序 (500,154)。B 右缘走廊=行内隙道族首道 238
+   *    （228+10）桩端；唯一 2 拐 L：(238,418)↑(238,154)→末桩 [490,500] 目标
+   *    豁免入锚——laneMarks=h418:228-238,v238:154-418,h154:238-500（拐角
+   *    r=min(6,10/2,·)=5/6）。
+   *  生成命令（回放单源）：临时件 console.log(JSON.stringify(routeAll(
+   *  baseInputs, snap))) → 落 fixtures/lineage-null-anchor-golden.json。 */
   const snap: LayoutSnapshot = {
     cards: new Map([
       ['A', { x: 100, y: 100, w: 128, h: 72 }],
       ['B', { x: 100, y: 400, w: 128, h: 72 }],
-      ['C', { x: 500, y: 250, w: 128, h: 72 }]
+      ['C', { x: 500, y: 100, w: 128, h: 72 }]
     ]),
     labels: [],
-    frames: [],
+    frames: [{ x: 66, y: 40, w: 700, h: 512, year: null, frameKey: 'k' }],
     yearHeads: [],
-    contentW: 1000
+    contentW: 1000,
+    contentH: 552,
+    cardFrame: new Map()
   }
   const baseInputs: EdgeGeomInput[] = [
     { edgeId: 'e-direct', sourceId: 'A', targetId: 'B' },
@@ -112,34 +144,58 @@ describe('F-VISFB-66·N-01 全 NULL 锚夹具零回归（[回炉 R8] 金标冻�
     { edgeId: 'e-hslip', sourceId: 'A', targetId: 'C' },
     { edgeId: 'e-hslip2', sourceId: 'B', targetId: 'C' }
   ]
-  /**
-   * [回炉 R8] 等价性论证：NULL 输入（fromAnchor/toAnchor 缺省）≡66 前
-   * EdgeGeomInput 形态（字段缺席→routeOne 走现行 selectAnchor/anchorPick 派
-   * 生路径——与 66 前代码同构：钉定分支以 undefined 短路进原路径）；派生
-   * 逻辑未动→输出逐字节等于 66 前基线。金标=fixtures/lineage-null-anchor-
-   * golden.json（字面值冻结——改派生逻辑即红，非自比较恒真）。
-   */
-  /**
-   * [S6③] 金标 fixture 生成命令（回放单源）：
-   *   临时件（tmp-dump/dump.test.ts）console.log('FIXTURE_JSON='+
-   *   JSON.stringify(routeAll(baseInputs, snap))) → vitest run 采 stdout →
-   *   落 fixtures/lineage-null-anchor-golden.json（本批已执行——值冻结）。
-   * 等价性论证补强：全 NULL 输入（锚字段缺席）≡66 前 EdgeGeomInput 形态恒等
-   * （routeOne 钉定分支以 undefined 短路进原 selectAnchor/anchorPick 派生路
-   * 径——形态同构）；66 批未动 detour/bands/slots/rounding 派生路径→输出
-   * 逐字节等于 66 前基线。改派生逻辑即红（金标字面值非自比较恒真）。
-   */
   const golden = JSON.parse(
     readFileSync(join(process.cwd(), 'tests/unit/renderer/fixtures/lineage-null-anchor-golden.json'), 'utf8')
   ) as ReturnType<typeof routeAll>
 
-  it('多态边图（direct/manual/h-slip×2）：全 NULL 输入输出=冻结金标逐字节全等', () => {
+  it('多态边图（直连×2/manual/L 形）：全 NULL 输入输出=冻结金标逐字节全等', () => {
     expect(routeAll(baseInputs, snap)).toEqual(golden)
   })
 
   it('锚字段显式 undefined 与缺省全等（归一化面——载荷装配层契约）', () => {
     const withUndef = baseInputs.map((e) => ({ ...e, fromAnchor: undefined, toAnchor: undefined }))
     expect(routeAll(withUndef, snap)).toEqual(golden)
+  })
+
+  it('[B2 回炉 M-2] 旧 C(500,250) 场景可达性契约：同帧/contentH 下四边全非 blocked+e-hslip2 全点列手推', () => {
+    // 夹具=旧金标坐标（帧 {66,40,700,512}/contentH=552 不变，仅 C 回
+    // (500,250)）——异高跨行场景仍可达（B2 审查探针 4/4 实测立案）。
+    // e-hslip2' 手推：B:r0=(228,418)（投影 136 越上界取 ¼ 序）/C:l2=(500,304)
+    //（投影 436 越下界取 ¾ 序）。单卡行无列隙道→走廊空→自由桩端=B 锚道 532
+    //（≥238 最近存活：h-418 余段 [238,532] 存活——B 死区 x[94,234] 外）；
+    // v-532 上行至 388（B 行隙 [322,390] 末道：|418−388|=30 最短且 h-388
+    // [196,532] 存活——A 死区 y[94,178]/B y[394,478]/C y[244,326] 皆不含）；
+    // 左行至 196（A/B 锚道——v-196 [304,388] 存活：A 死区 y[94,178] ∌）；
+    // ↓(196,304) 转右末桩 [490,500] C 豁免入锚（4 拐 len=304+30+336+84+304=1058）
+    const oldSnap: LayoutSnapshot = {
+      cards: new Map([
+        ['A', { x: 100, y: 100, w: 128, h: 72 }],
+        ['B', { x: 100, y: 400, w: 128, h: 72 }],
+        ['C', { x: 500, y: 250, w: 128, h: 72 }]
+      ]),
+      labels: [],
+      frames: [{ x: 66, y: 40, w: 700, h: 512, year: null, frameKey: 'k' }],
+      yearHeads: [],
+      contentW: 1000,
+      contentH: 552,
+      cardFrame: new Map()
+    }
+    const oldEdges: EdgeGeomInput[] = [
+      { edgeId: 'e-direct', sourceId: 'A', targetId: 'B' },
+      { edgeId: 'e-manual', sourceId: 'A', targetId: 'B', via: [{ x: 164, y: 200 }, { x: 164, y: 300 }] },
+      { edgeId: 'e-hslip', sourceId: 'A', targetId: 'C' },
+      { edgeId: 'e-hslip2', sourceId: 'B', targetId: 'C' }
+    ]
+    const ps = routeAll(oldEdges, oldSnap)
+    for (const p of ps) expect(p.clearance, `${p.edgeId} 旧 C 场景可达`).toBeUndefined()
+    expect(ps[0]!.pts).toEqual([{ x: 164, y: 172 }, { x: 164, y: 400 }])
+    expect(ps[2]!.anchorMarks).toBe('A:r2,C:l0')
+    expect(ps[3]!.anchorMarks).toBe('B:r0,C:l2')
+    expect(ps[3]!.pts).toEqual([
+      { x: 228, y: 418 }, { x: 532, y: 418 }, { x: 532, y: 388 },
+      { x: 196, y: 388 }, { x: 196, y: 304 }, { x: 500, y: 304 }
+    ])
+    expect(ps[3]!.laneMarks).toBe('h418:228-532,v532:388-418,h388:196-532,v196:304-388,h304:196-500')
   })
 })
 
@@ -171,8 +227,9 @@ describe('F-VISFB-66·N-06 水合边往返（repo 序列化→解析→routeAll 
   })
 })
 
-describe('F-VISFB-66·[回炉 R4] band 钉定族（bandSkeleton fromPin/toPin 消费面+不可达降级）', () => {
-  /** 同列三卡+双月框带（band 域在场——探测定谳几何：oy=220 拦直连） */
+describe('F-VISFB-66·[回炉 R4] 钉定族（[B2b] grid 重推导——钉定端直取/禁散开沿承 §4）', () => {
+  /** 同列三卡+双月框带（B2b 补帧键/contentH=580——末下外区带 482..570 在册：
+   *  底锚钉定边自下方带进锚的供给面） */
   const snapBand = (): LayoutSnapshot => ({
     cards: new Map([
       ['A', { x: 100, y: 100, w: 128, h: 72 }],
@@ -181,41 +238,56 @@ describe('F-VISFB-66·[回炉 R4] band 钉定族（bandSkeleton fromPin/toPin �
     ]),
     labels: [],
     frames: [
-      { x: 20, y: 60, w: 900, h: 250, year: 2020 },
-      { x: 20, y: 330, w: 900, h: 250, year: 2021 }
+      { x: 20, y: 60, w: 900, h: 250, year: 2020, frameKey: 'k1' },
+      { x: 20, y: 330, w: 900, h: 250, year: 2021, frameKey: 'k2' }
     ],
     yearHeads: [],
-    contentW: 872.8 // [F-DETOURW-01] 对齐=f.w−27.2（声明口径——N=4/M=4 档行为保持；走线消费 contentW 后 frames 非空例逐例对齐）
+    contentW: 872.8, // [F-DETOURW-01] 对齐=f.w−27.2（声明口径；走线消费 contentW 后 frames 非空例逐例对齐）
+    contentH: 580,
+    cardFrame: new Map()
   })
 
-  it('toPin 终落=钉定锚且 route=band（bandSkeleton 钉定终落分支——禁散开到其他槽）', () => {
+  it('toPin 终落=钉定锚且 route=grid（v164 被 O 杀段→左缘带 x=90 绕行——禁散开到其他槽）', () => {
     const r = routeEdge(
       { edgeId: 'e1', sourceId: 'A', targetId: 'B', toAnchor: { side: 'top', slot: 0 } },
       snapBand()
     )
-    expect(r.route).toBe('band')
-    expect(r.pts[r.pts.length - 1]).toEqual({ x: 132, y: 400 }) // B top/0=¼ 位钉定锚
-    expect(r.anchorMarks!.split(',')[1]!.endsWith(':t0')).toBe(true)
+    expect(r.route).toBe('grid')
+    // 手推：A:b1(164,172) 桩↓182；O 死区 y[214,298] 杀 v164 直落与近途——左缘
+    // 带 x=90（minLeft 100−10）全高存活；B:t0(132,400) 自 h-302（行隙 2 首道）
+    // 入末桩
+    expect(r.pts).toEqual([
+      { x: 164, y: 172 }, { x: 164, y: 182 }, { x: 90, y: 182 },
+      { x: 90, y: 302 }, { x: 132, y: 302 }, { x: 132, y: 400 }
+    ])
+    expect(r.anchorMarks).toBe('A:b1,B:t0')
+    expect(r.clearance).toBeUndefined()
   })
 
-  it('fromPin 源端直取=钉定锚（bandSkeleton fromPin 分支——不散开）', () => {
+  it('fromPin 源端直取=钉定锚（不散开）：A:l2 桩←90→行隙 302→B:t1 末桩', () => {
     const r = routeEdge(
       { edgeId: 'e1', sourceId: 'A', targetId: 'B', fromAnchor: { side: 'left', slot: 2 } },
       snapBand()
     )
-    expect(r.pts[0]).toEqual({ x: 100, y: 154 }) // A left/2=¾ 位
+    expect(r.route).toBe('grid')
+    expect(r.pts[0]).toEqual({ x: 100, y: 154 }) // A left/2=¾ 位（直取——pick 不介入）
+    expect(r.pts).toEqual([
+      { x: 100, y: 154 }, { x: 90, y: 154 }, { x: 90, y: 302 },
+      { x: 164, y: 302 }, { x: 164, y: 400 }
+    ])
   })
 
-  it('钉定不可达→band 降级 [R2-C2] 外圈底环承接（端点仍=钉定锚——底环沿 bottom 外法线进锚）', () => {
-    // toAnchor bottom/0：band 域终落桩自上方撞 B 卡身（vClear 不过）；[R2-C2]
-    // 外圈底车道 y=472+16=488（RING_MARGIN=PAD+10=16——[R2-C4]）：源右锚下行→底车道→自下方回桩进钉定锚合法
-    // （旧=overlap 兜底；端点主权不变）
+  it('钉定底锚（背向进锚）：末下外区带 482 自下方进锚（端点仍=钉定锚——主权不变）', () => {
+    // toAnchor bottom/0=(132,472)：自上方进锚撞 B 卡身——末桩自下方 h-482
+    //（末下外区带首道：maxBottom 472+10）上行入锚（旧=outer-ring 底环同语义）
     const r = routeEdge(
       { edgeId: 'e1', sourceId: 'A', targetId: 'B', toAnchor: { side: 'bottom', slot: 0 } },
       snapBand()
     )
-    expect(r.route).toBe('outer-ring')
+    expect(r.route).toBe('grid')
     expect(r.pts[r.pts.length - 1]).toEqual({ x: 132, y: 472 }) // 端点=钉定锚直取（主权不变）
+    expect(r.pts[r.pts.length - 2]).toEqual({ x: 132, y: 482 }) // 末桩=下带 482 自下方进锚
+    expect(r.clearance).toBeUndefined()
   })
 })
 
@@ -226,9 +298,11 @@ describe('F-VISFB-66·[回炉 S6] 双边共享锚避让+真 repo 水合集成', 
       ['rB', { x: 100, y: 400, w: 128, h: 72 }]
     ]),
     labels: [],
-    frames: [],
+    frames: [{ x: 66, y: 60, w: 700, h: 460, year: null, frameKey: 'k' }],
     yearHeads: [],
-    contentW: 1000
+    contentW: 1000,
+    contentH: 520,
+    cardFrame: new Map()
   })
 
   it('① 双边共享同锚：两未钉定边同 pair 端锚被 AnchorUse 散开（第二边不落同锚）', () => {
@@ -310,7 +384,12 @@ describe('F-VISFB-66·[定点修] routeAll 真·同锚共享（S6① 补格—�
         ['B', { x: 100, y: 400, w: 128, h: 72 }],
         ['C', { x: 400, y: 400, w: 128, h: 72 }]
       ]),
-      labels: [], frames: [], yearHeads: [], contentW: 1000
+      labels: [],
+      frames: [{ x: 66, y: 60, w: 700, h: 460, year: null, frameKey: 'k' }],
+      yearHeads: [],
+      contentW: 1000,
+      contentH: 520,
+      cardFrame: new Map()
     }
     const pinned = { side: 'bottom' as const, slot: 1 as const }
     const out = routeAll(

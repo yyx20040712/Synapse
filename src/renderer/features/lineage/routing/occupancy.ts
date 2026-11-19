@@ -23,10 +23,17 @@ export interface OccupySeg {
 export class LaneOccupancy {
   private readonly segs: OccupySeg[] = []
   private readonly keys = new Set<string>()
+  /** [性能锚] 轴×坐标桶索引（桶宽=LANE_PITCH：|Δ|<LANE_PITCH 的冲突段恒在
+   *  相邻 ±1 桶内——conflicts 谓词逐段不变，仅线性全表扫描改三桶扫描） */
+  private readonly buckets = new Map<string, OccupySeg[]>()
 
   /** 段身份键（axis/coord/span/owner/stub 全等——同段重放幂等落记） */
   private keyOf(s: OccupySeg): string {
     return `${s.axis}|${s.coord}|${s.span.lo}|${s.span.hi}|${s.owner}|${s.stub === true}`
+  }
+
+  private bucketKey(axis: 'v' | 'h', coord: number): string {
+    return `${axis}|${Math.floor(coord / LANE_PITCH)}`
   }
 
   /** 登记占用段（幂等：同段重复登记不增观测；深拷贝 span——调用方后续变异入参不污染内部态） */
@@ -34,7 +41,12 @@ export class LaneOccupancy {
     const key = this.keyOf(seg)
     if (this.keys.has(key)) return
     this.keys.add(key)
-    this.segs.push({ ...seg, span: { ...seg.span } })
+    const stored = { ...seg, span: { ...seg.span } }
+    this.segs.push(stored)
+    const bk = this.bucketKey(seg.axis, seg.coord)
+    const arr = this.buckets.get(bk)
+    if (arr === undefined) this.buckets.set(bk, [stored])
+    else arr.push(stored)
   }
 
   /**
@@ -44,11 +56,14 @@ export class LaneOccupancy {
    * 区分）；|Δ|≥LANE_PITCH 或跨距不重叠 → false。
    */
   conflicts(axis: 'v' | 'h', coord: number, span: Interval): boolean {
-    return this.segs.some((s) => {
-      if (s.axis !== axis) return false
-      if (Math.abs(s.coord - coord) >= LANE_PITCH) return false
-      return Math.max(s.span.lo, span.lo) < Math.min(s.span.hi, span.hi)
-    })
+    const bucket = Math.floor(coord / LANE_PITCH)
+    for (let k = bucket - 1; k <= bucket + 1; k++) {
+      for (const s of this.buckets.get(`${axis}|${k}`) ?? []) {
+        if (Math.abs(s.coord - coord) >= LANE_PITCH) continue
+        if (Math.max(s.span.lo, span.lo) < Math.min(s.span.hi, span.hi)) return true
+      }
+    }
+    return false
   }
 
   /** 全部登记段观测（逐元素+span 深拷贝快照——断言/测试面；外部变异不回写内部态） */

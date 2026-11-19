@@ -405,6 +405,16 @@ describe('[F-VISFB-31] 路由重算键含 uiScale', () => {
           host?.appendChild(el)
         }
       }
+      // [F-LANEGRID-01 B2b] 月框伴生（快照 frames 源——无框即空车道表自动边
+      // blocked，d 迁移判别面失效）
+      const hostEl = host
+      if (hostEl !== null && hostEl.querySelector('.month-frame') === null) {
+        const frameEl = document.createElement('div')
+        frameEl.className = 'month-frame'
+        frameEl.dataset.frameKey = 'k'
+        stubRect(frameEl, 66, 0, 566, 500)
+        hostEl.appendChild(frameEl)
+      }
       stubRect(req('.tl-card[data-node-id="A"]'), 100, 50, 128, 72)
       stubRect(req('.tl-card[data-node-id="B"]'), 100, 400, 128, 72)
     }
@@ -436,6 +446,9 @@ describe('[F-VISFB-31] 路由重算键含 uiScale', () => {
       id: 'e1', fromNode: 'A', toNode: 'B', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't'
     }
     mount(nodes, [e])
+    // [F-LANEGRID-01 B2b] 真月框 rect 桩+content rect 桩（frames/contentH 源）
+    stubRect(req('.tl-content'), 0, 0, 600, 600)
+    for (const frameEl of Array.from((host ?? host!).querySelectorAll('.month-frame'))) stubRect(frameEl, 66, 0, 566, 500)
     stubRect(cardOf('A'), 100, 50, 128, 72)
     stubRect(cardOf('B'), 100, 400, 128, 72)
     const flush = (): void => {

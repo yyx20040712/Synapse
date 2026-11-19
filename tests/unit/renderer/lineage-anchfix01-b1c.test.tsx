@@ -29,27 +29,32 @@ function rect(x: number, y: number, w: number, h: number): Rect {
   return { x, y, w, h }
 }
 
-function makeSnap(cards: Map<string, Rect>, frames: MonthFrame[] = []): LayoutSnapshot {
+/** [B2b] 快照必填面补齐：无帧例 contentH=0（横道族退化——manual 例不消费）；
+ *  自动边例显式给帧+contentH（帧 border {66,·,600/800,·}——x 域 [67.6,·]） */
+function makeSnap(cards: Map<string, Rect>, frames: MonthFrame[] = [], contentH = 0): LayoutSnapshot {
   const contentW = 800
-  return { cards, labels: [], frames, yearHeads: [], contentW }
+  return { cards, labels: [], frames, yearHeads: [], contentW, contentH, cardFrame: new Map() }
 }
 
 describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出——纯观测零行为变）', () => {
-  it('direct 态：两卡竖叠 A(100,100)/B(100,300) 128×72 → anchorMarks=A:b1,B:t1', () => {
+  it('直连态：两卡竖叠 A(100,100)/B(100,300) 128×72 → route=grid+anchorMarks=A:b1,B:t1+laneMarks=v164', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
         ['B', rect(100, 300, 128, 72)]
-      ])
+      ]),
+      [{ ...rect(66, 60, 600, 400), year: 2022, frameKey: 'k' }],
+      500
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
     expect(paths).toHaveLength(1)
-    expect(paths[0]!.route).toBe('direct')
+    expect(paths[0]!.route).toBe('grid')
     // 手算（selectAnchor 规则，期望值禁 import 实现）：sa=selectAnchor(A, B 中心
     // (164,336))：dx=0/dy=+200→竖向 dy≥0→bottom；投影 x=164 距 ½(64) 最近→slot1
     // =A:b1；sb=selectAnchor(B, A 中心 (164,136))：dy<0→top；投影 x=164→slot1
-    // =B:t1；direct commit [A,b1],[B,t1] → 串序=源,目标
+    // =B:t1。同道 v164 相向直连（中段 [182,290] 存活：A/B 死区 [94,178]/[294,378]）
     expect(paths[0]!.anchorMarks).toBe('A:b1,B:t1')
+    expect(paths[0]!.laneMarks).toBe('v164:172-300')
   })
 
   it('manual-override 态：via 在场不 commit（散开语义零变）——anchorMarks 从 selectAnchor 派生计入=A:l1,B:r1（显示真值）', () => {
@@ -73,82 +78,86 @@ describe('F-ANCHFIX-01 批 1c chain 层 anchorMarks（routeAll 观测透出—�
   // [回炉 R-3] h-slip/band/overlap 三态补面（[F-SLOTGRID-01 U2] corridor 态
   // 随走廊退役→兜底态=overlap 最短路线；夹具=带封闭几何〔X 并合卡行距
   // ≤2·PAD→无带可横移+通道候选全灭〕——U2 重基线）
-  it('[R2-C4] 陡斜 h-slip 失守降 band：A(100,100)/B(700,710)（x 进程占比 472/1046=0.451<PAD/10=0.6）→ anchorMarks=A:b2,B:t0', () => {
+  it('陡斜跨域（|dy|>|dx| 竖向主向）：A(100,100)/B(700,710) → route=grid+anchorMarks=A:b2,B:t0（阶梯绕行非 blocked）', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
         ['B', rect(700, 710, 128, 72)]
-      ])
+      ]),
+      [{ ...rect(66, 60, 800, 760), year: 2022, frameKey: 'k' }],
+      820
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
-    expect(paths[0]!.route).toBe('band')
-    // 手推（[R2-C4] PAD=6 重基线——主控裁决选项 a；旧 PAD=4 时本夹具为
-    // h-slip=A:r2,B:l0）：h-slip 锚 ha=(228,154)r2/hb=(700,728)l0 的斜段
-    // Δx=472/Δy=574、x 进程占比 0.451<0.6——末桩 x 进程 4.51px<PAD 6，
-    // 中段起/止点 (232.5,159.5)/(695.5,722.5) 各落 A/B 膨胀框 → h-slip 废；
-    // band 承接：pa=sideAnchor(A,'bottom',tc=(764,746)) 投影 x 越右界取最近
-    // ¾ 序 b2（196,172）；终落 sb=sideAnchor(B,'top',sc=(164,136)) 投影 x
-    // 越左界取最近 ¼ 序 t0（732,710）；带 [172,710] h=538 无框横贯 s=6、
-    // 槽位域 518→n=5 中位槽 y=441 横移（A/B 无投影重叠=零单元，单成员
-    // 残余簇跳过=零偏移）
+    expect(paths[0]!.route).toBe('grid')
+    // 手推（selectAnchor 主向定边）：sa=A 向 B 中心 (764,746)：|dy|=610>|
+    // dx|=600→竖向 bottom；投影 x=764 越右界取最近 ¾ 序 b2=(196,172)；sb=B
+    // 向 A 中心 (164,136)：|dy|=610>600→top；投影 x=164 越左界取最近 ¼ 序
+    // t0=(732,710)。竖程跨多行——阶梯绕行（锚道+行隙横移族供给）
     expect(paths[0]!.anchorMarks).toBe('A:b2,B:t0')
+    expect(paths[0]!.clearance).toBeUndefined()
   })
 
-  it('[R2-C4] h-slip 态（扁平 share>0.6 形态承载锚锁）：A(100,100)/B(700,200)（占比 472/536=0.881）→ anchorMarks=A:r2,B:l0（近侧 sideAnchor 锚）', () => {
+  it('扁平跨行（横向主向——斜连废除裁决①⑤）：A(100,100)/B(700,200) → route=grid+anchorMarks=A:r2,B:l0（异横道 L 形绕行）', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
         ['B', rect(700, 200, 128, 72)]
-      ])
+      ]),
+      [{ ...rect(66, 60, 800, 260), year: 2022, frameKey: 'k' }],
+      320
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
-    expect(paths[0]!.route).toBe('h-slip')
-    // 手推：x 带分离 100+128+12=240<700 ✓；ha=sideAnchor(A,'right',tc=
-    // (764,236))：投影 y 越下界取最近 ¾ 序 r2（228,154)；hb=sideAnchor(B,
-    // 'left',sc=(164,136))：投影 y 越上界取最近 ¼ 序 l0（700,218）。斜段
-    // 占比 0.881>0.6：双侧膨胀边距 10·0.881−6=2.81px（cutA.x=236.81>A
-    // 膨胀右缘 234；cutB.x=691.19<B 膨胀左缘 694）→ h-slip 成立。旧用例
-    // 的 selectAnchor 陡斜判别位子句（dy>|dx| 且 x 带分离）与 PAD=6 存活律
-    //（|dx|>1.5·|dy|）不相交，随 [R2-C4] 主控裁决退役（selectAnchor 竖向
-    // 分支本身经 direct/manual-override/编辑链仍可达，见结构排查批）
+    expect(paths[0]!.route).toBe('grid')
+    // 手推：sa=A 向 B 中心 (764,236)：dx=600>dy=100→right；投影 y=236 越下
+    // 界取 ¾ 序 r2=(228,154)；sb=B 向 A 中心 (164,136)：横向 left；投影
+    // y=136 越上界取 ¼ 序 l0=(700,218)。异横道（154/218）→桩+外区带/行隙
+    // 绕行（旧 h-slip 斜直线随裁决①废除）
     expect(paths[0]!.anchorMarks).toBe('A:r2,B:l0')
+    expect(paths[0]!.clearance).toBeUndefined()
   })
 
-  it('band 态：跨行行隙+错列（72px 网格重基线——[F-SLOTGRID-01 U2]）→ anchorMarks=A:b2,B:t0（band 骨架生效锚——lineage-routing.test ④ 夹具同几何）', () => {
+  it('L 形态：跨行行隙+错列（[B2b] grid 重推导）→ 全点列手推：A:b2 桩 182→B:t0 横移入末桩', () => {
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(112, 100, 128, 72)],
         ['B', rect(212, 244, 128, 72)]
       ]),
-      [{ ...rect(98.4, 80.4, 627.2, 400), year: 2022 }]
+      [{ ...rect(98.4, 80.4, 627.2, 400), year: 2022, frameKey: 'k' }],
+      460
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
-    expect(paths[0]!.route).toBe('band')
-    // 手算：A 底锚=sideAnchor(A,'bottom',tc=(276,280))：投影 x=276−112=164→
-    // ¾ 序 b2（208,172）；B 顶锚=sideAnchor(B,'top',sc=(176,136))：投影
-    // x=176−212=−36 越左界取最近 ¼ 序 t0（244,244）；行隙带 [172,244] h=72
-    // 槽位中位 208 供横移
+    expect(paths[0]!.route).toBe('grid')
+    // 手推：sa=A 向 B 中心 (276,280)：|dy|=144>|dx|=100→竖向 bottom；投影
+    // x=276 越右界取 ¾ 序 b2=(208,172)；sb=B 向 A 中心 (176,136)：竖向 top；
+    // 投影 x=176 越左界取 ¼ 序 t0=(244,244)。桩 (208,172)↓(208,182)（行隙
+    // 首道——走廊 i=0）；h-182 [208,244] 存活（A/B 死区 y 带 [94,178]/
+    // [238,322] 皆不含）→ 1 拐 L 直入末桩 [182,244]
     expect(paths[0]!.anchorMarks).toBe('A:b2,B:t0')
+    expect(paths[0]!.pts).toEqual([
+      { x: 208, y: 172 }, { x: 208, y: 182 }, { x: 244, y: 182 }, { x: 244, y: 244 }
+    ])
+    expect(paths[0]!.d).toBe('M 208 172 L 208 177 Q 208 182 213 182 L 238 182 Q 244 182 244 188 L 244 244')
+    expect(paths[0]!.laneMarks).toBe('v208:172-182,h182:208-244,v244:182-244')
+    expect(paths[0]!.clearance).toBeUndefined()
   })
 
-  it('overlap 态：带封闭+通道候选全灭+外圈连接段全灭（X 纵贯全域高墙——[R2-C2] 后 overlap 仅存于外圈亦不可行时）→ anchorMarks=A:b1,B:t1（direct 判别锚沿承）+overlapExempt', () => {
-    // X [90,690]×[60,380]：纵贯 A/B 全高（膨胀 [84,696]×[54,386]——±6〔R2-C4〕）——无框无
-    // 通道（detour null）、卡区间并合零带（band null）、[R2-C2] 外圈四车道
-    // 连接段必穿墙（outer-ring null）——仅剩 overlap 兜底
+  it('blocked 态：X 纵贯全域高墙（A/B 卡身皆落墙内——供给三路全灭）→ route=grid/blocked+anchorMarks=A:b1,B:t1（数据保留）', () => {
+    // X [90,690]×[60,380]（膨胀 [84,696]×[54,386]——±6）：A(100,100)/B(100,300)
+    // 卡身与全部行隙皆落墙死区内——v/h 道中段全灭（含边侧道：帧 x 域内全部
+    // v 道 x∈[84,696]）。[B2b] 旧 overlap 兜底随六态退役——INV-79 blocked 承接
     const snap = makeSnap(
       new Map<string, Rect>([
         ['A', rect(100, 100, 128, 72)],
         ['X', rect(90, 60, 600, 320)],
         ['B', rect(100, 300, 128, 72)]
-      ])
+      ]),
+      [{ ...rect(66, 40, 700, 400), year: 2022, frameKey: 'k' }],
+      440
     )
     const paths = routeAll([{ edgeId: 'e1', sourceId: 'A', targetId: 'B' }], snap)
-    expect(paths[0]!.route).toBe('overlap')
-    // 手算：overlap 锚=direct 判别锚（selectAnchor 同函数同参——INV-119 ② 域内
-    // 承诺沿承）：sa=A 底 ½ (164,172)=A:b1；sb=B 顶 ½ (164,300)=B:t1；x 相等
-    // →最短路线=单竖段（穿 X——忽略避让兜底）
-    expect(paths[0]!.anchorMarks).toBe('A:b1,B:t1')
-    expect(paths[0]!.overlapExempt).toBe(true)
+    // 手算：sa=A 底 ½ (164,172)=A:b1；sb=B 顶 ½ (164,300)=B:t1（selectAnchor
+    // 同函数同参——锚观测沿承）；无路=blocked 空 d
+    expect(paths[0]).toMatchObject({ route: 'grid', clearance: 'blocked', d: '', anchorMarks: 'A:b1,B:t1' })
   })
 })
 

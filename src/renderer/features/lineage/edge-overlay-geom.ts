@@ -57,13 +57,17 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
     return { x: (r.left - base.left) / sEff, y: (r.top - base.top) / sEff, w: r.width / sEff, h: r.height / sEff }
   }
   const cards = new Map<string, Box>()
+  // [F-LANEGRID-01 B2a §6.1] 卡→帧身份键映射（DOM 结构承载=closest('.month-frame')
+  // →data-frame-key；属性缺席/无框祖先=null——B3 帧差分消费，缺省防御不崩）
+  const cardFrame = new Map<string, string | null>()
   for (const el of Array.from(content.querySelectorAll<HTMLElement>('.tl-card[data-node-id]'))) {
     cards.set(el.dataset.nodeId ?? '', toBox(el))
+    cardFrame.set(el.dataset.nodeId ?? '', el.closest('.month-frame')?.getAttribute('data-frame-key') ?? null)
   }
   const labels = Array.from(content.querySelectorAll('.month-tag')).map(toBox)
   const frames = Array.from(content.querySelectorAll('.month-frame')).map((el) => {
     const raw = el.closest('[data-year]')?.getAttribute('data-year') ?? 'null'
-    return { ...toBox(el), year: raw === 'null' ? null : Number(raw) }
+    return { ...toBox(el), year: raw === 'null' ? null : Number(raw), frameKey: el.getAttribute('data-frame-key') }
   })
   // [F-UIRES-03 C2·P7 / N5 校准提前落地] 年份头障碍采集收窄=数字+「N 篇」meta
   // 两文本区（.tl-year-num/.tl-year-meta）——原 .tl-year-head 容器为 flex+
@@ -78,7 +82,10 @@ export function buildSnapshot(content: HTMLElement): LayoutSnapshot {
   // （base.width/sEff=content 容器宽）全仓消费侧零命中随本票退役
   const firstFrame = content.querySelector('.month-frame')
   const contentW = firstFrame instanceof HTMLElement ? readFrameContentWidth(firstFrame) : 0
-  return { cards, labels, frames, yearHeads, contentW }
+  // [F-LANEGRID-01 B2a §6.1] contentH=内容盒高（.tl-content rect÷s_eff=own 域）
+  // ——车道 y 域上界与外区带锚定源（grid.buildLaneTable 消费）
+  const contentH = base.height / sEff
+  return { cards, labels, frames, yearHeads, contentW, contentH, cardFrame }
 }
 
 /** [F-LGRAPH-01②U8] 边视觉样式（dashed/color 内联——A3；虚线纹固定 6 3） */

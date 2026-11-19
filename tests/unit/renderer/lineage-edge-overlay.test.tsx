@@ -8,8 +8,6 @@
  * 承载，本件锁结构/属性/样式映射/再触发/CSS 文本）。always-active 裸
  * describe（K3）。
  */
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -20,8 +18,6 @@ import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageT
 
 // act() 环境声明（lineage-timeline.test 同口径）
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
-
-const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8')
 
 function node(id: string): LineageNode {
   return {
@@ -55,6 +51,19 @@ function stubRaf(): void {
 /** 挂载+卡 DOM 伴生+rAF 冲洗（createRoot 首渲染清空宿主→卡注入在 render 后，
  *  rAF 队列化使快照采集读到卡 DOM——jsdom 零 rect 下产出退化几何但非空路径）。
  *  [F-VISFB-21 C4] extra=可选 prop 透传（focusDim/brightIds 判定集面） */
+/** [F-LANEGRID-01 B2b] 月框伴生（快照 frames 源——车道 x 域；jsdom 零盒下
+ *  无框即空车道表→自动边全 blocked）：rect 桩 (0,0,600,400) 覆盖全部夹具卡 */
+function addFrameRect(parent: HTMLElement): void {
+  const frameEl = document.createElement('div')
+  frameEl.className = 'month-frame'
+  frameEl.dataset.frameKey = 'k'
+  parent.appendChild(frameEl)
+  Object.defineProperty(frameEl, 'getBoundingClientRect', {
+    value: () => ({ left: 0, top: 0, right: 600, bottom: 400, width: 600, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+    configurable: true
+  })
+}
+
 function mountOverlay(
   nodes: LineageNode[],
   edges: LineageEdge[],
@@ -67,14 +76,11 @@ function mountOverlay(
   host = document.createElement('div')
   host.className = 'tl-content'
   document.body.appendChild(host)
-  if (contentW > 0) {
-    // [回炉 R3] 车道例需真机向走廊（contentW>0——走廊在卡右侧）：jsdom 零盒
-    // 下 contentW=0 使 laneX 落左侧，右锚外法线桩反向→中段回穿原点必落
-    // fallback（真机几何恒 contentW>卡 x 无此形态——夹具面补真，非实现缺陷）
-    vi.spyOn(host, 'getBoundingClientRect').mockReturnValue({
-      x: 0, y: 0, left: 0, top: 0, right: contentW, bottom: 0, width: contentW, height: 0, toJSON: () => ({})
-    } as DOMRect)
-  }
+  // [F-LANEGRID-01 B2b] host rect 恒桩（contentH=车道 y 域上界；width=contentW
+  // 供 contentW 采集——旧零盒下 0 使横道族退化）
+  vi.spyOn(host, 'getBoundingClientRect').mockReturnValue({
+    x: 0, y: 0, left: 0, top: 0, right: contentW || 600, bottom: 400, width: contentW || 600, height: 400, toJSON: () => ({})
+  } as DOMRect)
   root = createRoot(host)
   act(() => {
     root?.render(
@@ -89,6 +95,7 @@ function mountOverlay(
       />
     )
   })
+  addFrameRect(host) // render 后注入（createRoot 首渲染清空宿主）
   for (const n of nodes) {
     const card = document.createElement('div')
     card.className = 'tl-card'
@@ -196,8 +203,13 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     host = document.createElement('div')
     host.className = 'tl-content'
     document.body.appendChild(host)
+    Object.defineProperty(host, 'getBoundingClientRect', {
+      value: () => ({ left: 0, top: 0, right: 600, bottom: 400, width: 600, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
     root = createRoot(host)
     renderAt(0)
+    addFrameRect(host)
     for (const n of nodes) {
       const card = document.createElement('div')
       card.className = 'tl-card'
@@ -226,7 +238,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(dOf()).toBe(d2)
   })
 
-  it('[F-SLOTGRID-01 U2] data-route 六态域正锚：direct/h-slip 非空读出（corridor/fallback DOM 零出现）+零 console.warn', () => {
+  it('[F-LANEGRID-01 B2b] data-route 二值域正锚：自动边（直连/L 形）均读出 grid（六态枚举退役零出现）+零 console.warn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     // 非零卡矩形避免 blocked 安全网撤销全部 path，确保路由域断言读取真实节点。
     mountOverlay(
@@ -238,11 +250,11 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       (el) => (el as SVGPathElement).dataset.route ?? ''
     )
     expect(routes).toHaveLength(2)
-    expect(routes).toEqual(['direct', 'h-slip'])
+    expect(routes).toEqual(['grid', 'grid'])
     expect(routes.every((r) => r !== ''), 'route 非空卫').toBe(true)
-    const allowed = new Set(['direct', 'h-slip', 'detour', 'band', 'outer-ring', 'overlap', 'manual-override'])
+    const allowed = new Set(['grid', 'manual-override'])
     for (const r of routes) {
-      expect(allowed.has(r), `route=${r} ∈ 六态域（corridor/fallback 零出现）`).toBe(true)
+      expect(allowed.has(r), `route=${r} ∈ 二值域（六态枚举零出现）`).toBe(true)
     }
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
@@ -270,7 +282,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect((manualPath as SVGPathElement).style.opacity).toBe('')
   })
 
-  it('[F-SLOTGRID-01 U2] 观测钩子 DOM 挂线（retain/land 双 direct 边）：retain 边 data-slot+data-overlap-exempt 挂+data-detour 缺省；land 边仅 data-slot', () => {
+  it('[F-LANEGRID-01 B2b] 观测钩子 DOM 挂线（同对双直连边）：e1 data-lane=v164/e2 散开后 v196（互异道）+data-slot 族零残留', () => {
     stubRaf()
     host = document.createElement('div')
     host.className = 'tl-content'
@@ -294,6 +306,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
         />
       )
     })
+    addFrameRect(host)
     const rects: Array<[string, number, number, number, number]> = [
       ['A', 100, 100, 128, 72],
       ['B', 100, 300, 128, 72]
@@ -310,19 +323,23 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       host.appendChild(card)
     }
     flushRafs()
-    // e1（½/½ x=164）retain idx2（Δ=0<1 恰中槽）；e2（散开 ¾/¾ x=196）land
-    // idx4=200——buildSnapshot 采卡 rect（z=1）→routeAll 同几何（routing ① 同款）
+    // e1（½/½ 锚 b1/t1）同道 v164 直连；e2（散开 ¾/¾ 锚 b2/t2）同道 v196
+    // 直连——互异道 |Δ|=32≥8 无冲突（buildSnapshot 采卡 rect（z=1）→routeAll
+    // 同几何，routing 同列双直连同款）
     const e1 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e1"]')
     const e2 = host?.querySelector<SVGPathElement>('path.tl-edge[data-edge-id="e2"]')
     expect(e1).not.toBeNull()
     expect(e2).not.toBeNull()
-    expect(e1?.getAttribute('data-route')).toBe('direct')
-    expect(e2?.getAttribute('data-route')).toBe('direct')
-    expect(e1?.getAttribute('data-slot')).toBe('0:2')
-    expect(e1?.getAttribute('data-overlap-exempt')).toBe('1')
+    expect(e1?.getAttribute('data-route')).toBe('grid')
+    expect(e2?.getAttribute('data-route')).toBe('grid')
+    expect(e1?.getAttribute('data-lane')).toBe('v164:172-300')
+    expect(e2?.getAttribute('data-lane')).toBe('v196:172-300')
+    expect(e1?.getAttribute('data-overlap-exempt')).toBeNull()
+    // [B2b] 旧观测面零残留负锚（slot 族 DOM 属性随六态退役）
+    expect(e1?.getAttribute('data-slot')).toBeNull()
     expect(e1?.getAttribute('data-slot-fallback')).toBeNull()
     expect(e1?.getAttribute('data-detour')).toBeNull()
-    expect(e2?.getAttribute('data-slot')).toBe('0:4')
+    expect(e2?.getAttribute('data-slot')).toBeNull()
     expect(e2?.getAttribute('data-overlap-exempt')).toBeNull()
     expect(e2?.getAttribute('data-slot-fallback')).toBeNull()
   })
@@ -332,6 +349,10 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     host = document.createElement('div')
     host.className = 'tl-content'
     document.body.appendChild(host)
+    Object.defineProperty(host, 'getBoundingClientRect', {
+      value: () => ({ left: 0, top: 0, right: 600, bottom: 400, width: 600, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
     root = createRoot(host)
     const onHit = vi.fn()
     act(() => {
@@ -346,6 +367,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
         />
       )
     })
+    addFrameRect(host)
     for (const n of [node('A'), node('B')]) {
       const card = document.createElement('div')
       card.className = 'tl-card'
@@ -370,6 +392,10 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     host = document.createElement('div')
     host.className = 'tl-content'
     document.body.appendChild(host)
+    Object.defineProperty(host, 'getBoundingClientRect', {
+      value: () => ({ left: 0, top: 0, right: 600, bottom: 400, width: 600, height: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
     root = createRoot(host)
     const renderAt = (edit: boolean): void => {
       act(() => {
@@ -386,6 +412,7 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
       })
     }
     renderAt(true)
+    addFrameRect(host)
     for (const n of [node('A'), node('B')]) {
       const card = document.createElement('div')
       card.className = 'tl-card'
@@ -443,146 +470,5 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     flushRafs()
     expect(host?.querySelector('.timeline .tl-legend')).toBeNull()
     expect(host?.querySelector('.lc')).toBeNull()
-  })
-
-  it('CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例族零残留', () => {
-    expect(css).toMatch(/\.tl-edges\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow:\s*visible;[^}]*z-index:\s*1/)
-    expect(css).toMatch(/\.tl-edges\s*\{[^}]*transition:\s*opacity var\(--dur-tint\)/)
-    // [F-LGRAPH-01②U8] 四 kind 色 selector 退役负锚（视觉=inline dashed/color）
-    expect(css).not.toMatch(/\.tl-edge\[data-kind/)
-    expect(css).toMatch(/\.tl-edge-hit\s*\{[^}]*stroke-width:\s*8;[^}]*pointer-events:\s*none/)
-    // [F-VISFB-21 N1] 图例族（.tl-legend/.lc）CSS 零残留负锚
-    expect(css).not.toMatch(/\.tl-legend/)
-    expect(css).not.toMatch(/\.lc[\s.{]/)
-  })
-
-  it('CSS 锁 [T3-P7B/U2]：编辑态双闸（CSS 面）+.lg-*/.pop 族+悬停高亮（U2 票面④ v95-6B；[F-VISFB-66] link-src 退役负锚化）', () => {
-    // 双闸 CSS 面：view 基线 none（上行既有锁）+edit 态开 stroke（M-pointer-events 变异锚）
-    expect(css).toMatch(/\.timeline\.editing \.tl-edge-hit\s*\{[^}]*pointer-events:\s*stroke;[^}]*cursor:\s*pointer/)
-    // 悬停高亮：hover 线=宽 1.6→2.6+opacity 0.65（mockup §3.3）。
-    // [回炉 R2] 可见层 pointer-events:none 使 :hover 恒不触发（死样式）——
-    // 改命中层驱动同键类 .hovered；负锚锁死样式不再回潮。
-    // [RR10] opacity 0.65 单源=inline（edgeVisualOpacity——错峰边 inline
-    // fade 压 CSS 类使回升死样式）；CSS 仅承宽 2.6（组合锚=纯函数测试）
-    expect(css).toMatch(/\.tl-edge\s*\{[^}]*stroke-width:\s*1\.6/)
-    expect(css).toMatch(/\.tl-edge\.hovered\s*\{[^}]*stroke-width:\s*2\.6;\s*\}/)
-    expect(css).not.toMatch(/\.tl-edge:hover/)
-    // [F-LGRAPH-01②U8] linkbtn 退役负锚（「新建连线」按钮删除——画线工具替代）
-    expect(css).not.toMatch(/linkbtn/)
-    // [F-VISFB-66 W-09r2] 源侧高亮链整删负锚（.link-src 规则+复用面全灭）
-    expect(css).not.toMatch(/link-src/)
-    // [R6①] 意图值升特异性真正生效（原 .acc-body .pbtn 同特异性被 .pop .pbtn
-    // 源序覆盖=死声明）
-    expect(css).toMatch(/\.pop \.acc-body \.pbtn\s*\{[^}]*font-size:\s*var\(--fs-tl-hint\);[^}]*padding:\s*4px 0/)
-    // [R6②] .pop .schip i 的 border-top-width 恒被组件 inline borderTop 覆盖
-    // ——死属性已删（宽度面全权 inline）
-    expect(css).toMatch(/\.pop \.schip i\s*\{[^}]*width:\s*26px;[^}]*display:\s*inline-block/)
-    expect(css).not.toMatch(/\.pop \.schip i\s*\{[^}]*border-top-width/)
-    // 编辑态卡 hover faint（mockup L259-260）
-    expect(css).toMatch(/\.timeline\.editing \.tl-card\s*\{[^}]*outline:\s*1px dashed transparent/)
-    expect(css).toMatch(/\.timeline\.editing \.tl-card:hover\s*\{[^}]*outline-color:\s*var\(--faint\)/)
-    // .lg-toolbar sticky（mockup L204-205 逐值——色值经 color-mix var(--bg) 承载）
-    expect(css).toMatch(/\.lg-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*z-index:\s*12;[^}]*padding:\s*10px 18px/)
-    // .lg-btn 主/ghost（mockup L206-210——阴影=三稿同值 token 承载）
-    expect(css).toMatch(
-      /\.lg-btn\s*\{[^}]*color:\s*var\(--accent-ink\);[^}]*background:\s*var\(--accent\);[^}]*padding:\s*6px 14px;[^}]*border-radius:\s*8px;[^}]*box-shadow:\s*var\(--shadow-lg-btn\)/
-    )
-    expect(css).toMatch(
-      /\.lg-btn\.ghost\s*\{[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px solid var\(--line\);[^}]*box-shadow:\s*none/
-    )
-    // drag-hint 双态（[T3-P8] D-P7B-1 兑现——mockup L218 base accent+L219 edit signal）
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--accent\)/)
-    expect(css).toMatch(/\.timeline\.editing \.drag-hint\s*\{[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\);[^}]*border-color:\s*var\(--signal\)/)
-    // .pop 弹层基础面（mockup L287 逐值——fixed 240px 挂视口；[F-UIRES-03 C3]
-    // 脉络侧弹层消费面已随改月链退役——基础面留驻供通用弹层族）
-    expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)
-    expect(css).toMatch(/\.pop h4\s*\{[^}]*letter-spacing:\s*2px;[^}]*color:\s*var\(--faint\)/)
-    // .acc 手风琴（mockup L304-310）+schip chip i 预览（L294-296——[R6②]
-    // border-top-width 死属性已删，断言迁移至 R6 段）
-    expect(css).toMatch(/\.acc\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*border-radius:\s*8px;[^}]*overflow:\s*hidden/)
-    expect(css).toMatch(/\.acc-head\.on\s*\{[^}]*background:\s*var\(--accent-soft\);[^}]*color:\s*var\(--accent\)/)
-    expect(css).toMatch(/\.pop \.schip\.on\s*\{[^}]*border-color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
-    // acts 三型（pri/sec/dgr——dgr=三稿同值 token 承载）
-    expect(css).toMatch(/\.pop \.pbtn\.pri\s*\{[^}]*background:\s*var\(--accent\);[^}]*color:\s*var\(--accent-ink\)/)
-    expect(css).toMatch(/\.pop \.pbtn\.dgr\s*\{[^}]*border:\s*1px solid var\(--pop-danger-a50\);[^}]*color:\s*var\(--pop-danger\)/)
-    expect(css).toMatch(/\.pop \.foot-note\s*\{[^}]*color:\s*var\(--faint\)/)
-  })
-})
-
-describe('F-UIRES-03 C2·P7 buildSnapshot 采集（yearHeads 障碍源——快照面）', () => {
-  /** rect 桩（jsdom 零布局——三例共用，Rule of Three 上提） */
-  const mockRect = (el: Element, x: number, y: number, w: number, h: number): void => {
-    Object.defineProperty(el, 'getBoundingClientRect', {
-      value: () => ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h, x, y, toJSON: () => ({}) }) as DOMRect,
-      configurable: true
-    })
-  }
-  const mountContent = (): HTMLElement => {
-    const content = document.createElement('div')
-    content.className = 'tl-content'
-    mockRect(content, 0, 0, 1000, 800)
-    return content
-  }
-
-  it('.tl-year-num rects 采入 yearHeads（内容坐标 ÷z——与 cards/labels 同源同变换）', async () => {
-    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
-    const content = mountContent()
-    const num = document.createElement('div')
-    num.className = 'tl-year-num'
-    mockRect(num, 28, 60, 400, 20)
-    content.appendChild(num)
-    document.body.appendChild(content)
-    try {
-      const snap = buildSnapshot(content)
-      expect(snap.yearHeads).toEqual([{ x: 28, y: 60, w: 400, h: 20 }])
-    } finally {
-      content.remove()
-    }
-  })
-
-  it('[N5 校准提前落地] .tl-year-num 与 .tl-year-meta 双 rect 分立采入 yearHeads（两 rect 入数组，非并集盒）', async () => {
-    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
-    const content = mountContent()
-    const num = document.createElement('div')
-    num.className = 'tl-year-num'
-    mockRect(num, 20, 60, 58, 35)
-    const meta = document.createElement('div')
-    meta.className = 'tl-year-meta'
-    mockRect(meta, 660, 62, 72, 14)
-    content.appendChild(num)
-    content.appendChild(meta)
-    document.body.appendChild(content)
-    try {
-      const snap = buildSnapshot(content)
-      expect(snap.yearHeads).toEqual([
-        { x: 20, y: 60, w: 58, h: 35 },
-        { x: 660, y: 62, w: 72, h: 14 }
-      ])
-    } finally {
-      content.remove()
-    }
-  })
-
-  it('[N5 校准提前落地·负锚] .tl-year-head 容器自身不再采入（全宽容器 rect 挡死 band 跨年终落=CI 红 T-P1b 根因——防回归）', async () => {
-    const { buildSnapshot } = await import('../../../src/renderer/features/lineage/edge-overlay-geom')
-    const content = mountContent()
-    const head = document.createElement('div')
-    head.className = 'tl-year-head'
-    mockRect(head, 20, 60, 684, 34)
-    const num = document.createElement('div')
-    num.className = 'tl-year-num'
-    mockRect(num, 20, 60, 58, 34)
-    head.appendChild(num)
-    content.appendChild(head)
-    document.body.appendChild(content)
-    try {
-      const snap = buildSnapshot(content)
-      // 嵌套形态同真实 DOM：仅数字区入集，容器全宽 rect 不在采集集
-      expect(snap.yearHeads).toEqual([{ x: 20, y: 60, w: 58, h: 34 }])
-      expect(snap.yearHeads.some((b) => b.w > 100)).toBe(false)
-    } finally {
-      content.remove()
-    }
   })
 })

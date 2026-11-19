@@ -88,8 +88,8 @@ export function EdgeOverlay(props: {
         edgeId: e.id,
         sourceId: e.fromNode,
         targetId: e.toNode,
-        // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不参与
-        // 车道分组与避让链——lane=−1 天然不入 laneRank）
+        // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不占锚
+        // 不占车道——[F-LANEGRID-01 B2a] 车道网格分配只对自动边生效）
         via: e.via,
         ...(fa !== undefined ? { fromAnchor: fa } : {}),
         ...(ta !== undefined ? { toAnchor: ta } : {})
@@ -194,11 +194,9 @@ export function EdgeOverlay(props: {
               data-edge-id={p.edgeId}
               data-dashed={e.dashed ? '1' : '0'}
               data-route={p.route}
-              data-slot={p.slotMarks}
+              data-lane={p.laneMarks}
               data-anchors={p.anchorMarks}
               data-overlap-exempt={p.overlapExempt === true ? '1' : undefined}
-              data-slot-fallback={p.slotFallback === true ? '1' : undefined}
-              data-detour={p.detourMarks}
               d={p.d}
               style={selected ? { ...visual, stroke: 'var(--accent)', strokeWidth: 2.2 } : visual}
             />

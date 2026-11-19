@@ -117,6 +117,9 @@ function layout(edgeVia?: Array<{ x: number; y: number }>, third = false): void 
   mount(nodes, edges as LineageEdge[])
   const frame = host!.querySelector('.month-frame') as HTMLElement
   stubRect(frame, 0, 0, 800, 200)
+  // [F-LANEGRID-01 B2b] content rect 桩（contentH=车道 y 域上界——旧零盒下
+  // 横道族退化自动边 blocked）
+  stubRect(host!.querySelector('.tl-content') as HTMLElement, 0, 0, 800, 400)
   stubRect(host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement, 12, 30)
   stubRect(host!.querySelector('.tl-card[data-node-id="B"]') as HTMLElement, 412, 30)
   if (third) stubRect(host!.querySelector('.tl-card[data-node-id="C"]') as HTMLElement, 612, 230)

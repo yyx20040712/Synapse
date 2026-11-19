@@ -148,7 +148,9 @@ describe('R2-C3 手动调线统一提交门 commitEdgeVia', () => {
   it('谓词同源：同一 manual via 的 routeEdge 单边与 routeAll 全图 clearance 全等（非法 blocked/合法净空双锚）', () => {
     const snap: LayoutSnapshot = {
       cards: new Map(CARDS.map(([id, x, y]) => [id, { x, y, w: 128, h: 72 }] as const)),
-      labels: [], frames: [], yearHeads: [], contentW: 600
+      labels: [], frames: [], yearHeads: [], contentW: 600,
+      // manual 边不消费车道（frames/contentH 空表防御态——B2b 必填面补齐）
+      contentH: 0, cardFrame: new Map()
     }
     for (const via of [VIA_THROUGH_C, VIA_LEGAL]) {
       const input: EdgeGeomInput = { edgeId: 'e1', sourceId: 'A', targetId: 'B', via }

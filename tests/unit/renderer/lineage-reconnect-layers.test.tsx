@@ -32,7 +32,9 @@ function edge(id: string, from: string, to: string, patch: Partial<LineageEdge> 
   return { id, fromNode: from, toNode: to, label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't', ...patch }
 }
 
-/** 三卡夹具（内容坐标）：A(100,100) B(100,300) C(400,100)——128×72 */
+/** 三卡夹具（内容坐标）：A(100,100) B(100,300) C(400,100)——128×72。
+ *  [F-LANEGRID-01 B2b] 月框 rect 桩（快照 frames 源——jsdom 零盒下无桩即
+ *  空车道表→自动边 blocked 命中层不渲染）；content rect 同桩（contentH 源） */
 function mockGeometry(zoom = 1): void {
   const content = document.querySelector('.tl-content') as HTMLElement | null
   if (content === null) throw new Error('.tl-content 未渲染')
@@ -40,6 +42,12 @@ function mockGeometry(zoom = 1): void {
     value: () => ({ left: 0, top: 0, right: 1000 * zoom, bottom: 800 * zoom, width: 1000 * zoom, height: 800 * zoom, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect,
     configurable: true
   })
+  for (const frameEl of Array.from(content.querySelectorAll('.month-frame'))) {
+    Object.defineProperty(frameEl, 'getBoundingClientRect', {
+      value: () => ({ left: 66 * zoom, top: 40 * zoom, right: 666 * zoom, bottom: 540 * zoom, width: 600 * zoom, height: 500 * zoom, x: 66 * zoom, y: 40 * zoom, toJSON: () => ({}) }) as DOMRect,
+      configurable: true
+    })
+  }
   const rects: Record<string, { x: number; y: number }> = { A: { x: 100, y: 100 }, B: { x: 100, y: 300 }, C: { x: 400, y: 100 } }
   for (const el of Array.from(content.querySelectorAll('.tl-card[data-node-id]'))) {
     const id = (el as HTMLElement).dataset.nodeId ?? ''
