@@ -41,11 +41,9 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
+import { PAD } from '../../src/renderer/features/lineage/routing/avoid'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 import { zoomProbe } from './geo-probes'
-
-/** 避让 PAD（avoid.ts 单源同值——内容 px；屏幕域断言乘 z；[R2-C4] 4→6 镜面同步） */
-const PAD = 6
 
 /** 幽灵文献行（seedPaperRow——lineage.spec seedLineagePapers 同型） */
 async function seedGhosts(userData: string, ids: string[], titles: string[]): Promise<void> {

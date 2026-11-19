@@ -34,6 +34,12 @@ export const OFFSET_O = 100
 export const FRAME_PAD_LEFT = 12
 /** 月框内容顶内边距（px——.month-frame padding 顶，月标带承载） */
 export const FRAME_PAD_TOP = 18
+/** 月框边框宽（px——.month-frame border 直镜像；detour 仅高度/坐标侧消费
+ *  〔fx0 换算/innerH 派生〕，宽度侧容量输入已归一=snap.contentW 单源
+ *  〔readFrameContentWidth——INV-169②〕，本常量不参与容量宽度派生） */
+export const FRAME_BORDER = 1.6
+/** 月框内容底内边距（px——.month-frame padding 底） */
+export const FRAME_PAD_BOTTOM = 12
 
 /** 网格容量对（N=偶行〔顶格行〕容量/M=奇行〔错位行〕容量） */
 export interface RowCapacities {

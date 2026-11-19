@@ -42,20 +42,13 @@
  * 一引用→pass 级缓存命中；跨 pass 各自入缓存随 GC 回收——edge-overlay-geom
  * 现状满足）。
  */
-import { capacities, phaseOfRow, CARD_H, CARD_W, FRAME_PAD_LEFT, FRAME_PAD_TOP, PITCH_X, PITCH_Y } from '../capacity'
+import { capacities, phaseOfRow, CARD_H, CARD_W, FRAME_BORDER, FRAME_PAD_BOTTOM, FRAME_PAD_LEFT, FRAME_PAD_TOP, PITCH_X, PITCH_Y } from '../capacity'
 import type { PickedAnchor, Pt, Rect, Side } from './anchors'
 import { stubEnd } from './anchors'
 import { PAD, polylineClearStubs, segHitsAny } from './avoid'
 import type { LayoutSnapshot } from './chain'
 import { midSlotOf, quant, slotPositions } from './gap-cells'
 
-/** 月框边框宽（.month-frame border 1.6px——[F-DETOURW-01 起] 仅高度/坐标侧
- *  消费（fx0 换算/innerH 派生）；宽度侧容量输入已归一=snap.contentW 单源
- *  （readFrameContentWidth——INV-169②），本常量不再参与容量宽度派生 */
-const FRAME_BORDER = 1.6
-/** 月框底 padding（.month-frame padding-bottom 12px——capacity.ts 未导出底
- *  值，本件镜像常量；capacity 属 U1 产出件本票只读） */
-const FRAME_PAD_BOTTOM = 12
 /** 边框亚像素渲染容差：border 1.6px 声明在 Linux Chromium（DPR=1）used value 落定 1px
  *  （Windows 保 1.6px）——双侧至多亏 1.2px 使 innerH 低于 CARD_H 假封闭（F-PLATFORM-01
  *  探针实证：注入 border 2px 后 route 由 overlap 翻 band；实测 Linux innerH=70.8、
