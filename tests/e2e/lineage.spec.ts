@@ -2655,6 +2655,24 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-tool-solid').click()
     const root = nodeG(win, '脉络根文献')
     const cardA = nodeG(win, '脉络甲文献')
+    // [F-LANEGRID-01 B4·CI 时序防御] 布局稳定双读（卡 rect 连续两读全等
+    // ——RO→rAF 测量收敛证据）后再取 bbox 画线：慢机上 edit/工具切换后立即
+    // 取 bbox 可能落在测量过渡帧（B4 首轮 CI 44681930043 T1 稳定红——
+    // mouseup 落点随陈旧 rect 偏移致落边失败假设；waitForPaths 双读先例同型）
+    const rectOf = async (): Promise<string> =>
+      JSON.stringify(
+        await win.evaluate(() =>
+          Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map((c) => {
+            const r = c.getBoundingClientRect()
+            return [r.x, r.y, r.width, r.height].map((v) => Math.round(v))
+          })
+        )
+      )
+    for (let i = 0; i < 20; i++) {
+      const a = await rectOf()
+      await win.waitForTimeout(150)
+      if (a === (await rectOf())) break
+    }
     const rb = await root.boundingBox()
     const ab = await cardA.boundingBox()
     if (rb === null || ab === null) throw new Error('T1M 双卡不可见')
@@ -2662,7 +2680,28 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.mouse.down()
     await win.mouse.move(ab.x + ab.width - 2, ab.y + ab.height / 2, { steps: 8 })
     await win.mouse.up()
-    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(1, { timeout: 10_000 })
+    // [F-LANEGRID-01 B4·诊断分流] 10s 轮询窗口（toast「已画线」乐观先行，
+    // path 渲染滞后一拍——本地实证）后仍 ≠1 才带出 blocked/toast/卡位现场
+    // （判定不变：仍须恰 1 path——诊断仅增强可观测性）
+    let t1Ok = true
+    try {
+      await expect
+        .poll(async () => await win.locator('svg.tl-edges path.tl-edge').count(), { timeout: 10_000 })
+        .toBe(1)
+    } catch {
+      t1Ok = false
+    }
+    if (!t1Ok) {
+      const diag = await win.evaluate(() => ({
+        blocked: Array.from(document.querySelectorAll('svg.tl-edges g.tl-edge-blocked')).map((g) => (g as SVGElement).dataset.anchors ?? ''),
+        toasts: Array.from(document.querySelectorAll('.toast, [role="status"]')).map((t) => t.textContent),
+        cards: Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map((c) => {
+          const r = c.getBoundingClientRect()
+          return [r.x, r.y].map((v) => Math.round(v))
+        })
+      }))
+      throw new Error(`T1M 落边失败诊断：${JSON.stringify(diag)}`)
+    }
     // ①滚动容器锚：注入临时高度制造可滚面（evaluate 探针——T1 先例）
     await win.evaluate(() => {
       const style = document.createElement('style')
