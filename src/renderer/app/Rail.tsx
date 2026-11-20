@@ -37,6 +37,7 @@
  *   +ws-guide-state.test.tsx（引导态锁——R1 勘正拆件实驻）+tests/e2e/shell-rail.spec.ts（真 Chromium 渲染）
  */
 import { showToast } from '../shared/ui/Toast'
+import { ICON_READER, ICON_SETTINGS } from '../shared/icons'
 import { isGuideState, selectDisplayWsName, useWorkspaceStore } from '../features/workspaces/workspace.store'
 
 export type ViewId = 'library' | 'reader' | 'lineage' | 'settings' | 'workspaces'
@@ -59,11 +60,8 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
   {
     id: 'reader',
     label: '阅读器',
-    icon: (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5zM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z" />
-      </svg>
-    )
+    // [前端四期 B2] i-reader 上收 shared/icons（设置五类导航共用——单源不留两套）
+    icon: ICON_READER
   },
   {
     id: 'lineage',
@@ -79,13 +77,7 @@ const VIEWS: Array<{ id: ViewId; label: string; icon: JSX.Element }> = [
   }
 ]
 
-/** 设置图标（rail-foot 贴底） */
-const ICON_SETTINGS = (
-  <svg aria-hidden="true" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" />
-  </svg>
-)
+/** 设置图标（rail-foot 贴底）——[前端四期 B2] 上收 shared/icons.tsx ICON_SETTINGS */
 
 /** 课题图标（v2 i-folder——文件夹形） */
 const ICON_WS = (

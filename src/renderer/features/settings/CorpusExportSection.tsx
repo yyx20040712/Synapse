@@ -53,8 +53,10 @@ export function CorpusExportSection(): JSX.Element {
   const start = useCorpusExportStore((s) => s.start)
 
   return (
-    <section className="flex flex-col gap-2" data-testid="corpus-export-section">
-      <h2 className="text-sm font-medium">AI 语料导出</h2>
+    // [前端四期 B2] 节根=setting-group 组壳（v2 形态——组间 border-bottom 分隔；
+    // 节标 h2→h3 随分类页题（settings-title h2）层级下移，文案零变）
+    <section className="setting-group" data-testid="corpus-export-section">
+      <h3>AI 语料导出</h3>
       <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
         将全库文献导出为 AI 语料目录（corpus 语料+全文 txt+页面图+manifest 清单+
         INTERFACE 说明），供外部 AI 工具消费；目标目录在系统对话框中选择，导出

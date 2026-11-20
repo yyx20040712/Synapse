@@ -402,6 +402,15 @@ guardedDescribe('SR2-AI-04', 'CorpusExportSection —— 设置页 AI 语料导�
       data: { contactEmail: 'a@b.c', theme: 'system' }
     })
     await render(<SettingsPage />)
+    // [前端四期 B2 适配] 语料导出节驻「AI 助手」分类——先点分类导航再断言
+    // （默认分类=通用不含本节；分类互斥语义见 settings-categories.test）
+    await act(async () => {
+      const nav = [...(host?.querySelectorAll('.settings-nav-item') ?? [])].find(
+        (b) => b.textContent === 'AI 助手'
+      )
+      if (!(nav instanceof HTMLButtonElement)) throw new Error('AI 助手导航项不在场')
+      nav.click()
+    })
     expect(findButton('导出语料')).toBeDefined()
   })
 })

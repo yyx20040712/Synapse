@@ -195,26 +195,10 @@
   stroke-width: 1.6;
 }
 
-/* ══ R3-U4 设置分节卡（作用域皮肤：> section 直达自持节——CorpusExportSection
-   等票面外文件零触碰的同视觉收敛；节间菱形分隔经 DiamondRule 组件复用
-   .lib-rule*）══ */
-.syn-settings > section {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-1);
-  padding: 14px 16px;
-}
-.syn-settings h2 {
-  margin: 0 0 2px;
-  font-size: var(--fs-strong);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--text);
-  border-left: 3px solid var(--gold);
-  padding-left: 8px;
-}
-/* 表单控件 focus：accent 描边+gold-soft 底（票面 P2） */
+/* ══ [前端四期 B2 2026-11-20] 设置页皮肤已迁域：.syn-settings 分节卡+金节标
+   皮肤随五类归并方案切换删除（新皮肤=features/settings/settings.css——v2
+   setting-group 形态；方案切换不留双方案）。.syn-input focus 规则系跨域
+   表单件（reader/ai/settings 三域消费）留守本件 ══ */
 .syn-input:focus {
   outline: none;
   border-color: var(--accent);

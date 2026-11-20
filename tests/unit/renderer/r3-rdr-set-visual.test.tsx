@@ -7,9 +7,10 @@
  * 覆盖四面：①ReaderToolbar 工具栏（T3-P4 金族退役→mockup .toolbar：panel 底
  * +line 下缘；.rdr-tool-btn 28px 图标钮语汇）②TabBar（T3-P4→mockup .tabbar：
  * line-soft 条+圆角顶 tab+active panel 底+inset accent 底缘；关闭叉 hover token
- * 承载）③侧栏节标 accent 左缘（.rdr-aside-h4 金→accent）④SettingsPage 分节卡
- * （panel+radius-l+shadow-1）+金节标（h2 金左缘条）+节间菱形分隔（DiamondRule
- * ——settings 域非 T3-P4 票面，金族保活）。
+ * 承载）③侧栏节标 accent 左缘（.rdr-aside-h4 金→accent）④SettingsPage 五类
+ * 归并皮肤（[前端四期 B2] v2 setting-group 形态：分节卡+金节标+DiamondRule
+ * 旧皮肤随方案切换删除——负锚防回填；新皮肤材质锁=features/settings/
+ * settings.css 文本，行为面归 settings-categories.test）。
  * 行为/aria/testid 零变面由既有锁定测试护栏（tab-bar/reader-toolbar-icons/
  * reader-notes-panel/corpus-export 等）——本文件只锁新视觉语法。
  */
@@ -42,6 +43,11 @@ import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 // jsdom 环境 CSS 文本读取走 cwd 相对路径（theme.test 的 URL 法仅 node 环境可用）
 // [F-CSS-01] 拆件再锚：阅读器周边+设置卡皮肤段自 theme.css 迁 theme-reader.css
 const cssTheme = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-reader.css'), 'utf8')
+/** [前端四期 B2] 设置页新皮肤件（v2 setting-group 形态——旧分节卡皮肤已迁域删除） */
+const cssSettings = readFileSync(
+  join(process.cwd(), 'src/renderer/features/settings/settings.css'),
+  'utf8'
+)
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -85,11 +91,12 @@ describe('T3-P4 ReaderToolbar —— panel 底工具栏皮肤（mockup .toolbar 
     // mockup .toolbar 值面（panel 底+line 下缘；padding/gap 由组件类承载）
     expect(cssTheme, '工具栏底=--panel').toMatch(/\.rdr-toolbar\s*\{[^}]*background:\s*var\(--panel\)/)
     expect(cssTheme, '工具栏下缘=--line').toMatch(/\.rdr-toolbar\s*\{[^}]*border-bottom:\s*1px solid var\(--line\)/)
-    // 金族退役负锚（阅读器皮肤域回填即红；--gold 系仅 .syn-settings 段保活）
+    // 金族退役负锚（阅读器皮肤域回填即红；--gold/border-gold 随菱形分隔删除
+    // 全域清零——前端四期 B2 起 theme-buttons.css 无任何 --gold 消费）
     expect(cssTheme, '阅读器域 panel-glass 消费应清零').not.toContain('panel-glass')
     expect(cssTheme, '阅读器域 border-gold 消费应清零').not.toContain('border-gold')
     // 门一回炉（k2-N6）：--gold 本词消费负锚（旧 .rdr-aside-h4 即此形态——.rdr-*
-    // 规则体内回填即红；.syn-settings 段=settings 域合法驻留同文件，精确锚不误伤）
+    // 规则体内回填即红）
     expect(cssTheme, '阅读器 .rdr-* 规则 var(--gold) 消费应清零').not.toMatch(
       /\.rdr-[a-z-]+\s*\{[^}]*var\(--gold\)/
     )
@@ -164,24 +171,49 @@ describe('T3-P4 阅读器侧栏 —— accent 左缘节标（金族退役）', (
   })
 })
 
-describe('R3-U4 SettingsPage —— 分节卡+金节标+节间菱形分隔', () => {
-  it('根挂 syn-settings；分节卡值面=panel+radius-l+shadow-1；h2 金左缘条节标；节间 DiamondRule 在场', () => {
+describe('[前端四期 B2] SettingsPage —— 五类归并皮肤（v2 setting-group 形态）', () => {
+  it('根挂 syn-settings 双栏骨架；nav 竖排五项+内容区在场；DiamondRule 旧分隔已删（负锚）', () => {
     mount(<SettingsPage />)
     const page = host?.firstElementChild as HTMLElement
     expect(page, '设置页根元素应在场').toBeDefined()
     expect(page.className, '设置页根应挂 syn-settings 作用域类').toContain('syn-settings')
-    expect(page.querySelectorAll('section').length, '分节（section）≥2').toBeGreaterThanOrEqual(2)
-    expect(page.querySelector('.lib-rule'), '节间菱形分隔（DiamondRule）应在场').not.toBeNull()
-    // 材质文本锁：作用域皮肤（> section 直达自持节——CorpusExportSection 等
-    // 票面外文件零触碰的同视觉收敛法）
-    expect(cssTheme, '分节卡底=panel').toMatch(/\.syn-settings > section\s*\{[^}]*background:\s*var\(--panel\)/)
-    expect(cssTheme, '分节卡圆角=radius-l').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--radius-l\)/)
-    expect(cssTheme, '分节卡阴影=shadow-1').toMatch(/\.syn-settings > section\s*\{[^}]*var\(--shadow-1\)/)
-    // R2-SH2 决5：衬线消费清零（.syn-settings h2 font-family 删，回继承 UI 字体）
-    // ——旧「衬线+金左缘条」形态锁随裁决改写为负锚（与 theme.test 负锚同向）
-    expect(cssTheme, '金节标衬线消费已清零（决5）').not.toMatch(
-      /\.syn-settings h2\s*\{[^}]*var\(--font-display\)/
+    const nav = page.querySelector('nav.settings-nav')
+    expect(nav, '五类导航 nav.settings-nav 在场').not.toBeNull()
+    const items = [...(nav?.querySelectorAll('button.settings-nav-item') ?? [])]
+    expect(items, '五类导航恰五项').toHaveLength(5)
+    expect(page.querySelector('.settings-content'), '内容区在场').not.toBeNull()
+    // 旧方案删除负锚：节间菱形分隔（DiamondRule）随 v2 方案切换移出设置页
+    // （组件本体由文献库详情面板继续消费）
+    expect(page.querySelector('.lib-rule'), 'DiamondRule 不在设置页（旧方案删除）').toBeNull()
+    // 旧皮肤迁移负锚：theme-reader.css 不再承载 .syn-settings 皮肤（防回填）
+    expect(cssTheme, '旧分节卡皮肤已从 theme-reader.css 删除').not.toMatch(/\.syn-settings\s*>?\s*section/)
+    expect(cssTheme, '旧金节标规则已删除').not.toMatch(/\.syn-settings h2/)
+  })
+
+  it('新皮肤材质锁（settings.css 文本）：nav active=accent-soft 底；组=border-bottom 分隔；主题卡 active=accent 描边+双演示岛同名重绑', () => {
+    // nav 竖排+active 态（v2 .settings-nav .nav-item.active）
+    expect(cssSettings, 'nav 项 active=accent 字色').toMatch(
+      /\.settings-nav-item\.active\s*\{[^}]*color:\s*var\(--accent\)/
     )
-    expect(cssTheme, '金节标左缘条用 --gold').toMatch(/\.syn-settings h2\s*\{[^}]*3px solid var\(--gold\)/)
+    expect(cssSettings, 'nav 项 active=accent-soft 底').toMatch(
+      /\.settings-nav-item\.active\s*\{[^}]*background:\s*var\(--accent-soft\)/
+    )
+    // 组形态（v2 .setting-group：组间 border-bottom——非分节卡）
+    expect(cssSettings, '组=border-bottom line 分隔').toMatch(
+      /\.setting-group\s*\{[^}]*border-bottom:\s*1px solid var\(--line\)/
+    )
+    expect(cssSettings, '旧分节卡值面不回填（负锚）').not.toMatch(/var\(--shadow-1\)/)
+    // 主题卡选中态（v2 .theme-choice.active）
+    expect(cssSettings, '主题卡 active=accent 描边').toMatch(
+      /\.settings-theme-card\.active\s*\{[^}]*border-color:\s*var\(--accent\)/
+    )
+    // 演示画布双岛：同名重绑主题族 token（同名重定义=同值守卫合法形态——
+    // 值单源互指 theme.css 族块，见 settings.css 段注）
+    expect(cssSettings, 'light 演示岛在场').toMatch(/\.settings-theme-demo--light\s*\{[^}]*--bg:/)
+    expect(cssSettings, 'sepia 演示岛在场').toMatch(/\.settings-theme-demo--sepia\s*\{[^}]*--bg:/)
+    // 内容区自身滚动（长内容滚动边界——文档本身不滚由 html/body overflow 锁）
+    expect(cssSettings, '内容区 overflow-y=auto').toMatch(
+      /\.settings-content\s*\{[^}]*overflow-y:\s*auto/
+    )
   })
 })

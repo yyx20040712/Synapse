@@ -207,6 +207,8 @@ test('E5 场景三 folder 删：paper 档+lineage 档（锚=collections.id）双
 
   // 两档资源俱灭：设置页记忆 Tab 两档空态（scope 级全列——本库零残留）
   await win.getByRole('button', { name: '设置', exact: true }).click()
+  // [前端四期 B2] AI 管理节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })
   const section = win.getByTestId('ai-manage-section')
   await section.getByRole('tab', { name: '记忆' }).click()

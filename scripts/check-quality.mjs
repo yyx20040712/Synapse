@@ -139,8 +139,12 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   // [F-DBCAMP-01 DB-2 UI U6（2026-10-14）]：预算节同节第三件=BudgetSection
   //（设计 §4.1 settings 三节集成——17 输入自持，同节先例扩条）。
   // [回炉 R10] SettingsPage 行清 'ai/AiSessionPanel' 死条目（U2 AI 助手节壳外提
-  // 后该 import 已移 AiAssistantSection——现消费由本表 AiAssistantSection 行承载）
-  ['src/renderer/features/settings/SettingsPage.tsx', ['ai/manage/AiManageSection', 'ai/BudgetSection']],
+  // 后该 import 已移 AiAssistantSection——现消费由本表 AiAssistantSection 行承载）。
+  // [前端四期 B2 2026-11-20] 行随五类归并拆件迁移：AiManageSection/BudgetSection
+  // 组合点自 SettingsPage 移 AiCategory（AI 助手分类内容件）——接缝语义零变
+  // （同一两 import 换宿主文件，非新增跨域引用）；settings 域其余文件引用 ai
+  // 仍是红线。
+  ['src/renderer/features/settings/AiCategory.tsx', ['ai/manage/AiManageSection', 'ai/BudgetSection']],
   // [F-DBCAMP-01 DB-3 U2（2026-10-15）]：AI 助手节壳外提件（SettingsPage 插
   // 同步密钥节后 251 行超组件 250 限——简报③-6 授权微调；行为零变=原四行节
   // 壳搬运，接缝沿 SettingsPage 行 ai/AiSessionPanel 同型先例；settings 域

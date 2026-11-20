@@ -91,8 +91,9 @@ export function ZcodeLinkSection(): JSX.Element {
   }
 
   return (
-    <section className="flex flex-col gap-2" data-testid="zcode-link-section">
-      <h2 className="text-sm font-medium">AI 联动（zcode）</h2>
+    // [前端四期 B2] 节根=setting-group 组壳（节标 h2→h3 随分类页题层级下移）
+    <section className="setting-group" data-testid="zcode-link-section">
+      <h3>AI 联动（zcode）</h3>
       <p
         className="m-0 text-xs"
         data-testid="zcode-link-status"

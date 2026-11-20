@@ -9,24 +9,30 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
  * 主题两档 e2e（always-active；[B1] 暗色主题退役——原三主题场景中的
- * 「夜间 · 深灰」保存/dark 底色/dark 桥接级联/dark 纸面反色断言随主题删除）：
- * 设置页两选项 → 保存后 data-theme 挂 documentElement + body computed
+ * 「夜间 · 深灰」保存/dark 底色/dark 桥接级联/dark 纸面反色断言随主题删除；
+ * [前端四期 B2] 主题控件=外观分类预览卡两张〔2026-11-20 用户裁决，非下拉〕）：
+ * 设置页两卡 → 保存后 data-theme 挂 documentElement + body computed
  * backgroundColor 两主题终值实测（真实渲染断言——INV-06 口径，禁只断言
  * attr 不见色）+状态条主题名单源跟随。值源=v2 设计稿
  * （synapse-redesign-v2.html，2026-11-19 定案）：light #f2f4f1 / sepia
  * #eee6d6。收尾恢复正常模式（终态=light，防污染其他 spec 的视觉断言面）。
  */
 
-/** 阅读器纸面段共用：设置页切主题并保存→回阅读器视图（tab 驻 store 重挂恢复） */
+/**
+ * 阅读器纸面段共用：设置页切主题并保存→回阅读器视图（tab 驻 store 重挂恢复）。
+ * [前端四期 B2 2026-11-20 用户裁决] 主题控件=v2 预览卡两张（非下拉）——
+ * label=卡主标（正常模式/护眼模式）。
+ */
 async function switchTheme(win: Page, label: string): Promise<void> {
   await win.getByRole('button', { name: '设置' }).click()
-  await win.getByRole('combobox', { name: '主题' }).selectOption({ label })
+  await win.getByRole('button', { name: '外观' }).click()
+  await win.getByRole('button', { name: new RegExp(label) }).click()
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.getByText('设置已保存')).toBeVisible()
   await win.getByRole('button', { name: '阅读器' }).click()
 }
 
-test('主题两档：下拉恰两选项（正常/护眼）；启动初态 light；切换保存后 data-theme+body 真实渲色+状态条主题名；收尾恢复正常模式', async () => {
+test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light；切换保存后 data-theme+body 真实渲色+状态条主题名；收尾恢复正常模式', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-theme-trio-'))
   // [F-WS-02] 种子破引导态（设置钮在引导态禁用——smoke.spec 同配方；
   // 主题初态断言不受种子影响：settings.json 仍全新=DEFAULTS light）
@@ -37,11 +43,17 @@ test('主题两档：下拉恰两选项（正常/护眼）；启动初态 light�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '外观' }).click()
 
-  // 下拉恰两选项（B1 暗色退役——dark 不再是可选项）
-  const select = win.getByRole('combobox', { name: '主题' })
-  const labels = await select.locator('option').allTextContents()
-  expect(labels, '主题下拉恰两选项（light/sepia——暗色已退役）').toEqual(['正常模式', '护眼模式'])
+  // 预览卡恰两张（B1 暗色退役——dark 不再是可选项；[B2] 控件=卡非下拉）：
+  // 卡主标+副标（v2 theme-choice-copy 文案）+aria-pressed 选中态
+  const cards = win.locator('.settings-theme-card')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toContainText('正常模式')
+  await expect(cards.nth(0)).toContainText('清亮中性色')
+  await expect(cards.nth(1)).toContainText('护眼模式')
+  await expect(cards.nth(1)).toContainText('牛皮纸暖米色')
+  await expect(cards.nth(0)).toHaveAttribute('aria-pressed', 'true')
 
   // 启动初态：全新 userData → DEFAULTS theme=light → data-theme=light + 正常底色
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
@@ -50,8 +62,9 @@ test('主题两档：下拉恰两选项（正常/护眼）；启动初态 light�
     .toBe('rgb(242, 244, 241)')
   await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
 
-  // 护眼模式：保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
-  await select.selectOption({ label: '护眼模式' })
+  // 护眼模式：点卡+保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
+  await cards.nth(1).click()
+  await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'true')
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.getByText('设置已保存')).toBeVisible()
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'sepia')
@@ -67,7 +80,7 @@ test('主题两档：下拉恰两选项（正常/护眼）；启动初态 light�
   await expect(win.locator('.app-statusbar')).toContainText('主题：护眼模式')
 
   // 收尾恢复正常模式（终态=light——防污染其他 spec）
-  await select.selectOption({ label: '正常模式' })
+  await cards.nth(0).click()
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect

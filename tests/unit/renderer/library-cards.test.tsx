@@ -9,7 +9,7 @@
  * 填充/题名·期刊/年月/引用/标签前 3+折叠+N——档次列 F-LIBUI-01 退役、
  * 序号 # 前缀 F-LIBUI-01 删）；listbox 键盘
  * 导航/单击选中/双击打开行为面零变。页面组装面：.lib-page/.lib-body/
- * .lib-drawer 在场+DiamondRule 库域退役（settings 域消费保留）+
+ * .lib-drawer 在场+菱形分隔零挂载（DiamondRule 已随前端四期 B2 全域退役）+
  * corpusSet「导出语料集合」入口退役负锚（F-LIBUI-01 ⑨，D4 裁决）+
  * DrActions 两列 grid CSS 锁（F-LIBUI-01 ⑥）。always-active 裸 describe（K3）。
  */
@@ -40,7 +40,6 @@ import { PaperList } from '../../../src/renderer/features/library/PaperList'
 import { useLibraryStore } from '../../../src/renderer/features/library/library.store'
 import { FilterBar } from '../../../src/renderer/features/library/FilterBar'
 import { LibraryPage } from '../../../src/renderer/features/library/LibraryPage'
-import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 
 // act() 环境声明（selection-layer/page-column 同口径——免 React 警告刷屏）
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -48,8 +47,8 @@ import { DiamondRule } from '../../../src/renderer/shared/ui/DiamondRule'
 // jsdom 环境 import.meta.url 是 http: 协议——CSS 文本读取走 cwd 相对路径
 // （theme.test.ts 的 URL 法仅 node 环境可用）。lib-* 规则住 feature 本地
 // library.css（theme.css 500 行上限拆分，由 LibraryPage 挂载导入）；
-// .lib-rule* 三段住 theme-buttons.css（DiamondRule 语法位——T3-P3 起库域
-// 退役、settings 域消费保留，本件续锚防回漂）
+// .lib-rule* 菱形分隔族已随 DiamondRule 全域退役（前端四期 B2），本件
+// 负锚防回漂
 const css = readFileSync(join(process.cwd(), 'src/renderer/features/library/library.css'), 'utf8')
 // [F-UIRES-01] 资源管理器形态域分域拆件（CSS 450 上限）——两文件合读续锚
 const cssExplorer = readFileSync(
@@ -391,7 +390,7 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
     expect(host?.querySelector('.lib-list .lib-cols')).not.toBeNull()
     const drawer = host?.querySelector('.lib-drawer')
     expect(drawer).not.toBeNull()
-    // DiamondRule 退役：库域不再挂菱形分隔（settings 域消费保留在彼处）
+    // DiamondRule 退役：菱形分隔零挂载（组件已随前端四期 B2 全域删除）
     expect(host?.querySelector('.lib-rule')).toBeNull()
   })
 
@@ -441,34 +440,12 @@ describe('T3-P3 LibraryPage 组装（页面布局+DiamondRule 库域退役）', 
   })
 })
 
-// [T3-P3] 邻面保活三件：DiamondRule 库域退役（settings 域消费保留）后
-// 组件与 theme-buttons.css 语法位仍在——原 describe 归位续锚（describe 路径
-// 入指纹键，改名即断基线配对——test-surface 口径）
-describe('R3-LIB 菱形分隔线（筛选区与列表之间）', () => {
-  it('DiamondRule 渲染：渐隐线×2+◆菱形+装饰 aria-hidden（渲染级存在性）', async () => {
-    await render(<DiamondRule />)
-    const rule = host?.querySelector('.lib-rule')
-    expect(rule).not.toBeNull()
-    expect(rule?.getAttribute('aria-hidden')).toBe('true')
-    expect(rule?.querySelectorAll('.lib-rule-line').length).toBe(2)
-    expect(rule?.querySelector('.lib-rule-gem')).not.toBeNull()
-  })
-})
-
-describe('R3-LIB library.css 材质文本锁（卡片/网格/分隔——mockup 逐值）', () => {
-  it('菱形分隔窄窗防碰撞：line min-width 24px+flex:1；gem rotate(45deg)（注意事项③）', () => {
-    // 回炉 W3：.lib-rule* 迁共享语法位（R3-U4 复用依赖;F-CSS-01 起住
-    // theme-buttons.css）
-    expect(cssTheme).toMatch(/\.lib-rule-line\s*\{[^}]*min-width: 24px/)
-    expect(cssTheme).toMatch(/\.lib-rule-line\s*\{[^}]*flex: 1/)
-    expect(cssTheme).toMatch(/\.lib-rule-gem\s*\{[^}]*rotate\(45deg\)/)
-  })
-})
-
-describe('R3-LIB 回炉一（门一 3B+3W）', () => {
-  it('W3 共享位：theme-buttons.css 含 .lib-rule 三段（line-l/line-r/gem 渐隐线语法）', () => {
-    expect(cssTheme).toMatch(/\.lib-rule-line-l\s*\{[^}]*linear-gradient\(90deg, transparent, var\(--border-gold\)\)/)
-    expect(cssTheme).toMatch(/\.lib-rule-line-r\s*\{[^}]*linear-gradient\(90deg, var\(--border-gold\), transparent\)/)
-    expect(cssTheme).toMatch(/\.lib-rule-gem\s*\{[^}]*background: var\(--gold\)/)
+// [T3-P3→前端四期 B2] 菱形分隔退役负锚：DiamondRule 组件与 .lib-rule* 样式
+// 随设置页 v2 化全域删除（方案切换=删除旧方案）——正锁（渲染存在性+CSS 语法
+// 逐值）随方案删除，本段换零残留负锚防回漂
+describe('R3-LIB 菱形分隔退役负锚', () => {
+  it('.lib-rule* 在 theme-buttons.css/library.css 零规则定义（全域删除防回漂；注释提及不拦）', () => {
+    expect(cssTheme).not.toMatch(/\.lib-rule[a-z-]*\s*\{/)
+    expect(css).not.toMatch(/\.lib-rule[a-z-]*\s*\{/)
   })
 })

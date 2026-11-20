@@ -1,0 +1,301 @@
+/* ══ [前端四期 B2] 设置页五类归并皮肤（2026-11-20）——值源=v2 设计稿
+   （synapse-redesign-v2.html）settings 段逐值誊录：settings-page/settings-nav/
+   settings-content/settings-title/setting-group/setting-row/theme-choices/
+   theme-choice/theme-preview/settings-save。token 单源=theme.css——v2 私有
+   var 映射：--panel-subtle→--panel-2（值恰同）、--ink-soft→--text-dim（值恰
+   同）、--muted→--text-dim（近似映射自裁）、--radius-md(6px)→--radius-s(8px)、
+   --font-serif→--font-display、px 字号→--fs-* 档位（22/23px 页题两处取
+   --fs-display 17px——档位单源优先，视觉差登记 executor note）。
+   旧 .syn-settings 分节卡+金节标皮肤（原驻 theme-reader.css）随方案切换
+   删除；本件由 SettingsPage.tsx import（library.css 先例——feature 树挂载）。══ */
+
+/* ── 页骨架：左 nav 竖排全高+右内容区自身滚动（文档本身不滚——app-main
+   恒满高零溢出，滚动只发生在 .settings-content）── */
+.syn-settings {
+  display: grid;
+  grid-template-columns: 192px minmax(0, 1fr);
+  height: 100%;
+  background: var(--panel);
+}
+
+/* ── 五类导航（v2 .settings-nav）── */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px 12px;
+  background: var(--panel-2);
+  border-right: 1px solid var(--line);
+}
+.settings-nav h1 {
+  margin: 0 0 14px;
+  padding: 0 10px;
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-nav-item {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.settings-nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+}
+.settings-nav-item:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+.settings-nav-item.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+/* ── 内容区（v2 .settings-content/.settings-inner）：长内容自身滚动 ── */
+.settings-content {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 28px 34px 50px;
+  font-size: var(--fs-body);
+  scrollbar-width: thin;
+}
+.settings-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ── 分类页题（v2 .settings-title）── */
+.settings-title {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-title p {
+  margin: 7px 0 0;
+  color: var(--text-dim);
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+/* ── 组（v2 .setting-group）：组间 border-bottom 分隔（旧分节卡/DiamondRule
+   皮肤已删）；flex column+gap 承节内间距（原组件 flex gap-2 语义承载）── */
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.setting-group h3 {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+}
+.setting-group-note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+}
+
+/* ── 空态说明（「阅读与标注」分类——如实文案，不新增字段）── */
+.setting-empty {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-body);
+  line-height: 1.8;
+}
+
+/* ── 主题预览卡（v2 .theme-choices/.theme-choice/.theme-preview）── */
+.settings-theme-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.settings-theme-card {
+  display: block;
+  padding: 9px;
+  text-align: left;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.settings-theme-card:hover {
+  border-color: var(--faint);
+}
+.settings-theme-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* 主题演示画布双岛（v2 theme-preview inline --preview-* 的 CSS 载体）：演示
+   两主题并列恒色——在预览元素上**同名重绑**主题族 token（局部声明按继承
+   距离覆盖 :root/[data-theme='sepia'] 族块，卡色不随当前主题翻），同名
+   重定义=check-quality ② 同值守卫合法形态（同名合并一键）。值单源=theme.css
+   :root（light 族）与 :root[data-theme='sepia']（sepia 族）对应 token 逐值
+   ——改族值须同步此两行（值恰等于 v2 设计稿 theme-choice 两卡 inline 值） */
+.settings-theme-demo--light {
+  --bg: #f2f4f1;
+  --sidebar: #ecefeb;
+  --panel: #ffffff;
+  --line: #d9dfda;
+  --accent: #2f6f64;
+}
+.settings-theme-demo--sepia {
+  --bg: #eee6d6;
+  --sidebar: #e8decb;
+  --panel: #faf5e9;
+  --line: #d6cbb5;
+  --accent: #596b4e;
+}
+
+/* 迷你界面预览（v2 .theme-preview 族：侧栏 27%+顶栏 19px+三文行线条） */
+.settings-theme-demo {
+  position: relative;
+  display: block;
+  height: 100px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.settings-theme-demo-side {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 27%;
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
+}
+.settings-theme-demo-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 27%;
+  height: 19px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.settings-theme-demo-lines {
+  position: absolute;
+  top: 33px;
+  right: 12px;
+  left: calc(27% + 12px);
+  display: grid;
+  gap: 8px;
+}
+.settings-theme-demo-lines i {
+  display: block;
+  width: 80%;
+  height: 5px;
+  background: var(--line);
+  border-radius: 1px;
+}
+.settings-theme-demo-lines i:nth-child(2) {
+  width: 58%;
+  background: var(--accent);
+}
+.settings-theme-demo-lines i:nth-child(3) {
+  width: 72%;
+}
+
+/* 卡文案（v2 .theme-choice-copy） */
+.settings-theme-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 2px 1px;
+}
+.settings-theme-copy strong {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-theme-copy span {
+  color: var(--text-dim);
+  font-size: var(--fs-nano);
+}
+.settings-theme-card.active .settings-theme-copy strong {
+  color: var(--accent);
+}
+
+/* ── 设置行（v2 .setting-row：左文案右控件/标签）── */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.setting-row-copy strong {
+  display: block;
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--text);
+}
+.setting-row-copy span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+}
+.setting-row-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  flex: none;
+  padding: 2px 7px;
+  color: var(--text-dim);
+  font-size: var(--fs-micro);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+/* ── 底部保存行（v2 .settings-save）── */
+.settings-save {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+/* ── 网络诊断表（原 SettingsPage 内联表格迁 CSS 承载）── */
+.settings-diag-table {
+  border-collapse: collapse;
+  font-size: var(--fs-body);
+}
+.settings-diag-table th {
+  padding: 4px 16px 4px 0;
+  color: var(--text-dim);
+  font-weight: 400;
+  text-align: left;
+}
+.settings-diag-table td {
+  padding: 2px 16px 2px 0;
+}

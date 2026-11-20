@@ -154,8 +154,9 @@ export function SyncKeySection(): JSX.Element {
   }
 
   return (
-    <section className="flex flex-col gap-2" data-testid="sync-key-section">
-      <h2 className="text-sm font-medium">同步密钥</h2>
+    // [前端四期 B2] 节根=setting-group 组壳（节标 h2→h3 随分类页题层级下移）
+    <section className="setting-group" data-testid="sync-key-section">
+      <h3>同步密钥</h3>
       <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
         同步密钥用于快照传输加密（接收端导入发送端密钥后可解密其快照）。密钥不经
         快照文件传输，须以带外方式（如当面扫码）分发；持有密钥即持有该库同步域

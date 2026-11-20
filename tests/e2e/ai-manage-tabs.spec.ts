@@ -38,6 +38,8 @@ test('E3 置顶闭环：置顶 Tab 断言消息文本+锚标题→取消置顶�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置', exact: true }).click()
+  // [前端四期 B2] AI 管理节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })
 
   const section = win.getByTestId('ai-manage-section')
@@ -63,6 +65,8 @@ test('E7 记忆 CRUD 全链：global 档新建→列表→编辑→置顶→删�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置', exact: true }).click()
+  // [前端四期 B2] AI 管理节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible({ timeout: 10_000 })
 
   const section = win.getByTestId('ai-manage-section')

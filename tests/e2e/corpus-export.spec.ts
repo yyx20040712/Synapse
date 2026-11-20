@@ -79,6 +79,8 @@ test('AI 语料导出全链：设置页发起→五件套落盘+manifest 一致+
   }, exportDir)
 
   await win.getByRole('button', { name: '设置' }).click()
+  // [前端四期 B2] 语料导出节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await win.getByRole('button', { name: '导出语料' }).click()
 
   // 终局反馈两锚：toast（INV-02——部分成功文案）+进度行（持久终局态）
@@ -196,6 +198,8 @@ test('F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞�
   }, exportDir)
 
   await win.getByRole('button', { name: '设置' }).click()
+  // [前端四期 B2] 语料导出节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await win.getByRole('button', { name: '导出语料' }).click()
 
   // streaming 实证：任一篇页快照落盘即 figure 回传在途（篇序=库序，不写死
@@ -211,9 +215,11 @@ test('F-SESS-01 renderer 重载格：streaming 中 reload→会话中止单飞�
   await win.waitForTimeout(1500)
 
   // reload 后 UI 从库页起：重进设置页再发起——断言不再 EXPORT_BUSY（第二会话
-  // 全链完成的端到端实证）
+  // 全链完成的端到端实证；[前端四期 B2] 分类选中=模块态，reload 后回默认
+  // 「通用」——重进须再点「AI 助手」分类）
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await win.getByRole('button', { name: '导出语料' }).click()
   await expect(win.getByText('语料导出完成：2 篇')).toBeVisible({ timeout: 60_000 })
 

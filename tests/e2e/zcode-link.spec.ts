@@ -32,6 +32,8 @@ test('zcode 联动：未发现→装 zcode→技能未装→一键装技能→fs
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置' }).click()
+  // [前端四期 B2] zcode 联动节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
 
   // zcode-not-found：指引文案（渲染真实文本锚）
   await expect(win.getByTestId('zcode-link-status')).toHaveText('未发现 zcode', { timeout: 10_000 })

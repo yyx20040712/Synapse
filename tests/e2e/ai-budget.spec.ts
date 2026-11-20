@@ -17,6 +17,8 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 async function openBudgetSection(win: Page): Promise<Page> {
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置', exact: true }).click()
+  // [前端四期 B2] AI 预算节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await expect(win.getByRole('heading', { name: 'AI 预算' })).toBeVisible({ timeout: 10_000 })
   await expect(win.getByTestId('ai-budget-section')).toBeVisible()
   return win

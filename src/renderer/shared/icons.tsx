@@ -7,6 +7,9 @@
  * - 常量清单（R1）：X 关闭/check 确定/chevron 四向+双 chevron（收起展开）/
  *   plus 添加/undo 撤销/redo 重做/retry 重试/pencil 重命名/hand 选择/trash
  *   删除/highlight 高亮/underline 下划线/note 备注/save 保存
+ * - [前端四期 B2 2026-11-20] 设置五类导航图标五件（settings/sun/reader/ai/
+ *   database——v2 symbol 库逐值誊录；settings/reader 原驻 Rail.tsx 内联两份
+ *   随本批上收共享单源，Rail 改 import 消费不留两套）
  *
  * ── 接口层 ──
  * - export const ICON_XXX: JSX.Element（模块级单例常量——reader 工具栏
@@ -157,5 +160,47 @@ export const ICON_SAVE = (
     <path d="M4 4h13l3 3v13H4z" />
     <path d="M8 4v5h7V4" />
     <rect x="8" y="13" width="8" height="6" />
+  </svg>
+)
+
+/* ══ [前端四期 B2] 设置五类导航图标（v2 symbol 库 i-settings/i-sun/i-reader/
+   i-ai/i-database path 逐值誊录——synapse-redesign-v2.html L720-756；描边走
+   消费面 CSS（settings.css .settings-nav-item svg 同 .rail-item svg 规格）══ */
+
+/** 设置齿轮（v2 i-settings——原 Rail.tsx 内联件上收） */
+export const ICON_SETTINGS = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" />
+  </svg>
+)
+
+/** 太阳（v2 i-sun——外观分类） */
+export const ICON_SUN = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+  </svg>
+)
+
+/** 打开的书（v2 i-reader——阅读与标注分类；原 Rail.tsx 内联件上收） */
+export const ICON_READER = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5zM20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z" />
+  </svg>
+)
+
+/** 星芒（v2 i-ai——AI 助手分类） */
+export const ICON_AI = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <path d="m12 3 1.4 4.2L18 9l-4.6 1.8L12 15l-1.4-4.2L6 9l4.6-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8zM5 14l.7 2.3L8 17l-2.3.7L5 20l-.7-2.3L2 17l2.3-.7z" />
+  </svg>
+)
+
+/** 数据库圆柱（v2 i-database——数据与网络分类） */
+export const ICON_DATABASE = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="5" rx="8" ry="3" />
+    <path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" />
   </svg>
 )

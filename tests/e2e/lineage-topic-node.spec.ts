@@ -131,6 +131,8 @@ test('G④：存量幽灵边（直写库种子）→graph 子图过滤+导出 li
   // 导出面兜底（C2 ②）：语料导出→lineage.json 零跨图边（edges 空数组）
   await stubOpenDialog(app, [exportDir])
   await win.getByRole('button', { name: '设置' }).click()
+  // [前端四期 B2] 语料导出节驻「AI 助手」分类——先点分类导航
+  await win.getByRole('button', { name: 'AI 助手' }).click()
   await win.getByRole('button', { name: '导出语料' }).click()
   await expect(win.getByText('语料导出完成：2 篇', { exact: false })).toBeVisible({
     timeout: 120_000

@@ -14,8 +14,8 @@ import { seedCollectionRow } from './ai-seed'
  * ①paper 档：开文献→reader-research（[B1 批] 右栏研究面板——原 reader-aside
  * AI 页签迁移，tab 名换「AI 对话」）内页签→「暂无会话消息」+
  * 「对话能力将在后续版本接入」②lineage 档：脉络页选 seed 造的文件夹图→
- * 侧栏「AI 会话」页签→同两文案 ③settings：三节标在场+相对顺序
- * （AI 助手→AI 管理→AI 预算；锚定「网络」节后、「AI 语料导出」前）。
+ * 侧栏「AI 会话」页签→同两文案 ③settings：「AI 助手」分类内节标在场+相对
+ * 顺序（AI 助手→AI 管理→AI 预算→AI 语料导出；网络节驻「数据与网络」分类）。
  * tab 查询一律限定容器（reader-research/lineage-sidebar——e2e 坑③域污染防线）。
  */
 
@@ -91,7 +91,13 @@ test('E1③ settings：AI 三节标在场+相对顺序（AI 助手→AI 管理�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置', exact: true }).click()
-  await expect(win.getByRole('heading', { name: 'AI 助手' })).toBeVisible({ timeout: 10_000 })
+  // [前端四期 B2] AI 三节驻「AI 助手」分类——先点分类导航；节标断言收窄
+  // level 3（分类页题 h2「AI 助手」与节标同名——双 heading 严格定位消歧，
+  // 断言语义不变：节标仍在场）
+  await win.getByRole('button', { name: 'AI 助手' }).click()
+  await expect(win.getByRole('heading', { name: 'AI 助手', level: 3 })).toBeVisible({
+    timeout: 10_000
+  })
   await expect(win.getByRole('heading', { name: 'AI 管理' })).toBeVisible()
   await expect(win.getByRole('heading', { name: 'AI 预算' })).toBeVisible()
   // [r1′ R1c] AI 助手节内会话终态（global 档挂载即 open——真实 IPC 非缺省桩）
@@ -99,18 +105,24 @@ test('E1③ settings：AI 三节标在场+相对顺序（AI 助手→AI 管理�
   const composer = win.locator('input[aria-label="对话输入"]')
   await expect(composer).toHaveValue('对话能力将在后续版本接入')
   await expect(composer).toBeDisabled()
-  // 相对顺序：网络→AI 助手→AI 管理→AI 预算→（AI 语料导出）
+  // 相对顺序（[前端四期 B2] 五类归并后收窄为 AI 助手分类内节序——原「网络」
+  // 节前锚随分栏归并退役：网络披露驻「数据与网络」分类，不再与 AI 节同页；
+  // E1 节序锚 AI 助手→AI 管理→AI 预算→AI 语料导出 语义零变）：节标取 h3
+  // （分类页题 h2 不参与节序）
   const order = await win.evaluate(() =>
-    Array.from(document.querySelectorAll('.syn-settings h2')).map((h) => h.textContent ?? '')
+    Array.from(document.querySelectorAll('.syn-settings .settings-inner h3')).map(
+      (h) => h.textContent ?? ''
+    )
   )
   const idx = (t: string): number => order.findIndex((x) => x === t)
-  // [r1′ R1b] 「网络」节索引前 some() 前置守卫（沿「语料导出」锚先例——
-  // 防 -1 空洞下 toBeLessThan 恒真）
-  expect(order.some((x) => x === '网络'), '「网络」节锚在场').toBeTruthy()
-  expect(idx('网络'), 'AI 助手插在网络节后').toBeLessThan(idx('AI 助手'))
+  // [r1′ R1b] 节索引前 some() 前置守卫（沿「语料导出」锚先例——防 -1 空洞下
+  // toBeLessThan 恒真）
+  expect(order.some((x) => x === 'AI 助手'), '「AI 助手」节锚在场').toBeTruthy()
   expect(idx('AI 助手')).toBeLessThan(idx('AI 管理'))
   expect(idx('AI 管理')).toBeLessThan(idx('AI 预算'))
   expect(order.some((x) => x.includes('语料导出')), 'AI 预算在语料导出节前').toBeTruthy()
   expect(idx('AI 预算')).toBeLessThan(order.findIndex((x) => x.includes('语料导出')))
+  // 网络节随五类归并驻「数据与网络」分类（原「AI 助手插在网络节后」平铺序
+  // 断言退役——切换分类后节锚在场由 settings-categories.spec 承载）
   await app.close()
 })

@@ -1,39 +1,46 @@
 /**
- * [SR-SET-01] SettingsPage —— 设置页（工单：done / weak）
+ * [SR-SET-01→前端四期 B2] SettingsPage —— 设置页（左侧五类导航+右侧当前分类）。
  *
  * ── 行为层 ──
- * - 表单：contactEmail（校验 email；说明"仅用于 CrossRef/OpenAlex 礼貌池标识"）
- * - 主题两选（light/sepia；T3-P1 已接线——App.tsx effect 写 data-theme
- *   切换 theme.css token 两族，保存后即时生效；B1 暗色主题已退役）
- * - 「网络诊断」按钮：settings.store.diagnose → 每行 host ✓ 延迟ms / ✗（安全 §6.4 披露）
- * - 「网络行为披露」静态说明区：列出 3 个白名单 host 与触发时机（仅手动增强/诊断）
- * - 数据目录：v1 不展示路径（避免暴露给 renderer），仅"数据保存在本机"文案
+ * - 五类归并（v2 settings-nav 顺序与名称逐字）：通用=联系邮箱；外观=主题两卡
+ *   +界面缩放+宽屏只读说明行；阅读与标注=空态说明（不新增字段）；AI 助手=
+ *   会话/管理/预算/语料导出/zcode 联动；数据与网络=白名单披露+诊断+同步密钥
+ * - 分类选中=模块级会话态（settings-category.ts——会话内记忆、不持久化、
+ *   重开应用回默认「通用」）
+ * - 保存走 settings.store.save 全量载荷（set 通道 Req=完整 appSettingsSchema）；
+ *   「通用」与「外观」两处保存按钮同一 runSave 链（email 校验+uiScale/aiBudgets
+ *   兜底原样）；水合一次规则（hydratedRef 防抹草稿）保留
  *
  * ── 接口层 ──
  * - export function SettingsPage(): JSX.Element
  *
  * ── 架构层 ── / ── 生命周期层 ── / ── 文化层 ──
- * - 保存走 settings.store.save；store 动作型失败在此 catch 后 toast
- * - [R3-SET 皮肤票] 分节卡+金节标衬线+节间 DiamondRule（.syn-settings 作用域
- *   皮肤住 theme.css——自持节 section 根同吃）；表单控件 focus=accent 描边+
- *   gold-soft 底（.syn-input）；内联节壳拆 SettingsSection（180 行消化上限）
+ * - 保存链与 email/theme 状态驻本件（两分类共享同一链）；分类内容拆件
+ *   （组件 250 行上限——五类平铺装不下）；旧单列平铺结构已随方案切换删除
+ * - 皮肤=settings.css（.syn-settings 作用域——v2 settings-page/settings-nav/
+ *   setting-group 形态；旧分节卡+菱形分隔（DiamondRule）随 B2 方案切换删除，
+ *   组件与 .lib-rule* 样式同批退役）
+ * - 测试：settings-categories.test.tsx（五类面）+settings-page-enter.test.tsx
+ *   （Enter 保存链——默认通用分类承载）
  */
 import { useEffect, useRef, useState } from 'react'
-import { ALLOWED_REMOTE_HOSTS } from '@shared/constants'
+import './settings.css'
 import { ApiClientError } from '../../api/client'
-import { BudgetSection } from '../ai/BudgetSection'
-import { AiManageSection } from '../ai/manage/AiManageSection'
-import { Button } from '../../shared/ui/Button'
-import { DiamondRule } from '../../shared/ui/DiamondRule'
 import { showToast } from '../../shared/ui/Toast'
-import { OP_FAILED, THEME_LABEL } from '../../shared/ui-constants'
+import { OP_FAILED } from '../../shared/ui-constants'
 import { useSettingsStore } from './settings.store'
-import { AiAssistantSection } from './AiAssistantSection'
-import { CorpusExportSection } from './CorpusExportSection'
-import { SettingsSection } from './SettingsSection'
-import { SyncKeySection } from './SyncKeySection'
-import { UiScaleSection } from './UiScaleSection'
-import { ZcodeLinkSection } from './ZcodeLinkSection'
+import { AiCategory } from './AiCategory'
+import { AppearanceCategory } from './AppearanceCategory'
+import { DataCategory } from './DataCategory'
+import { GeneralCategory } from './GeneralCategory'
+import { ReadingCategory } from './ReadingCategory'
+import {
+  readSessionCategory,
+  writeSessionCategory,
+  SETTINGS_CATEGORY_META,
+  type SettingsCategoryId
+} from './settings-category'
+import { SettingsNav } from './SettingsNav'
 import type { AppSettings } from '@shared/ipc/schemas'
 import { AI_BUDGET_DEFAULTS, aiBudgetsSchema } from '@shared/models/ai-domain'
 
@@ -44,14 +51,13 @@ const SAVE_OK = '设置已保存'
 export function SettingsPage(): JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const saving = useSettingsStore((s) => s.saving)
-  const diag = useSettingsStore((s) => s.diag)
   const load = useSettingsStore((s) => s.load)
   const save = useSettingsStore((s) => s.save)
-  const diagnose = useSettingsStore((s) => s.diagnose)
 
   const [email, setEmail] = useState('')
   const [theme, setTheme] = useState<AppSettings['theme']>('light')
-  const [diagnosing, setDiagnosing] = useState(false)
+  // 分类选中：初始值单读模块会话态（卸载重挂恢复；新会话默认「通用」）
+  const [category, setCategory] = useState<SettingsCategoryId>(readSessionCategory())
 
   // 载入后同步进表单（settings 到达晚于首帧）
   useEffect(() => {
@@ -70,6 +76,11 @@ export function SettingsPage(): JSX.Element {
       setTheme(settings.theme)
     }
   }, [settings])
+
+  function pickCategory(next: SettingsCategoryId): void {
+    writeSessionCategory(next)
+    setCategory(next)
+  }
 
   function runSave(): void {
     if (saving) {
@@ -96,154 +107,42 @@ export function SettingsPage(): JSX.Element {
       })
   }
 
-  async function runDiagnose(): Promise<void> {
-    if (diagnosing) {
-      return
-    }
-    setDiagnosing(true)
-    try {
-      await diagnose()
-    } catch (e) {
-      showToast(e instanceof ApiClientError ? e.message : OP_FAILED, 'error')
-    } finally {
-      setDiagnosing(false)
-    }
-  }
-
-  const inputStyle = { borderColor: 'var(--border)', background: 'var(--panel)' }
+  const meta = SETTINGS_CATEGORY_META[category]
 
   return (
-    // syn-settings 作用域（R3-U4 皮肤票）：> section 分节卡（panel+radius-l+
-    // shadow-1）+h2 金节标衬线——自持节（语料导出/zcode/注入课题节）渲染
-    // section 根同吃皮肤；节间菱形分隔复用 DiamondRule（.lib-rule* 语法）
-    <div className="syn-settings mx-auto flex min-h-full max-w-xl flex-col gap-4 p-6 text-sm">
-      <SettingsSection title="通用">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            联系邮箱（仅用作 CrossRef/OpenAlex 礼貌池标识，附在请求 User-Agent 中）
-          </span>
-          <input
-            aria-label="联系邮箱"
-            className="syn-input rounded border px-2 py-1 text-sm"
-            style={inputStyle}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            // [F-UIRES-02 R7] Enter=保存设置（runSave 同按钮校验链——非法
-            // 邮箱 toast 零 set）；isComposing 守卫（组词确认回车非提交意图）
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) return
-              if (e.key === 'Enter') {
-                // [RR1-5] preventDefault 对齐 inlineKeyDown 范式（防御）
-                e.preventDefault()
-                runSave()
-              }
-            }}
-          />
-        </label>
-        <label className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            主题
-          </span>
-          <select
-            aria-label="主题"
-            className="syn-input rounded border px-1 py-1 text-sm"
-            style={inputStyle}
-            value={theme}
-            onChange={(e) => setTheme(e.target.value as AppSettings['theme'])}
-          >
-            {Object.entries(THEME_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            切换即时生效（保存后应用）
-          </span>
-        </label>
-        <div>
-          <Button variant="primary" size="sm" loading={saving} onClick={runSave}>
-            保存设置
-          </Button>
+    // syn-settings 作用域（B2 五类归并）：左 nav 竖排全高+右内容区自身滚动
+    // （settings-content overflow——文档本身不滚）；皮肤单源=settings.css
+    <div className="syn-settings">
+      <SettingsNav active={category} onPick={pickCategory} />
+      <div className="settings-content">
+        <div className="settings-inner">
+          <header className="settings-title">
+            <h2>{meta.title}</h2>
+            <p>{meta.description}</p>
+          </header>
+          {category === 'general' && (
+            <GeneralCategory
+              email={email}
+              onEmailChange={setEmail}
+              saving={saving}
+              onSave={runSave}
+            />
+          )}
+          {category === 'appearance' && (
+            <AppearanceCategory
+              theme={theme}
+              onThemePick={setTheme}
+              saving={saving}
+              onSave={runSave}
+            />
+          )}
+          {category === 'reading' && <ReadingCategory />}
+          {category === 'ai' && (
+            <AiCategory settings={settings} saving={saving} onSave={(payload) => save(payload)} />
+          )}
+          {category === 'data' && <DataCategory />}
         </div>
-      </SettingsSection>
-
-      <DiamondRule />
-
-      {/* R2-SET1 界面缩放：F-G7 拆自持组件（三档 segmented 即时保存——行为零变） */}
-      <UiScaleSection />
-
-      <DiamondRule />
-
-      <SettingsSection title="网络">
-        <p className="text-xs leading-5" style={{ color: 'var(--text-dim)' }}>
-          本应用出网仅限元数据增强与连通诊断，全部由你手动触发，无任何后台网络任务。
-          白名单 host（在共享常量中维护）：{ALLOWED_REMOTE_HOSTS.join('、')}。
-          数据保存在本机，不经任何第三方服务器中转。
-        </p>
-        <div>
-          <Button size="sm" loading={diagnosing} onClick={() => void runDiagnose()}>
-            网络诊断
-          </Button>
-        </div>
-        {diag !== null && (
-          <table className="text-xs" aria-label="网络诊断结果">
-            <thead>
-              <tr style={{ color: 'var(--text-dim)' }}>
-                <th className="py-1 pr-4 text-left font-normal">Host</th>
-                <th className="py-1 pr-4 text-left font-normal">状态</th>
-                <th className="py-1 text-left font-normal">延迟</th>
-              </tr>
-            </thead>
-            <tbody>
-              {diag.map((d) => (
-                <tr key={d.host}>
-                  <td className="py-0.5 pr-4">{d.host}</td>
-                  <td className="py-0.5 pr-4" style={{ color: d.ok ? 'var(--ok)' : 'var(--danger)' }}>
-                    {d.ok ? '✓ 可达' : '✗ 不可达'}
-                  </td>
-                  <td className="py-0.5">{d.ok ? `${d.latencyMs} ms` : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SettingsSection>
-
-      {/* [F-DBCAMP-01 DB-3 U2] 同步密钥节（§13.9 已裁：文本串+二维码/导入单入口
-          ——自持组件直调 window.api.snapshot.*，不进 settings.store） */}
-      <DiamondRule />
-      <SyncKeySection />
-
-      {/* [F-DBCAMP-01 DB-2 UI U3] AI 三节壳一次立（E1 断言锚）：节序=AI 助手→
-          AI 管理→AI 预算；插入点=同步密钥节后、AI 语料导出节前。AI 助手壳=
-          [F-DBCAMP-01 DB-3 U2] AiAssistantSection 外提（SettingsPage 250 行限）；
-          [U5] 管理=三 Tab 面板（任务/置顶消息/记忆——AiManageSection 自持）；
-          [U6] 预算=BudgetSection 自持（17 输入+校验+保存——节标「AI 预算」逐字零动） */}
-      <DiamondRule />
-      <AiAssistantSection />
-      <DiamondRule />
-      <SettingsSection title="AI 管理">
-        <AiManageSection />
-      </SettingsSection>
-      <DiamondRule />
-      <SettingsSection title="AI 预算">
-        {/* [U6] 受控注入（ai 域件不 import settings 域 store——跨域 props 化）：
-            保存载荷由 BudgetSection 组装（全量四键），通道=settings.store.save */}
-        <BudgetSection
-          settings={settings}
-          saving={saving}
-          onSave={(payload) => save(payload)}
-        />
-      </SettingsSection>
-
-      {/* AI-04：AI 语料导出节（自持组件——行数防线 R14；事件桥/终局 toast 在 App 层） */}
-      <DiamondRule />
-      <CorpusExportSection />
-
-      {/* AI-10：zcode 联动节（自持组件——检测/装技能纯 fs，INV-21 零 spawn） */}
-      <DiamondRule />
-      <ZcodeLinkSection />
+      </div>
     </div>
   )
 }

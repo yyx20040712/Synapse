@@ -175,8 +175,10 @@ test('R2-SET1 界面缩放：点「大 125%」→rail 首项 rect ×1.25（±2px
   // final-design §1 四轮裁决后规格——后者覆盖前者）
   expect(base.headerH, '基线 header 高=38（T3-P2 壳层规格）').toBe(38)
 
-  // 进设置→点「大 125%」→save 落地→store 替换→App 订阅→--ui-scale→内容行 zoom
+  // 进设置→切「外观」分类→点「大 125%」→save 落地→store 替换→App 订阅→
+  // --ui-scale→内容行 zoom（[前端四期 B2] 界面缩放节驻外观分类——先点分类导航）
   await win.getByRole('button', { name: '设置' }).click()
+  await win.getByRole('button', { name: '外观' }).click()
   await win.getByRole('button', { name: '大 125%' }).click()
   await expect(win.getByText('界面缩放已保存')).toBeVisible()
 
