@@ -203,29 +203,38 @@ flowchart TB
   - 时间线=纵向「年+月」DOM 布局（TimelineYears；`.month-frame>.tl-row>.tl-card`
     砖砌网格；capacity.ts 容量公式纯函数族 N=⌊(W+72)/200⌋/M=⌊(W+72−100)/200⌋/
     奇行相位 100/数组序贪心分行/index↔(row,col) 双射；W=归一化内容盒宽
-    readFrameContentWidth 单源；月框 border-box 最小宽 577px+配套四约束
+    readFrameContentWidth 单源；〔F-LANEGRID-01 B4〕月标骑框线布局=FRAME_PAD_
+    TOP/BOTTOM 38 上下对称（capacity.ts 五常量单源，CSS 交叉锁防漂移）、
+    顶锚解封（自动边首选锚可经帧顶带接驳）；月框 border-box 最小宽 577px+
+    配套四约束
     （`.tl-content` min-width calc(577px+140) 边层铺满/空图
     `:not(:has(.month-frame))` 守卫不铺/`.tl-card` flex-shrink:0 不压缩/
     `.timeline` overflow-x:auto 横向滚动）——ADR-0028/INV-169）。
   - 连线层=EdgeOverlay 双层 svg（可见层+命中层 z4）+ `routing/` 纯函数族
-    （gap-cells 间隙单元→slots 槽位分配→zapply Z 形施加→residual 残余→chain
-    六态链编排 direct→h-slip→detour→band→outer-ring→overlap；坐标集封闭=段坐标
-    ∈锚/桩∪槽位集∪外圈车道集——ADR-0023/0024；detour=网格通道模型）。
-    band 搜索域=源/目标纵区间内带 ∪ 目标行进方向续侧带 ∪ 目标背侧带（同行被挡
-    零带承接——续侧带落锚=目标远侧锚先试、背侧带落锚=标准 endSide 序）；outer-ring=图域最外圈车道末级候选
-    （routing/outer-ring.ts：四车道=最外障碍边∓(PAD+短桩 10)、每端候选锚经
-    AnchorUse 散开、候选全序=曼哈顿长升序——「稀疏图 blocked=缺陷」的末级
-    承接，排 overlap 之前，不消费槽位分配）。钉定端按锚外法线起落；自动路径在
-    槽位与 jog 施加后经 finalize 的 r=6→3→0 最终采样净空门，三档均碰障则
+    （chain 编排+grid 车道表+allocate 分配器+finalize 终门+occupancy 段级
+    占用；六态构线器 direct→h-slip→detour→band→outer-ring 与槽位/残余/
+    detour/外圈机制已随 F-LANEGRID-01 车道网格退役删除——ADR-0023/0024
+    走线面由 docs/design/2026-11-19_lane-grid-rerouting.md 接替，砖砌网格
+    布局面沿承）。全网一张车道网格统一分配所有边（跨月跨年不切换坐标体系，
+    网格随布局派生；网格耗尽按边序叠加不扩大图域）；自动路径只含水平与垂直
+    段；坐标集封闭=采样电平 ∈ 锚坐标集 ∪ 车道表坐标集（INV-SLOTGRID-02；
+    车道表单源=grid.ts buildLaneTable 五族：锚道/间隙道/边侧道/外区带/帧顶
+    底带）。任两非豁免平行段间距 ≥8px（LANE_PITCH 单源 grid.ts——INV-112）；
+    同道跨距重叠→overlapSpans 段级登记+overlapExempt 豁免或同锚错峰桩区
+    消解。障碍集恒=实卡∪月标注∪年份头三源并集（chain.ts allObstacles
+    单源；空卡位区非障碍）。自动路径（allocate 搜索段+首末外法线桩）经
+    finalize 的 r=6→3→0 最终采样净空门，三档均碰障则
     clearance='blocked'、d=''，可见/命中两层及编辑手柄、警示、虚影均撤销，
-    按边提示一次，布局重算自动重试；selected 保留以便恢复后手柄回归，边数据不删，
-    blocked 无几何元数据节点保留 data-anchors，占用发布跟随边数据而非路由成功。
-    overlap 只豁免线-线槽位重合，不豁免线-卡相交；manual-override 同过终门
-    （R2-C3）：障碍集=第三方（源/目标卡全链豁免——与穿卡警示 crossCardSegments
-    单源语义对齐），碰第三方障碍=blocked 显式态，承接旧 via 与重排后非法 via；
-    新 via 写入由提交门 edge-via-commit.ts 统一拦截（拖顶点/拖段含物化/双击
-    加点/菜单删点与重置四口单点收敛——非法松手即回弹：零写零撤销单元零
-    dirty+toast；via=null 清除免门直写回自动路由）。
+    按边提示一次，布局重算自动重试；selected 保留以便净空恢复后手柄回归，
+    边数据不删，blocked 无几何元数据节点保留 data-anchors，占用发布跟随
+    边数据而非路由成功（INV-79）。overlap 只豁免线-线段级重合
+    （overlapSpans 登记），不豁免线-卡相交；manual-override 同过终门
+    （R2-C3）：障碍集=第三方卡∪月标注∪年份头（源/目标卡全链豁免——与穿卡
+    警示 crossCardSegments 单源语义对齐），碰第三方障碍=blocked 显式态，
+    承接旧 via 与重排后非法 via；新 via 写入由提交门 edge-via-commit.ts
+    统一拦截（拖顶点/拖段含自动线物化/双击加点/菜单删点与重置走线四口
+    单点收敛——非法松手即回弹：零写零撤销单元零 dirty+toast；via=null
+    清除免门直写回自动路由）。
   - 交互=use-edge-edit 调线态机+useDrawLine 画线+12 锚吸附
     （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
     drag-autoscroll 四会话统一自动滚动（INV-80）。
@@ -395,8 +404,8 @@ flowchart TB
 | 0020 | 应用改名与 userData 目录迁移 | docs/adr/ |
 | 0021 | 文件夹单归属×脉络图绑定 | docs/adr/ |
 | 0022 | 草稿导入链退役 | docs/adr/ |
-| 0023 | 走线候选位分配=后处理槽位分配 | docs/design/2026-10-06_f-route02-design.md |
-| 0024 | 砖砌网格布局+五态走线正统化 | docs/design/2026-10-07_f-slotgrid01-design.md |
+| 0023 | 走线候选位分配=后处理槽位分配（走线面已由 F-LANEGRID-01 车道网格接替——docs/design/2026-11-19_lane-grid-rerouting.md；槽位机制删除） | docs/design/2026-10-06_f-route02-design.md |
+| 0024 | 砖砌网格布局+五态走线正统化（布局面沿承 INV-SLOTGRID-01；五态走线面已由 F-LANEGRID-01 车道网格接替） | docs/design/2026-10-07_f-slotgrid01-design.md |
 | 0025 | DB 契约冻结（folder↔graph 投影/NOT NULL/app_meta/标签域化） | docs/design/2026-10-08_f-dbcamp01-design.md |
 | 0026 | 关闭入口无条件握手化 | docs/adr/（细节=docs/design/2026-10-18_f-visfb64-design.md） |
 | 0027 | 恢复副本统一管理 | docs/adr/ |
