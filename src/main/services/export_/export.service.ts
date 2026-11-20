@@ -8,6 +8,10 @@
  *   字段双引号包裹、内嵌双引号翻倍、换行替换为空格（Excel 友好）
  * - buildReport(paperId)：papers.detailById + annotations.listByPaper +
  *   notes.findByPaper → buildReadingReport；不存在抛 NOT_FOUND
+ * - [B3] buildCitation(paperId, format)：detail → 三格式分派——gbt7714/apa=
+ *   citation.serializer（纯函数单源）；bibtex=单条 serializeBibtex（citation
+ *   key 沿 makeCitationKey——与 buildBibtex 同一装配助手 bibtexEntryOf 单源）；
+ *   不存在抛 NOT_FOUND（buildReport 同约定）
  * - writeToFile(path, content)：fs 写入 UTF-8，失败抛 IO_ERROR（DomainError 形状）
  *
  * ── 接口层 ──
@@ -38,11 +42,13 @@ import { writeFile } from 'node:fs/promises'
 import type { PaperDetail } from '../../../shared/models/paper'
 import type { Repos } from '../../db/repos'
 import { DomainError } from '../shared/domain-error'
+import type { CitationFormat } from '../../../shared/ipc/schemas'
 import {
   makeCitationKey,
   serializeBibtex,
   type BibtexEntryData
 } from './bibtex.serializer'
+import { serializeApa, serializeGbt7714, type CitationEntryData } from './citation.serializer'
 import { assembleCorpusMd } from './corpus.assemble'
 import { buildReadingReport } from './markdown.report'
 
@@ -56,6 +62,8 @@ export interface ExportService {
   buildReport(paperId: string): Promise<string>
   /** 单篇 corpus md（C-02：装配纯函数单源=corpus.assemble.ts——R12 条款） */
   buildCorpus(paperId: string): Promise<string>
+  /** [B3] 单篇引用文本（三格式——预览/复制共用单源，INV-56） */
+  buildCitation(paperId: string, format: CitationFormat): Promise<string>
   writeToFile(path: string, content: string): Promise<void>
 }
 
@@ -79,17 +87,23 @@ export function createExportService(deps: { repos: Repos }): ExportService {
     return out
   }
 
+  /** [B3] detail→BibTeX 条目装配（buildBibtex 与 buildCitation('bibtex') 共用
+   *  单源——citation key 与 type 启发式禁复制第二份） */
+  function bibtexEntryOf(d: PaperDetail): BibtexEntryData {
+    return {
+      key: makeCitationKey(d.title, d.year, d.authors[0] ?? 'anon'),
+      type: d.venue === '' ? 'misc' : 'article',
+      title: d.title,
+      authors: d.authors,
+      year: d.year,
+      venue: d.venue,
+      doi: d.doi
+    }
+  }
+
   return {
     async buildBibtex(paperIds) {
-      const entries: BibtexEntryData[] = detailsOf(paperIds).map((d) => ({
-        key: makeCitationKey(d.title, d.year, d.authors[0] ?? 'anon'),
-        type: d.venue === '' ? 'misc' : 'article',
-        title: d.title,
-        authors: d.authors,
-        year: d.year,
-        venue: d.venue,
-        doi: d.doi
-      }))
+      const entries: BibtexEntryData[] = detailsOf(paperIds).map(bibtexEntryOf)
       return serializeBibtex(entries)
     },
 
@@ -132,6 +146,24 @@ export function createExportService(deps: { repos: Repos }): ExportService {
         note: notes.findByPaper(paperId),
         annotations: annotations.listByPaper(paperId)
       })
+    },
+
+    async buildCitation(paperId, format) {
+      const detail = papers.detailById(paperId)
+      if (detail === null) {
+        throw new ExportDomainError('NOT_FOUND', `文献不存在：${paperId}`)
+      }
+      if (format === 'bibtex') {
+        return serializeBibtex([bibtexEntryOf(detail)])
+      }
+      const entry: CitationEntryData = {
+        title: detail.title,
+        authors: detail.authors,
+        year: detail.year,
+        venue: detail.venue,
+        doi: detail.doi
+      }
+      return format === 'gbt7714' ? serializeGbt7714(entry) : serializeApa(entry)
     },
 
     async writeToFile(path, content) {

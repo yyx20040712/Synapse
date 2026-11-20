@@ -81,6 +81,11 @@ export const API_SURFACE = {
       Req: S.clipboardReqSchema,
       Res: z.object({ count: z.number().int().min(1) }).strict()
     },
+    // [B3] 引用预览（三格式单篇）：与 clipboard 通道「内容不过 renderer」的
+    // 差异=文本按 v2 设计回传 renderer（预览展示用）；序列化单源仍在 main
+    //（INV-56 禁复制第二份规则），复制动作由 renderer 对已展示文本
+    // navigator.clipboard.writeText
+    citation: { channel: 'export/citation', Req: S.citationReqSchema, Res: S.citationResSchema },
     report: { channel: 'export/report', Req: S.reportReqSchema, Res: S.exportResSchema },
     corpus: { channel: 'export/corpus', Req: S.corpusReqSchema, Res: S.exportResSchema },
     // [F-LIBUI-01 ⑨] corpusSet（export/corpus-set）通道退役（用户 D4 裁决
@@ -134,7 +139,7 @@ export const API_SURFACE = {
   },
   tags: {
     // [F-TAGS-02 / DB-1 U4] list Req=folderId 必填（域内列表——无全域并集消费面；
-    // Req 形状变通道数不变：本域八通道（沿革注：立项时全表 pin=62，现行全表=93））
+    // Req 形状变通道数不变：本域八通道（沿革注：立项时全表 pin=62，现行全表=94））
     list: { channel: 'tags/list', Req: S.tagListReqSchema, Res: z.array(S.tagWithCountSchema) },
     upsert: { channel: 'tags/upsert', Req: S.tagNameReqSchema, Res: tagSchema },
     attach: { channel: 'tags/attach', Req: S.attachTagReqSchema, Res: S.trueAckSchema },

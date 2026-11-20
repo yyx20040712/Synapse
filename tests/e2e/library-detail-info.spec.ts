@@ -19,6 +19,9 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
  *   （E 裁决右侧滚动条——滚动承载自 .lib-dr-body 局部上移 .lib-dr 全区）。
  * - 例④（键值行在场=搬移丢面回归锁）：YEAR-MO/VENUE 行在场（DrKeyVals
  *   拆件后 .lib-fld 族 DOM 锚不变——防拆件丢面）。
+ * - 例⑤（[B3] 引用分节全流程）：引用区真实文本可见（GB/T 7714 默认——
+ *   作者/题名[J]/期刊/年份段）→切 APA 文本变化（(年份) 段形）→复制→
+ *   toast「引用已复制」。
  * 种子=seedPaperRow+seedLineageGraph 单节点（A=作者三人/长摘要/脉络节点
  * ——例②侧板同构面需 A 在脉络图中）；夹具协议沿承 lineage-side-info.spec
  * （1280×860/20s 首屏）。
@@ -141,5 +144,28 @@ test('键值行在场：YEAR-MO/VENUE 行在抽屉渲染（DrKeyVals 拆件回�
   await expect(drawer.locator('.lib-fld', { hasText: 'YEAR-MO' })).toContainText('2024')
   await expect(drawer.locator('.lib-fld', { hasText: 'VENUE' })).toContainText(VENUE_A)
 
+  await app.close()
+})
+
+test('[B3] 引用分节：三格式真实文本+切换+复制（toast 引用已复制）', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-b3-cit-lib-'))
+  await bootstrapMigrations(userData)
+  await seedFixture(userData)
+  const { app, win } = await openDrawerOn(userData)
+
+  // 默认 GB/T 7714：真实文本（作者三人全列+题名[J]+期刊, 年份——种子无 DOI 段省略）
+  const citation = win.getByTestId('dr-citation')
+  await expect(citation).toBeVisible({ timeout: 10_000 })
+  const text = citation.getByTestId('citation-text')
+  // 预览文本本体可见（外层可见≠文本可见——[B3 审查回炉 W-2]）
+  await expect(text).toBeVisible()
+  await expect(text).toContainText('张三丰, 李四光, 王二三. 库域信息区论文[J]. Water Res., 2024.')
+  // 切 APA：文本变化（(2024) 段形+URL 段缺席——种子无 DOI）+切换后仍可见
+  await citation.getByRole('button', { name: 'APA' }).click()
+  await expect(text).toBeVisible()
+  await expect(text).toContainText('张三丰, 李四光, & 王二三 (2024). 库域信息区论文. Water Res.')
+  // 复制：renderer 侧 writeText 当前文本+toast
+  await citation.getByRole('button', { name: '复制引用' }).click()
+  await expect(win.getByText('引用已复制')).toBeVisible({ timeout: 5_000 })
   await app.close()
 })

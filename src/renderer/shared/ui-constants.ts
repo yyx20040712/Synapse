@@ -26,6 +26,10 @@ import type { AppSettings } from '@shared/ipc/schemas'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 export const OP_FAILED = '操作失败'
+
+/** 剪贴板动作失败文案（[B3] DrCitation 与 usePaperDetailActions 同值收敛——
+ *  quality 同值双常量门；库域动作型：无 CANCELLED 面，失败统一动作型） */
+export const CLIP_FAILED = '复制到剪贴板失败'
 /** 门控轮询周期（组件挂载期间——INV-14 成对清理） */
 export const STATUS_POLL_MS = 5000
 /** fixed 右键菜单菜单项类名（block 全宽行式菜单项——hover 浮起） */

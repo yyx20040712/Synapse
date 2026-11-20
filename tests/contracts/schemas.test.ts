@@ -206,6 +206,12 @@ const VALID: Record<string, unknown[]> = {
     { format: 'bibtex', paperIds: ['p1'] },
     { format: 'csv', paperIds: ['p1'] }
   ],
+  citationReqSchema: [
+    { format: 'gbt7714', paperId: 'p1' },
+    { format: 'apa', paperId: 'p1' },
+    { format: 'bibtex', paperId: 'p1' }
+  ],
+  citationResSchema: [{ text: 'Wang. Title[J]. V, 2024.' }],
   corpusItemReqSchema: [{ kind: 'fulltext', sessionId: 's1', paperId: 'p1', page: 1, payload: '# md' }],
   extractRequestEventSchema: [
     { type: 'extract-request', sessionId: 's1', paperId: 'p1', url: 'app-file://p1', annotations: [{ id: 'a1', rects: [rect] }] }
@@ -316,6 +322,8 @@ const SCHEMA_NAMES = [
   'annotationListResSchema',
   'appSettingsSchema',
   'attachTagReqSchema',
+  'citationReqSchema',
+  'citationResSchema',
   'clipboardReqSchema',
   'collectionListResSchema',
   'corpusItemReqSchema',
@@ -458,6 +466,13 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     for (const fixture of fixtures.filter(hasObjectFace)) {
       expect(schema.safeParse(withExtra(fixture)).success, `${name} 应拒绝未知字段（strict 命名约定）`).toBe(false)
     }
+  })
+
+  it('[B3] citationReq：format 枚举外拒收；paperId 空串拒（min(1)）；citationRes 仅 text 字段', () => {
+    expect(S.citationReqSchema.safeParse({ format: 'ris', paperId: 'p1' }).success).toBe(false)
+    expect(S.citationReqSchema.safeParse({ format: 'gbt7714', paperId: '' }).success).toBe(false)
+    expect(S.citationReqSchema.safeParse({ format: 'gbt7714' }).success).toBe(false)
+    expect(S.citationResSchema.safeParse({ text: 'a', extra: 1 }).success).toBe(false)
   })
 
   it('saveProgress：page 负数拒；旧时长载荷 secondsDelta 已随 F-TIME-02 移除=strict 拒收未知字段', () => {

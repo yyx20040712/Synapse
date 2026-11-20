@@ -153,7 +153,8 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
       makeDetail({ pubNo: 1, lineage: { year: 2023, month: 6, edgeCount: 3 } })
     )
     const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((s) => s.textContent)
-    expect(secs).toEqual(['标 签'])
+    // [B3] 引用分节随批新增（节序=['标 签','引用']）；「关 联」退役负锚语义不变
+    expect(secs).toEqual(['标 签', '引用'])
     expect(fldValue('脉络'), '脉络行已退役').toBeNull()
     expect(fldValue('AI 评估'), 'AI 评估行已退役').toBeNull()
     expect(host?.querySelector('.lib-postpone'), '后置徽章已退役').toBeNull()
@@ -162,7 +163,7 @@ describe('T3-P3 规格表抽屉——键值行与关联行', () => {
   it('分节条在场：「标 签」+TagEditor 驻留（新增标签输入框）；「关 联」节已退役（F-LIBUI-01）', async () => {
     await renderPanel(makeDetail())
     const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((s) => s.textContent)
-    expect(secs).toEqual(['标 签'])
+    expect(secs).toEqual(['标 签', '引用'])
     expect(host?.querySelector('input[aria-label="新增标签"]')).not.toBeNull()
   })
 
@@ -211,6 +212,17 @@ describe('T3-P3 规格表抽屉——头区状态点与动作面', () => {
     await renderPanel(makeDetail({ enrichStatus: 'pending' }))
     expect(host?.querySelector('.lib-dr-id')?.textContent).toContain('待增强')
     expect(host?.querySelector('.lib-dr-status-faint')).not.toBeNull()
+  })
+
+  it('[B3] 引用分节在场：节头「引用」+三格式钮（GB/T 7714/APA/BibTeX）真实文本（九钮锁零触碰）', async () => {
+    await renderPanel(makeDetail())
+    const secs = Array.from(host?.querySelectorAll('.lib-dr-sec') ?? []).map((x) => x.textContent)
+    expect(secs, '「引用」节头在场（沿「标 签」节头语汇）').toContain('引用')
+    const buttons = Array.from(host!.querySelectorAll('button')).map((b) => b.textContent)
+    expect(buttons).toContain('GB/T 7714')
+    expect(buttons).toContain('APA')
+    expect(buttons).toContain('BibTeX')
+    expect(buttons).toContain('复制引用')
   })
 
   it('动作面九钮在场（文本逐字——受锁 export/clip/notes-off 断言面同源）+主钮 primary 类', async () => {

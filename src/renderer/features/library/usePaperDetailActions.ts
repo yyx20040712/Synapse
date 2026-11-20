@@ -28,10 +28,7 @@ import { useState } from 'react'
 import type { PaperDetail } from '@shared/models/paper'
 import { api, unwrap, ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/Toast'
-import { OP_FAILED } from '../../shared/ui-constants'
-
-/** 剪贴板动作失败文案（E6/E7：无 CANCELLED 面，失败统一动作型） */
-const CLIP_FAILED = '复制到剪贴板失败'
+import { CLIP_FAILED, OP_FAILED } from '../../shared/ui-constants'
 
 export type PaperDetailAction =
   | 'enrich'

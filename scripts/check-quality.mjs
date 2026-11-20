@@ -114,6 +114,10 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
   ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']],
   ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']],
+  // [B3 批 2026-11-20] LineageSidePanel 引用分节消费 library/DrCitation（两
+  // 面板共用件——序列化单源在 main，共用件单源防两域各拼一份 UI；受控例外
+  // 沿 LineageSideFragments 同型先例），lineage 域其余文件引用 library 仍是红线。
+  ['src/renderer/features/lineage/LineageSidePanel.tsx', ['library/DrCitation']],
   // F-VISFB-31（2026-10-17，B4）：LineageTimeline 订阅 settings.store uiScale
   // 档（W 量测/spacer 量测/当前月对齐/路由快照四重算键——INV-144 三域律量测
   // 面；单值订阅受控例外〔tab-dirty→notes.store 同型先例族〕，lineage 域其余

@@ -137,6 +137,17 @@ export const clipboardReqSchema = z
   .object({ format: z.enum(['bibtex', 'csv']), paperIds: z.array(z.string().min(1)).min(1) })
   .strict()
 
+/** [B3] 引用预览请求：三格式单篇（序列化单源在 main——renderer 不拼第二套
+ *  元数据规则；预览文本按设计回传 renderer 展示，复制动作在 renderer 侧） */
+export const citationReqSchema = z
+  .object({ format: z.enum(['gbt7714', 'apa', 'bibtex']), paperId: z.string().min(1) })
+  .strict()
+
+/** [B3] 引用预览回包：单条格式化文本 */
+export const citationResSchema = z.object({ text: z.string() }).strict()
+
+export type CitationFormat = z.infer<typeof citationReqSchema>['format']
+
 // ── export_ corpus-item（AI-02：五件套提取回传 renderer→main 常规 invoke）──
 /** 逐项回传判别联合（背压：每页/每图一 invoke，await ack 后发下一项） */
 export const corpusItemReqSchema = z.discriminatedUnion('kind', [

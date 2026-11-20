@@ -44,6 +44,7 @@ import { SideBadges } from './SideBadges'
 import { SideCapRow } from './SideCapRow'
 import { TagsRow } from './TagsRow'
 import { SidePaperInfo } from './SidePaperInfo'
+import { DrCitation } from '../library/DrCitation'
 import { LineageSideAiNotes } from './LineageSideAiNotes'
 import { LineageSideFragments } from './LineageSideFragments'
 import { LineageSideManualNote } from './LineageSideManualNote'
@@ -189,6 +190,19 @@ export function LineageSidePanel(props: {
             {/* [F-UIRES-04 批 3b] 论文信息区（§4.1 滚动区 DOM 序首件——与笔记
                 区同滚动承载；SidePaperInfo 自持 M1×M2 双机扇出） */}
             <SidePaperInfo paperId={node.paperId} />
+            {/* [B3] 引用分节（三格式切换+预览+复制）：结构等价位=信息区之后
+                笔记节之前（库域「元数据→引用」同序；节头沿脉络域 h4 语汇——
+                标签节驻头部区，引用随可滚内容承载；共用件=library/DrCitation
+                经 check-quality 白名单受控例外） */}
+            <section data-testid="lineage-side-citation" className="flex flex-col gap-1">
+              <h4
+                className="m-0 pl-1.5 font-medium"
+                style={{ color: 'var(--text-dim)', borderLeft: '3px solid var(--accent)' }}
+              >
+                引用
+              </h4>
+              <DrCitation paperId={node.paperId} />
+            </section>
             {/* [F-UIRES-03 B2] 三节新序（DOM 序即此序）：全文笔记→片段笔记→
                 AI 评估与建议；后置占位章随③真节替代整删（B4 裁决终结） */}
             <LineageSideManualNote paperId={node.paperId} />

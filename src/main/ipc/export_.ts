@@ -12,6 +12,8 @@
  *   复用，构建失败零剪贴板副作用）后经 deps.clipboard.writeText 写系统剪贴板，
  *   res { count }；无保存对话框 → 无 CANCELLED 分支（与 exportTo 文件导出的
  *   语义差异——取消面不存在，失败面只有构建/写入两种）
+ * - [B3] citation：纯委托 buildCitation(paperId, format)→{text}（预览文本按
+ *   设计回传 renderer；零剪贴板副作用——复制动作在 renderer 侧）
  * - 文件名安全化：替换 Windows 非法字符 \\ / : * ? " < > | 与全角冒号为下划线、
  *   空白归一为下划线，截断 80 字符
  *
@@ -115,6 +117,12 @@ export function createExportIpc(deps: IpcDeps): ApiHandlers['export_'] {
         deps.services.export_.buildCsv(req.paperIds), req.paperIds.length),
 
     clipboard: (req) => exportClipboard(req.format, req.paperIds),
+
+    // [B3] 引用预览：纯委托 service（文本回传 renderer 展示；零剪贴板副作用
+    //——复制动作在 renderer 侧对已展示文本 writeText；服务错误透传）
+    citation: async (req) => ({
+      text: await deps.services.export_.buildCitation(req.paperId, req.format)
+    }),
 
     report: async (req) => {
       const detail = await deps.services.library.detail({ paperId: req.paperId })

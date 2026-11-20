@@ -42,6 +42,7 @@ import { ICON_X } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { TagEditor } from '../tags/TagEditor'
 import { DrActions } from './DrActions'
+import { DrCitation } from './DrCitation'
 import { DrKeyVals } from './DrKeyVals'
 import { DrMetrics } from './DrMetrics'
 import { DrPaperInfo } from './DrPaperInfo'
@@ -188,6 +189,10 @@ export function PaperDetailPanel(props: {
         <DrPaperInfo detail={detail} />
         {/* 键值行拆件（YEAR-MO/VENUE/DOI 含 IF 灰字段——零变搬移） */}
         <DrKeyVals detail={detail} />
+        {/* [B3] 引用分节（三格式切换+预览+复制——沿「标 签」节头语汇；DrCitation
+            自持加载，格式选择跨文献驻留故不 key 重挂） */}
+        <div className="lib-dr-sec">引用</div>
+        <DrCitation paperId={detail.id} />
       </div>
       <DrActions
         detail={detail}

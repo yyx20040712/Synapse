@@ -18,6 +18,8 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
  * - 判据⑤（strip 降级面）：seed 无真 PDF 文件→M2 自建 getDocument 失败
  *   （app-file 404）→strip 省略+重试微钮在场（I4 降级不挡主件——作者文本
  *   仍在场）。真 PDF 提取面挂视检/CI 后续票（票面降级申报）。
+ * - [B3] 引用分节（结构等价位=信息区之后笔记节之前）：侧板引用真实文本
+ *   （GB/T 7714 默认）+切 BibTeX 单条回读——两域共用件 DrCitation 同源。
  * 种子=seedPaperRow 双行+seedLineageGraph 双节点（A=标签/作者/长摘要，
  * B=作者无标签）；authors/abstract 经 seed-lineage.mjs 信息区种子面 UPDATE
  * （papers 既有列）。夹具协议沿承 lineage-sidebar.spec（1280×860/20s 首屏）。
@@ -145,5 +147,27 @@ test('无真 PDF 场零 figures→strip 省略+重试微钮退役（F-VISFB-43 �
   await expect(win.getByTestId('paper-info-strip')).toHaveCount(0)
   await expect(win.getByTestId('paper-info-authors')).toContainText('张三丰')
 
+  await app.close()
+})
+
+test('[B3] 引用分节：脉络侧板真实文本+切 BibTeX 单条回读', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-b3-cit-lg-'))
+  await bootstrapMigrations(userData)
+  await seedFixture(userData)
+  const { app, win } = await openPanelOn(userData, A.title)
+
+  const section = win.getByTestId('lineage-side-citation')
+  await expect(section).toBeVisible({ timeout: 10_000 })
+  const text = section.getByTestId('citation-text')
+  // 预览文本本体可见（外层可见≠文本可见——[B3 审查回炉 W-2]）
+  await expect(text).toBeVisible()
+  // GB/T 7714 默认：作者三人全列+题名[J]（种子无 venue/DOI——段省略）+年份
+  await expect(text).toContainText('张三丰, 李四光, 王二三. 信息区主论文. 2024.')
+  // 切 BibTeX：单条回读（@misc 头〔种子无 venue〕+author join(and)——citation
+  // key 单源=makeCitationKey：纯 CJK 题名回退词 'smart'）+切换后仍可见
+  await section.getByRole('button', { name: 'BibTeX' }).click()
+  await expect(text).toBeVisible()
+  await expect(text).toContainText('@misc{zhang2024smart')
+  await expect(text).toContainText('author = {张三丰 and 李四光 and 王二三}')
   await app.close()
 })

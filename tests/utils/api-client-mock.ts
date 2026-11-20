@@ -143,9 +143,24 @@ const stubFiguresDefault = {
 }
 stubState.api.figures = stubFiguresDefault as unknown as Record<string, unknown>
 
+// [B3 批 2026-11-20] PaperDetailPanel/LineageSidePanel 挂载链缺省桩面（挂
+// SettingsPage 同型习语——单点扩优于六件逐加）：引用分节挂载即
+// export_.citation。恒 ok 单条文本（挂载链测试不断言其内容——交互面归
+// dr-citation.test 自带 mock）；**分域覆盖下存活**：makeApiStub({export_:…})
+// 整体替换 export_ 时若未自带 citation 则回填缺省（六件库域测试件零逐改）。
+const stubExportCitationDefault = {
+  citation: vi.fn(async () => ({ ok: true as const, data: { text: 'Wang. Title[J]. Venue, 2024.' } }))
+}
+stubState.api.export_ = { ...stubExportCitationDefault } as unknown as Record<string, unknown>
+
 /** 填充 api 门面桩形状并返回（返回值即入参字面量——保持文件内类型化引用） */
 export function makeApiStub<T extends object>(shape: T): T {
   Object.assign(stubState.api, shape)
+  // [B3] export_.citation 缺省桩在分域整体覆盖下存活（见上注——挂载链面）
+  const ex = stubState.api.export_ as Record<string, unknown> | undefined
+  if (ex !== undefined && ex.citation === undefined) {
+    ex.citation = stubExportCitationDefault.citation
+  }
   return shape
 }
 

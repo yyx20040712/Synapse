@@ -232,9 +232,9 @@ it('文献节点三节新序：全文笔记→片段笔记→AI 评估与建议�
   expect(q('[data-testid="lineage-side-meta"]')?.getAttribute('data-binding')).toBe('paper')
   // [A3] 原「区2 核心 idea」整区随 core_idea 全退役删除——面板无该区（负锚）
   expect(q('[data-testid="lineage-side-idea"]')).toBeNull()
-  // B2 三节新序=DOM 序（h4 标题数组）
+  // B2 三节新序=DOM 序（h4 标题数组）；[B3] 引用分节插信息区后笔记节前
   const h4s = Array.from(host?.querySelectorAll('h4') ?? []).map((h) => h.textContent)
-  expect(h4s).toEqual(['全文笔记', '片段笔记', 'AI 评估与建议'])
+  expect(h4s).toEqual(['引用', '全文笔记', '片段笔记', 'AI 评估与建议'])
   // 全文笔记（现名承「人工笔记」位——contentMd 呈现）
   expect(q('[data-testid="lineage-side-manual-note"]')?.textContent).toContain('全文总评内容')
   // 片段笔记条目（色点+1 基页码显示）
@@ -275,9 +275,10 @@ it('R2-LG11 侧板浅色化：白玻璃底+边；三节 h4 accent 左缘条；�
   expect(rootEl.getAttribute('style')).toContain('var(--panel-a92)')
   expect(rootEl.getAttribute('style')).toContain('var(--border)')
   expect(rootEl.style.backdropFilter).toBe('blur(12px)')
-  // 三节 h4 accent 左缘条（B2 三节齐改——去金夜色）
+  // 三节 h4 accent 左缘条（B2 三节齐改——去金夜色）；[B3] 引用分节同款
+  // h4 语汇（4 枚全携左缘条）
   const h4s = Array.from(host?.querySelectorAll('h4') ?? [])
-  expect(h4s.length).toBe(3)
+  expect(h4s.length).toBe(4)
   for (const h of h4s) {
     expect(h.getAttribute('style')).toContain('var(--accent)')
   }
