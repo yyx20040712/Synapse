@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTwoColumnPdf,
+  PDF_TWOCOL_FOOTER,
   PDF_TWOCOL_GUTTER,
+  PDF_TWOCOL_HEADER,
   PDF_TWOCOL_LEFT,
   PDF_TWOCOL_RIGHT,
   PDF_TWOCOL_TITLE
@@ -36,8 +38,17 @@ describe('0C createTwoColumnPdf —— 双栏 fixture 可加载验收', () => {
     expect(right).toBeDefined()
     expect(right?.transform[4]).toBeGreaterThanOrEqual(PDF_TWOCOL_GUTTER.right)
 
-    // 中缝净空：栏体带（y≤720）任意行盒不得穿越中缝带（2pt 容差=字形度量噪声）
-    const body = lines.filter((t) => t.str.trim() !== '' && (t.transform[5] ?? 0) <= 720)
+    // 中缝净空：栏体带（y≤720 且排除页眉/页脚独立带）任意行盒不得穿越中缝带
+    // （2pt 容差=字形度量噪声）。[F-SELBLK-01 适配] 页眉基线 764 已由 y≤720
+    // 排除；页脚基线 60 居中跨中缝（页级 fullSpan 样本），须按哨兵排除——
+    // 否则「正文区双栏结构」断言把页脚当正文误判。
+    const body = lines.filter(
+      (t) =>
+        t.str.trim() !== '' &&
+        (t.transform[5] ?? 0) <= 720 &&
+        t.str !== PDF_TWOCOL_HEADER &&
+        t.str !== PDF_TWOCOL_FOOTER
+    )
     expect(body.length).toBeGreaterThanOrEqual(22)
     for (const t of body) {
       const x0 = t.transform[4] ?? 0

@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { createTwoColumnPdf, PDF_TWOCOL_LEFT, PDF_TWOCOL_RIGHT } from '../utils/pdf-factory'
+import { createTwoColumnPdf, PDF_TWOCOL_CAPTION, PDF_TWOCOL_LEFT, PDF_TWOCOL_RIGHT } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 // [F-VISFB-53CI-01 诊断轮] 预拖段采集面保留（失败现场 attach=pre 数据）；
 // [53CI-02 收尾] sel53Verdict Node 复算函数已删（死代码——诊断结论归档仓外
@@ -475,4 +475,117 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
   }
 
   await app.close()
+})
+
+/**
+ * [F-SELBLK-01] 共享开页步骤（A/B 两案同形）：建用户数据→写入 0C 双栏
+ * fixture→种子文献行→启动 Electron→打开文献→等两栏哨兵可见。
+ * 返回 app/win 供案内滚动锚定与鼠标链消费（CI 窄视口滚动锚定由案内承载）。
+ */
+async function launchTwoColDoc(): Promise<{ app: Awaited<ReturnType<typeof launch>>; win: Page }> {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-selblk-'))
+  await bootstrapMigrations(userData)
+  const bytes = createTwoColumnPdf()
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  const title = '智慧水务 e2e 块钳制文献'
+  await seedPaperRow(userData, fileRef, sha, title)
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_TWOCOL_LEFT).first()).toBeVisible({ timeout: 20_000 })
+  await expect(win.getByText(PDF_TWOCOL_RIGHT).first()).toBeVisible({ timeout: 20_000 })
+  return { app, win }
+}
+
+/** A 案：左栏 ROW 02 锚定 → 真实拖至 caption 下方 ROW 08 行 → enforce 投影回上段块行尾 */
+test('[F-SELBLK-01] A 块钳制：左栏 ROW 02 拖至 caption 下方 ROW 08 → 选区止于上段块行尾（真实文本断言）', async () => {
+  const { app, win } = await launchTwoColDoc()
+  try {
+    // 锚定输入：ROW 02 行内（y 中心）→ 右移进同栏（不越中缝）
+    const row02 = win.getByText('LCOL ROW 02').first()
+    const captionText = win.getByText(PDF_TWOCOL_CAPTION).first()
+    const row08 = win.getByText('LCOL ROW 08').first()
+    await row02.scrollIntoViewIfNeeded()
+    const b02 = await row02.boundingBox()
+    const bCap = await captionText.boundingBox()
+    const b08 = await row08.boundingBox()
+    expect(b02).not.toBeNull()
+    expect(bCap).not.toBeNull()
+    expect(b08).not.toBeNull()
+    const [sx, sy] = [b02!.x + b02!.width * 0.2, b02!.y + b02!.height / 2]
+    const vh = await win.evaluate(() => window.innerHeight)
+    // 目标：caption 下方 ROW 08 行（纵向越出段块——违例钳制面）
+    const tx = b08!.x + b08!.width * 0.6
+    const ty = Math.min(b08!.y + b08!.height / 2, vh - 24)
+    // 指针 x 取锚块包络右缘外（左栏哨兵行末右缘；投影行尾二值判据 px≥blockX1
+    // ——块 x1 由该块最宽行（哨兵 113pt）决定，故指针须越过栏内实际行宽）
+    const leftSentinel = (await win.getByText(PDF_TWOCOL_LEFT).first().boundingBox())!
+    const pointerX = leftSentinel.x + leftSentinel.width + 6
+    await win.mouse.move(sx, sy)
+    await win.mouse.down()
+    await sel53CacheAnchor(win, sx, sy)
+    // 真实 mousemove 推进指针（授权→会话 pointer 记录：x 出块包络=行尾、y 落
+    // ROW 08=越块底→视觉末带），再程序化写 focus 至 ROW 08 行内
+    await win.mouse.move(pointerX, ty)
+    await sel53ExtendSelectionTo(win, tx, ty)
+    await sel53WaitQuiescent(win)
+    const skips = await win.evaluate(
+      () => (window as unknown as { __sel53ext?: { skips: number } }).__sel53ext?.skips ?? -1
+    )
+    expect(skips, 'A 案扩展写零跳写').toBe(0)
+    const aText = await win.evaluate(() => window.getSelection()?.toString() ?? '')
+    // 真实文本断言：止于上段块（含 ROW 06）、不含 caption、不含下段 ROW 07
+    expect(aText.includes('LCOL ROW 06'), `A 案选区含上段块末行（实得=${JSON.stringify(aText)}）`).toBe(true)
+    expect(aText.includes('CAPTION'), `A 案选区不含 caption 段（实得=${JSON.stringify(aText)}）`).toBe(false)
+    expect(aText.includes('LCOL ROW 07'), `A 案选区不含下段块（实得=${JSON.stringify(aText)}）`).toBe(false)
+    await win.mouse.up()
+    await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 5_000 })
+  } finally {
+    await app.close()
+  }
+})
+
+/** B 案：右栏 ROW 02 锚定 → 真实拖至 ROW 08 → 同块连续（含 ROW 07/08，互证 A 不对称） */
+test('[F-SELBLK-01] B 流连续：右栏 ROW 02 拖至 ROW 08 → 同块无中切（真实文本断言）', async () => {
+  const { app, win } = await launchTwoColDoc()
+  try {
+    const row02 = win.getByText('RCOL ROW 02').first()
+    const row08 = win.getByText('RCOL ROW 08').first()
+    await row02.scrollIntoViewIfNeeded()
+    const b02 = await row02.boundingBox()
+    const b08 = await row08.boundingBox()
+    expect(b02).not.toBeNull()
+    expect(b08).not.toBeNull()
+    const [sx, sy] = [b02!.x + b02!.width * 0.2, b02!.y + b02!.height / 2]
+    const vh = await win.evaluate(() => window.innerHeight)
+    // 程序化 focus 落 ROW 08 行尾内 1px（越过行右缘会命中 textLayer 容器——
+    // 探针实测 caret 解析退化；行内近右缘含整行文本）
+    const tx = b08!.x + b08!.width - 1
+    const ty = Math.min(b08!.y + b08!.height / 2, vh - 24)
+    // 指针 x 越右栏块包络右缘（行尾二值判据）；y 落 ROW 08=同块可见末带
+    const rightSentinel = (await win.getByText(PDF_TWOCOL_RIGHT).first().boundingBox())!
+    const pointerX = rightSentinel.x + rightSentinel.width + 6
+    await win.mouse.move(sx, sy)
+    await win.mouse.down()
+    await sel53CacheAnchor(win, sx, sy)
+    await win.mouse.move(pointerX, ty)
+    await sel53ExtendSelectionTo(win, tx, ty)
+    await sel53WaitQuiescent(win)
+    const skips = await win.evaluate(
+      () => (window as unknown as { __sel53ext?: { skips: number } }).__sel53ext?.skips ?? -1
+    )
+    expect(skips, 'B 案扩展写零跳写').toBe(0)
+    const bText = await win.evaluate(() => window.getSelection()?.toString() ?? '')
+    expect(bText.includes('RCOL ROW 07'), `B 案选区含 ROW 07（同块无中切；实得=${JSON.stringify(bText)}）`).toBe(true)
+    expect(bText.includes('RCOL ROW 08'), `B 案选区含 ROW 08（实得=${JSON.stringify(bText)}）`).toBe(true)
+    await win.mouse.up()
+    await expect(win.getByTestId('selection-toolbar')).toBeVisible({ timeout: 5_000 })
+  } finally {
+    await app.close()
+  }
 })

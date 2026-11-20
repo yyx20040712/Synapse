@@ -7,19 +7,22 @@
  * 判别形态（手算基线——DoD 预期数字条款）：
  * - 标记夹具（乱序 DOM 形——pdf.js transform 乱序真实形态）：textLayer 盒
  *   (0,0,612,120)；DOM 序=行1 'AB' 盒 (10,20)-(110,30)、空文本标记（零长
- *   文本节点）盒 (10,80)-(10,100)、行2 'CD' 盒 (10,60)-(110,70)；标记中心
- *   90>真实末行（行2）底 70=越末行。items ['AB','CD']（零长标记不入拼接）
+ *   文本节点）盒 (10,80)-(10,100)、行2 'CD' 盒 (10,36)-(110,46)；标记中心
+ *   90>真实末行（行2）底 46=越末行。行距 16（间隙 6=0.6×字号）贴近真实
+ *   排版——[F-SELBLK-01] 块模型下 AB/CD 同属一枚 flow 块（原 40 间距会被
+ *   切为两段块，见该票适配注）。items ['AB','CD']（零长标记不入拼接）
  *   transform y=120-domTop-8（AB 92/CD 52）→rects 归一 top≈20/120≈16.67%
- *   与 60/120=50%（zoom2 盒×2→16.67→33.33——B 组幂等判别轴）。
+ *   与 36/120=30%（zoom2 盒×2→16.67→33.33——B 组幂等判别轴）。
  *   闪烁机理（d1 归因实证）：focus=(标记零长文本,0) 时 visual 吸附末行行尾
  *   =(CD 尾)→两行块；改动前 settle full 的 raw 边界经 snapBlankBoundary('end')
  *   栏分流把边界解到行2 行首 (CD,0)→tail=2→end=2→quote='AB' 单行块——
  *   双几何交替（探针 53-impl 实证 1 块≠2 块）。
  * - 双栏夹具：textLayer 盒 (0,0,300,120)；title/L1-L3/R1-R3 行盒
- *   (10,0..290,12)/(10,20..90,30)/(10,60..90,70)/(210,20..290,30)...；items
- *   偏移手算 title 0-12、L1 12-21、L2 21-30、L3 30-39、R1 39-48（各 9 字符）
- *   ——L1..L3 全选 quote=slice(12,39) 长 27；左栏块归一域 left+width≤30%
- *   （x10+w80 / 300），右栏块 left≥70%——45% 为判别界。
+ *   (10,0..290,12)/(10,20..90,30)/(10,36..90,46)/(10,52..90,62) 与右栏同
+ *   （行距 16=间隙 6，左栏三行同属一枚 flow 块——[F-SELBLK-01] 块模型）；
+ *   items 偏移手算 title 0-12、L1 12-21、L2 21-30、L3 30-39、R1 39-48
+ *   （各 9 字符）——L1..L3 全选 quote=slice(12,39) 长 27；左栏块归一域
+ *   left+width≤30%（x10+w80 / 300），右栏块 left≥70%——45% 为判别界。
  * 幂等判据=52 号 canonical signature 四元组（selection-drag-controller 域
  * 导出面——禁第二套签名）；失效点=save 清选区+mousedown 新会话。
  * 桩形状=全字段 domRect（控制器 boxOf 读四边——stubElementRects 四字段桩
@@ -71,16 +74,16 @@ function mountMarkerFixture(): { page: HTMLElement; span1: HTMLElement; span2: H
   rects.set(page, { x: 0, y: 0, width: 612, height: 120 })
   rects.set(span1, { x: 10, y: 20, width: 100, height: 10 })
   rects.set(marker, { x: 10, y: 80, width: 0, height: 20 })
-  rects.set(span2, { x: 10, y: 60, width: 100, height: 10 })
+  rects.set(span2, { x: 10, y: 36, width: 100, height: 10 })
   return { page, span1, span2, marker }
 }
 
 /** 标记夹具页项（view=[0,0,612,120]；DOM 全文='AB'+'CD'——零长标记不入；
- *  y=120-domTop-8 手算：AB 行 top20→92、CD 行 top60→52） */
+ *  y=120-domTop-8 手算：AB 行 top20→92、CD 行 top36→76） */
 function seedMarkerPage(): void {
   const items: PdfTextItem[] = [
     { str: 'AB', dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, 10, 92], fontName: 'g1', hasEOL: false },
-    { str: 'CD', dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, 10, 52], fontName: 'g1', hasEOL: false }
+    { str: 'CD', dir: 'ltr', width: 100, height: 10, transform: [10, 0, 0, 10, 10, 76], fontName: 'g1', hasEOL: false }
   ]
   seedRegistry(1, mkText(items), 0, [0, 0, 612, 120])
 }
@@ -102,11 +105,11 @@ function mountTwocolFixture(): { page: HTMLElement; spanOf: (id: string) => HTML
   }
   mk('T', 'TWOCOL TITLE', 10, 0, 280)
   mk('L1', 'LCOLSENT1', 10, 20, 80)
-  mk('L2', 'LCOLSENT2', 10, 40, 80)
-  mk('L3', 'LCOLSENT3', 10, 60, 80)
+  mk('L2', 'LCOLSENT2', 10, 36, 80)
+  mk('L3', 'LCOLSENT3', 10, 52, 80)
   mk('R1', 'RCOLSENT1', 210, 20, 80)
-  mk('R2', 'RCOLSENT2', 210, 40, 80)
-  mk('R3', 'RCOLSENT3', 210, 60, 80)
+  mk('R2', 'RCOLSENT2', 210, 36, 80)
+  mk('R3', 'RCOLSENT3', 210, 52, 80)
   page.appendChild(textLayer)
   document.body.appendChild(page)
   return {
@@ -124,8 +127,8 @@ function seedTwocolPage(): void {
   })
   seedRegistry(1, mkText([
     row('TWOCOL TITLE', 10, 0),
-    row('LCOLSENT1', 10, 20), row('LCOLSENT2', 10, 40), row('LCOLSENT3', 10, 60),
-    row('RCOLSENT1', 210, 20), row('RCOLSENT2', 210, 40), row('RCOLSENT3', 210, 60)
+    row('LCOLSENT1', 10, 20), row('LCOLSENT2', 10, 36), row('LCOLSENT3', 10, 52),
+    row('RCOLSENT1', 210, 20), row('RCOLSENT2', 210, 36), row('RCOLSENT3', 210, 52)
   ]), 0, [0, 0, 300, 120])
 }
 
@@ -247,7 +250,7 @@ describe('F-VISFB-53 闪烁收口（统一快慢 effective boundary+同签名禁
     const visualFrame = blockStyles()
     expect(visualFrame.length).toBe(2)
     expect(parseFloat(firstRect()!.style.top)).toBeCloseTo((20 / 120) * 100, 2)
-    expect(parseFloat(paintBlocks()[1]!.style.top)).toBeCloseTo((60 / 120) * 100, 2)
+    expect(parseFloat(paintBlocks()[1]!.style.top)).toBeCloseTo((36 / 120) * 100, 2)
     await advance(200)
     expect(firstRect(), 'settle 全量不清 visual 帧（无空帧）').not.toBeNull()
     expect(blockStyles(), 'settle 全量产物=visual 帧同几何（双行块保持——无双几何交替）').toEqual(visualFrame)
@@ -429,7 +432,12 @@ describe('F-VISFB-53 闪烁收口（统一快慢 effective boundary+同签名禁
     selectRange(f.textOf('L1'), 0, f.textOf('L3'), 0)
     fireSelectionChange()
     await advance(16)
-    expect(parseFloat(paintBlocks()[0]!.style.top), '新纪首帧读新 zoom（zoom2 → 40/120）').toBeCloseTo((40 / 120) * 100, 1)
+    // [F-SELBLK-01 适配] 新纪首帧须读 zoom2（区别于拖选期 zoom1 帧）：
+    // 项几何 L1 顶=40px，A9 带校准把该带拉到 span L2/L3 盒（jsdom span 不随
+    // zoom 缩放：y=36/52）→ 首块顶=36px=30%；zoom1 帧首块顶=20px=16.67%。
+    // 断言精确值 + 显式否定 zoom1 值（原断言=同一性质的 zoom2 判别点）。
+    expect(parseFloat(paintBlocks()[0]!.style.top), '新纪首帧读新 zoom（zoom2 带校准顶 36/120）').toBeCloseTo((36 / 120) * 100, 2)
+    expect(parseFloat(paintBlocks()[0]!.style.top), '新纪首帧≠拖选期 zoom1 几何（20/120）').not.toBeCloseTo((20 / 120) * 100, 2)
     await clickHighlightSave()
     const arg = saveMock.mock.calls[0]![0] as { annotation: { quoteText: string } }
     expect(arg.annotation.quoteText).not.toContain('RCOL')
@@ -446,11 +454,12 @@ describe('F-VISFB-53 闪烁收口（统一快慢 effective boundary+同签名禁
     fireSelectionChange()
     await advance(16)
     expect(paintBlocks().length).toBe(2)
-    // mouseup 释放点 (150,35)：focus 行2 盒顶 60 上方、距行1 底 30 为 5≤max(25,4)、
+    // mouseup 释放点 (150,33)：focus 行2 盒顶 36 上方、距行1 底 30 为 3≤max(3,4)、
     // upX=150>行1 右缘 110+1 容差=111（该处无文本）——F-A12 浅探 affinity 触发：
     // focus 重定向行1 行尾 (AB,2)→终局签名 A=(AB,0)-(AB,2)≠R；full(true) 终局帧
-    // （1 块 zoom1）
-    fireUp(150, 35)
+    // （1 块 zoom1）。[F-SELBLK-01 适配] 行距致密化后行间隙 6，释放点须贴上行
+    // 底（原 35 在新间隙下距上行底 5>max(1,4)=4=不触发）
+    fireUp(150, 33)
     await advance(16)
     expect(toolbar()).not.toBeNull()
     expect(paintBlocks().length).toBe(1)
@@ -484,7 +493,7 @@ describe('F-VISFB-53 闪烁收口（统一快慢 effective boundary+同签名禁
     selectRange((f.span1.firstChild as Text), 0, (f.span2.firstChild as Text), 2)
     fireSelectionChange()
     await advance(16)
-    fireUp(150, 35)
+    fireUp(150, 33)
     await advance(16)
     expect(toolbar()).not.toBeNull()
     // S5 窗内程序化改选 B=(AB,0)-(CD,1)（markFlushed 后 16ms<100ms）：rAF 的

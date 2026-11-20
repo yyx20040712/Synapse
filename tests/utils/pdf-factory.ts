@@ -197,8 +197,23 @@ export function createRotatedCropPdf(text = PDF_ROTATED_CROP_TEXT): Uint8Array {
 export const PDF_TWOCOL_TITLE = 'TWOCOL TEST DOC TITLE'
 export const PDF_TWOCOL_LEFT = 'LCOL SENTINEL ALPHA'
 export const PDF_TWOCOL_RIGHT = 'RCOL SENTINEL OMEGA'
+/** [F-SELBLK-01] 块分割样本哨兵（页眉/页脚=页级 fullSpan；caption=左栏段块净空） */
+export const PDF_TWOCOL_HEADER = 'TWOCOL TEST RUNNING HEAD'
+export const PDF_TWOCOL_FOOTER = 'TWOCOL TEST PAGE FOOT'
+export const PDF_TWOCOL_CAPTION = 'LCOL CAPTION SAMPLE'
 /** 中缝几何单源（栏检测断言=中缝净空带 [left,right]，中线 mid——pt，用户空间） */
 export const PDF_TWOCOL_GUTTER = { left: 294, right: 318, mid: 306 } as const
+
+/** 粗估 Helvetica 文本宽度（0.5×字号×字符数——fixture 只求水平居中近似，
+ *  真实宽度由 pdfjs 量测；居中目的是让页眉/页脚 x 包络跨页级中缝） */
+function approxTextWidth(text: string, size: number): number {
+  return text.length * size * 0.5
+}
+
+/** 单行文本内容流片段（基线 y、字号 size、左缘 x；esc 防括号/反斜杠） */
+function textLine(text: string, size: number, x: number, y: number): string {
+  return `BT /F1 ${size} Tf ${x} ${y} Td (${esc(text)}) Tj ET`
+}
 
 /**
  * 双栏变体（0C：全宽标题+左右栏哨兵行——选区票双栏几何的 gating fixture）。
@@ -208,15 +223,33 @@ export const PDF_TWOCOL_GUTTER = { left: 294, right: 318, mid: 306 } as const
  * （哨兵+ROW 01-10，行基线 700..540）。文本坐标=PDF 用户空间 y-up
  * （getTextContent item.transform[4]/[5]）；e2e 消费经 viewport 换算。
  * 对象布局同 createTinyPdf（1=Catalog 2=Pages 3=Page 4=Contents 5=Font）。
+ *
+ * [F-SELBLK-01] 块分割样本扩展（沿设计稿 §6）：
+ * - 页眉 `TWOCOL TEST RUNNING HEAD` font 8 基线 764 水平居中（x 包络跨页级
+ *   中缝 → 页级 fullSpan）；
+ * - 左栏 caption `LCOL CAPTION SAMPLE` font 8 基线 588 x=54；左栏 ROW 07-10
+ *   基线 560/544/528/512（避让 caption——段前净空+字号簇双信号）；
+ * - 页脚 `TWOCOL TEST PAGE FOOT` font 8 基线 60 水平居中（页级 fullSpan）。
+ * 页面尺寸/标题/两栏哨兵行坐标不动（既有 e2e 几何断言零改）。
  */
 export function createTwoColumnPdf(): Uint8Array {
-  const rows: string[] = [`BT /F1 18 Tf 72 740 Td (${esc(PDF_TWOCOL_TITLE)}) Tj ET`]
-  const column = (prefix: string, sentinel: string, x: number): string[] =>
-    [sentinel, ...Array.from({ length: 10 }, (_, i) => `${prefix} ROW ${String(i + 1).padStart(2, '0')}`)].map(
-      (line, i) => `BT /F1 10 Tf ${x} ${700 - i * 16} Td (${esc(line)}) Tj ET`
-    )
-  rows.push(...column('LCOL', PDF_TWOCOL_LEFT, 54))
-  rows.push(...column('RCOL', PDF_TWOCOL_RIGHT, 318))
+  const centeredX = (text: string, size: number): number => (612 - approxTextWidth(text, size)) / 2
+  const rows: string[] = [
+    textLine(PDF_TWOCOL_TITLE, 18, 72, 740),
+    textLine(PDF_TWOCOL_HEADER, 8, centeredX(PDF_TWOCOL_HEADER, 8), 764),
+    textLine(PDF_TWOCOL_FOOTER, 8, centeredX(PDF_TWOCOL_FOOTER, 8), 60)
+  ]
+  const rowLine = (prefix: string, n: number, y: number): string =>
+    textLine(`${prefix} ROW ${String(n).padStart(2, '0')}`, 10, prefix === 'LCOL' ? 54 : 318, y)
+  // 左栏：哨兵+ROW 01-06（基线 684..604）→ caption（font 8 基线 588）→ ROW
+  // 07-10 下移避让（基线 560/544/528/512）——段前 8pt/段后 18pt 双净空+字号簇变
+  rows.push(textLine(PDF_TWOCOL_LEFT, 10, 54, 700))
+  for (let i = 1; i <= 6; i += 1) rows.push(rowLine('LCOL', i, 700 - i * 16))
+  rows.push(textLine(PDF_TWOCOL_CAPTION, 8, 54, 588))
+  for (let i = 7; i <= 10; i += 1) rows.push(rowLine('LCOL', i, 560 - (i - 7) * 16))
+  // 右栏：哨兵+ROW 01-10（基线 700..540，行距 16 间隙 6 不分裂）
+  rows.push(textLine(PDF_TWOCOL_RIGHT, 10, 318, 700))
+  for (let i = 1; i <= 10; i += 1) rows.push(rowLine('RCOL', i, 700 - i * 16))
   const stream = rows.join('\n')
   // /Length 是字节数（与 buildPdfObjects 同口径按 UTF-8 字节计）
   const streamBytes = new TextEncoder().encode(stream).length

@@ -28,7 +28,12 @@ stubUnwrap(async (p: Promise<{ ok: boolean; data: unknown }>): Promise<unknown> 
   return r.data
 })
 
-/** 双栏夹具（控制器直测件同构：左 L1..L3/右 R1..R3/中缝 [90,210]） */
+/** 双栏夹具（控制器直测件同构：左 L1..L3/右 R1..R3/中缝 [90,210]）。
+ *  [F-SELBLK-01 适配] 行带 y=[10,20]/[26,36]/[42,52]（行距 24→16、行盒净空
+ *  14→6=0.6×字号，贴近真实排版）：原行盒净空 14 ≥0.75×字号，块模型下会被
+ *  切成三条单行全局带（每带仅左右两盒→法定中缝带数不足=无双栏），与本夹具
+ *  「双栏+中缝」的原意图冲突；致密化后三条行带同属一条全局带，中缝 [90,210]
+ *  照旧成立，左/右各一枚连续 flow 块。 */
 function mountFixture(): { page: HTMLElement; spanOf: (id: string) => HTMLSpanElement; textOf: (id: string) => Text } {
   const page = document.createElement('div')
   page.setAttribute('data-page-root', '1')
@@ -43,11 +48,11 @@ function mountFixture(): { page: HTMLElement; spanOf: (id: string) => HTMLSpanEl
     textLayer.append(s)
   }
   mk('L1', 'LEFT ONE', { top: 10, bottom: 20, left: 10, right: 90 })
-  mk('L2', 'LEFT TWO', { top: 34, bottom: 44, left: 10, right: 90 })
-  mk('L3', 'LEFT THREE', { top: 58, bottom: 68, left: 10, right: 90 })
+  mk('L2', 'LEFT TWO', { top: 26, bottom: 36, left: 10, right: 90 })
+  mk('L3', 'LEFT THREE', { top: 42, bottom: 52, left: 10, right: 90 })
   mk('R1', 'RIGHT ONE', { top: 10, bottom: 20, left: 210, right: 290 })
-  mk('R2', 'RIGHT TWO', { top: 34, bottom: 44, left: 210, right: 290 })
-  mk('R3', 'RIGHT THREE', { top: 58, bottom: 68, left: 210, right: 290 })
+  mk('R2', 'RIGHT TWO', { top: 26, bottom: 36, left: 210, right: 290 })
+  mk('R3', 'RIGHT THREE', { top: 42, bottom: 52, left: 210, right: 290 })
   page.append(textLayer)
   document.body.append(page)
   return {

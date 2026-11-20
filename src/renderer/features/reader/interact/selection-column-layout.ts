@@ -19,12 +19,12 @@
  *     并入任何栏」；x1 恰触缝左界相切不算跨）；缝左侧整体落左栏、右侧落右栏。
  *     栏按 x0 视觉左右序输出；栏内 boxes 保持输入（DOM）序、成员=输入引用
  *     恒定（52 消费合同）。
- * - authorizeColumnSpan(layout, span)：授权判定——零栏态=no-columns 不授权；
- *   单栏态=无歧义恒授权 single；双栏态=span（内部归一，anchor/focus 传入序
- *   无关）跨中缝开区间 → 不授权 cross-gutter（票面「中缝不授权」——INV-142
- *   几何判定面：锚定/选区跨中缝时不产生栏授权，为 52 的 effective selection
- *   判定预埋，本票只锁纯函数合同），其余按缝两侧定栏（贴边相切授权所在侧
- *   ——缝=开区间语义）。
+ * - 授权判定已迁出本件：[F-SELBLK-01] 起授权合同=selection-block-layout
+ *   authorizeBlockPoint（INV-178——块级授权判定序：rotated/full-span 伪块盒级
+ *   命中→flow 包络→带内中缝 in-gutter 不授权→最近块回退→零块 no-blocks）。
+ *   本件仅承载栏几何（旋转分流/行带聚类+中缝投票/x 区间归栏）；旧
+ *   authorizeColumnSpan 的 span 授权语义由块件统一取代后删除（死代码即删——
+ *   生产消费已归零）。
  * - 语义校准：与 0C 双栏 fixture（tests/utils/pdf-factory createTwoColumnPdf）
  *   结构对齐——全宽标题带+左右栏（左 x=54/右 x=318）+中缝 24pt（[294,318]）
  *   形态；纯函数零 fixture 文件依赖（测试直构行盒）。全宽带判定=x 跨缝信号、
@@ -38,8 +38,9 @@
  * - 消费面=52（selection-evaluate 接线）；本票不触 SelectionLayer/
  *   selection-evaluate/release-affinity/selection-paint。
  */
-/** 竖排形态阈值：h > 3×w 判旋转盒（transform 后几何——行高主导的竖排 run） */
-const ROTATED_ASPECT = 3
+/** 竖排形态阈值：h > 3×w 判旋转盒（transform 后几何——行高主导的竖排 run）。
+ *  [F-SELBLK-01] 起导出：块分割件（selection-block-layout）L0 分流复用同一阈值。 */
+export const ROTATED_ASPECT = 3
 /** 中缝法定带数：≥2 条多盒行带候选交集才立缝（单带两段=词隙级偶发） */
 const MIN_GUTTER_BANDS = 2
 
@@ -80,11 +81,6 @@ export interface ColumnLayout {
   gutter: GutterBand | null
 }
 
-/** 授权判定结果（未授权态携带 reason；「中缝不授权」=cross-gutter 态） */
-export type ColumnAuthorization =
-  | { authorized: true; columnId: ColumnId }
-  | { authorized: false; reason: 'no-columns' | 'cross-gutter' }
-
 /** 栏划分：旋转分流 → 行带聚类+中缝投票 → x 区间归栏（头注行为层三段式） */
 export function detectColumnLayout(boxes: readonly LineBox[]): ColumnLayout {
   const rotated: LineBox[] = []
@@ -119,8 +115,10 @@ export function detectColumnLayout(boxes: readonly LineBox[]): ColumnLayout {
   return { kind: 'two-column', columns, fullSpan, rotated, gutter }
 }
 
-/** 行带聚类：y 重叠传递链（按 y 排序逐盒对照带内 maxY；相切不算重叠） */
-function rowBands(boxes: LineBox[]): LineBox[][] {
+/** 行带聚类：y 重叠传递链（按 y 排序逐盒对照带内 maxY；相切不算重叠）。
+ *  [F-SELBLK-01] 起导出：块分割件（selection-block-layout）L1/L3 的水平带聚类
+ *  与本函数同式——导出复用，禁抄第二份。 */
+export function rowBands(boxes: LineBox[]): LineBox[][] {
   const sorted = [...boxes].sort((a, b) => a.y - b.y || a.x - b.x)
   const bands: LineBox[][] = []
   let cur: LineBox[] | null = null
@@ -177,24 +175,4 @@ function bandOf(id: ColumnId, boxes: LineBox[]): ColumnBand {
     x1: Math.max(...boxes.map((b) => b.x + b.w)),
     boxes
   }
-}
-
-/** 授权判定（头注行为层：零栏不授权/单栏恒授权/双栏跨缝不授权+两侧定栏） */
-export function authorizeColumnSpan(
-  layout: ColumnLayout,
-  span: { x0: number; x1: number }
-): ColumnAuthorization {
-  if (layout.columns.length === 0) {
-    return { authorized: false, reason: 'no-columns' }
-  }
-  const gutter = layout.gutter
-  if (gutter === null) {
-    return { authorized: true, columnId: 'single' }
-  }
-  const lo = Math.min(span.x0, span.x1)
-  const hi = Math.max(span.x0, span.x1)
-  if (lo < gutter.right && hi > gutter.left) {
-    return { authorized: false, reason: 'cross-gutter' }
-  }
-  return { authorized: true, columnId: hi <= gutter.left ? 'left' : 'right' }
 }

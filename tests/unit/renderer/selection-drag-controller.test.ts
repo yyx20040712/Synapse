@@ -1,21 +1,25 @@
 // @vitest-environment jsdom
 /**
- * [F-VISFB-52] selection-drag-controller 直测（指针授权手势——态空间+跨格序列，
- * always-active 不经 guardedDescribe）。
+ * [F-VISFB-52]/[F-SELBLK-01] selection-drag-controller 直测（指针授权手势——
+ * 态空间+跨块序列，always-active 不经 guardedDescribe）。
+ *
+ * [F-SELBLK-01] 词汇迁移：会话锚定单位由「栏」迁至「块」——违例=边界项所属块
+ * ≠ 锚块（flow/full-span/rotated 统一）；单栏会话同样执行 enforce（52 号
+ * single no-op 取消）。夹具行距 24→16（行盒净空 14→6=0.6×字号，<0.75 净空阈）
+ * 使每栏正文恒为一枚 flow 块——块内行带投影语义与 52 号栏内投影逐条等价。
  *
  * jsdom 量测桩=stubRectOf 逐元素打盒（release-affinity/fa12 同款手法）；jsdom
  * 不派发原生 selectionchange——事件一律 onSelectionChange 直调；「browser 已
  * 解析」选区经 setBaseAndExtent 预置（fa12 presetDescended 同款）。
  *
- * 覆盖面（态空间表+跨格序列）：
+ * 覆盖面（态空间表+跨块序列）：
  *  授权三分支（左/右启动+非 textLayer 目标零触）/中缝+零栏不启动（preventDefault）/
- *  违例拖选钳制（focus 投影回锚栏行尾——§0-4 跨双栏需指针明确入栏授权）/
- *  mousemove 只写 ref（零选区写，pointer 供投影消费）/echo 精确抑制（canonical
- *  signature 相等——探针 E1/E2 逐字回声）/有界振荡退出（CAP=3+mousemove 重开
- *  写窗——B4 加严）/mouseup 会话终局后外部选区不吞（B4-3 S5 窗语义）/
- *  shift+click 锚侧违例投影/越顶=首带+越底=末带（F-VISFB-53CI-02 B3——按 B2 二值，
- *  视觉序单源）/中缝悬停元素槽位形态（探针 E9——focus=(span,0) 元素形）/
- *  ⑮ 间隙最近带+等距取上带（B1 新契约）/⑯ 乱序 DOM 越顶越底取视觉首末带（B3）。
+ *  违例拖选钳制（focus 投影回锚块行尾——块授权语义）/mousemove 只写 ref（零选区写）/
+ *  echo 精确抑制（canonical signature 相等）/有界振荡退出（CAP=3+mousemove 重开
+ *  写窗）/mouseup 会话终局后外部选区不吞/shift+click 锚侧违例投影/越顶=首带+
+ *  越底=末带/中缝悬停元素槽位形态/⑮ 间隙最近带+等距取上带/⑯ 乱序 DOM 视觉序/
+ *  [F-SELBLK-01] 新增：单栏页页眉钳制（52 no-op 即红）/full-span 伪块违例/
+ *  in-gutter preventDefault 保持/最近块回退锚定。
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { stubRectOf } from '../../utils/geometry'
@@ -24,7 +28,9 @@ import { createSelectionDragController } from '../../../src/renderer/features/re
 /**
  * 双栏夹具（结构对齐 0C fixture 形态：左右栏+中缝+行带）：
  * 左栏 L1..L3 x[10,90]、右栏 R1..R3 x[210,290]、中缝 [90,210]、
- * 行带 y：[10,20]/[34,44]/[58,68]；textLayer 原点 (0,0)=client 坐标同构。
+ * 行带 y：[10,20]/[26,36]/[42,52]（行距 16、行盒净空 6=0.6×字号——同块
+ * 连续正文，[F-SELBLK-01] 块模型下不切段）；textLayer 原点 (0,0)=client
+ * 坐标同构。
  * order=DOM 追加序自订（⑯ 乱序形态——缺省=文档序）。
  */
 const FIXTURE_TEXT: Record<string, string> = {
@@ -33,11 +39,11 @@ const FIXTURE_TEXT: Record<string, string> = {
 }
 const FIXTURE_BOX: Record<string, { top: number; bottom: number; left: number; right: number }> = {
   L1: { top: 10, bottom: 20, left: 10, right: 90 },
-  L2: { top: 34, bottom: 44, left: 10, right: 90 },
-  L3: { top: 58, bottom: 68, left: 10, right: 90 },
+  L2: { top: 26, bottom: 36, left: 10, right: 90 },
+  L3: { top: 42, bottom: 52, left: 10, right: 90 },
   R1: { top: 10, bottom: 20, left: 210, right: 290 },
-  R2: { top: 34, bottom: 44, left: 210, right: 290 },
-  R3: { top: 58, bottom: 68, left: 210, right: 290 }
+  R2: { top: 26, bottom: 36, left: 210, right: 290 },
+  R3: { top: 42, bottom: 52, left: 210, right: 290 }
 }
 function makeTwoColLayer(order?: string[]): {
   page: HTMLElement
@@ -59,6 +65,85 @@ function makeTwoColLayer(order?: string[]): {
     return s
   }
   for (const id of order ?? ['L1', 'L2', 'L3', 'R1', 'R2', 'R3']) mk(id)
+  page.append(layer)
+  document.body.append(page)
+  return {
+    page,
+    layer,
+    spanOf: (id) => document.getElementById(id) as HTMLSpanElement,
+    textOf: (id) => document.getElementById(id)!.firstChild as Text
+  }
+}
+
+/**
+ * [F-SELBLK-01] 单栏夹具（页眉/正文/页脚三 flow 块——净空 8≥0.75×10 分裂）：
+ * 页眉 HDR y[10,18]、正文 B1/B2 y[26,36]/[42,52]、页脚 FTR y[80,88]；
+ * textLayer 原点 (0,0)=client 坐标同构（列宽 300 无中缝→单栏）。
+ */
+function makeSingleLayer(): {
+  page: HTMLElement
+  layer: HTMLElement
+  spanOf: (id: string) => HTMLSpanElement
+  textOf: (id: string) => Text
+} {
+  const page = document.createElement('div')
+  page.setAttribute('data-page-root', '1')
+  const layer = document.createElement('div')
+  layer.className = 'textLayer'
+  stubRectOf(layer, { top: 0, bottom: 120, left: 0, right: 300 })
+  const mk = (id: string, text: string, b: { top: number; bottom: number; left: number; right: number }): void => {
+    const s = document.createElement('span')
+    s.id = id
+    s.textContent = text
+    stubRectOf(s, b)
+    layer.append(s)
+  }
+  mk('HDR', 'HEAD LINE', { top: 10, bottom: 18, left: 10, right: 290 })
+  mk('B1', 'BODY ONE', { top: 26, bottom: 36, left: 10, right: 290 })
+  mk('B2', 'BODY TWO', { top: 42, bottom: 52, left: 10, right: 290 })
+  mk('FTR', 'FOOT LINE', { top: 80, bottom: 88, left: 10, right: 290 })
+  page.append(layer)
+  document.body.append(page)
+  return {
+    page,
+    layer,
+    spanOf: (id) => document.getElementById(id) as HTMLSpanElement,
+    textOf: (id) => document.getElementById(id)!.firstChild as Text
+  }
+}
+
+/**
+ * [F-SELBLK-01] 双栏+跨缝标题夹具：TITLE x[10,290] y[5,15] 跨中缝，且与
+ * 左右首行（y[10,20]）y 重叠成链 → 同一条全局带；带内中缝成立后 TITLE 跨缝
+ * → 带内 fullSpan → full-span 伪块（伪块违例案的真实形态）。若 TITLE 单独成
+ * 带（如 y[0,12] 与正文首带净空 ≥0.75×字号），该带只有一枚跨缝盒→法定中缝
+ * 带数不足→单栏态→TITLE 落 flow 块，伪块形态不成立。
+ */
+function makeTwoColLayerWithSpan(): {
+  page: HTMLElement
+  layer: HTMLElement
+  spanOf: (id: string) => HTMLSpanElement
+  textOf: (id: string) => Text
+} {
+  const page = document.createElement('div')
+  page.setAttribute('data-page-root', '1')
+  const layer = document.createElement('div')
+  layer.className = 'textLayer'
+  stubRectOf(layer, { top: 0, bottom: 120, left: 0, right: 300 })
+  const mk = (id: string, text: string, b: { top: number; bottom: number; left: number; right: number }): void => {
+    const s = document.createElement('span')
+    s.id = id
+    s.textContent = text
+    stubRectOf(s, b)
+    layer.append(s)
+  }
+  mk('TITLE', 'SPAN TITLE', { top: 5, bottom: 15, left: 10, right: 290 })
+  mk('L1', 'LEFT ONE', { top: 10, bottom: 20, left: 10, right: 90 })
+  mk('L2', 'LEFT TWO', { top: 26, bottom: 36, left: 10, right: 90 })
+  mk('L3', 'LEFT THREE', { top: 42, bottom: 52, left: 10, right: 90 })
+  mk('R1', 'RIGHT ONE', { top: 10, bottom: 20, left: 210, right: 290 })
+  mk('R2', 'RIGHT TWO', { top: 26, bottom: 36, left: 210, right: 290 })
+  mk('R3', 'RIGHT THREE', { top: 42, bottom: 52, left: 210, right: 290 })
   page.append(layer)
   document.body.append(page)
   return {
@@ -164,8 +249,8 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     }
     expect(sel().focusNode).toBe(f.textOf('R2'))
     expect(sel().focusOffset).toBe(4)
-    // selectionchange 时刻以「最后一 move」的 pointer 投影：y=52 落 L2/L3 间隙——
-    // [F-VISFB-53CI-02 B1] 间隙取最近带：距 L3 顶 6 < 距 L2 底 8 → L3；px=240 ≥ 锚栏 x1 → 行尾
+    // selectionchange 时刻以「最后一 move」的 pointer 投影：y=52 恰落 L3 带底
+    // [F-VISFB-53CI-02 B1]（L2 带 [26,36]/L3 带 [42,52]）→ L3；px=240 ≥ 锚块 x1 → 行尾
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(10)
@@ -361,20 +446,20 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     const f = makeTwoColLayer()
     const ctl = createSelectionDragController({ pageRoot: f.page })
     down(ctl, f.spanOf('L1'), 20, 15)
-    // L2 带 [34,44] 与 L3 带 [58,68] 的间隙 (44,58)：y=46 距上带底 2 < 距下带顶 12 → 上带 L2 行尾
-    move(250, 46)
+    // L2 带 [26,36] 与 L3 带 [42,52] 的间隙 (36,42)：y=38 距上带底 2 < 距下带顶 4 → 上带 L2 行尾
+    move(250, 38)
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L2'))
     expect(sel().focusOffset).toBe(8)
-    // y=55 距下带顶 3 < 距上带底 11 → 下带 L3 行尾
-    move(250, 55)
+    // y=41 距下带顶 1 < 距上带底 5 → 下带 L3 行尾
+    move(250, 41)
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(10)
-    // y=51 等距（7==7）→ 取上带 L2（旧契约恒取下带 L3，判别点）
-    move(250, 51)
+    // y=39 等距（3==3）→ 取上带 L2（旧契约恒取下带 L3，判别点）
+    move(250, 39)
     sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L2'))
@@ -385,7 +470,7 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     // DOM 追加序 L2,R1,L3,R2,L1,R3——左栏 DOM 序=[L2,L3,L1]；视觉序=[L1,L2,L3]
     const f = makeTwoColLayer(['L2', 'R1', 'L3', 'R2', 'L1', 'R3'])
     const ctl = createSelectionDragController({ pageRoot: f.page })
-    down(ctl, f.spanOf('L2'), 20, 39)
+    down(ctl, f.spanOf('L2'), 20, 31)
     // 越顶 y=5：视觉首带=L1（DOM 首项=L2——旧契约投影 L2 offset 0 在此红）；px≥x1 → 行尾 8
     move(250, 5)
     sel().setBaseAndExtent(f.textOf('L2'), 0, f.textOf('R2'), 4)
@@ -398,5 +483,63 @@ describe('F-VISFB-52 selection-drag-controller —— 指针授权手势', () =>
     ctl.onSelectionChange()
     expect(sel().focusNode).toBe(f.textOf('L3'))
     expect(sel().focusOffset).toBe(10)
+  })
+
+  it('[F-SELBLK-01] 单栏页页眉钳制：正文锚块→focus 落页眉块被投影回正文块（52 号 single no-op 在此红）', () => {
+    const f = makeSingleLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    // 正文行上 mousedown：单栏页恒授权（无中缝），锚块=正文块
+    const e = down(ctl, f.spanOf('B1'), 20, 35)
+    expect(e.defaultPrevented).toBe(false)
+    // pointer y=40 落 B1/B2 行带间隙（距下带顶 2 < 距上带底 4 → B2），px=20<块 x1 → 行首
+    move(20, 40)
+    // browser 已解析：anchor 留正文、focus 落页眉块（不同 flow 块=违例）
+    sel().setBaseAndExtent(f.textOf('B1'), 0, f.textOf('HDR'), 3)
+    ctl.onSelectionChange()
+    // 52 号实现 single 会话 enforce no-op → focus 仍是页眉（本票判别点=红）；
+    // 本票起投影回锚块（正文块）行首——B2 属锚块成员
+    expect(sel().focusNode).toBe(f.textOf('B2'))
+    expect(sel().focusOffset).toBe(0)
+    expect(sel().anchorNode).toBe(f.textOf('B1'))
+  })
+
+  it('[F-SELBLK-01] full-span 伪块违例：跨缝标题=伪块，focus 落标题被投影回锚块（52 号 full-span 不判在此红）', () => {
+    const f = makeTwoColLayerWithSpan()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    // mousedown 落 L1 行内（y=18 在标题盒 [5,15] 之外——锚块=左栏 flow 块）
+    down(ctl, f.spanOf('L1'), 20, 18)
+    move(250, 39)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('TITLE'), 4)
+    ctl.onSelectionChange()
+    // 违例判据=member≠anchorBlock（伪块统一），投影 y=39 等距取上带 L2、px≥x1 → 行尾
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    expect(sel().focusOffset).toBe(8)
+  })
+
+  it('[F-SELBLK-01] in-gutter preventDefault 保持：缝带（带 y 包络内）mousedown 不启动会话', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    // 缝带 x=150 落正文带 y 包络 [10,52] 内 → in-gutter 不授权
+    const eG = down(ctl, f.layer, 150, 31)
+    expect(eG.defaultPrevented).toBe(true)
+    // 无会话：其后外部跨栏选区原样（不被投影改写）
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    expect(ctl.onSelectionChange()).toBe(false)
+    expect(sel().focusNode).toBe(f.textOf('R2'))
+    expect(sel().focusOffset).toBe(4)
+  })
+
+  it('[F-SELBLK-01] 最近块回退锚定：页边零文本区 mousedown 授权最近块，违例仍钳回该块', () => {
+    const f = makeTwoColLayer()
+    const ctl = createSelectionDragController({ pageRoot: f.page })
+    // x=2 落 textLayer 左内边距、y=31 在两行带间净空：无 flow 包络/缝带命中 → 最近块=左栏块
+    const e = down(ctl, f.layer, 2, 31)
+    expect(e.defaultPrevented).toBe(false)
+    move(250, 31)
+    sel().setBaseAndExtent(f.textOf('L1'), 0, f.textOf('R2'), 4)
+    ctl.onSelectionChange()
+    // 锚块=最近左栏块 → 违例 focus 投影回左栏；y=31 落 L2 带、px≥x1 → 行尾
+    expect(sel().focusNode).toBe(f.textOf('L2'))
+    expect(sel().focusOffset).toBe(8)
   })
 })

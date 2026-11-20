@@ -4,37 +4,33 @@
  * 指针明确入栏授权」的手势层落地——51 号 selection-column-layout 几何判定面
  * 的接线消费方）。
  *
- * ── 行为层（态空间表：S0 idle / S1 dragging）──
+ * ── 行为层（态空间表：S0 idle / S1 dragging；[F-SELBLK-01] 锚栏→锚块泛化）──
  * - S0：mousedown（button 0，target 经 closest('.textLayer') 且在 pageRoot
  *   含域）→ 行盒量测（collectSpans 文本节点→boxOf 视口盒→textLayer 本地
- *   LineBox）→ detectColumnLayout → authorizeColumnSpan（指针形零宽 span
- *   {x0:px,x1:px}）：授权 → 记锚栏+layout+items+pointer 进 S1；未授权
- *   （cross-gutter/no-columns）→ preventDefault（拖选不启动——缝带/零文本
- *   区无「指针明确入栏」授权）停 S0。S0 的 selectionchange=纯转发（外部/
- *   程序化选区零处理——B4-3 S5 窗语义）。
+ *   LineBox）→ detectBlockLayout（块分割三级）→ authorizeBlockPoint（指针形
+ *   点 {x,y}）：授权 → 记锚块+layout+items+pointer 进 S1；未授权（in-gutter/
+ *   no-blocks）→ preventDefault（拖选不启动——缝带/零文本区无指针明确授权）
+ *   停 S0。S0 的 selectionchange=纯转发（外部/程序化选区零处理——B4-3 窗语义）。
  * - S1：mousemove → 仅写 session.pointer+重开写窗（禁 setState/禁选区写
  *   ——闪烁与性能面归 53 票）；selectionchange → 自写回声（canonical
- *   signature：anchor/focus 节点同一性+偏移四元组精确相等——归一化探针
- *   E1/E2/E4 实证 Chromium 对文本形态写逐字回声零归一化；**一次性消费+
- *   会话/纪边界清零**〔回炉 B-1〕——首个精确匹配即失效，endSession/
- *   dispose/onMouseDown 均清，外部后续同形态选区不被吞）→ 抑制不转发
- *   （防自身写回环）；其余 → 违例检测（focus/anchor 边界行盒 ∈ 对侧栏）→
- *   越栏边界投影回锚栏（focus 按 pointer——§0-4 鼠标位置+栏布局判定；anchor
- *   按锚盒自身 y/侧——shift+click 旧锚跨栏形态）→ setBaseAndExtent 写（限写
- *   =每 mousemove 写窗 ≤WRITE_RETRY_CAP——用户输入重开预算、纯振荡有界，
- *   epoch 全程随真实移动无界=设计语义〔回炉 W-1 显式化〕；超出接受浏览器
- *   终态——归一化振荡有界退出）→ 转发调度器。
- *   转发后 rAF 帧点 evaluate.visual 与 mouseup 的 evaluate.full 同读 window
- *   selection=visual-full-mouseup 共用 effective selection 单源（禁两套几何）。
- * - 投影语义（[F-VISFB-53CI-02] B1/B2/B3 新契约——选区范围恒等鼠标投影，禁
- *   结构性外扩）：pointer y 落行带→该带；y 落带间隙→距 y 最近带（比较
- *   y−上带.bottom 与 下带.top−y，等距取上带=阅读序保守防外扩）；y 越首带顶
- *   →视觉首带、越末带底→视觉末带（rowBandsOf 输出=视觉序单源，不再 DOM 序
- *   首末项）；带内 x 二值：px ≥ 锚栏 x1 → 带内最右盒文本尾、px ≤ x0 → 最左
- *   盒 offset 0（栏尾全选仅指针真处栏底以下时成立）。
+ *   signature：anchor/focus 节点同一性+偏移四元组精确相等——**一次性消费+
+ *   会话/纪边界清零**〔回炉 B-1〕）→ 抑制不转发（防自身写回环）；其余 →
+ *   违例检测（focus/anchor 边界行盒的 member 存在且 ≠ 锚块——flow/full-span/
+ *   rotated 统一判）→ 投影回锚块（focus 按 pointer；anchor 按锚盒自身 y/侧
+ *   ——shift+click 旧锚形态）→ setBaseAndExtent 写（限写=每 mousemove 写窗
+ *   ≤WRITE_RETRY_CAP——用户输入重开预算、纯振荡有界；超出接受浏览器终态）
+ *   → 转发调度器。转发后 rAF 帧点 evaluate.visual 与 mouseup 的 evaluate.full
+ *   同读 window selection=共用 effective selection 单源（禁两套几何）。
+ * - 投影语义（[F-VISFB-53CI-02] B1/B2/B3 沿承，作用域=锚块）：pointer y 落
+ *   锚块内行带→该带；y 落带间隙→距 y 最近带（等距取上带=阅读序保守防外扩）；
+ *   y 越首带顶→视觉首带、越末带底→视觉末带（rowBandsOf 输出=视觉序单源）；
+ *   带内 x 二值：px ≥ 锚块 x1 → 带内最右盒文本尾、px ≤ 锚块 x0 → 最左盒
+ *   offset 0（块尾全选仅指针真处块底以下时成立）。
+ * - 单栏页同样执行 enforce（[F-SELBLK-01] 行为变化：52 号 single 会话 no-op
+ *   → 本票 flow 块违例同样投影——单栏页页眉/页脚/段块净空生效，票面主诉）。
  * - 元素槽位形态边界（探针 E9：中缝悬停解析为邻行 span 槽位 (span,0)）按
- *   span 归属判栏；全宽带/旋转盒/不可解析边界（页外/工具条等）不判违例
- *   （全宽标题行内拖选不受扰——51 号头注「52 持最终语义裁量」的落法）。
+ *   span 所属块判；不可解析边界（页外/工具条等，itemOf 返回 null）不判违例。
+ *   全宽带/旋转盒伪块违例由本票统一承载（52 号「不判违例」类目取消）。
  * - mouseup（SelectionLayer 链）：enforce（F-12 门前后各一核——幂等）+
  *   endSession → S0；会话终局后外部选区零拦截零清除（B4-3）。
  *
@@ -50,23 +46,25 @@
  * ── 架构层 ──
  * - 依赖单向：本件→anchors/annotation-anchor（collectSpans）/anchors/
  *   anchor-blank-snap（boxOf——release-affinity 同域先例方向）+interact/
- *   selection-column-layout（51 号几何单源；行盒成员=输入引用恒定合同=
- *   行盒→量测项回映依据）。S5 窗（selection-evaluate AFFINITY_SHORTCUT_
- *   TTL_MS）语义零改：本件抑制仅限自写精确匹配，无 blanket 窗。
+ *   selection-block-layout（块分割单源；行盒成员=输入引用恒定合同=行盒→
+ *   量测项回映依据）+interact/selection-column-layout（类型 LineBox）。S5 窗
+ *   （selection-evaluate AFFINITY_SHORTCUT_TTL_MS）语义零改：本件抑制仅限
+ *   自写精确匹配，无 blanket 窗。
  *
  * ── 生命周期层 ──
  * - mousemove 监听=创建期常挂（S0 早退 O(1)——免会话生命周期挂拆错位）；
  *   dispose=SelectionLayer 卸载清理（INV-14 同型）。
  *
  * ── 文化层 ──
- * - tests/unit/renderer/selection-drag-controller.test.ts（态空间+跨格
- *   序列 10 it）+selection-drag-fixture.test.ts（0C 真 pdfjs gating 链）+
- *   selection-layer-f52.test.tsx（接线三态）；归一化探针=evidence/
+ * - tests/unit/renderer/selection-drag-controller.test.ts（态空间+跨格序列）+
+ *   selection-drag-fixture.test.ts（0C 真 pdfjs gating 链）+
+ *   selection-layer-f52.test.tsx（接线四态）；归一化探针=evidence/
  *   52-normalization-probe.{mjs,raw.txt}（B4 加严 1——结论入实施报告）。
  */
 import { collectSpans } from '../anchors/annotation-anchor'
 import { boxOf } from '../anchors/anchor-blank-snap'
-import { authorizeColumnSpan, detectColumnLayout, type ColumnId, type ColumnLayout, type LineBox } from './selection-column-layout'
+import { authorizeBlockPoint, detectBlockLayout, type TextBlock } from './selection-block-layout'
+import type { LineBox } from './selection-column-layout'
 
 /** 归一化振荡重试上限（B4 有界退出；回炉 W-1 语义显式化）：限写=**每
  *  mousemove 写窗** ≤3——用户输入事件重开预算（归一化事件无伴随 move〔探针
@@ -95,16 +93,17 @@ interface DragItem {
   text: Text
 }
 
-/** 拖选会话（S1 态全量——纯可变数据，无 DOM 写缓存） */
+/** 拖选会话（S1 态全量——纯可变数据，无 DOM 写缓存）。[F-SELBLK-01] 字段
+ *  迁移：anchorColumn/otherColumn/twoColumn/colItems/colX0/colX1 →
+ *  anchorBlock/blockItems/blockX0/blockX1（违例判据=member≠anchorBlock，
+ *  单栏会话同样 enforce）。 */
 interface DragSession {
-  anchorColumn: ColumnId
-  otherColumn: ColumnId
-  twoColumn: boolean
+  anchorBlock: number
   items: DragItem[]
-  member: Map<LineBox, ColumnId | 'full-span' | 'rotated'>
-  colItems: DragItem[]
-  colX0: number
-  colX1: number
+  member: Map<LineBox, number>
+  blockItems: DragItem[]
+  blockX0: number
+  blockX1: number
   originX: number
   originY: number
   pointer: { x: number; y: number }
@@ -187,11 +186,12 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     return bands
   }
 
-  /** 投影目标（头注行为层投影语义——[F-VISFB-53CI-02] B1/B2/B3）：y→行带映射
-   *  （带内=该带；间隙=距 y 最近带，等距取上带；越顶/越底=视觉首带/末带——
-   *  rowBandsOf 视觉序单源）；行内按 rowEnd 定行尾（最右盒文本尾）/行首 */
+  /** 投影目标（头注行为层投影语义——[F-VISFB-53CI-02] B1/B2/B3，作用域=锚块）：
+   *  y→锚块内行带映射（带内=该带；间隙=距 y 最近带，等距取上带；越顶/越底=
+   *  视觉首带/末带——rowBandsOf 视觉序单源）；行内按 rowEnd 定行尾（最右盒
+   *  文本尾）/行首 */
   function projectTo(s: DragSession, y: number, rowEnd: boolean): DragBoundary | null {
-    const items = s.colItems
+    const items = s.blockItems
     if (items.length === 0) return null
     const bands = rowBandsOf(items)
     let band = bands[0]!
@@ -217,10 +217,12 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     return rowEnd ? { node: pick.text, offset: pick.text.data.length } : { node: pick.text, offset: 0 }
   }
 
-  /** 违例核查+钳制写（幂等；会话外/单栏/坍缩零写） */
+  /** 违例核查+钳制写（幂等；会话外/坍缩零写）。[F-SELBLK-01] 违例判据=边界
+   *  项 member 存在且 ≠ 锚块（flow/full-span/rotated 统一）；单栏会话同样执行
+   *  （52 号 twoColumn no-op 取消）。 */
   function enforce(): void {
     const s = session
-    if (s === null || !s.twoColumn) return
+    if (s === null) return
     const sel = window.getSelection()
     if (sel === null || sel.rangeCount === 0 || sel.isCollapsed || sel.anchorNode === null || sel.focusNode === null) {
       return
@@ -231,9 +233,9 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     let focusOffset = sel.focusOffset
     let changed = false
     const aItem = itemOf(anchorNode, s.items)
-    if (aItem !== null && s.member.get(aItem.box) === s.otherColumn) {
+    if (aItem !== null && s.member.get(aItem.box) !== undefined && s.member.get(aItem.box) !== s.anchorBlock) {
       const cy = aItem.box.y + aItem.box.h / 2
-      const proj = projectTo(s, cy, aItem.box.x >= s.colX1)
+      const proj = projectTo(s, cy, aItem.box.x >= s.blockX1)
       if (proj !== null && (proj.node !== anchorNode || proj.offset !== anchorOffset)) {
         anchorNode = proj.node
         anchorOffset = proj.offset
@@ -241,8 +243,8 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
       }
     }
     const fItem = itemOf(focusNode, s.items)
-    if (fItem !== null && s.member.get(fItem.box) === s.otherColumn) {
-      const proj = projectTo(s, s.pointer.y, s.pointer.x >= s.colX1)
+    if (fItem !== null && s.member.get(fItem.box) !== undefined && s.member.get(fItem.box) !== s.anchorBlock) {
+      const proj = projectTo(s, s.pointer.y, s.pointer.x >= s.blockX1)
       if (proj !== null && (proj.node !== focusNode || proj.offset !== focusOffset)) {
         focusNode = proj.node
         focusOffset = proj.offset
@@ -273,31 +275,27 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
       // [回炉 B-1] 新 drag epoch=新签名域：授权/未授权两径均清旧纪自写签名
       ownWrite = null
       const { items, ox, oy } = measure(textLayer as HTMLElement)
-      const layout: ColumnLayout = detectColumnLayout(items.map((it) => it.box))
+      const layout = detectBlockLayout(items.map((it) => it.box))
       const px = e.clientX - ox
       const py = e.clientY - oy
-      const auth = authorizeColumnSpan(layout, { x0: px, x1: px })
+      const auth = authorizeBlockPoint(layout, { x: px, y: py })
       if (!auth.authorized) {
         e.preventDefault()
         session = null
         return
       }
-      const member = new Map<LineBox, ColumnId | 'full-span' | 'rotated'>()
-      for (const col of layout.columns) {
-        for (const b of col.boxes) member.set(b, col.id)
+      const member = new Map<LineBox, number>()
+      for (const block of layout.blocks) {
+        for (const b of block.boxes) member.set(b, block.id)
       }
-      for (const b of layout.fullSpan) member.set(b, 'full-span')
-      for (const b of layout.rotated) member.set(b, 'rotated')
-      const col = layout.columns.find((c) => c.id === auth.columnId)!
+      const block: TextBlock = layout.blocks[auth.blockId]!
       session = {
-        anchorColumn: auth.columnId,
-        otherColumn: auth.columnId === 'left' ? 'right' : 'left',
-        twoColumn: layout.kind === 'two-column',
+        anchorBlock: auth.blockId,
         items,
         member,
-        colItems: col.boxes.map((b) => items.find((it) => it.box === b)!),
-        colX0: col.x0,
-        colX1: col.x1,
+        blockItems: block.boxes.map((b) => items.find((it) => it.box === b)!),
+        blockX0: block.x0,
+        blockX1: block.x1,
         originX: ox,
         originY: oy,
         pointer: { x: px, y: py },

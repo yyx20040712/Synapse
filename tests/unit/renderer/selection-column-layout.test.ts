@@ -3,8 +3,13 @@
  * B2·选区泳道 B1 波次补跑；always-active——新用例恒跑，不经 guardedDescribe）。
  *
  * 用例面=票面 §5 批 B5 段 51 号行全枚举（一形不缺）：左右双栏/反向（DOM 序
- * 与视觉序交错）/中缝不授权/全宽标题带（跨栏行不并入任何栏）/单栏/零盒/
- * 旋转盒（transform 后几何）/DOM 视觉序交错。
+ * 与视觉序交错）/中缝量测/全宽标题带（跨栏行不并入任何栏）/单栏/零盒/
+ * 旋转盒（transform 后几何）/DOM 视觉序交错；交集空回退。
+ *
+ * [F-SELBLK-01] 授权分支已迁出：旧 authorizeColumnSpan 随块级授权合同
+ * （selection-block-layout authorizeBlockPoint——INV-143）退役删除，其
+ * 「单栏恒授权/零栏不授权/中缝不授权」语义由 selection-block-layout.test.ts
+ * 授权判定序六分支逐条承载；本文件只锁栏几何（detectColumnLayout）。
  *
  * 几何形状与 0C 双栏 fixture（tests/utils/pdf-factory createTwoColumnPdf）结构
  * 对齐作语义校准：全宽标题带+左右栏+中缝 24pt（[294,318]，左栏起点 x=54/
@@ -13,7 +18,7 @@
  * 引用、栏内 DOM 序保持」合同（52 接线消费面）。
  */
 import { describe, expect, it } from 'vitest'
-import { authorizeColumnSpan, detectColumnLayout, type LineBox } from '../../../src/renderer/features/reader/interact/selection-column-layout'
+import { detectColumnLayout, type LineBox } from '../../../src/renderer/features/reader/interact/selection-column-layout'
 
 /** 0C fixture 结构对齐：左右栏各 11 行（哨兵+ROW 01-10 同量） */
 const ROWS = 11
@@ -88,23 +93,6 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     expect(layout.fullSpan).toEqual([TITLE_BOX])
   })
 
-  it('中缝不授权（INV-142 几何判定面）：跨中缝选区=未授权态；贴边相切授权；传入序无关', () => {
-    const layout = detectColumnLayout([TITLE_BOX, ...bothColumns()])
-    expect(authorizeColumnSpan(layout, { x0: 100, x1: 200 })).toEqual({ authorized: true, columnId: 'left' })
-    expect(authorizeColumnSpan(layout, { x0: 330, x1: 420 })).toEqual({ authorized: true, columnId: 'right' })
-    // 跨缝（两端分列中缝两侧）→ 未授权
-    expect(authorizeColumnSpan(layout, { x0: 200, x1: 400 })).toEqual({ authorized: false, reason: 'cross-gutter' })
-    // 整段含于中缝内部（指针落于缝带）→ 未授权
-    expect(authorizeColumnSpan(layout, { x0: 300, x1: 310 })).toEqual({ authorized: false, reason: 'cross-gutter' })
-    // 指针形零宽 span（52 鼠标位置语义）落缝中点 → 未授权
-    expect(authorizeColumnSpan(layout, { x0: 306, x1: 306 })).toEqual({ authorized: false, reason: 'cross-gutter' })
-    // 传入序倒挂（anchor/focus 无向）→ 归一后同判
-    expect(authorizeColumnSpan(layout, { x0: 400, x1: 200 })).toEqual({ authorized: false, reason: 'cross-gutter' })
-    // 贴边相切（缝为开区间语义）不构成跨缝 → 授权所在侧
-    expect(authorizeColumnSpan(layout, { x0: 200, x1: 294 })).toEqual({ authorized: true, columnId: 'left' })
-    expect(authorizeColumnSpan(layout, { x0: 318, x1: 400 })).toEqual({ authorized: true, columnId: 'right' })
-  })
-
   it('全宽标题带=跨缝行不并入任何栏（x 跨缝为信号，y 位置无关——栏体带内横幅同判）', () => {
     const banner: LineBox = { x: 100, y: 148, w: 250, h: 12 }
     const layout = detectColumnLayout([...bothColumns(), banner])
@@ -114,11 +102,9 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     // 横幅不并入任何栏（两栏仍各 ROWS 行，无栏吃进跨缝行）
     expect(layout.columns[0]?.boxes).toHaveLength(ROWS)
     expect(layout.columns[1]?.boxes).toHaveLength(ROWS)
-    // 覆盖横幅的选区跨缝 → 未授权
-    expect(authorizeColumnSpan(layout, { x0: 100, x1: 350 })).toEqual({ authorized: false, reason: 'cross-gutter' })
   })
 
-  it('单栏：无中缝恒授权 single；单带两段（词隙级候选）不立缝（法定带数 ≥2）', () => {
+  it('单栏：无中缝（gutter null）；单带两段（词隙级候选）不立缝（法定带数 ≥2）', () => {
     const rows = Array.from({ length: 8 }, (_, i): LineBox => ({ x: 54, y: 80 + i * 16, w: 374, h: 12 }))
     const layout = detectColumnLayout(rows)
     expect(layout.kind).toBe('single')
@@ -129,8 +115,6 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     expect(layout.columns[0]?.x1).toBe(428)
     expect(layout.gutter).toBeNull()
     expect(layout.fullSpan).toHaveLength(0)
-    // 单栏无歧义：任意 span（含超出行盒包络者）恒授权唯一栏
-    expect(authorizeColumnSpan(layout, { x0: 0, x1: 612 })).toEqual({ authorized: true, columnId: 'single' })
     // 法定带数：仅一条行带含两段（隙=缝宽）+ 其余单盒行 → 仍单栏（不立缝）
     const stray = [...rows, { x: 54, y: 400, w: 240, h: 12 }, { x: 318, y: 400, w: 110, h: 12 }]
     const quorum = detectColumnLayout(stray)
@@ -139,14 +123,13 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     expect(quorum.gutter).toBeNull()
   })
 
-  it('零盒（空输入边界）：无栏态+授权恒 no-columns', () => {
+  it('零盒（空输入边界）：无栏态（columns/fullSpan/rotated 全空、gutter null）', () => {
     const layout = detectColumnLayout([])
     expect(layout.kind).toBe('none')
     expect(layout.columns).toHaveLength(0)
     expect(layout.fullSpan).toHaveLength(0)
     expect(layout.rotated).toHaveLength(0)
     expect(layout.gutter).toBeNull()
-    expect(authorizeColumnSpan(layout, { x0: 100, x1: 200 })).toEqual({ authorized: false, reason: 'no-columns' })
   })
 
   it('旋转盒（transform 后几何）：竖排形态分流不扰栏检测；全竖排=无栏态；单字形窄行不误伤', () => {
@@ -160,7 +143,7 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     expect(mixed.gutter).toEqual({ left: 294, right: 318 })
     expect(mixed.columns[0]?.boxes).toHaveLength(ROWS)
     expect(mixed.columns[1]?.boxes).toHaveLength(ROWS)
-    // 全竖排页：无栏态+授权 no-columns
+    // 全竖排页：无栏态（授权 no-columns 语义归 block-layout.test）
     const allVertical = [
       { x: 54, y: 40, w: 12, h: 240 },
       { x: 300, y: 40, w: 12, h: 240 },
@@ -169,7 +152,6 @@ describe('F-VISFB-51 selection-column-layout —— 栏几何纯函数', () => {
     const rotatedOnly = detectColumnLayout(allVertical)
     expect(rotatedOnly.kind).toBe('none')
     expect(rotatedOnly.rotated).toHaveLength(3)
-    expect(authorizeColumnSpan(rotatedOnly, { x0: 0, x1: 612 })).toEqual({ authorized: false, reason: 'no-columns' })
     // 单字形行（bullet 形 4×10，比值 2.5<3）不判旋转——保留栏成员资格
     const bullet: LineBox = { x: 54, y: 80, w: 4, h: 10 }
     const withBullet = detectColumnLayout([bullet, ...Array.from({ length: 4 }, (_, i): LineBox => ({ x: 60, y: 80 + (i + 1) * 16, w: 300, h: 12 }))])

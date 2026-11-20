@@ -42,9 +42,10 @@
  * 同帧照常（G2 文本位下探——完整判据/时间线=release-affinity.ts 头注）。
  *
  * **F-VISFB-52 指针授权拖选（态空间/探针结论=selection-drag-controller.ts 头注）**：
- * mousedown 记锚栏（authorizeColumnSpan——中缝/零栏不启动）/mousemove 只写 ref/
- * selectionchange 门（自写回声抑制——canonical signature 精确匹配）/mouseup
- * enforce×2+endSession；visual 与 full 共读 window selection（共用单源）。
+ * mousedown 记锚块（[F-SELBLK-01] 起 authorizeBlockPoint——缝带/零块不启动）/
+ * mousemove 只写 ref/selectionchange 门（自写回声抑制——canonical signature
+ * 精确匹配）/mouseup enforce×2+endSession；visual 与 full 共读 window
+ * selection（共用单源）。
  *
  * **F-VISFB-53 闪烁收口（闸①拆件前置）**：事件接线段（selectionchange/
  * mousedown/mouseup/keydown 四监听+evaluate/scheduler/dragCtl 组装）整体迁
