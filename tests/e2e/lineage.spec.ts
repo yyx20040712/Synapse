@@ -2678,6 +2678,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     if (rb === null || ab === null) throw new Error('T1M 双卡不可见')
     await win.mouse.move(rb.x + rb.width - 2, rb.y + rb.height / 2)
     await win.mouse.down()
+    // [F-LANEGRID-01 B4·CI 输入竞态防御] CDP 合成事件 down→move 连发在慢机
+    // 上 move 可先于 renderer armed 会话 mount 处理到达→预览端点丢失→mouseup
+    // 退化为自环拒绝（无 toast 无边——CI 44685089959 诊断现场：toasts 空+
+    // blocked 空+卡位正常）；down 后留一拍处理窗再 move
+    await win.waitForTimeout(300)
     await win.mouse.move(ab.x + ab.width - 2, ab.y + ab.height / 2, { steps: 8 })
     await win.mouse.up()
     // [F-LANEGRID-01 B4·诊断分流] 10s 轮询窗口（toast「已画线」乐观先行，
@@ -2695,6 +2700,10 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       const diag = await win.evaluate(() => ({
         blocked: Array.from(document.querySelectorAll('svg.tl-edges g.tl-edge-blocked')).map((g) => (g as SVGElement).dataset.anchors ?? ''),
         toasts: Array.from(document.querySelectorAll('.toast, [role="status"]')).map((t) => t.textContent),
+        drawingCls: document.querySelector('.tl-content')?.className ?? '',
+        hintCount: document.querySelectorAll('[data-testid="draw-anchor-hint"]').length,
+        previewCount: document.querySelectorAll('.draw-preview').length,
+        vp: { ih: window.innerHeight, dpr: window.devicePixelRatio, st: document.querySelector('.timeline')?.scrollTop ?? -1 },
         cards: Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map((c) => {
           const r = c.getBoundingClientRect()
           return [r.x, r.y].map((v) => Math.round(v))
