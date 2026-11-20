@@ -62,6 +62,19 @@ export interface TabState {
    *  'ai'=AI 对话（缺省，字段缺席即 ai）；'notes'=笔记。生命周期迁移表见
    *  本件头注行为层；消费方（ResearchAside）?? 'ai' 兜底 */
   researchTab?: 'ai' | 'notes'
+  /** [B2 批] 右栏研究面板滚动会话记忆（per-tab，按页签分槽）：值=有效滚动
+   *  容器瞬时 scrollTop（笔记页签=fragment 列表容器、AI 页签=消息列表——
+   *  面板内部自持滚动，host .rdr-research-body 解析兜底）。生命周期迁移表：
+   *  | 事件 | researchScroll 迁移 |
+   *  | openPaper（absent 新建） | 不写（字段缺席=两页签 0/顶部） |
+   *  | openPaper（error 重试） | 沿 prev（{...prev,status:'loading'}） |
+   *  | saveResearchScroll(id,t,v) | 显式 paperId 寻址写入该槽（不读 activeId） |
+   *  | closeOne(id) | 随 tab 删除；重开同 id=全新（缺省 0） |
+   *  | close() | 整体复位（重开应用=新 store 实例，无持久化面） |
+   *  收账三点（页签点击前/activeId 变化 effect/组件卸载 cleanup——禁 scroll
+   *  事件监听）；恢复=容器 scrollTop 直写（INV-34 例外登记），严禁经
+   *  setPage/scrollRequest（INV-29/118 双源分离） */
+  researchScroll?: { ai?: number; notes?: number }
 }
 
 /** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading；

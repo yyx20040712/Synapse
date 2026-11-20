@@ -658,3 +658,78 @@ describe('B1 研究面板会话态（researchOpen/researchTab）', () => {
     expect(useStore.getState().tabs['p-2']?.researchTab).toBe('notes')
   })
 })
+
+// ── [B2 批] 右栏滚动会话记忆 store 面（always-active）：researchScroll 驻
+//    TabState（per-tab 可选字段——selectionMode 同型）；saveResearchScroll
+//    显式 paperId 寻址（不读 activeId——卸载收账闭包捕获旧文献场景）；
+//    严禁 bump scrollRequest（INV-29/INV-118 双源分离——右栏 scrollTop 与
+//    PDF 页码滚动互不触发）──
+describe('B2 saveResearchScroll —— 滚动会话记忆 store 面', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('显式 paperId 寻址：activeId=p-2 时写 p-1（不依赖调用时 active tab）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2')
+    expect(useStore.getState().activeId).toBe('p-2')
+    useStore.getState().saveResearchScroll('p-1', 'notes', 33)
+    expect(useStore.getState().tabs['p-1']?.researchScroll?.notes).toBe(33)
+    expect(useStore.getState().tabs['p-2']?.researchScroll, 'active tab 不被误写').toBeUndefined()
+  })
+
+  it('per-tab 独立：ai/notes 两字段互覆不误伤；负值夹 0', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().saveResearchScroll('p-1', 'ai', 11)
+    useStore.getState().saveResearchScroll('p-1', 'notes', 22)
+    expect(useStore.getState().tabs['p-1']?.researchScroll).toEqual({ ai: 11, notes: 22 })
+    useStore.getState().saveResearchScroll('p-1', 'ai', -5)
+    expect(useStore.getState().tabs['p-1']?.researchScroll?.ai, '负值防御夹 0').toBe(0)
+    expect(useStore.getState().tabs['p-1']?.researchScroll?.notes, '他页签不受夹取影响').toBe(22)
+  })
+
+  it('tab 缺席 no-op：已关文献的迟到收账不炸不复活', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().closeTab('p-1')
+    useStore.getState().saveResearchScroll('p-1', 'notes', 9)
+    expect(useStore.getState().tabs['p-1']).toBeUndefined()
+    expect(useStore.getState().activeId).toBeNull()
+  })
+
+  it('closeTab 随删：收账后关标签，重开同 id 无 researchScroll（全新会话态）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().saveResearchScroll('p-1', 'ai', 120)
+    useStore.getState().closeTab('p-1')
+    await openReady(useStore, 'p-1')
+    expect(useStore.getState().tabs['p-1']?.researchScroll, '重开无字段=0/顶部语义').toBeUndefined()
+  })
+
+  it('重开应用=新 store 实例默认态（无持久化面——不写 DB/settings/localStorage）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().saveResearchScroll('p-1', 'notes', 77)
+    // 重开应用=模块重载新 store：任何 tab 无 researchScroll 残留
+    vi.resetModules()
+    vi.unstubAllGlobals()
+    const useStore2 = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    expect(Object.keys(useStore2.getState().tabs).length, '新实例零残留').toBe(0)
+    await openReady(useStore2, 'p-1')
+    expect(useStore2.getState().tabs['p-1']?.researchScroll).toBeUndefined()
+  })
+
+  it('双源分离：saveResearchScroll 不 bump scrollRequest（INV-29/INV-118——右栏 scrollTop 与 PDF 程序滚动互不触发）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setTotalPages(10)
+    useStore.getState().setPage(3)
+    const before = useStore.getState().scrollRequest
+    expect(before).toEqual({ paperId: 'p-1', page: 3, seq: 1 })
+    useStore.getState().saveResearchScroll('p-1', 'notes', 64)
+    expect(useStore.getState().scrollRequest, '引用与内容均不动').toBe(before)
+  })
+})

@@ -117,6 +117,12 @@ export interface ReaderStore {
   /** [B1 批] 研究面板页签写 active tab（per-tab 会话态——researchTab 缺省
    *  ai；activeId=null no-op（updateActiveTab 兜底）） */
   setResearchTab(tab: 'ai' | 'notes'): void
+  /** [B2 批] 研究面板滚动收账（per-tab 分槽）：显式 paperId 寻址不读
+   *  activeId——卸载/切换收账闭包捕获的旧文献场景更稳（addAnnotation
+   *  INV-03 写方向同族）；tab 缺席（已关）no-op；负值夹 0；**不 bump
+   *  scrollRequest**（INV-29/INV-118 双源分离——右栏 scrollTop 与 PDF 程序
+   *  滚动互不触发） */
+  saveResearchScroll(paperId: string, tab: 'ai' | 'notes', scrollTop: number): void
   openPaper(id: string): Promise<void>
   activateTab(id: string): void
   closeTab(id: string): void
@@ -426,6 +432,18 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
 
     setResearchTab(tab) {
       updateActiveTab((t) => ({ ...t, researchTab: tab }))
+    },
+
+    saveResearchScroll(paperId, tab, scrollTop) {
+      const { tabs } = get()
+      const t = tabs[paperId]
+      if (t === undefined) return
+      set({
+        tabs: {
+          ...tabs,
+          [paperId]: { ...t, researchScroll: { ...t.researchScroll, [tab]: Math.max(0, scrollTop) } }
+        }
+      })
     },
 
     async undo() {

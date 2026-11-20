@@ -18,8 +18,8 @@
  *   消费完成）
  * - locateFragment（anchor-locate，INV-20 单入口）自 OutlineAside 迁来，
  *   onLocate 接 ReaderNotesPanel 片段单击
- * - 正文滚动容器（.rdr-research-body min-h-0 flex-1 overflow-auto）：本批
- *   只建结构，滚动记忆收账归下一批
+ * - [B2 批] 滚动会话记忆归 use-research-scroll（收账三点+恢复+noteHighlight
+ *   让位——详见该件头注）；本组件只接线：host ref+点击前收账
  *
  * ── 接口层 ──
  * - export function ResearchAside(): JSX.Element（零 props——数据面全自取）
@@ -32,19 +32,22 @@
  *
  * ── 生命周期层 ──
  * - 不做：页签文字图标化（面板宽 300px 双页签平铺可读——与左栏窄面板
- *   图标化不同形是有意分工）；滚动记忆（下一批）
+ *   图标化不同形是有意分工）；滚动位跨应用启动持久化（计划明令不跨启动）
  *
  * ── 文化层 ──
  * - 组件测试 tests/unit/renderer/research-aside.test.tsx：页签数组/切换
  *   写 store/条件挂载互换/noteHighlight 高亮派生/片段定位/空态/AI IPC 面；
+ *   滚动会话记忆 tests/unit/renderer/research-scroll.test.tsx（[B2] 组件面）；
  *   装配测试 tests/unit/renderer/reader-research-assembly.test.tsx：收起态
- *   noteHighlight 自动展开（[B1 审查回炉 B-1]）
+ *   noteHighlight 自动展开（[B1 审查回炉 B-1]）+让位面（[B2]）
  */
+import { useRef } from 'react'
 import { locateAnchor } from '../anchors/anchor-locate'
 import { PaperAiPanel } from '../../ai/PaperAiPanel'
 import { ReaderNotesPanel } from './ReaderNotesPanel'
 import { useReaderStore } from '../state/reader.store'
 import { useActiveTab } from '../state/useActiveTab'
+import { useResearchScroll } from './use-research-scroll'
 
 type ResearchTab = 'ai' | 'notes'
 
@@ -59,6 +62,10 @@ export function ResearchAside(): JSX.Element {
   // [B1 审查回炉 B-1] 纯渲染派生（副作用驻 ReaderPageView，见头注）
   const noteHighlight = useReaderStore((s) => s.noteHighlight)
   const setResearchTab = useReaderStore((s) => s.setResearchTab)
+  // [B2] 滚动会话记忆：host 容器 ref+页签点击前收账（收账三点/恢复/让位
+  // 归 use-research-scroll）
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  const collectScroll = useResearchScroll({ hostRef: bodyRef, activeId: activeTab?.paperId ?? null, tab })
 
   /** 片段单击定位（C-05 三层防线服务——INV-20 单入口，页级只是降级链一环；
    *  自 OutlineAside 迁来零改） */
@@ -97,16 +104,22 @@ export function ResearchAside(): JSX.Element {
                   ? { color: 'var(--accent)', fontWeight: 500, borderBottom: '2px solid var(--accent)' }
                   : { color: 'var(--text-dim)' }
               }
-              onClick={() => setResearchTab(id)}
+              onClick={() => {
+                // [B2] 点击前收账旧页签瞬时 scrollTop（切页签即卸载旧面板）；
+                // [W-1] 重复点击当前页签不收账不置 skip（无变更——置了会
+                // 遗留标记跳过后续真实切换的收账）
+                if (id !== tab) collectScroll()
+                setResearchTab(id)
+              }}
             >
               {TAB_LABELS[id]}
             </button>
           ))}
         </div>
       </div>
-      {/* 正文滚动容器（host 自有滚动——滚动收账下一批接驳）；两页签条件
-          挂载互斥（切页签即卸载，INV-106 草稿 flush 面） */}
-      <div className="rdr-research-body min-h-0 flex-1 overflow-auto">
+      {/* 正文滚动容器（host——[B2] 有效滚动容器=面板内部自持滚动面，host
+          兼兜底载体；两页签条件挂载互斥——切页签即卸载，INV-106 草稿 flush 面） */}
+      <div ref={bodyRef} className="rdr-research-body min-h-0 flex-1 overflow-auto">
         {tab === 'notes' ? (
           <ReaderNotesPanel
             annotations={activeTab?.annotations ?? []}
