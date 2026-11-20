@@ -236,7 +236,17 @@ test.describe('F-VISFB-66 拖拽自动滚动（裁定 4——容器 20% 触发�
     // 已回滚至 0——向上滚需要正的起点，F-CIFLK-01 视口纪律同族）→拖 from
     // 端柄入上带→向上滚
     await win.locator('.tl-edge-hit').first().evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
-    await win.locator('.tl-edge-hit').first().click({ force: true })
+    // 〔F-LANEGRID-01 B4〕U 形绕行后 hit 元素 bbox 中心落在空腔点不中——
+    // 改路径中点采样（getPointAtLength(½) 映射屏幕坐标）后 mouse.click 命中
+    const mid = await win.locator('.tl-edge-hit').first().evaluate((el) => {
+      const p = el as SVGPathElement
+      const bb = p.getBBox()
+      const br = p.getBoundingClientRect()
+      const z = bb.width === 0 ? 1 : br.width / bb.width
+      const q = p.getPointAtLength(p.getTotalLength() / 2)
+      return { x: br.left - bb.x * z + q.x * z, y: br.top - bb.y * z + q.y * z }
+    })
+    await win.mouse.click(mid.x, mid.y)
     await expect(win.getByTestId('edge-handles')).toBeVisible({ timeout: 5_000 })
     // 显式置 scrollTop 在 click 之后（click 自动滚回可能清零——向上滚需正
     // 起点；150=端柄仍视口内的上限值：400 会把顶区边推出视口〔fh.y<0 探针

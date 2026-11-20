@@ -69,8 +69,10 @@
 .month-frame {
   border: 1.6px dashed var(--month-dash);
   border-radius: 12px;
-  /* [F-LINEAGE-02 D-L2-2] 顶 15→18：月标自框外悬浮移入框内顶 padding 承载 */
-  padding: 18px 12px 12px;
+  /* [F-LANEGRID-01 B4] 顶 18→38/底 12→38（2026-11-20 用户裁决·对称）：月标骑
+     框线后框内只占下半 10px（死区下缘=框内 16px），顶 38 使卡顶桩净距 12px
+     且帧顶带两道存活——top ¼/½ 锚解封；底 38 与顶对称（视觉均衡） */
+  padding: 38px 12px 38px;
   display: flex;
   flex-direction: column;
   gap: 72px;
@@ -99,9 +101,13 @@
    10px=--fs-micro 同值复用） */
 .month-tag {
   position: absolute;
-  /* [F-LINEAGE-02 裁决 7] 注入 .month-frame 内首位（D-L2-2：框间 26px 带全宽
-     净空——INV-79 标注仍属障碍集）；absolute 不占 flex 槽，0.5px 内让框顶边线 */
-  top: 0.5px;
+  /* [F-LANEGRID-01 B4] 骑框线（2026-11-20 用户裁决：中轴=框上边界）：
+     top:−10px=胶囊高 20 之半，中轴压框 border-box 顶边线；包含块=.tl-month
+     （与框顶同位、无 overflow 裁剪——框 overflow:hidden 会裁出框上半，故
+     DOM 注入位提升，见 TimelineYears 注）。原框内顶形态 tag 底压卡顶
+     2.5px 致 top ¼/½ 锚桩全埋死区（整图 blocked——B4 实证）；骑线+顶 38
+     解封。标注仍属障碍集；tag x 域内框间道损 1 条、帧顶带 +2 道覆盖 */
+  top: -10px;
   left: 12px;
   z-index: 3;
   font-size: var(--fs-micro);
@@ -179,9 +185,12 @@
    申报：现行 height .38s 过渡字段保留不拆）。
    [F-VISFB-22 C6] 94=12+82 值耦合改 CSS 变量化（INV-100 在档可选项落法）：
    增量=--lg-pull（会话侧逐 move 连续写入——未拉伸底缘起跟随量，
-   PULL_BAND_PX=82 封顶单源在 card-drag-session.ts；CSS 只知基准 12px+变量，
-   字面 94 退役）；缺省 82px=var 缺席兜底（旧全量语义） */
-.month-frame.stretch { padding-bottom: calc(12px + var(--lg-pull, 82px)); }
+   PULL_BAND_PX=82 封顶单源在 card-drag-session.ts；CSS 只知基准+变量，
+   字面 94 退役）；缺省 82px=var 缺席兜底（旧全量语义）。
+   [F-LANEGRID-01 B4] 基准 12→38px=FRAME_PAD_BOTTOM 同步（底 padding
+   12→38 对称变更随批）——stretch 挂载瞬间基准不跳（38→38+pull 连续），
+   全拉伸态 38+82=120 */
+.month-frame.stretch { padding-bottom: calc(38px + var(--lg-pull, 82px)); }
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；

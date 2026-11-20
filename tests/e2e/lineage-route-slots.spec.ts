@@ -1,38 +1,42 @@
 /**
- * [F-ROUTE-02 U4] 走线候选位分配 e2e（R1-R4——设计稿 §6 R 系+观测钩子面）。
+ * [F-LANEGRID-01 B4] 走线车道网格 e2e（R1-R5——车道网格分配器观测面重基线）。
  *
- * ── 夹具口径（探针 20261007-froute02-u4-exec/probe-geometry.json 校准）──
- * - 视口 1280×860 固定（contentW=732 屏 px 量测单源）；一切期望几何**实测
- *   派生**（卡 rect/分点集/槽电平全 in-page 计算），零硬编码坐标——字体度量
- *   平台差由实测吸收（年份头高度漂移只挪卡 y，不断言绝对值）。
- * - [F-SLOTGRID-01 U2 重基线] corridor/fallback 随走廊退役（2026-10-07 用户
- *   裁决③——兜底=最短路线重叠）；R1/R2 绕行族断言=route∈{band,detour}
- *   （五态链：网格通道槽位横移——框外空白候选结构性禁绝 INV-SLOTGRID-02）；
- *   R3 分点公式=域=高−20/n=clamp(⌊(域−8)/8⌋,0,5)（设计 §2 槽位行）；
- *   R5=三卡同列 1→3 探针回归三断言（竖直段 x∈通道槽位集∪锚集+坐标集封闭
- *   +标注覆盖——设计 §5.3 探针复演；x₀=½ 与月标注左缘实测余量入净空判定）。
- * - R1 绕卡=三卡+障碍卡（2020-05 两卡/06 障碍/07 目标）→绕行族承接，
- *   path 采样避障碍卡 rect±PAD；R2 跨年=2020-12→2022-05 中隔 2021 障碍卡
- *   →绕行族承接，path 避全部 .tl-year-num/.tl-year-meta 文本区
- *   （年份头障碍集承重：无其集则左绕候选穿 2021/2022 两文本区）；
- *   R3 同月相邻卡双向边=同列缝单元双消费（retain idx2+land idx4∈分点集，
- *   zoom 1.0/1.5 双跑——rect÷z 归一化恒等）；R4 重合态=retain 边
- *   （data-overlap-exempt=1）+via 手动边（一次 launch 量电平→关应用→spec
- *   进程 better-sqlite3 直写 via〔窗口=零应用进程，Windows 文件锁面空〕→
- *   二次 launch 冷读）贴同一电平→点击重合段中点命中层不抛错且可选中。
+ * ── 夹具口径（期望几何全实测派生——车道表直算零镜面）──
+ * - 视口 1280×860 固定；一切期望几何实测派生（卡 rect/月框/月标注 own 域
+ *   rect÷z in-page 采集，Node 侧 grid.buildLaneTable 单源 import 直算期望
+ *   坐标集），零硬编码坐标——字体度量平台差由实测吸收。
+ * - [F-LANEGRID-01 B4 重基线] 六态链已换车道网格分配器：RouteTag 单态化
+ *   （自动态恒 'grid'，manual-override=via 边）；[F-SLOTGRID-01 U2] 槽位
+ *   分点公式与五态域断言（band/detour 绕行族/data-slot/retain 豁免支）随
+ *   槽位与六态机制退役删除（历史口径申报——2026-11-20 B4）；R1/R2/R5
+ *   绕行族断言=route='grid'（车道网格绕行族）。
+ * - 观测钩子=data-route（grid 单态）/data-lane（占道段「轴+坐标:起-止」
+ *   逗号串——laneMarkOf 单源）/data-overlap-exempt（仅 overlapSpans 非空
+ *   时 '1'）/data-overlap-spans（段级冲突区间串列逗号连接）；data-slot/
+ *   data-slot-fallback 已随槽位机制删除。
+ * - R1 绕卡=三卡+障碍卡（2020-05 两卡/06 障碍/07 目标）→path 采样避障碍卡
+ *   rect±PAD；R2 跨年=2020-12→2022-05 中隔 2021 障碍卡→path 避全部
+ *   .tl-year-num/.tl-year-meta 文本区（年份头障碍集承重）；R3 同月相邻卡
+ *   双向边=同缝双消费（车道坐标封闭+互异道或 overlapSpans 登记——INV-112
+ *   新口径；zoom 1.0/1.5 双跑 rect÷z 恒等）；R4 重合态=grid 直连边+via
+ *   手动边贴同电平（一次 launch 量电平→关应用→spec 进程 better-sqlite3
+ *   直写 via→二次 launch 冷读）→点击重合段中点命中层不抛错且可选中；
+ *   R5 三卡同列 1→3 探针回归（竖直段 x∈车道表坐标集——INV-SLOTGRID-02
+ *   新口径+标注覆盖；月标注骑月份框上边界中轴——.month-tag rect 实测
+ *   派生自吸收）。
  *
  * ── helper 落位申报 ──
  * - expectPathAvoids=本 spec helper 区（非 geo-probes 追加）：geo-probes 头注
  *   单源边界=**三类 rect 断言**（邻近/静止/无瞬跳）；路径采样判交族=本批
  *   新面（T-P1b pathClearOfTags 段化采样模式），驻消费方避免扩锁面单源域。
- * - 观测钩子=data-slot/data-overlap-exempt/data-slot-fallback 三属性
- *   （data-route-state 不新增——既有 data-route 即胜出态观测位，T-P1b 已
- *   消费；重复挂同值属性=冗余，主控申报处置）。
+ * - laneGeoProbe/laneUniverse=本 spec helper 区（stress observe+buildUniverse
+ *   同型子集——期望坐标集=锚∪车道表 buildLaneTable 直算，单源 import
+ *   src/renderer/.../routing/grid，零镜面）。
  *
  * - R3 取景申报：产品库 UNIQUE(from,to) 使同端点对三边不可达（设计 §5 S3
  *   同锚三边=单测域；e2e 域结构证明可达最大=同单元双消费——双向边，跨卡
- *   桥边必穿中间卡被避让链拦），本 spec 断言可达核（同单元槽位互异+∈分点
- *   集+zoom 双跑），三线面由单测 ① 承载。
+ *   桥边必穿中间卡被避让链拦），本 spec 断言可达核（同缝车道坐标封闭+
+ *   互异道/登记+zoom 双跑），三线面由单测承载。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -42,6 +46,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { PAD } from '../../src/renderer/features/lineage/routing/avoid'
+import { buildLaneTable } from '../../src/renderer/features/lineage/routing/grid'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
 import { zoomProbe } from './geo-probes'
 
@@ -53,7 +58,7 @@ async function seedGhosts(userData: string, ids: string[], titles: string[]): Pr
   }
 }
 
-/** 建库+种子一步（R1-R4 夹具公共面） */
+/** 建库+种子一步（R1-R5 夹具公共面） */
 async function seedFixture(
   userData: string,
   ids: string[],
@@ -189,22 +194,72 @@ async function expectPathAvoids(
   expect(hit.err, `${label}：${hit.err ?? '净空'}`).toBeNull()
 }
 
-/** 路径电平/缝几何量测（缝中点最近采样点 y——用户坐标即内容坐标） */
+/** 车道表直算布局采集面（own 域 rect÷z——stress observe 同型子集；GridInput 全五字段） */
+interface LaneGeo {
+  cards: Array<{ x: number; y: number; w: number; h: number }>
+  labels: Array<{ x: number; y: number; w: number; h: number }>
+  yearHeads: Array<{ x: number; y: number; w: number; h: number }>
+  frames: Array<{ x: number; y: number; w: number; h: number }>
+  /** 内容盒高=帧底最大值（stress buildUniverse 同式——v 坐标集派生不敏感，h 域上界用） */
+  contentH: number
+}
+
+/** 布局采集探针：卡/月标注/年份头/月框 own rect+contentH（rect÷z——zoom 档间恒等） */
+async function laneGeoProbe(win: Page): Promise<LaneGeo> {
+  return win.evaluate(() => {
+    const content = document.querySelector('.tl-content') as HTMLElement | null
+    if (content === null) throw new Error('laneGeoProbe：.tl-content 不在场')
+    const base = content.getBoundingClientRect()
+    const zm = /matrix\(([\d.]+),/.exec(getComputedStyle(content).transform)
+    const z = zm === null ? 1 : Number(zm[1])
+    const own = (el: Element): { x: number; y: number; w: number; h: number } => {
+      const r = el.getBoundingClientRect()
+      return {
+        x: +((r.left - base.left) / z).toFixed(3),
+        y: +((r.top - base.top) / z).toFixed(3),
+        w: +(r.width / z).toFixed(3),
+        h: +(r.height / z).toFixed(3)
+      }
+    }
+    const frames = Array.from(document.querySelectorAll('.month-frame')).map(own)
+    if (frames.length === 0) throw new Error('laneGeoProbe：月框不在场')
+    return {
+      cards: Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map(own),
+      labels: Array.from(document.querySelectorAll('.month-tag')).map(own),
+      yearHeads: Array.from(document.querySelectorAll('.tl-year-num, .tl-year-meta')).map(own),
+      frames,
+      contentH: +Math.max(...frames.map((f) => f.y + f.h)).toFixed(3)
+    }
+  })
+}
+
+/** 期望坐标集直算（Node 侧 buildLaneTable 单源 import——零镜面；v/h=轴别坐标集） */
+function laneUniverse(geo: LaneGeo): { v: number[]; h: number[] } {
+  const t = buildLaneTable({
+    cards: geo.cards,
+    labels: geo.labels,
+    yearHeads: geo.yearHeads,
+    frames: geo.frames,
+    contentH: geo.contentH
+  })
+  return { v: t.v.map((l) => l.coord), h: t.h.map((l) => l.coord) }
+}
+
+/** 路径观测面（缝中点电平 y=内容坐标；twoPoint=0 拐直连族 d 形态） */
 interface PathLevel {
   route: string
   y: number
-  slotAttr: string
+  laneAttr: string
   exemptAttr: string
-  fallbackAttr: string
+  spansAttr: string
   twoPoint: boolean
 }
 interface SeamProbe {
-  slots: number[]
   cellMidX: number
   paths: PathLevel[]
 }
 
-/** 同月相邻卡列缝单元分点集（a1 公式 in-page：L=H−2·PAD、n=min(5,⌊L/6⌋−1)、内缩 k/(n+1) 分点）+各 path 缝中点电平（全内容坐标——rect÷z） */
+/** 同列缝单元探针：缝中点 x+各 path 缝中点电平与观测属性（全内容坐标——rect÷z） */
 async function seamProbe(win: Page): Promise<SeamProbe> {
   return win.evaluate(() => {
     const content = document.querySelector('.tl-content') as HTMLElement | null
@@ -219,17 +274,8 @@ async function seamProbe(win: Page): Promise<SeamProbe> {
     // 单元 rect（内容坐标=屏 rect÷z——buildSnapshot toBox 同式；x=左卡右缘）
     const cell = {
       x: (left.right - base.left) / z,
-      y: (Math.max(left.top, right.top) - base.top) / z,
-      w: (right.left - left.right) / z,
-      h: (Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)) / z
+      w: (right.left - left.right) / z
     }
-    // [F-SLOTGRID-01 U2] 槽位公式：域=高−2×短桩 10、n=clamp(⌊(域−8)/8⌋,0,5)、
-    // 槽位=域内 k/(n+1) 分点（gap-cells slotPositions 镜像——DOM 依赖不可 Node
-    // import，镜像而非 import 为 e2e 域结构性必然，INV-116 同族）
-    const L = cell.h - 2 * 10
-    const n = Math.min(5, Math.max(0, Math.floor((L - 8) / 8)))
-    const slots: number[] = []
-    for (let k = 1; k <= n; k++) slots.push(+(cell.y + 10 + (k * L) / (n + 1)).toFixed(2))
     const cellMidScreen = left.right + (right.left - left.right) / 2
     const cellMidX = +(cell.x + cell.w / 2).toFixed(2)
     const paths = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')) as SVGPathElement[]
@@ -253,22 +299,22 @@ async function seamProbe(win: Page): Promise<SeamProbe> {
       return {
         route: p.dataset.route ?? '',
         y: +bestUserY.toFixed(2),
-        slotAttr: p.dataset.slot ?? '',
+        laneAttr: p.dataset.lane ?? '',
         exemptAttr: p.dataset.overlapExempt ?? '',
-        fallbackAttr: p.dataset.slotFallback ?? '',
+        spansAttr: p.dataset.overlapSpans ?? '',
         twoPoint: (p.getAttribute('d') ?? '').split(/[ML]/).length === 3
       }
     })
-    return { slots, cellMidX, paths: levels }
+    return { cellMidX, paths: levels }
   })
 }
 
-test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
+test.describe('F-LANEGRID-01 B4 走线车道网格 e2e（R1-R5）', () => {
   /**
-   * R1 绕卡：三卡（甲/乙/丁）+障碍卡（丙拦甲→丁直连）→path 采样点避丙 rect
-   * ±PAD+data-route≠fallback（探针 p1：band 框外左绕 x≈43 下行再回兜）。
+   * R1 绕卡：三卡（甲/乙/丁）+障碍卡（丙拦甲→丁直连）→route='grid'（车道
+   * 网格绕行族——RouteTag 单态化）+path 采样点避丙 rect±PAD。
    */
-  test('R1 绕卡：障碍卡拦直连→路径避障 rect±PAD+route≠fallback', async () => {
+  test('R1 绕卡：障碍卡拦直连→路径避障 rect±PAD+route=grid', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u4-r1-'))
     await seedFixture(userData, ['u4r-a', 'u4r-a2', 'u4r-o', 'u4r-b'], ['绕卡甲', '绕卡乙', '绕障丙', '绕卡丁'], {
       nodes: [
@@ -284,19 +330,19 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     await openLineage(win, '绕卡甲')
     await waitForPaths(win, 1)
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    // [RR1 非空卫——门一双席共识] 空读（属性缺失/选择器漂移）恒过 ≠fallback 判定，
+    // [RR1 非空卫——门一双席共识] 空读（属性缺失/选择器漂移）恒过判别，
     // 先钉非空再判别（恒真断言防线——RR1 变异 4b 实证空读恒过）
     expect(route, 'R1 route 非空卫（data-route 缺席即红）').not.toBe('')
-    expect(['band', 'detour'], `R1 实测 route=${route}（绕行族 band/detour——U2 五态域）`).toContain(route)
+    expect(route, 'R1 实测 route=grid（车道网格绕行族——RouteTag 单态化）').toBe('grid')
     const z = await contentZ(win)
     await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.tl-card[data-node-id]', hasText: '绕障丙' }], PAD * z, 'R1 避障丙')
     await app.close()
   })
 
   /**
-   * R2 跨年：2020-12→2022-05（中隔 2021-01 障碍卡）→path 避全部年份头两
-   * 文本区（探针 p6：corridor 右缘 x=684 承接；年份头障碍集承重证据=band
-   * 左绕候选 x≈43 落 num rect[16,80.66]±PAD 内——无该障碍集即穿文本区）。
+   * R2 跨年：2020-12→2022-05（中隔 2021-01 障碍卡）→route='grid'（跨年绕行
+   * =车道网格多拐）+path 避全部年份头两文本区（年份头障碍集承重证据=无该
+   * 集即穿文本区）。
    */
   test('R2 跨年连线不穿 .tl-year-num/.tl-year-meta 两文本区', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u4-r2-'))
@@ -315,19 +361,22 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
     // [RR1 非空卫——同 R1（门一双席共识）]
     expect(route, 'R2 route 非空卫').not.toBe('')
-    expect(['band', 'detour'], `R2 实测 route=${route}（直连被拦——绕行族 band/detour〔U2 五态域〕）`).toContain(route)
+    expect(route, 'R2 实测 route=grid（直连被拦——跨年绕行=车道网格多拐）').toBe('grid')
     const z = await contentZ(win)
     await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.tl-year-num' }, { sel: '.tl-year-meta' }], PAD * z, 'R2 避年份头文本区')
     await app.close()
   })
 
   /**
-   * R3 同单元双消费槽位互异∈分点集（zoom 1.0/1.5 双跑）：同月相邻卡双向边
-   * →同列缝单元（20px 缝×72px 高→n=5 分点）retain idx2（Δ=0）+land idx4
-   * （|54−57.3|<|54−46.7|）——探针 p3/p3z15 实测 126.1/147.4 两电平，两档
-   * 内容坐标全等（rect÷z 归一化）。
+   * R3 同缝双消费（zoom 1.0/1.5 双跑）：同月相邻卡双向边→（a）双边在场且
+   * route='grid'；（b）laneMarks 逐占道段坐标∈车道表坐标集±0.6（buildLaneTable
+   * 直算——INV-SLOTGRID-02 新口径；实测横邻双向边=0 拐直连族散开互异 h 道，
+   * 竖道坐标随夹具形态入集同判——轴别封闭非空卫防恒真）；（c）互异道或登记：
+   * 共享道（同轴同坐标）⟹至少一边 data-overlap-spans 在场（同道重叠⟹
+   * overlapSpans 登记——INV-112 新口径）；（d）rect÷z 归一化恒等：laneMarks
+   * 与缝中点电平两档全等。
    */
-  test('R3 同单元槽位互异∈分点集（zoom 1.0/1.5 双跑——rect÷z 恒等）', async () => {
+  test('R3 同缝双消费：车道坐标封闭+互异道/overlapSpans 登记（zoom 1.0/1.5 双跑——rect÷z 恒等）', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u4-r3-'))
     await seedFixture(userData, ['u4r-l1', 'u4r-l2'], ['槽位甲', '槽位乙'], {
       nodes: [
@@ -343,39 +392,43 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     const win = await app.firstWindow()
     await openLineage(win, '槽位甲')
 
-    /** 断言体（tag=档位标注）：marks 同单元互异+电平∈分点集+电平↔slotIdx 一致 */
+    /** 断言体（tag=档位标注）：(a)双边 grid+(b)车道坐标封闭+(c)互异道/登记 */
     const runAssertions = async (tag: string): Promise<SeamProbe> => {
       await waitForPaths(win, 2)
       const m = await seamProbe(win)
-      expect(m.slots.length, `${tag} 分点数（n=clamp(⌊(域−8)/8⌋,0,5)——72px 高单元域 52→n=5）`).toBe(5)
-      const marks = m.paths.map((p) => p.slotAttr).filter((x) => x !== '')
-      expect(marks.length, `${tag} data-slot 双值在场（retain+land 各一）`).toBe(2)
-      const parsed = marks.map((x) => x.split(':').map(Number))
+      const uni = laneUniverse(await laneGeoProbe(win))
+      // (a) 双边在场+grid 单态
+      expect(m.paths.length, `${tag} 双边在场`).toBe(2)
+      for (const p of m.paths) {
+        expect(p.route, `${tag} route=grid（车道网格单态）`).toBe('grid')
+      }
+      // (b) 坐标集封闭：laneMarks 逐 token 轴别∈车道表坐标集±0.6（亚像素容差）
+      const inSet = (c: number, set: number[]): boolean => set.some((s) => Math.abs(s - c) <= 0.6)
+      const laneTokens: Array<Array<{ axis: string; coord: number }>> = []
+      for (const p of m.paths) {
+        expect(p.laneAttr, `${tag} data-lane 非空卫（占道段观测串——空读防恒真）`).not.toBe('')
+        const toks = p.laneAttr.split(',').map((t) => /^([vh])(-?[\d.]+):/.exec(t))
+        expect(
+          toks.every((mt) => mt !== null),
+          `${tag} laneMarks token 形如 轴+坐标:起-止（实测 lane=${p.laneAttr}）`
+        ).toBe(true)
+        const cs = toks.map((mt) => ({ axis: mt![1]!, coord: Number(mt![2]!) }))
+        laneTokens.push(cs)
+        for (const c of cs) {
+          expect(
+            inSet(c.coord, c.axis === 'v' ? uni.v : uni.h),
+            `${tag} ${c.axis}道坐标 ${c.coord} ∈车道表坐标集±0.6（实测 lane=${p.laneAttr}）`
+          ).toBe(true)
+        }
+        // 豁免位一致性：data-overlap-exempt='1' ⟺ data-overlap-spans 在场（DOM 发射序单源）
+        expect(p.exemptAttr, `${tag} exempt⟺spans 一致（实测 exempt=${p.exemptAttr} spans=${p.spansAttr}）`).toBe(p.spansAttr !== '' ? '1' : '')
+      }
+      // (c) 互异道或登记：共享道（同轴同坐标）⟹至少一边 overlapSpans 登记
+      const shared = laneTokens[0]!.filter((a) => laneTokens[1]!.some((b) => b.axis === a.axis && b.coord === a.coord))
       expect(
-        parsed.every((pr) => pr.length === 2 && Number.isInteger(pr[0]!) && Number.isInteger(pr[1]!)),
-        `${tag} data-slot 形如 cellId:slotIdx`
+        shared.length === 0 || m.paths.some((p) => p.spansAttr !== ''),
+        `${tag} 两边车道互异（共享道=${JSON.stringify(shared)}）或共享道已 overlapSpans 登记（实测 spans=${m.paths.map((p) => p.spansAttr).join('|')}）`
       ).toBe(true)
-      expect(new Set(parsed.map((pr) => pr[0]!)).size, `${tag} 同单元（cellId 全等）`).toBe(1)
-      const idxs = parsed.map((pr) => pr[1]!)
-      expect(new Set(idxs).size, `${tag} 槽位互异（INV-1XX e2e 面）`).toBe(2)
-      for (const idx of idxs) {
-        expect(idx, `${tag} slotIdx∈[0,n)`).toBeGreaterThanOrEqual(0)
-        expect(idx).toBeLessThan(m.slots.length)
-      }
-      // [F-SLOTGRID-01 U2] 实测电平双证：每边缝中点电平∈槽位集∪锚 y 集 ±0.6px
-      //（retain 豁免支电平=理想锚 y——12 锚体系锚坐标，INV-SLOTGRID-02 坐标集
-      // 封闭以锚∪槽位计；亚像素+采样残差容差）；落位边另断电平分点=slotIdx
-      const lvSlots = m.paths.map((p) => m.slots.findIndex((s) => Math.abs(s - p.y) <= 0.6))
-      for (let i = 0; i < m.paths.length; i++) {
-        if (lvSlots[i]! >= 0) continue
-        // retain 边豁免支：twoPoint（直线）=理想锚 y 原位（½/¾ 锚电平距槽位
-        // 可达 ~0.7px——新槽位网格 8.67 距 vs ¾ 锚偏移 0.67 实测）
-        expect(m.paths[i]!.twoPoint, `${tag} 边${i} 电平 ${m.paths[i]!.y} 非分点——须为 retain 直线形态（锚 y 豁免支）`).toBe(true)
-      }
-      const landed = m.paths.filter((_, i) => lvSlots[i]! >= 0)
-      expect(landed.length, `${tag} 落位边电平命中分点集 ${JSON.stringify(m.slots)}±0.6`).toBeGreaterThanOrEqual(1)
-      expect(new Set(lvSlots.filter((x) => x >= 0)).size, `${tag} 落位电平分属互异分点`).toBeGreaterThanOrEqual(1)
-      expect(m.paths.some((p) => p.twoPoint), `${tag} retain 直线形态在场（Δ<1 豁免支）`).toBe(true)
       return m
     }
 
@@ -385,20 +438,21 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     })
     await zoomProbe(win, 1.5, async () => {
       const m = await runAssertions('zoom1.5')
-      // rect÷z 归一化恒等：内容坐标电平与 marks 两档全等
-      expect(m.paths.map((p) => p.slotAttr)).toEqual(at10!.paths.map((p) => p.slotAttr))
-      expect(m.paths.map((p) => p.y)).toEqual(at10!.paths.map((p) => p.y))
+      // (d) rect÷z 归一化恒等：laneMarks 与缝中点电平两档全等
+      expect(m.paths.map((p) => p.laneAttr), 'R3 zoom 1.0/1.5 laneMarks 两档全等').toEqual(at10!.paths.map((p) => p.laneAttr))
+      expect(m.paths.map((p) => p.y), 'R3 zoom 1.0/1.5 缝中点电平两档全等').toEqual(at10!.paths.map((p) => p.y))
     })
     await app.close()
   })
 
   /**
-   * R4 重合态命中层抽查：retain 边（同单元 Δ<1 豁免——data-overlap-exempt=1）
-   * +via 手动边贴同电平（一次 launch 量电平→关应用→spec 进程直写 via→二次
-   * launch 冷读）→两线重合→edit 态点击重合段中点不抛错+至少一条可选中
-   * （命中层 stroke 8；手动边渲染序末位=恒最上）。
+   * R4 重合态命中层抽查：grid 直连边+via 手动边贴同电平（一次 launch 量电平
+   * →关应用→spec 进程直写 via→二次 launch 冷读）→两线重合→edit 态点击重合
+   * 段中点不抛错+至少一条可选中（命中层 stroke 8；手动边渲染序末位=恒最上）。
+   * [B4] retain 豁免概念退役：grid 边断两点直线（0 拐直连族）+无溢出登记
+   * （data-overlap-spans 缺席或空）。
    */
-  test('R4 重合态：retain 豁免边+via 贴同电平→重合段中点可点击选中', async () => {
+  test('R4 重合态：grid 直连边+via 贴同电平→重合段中点可点击选中', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u4-r4-'))
     await seedFixture(userData, ['u4r-m1', 'u4r-m2'], ['重合甲', '重合乙'], {
       nodes: [
@@ -410,7 +464,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
         { from: 'u4r-m2', to: 'u4r-m1', label: '' }
       ]
     })
-    // 相位一：量 retain 直线边电平与缝中点（内容坐标=用户坐标）
+    // 相位一：量 grid 直连边电平与缝中点（内容坐标=用户坐标）
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage(win, '重合甲')
@@ -423,7 +477,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
       const straight = Array.from(document.querySelectorAll('svg.tl-edges path.tl-edge')).find(
         (p) => (p.getAttribute('d') ?? '').split(/[ML]/).length === 3
       ) as SVGPathElement | undefined
-      if (straight === null || straight === undefined) throw new Error('R4：直线边不在场')
+      if (straight === null || straight === undefined) throw new Error('R4：grid 直连边不在场')
       const bb = straight.getBBox()
       return { yLevel: +(bb.y + bb.height / 2).toFixed(2), seamMid: +((left.right + right.left) / 2).toFixed(2) }
     })
@@ -455,7 +509,7 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
       db.close()
     }
 
-    // 相位三：二次 launch 冷读 via→manual 边贴 retain 电平→重合断言+命中点击
+    // 相位三：二次 launch 冷读 via→manual 边贴 grid 电平→重合断言+命中点击
     const app2 = await launch(userData)
     const win2 = await app2.firstWindow()
     await openLineage(win2, '重合甲')
@@ -463,8 +517,12 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     const m = await seamProbe(win2)
     const routes = m.paths.map((p) => p.route)
     expect(routes.filter((r) => r === 'manual-override').length, 'R4 manual 边在场（via 冷读）').toBe(1)
-    expect(m.paths.some((p) => p.twoPoint && p.exemptAttr === '1'), 'R4 retain 边携 data-overlap-exempt=1（重合对至少一方豁免）').toBe(true)
-    // 重合前提：缝中点两电平差 ≤0.5px（via 贴 retain 电平——内容坐标）
+    // [B4] retain 豁免支退役：grid 边=两点直线（0 拐直连族）+无溢出登记
+    const gridPath = m.paths.find((p) => p.route !== 'manual-override')
+    expect(gridPath, 'R4 grid 边在场').toBeDefined()
+    expect(gridPath!.twoPoint, `R4 grid 边为两点直线（0 拐直连族——实测 d 形态=${gridPath!.twoPoint ? '两点' : '多拐'}）`).toBe(true)
+    expect(gridPath!.spansAttr, 'R4 grid 边无溢出登记（data-overlap-spans 缺席或空）').toBe('')
+    // 重合前提：缝中点两电平差 ≤0.5px（via 贴 grid 电平——内容坐标）
     const levels = m.paths.map((p) => p.y)
     expect(Math.abs(levels[0]! - levels[1]!), `R4 两线电平 ${levels.join('/')} 重合（±0.5）`).toBeLessThanOrEqual(0.5)
     // 命中层抽查：edit 态+点击重合段中点（stroke 8 命中带）→选中（手柄集在场=选中证据）不抛错
@@ -480,16 +538,15 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
   })
 
   /**
-   * R5 [F-SLOTGRID-01 U2] 三卡同列 1→3 探针回归三断言（设计 §5.3 探针复演
-   * ——W18 网格基复核不变）：05/06/07 相邻月同 slot1 三卡+跨双框边 05→07
-   * →（a）绕行族承接〔detour/band——月标注封堵 ½ 入桩锚时 band 散开 ¾ 承接，
-   * 两态皆网格通道槽位横移〕；（b）坐标集封闭：路径全部竖直段 x∈锚集（卡
-   * ¼/½/¾ 位）∪通道槽位集（col0|1 段=卡右缘 +72 域分点——INV-SLOTGRID-02）；
-   * （c）标注覆盖：path 采样避全部 .month-tag rect±PAD（x₀=½ 与标注左缘
-   * 实测余量 3.6px<6〔R2-C4 PAD=6——旧口径 <4；3.6px 为夹具持久实测值，
-   * ½ 入桩带命中结论在两口径下均成立〕——½ 入桩净空以实测值入判定，非设计书参照值）。
+   * R5 [F-LANEGRID-01 B4] 三卡同列 1→3 探针回归三断言：05/06/07 相邻月同
+   * slot1 三卡+跨双框边 05→07→（a）route='grid'（中卡拦直连——车道网格
+   * 绕行族）；（b）坐标集封闭：路径全部竖直段 x∈车道表坐标集（Node 侧
+   * buildLaneTable 直算 vCoords——锚道 ¼/½/¾ 位本在车道表内，锚 x 集被子
+   * 集吸收；INV-SLOTGRID-02 新口径）；（c）标注覆盖：path 采样避全部
+   * .month-tag rect±PAD（月标注骑月份框上边界中轴——tag 在 .tl-month 首位
+   * top:-10px，rect 实测派生自吸收）。
    */
-  test('R5 三卡同列 1→3：竖直段 x∈锚∪通道槽位集（坐标集封闭）+标注覆盖+绕行族', async () => {
+  test('R5 三卡同列 1→3：竖直段 x∈车道表坐标集（坐标集封闭）+标注覆盖+route=grid', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'u2-r5-'))
     await seedFixture(userData, ['u2r-p1', 'u2r-p2', 'u2r-p3'], ['探针甲', '探针乙', '探针丙'], {
       nodes: [
@@ -505,28 +562,10 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
     await waitForPaths(win, 1)
     const route = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
     expect(route, 'R5 route 非空卫').not.toBe('')
-    expect(['band', 'detour'], `R5 实测 route=${route}（绕行族——中卡拦直连）`).toContain(route)
-    // (b) 坐标集封闭：竖直段 x∈锚集∪通道槽位集（in-page 全实测派生——零硬编码）
-    const closure = await win.evaluate(() => {
-      const content = document.querySelector('.tl-content') as HTMLElement | null
-      if (content === null) throw new Error('R5：.tl-content 不在场')
-      const base = content.getBoundingClientRect()
-      const zm = /matrix\(([\d.]+),/.exec(getComputedStyle(content).transform)
-      const z = zm === null ? 1 : Number(zm[1])
-      const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]')).map((el) => {
-        const r = el.getBoundingClientRect()
-        return { left: (r.left - base.left) / z, right: (r.right - base.left) / z }
-      })
-      if (cards.length !== 3) throw new Error('R5：卡数≠3')
-      const anchorXs = new Set<number>()
-      for (const c of cards) for (const f of [0.25, 0.5, 0.75]) anchorXs.add(+(c.left + (c.right - c.left) * f).toFixed(1))
-      const slots = new Set<number>()
-      for (const c of cards) {
-        const lo = c.right + 10
-        const domain = 72 - 20
-        const n = Math.min(5, Math.max(0, Math.floor((domain - 8) / 8)))
-        for (let k = 1; k <= n; k++) slots.add(+(lo + (k * domain) / (n + 1)).toFixed(1))
-      }
+    expect(route, 'R5 实测 route=grid（绕行族——中卡拦直连）').toBe('grid')
+    // (b) 坐标集封闭：竖直段 x∈车道表 vCoords（buildLaneTable 直算——零硬编码）
+    const uni = laneUniverse(await laneGeoProbe(win))
+    const runXs = await win.evaluate(() => {
       const path = document.querySelector('svg.tl-edges path.tl-edge') as SVGPathElement | null
       if (path === null) throw new Error('R5：路径不在场')
       const total = path.getTotalLength()
@@ -536,26 +575,23 @@ test.describe('F-ROUTE-02 U4 走线槽位 e2e（R1-R4）', () => {
         const q = path.getPointAtLength((total * k) / N)
         pts.push({ x: q.x, y: q.y })
       }
-      const runXs: number[] = []
+      const xs: number[] = []
       let i = 0
       while (i < pts.length) {
         let j = i
         while (j + 1 < pts.length && Math.abs(pts[j + 1]!.x - pts[i]!.x) < 0.6) j++
-        if (Math.abs(pts[j]!.y - pts[i]!.y) > 2) runXs.push(+pts[i]!.x.toFixed(1))
+        if (Math.abs(pts[j]!.y - pts[i]!.y) > 2) xs.push(+pts[i]!.x.toFixed(1))
         i = j + 1
       }
-      const inSet = (x: number): boolean => {
-        for (const a of anchorXs) if (Math.abs(a - x) <= 0.6) return true
-        for (const sl of slots) if (Math.abs(sl - x) <= 0.6) return true
-        return false
-      }
-      return { runXs, open: runXs.filter((x) => !inSet(x)), anchorXs: [...anchorXs], slots: [...slots] }
+      return xs
     })
+    expect(runXs.length, 'R5 竖直段非空卫（绕行族≥2 竖直段——空集防恒真）').toBeGreaterThanOrEqual(2)
+    const open = runXs.filter((x) => !uni.v.some((s) => Math.abs(s - x) <= 0.6))
     expect(
-      closure.open,
-      `R5 竖直段 x 全∈锚∪槽位集（开放值=坐标集外逃逸——INV-SLOTGRID-02）锚=${JSON.stringify(closure.anchorXs)} 槽=${JSON.stringify(closure.slots)}`
+      open,
+      `R5 竖直段 x 全∈车道表坐标集（开放值=坐标集外逃逸——INV-SLOTGRID-02）实测 runXs=${JSON.stringify(runXs)} vCoords=${JSON.stringify(uni.v)}`
     ).toEqual([])
-    // (c) 标注覆盖：path 采样避全部 .month-tag rect±PAD（实测锚定净空判定）
+    // (c) 标注覆盖：path 采样避全部 .month-tag rect±PAD（骑线形态 rect 实测派生）
     const z = await contentZ(win)
     await expectPathAvoids(win, 'svg.tl-edges path.tl-edge', [{ sel: '.month-tag' }], PAD * z, 'R5 避月标注矩形')
     await app.close()

@@ -41,6 +41,13 @@ test('标签多选过滤：面板勾选两标签交集→取消一个→清空�
   const tagInput = win.getByLabel('新增标签')
   async function tagPaper(title: string, ...names: string[]): Promise<void> {
     await win.getByText(title).first().click()
+    // [011b3892 状态机适配] 窄视口（内容宽≤1320——CI 1024×768 钳制）首进
+    // 文献库详情抽屉默认收起（.lib-drawer 不在 DOM），「新增标签」输入在
+    // 抽屉内——两态兼容：不在场才点「详情」钮展开（宽视口默认展开/会话
+    // 已开跳过，幂等）
+    if ((await win.locator('.lib-drawer').count()) === 0) {
+      await win.locator('.lib-detail-toggle').click()
+    }
     for (const name of names) {
       await tagInput.fill(name)
       await tagInput.press('Enter')

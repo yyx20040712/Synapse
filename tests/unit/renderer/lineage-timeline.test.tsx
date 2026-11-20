@@ -163,11 +163,12 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     const unknownMonth = host?.querySelector('.tl-month.unknown')
     expect(unknownMonth).not.toBeNull()
     expect(unknownMonth!.querySelector('.month-frame')!.classList.contains('unknown')).toBe(false)
-    // [F-LINEAGE-02 裁决 7] 月标注入框内首位（D-L2-2：框外悬浮堵死框间通道
-    // ——移入后框内顶 padding 18 承载，absolute 定位不占 flex 槽；标签整体
-    // 在框内=overflow:hidden 无裁切面，d1-B1 悬出段顾虑随布局改版消灭）
+    // [F-LANEGRID-01 B4] 月标骑框线（2026-11-20 用户裁决：中轴=框上边界）
+    // ——注入位提升至 .tl-month 首位（.month-frame overflow:hidden 会裁出框
+    // 上半；.tl-month position:relative=包含块且与框顶同位）。absolute 定位
+    // 不占 flex 槽沿承；框内顶 padding 38 承载（FRAME_PAD_TOP——top 锚解封）
     for (const tag of host?.querySelectorAll('.month-tag') ?? []) {
-      expect(tag.parentElement!.classList.contains('month-frame')).toBe(true)
+      expect(tag.parentElement!.classList.contains('tl-month')).toBe(true)
       expect(tag.parentElement!.firstElementChild === tag).toBe(true)
     }
   })
@@ -443,10 +444,10 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     )
   })
 
-  it('月框：.tl-month margin 0 46px 26px 46px（[F-SLOTGRID-01 呈裁点 4] 右 58→46=corridor 走廊遗产回收）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 18px 12px 12px 列容器（flex-direction column+gap 72px）min-height 58px；.tl-row 行容器 gap 72px+奇行 padding-left 100px（o=100 呈裁点 1）', () => {
+  it('月框：.tl-month margin 0 46px 26px 46px（[F-SLOTGRID-01 呈裁点 4] 右 58→46=corridor 走廊遗产回收）+position relative；.month-frame 1.6px dashed --month-dash 圆角 12 padding 38px 12px 38px 列容器（〔F-LANEGRID-01 B4〕18/12→38/38——月标骑线+top 锚解封+上下对称，flex-direction column+gap 72px）min-height 58px；.tl-row 行容器 gap 72px+奇行 padding-left 100px（o=100 呈裁点 1）', () => {
     expect(css).toMatch(/\.tl-month\s*\{[^}]*margin:\s*0 46px 26px 46px;[^}]*position:\s*relative/)
     expect(css).toMatch(
-      /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*18px 12px 12px/
+      /\.month-frame\s*\{[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*border-radius:\s*12px;[^}]*padding:\s*38px 12px 38px/
     )
     expect(css).toMatch(
       /\.month-frame\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*gap:\s*72px;[^}]*min-height:\s*58px/
@@ -466,9 +467,9 @@ describe('T3-P6 CSS 逐值文本锁（theme-lineage.css——mockup L203-262 誊
     expect(css).not.toMatch(/\.tl-row\.odd\s*\{[^}]*position:/)
   })
 
-  it('月标签（[F-LINEAGE-02 裁决 7] 注入框内首位）：.month-tag absolute top 0.5px left 12px 胶囊（框内顶 padding 18 承载——框间 26px 带全宽净空 D-L2-2）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
+  it('月标签（[F-LANEGRID-01 B4] 骑框线——中轴=框上边界）：.month-tag absolute top -10px left 12px 胶囊（.tl-month 首位注入——框内顶 padding 38 承载，top ¼/½ 锚解封）；未定月=月标签级变体（faint 字+--line 实线边）', () => {
     expect(css).toMatch(
-      /\.month-tag\s*\{[^}]*top:\s*0\.5px;[^}]*left:\s*12px;[^}]*border-radius:\s*99px;[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--accent\);[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*font-variant-numeric:\s*tabular-nums/
+      /\.month-tag\s*\{[^}]*top:\s*-10px;[^}]*left:\s*12px;[^}]*border-radius:\s*99px;[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--accent\);[^}]*border:\s*1\.6px dashed var\(--month-dash\);[^}]*font-variant-numeric:\s*tabular-nums/
     )
     expect(css).toMatch(
       /\.tl-month\.unknown \.month-tag\s*\{[^}]*color:\s*var\(--faint\);[^}]*border-color:\s*var\(--line\);[^}]*border-style:\s*solid/

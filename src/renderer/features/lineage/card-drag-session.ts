@@ -57,7 +57,7 @@ export interface DragSlotPreview {
   extend?: boolean
   /** [F-VISFB-22 C6] 连续跟随量（px——x 带内指针越未拉伸底缘 frameBottom0
    *  量，PULL_BAND_PX 封顶；0=未越缘/带外。消费面=TimelineYears 写入框
-   *  inline --lg-pull → CSS calc(12px+var) 逐 move 跟随） */
+   *  inline --lg-pull → CSS calc(38px+var) 逐 move 跟随〔F-LANEGRID-01 B4 基准随 FRAME_PAD_BOTTOM 38 同步〕） */
   pullPx?: number
 }
 
@@ -68,8 +68,8 @@ const DRAG_THRESHOLD = 5
  *  [lnfix2] 冻结基准判定两处共用单源。
  *  [F-VISFB-22 C6] 双角色：①触发带语义沿承（INV-98 实时域——overSourceFrame
  *  带上限不动）；②连续跟随封顶（pullPx 钳制上限+CSS 增量单源——TimelineYears
- *  消费写入 --lg-pull，theme-lineage.css 只知基准 12px+变量，INV-100 的
- *  94=12+82 值耦合由此解除） */
+ *  消费写入 --lg-pull，theme-lineage.css 只知基准+变量（基准 38px=FRAME_PAD_BOTTOM
+ *  同步——F-LANEGRID-01 B4；INV-100 的 94=12+82 值耦合由此解除） */
 export const PULL_BAND_PX = 82
 
 interface DragSession {

@@ -14,29 +14,32 @@
  *   band（row0→row4 族——通道竞争）、同行被挡（(0,2)/(5,7)/(10,12)/(15,17)）、
  *   同月邻卡 h-slip（(10,11)/(15,16)/(18,19)）、远跨上行（(19,0)）。
  *
- * ── 断言口径（[F-LANEGRID-01 B2b] 重推导后）──
+ * ── 断言口径（[F-LANEGRID-01 B4] 车道网格重基线）──
  * ① 全覆盖：36 边各恰一渲染产物（path 或 blocked 无几何 g）+20 卡；② 坐标集
  * 封闭（INV-SLOTGRID-02 重写口径）：采样横/纵段电平 ∈ 锚坐标∪车道表坐标
  * ——期望集由 src 单源 import 公式派生（anchorPoint/stubEnd/buildLaneTable
  * ——零镜面）；③ 占用互斥：data-anchors 层（含 blocked）逐锚互斥（INV-119③
  * 豁免面=钉定共享/12 锚全满回退/12 锚观测共享——夹具设计规避，红即未登记
- * 形态）；④ 容量：每卡锚占用 ≤12；⑤ 第三方净空（INV-79/110）：逐 path 128
- * 点采样 vs 第三方卡∪月标注∪年份头两文本区 ±PAD（源/目标卡按桩区语义不入
- * 第三方集；空卡位非障碍——INV-79；同型探针驻本 spec——geo-probes 单源边界
- * =三类 rect 断言，route-slots 头注申报沿承）；⑥b/⑥ 槽域/残余族断言随槽位
- * 与残余机制退役删除（头注申报面）；⑥c 全域防贴合 ≥1px 保留；⑦ 确定性：
- * 切视图往返两次完整渲染，全部边观测属性序列化逐字节全等。
+ * 形态）；④ 容量：每卡锚占用 ≤12；⑤ 第三方净空（INV-79/110）：d 折线顶点
+ * 判交+Q 圆角弧 32 点细采样 vs 第三方卡∪月标注∪年份头两文本区 ±PAD（源/
+ * 目标卡按桩区语义不入第三方集；空卡位非障碍——INV-79；〔B4 弦伪影修正〕
+ * 旧 128 点弦采样在 r=6 弧上「弦穿 PAD 角区而弧轨迹净空」伪影实证——拐点
+ * (75,63.5)→(69,69.5) 弧距 tag PAD 角 2.9px 而弦穿；产品净空谓词=圆角前
+ * 折线，弧段细采样=真实渲染几何判定；同型探针驻本 spec——geo-probes 单源
+ * 边界=三类 rect 断言，route-slots 头注申报沿承）；⑥ 平行间距族（B4 升硬
+ * ——route-stress-assert assertParallelSpacing 单源）：④b/⑥/⑥b 残余/槽域
+ * 族随机制退役整体删除（bandCap·maxOff 公式镜像两处核销——设计 §9 关账
+ * 行）；⑥c 非豁免对 Δ≥LANE_PITCH−TOL（8−0.6），豁免仅 overlapSpans 登记
+ * 区间对（data-overlap-spans——区间+标记双重校验；SHARED_LEVEL_ROUTES
+ * 删除=六态值域退役核销）；⑦ 确定性：切视图往返两次完整渲染，全部边观测
+ * 属性（route/d/lane/anchors/exempt/overlapSpans）序列化逐字节全等。
  *
  * ── 断言域申报（impl-report 未决事项对应）──
- * [F-LANEGRID-01 B2b] 六态构线器删除连带面：② 坐标集期望源改锚∪车道表
- * （grid.buildLaneTable 直算——INV-SLOTGRID-02 重写口径）；③ data-slot 槽位
- * 互斥与 ④ 槽位容量断言随槽位机制退役删除（镜像两处同删——设计 §9 关账
- * 行；B4 重基线时以 data-lane 段级互斥升硬承接）；⑥b seamRects 槽域共线
- * 判据同退役（承接=overlapSpans 段级登记——B2b 单测 lineage-routing-outer
- * expectSpacing 已承载）；⑥/④b 残余族（bandCap/maxOff）随残余机制退役
- * （设计 §5）；⑥c 全域防贴合保留（SHARED_LEVEL_ROUTES 豁免值域随六态退役
- * 恒不命中——B4 ⑥c 升硬去豁免）。blocked 边口径=豁免面报告 §6：锚占用
- * 计入（data-anchors 层）/path 几何断言排除。
+ * [F-LANEGRID-01 B2b→B4] 六态构线器删除连带面：② 坐标集期望源=锚∪车道表
+ * （grid.buildLaneTable 直算）；③/④ 槽位断言随槽位机制退役（B4 起观测面
+ * =data-lane/data-overlap-spans，段级互斥由单测 lineage-routing-outer
+ * expectSpacing+⑥c 升硬承接）；blocked 边口径沿承：锚占用计入（data-anchors
+ * 层）/path 几何断言排除。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -47,7 +50,7 @@ import { anchorPoint, stubEnd, type Rect, type Side } from '../../src/renderer/f
 import { PAD } from '../../src/renderer/features/lineage/routing/avoid'
 import { buildLaneTable, quant } from '../../src/renderer/features/lineage/routing/grid'
 import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
-import { assertParallelFamily, inSet, RUN_MIN_EXTENT, TOL, type ObservedPath, type Run } from './route-stress-assert'
+import { assertParallelSpacing, inSet, RUN_MIN_EXTENT, TOL, type ObservedPath, type Run } from './route-stress-assert'
 
 /** 单月卡数（20 文献——压力面） */
 const N_CARDS = 20
@@ -222,39 +225,67 @@ async function observe(win: Page): Promise<Obs> {
         const zP = bb.width === 0 ? 1 : br.width / bb.width
         const ox = br.left - bb.x * zP
         const oy = br.top - bb.y * zP
-        const total = p.getTotalLength()
-        let prev: { x: number; y: number } | null = null
-        for (let k = 0; k <= 128 && clearanceHits.length < cfg.maxHits; k++) {
-          const q = p.getPointAtLength((total * k) / 128)
-          const px = ox + q.x * zP
-          const py = oy + q.y * zP
-          if (prev !== null) {
-            for (const [id, r] of cardScreen) {
-              if (ends.has(id)) continue
-              if (segHits(prev.x, prev.y, px, py, r.left - padS, r.top - padS, r.right + padS, r.bottom + padS)) {
-                clearanceHits.push({ edgeId: ds.edgeId ?? '', desc: `第三方卡 ${id.slice(0, 8)} rect±PAD` })
-                break
-              }
-            }
-            for (const o of otherScreen) {
-              if (segHits(prev.x, prev.y, px, py, o.r.left - padS, o.r.top - padS, o.r.right + padS, o.r.bottom + padS)) {
-                clearanceHits.push({ edgeId: ds.edgeId ?? '', desc: `${o.desc} rect±PAD` })
-                break
-              }
-            }
+      // ⑤ 净空判定（B4 口径）：d 折线顶点判交+Q 圆角弧 32 点细采样——
+      // 旧 128 点弦采样在 r=6 弧上「弦穿 PAD 角区而弧轨迹净空」伪影实证
+      // （头注申报）；每 path 首个命中段后该 path 剩余段停检（maxHits 全局封顶沿承——诊断面足够，防 payload 失控）
+      const dToks = (p.getAttribute('d') ?? '').match(/[MLQ]|-?[\d.]+/g) ?? []
+      let px = 0
+      let py = 0
+      const scr = (ux: number, uy: number): { x: number; y: number } => ({ x: ox + ux * zP, y: oy + uy * zP })
+      const hitScreen = (s1: { x: number; y: number }, s2: { x: number; y: number }): boolean => {
+        for (const [id, r] of cardScreen) {
+          if (ends.has(id)) continue
+          if (segHits(s1.x, s1.y, s2.x, s2.y, r.left - padS, r.top - padS, r.right + padS, r.bottom + padS)) {
+            if (clearanceHits.length < cfg.maxHits) clearanceHits.push({ edgeId: ds.edgeId ?? '', desc: `第三方卡 ${id.slice(0, 8)} rect±PAD` })
+            return true
           }
-          prev = { x: px, y: py }
         }
-        paths.push({
-          edgeId: ds.edgeId ?? '',
-          route: ds.route ?? '',
-          anchors: ds.anchors ?? '',
-          slot: ds.slot ?? '',
-          exempt: ds.overlapExempt === '1',
-          fallback: ds.slotFallback === '1',
-          d: p.getAttribute('d') ?? '',
-          ...mkRuns(p)
-        })
+        for (const o of otherScreen) {
+          if (segHits(s1.x, s1.y, s2.x, s2.y, o.r.left - padS, o.r.top - padS, o.r.right + padS, o.r.bottom + padS)) {
+            if (clearanceHits.length < cfg.maxHits) clearanceHits.push({ edgeId: ds.edgeId ?? '', desc: `${o.desc} rect±PAD` })
+            return true
+          }
+        }
+        return false
+      }
+      for (let k = 0; k < dToks.length; k++) {
+        const t = dToks[k]!
+        if (t === 'M' || t === 'L') {
+          const x = Number(dToks[k + 1])
+          const y = Number(dToks[k + 2])
+          k += 2
+          if (t === 'L' && hitScreen(scr(px, py), scr(x, y))) break
+          px = x
+          py = y
+        } else if (t === 'Q') {
+          const cx = Number(dToks[k + 1])
+          const cy = Number(dToks[k + 2])
+          const x = Number(dToks[k + 3])
+          const y = Number(dToks[k + 4])
+          k += 4
+          let qs = scr(px, py)
+          for (let u = 1; u <= 32; u++) {
+            const mt = u / 32
+            const bx = (1 - mt) * (1 - mt) * px + 2 * (1 - mt) * mt * cx + mt * mt * x
+            const by = (1 - mt) * (1 - mt) * py + 2 * (1 - mt) * mt * cy + mt * mt * y
+            const qe = scr(bx, by)
+            if (hitScreen(qs, qe)) break
+            qs = qe
+          }
+          px = x
+          py = y
+        }
+      }
+      paths.push({
+        edgeId: ds.edgeId ?? '',
+        route: ds.route ?? '',
+        anchors: ds.anchors ?? '',
+        lane: ds.lane ?? '',
+        exempt: ds.overlapExempt === '1',
+        overlapSpans: ds.overlapSpans ?? '',
+        d: p.getAttribute('d') ?? '',
+        ...mkRuns(p)
+      })
       }
       const blocked = Array.from(document.querySelectorAll('svg.tl-edges g.tl-edge-blocked')).map((g) => ({
         edgeId: (g as SVGElement).dataset.edgeId ?? '',
@@ -267,14 +298,11 @@ async function observe(win: Page): Promise<Obs> {
 }
 
 /** 期望坐标全集（② 单源 import 公式派生——锚∪车道表，文件头申报面；
- *  ⑥ 族 ParallelUniverse 面随残余机制退役=空带/槽域（头注申报）） */
+ *  [F-LANEGRID-01 B4] ⑥ 族辅助面（bands/landedYs/fixedYs/seamRects）随
+ *  残余/槽位机制退役删除（route-stress-assert 关账核销） */
 function buildUniverse(obs: Obs): {
   xs: Set<number>
   ys: Set<number>
-  bands: never[]
-  landedYs: Set<number>
-  fixedYs: Set<number>
-  seamRects: Rect[]
 } {
   const snap = {
     cards: new Map(obs.cards.map((c) => [c.id, { x: c.x, y: c.y, w: c.w, h: c.h }])),
@@ -308,16 +336,7 @@ function buildUniverse(obs: Obs): {
     ys.add(quant(c.y))
     ys.add(quant(c.y + c.h))
   }
-  return {
-    xs,
-    ys,
-    // ④b/⑥ 残余族断言随残余机制退役（bands 空集=恒过——头注申报）；
-    // ⑥b seamRects 槽域判据同退役；⑥c 全域防贴合仍全效
-    bands: [],
-    landedYs: ys,
-    fixedYs: ys,
-    seamRects: []
-  }
+  return { xs, ys }
 }
 
 test.describe('R2-C5 走线压力（单月 20 文献×36 边——七不变量）', () => {
@@ -382,17 +401,18 @@ test.describe('R2-C5 走线压力（单月 20 文献×36 边——七不变量�
     expect(openH, `② 横段电平全∈坐标集（逃逸=${JSON.stringify(openH.slice(0, 10))}——INV-SLOTGRID-02+jog/残余/夹缝电平申报面）`).toEqual([])
     expect(openV, `② 纵段 x 全∈坐标集（逃逸=${JSON.stringify(openV.slice(0, 10))}——INV-SLOTGRID-02）`).toEqual([])
 
-    // ④b/⑥/⑥b/⑥c 平行间距族断言（route-stress-assert 单源——spec 500 行
-    // 上限拆件）：残余 |off|≤maxOff、残余互达对 ≥s（豁免对显式列名）、槽域
-    // 内重合须一方 exempt、[用户裁决 C] 全域防贴合 ≥1px（重叠/贴死必红）。
-    assertParallelFamily(obs.paths, uni)
+    // ⑥c 平行间距升硬断言（route-stress-assert 单源——spec 500 行上限拆件）：
+    // 非豁免对 Δ≥LANE_PITCH−TOL（8−0.6），豁免仅 overlapSpans 登记区间对
+    // （区间+标记双重校验，豁免对显式列名）；④b/⑥/⑥b 残余/槽域族已随机制
+    // 退役删除（B4 关账核销——头注申报面）
+    assertParallelSpacing(obs.paths)
 
     // ⑦ 确定性：切视图往返重渲染，观测属性序列化逐字节全等
     const serialize = (o: Obs): string =>
       JSON.stringify(
         [
-          ...o.paths.map((p) => [p.edgeId, p.route, p.d, p.slot, p.anchors, p.exempt, p.fallback]),
-          ...o.blocked.map((b) => [b.edgeId, 'blocked', '', '', b.anchors, false, false])
+          ...o.paths.map((p) => [p.edgeId, p.route, p.d, p.lane, p.anchors, p.exempt, p.overlapSpans]),
+          ...o.blocked.map((b) => [b.edgeId, 'blocked', '', '', b.anchors, false, ''])
         ].sort()
       )
     const first = serialize(obs)

@@ -87,6 +87,12 @@ test('导入 raster PDF→提取桥驱动→信息区真图 naturalWidth>0（§7
 
   // 信息区真图加载：抽屉打开→strip img 出现→naturalWidth>0（协议分支真 PNG 字节）
   await row.click()
+  // [011b3892 状态机适配] 窄视口（内容宽≤1320——CI 1024×768 钳制）首进
+  // 文献库详情抽屉默认收起（.lib-drawer 不在 DOM），信息区在抽屉内——
+  // 两态兼容：不在场才点「详情」钮展开（宽视口默认展开/会话已开跳过）
+  if ((await win.locator('.lib-drawer').count()) === 0) {
+    await win.locator('.lib-detail-toggle').click()
+  }
   const drawer = win.locator('.lib-drawer')
   await expect(drawer.getByTestId('paper-info-section')).toBeVisible({ timeout: 10_000 })
   await expect

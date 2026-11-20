@@ -322,10 +322,11 @@ describe('F-VISFB-66·[回炉 S10/S11] 滚动帧：tick 先于基准重测+滚�
     pMove(150, 40) // row0 col0 右缘（center 76）→ p=1 src=1 → idx=1 → [A,B,C,D]
     const ph0 = req('.drag-slot:not(.cand)')
     expect(ph0.previousElementSibling?.isEqualNode(cardOf('A')), '滚动前插位=A 后 C 前').toBe(true)
-    // 滚动帧：内容上移 130px（frame gBCR top 0→−130）——光标静止 (150,40)
-    // →frame 域 y=170 跨入 row1；x=150<row1 cell0 中心 176 → p=3 src=1 →
-    // idx=2（C 后）
-    stubFrame(0, -130, 600, 400)
+    // 滚动帧：内容上移 150px（frame gBCR top 0→−150）——光标静止 (150,40)
+    // →frame 域 y=190 跨入 row1（row1 起 y=FRAME_PAD_TOP+PITCH_Y=38+144=182
+    // 〔F-LANEGRID-01 B4 顶部内边距 18→38——位移量 130→150 补偿〕）；x=150<
+    // row1 cell0 中心 176 → p=3 src=1 → idx=2（C 后）
+    stubFrame(0, -150, 600, 400)
     act(() => {
       req('.timeline').dispatchEvent(new CustomEvent('synapse-autoscroll-frame'))
     })

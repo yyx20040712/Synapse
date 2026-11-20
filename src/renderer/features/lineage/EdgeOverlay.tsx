@@ -198,6 +198,7 @@ export function EdgeOverlay(props: {
               data-lane={p.laneMarks}
               data-anchors={p.anchorMarks}
               data-overlap-exempt={p.overlapExempt === true ? '1' : undefined}
+              data-overlap-spans={p.overlapSpans !== undefined && p.overlapSpans.length > 0 ? p.overlapSpans.join(',') : undefined}
               d={p.d}
               style={selected ? { ...visual, stroke: 'var(--accent)', strokeWidth: 2.2 } : visual}
             />

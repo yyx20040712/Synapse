@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -16,6 +16,18 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * ④着色 computed style 锚（真 Chromium 计算样式——F-LIBUI-01 先例口径，
  * 背景/边框计算值断言，hex alpha 后缀序列化宽容匹配 rgb 三元组）。
  */
+
+/** [011b3892 状态机适配] 详情抽屉两态兼容：窄视口（内容宽≤1320——CI
+ * 1024×768 钳制）首进文献库默认收起（.lib-drawer 不在 DOM），而「新增标签」
+ * 输入与已挂接 chip 均在抽屉内——不在场才点「详情」钮展开（library-detail-
+ * collapse.spec 先例锚）；detailOpen=会话内存态，复 launch 回 null 重推导，
+ * 故第二会话需再次调用；宽视口默认展开/会话已开则跳过，幂等。 */
+async function ensureDetailOpen(win: Page): Promise<void> {
+  if ((await win.locator('.lib-drawer').count()) === 0) {
+    await win.locator('.lib-detail-toggle').click()
+  }
+}
+
 test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ftags-'))
   await bootstrapMigrations(userData)
@@ -26,6 +38,7 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText('F-T1 文献').first().click()
+  await ensureDetailOpen(win)
 
   // —— ① Enter 路：真键盘中文逐字符+回车 → 已挂接 chip 在场 ——
   const tagInput = win.getByLabel('新增标签')
@@ -72,6 +85,7 @@ test('标签三路提交：CJK 回车→持久/失焦/按钮/着色计算样式'
   const win2 = await app2.firstWindow()
   await expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win2.getByText('F-T1 文献').first().click()
+  await ensureDetailOpen(win2)
   for (const name of ['水质', '水文', '水泵']) {
     await expect(win2.getByLabel(`移除标签 ${name}`)).toBeVisible({ timeout: 10_000 })
   }

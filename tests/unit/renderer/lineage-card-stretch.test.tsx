@@ -149,7 +149,7 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
   const setup = (): HTMLElement => {
     mount()
     const frame = req('.month-frame') as HTMLElement
-    stubLiveFrame(frame, { baseBottom: 200, stretchPad: 94, slotRowGrow: 92, width: 600 })
+    stubLiveFrame(frame, { baseBottom: 200, stretchPad: 120, slotRowGrow: 92, width: 600 })
     stubRect(cardOf('A'), 12, 18)
     stubRect(cardOf('B'), 160, 18)
     stubRect(cardOf('C'), 308, 18)

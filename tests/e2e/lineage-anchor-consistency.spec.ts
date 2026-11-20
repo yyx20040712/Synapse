@@ -403,7 +403,9 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
       const ta = ptOf(to, sp.ta.side, sp.ta.slot)
       expect(Math.hypot(e.first.x - fa.x, e.first.y - fa.y), `${tag} 边${i}（${e.route}）首点=from 钉定锚 ±1`).toBeLessThanOrEqual(1)
       expect(Math.hypot(e.last.x - ta.x, e.last.y - ta.y), `${tag} 边${i}（${e.route}）末点=to 钉定锚 ±1`).toBeLessThanOrEqual(1)
-      if (e.route === 'band' || e.route === 'detour' || e.route === 'outer-ring') {
+      // 〔F-LANEGRID-01 B4〕grid 态首段=源锚外法线桩（构造保证，chain.ts 头注）；
+      // manual-override 不入此判定，保持原语义
+      if (e.route === 'grid') {
         const nrm = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }[sp.fa.side as 'top' | 'bottom' | 'left' | 'right']!
         const len = Math.hypot(e.dir.x, e.dir.y)
         const sin = Math.abs((e.dir.x * nrm.y - e.dir.y * nrm.x) / len)
@@ -412,30 +414,62 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     }
   }
 
-  test('R-锚级一致①（不可布通安全网）：相邻月钉定边穿目标月标→blocked 两层撤销（zoom 三档）', async () => {
+  test('R-锚级一致①（不可布通安全网）：manual via 穿第三方卡→终门 blocked 两层撤销（zoom 三档）——〔F-LANEGRID-01 B4〕月标骑线后钉定穿月标场景解封，安全网改由 via 碰障承接（R2-C3 合同）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r1-'))
-    await seedFixture(userData, ['af-c1-a', 'af-c1-b'], ['直意甲', '直意乙'], {
+    await seedFixture(userData, ['af-c1-a', 'af-c1-o', 'af-c1-b'], ['穿障甲', '穿障障', '穿障乙'], {
       nodes: [
-        { paperId: 'af-c1-a', title: '直意甲', year: 2020, month: 5, slot: 1 },
-        { paperId: 'af-c1-b', title: '直意乙', year: 2020, month: 6, slot: 1 }
+        { paperId: 'af-c1-a', title: '穿障甲', year: 2020, month: 5, slot: 1 },
+        { paperId: 'af-c1-o', title: '穿障障', year: 2020, month: 6, slot: 1 },
+        { paperId: 'af-c1-b', title: '穿障乙', year: 2020, month: 7, slot: 1 }
       ],
       edges: [{ from: 'af-c1-a', to: 'af-c1-b', label: '' }]
     })
-    await seedPinned(userData, '直意甲', '直意乙', { side: 'bottom', slot: 2 }, { side: 'top', slot: 0 })
+    // 相位一：量障碍卡内容 rect（via 折线水平段目标域——R5 两相位先例）
     const app = await launch(userData)
     const win = await app.firstWindow()
-    await openLineage(win, '直意甲')
-    // 带封闭使路由落 overlap；L 形竖段穿目标月标，最终门必须撤销非法线。
-    // 等待真实提示文本以确认首轮路由已完成，避免空 NodeList 假绿。
-    await expect(win.getByText('该连线暂无可行走线', { exact: true })).toBeVisible({ timeout: 10_000 })
+    await openLineage(win, '穿障甲')
+    const ro = await cardContentRect(win, '穿障障')
+    await app.close()
+    // 相位二：直写 via 两点（同 y=障碍中心 y，x=障碍左缘−60/右缘+60——折线水平段
+    // 穿障碍卡中心）；锚不钉定（from_anchor/to_anchor 不写）。R2-C3 合同：
+    // via 折线碰第三方障碍=blocked 空 d——数据保留、提示一次。
+    const wsDb = join(userData, 'workspaces', 'default', 'synapse.db')
+    const db = new Database(existsSync(wsDb) ? wsDb : join(userData, 'synapse.db'))
+    try {
+      const res = db
+        .prepare(
+          `UPDATE lineage_edges SET via = ?
+           WHERE id IN (
+             SELECT e.id FROM lineage_edges e
+             JOIN lineage_nodes fn ON fn.id = e.from_node
+             JOIN lineage_nodes tn ON tn.id = e.to_node
+             WHERE fn.title = '穿障甲' AND tn.title = '穿障乙'
+           )`
+        )
+        .run(
+          JSON.stringify([
+            { x: ro.x - 60, y: ro.y + ro.h / 2 },
+            { x: ro.x + ro.w + 60, y: ro.y + ro.h / 2 }
+          ])
+        )
+      if (res.changes !== 1) throw new Error(`R1：via 写入 ${res.changes} 行（期望 1）`)
+    } finally {
+      db.close()
+    }
+    // 相位三：二次 launch 冷读→终门 blocked 断言。等待真实提示文本以确认首轮
+    // 路由已完成，避免空 NodeList 假绿。
+    const app2 = await launch(userData)
+    const win2 = await app2.firstWindow()
+    await openLineage(win2, '穿障甲')
+    await expect(win2.getByText('该连线暂无可行走线', { exact: true })).toBeVisible({ timeout: 10_000 })
     for (const z of [1.0, 0.8, 1.5]) {
-      await zoomProbe(win, z, async () => {
-        await expect(win.locator('svg.tl-edges path.tl-edge'), `R1 z=${z} blocked 可见层撤销`).toHaveCount(0)
-        await expect(win.locator('svg.tl-edge-hits path.tl-edge-hit'), `R1 z=${z} blocked 命中层撤销`).toHaveCount(0)
+      await zoomProbe(win2, z, async () => {
+        await expect(win2.locator('svg.tl-edges path.tl-edge'), `R1 z=${z} blocked 可见层撤销`).toHaveCount(0)
+        await expect(win2.locator('svg.tl-edge-hits path.tl-edge-hit'), `R1 z=${z} blocked 命中层撤销`).toHaveCount(0)
       })
     }
-    await app.close()
+    await app2.close()
   })
 
   test('R-锚级一致②（钉定基座）：横邻对落端=钉定锚（zoom 三档）', async () => {
@@ -454,16 +488,16 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '横邻甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R2 实测 route=h-slip（横邻缝直连——[回炉 R4] 恢复预期态）').toBe('h-slip')
+    expect(route0, 'R2 实测 route=grid（横邻缝直连在新链=0 拐直连族——〔F-LANEGRID-01 B4〕车道网格单态）').toBe('grid')
     for (const z of [1.0, 0.8, 1.5]) {
       await zoomProbe(win, z, async () => {
-        await expectPinnedEndpoints(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙', fa: { side: 'right', slot: 1 }, ta: { side: 'left', slot: 1 }, expectRoute: 'h-slip' }], `R2 z=${z}`)
+        await expectPinnedEndpoints(win, [{ fromTitle: '横邻甲', toTitle: '横邻乙', fa: { side: 'right', slot: 1 }, ta: { side: 'left', slot: 1 }, expectRoute: 'grid' }], `R2 z=${z}`)
       })
     }
     await app.close()
   })
 
-  test('R-锚级一致③（钉定基座）：带桩族（双障夹中——band）落端=钉定锚+首段外法线（zoom 三档）', async () => {
+  test('R-锚级一致③（钉定基座）：带桩族（双障夹中——绕行族）落端=钉定锚+首段外法线（zoom 三档）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'anchfix-r3-'))
     await seedFixture(userData, ['af-c3-a', 'af-c3-o1', 'af-c3-o2', 'af-c3-b'], ['带桩甲', '带桩障一', '带桩障二', '带桩乙'], {
@@ -482,10 +516,10 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '带桩甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    expect(route0, 'R3 实测 route=band（[回炉 R4] 恢复预期态——钉定=b1/t2 探针实证可达槽）').toBe('band')
+    expect(route0, 'R3 实测 route=grid（双障夹中=绕行族——〔F-LANEGRID-01 B4〕车道网格单态；钉定=b1/t2）').toBe('grid')
     for (const z of [1.0, 0.8, 1.5]) {
       await zoomProbe(win, z, async () => {
-        await expectPinnedEndpoints(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙', fa: { side: 'bottom', slot: 1 }, ta: { side: 'top', slot: 2 }, expectRoute: 'band' }], `R3 z=${z}`)
+        await expectPinnedEndpoints(win, [{ fromTitle: '带桩甲', toTitle: '带桩乙', fa: { side: 'bottom', slot: 1 }, ta: { side: 'top', slot: 2 }, expectRoute: 'grid' }], `R3 z=${z}`)
       })
     }
     await app.close()
@@ -508,12 +542,12 @@ test.describe('F-ANCHFIX-01 批 1b 锚级一致（R-零跳动+R-锚级一致）'
     await openLineage(win, '跨年甲')
     await waitForPaths(win, 1)
     const route0 = await win.locator('svg.tl-edges path.tl-edge').first().evaluate((el) => (el as SVGPathElement).dataset.route ?? '')
-    // [R2-C4] PAD=6：年头膨胀 +2px 封死 band 终落竖直线（三槽全灭）→链降级 outer-ring
-    //（合法拓扑迁移——v231 §4-1 预测面；绕行族仍非 direct/overlap，钉定端点不变量由 zoom 循环承载）
-    expect(['band', 'detour', 'outer-ring'], `R4 实测 route=${route0}（跨年绕行族——[回炉 R4] 收回放宽；[R2-C4] 扩 outer-ring）`).toContain(route0)
+    // 跨年绕行族=车道网格多拐路径（〔F-LANEGRID-01 B4〕RouteTag 单态化——六态链
+    // 退役；钉定端点不变量由 zoom 循环承载）
+    expect(route0, 'R4 实测 route=grid（跨年绕行族=车道网格多拐路径——〔F-LANEGRID-01 B4〕单态化）').toBe('grid')
     for (const z of [1.0, 0.8, 1.5]) {
       await zoomProbe(win, z, async () => {
-        await expectPinnedEndpoints(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙', fa: { side: 'bottom', slot: 0 }, ta: { side: 'top', slot: 2 }, expectRoute: ['band', 'detour', 'outer-ring'] }], `R4 z=${z}`)
+        await expectPinnedEndpoints(win, [{ fromTitle: '跨年甲', toTitle: '跨年乙', fa: { side: 'bottom', slot: 0 }, ta: { side: 'top', slot: 2 }, expectRoute: 'grid' }], `R4 z=${z}`)
       })
     }
     await app.close()

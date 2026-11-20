@@ -29,9 +29,9 @@ import {
 } from '../../../src/renderer/features/lineage/capacity'
 
 describe('F-SLOTGRID-01 capacity 纯函数族（砖砌网格数学——INV-SLOTGRID-01）', () => {
-  it('常量锚：卡 128×72/行隙=列隙 72/节距 200×144/错位 o=100/框内容左 12 顶 18（设计 §5.1 实测锚定）', () => {
+  it('常量锚：卡 128×72/行隙=列隙 72/节距 200×144/错位 o=100/框内容左 12 顶 38（〔F-LANEGRID-01 B4〕18→38——月标骑框线+top 锚解封，2026-11-20 用户裁决）', () => {
     expect([CARD_W, CARD_H, GAP, PITCH_X, PITCH_Y, OFFSET_O, FRAME_PAD_LEFT, FRAME_PAD_TOP]).toEqual([
-      128, 72, 72, 200, 144, 100, 12, 18
+      128, 72, 72, 200, 144, 100, 12, 38
     ])
   })
 

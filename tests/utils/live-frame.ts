@@ -45,14 +45,15 @@ export interface LiveFrameOptions {
 
 /**
  * 月框底缘随动模型（lnfix2 stubLiveFrame 零语义迁移单源）：
- * - bottom = baseBottom +（stretch 类在场 ? stretchPad : 0）
+ * - bottom = baseBottom +（stretch 类在场 ? stretchPad : 0）——stretchPad
+ *   默认 120=38+82（〔F-LANEGRID-01 B4〕基准随 FRAME_PAD_BOTTOM 38；旧 94=12+82）
  *   +（实态槽在末个非拖卡之后 ? slotRowGrow : 0）
  * - 其余维度静态（left/top=0、width/height=派生 bottom）。
  */
 export function stubLiveFrame(frame: HTMLElement, opts: LiveFrameOptions): void {
   const {
     baseBottom,
-    stretchPad = 94,
+    stretchPad = 120,
     slotRowGrow = 92,
     width = 600,
     slotSelector = '.drag-slot:not(.cand)'

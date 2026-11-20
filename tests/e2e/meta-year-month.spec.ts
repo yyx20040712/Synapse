@@ -42,6 +42,13 @@ test('改 year/month→节点排序键更新+pubNo 重派生+表格不滞旧', a
 
   // 选中 P1：详情面板 pubNo 徽章=·002（库级全序：乙 2021 在前；F-UIRES-03 B4① #→·）
   await win.getByText(P1.title).first().click()
+  // [011b3892 状态机适配] 窄视口（内容宽≤1320——CI 1024×768 钳制）首进
+  // 文献库详情抽屉默认收起（.lib-drawer 不在 DOM），pubNo 徽章/编辑元数据
+  // 钮均在抽屉内——两态兼容：不在场才点「详情」钮展开（宽视口默认展开/
+  // 会话已开跳过；会话定值——此后切换文献/视图不重置）
+  if ((await win.locator('.lib-drawer').count()) === 0) {
+    await win.locator('.lib-detail-toggle').click()
+  }
   const idBadge = win.locator('.lib-dr-id span').first()
   await expect(idBadge).toHaveText('·002', { timeout: 10_000 })
 

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -17,6 +17,17 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * →确认→行消失+徽标消失+筛选自愈全列表）。全程断言渲染真实文本。
  * 行容器=.lib-dd-row（[勾选框][椭圆 chip][mono 计数][「编辑」钮]）。
  */
+
+/** [011b3892 状态机适配] 详情抽屉两态兼容：窄视口（内容宽≤1320——CI
+ * 1024×768 钳制）首进文献库默认收起（.lib-drawer 不在 DOM），而「新增标签」
+ * 输入与已挂接 chip 均在抽屉内——不在场才点「详情」钮展开（library-detail-
+ * collapse.spec 先例锚）；会话定值：宽视口默认展开或已展开则跳过，幂等。 */
+async function ensureDetailOpen(win: Page): Promise<void> {
+  if ((await win.locator('.lib-drawer').count()) === 0) {
+    await win.locator('.lib-detail-toggle').click()
+  }
+}
+
 test('标签生命周期（B1 编辑态+删除链）：编辑钮改名/取色→行/徽标真文本更新+确认窗批量删除', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-p7e-'))
 
@@ -41,6 +52,7 @@ test('标签生命周期（B1 编辑态+删除链）：编辑钮改名/取色→
   const tagInput = win.getByLabel('新增标签')
   async function tagPaper(title: string, ...names: string[]): Promise<void> {
     await win.getByText(title).first().click()
+    await ensureDetailOpen(win)
     for (const name of names) {
       await tagInput.fill(name)
       await tagInput.press('Enter')
@@ -146,6 +158,7 @@ test('标签写后同页刷新：新建/移除/建议挂接后不重挂即可见
   const rowA = win.getByText('同页甲文献').first()
   await rowA.scrollIntoViewIfNeeded()
   await rowA.click()
+  await ensureDetailOpen(win)
   await tagInput.scrollIntoViewIfNeeded()
   await tagInput.fill('同页标签')
   await tagInput.press('Enter')
@@ -206,6 +219,7 @@ test('标签行编辑态（B1）：编辑钮→保存钮保存不回滚+Enter �
   // UI 打两标签（保存钮路与 Enter 路各一）
   const tagInput = win.getByLabel('新增标签')
   await win.getByText('tagrows 甲文献').first().click()
+  await ensureDetailOpen(win)
   for (const name of ['原名', '二名']) {
     await tagInput.fill(name)
     await tagInput.press('Enter')

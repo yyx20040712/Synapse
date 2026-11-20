@@ -710,9 +710,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * setViewportSize 两档（〔F-VISFB-67 轮 3 W1 连锁〕**1520→1280 跨地板**——
    * 亚默认 resize 覆盖随地板化结构性退役：.tl-content min-width 使亚默认档
    * contentW 恒 717，原 1280→1000 收窄直证面 extinct）→ResizeObserver 重算
-   * →（a）首条树边（根→甲）route=band（批 3 终落锚散开：月标封堵首选 slot
-   * 后同边 slot 近序散开承接——跨年边不再绕右走廊；观测窗=path[data-route]
-   * 可见层属性，99eacd5e 落）；（b）band 由卡位派生非 contentW 锚定（走廊
+   * →（a）首条树边（根→甲）route=grid（首条树边=车道网格绕行态
+   * 〔F-LANEGRID-01 B2 RouteTag 单态化〕；观测窗=path[data-route]
+   * 可见层属性，99eacd5e 落）；（b）grid 由卡位派生非 contentW 锚定（走廊
    * 时代 laneX=contentW−48+9×lane 参数族谓词随绕右形态退役）——收窄只削
    * 内容右缘、卡零迁移，故断言面=路径对内容盒左缘偏移两档全等（卡锚定
    * 几何内容坐标不变性——若路径 stale 而卡迁移即错位红）+线-卡 y 相对关系
@@ -720,12 +720,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
    * rect 线段-矩形判交——zigzag 路径 bbox 角区与月标恒相交而路径几何
    * 净空，bbox 级判交假阳性，批 3 探针实证 tagHit=true 且路径距月标
    * ≥14px）。
-   * [回炉 W3 守卫边界] band 由卡位派生，两档 d 全等为批 3 探针实证——
+   * [回炉 W3 守卫边界] grid 由卡位派生，两档 d 全等为批 3 探针实证——
    * stale 路径区分=contentW poll+route 复核弱守卫；强守卫（收窄触发卡
    * 换行重排）由 T6 网格分行用例承载（[F-SLOTGRID-01 U1] 网格布局下
    * 本例夹具单卡每框=卡零迁移，换行重排面归 T6；主控挂账知悉）。
    */
-  test('T-P1b resize 直证：两档视口→route=band+路径卡锚定几何两档全等+线-卡 y 相对关系恒定', async () => {
+  test('T-P1b resize 直证：两档视口→route=grid+路径卡锚定几何两档全等+线-卡 y 相对关系恒定', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-p1b-'))
     await firstHop(userData)
     await seedLineagePapers(userData)
@@ -831,9 +831,9 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         }
         return true
       })
-    // (a) 首条树边（根→甲）route=band（批 3 散开承接——右缘走廊形态已退役
-    // 〔F-SLOTGRID-01 走线正统化归 U2〕）
-    await expect.poll(async () => (await measure()).route).toBe('band')
+    // (a) 首条树边（根→甲）route=grid（首条树边=车道网格绕行态
+    // 〔F-LANEGRID-01 B2 RouteTag 单态化〕）
+    await expect.poll(async () => (await measure()).route).toBe('grid')
     const m1 = await measure()
     // (c) 首档不穿月标
     expect(await pathClearOfTags()).toBe(true)
@@ -845,11 +845,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect
       .poll(async () => {
         const m = await measure()
-        return m.contentW < m1.contentW - 200 && m.route === 'band'
+        return m.contentW < m1.contentW - 200 && m.route === 'grid'
       })
       .toBe(true)
     const m2 = await measure()
-    // (b) 路径对内容盒左缘偏移两档全等（卡锚定几何不变性——band 由卡位
+    // (b) 路径对内容盒左缘偏移两档全等（卡锚定几何不变性——grid 由卡位
     // 派生，收窄只削右缘；两档 d 全等为批 3 探针实证）
     expect(m2.bboxX - m2.contentLeft).toBeCloseTo(m1.bboxX - m1.contentLeft, 1)
     // (b) 纵向相对关系恒定（线-卡 y 差不变——错位即红）

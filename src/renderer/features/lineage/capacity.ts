@@ -32,14 +32,19 @@ export const PITCH_Y = CARD_H + GAP
 export const OFFSET_O = 100
 /** 月框内容左内边距（px——.month-frame padding 左） */
 export const FRAME_PAD_LEFT = 12
-/** 月框内容顶内边距（px——.month-frame padding 顶，月标带承载） */
-export const FRAME_PAD_TOP = 18
+/** 月框内容顶内边距（px——.month-frame padding 顶。[F-LANEGRID-01 B4]
+ *  18→38（2026-11-20 用户裁决）：月标骑框线（中轴=框上边界）后框内占下半
+ *  10px、死区下缘=框内 16px；38 使卡顶桩（28-38px）净距 12px 且帧顶带两道
+ *  （28/20px）存活——top ¼/½ 锚解封（原 18 时 tag 底压卡顶 2.5px 整图
+ *  blocked——B4 实证），月标带承载语义由骑线形态接管 */
+export const FRAME_PAD_TOP = 38
 /** 月框边框宽（px——.month-frame border 直镜像；detour 仅高度/坐标侧消费
  *  〔fx0 换算/innerH 派生〕，宽度侧容量输入已归一=snap.contentW 单源
  *  〔readFrameContentWidth——INV-169②〕，本常量不参与容量宽度派生） */
 export const FRAME_BORDER = 1.6
-/** 月框内容底内边距（px——.month-frame padding 底） */
-export const FRAME_PAD_BOTTOM = 12
+/** 月框内容底内边距（px——.month-frame padding 底。[F-LANEGRID-01 B4]
+ *  12→38：与顶对称（2026-11-20 用户裁决·视觉均衡；无功能需求） */
+export const FRAME_PAD_BOTTOM = 38
 
 /** 网格容量对（N=偶行〔顶格行〕容量/M=奇行〔错位行〕容量） */
 export interface RowCapacities {

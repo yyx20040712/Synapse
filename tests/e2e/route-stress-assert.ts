@@ -1,17 +1,23 @@
 /**
- * [R2-C5] 压力走线平行间距族断言器（自 lineage-route-stress.spec 拆出——
- * spec 500 行上限第二职责拆件，先例=geo-probes/e2e-env 驻位）。承载：
- * ④b 残余 |off|≤maxOff（INV-115）；⑥ 残余互达对 ≥s（INV-115 同簇承诺；
- * cap 溢出边界对+INV-112 exempt 对豁免——豁免对显式列名不静默跳过）；
- * ⑥b 槽域内横段重合对须一方 data-overlap-exempt=1（INV-112 域=槽域内
- * ——band 中位横移/外圈车道/桩端线域外重合=INV-113/79 域外合法不入判）；
- * ⑥c 全域防贴合下限：任意两不同边横段投影重叠时 |Δ|≥GLUE_MIN（用户
- * 裁决 C——重叠/贴死必红；跨机制近距〔≥GLUE_MIN 且 <s〕=INV-115 登记
- * 域外合法形态）。常量单源：TOL/RUN_MIN_EXTENT 驻本件导出，spec 采集
- * cfg 与 ② 断言同源 import。
+ * [R2-C5→F-LANEGRID-01 B4] 压力走线平行间距断言器（自 lineage-route-stress.spec
+ * 拆出——spec 500 行上限第二职责拆件，先例=geo-probes/e2e-env 驻位）。
+ * B4 车道网格口径重写：
+ * - ④b/⑥/⑥b（bandCap/maxOff 残余族+seamRects 槽域共线族）随残余/槽位
+ *   机制退役**整体删除**（设计 §5/§9 关账——bandCap·maxOff 公式镜像两处
+ *   随批核销；B2b 过渡期的空带/空槽域恒过代码不再保留）；
+ * - ⑥c 全域平行间距**升硬**（设计 §8 定案）：任意两不同边横段投影重叠时
+ *   |Δ| ≥ LANE_PITCH−TOL（8−0.6——非豁免对 Δ≥8，v2 误写 Δ≥1 的假绿面
+ *   修正；采样容差 TOL 沿承）；豁免仅 overlapSpans 登记区间对——区间+
+ *   标记双重校验（重叠段所在车道〔轴+坐标 ±TOL〕在任一边 data-overlap-spans
+ *   登记串中有正长度相交区间）。错峰桩区对（同锚 i mod K 指派互异道）
+ *   不重叠天然不入判；复用桩区对（第 K+1 条折回共线）按 §3.3 登记
+ *   overlapSpans=豁免面覆盖。SHARED_LEVEL_ROUTES 豁免删除（六态值域随
+ *   RouteTag 单态化恒不可达——v233 §5 F-LANEGRID-01 清偿面兑现）。
+ * 常量单源：TOL/RUN_MIN_EXTENT 驻本件导出，spec 采集 cfg 与 ② 断言同源
+ * import；LANE_PITCH=grid.ts 单源 import（间距承诺域=分配规则 §3.3）。
  */
 import { expect } from '@playwright/test'
-import type { Rect } from '../../src/renderer/features/lineage/routing/anchors'
+import { LANE_PITCH } from '../../src/renderer/features/lineage/routing/grid'
 
 export interface Run {
   level: number
@@ -22,32 +28,20 @@ export interface ObservedPath {
   edgeId: string
   route: string
   anchors: string
-  slot: string
+  /** data-lane 占道段观测串（「轴+坐标:起-止」逗号连接；manual-override 缺省） */
+  lane: string
   exempt: boolean
-  fallback: boolean
+  /** data-overlap-spans 冲突登记串（逗号连接；缺省=无登记） */
+  overlapSpans: string
   d: string
   hRuns: Run[]
   vRuns: Run[]
-}
-export interface BandInfo {
-  top: number
-  bottom: number
-  s: number
-  center: number
-  cap: number
-  maxOff: number
 }
 
 /** 采样段坐标集成员判定容差（route-slots R5 同型 0.6px——亚像素+采样残差） */
 export const TOL = 0.6
 /** 采样 runs 的最小轴跨（弧平坦段上界≈2.6px——r=6 圆角排除，R5 同型判据） */
 export const RUN_MIN_EXTENT = 4
-/** ⑥c 全域防贴合下限（px）——用户裁决 C：重叠/贴死必红 */
-export const GLUE_MIN = 1
-/** ⑥c 同态共享电平豁免（现状设计形态、无防贴合承诺载体：band 跨单元同带
- *  共线重合=INV-112 域外备案不治理；outer-ring 车道单电平无槽分离。车道
- *  网格票〔用户裁决全局网格〕落地统一分配后删除本豁免升硬断言） */
-const SHARED_LEVEL_ROUTES: ReadonlySet<string> = new Set(['band', 'outer-ring'])
 
 /** 坐标集成员判定（±TOL） */
 export const inSet = (v: number, set: Set<number>): boolean => {
@@ -55,99 +49,64 @@ export const inSet = (v: number, set: Set<number>): boolean => {
   return false
 }
 
-export interface ParallelUniverse {
-  bands: BandInfo[]
-  landedYs: Set<number>
-  fixedYs: Set<number>
-  seamRects: Rect[]
+/** 登记区间（overlapSpans 串解析：「轴+坐标:起-止」→轴别坐标+区间） */
+interface Span {
+  axis: 'v' | 'h'
+  coord: number
+  lo: number
+  hi: number
 }
 
-/** 平行间距族断言（④b/⑥/⑥b/⑥c——paths=非 blocked 采集，blocked 无 path 天然排除） */
-export function assertParallelFamily(paths: readonly ObservedPath[], uni: ParallelUniverse): void {
-  const bandOf = (y: number): BandInfo | undefined => uni.bands.find((b) => y > b.top + TOL && y < b.bottom - TOL)
-  const resid = paths.flatMap((p) =>
-    p.hRuns
-      .filter((r) => bandOf(r.level) !== undefined && !inSet(r.level, uni.landedYs) && !inSet(r.level, uni.fixedYs))
-      .map((r) => ({ edge: p, run: r, band: bandOf(r.level)! }))
-  )
-  for (const r of resid) {
-    const off = Math.abs(r.run.level - r.band.center)
-    expect(off, `④b 残余 |off|=${off.toFixed(2)} ≤maxOff=${r.band.maxOff}（边 ${r.edge.edgeId.slice(0, 8)} y=${r.run.level}——INV-115）`).toBeLessThanOrEqual(r.band.maxOff + TOL)
+/** overlapSpans/laneMarks 串解析（「v76:90-100,h63.5:69-265」逗号条目） */
+export const parseLaneMarks = (s: string): Span[] => {
+  const out: Span[] = []
+  for (const tok of s.split(',')) {
+    const m = /^([vh])([\d.]+):([\d.]+)-([\d.]+)$/.exec(tok.trim())
+    if (m === null) continue
+    out.push({ axis: m[1] as 'v' | 'h', coord: Number(m[2]), lo: Number(m[3]), hi: Number(m[4]) })
   }
-  const violations: Array<string> = []
+  return out
+}
+
+/**
+ * ⑥c 全域平行间距升硬断言（paths=非 blocked 采集，blocked 无 path 天然排除）：
+ * 任意两不同边横段投影重叠（>RUN_MIN_EXTENT）时 |Δlevel| ≥ LANE_PITCH−TOL；
+ * 豁免=重叠区间命中任一边 overlapSpans 登记（同轴同坐标 ±TOL 的登记区间与
+ * 重叠段正长度相交——区间+标记双重校验），豁免对显式列名不静默跳过。
+ */
+export function assertParallelSpacing(paths: readonly ObservedPath[]): void {
+  const glue: Array<string> = []
   const exemptPairs: Array<string> = []
-  const atBoundary = (run: Run): boolean => {
-    const b = bandOf(run.level)
-    return b !== undefined && Math.abs(Math.abs(run.level - b.center) - b.maxOff) <= TOL
-  }
-  for (let i = 0; i < resid.length; i++) {
-    for (let j = i + 1; j < resid.length; j++) {
-      const a = resid[i]!
-      const b = resid[j]!
-      if (a.edge.edgeId === b.edge.edgeId || a.band.top !== b.band.top) continue
-      if (Math.min(a.run.hi, b.run.hi) - Math.max(a.run.lo, b.run.lo) <= TOL) continue
-      const d = Math.abs(a.run.level - b.run.level)
-      if (d >= a.band.s - TOL) continue
-      const cluster = resid.filter((r) => r.band.top === a.band.top && Math.min(r.run.hi, a.run.hi) - Math.max(r.run.lo, a.run.lo) > TOL)
-      if (a.edge.exempt || b.edge.exempt) {
-        exemptPairs.push(`INV-112 exempt：${a.edge.edgeId.slice(0, 8)}@${a.run.level}/${b.edge.edgeId.slice(0, 8)}@${b.run.level} Δ=${d.toFixed(2)}`)
-      } else if (cluster.length > a.band.cap && atBoundary(a.run) && atBoundary(b.run)) {
-        exemptPairs.push(`INV-115 cap 溢出边界：${a.edge.edgeId.slice(0, 8)}@${a.run.level}/${b.edge.edgeId.slice(0, 8)}@${b.run.level}（簇 ${cluster.length}>cap ${a.band.cap}）`)
-      } else {
-        violations.push(`${a.edge.edgeId.slice(0, 8)}@${a.run.level} × ${b.edge.edgeId.slice(0, 8)}@${b.run.level} Δ=${d.toFixed(2)}<s=${a.band.s}`)
-      }
-    }
-  }
-  expect(violations, `⑥ 残余互达对间距 ≥s（违例=${JSON.stringify(violations)}；豁免对=${JSON.stringify(exemptPairs)}）`).toEqual([])
-  // ⑥b 重合对（|Δ|≤TOL——INV-112 共线面；域=槽域内：重合区落在列缝单元
-  // rect 内才入判）。域内重合须一方 exempt。
-  const coincide: Array<string> = []
   for (let i = 0; i < paths.length; i++) {
     for (let j = i + 1; j < paths.length; j++) {
       const a = paths[i]!
       const b = paths[j]!
+      const spansA = parseLaneMarks(a.overlapSpans)
+      const spansB = parseLaneMarks(b.overlapSpans)
       for (const ra of a.hRuns) {
         for (const rb of b.hRuns) {
-          if (Math.abs(ra.level - rb.level) > TOL) continue
           const lo = Math.max(ra.lo, rb.lo)
           const hi = Math.min(ra.hi, rb.hi)
           if (hi - lo <= RUN_MIN_EXTENT) continue
-          const inSlotDomain = uni.seamRects.some((s) => ra.level >= s.y - TOL && ra.level <= s.y + s.h + TOL && hi > s.x && lo < s.x + s.w)
-          if (!inSlotDomain) continue
-          if (a.exempt || b.exempt) {
-            exemptPairs.push(`INV-112 exempt 重合：${a.edgeId.slice(0, 8)}/${b.edgeId.slice(0, 8)}@${ra.level}`)
-          } else {
-            coincide.push(`${a.edgeId.slice(0, 8)}(${a.route})/${b.edgeId.slice(0, 8)}(${b.route})@${ra.level.toFixed(1)} x[${lo.toFixed(0)},${hi.toFixed(0)}]`)
-          }
-        }
-      }
-    }
-  }
-  expect(coincide, `⑥b 槽域内横段重合对须一方 data-overlap-exempt=1（INV-112；违例=${JSON.stringify(coincide.slice(0, 10))}；豁免对=${JSON.stringify(exemptPairs)}）`).toEqual([])
-  // ⑥c 全域防贴合下限：任意两不同边横段投影重叠时 |Δ|≥GLUE_MIN——合法
-  // Δ<GLUE_MIN 仅 INV-112 exempt 对与 INV-115 cap 溢出同带双边界对，入豁免列名。
-  const glue: Array<string> = []
-  for (let i = 0; i < paths.length; i++) {
-    for (let j = i + 1; j < paths.length; j++) {
-      const a = paths[i]!
-      const b = paths[j]!
-      for (const ra of a.hRuns) {
-        for (const rb of b.hRuns) {
-          if (Math.min(ra.hi, rb.hi) - Math.max(ra.lo, rb.lo) <= RUN_MIN_EXTENT) continue
           const d = Math.abs(ra.level - rb.level)
-          if (d >= GLUE_MIN) continue
-          if (a.exempt || b.exempt) {
-            exemptPairs.push(`INV-112 exempt 贴合：${a.edgeId.slice(0, 8)}/${b.edgeId.slice(0, 8)}@${ra.level}`)
-          } else if (bandOf(ra.level) !== undefined && bandOf(ra.level) === bandOf(rb.level) && atBoundary(ra) && atBoundary(rb)) {
-            exemptPairs.push(`INV-115 cap 溢出边界贴合：${a.edgeId.slice(0, 8)}@${ra.level}/${b.edgeId.slice(0, 8)}@${rb.level}`)
-          } else if (a.route === b.route && SHARED_LEVEL_ROUTES.has(a.route)) {
-            exemptPairs.push(`同态共享电平[${a.route}]：${a.edgeId.slice(0, 8)}/${b.edgeId.slice(0, 8)}@${ra.level}（车道网格票后升硬断言）`)
+          if (d >= LANE_PITCH - TOL) continue
+          const hit = (spans: readonly Span[]): boolean =>
+            spans.some(
+              (s) => s.axis === 'h' && Math.abs(s.coord - ra.level) <= TOL && Math.min(s.hi, hi) - Math.max(s.lo, lo) > 0
+            )
+          if (hit(spansA) || hit(spansB)) {
+            exemptPairs.push(
+              `overlapSpans 登记：${a.edgeId.slice(0, 8)}@${ra.level.toFixed(1)}/${b.edgeId.slice(0, 8)}@${rb.level.toFixed(1)} x[${lo.toFixed(0)},${hi.toFixed(0)}] Δ=${d.toFixed(2)}`
+            )
           } else {
-            glue.push(`${a.edgeId.slice(0, 8)}(${a.route})/${b.edgeId.slice(0, 8)}(${b.route}) Δ=${d.toFixed(2)}@${ra.level}`)
+            glue.push(`${a.edgeId.slice(0, 8)}(${a.route})/${b.edgeId.slice(0, 8)}(${b.route}) Δ=${d.toFixed(2)}@${ra.level.toFixed(1)} x[${lo.toFixed(0)},${hi.toFixed(0)}]`)
           }
         }
       }
     }
   }
-  expect(glue, `⑥c 全域防贴合 ≥${GLUE_MIN}px（违例=${JSON.stringify(glue.slice(0, 10))}；豁免对=${JSON.stringify(exemptPairs)}）`).toEqual([])
+  expect(
+    glue,
+    `⑥c 全域平行间距 ≥${LANE_PITCH}−TOL（违例=${JSON.stringify(glue.slice(0, 10))}；豁免对=${JSON.stringify(exemptPairs)}）`
+  ).toEqual([])
 }

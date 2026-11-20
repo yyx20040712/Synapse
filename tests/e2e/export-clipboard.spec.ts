@@ -44,6 +44,12 @@ test('P7E-04 导出剪贴板：详情面板「复制 BibTeX」→主进程剪贴
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().click()
+  // [011b3892 状态机适配] 窄视口（内容宽≤1320——CI 1024×768 钳制）首进
+  // 文献库详情抽屉默认收起（.lib-drawer 不在 DOM），「复制 BibTeX」在抽屉
+  // 内——两态兼容：不在场才点「详情」钮展开（宽视口默认展开/会话已开跳过）
+  if ((await win.locator('.lib-drawer').count()) === 0) {
+    await win.locator('.lib-detail-toggle').click()
+  }
   await expect(win.getByRole('button', { name: '复制 BibTeX' })).toBeVisible({ timeout: 20_000 })
 
   await app.evaluate(({ clipboard }) => clipboard.writeText('__p7e04_cleared__'))

@@ -131,7 +131,7 @@ export function TimelineYears(props: {
               // CSS 承载）；候选槽族（faded 多预览）挂源框内。
               // [F-VISFB-22 C6] 框底连续跟随：inline --lg-pull=会话 pullPx
               //（未拉伸底缘起越过量，PULL_BAND_PX 封顶）→ theme-lineage.css
-              // stretch 规则 calc(12px+var) 消费（94=12+82 值耦合解除——CSS
+              // stretch 规则 calc(38px+var) 消费（基准随 FRAME_PAD_BOTTOM 38 同步——F-LANEGRID-01 B4；值耦合解除——CSS
               // 变量化落法，INV-100 在档可选项）；缺省回落=旧全量 82px。
               //（--lg-pull=运行时注入动态量——check-quality C-4c DYNAMIC_TOKENS
               // 白名单在册，双向互指）
@@ -147,19 +147,27 @@ export function TimelineYears(props: {
                   className={m.month === null ? 'tl-month unknown' : 'tl-month'}
                   key={m.month === null ? 'null' : String(m.month)}
                 >
-                  {/* [F-LINEAGE-02 裁决 7/D-L2-2] 月标注入框内首位（框外悬浮
-                      堵死框间通道——absolute 不占 flex 槽，顶 padding 18 承载；
-                      标签整体在框内=overflow:hidden 无裁切面） */}
+                  {/* [F-LANEGRID-01 B4] 月标骑框线（2026-11-20 用户裁决：中轴
+                      =框上边界）——注入位置从框内首位提至 .tl-month 直接首位
+                      （.month-frame overflow:hidden 会裁出框上半；.tl-month
+                      position:relative 无裁切=包含块基准，与框 border-box 顶
+                      同位）。原框内顶形态（[F-LINEAGE-02 裁决 7/D-L2-2]）的
+                      tag 底(框内 20.5px)压卡顶(18px) 2.5px——top ¼/½ 锚桩
+                      全埋障碍死区（普通跨年图整图 blocked 实证）；骑线后框内
+                      只占下半 10px，配合 FRAME_PAD_TOP=38 帧顶带两道
+                      （卡顶−10/−18 均在 tag 死区下缘 16px 之下）top 锚解封。
+                      框间通道：tag x 域内框间道损失 1 条（死区上缘=框顶−16），
+                      由帧顶带 +2 道覆盖（净增益） */}
+                  <span className="month-tag">
+                    {m.month === null
+                      ? `未定月 · ${m.nodes.length} 篇`
+                      : `${m.month} 月 · ${m.nodes.length} 篇`}
+                  </span>
                   <div
                     className={frameCls}
                     data-frame-key={key}
                     style={pullStyle}
                   >
-                    <span className="month-tag">
-                      {m.month === null
-                        ? `未定月 · ${m.nodes.length} 篇`
-                        : `${m.month} 月 · ${m.nodes.length} 篇`}
-                    </span>
                     {/* [F-SLOTGRID-01 U1] 行容器逐行渲染（数组序贪心分行——
                         占位/拖卡按 kids 原位入行；.tl-row 保持 static
                         position——拖拽 .dragging absolute 包含块链不变）。
