@@ -125,7 +125,9 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   // 自取锚（PaperAiPanel 消费 useActiveTab 取 paperId——ReaderNotesPanel
   // 同型先例；LineageAiPanel 消费 lineage.store folderId）。聚合职责=AI 域
   // 会话入口在宿主视图的组装点，各域其余文件引用 ai 仍是红线。
-  ['src/renderer/features/reader/panels/OutlineAside.tsx', ['ai/PaperAiPanel']],
+  // [B1 批 2026-11-20] reader 侧 AI 宿主自 OutlineAside（左栏第 4 页签）
+  // 迁 ResearchAside（右栏研究面板 AI 对话页签）——条目随文件迁移，语义零变。
+  ['src/renderer/features/reader/panels/ResearchAside.tsx', ['ai/PaperAiPanel']],
   // [F-DBCAMP-01 DB-2 UI U5（2026-10-14）]：AI 管理面板=设置页「AI 管理」节
   // 内容壳（设计 §4.1 settings 三节集成面——U3 五接缝同表扩条）：SettingsPage
   // 组合 AiManageSection（三 Tab 自持，数据面全在 features/ai/ 内），沿同节

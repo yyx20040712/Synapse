@@ -561,9 +561,11 @@ test('P7-A 交互：侧栏分隔条拖拽（SplitPane 集成）', async () => {
   // 分隔条拖拽：pane 计算宽度随拖拽增大（SplitPane 指针会话 → 宽度状态 → 样式）
   // [F-UI-03/locked-change] 选择器收紧 main 容器：App 壳 nav 亦包 SplitPane（app-nav
   // 在 main 外）——「页面唯一 SplitPane」假设随 F-UI-03 打破，本测语义恒=阅读器侧栏
+  // [B1 批] 右栏研究面板起=main 内两个 separator（左栏手柄 DOM 序在前）——
+  // .first() 锚定左栏；pane testid 左栏保持缺省值（右栏用独立 reader-research-pane）
   const pane = win.locator('main [data-testid="split-pane-pane"]')
   const widthBefore = await pane.evaluate((el) => parseFloat(getComputedStyle(el).width))
-  const handleBox = await win.locator('main [role="separator"]').boundingBox()
+  const handleBox = await win.locator('main [role="separator"]').first().boundingBox()
   expect(handleBox).not.toBeNull()
   const hx = handleBox!.x + handleBox!.width / 2
   const hy = handleBox!.y + Math.min(handleBox!.height / 2, 200)
@@ -620,10 +622,15 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   const known = win.getByText(PDF_KNOWN_TEXT).first()
   await expect(known).toBeVisible({ timeout: 20_000 })
 
-  // 三栏宿主：目录/缩略图/笔记（e2e 坑③——查询限定 reader-aside 容器）
+  // 左栏宿主：目录/缩略图（e2e 坑③——查询限定容器；[B1 批] 笔记/AI 页签
+  // 迁右栏研究面板——reader-research 容器内 AI 对话/笔记两页签）
   const aside = win.getByTestId('reader-aside')
-  for (const label of ['目录', '缩略图', '笔记']) {
+  for (const label of ['目录', '缩略图']) {
     await expect(aside.getByRole('tab', { name: label })).toBeVisible()
+  }
+  const research = win.getByTestId('reader-research')
+  for (const label of ['AI 对话', '笔记']) {
+    await expect(research.getByRole('tab', { name: label })).toBeVisible()
   }
 
   // 划选高亮（既有配方）→ 片段层实时出现该条目（TabState.annotations 投影）
@@ -632,8 +639,9 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await win.getByRole('button', { name: '高亮' }).click()
   await expect(win.getByTestId('annotation-rect').first()).toBeVisible()
 
-  // 切到笔记 tab：片段列表含划选引文（C-01 文档序消费）；总评层 autosave 四态
-  await aside.getByRole('tab', { name: '笔记' }).click()
+  // 切到笔记 tab（[B1 批] 右栏研究面板页签）：片段列表含划选引文（C-01 文档序
+  // 消费）；总评层 autosave 四态
+  await research.getByRole('tab', { name: '笔记' }).click()
   const panel = win.getByTestId('reader-notes-panel')
   await expect(panel).toBeVisible()
   await expect(panel.getByTestId('fragment-list')).toBeVisible()
@@ -658,7 +666,7 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win2.getByText(title).first().dblclick()
   await expect(win2.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
-  await win2.getByTestId('reader-aside').getByRole('tab', { name: '笔记' }).click()
+  await win2.getByTestId('reader-research').getByRole('tab', { name: '笔记' }).click()
   const panel2 = win2.getByTestId('reader-notes-panel')
   await expect(panel2.locator('[data-fragment-id]')).toHaveCount(1, { timeout: 10_000 })
   await expect(panel2.getByLabel('笔记正文')).toHaveValue('e2e 总评内容')
@@ -1250,8 +1258,9 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
 
   // 笔记面板输入（flush-first 即时关闭面——fill 后立即关 tab；600s 防抖下
   // timer 不可能自然到期，关闭语义全由 requestCloseTab 立存承接）
-  const aside = win.getByTestId('reader-aside')
-  await aside.getByRole('tab', { name: '笔记' }).click()
+  // [B1 批] 笔记页签在右栏研究面板（默认展开；页签=AI 对话/笔记）
+  const research = win.getByTestId('reader-research')
+  await research.getByRole('tab', { name: '笔记' }).click()
   const panel = win.getByTestId('reader-notes-panel')
   await expect(panel).toBeVisible()
   await panel.getByLabel('笔记正文').fill('A3 悬置写输入')
@@ -1280,7 +1289,7 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   await win.getByRole('button', { name: '文献库' }).click()
   await win.getByText(title).first().dblclick()
   await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
-  await win.getByTestId('reader-aside').getByRole('tab', { name: '笔记' }).click()
+  await win.getByTestId('reader-research').getByRole('tab', { name: '笔记' }).click()
   const panel2 = win.getByTestId('reader-notes-panel')
   // 载入完成锚（entry 未落地时 textarea 恒空串——先证 load 已整版落地再断值）
   await expect(panel2.getByText('已保存')).toBeVisible({ timeout: 10_000 })

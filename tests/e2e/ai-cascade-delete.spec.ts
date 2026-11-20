@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { bootstrapMigrations, launch, seedPaperRow, seedLineageGraph } from './e2e-env'
 import { seedAiSession, seedAiMessage, seedAiMemory, seedAiTask, seedAiAuditRow, readAiAuditCount } from './ai-seed'
+import { createTinyPdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 
 /**
  * [F-DBCAMP-01 DB-2 UI U6] E5 级联两次确认（设计 §5.1-E5 三场景）：
@@ -13,23 +15,40 @@ import { seedAiSession, seedAiMessage, seedAiMemory, seedAiTask, seedAiAuditRow,
  * 资源仅第一窗（第二窗负锚）；场景三 folder 删——paper 档与 lineage 档（锚=
  * collections.id）AI 资源各一套→第二窗断言双面合计→确认→两档资源俱灭（记忆
  * Tab 两档空态）+审计恒存。种子零新函数（ai-seed 函数面全在）。
+ * [B1 批] 场景一的 target 文献改落真实 tiny PDF（ai-tasks-card seedOpenablePaper
+ * 配方）：占位 fileRef 下 pdfjs 必失败→tab error→阅读器空态分支整树卸载，
+ * 研究面板消息回读与面板卸载结构化竞速（FLK 台账 detach 亚型的机制面）；
+ * 真实文件下 tab 恒 ready，断言语义（消息真实回读）零变。
  */
 
 async function readyLibrary(win: Page): Promise<void> {
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
 }
 
-/** 占位文献行（破引导态——fake fileRef 不落 PDF 文件） */
+/** 占位文献行（破引导态——fake fileRef 不落 PDF 文件；不打开的文献专用） */
 async function seedGuidePaper(userData: string, id: string, title: string): Promise<void> {
   const sha = createHash('sha256').update(id).digest('hex')
   await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, title, id)
 }
 
+/** [B1 批] 可打开文献（真实 tiny PDF 落盘——ai-tasks-card seedOpenablePaper 配方） */
+async function seedOpenablePaper(userData: string, title: string, id: string): Promise<void> {
+  const bytes = createTinyPdf(`${title} ${PDF_KNOWN_TEXT}`)
+  const sha = createHash('sha256').update(bytes).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  const abs = join(userData, 'files', ...fileRef.split('/'))
+  mkdirSync(dirname(abs), { recursive: true })
+  writeFileSync(abs, bytes)
+  await seedPaperRow(userData, fileRef, sha, title, id)
+}
+
 test('E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示→取消中止→再双确认级联删+审计恒存', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-dbcamp-e5a-'))
   await bootstrapMigrations(userData)
-  // 两文献+一边（edgeCount=1→保护弹窗路径——第一窗前提）
-  await seedGuidePaper(userData, 'e5a-target', 'E5 场景一文献')
+  // 两文献+一边（edgeCount=1→保护弹窗路径——第一窗前提）；[B1 批] target=
+  // 真实 PDF（本测要开进阅读器回读 AI 面板——占位 fileRef 的 error 分支会
+  // 卸载整树，见头注）
+  await seedOpenablePaper(userData, 'E5 场景一文献', 'e5a-target')
   await seedGuidePaper(userData, 'e5a-neighbor', 'E5 场景一邻接')
   await seedLineageGraph(userData, {
     folders: [{ id: 'f-e5a', name: 'E5 场景一夹' }],
@@ -76,11 +95,11 @@ test('E5 场景一 paper 删：第一窗→第二窗四计数+审计保留提示
   await expect(win.locator('[role="dialog"]')).toHaveCount(0)
   await expect(win.locator('.lib-row', { hasText: 'E5 场景一文献' }), '取消=对象保留').toBeVisible()
 
-  // 消息仍在（取消后未级联——reader 侧栏 AI 会话页签真实回读）
+  // 消息仍在（取消后未级联——[B1 批] reader 右栏研究面板 AI 对话页签真实回读）
   await win.locator('.lib-row', { hasText: 'E5 场景一文献' }).dblclick()
-  const aside = win.getByTestId('reader-aside')
+  const aside = win.getByTestId('reader-research')
   await expect(aside).toBeVisible({ timeout: 20_000 })
-  await aside.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside.getByRole('tab', { name: 'AI 对话' }).click()
   await expect(win.getByText('E5 场景一消息甲')).toBeVisible({ timeout: 10_000 })
   await win.getByRole('button', { name: '文献库' }).click()
   await expect(win.locator('.lib-row', { hasText: 'E5 场景一文献' })).toBeVisible({ timeout: 10_000 })

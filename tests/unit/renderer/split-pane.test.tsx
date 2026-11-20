@@ -227,4 +227,21 @@ guardedDescribe('SR2-UIK-01', 'SplitPane —— 可拖拽分隔条容器', () =>
     expect(document.body.style.userSelect).toBe('')
     unmount()
   })
+
+  // [B1 批] paneTestId 可选 prop：右栏研究面板复用本件时换独立 testid
+  // （缺省 'split-pane-pane' 行为零变——reader-text.spec P7-A 左栏拖拽锚不迁移）
+  it('paneTestId 覆写：缺省 split-pane-pane；显式传值时 pane 槽换独立 testid（行为不变）', () => {
+    const { host, unmount } = renderPane({ paneTestId: 'reader-research-pane' })
+    expect(host.querySelector('[data-testid="split-pane-pane"]'), '缺省 testid 不再命中').toBeNull()
+    const pane = host.querySelector('[data-testid="reader-research-pane"]') as HTMLElement
+    expect(pane, '覆写 testid 生效').not.toBeNull()
+    expect(pane.querySelector('[data-testid="pane-body"]')?.textContent).toBe('侧栏内容')
+    // 行为面零变：手柄调宽照常（键盘 +8px 路径）
+    const h = handle(host)
+    act(() => {
+      h.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }))
+    })
+    expect(pane.style.width).toBe('228px')
+    unmount()
+  })
 })

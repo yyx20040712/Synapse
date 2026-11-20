@@ -48,9 +48,9 @@ test('E2 任务卡六态与取消：queued 取消→已取消；running 执行�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
-  const aside = win.getByTestId('reader-aside')
+  const aside = win.getByTestId('reader-research')
   await expect(aside).toBeVisible({ timeout: 20_000 })
-  await aside.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside.getByRole('tab', { name: 'AI 对话' }).click()
 
   const section = aside.getByTestId('ai-tasks-section')
   await expect(section).toBeVisible({ timeout: 10_000 })
@@ -77,14 +77,15 @@ test('E2 任务卡六态与取消：queued 取消→已取消；running 执行�
   await expect(card('memory.create').getByTestId('ai-task-status')).toHaveText('已取消')
 
   // running 段：app 在跑时直写 running 行（恢复扫描已过不再迁移）+reload 重挂
-  // （'ai' 页签 CSS 隐藏不卸载——切 tab 不重派，reload 是唯一重挂面）
+  // （[B1 批] 研究面板条件挂载——切页签即卸载重挂会重派；本测不切页签，
+  // reload 仍是干净重挂面）
   await seedAiTask(userData, 'paper', anchor, { action: 'memory.update', status: 'running' })
   await win.reload()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
-  const aside2 = win.getByTestId('reader-aside')
+  const aside2 = win.getByTestId('reader-research')
   await expect(aside2).toBeVisible({ timeout: 20_000 })
-  await aside2.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside2.getByRole('tab', { name: 'AI 对话' }).click()
   const section2 = aside2.getByTestId('ai-tasks-section')
   await expect(section2).toBeVisible({ timeout: 10_000 })
   const card2 = (action: string) => section2.locator(`[data-action="${action}"]`)
@@ -114,9 +115,9 @@ test('R1-B1 跨格序列：开 paper A 抽屉→双击换 paper B（换锚重挂
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   // 开文献 A→AI 会话→开任务 A 抽屉（行落地）
   await win.getByText(titleA).first().dblclick()
-  const aside = win.getByTestId('reader-aside')
+  const aside = win.getByTestId('reader-research')
   await expect(aside).toBeVisible({ timeout: 20_000 })
-  await aside.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside.getByRole('tab', { name: 'AI 对话' }).click()
   const section = aside.getByTestId('ai-tasks-section')
   await expect(section).toBeVisible({ timeout: 10_000 })
   await section.locator('[data-action="memory.create"]').getByRole('button', { name: '审计' }).click()
@@ -130,9 +131,9 @@ test('R1-B1 跨格序列：开 paper A 抽屉→双击换 paper B（换锚重挂
   await win.getByRole('button', { name: '文献库', exact: true }).click()
   await expect(win.getByText(titleB).first()).toBeVisible({ timeout: 20_000 })
   await win.getByText(titleB).first().dblclick()
-  const aside2 = win.getByTestId('reader-aside')
+  const aside2 = win.getByTestId('reader-research')
   await expect(aside2).toBeVisible({ timeout: 20_000 })
-  await aside2.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside2.getByRole('tab', { name: 'AI 对话' }).click()
   // 新锚任务区就绪（换锚生效锚）——抽屉不得浮现（单抽屉全局语义：归属面消失必关）
   const section2 = aside2.getByTestId('ai-tasks-section')
   await expect(section2).toBeVisible({ timeout: 10_000 })
@@ -162,9 +163,9 @@ test('E6 审计抽屉：seq 升序+类型标+摘要与 before/after；无审计�
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
-  const aside = win.getByTestId('reader-aside')
+  const aside = win.getByTestId('reader-research')
   await expect(aside).toBeVisible({ timeout: 20_000 })
-  await aside.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside.getByRole('tab', { name: 'AI 对话' }).click()
 
   const section = aside.getByTestId('ai-tasks-section')
   await expect(section).toBeVisible({ timeout: 10_000 })

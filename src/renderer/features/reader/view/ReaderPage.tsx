@@ -149,11 +149,11 @@ export function ReaderPage(): JSX.Element {
     setZoom((uiScale * (el.clientWidth - 24)) / columnBasis.current)
   }
 
-  // 装配渲染（空态引导/主区/工具栏+目录——ReaderPageView，[F-SPLIT-01] 拆件）
+  // 装配渲染（空态引导/主区/工具栏+双侧栏——ReaderPageView，[F-SPLIT-01] 拆件）
   return (
     <ReaderPageView paperId={paperId} tabStatus={tab?.status} page={page} totalPages={totalPages} zoom={zoom} color={color}
       selectionMode={selectionMode} pageLayout={pageLayout} annotations={annotations} columnScroll={columnScroll} searchBox={searchBox}
-      pdfDoc={pdfDoc} outlineOpen={outlineOpen} setOutlineOpen={setOutlineOpen} scrollAreaRef={scrollAreaRef} spProg={spProg}
+      pdfDoc={pdfDoc} outlineOpen={outlineOpen} onToggleOutline={() => setOutlineOpen((v) => !v)} scrollAreaRef={scrollAreaRef} spProg={spProg}
       selectionMount={selectionMount} setSelectionMount={setSelectionMount} fileUrl={fileUrl} setTotalPages={setTotalPages}
       setPdfDoc={setPdfDoc} handleColumnReady={handleColumnReady} handlePdfError={handlePdfError} fitWidth={fitWidth}
       setPage={setPage} setZoom={setZoom} setColor={setColor} addAnnotation={addAnnotation} />

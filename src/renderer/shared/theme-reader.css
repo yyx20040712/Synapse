@@ -164,16 +164,23 @@ canvas[data-thumb-canvas] {
   border-left: 3px solid var(--accent);
   padding-left: 8px;
 }
+/* [B1 批] 右栏研究面板（ResearchAside 消费）：panel 底+左缘分隔（右栏贴
+   视口右缘——分隔线与 SplitPane 手柄同侧视觉叠加；页签条/正文滚动容器
+   结构类 .rdr-research-tabs/.rdr-research-body 为滚动收账批预留锚，
+   皮肤沿左栏语汇由组件内联承载） */
+.rdr-research {
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+}
 /* F-UI-02 工具栏/侧栏 tab 图标基线（D7=24×24 单色描边，沿 theme-shell.css
    .titlebar-btn svg 先例：stroke currentColor/fill none/统一线宽；图标常量
    =toolbar-icons.tsx+OutlineAside.tsx TAB_ICONS，禁新依赖；按钮文本走
    sr-only span——textContent/accessible name 双面保活受锁断言；
    [T3-P4] 16px=mockup .tb-btn svg/.aside-tab svg 逐值；
-   [小挂账第 9 条] .rdr-aside-collapse svg=侧栏收起钮图标（2026-10-02
-   文字钮图标化——同规则组并入） */
+   [B1 批] .rdr-aside-collapse svg=侧栏收起钮图标随钮退役删除（开关收口
+   toolbar——新两钮走 .rdr-toolbar button svg 既有规则组） */
 .rdr-toolbar button svg,
-.rdr-aside-tabs button svg,
-.rdr-aside-collapse svg {
+.rdr-aside-tabs button svg {
   width: 16px;
   height: 16px;
   flex: none;

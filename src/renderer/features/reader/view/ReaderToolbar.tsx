@@ -1,8 +1,15 @@
 /**
- * [SR-RDR-07] ReaderToolbar —— 阅读器工具栏（工单：done / weak）
+ * [SR-RDR-07] ReaderToolbar —— 阅读器工具栏（工单：done / weak；[B1 批]
+ * 翻页组拆 ReaderToolbarNav、双侧栏开合两钮收口本栏两端）
  *
  * ── 行为层 ──
- * - 页码显示/跳转、上/下页、缩放 -/100%/+（0.5~3 步进 0.1）、适应宽度
+ * - [B1 批] 左端首位=目录侧栏开关（aria-pressed=outlineOpen）；搜索槽之后
+ *   右端=研究面板开关（aria-pressed=researchOpen，aria-label 字面=v2 设计
+ *   稿「展开或收起研究面板」）——左右栏开合唯一入口（OutlineAside 收起钮
+ *   与浮动展开 chevron 随之退役）；toggle 语义在装配面 ReaderPageView——
+ *   本组件纯受控只上抛
+ * - 翻页组（上一页/页码/下一页）拆驻 ReaderToolbarNav（行为零变——IME
+ *   守卫随组迁移）；缩放 -/100%/+（0.5~3 步进 0.1）、适应宽度
  * - 标注颜色选择（当前色）；页内高亮搜索面板（P7E-03 兑现：经可选 slot
  *   prop searchBox 注入——装配面 ReaderPage 恒传 useReaderSearch 产出；
  *   缺席=旧占位 span 兜底，仅存量受锁测试夹具路径；库侧全文检索仍走 FTS）
@@ -20,11 +27,14 @@
  *     onZoom(z: number): void; onColor(c: AnnotationColor): void;
  *     selectionMode?: boolean; onToggleSelectionMode?(): void;
  *     onFitWidth?(): void; pageLayout?: 'single' | 'double';
- *     onTogglePageLayout?(): void; pageStep?: number }): JSX.Element
+ *     onTogglePageLayout?(): void; pageStep?: number;
+ *     outlineOpen?: boolean; onToggleOutline?(): void;
+ *     researchOpen?: boolean; onToggleResearch?(): void }): JSX.Element
  * - selectionMode/onToggleSelectionMode/onFitWidth/pageLayout/
- *   onTogglePageLayout/pageStep 可选：受锁测试夹具（sha256 面）直植既有
- *   props 形状零破坏；生产装配面 ReaderPage 恒传（缺席=常规态渲染+按钮
- *   点击无操作/步进 1，仅存在于测试路径）
+ *   onTogglePageLayout/pageStep/searchBox（[B1] outlineOpen/onToggleOutline/
+ *   researchOpen/onToggleResearch 同款可选先例）：受锁测试夹具（sha256 面）
+ *   直植既有 props 形状零破坏；生产装配面 ReaderPageView 恒传（缺席=按钮
+ *   aria-pressed false+点击无操作，仅存在于测试路径）
  * - onFitWidth（可选，Phase 3 接线时加入）：适应宽度需要滚动容器内宽与页面原始宽，
  *   二者都在 ReaderPage 手里——工具栏是纯受控组件不自测 DOM，故以回调上交；
  *   未传时按钮禁用并 title 说明
@@ -38,14 +48,16 @@
  * - [F-UI-02 图标化] 五文字控件换 toolbar-icons.tsx 图标+title 悬停汉语+
  *   sr-only span 保文本（textContent/accessible name 双面，受锁断言不动）；
  *   −/＋/100%/颜色点组不动（保字符数字）；选择模式 background 常亮叠加+
- *   双页图标随态（内联串锁[reader-toolbar-icons]保活，ring 住类承载）
+ *   双页图标随态（内联串锁[reader-toolbar-icons]保活，ring 住类承载）；
+ *   [B1] 双侧栏开关钮=aria-label 承载语义名（收起钮先例形态——面板开合
+ *   语义非动作名，sr-only 动作词不适用）
  */
-import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
 import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
-import { ICON_FIT_WIDTH, ICON_NEXT, ICON_PAGE_DOUBLE, ICON_PAGE_SINGLE, ICON_PREV, ICON_SELECT } from './toolbar-icons'
+import { ICON_FIT_WIDTH, ICON_PAGE_DOUBLE, ICON_PAGE_SINGLE, ICON_RESEARCH_PANEL, ICON_SELECT, ICON_SIDEBAR_OUTLINE } from './toolbar-icons'
+import { ReaderToolbarNav } from './ReaderToolbarNav'
 
 /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
  *  （ReaderPage 经 ReaderShortcuts 消费）共用，禁止复制第二份 */
@@ -71,6 +83,14 @@ export function ReaderToolbar(props: {
   onTogglePageLayout?: () => void
   /** F-R1 翻页步进（缺省 1=既有零变；双页装配面传 2=翻面语义） */
   pageStep?: number
+  /** [B1 批] 目录侧栏开合（缺省 false=收起态渲染）；aria-pressed 消费 */
+  outlineOpen?: boolean
+  /** [B1 批] 目录侧栏 toggle 上抛（toggle 语义在装配面） */
+  onToggleOutline?: () => void
+  /** [B1 批] 研究面板开合（缺省 false=收起态渲染）；aria-pressed 消费 */
+  researchOpen?: boolean
+  /** [B1 批] 研究面板 toggle 上抛（toggle 语义在装配面） */
+  onToggleResearch?: () => void
   /** P7E-03 页内搜索面板 slot（装配面 useReaderSearch 产出恒传；缺席=旧占位
    *  span 兜底——存量受锁测试夹具直植 props 形状零破坏，onFitWidth 同款
    *  可选先例形态） */
@@ -80,26 +100,8 @@ export function ReaderToolbar(props: {
   const selectionMode = props.selectionMode ?? false
   const pageLayout = props.pageLayout ?? 'single'
   const pageStep = props.pageStep ?? 1
-  const [pageInput, setPageInput] = useState(String(page + 1))
-  // [F-TAGS-01 回炉 R1/R2] 组词态镜像：blur 与 Enter 同守卫（d1-N3）。数字面
-  // 只守卫不补提交（与 TagEditor 不对称=主控裁：页码非用户署名数据、无污染面；
-  // 组词被失焦打断=静默丢弃，回显由外部翻页 useEffect 自愈）
-  const pageComposingRef = useRef(false)
-  // 外部翻页（键盘/目录跳转/越界自愈）同步回输入框
-  useEffect(() => {
-    setPageInput(String(page + 1))
-  }, [page])
-
-  /** 页码跳转提交：失焦或回车；非法输入回显当前页（夹取由 store 兜底） */
-  const commitPage = (): void => {
-    const v = Number.parseInt(pageInput, 10)
-    if (Number.isNaN(v)) {
-      setPageInput(String(page + 1))
-      return
-    }
-    onNavigate(v - 1)
-    setPageInput(String(page + 1))
-  }
+  const outlineOpen = props.outlineOpen ?? false
+  const researchOpen = props.researchOpen ?? false
 
   // [T3-P4] 工具栏钮语汇=.rdr-tool-btn（mockup .tb-btn：28px 方格+7px 圆角+
   // hover line-soft+.on=accent-soft/inset ring——theme-reader.css 单源；旧
@@ -111,48 +113,21 @@ export function ReaderToolbar(props: {
     // [T3-P4] 工具栏皮肤=.rdr-toolbar（mockup .toolbar：panel 底+line 下缘——
     // 金族退役；padding/gap 由组件承载）；文档流位置零变：纯皮肤票
     <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-1 px-3.5 py-1.5 text-xs">
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          className={btn}
-          title="上一页"
-          disabled={page <= 0}
-          onClick={() => onNavigate(page - pageStep)}
-        >
-          {ICON_PREV}
-          <span className="sr-only">上一页</span>
-        </button>
-        <input
-          className="rdr-num w-12 rounded border px-1 py-0.5 text-center text-xs"
-          style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}
-          value={pageInput}
-          aria-label="跳转到页"
-          onChange={(e) => setPageInput(e.target.value)}
-          onCompositionStart={() => { pageComposingRef.current = true }}
-          onCompositionEnd={() => { pageComposingRef.current = false }}
-          onBlur={() => {
-            if (pageComposingRef.current) return
-            commitPage()
-          }}
-          onKeyDown={(e) => {
-            if (e.nativeEvent.isComposing) return
-            if (e.key === 'Enter') commitPage()
-          }}
-        />
-        <span className="rdr-num" style={{ color: 'var(--text-dim)' }}>
-          / {totalPages > 0 ? totalPages : '…'}
-        </span>
-        <button
-          type="button"
-          className={btn}
-          title="下一页"
-          disabled={totalPages > 0 && page >= totalPages - 1}
-          onClick={() => onNavigate(page + pageStep)}
-        >
-          {ICON_NEXT}
-          <span className="sr-only">下一页</span>
-        </button>
-      </div>
+      {/* [B1 批] 左端首位：目录侧栏开关（开合唯一入口——收起钮/浮动 chevron
+          退役；on 态=rdr-tool-btn on 类，与选择模式/双页钮同语言） */}
+      <button
+        type="button"
+        className={`${btn}${outlineOpen ? ' on' : ''}`}
+        aria-pressed={outlineOpen}
+        aria-label="展开或收起目录侧栏"
+        title="展开或收起目录侧栏"
+        onClick={() => props.onToggleOutline?.()}
+      >
+        {ICON_SIDEBAR_OUTLINE}
+      </button>
+
+      {/* 翻页组（[B1 批] 拆驻 ReaderToolbarNav——行为零变） */}
+      <ReaderToolbarNav page={page} totalPages={totalPages} pageStep={pageStep} onNavigate={onNavigate} />
 
       {/* [T3-P4] 分组分隔线（mockup .tb-sep——装饰性，aria-hidden） */}
       <span className="rdr-tb-sep" aria-hidden="true" />
@@ -244,6 +219,19 @@ export function ReaderToolbar(props: {
           全库检索请回文献库
         </span>
       )}
+
+      {/* [B1 批] 右端（搜索槽之后）：研究面板开关（开合唯一入口；aria-label
+          字面=v2 设计稿） */}
+      <button
+        type="button"
+        className={`${btn}${researchOpen ? ' on' : ''}`}
+        aria-pressed={researchOpen}
+        aria-label="展开或收起研究面板"
+        title="展开或收起研究面板"
+        onClick={() => props.onToggleResearch?.()}
+      >
+        {ICON_RESEARCH_PANEL}
+      </button>
     </div>
   )
 }

@@ -10,8 +10,9 @@
  *
  * ── 接口层 ──
  * - export const ICON_PREV / ICON_NEXT / ICON_FIT_WIDTH / ICON_PAGE_SINGLE /
- *   ICON_PAGE_DOUBLE / ICON_SELECT: JSX.Element（模块级常量，仿 App.tsx
- *   NAV_ICONS 形态）
+ *   ICON_PAGE_DOUBLE / ICON_SELECT / ICON_SIDEBAR_OUTLINE /
+ *   ICON_RESEARCH_PANEL: JSX.Element（模块级常量，仿 App.tsx
+ *   NAV_ICONS 形态；[B1 批] 后两者=双侧栏开合钮——语义名走按钮 aria-label）
  *
  * ── 架构层 ──
  * - D7=24×24 单色描边简笔画，viewBox 24×24+aria-hidden——stroke 走 CSS 类
@@ -62,5 +63,23 @@ export const ICON_PAGE_DOUBLE = (
 export const ICON_SELECT = (
   <svg aria-hidden="true" viewBox="0 0 24 24">
     <path d="M6 4h12M12 4v16M6 20h12M9 4l3 3 3-3M9 20l3-3 3 3" />
+  </svg>
+)
+
+/** [B1 批] 目录侧栏开关（左缘分栏形：外框+左列竖线——左栏开合语义；
+ *  aria-pressed 承载开合态，语义名走按钮 aria-label） */
+export const ICON_SIDEBAR_OUTLINE = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M9.5 4v16" />
+  </svg>
+)
+
+/** [B1 批] 研究面板开关（右缘分栏形：外框+右列竖线+内容行——右栏开合语义；
+ *  aria-label 字面=v2 设计稿「展开或收起研究面板」） */
+export const ICON_RESEARCH_PANEL = (
+  <svg aria-hidden="true" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M14.5 4v16M8 9h3M8 13h3" />
   </svg>
 )

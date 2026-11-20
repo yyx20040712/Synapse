@@ -85,39 +85,11 @@ import { api, unwrap } from '../../../api/client'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
 import { clearStack, undo as runUndo, type UndoOutcome } from './annotation-undo'
 import { showToast } from '../../../shared/ui/toast-store'
+import { makeLoadingTab, type TabState } from './tab-state'
 
-export interface TabState {
-  paperId: string
-  fileUrl: string
-  fileName: string
-  /** 文献名（PaperDetail.title）——标签页可读名单源（缺陷②）；空串=未知，
-   *  展示层兜底 fileName 去扩展名（防御位） */
-  title: string
-  page: number
-  totalPages: number
-  zoom: number
-  color: AnnotationColor
-  annotations: Annotation[]
-  status: 'loading' | 'ready' | 'error'
-  /** 灰点信号位（TABS-03 写入；本单恒 false） */
-  dirty: boolean
-  /** 标注「选择模式」（F-A3/INV-42，per-tab 视图交互态）：true=两层标注渲染
-   *  rect pointer-events 全关（点击穿透零副作用，拖选可在标注块上发起——
-   *  F-A2 根治）；会话内存态不持久化。可选字段=存量测试夹具（受锁 sha256
-   *  面，8 文件完整对象直植）零破坏的必要形式；缺席即常规态，消费方一律
-   *  ?? false 兜底；makeLoadingTab 新建分支显式 false */
-  selectionMode?: boolean
-  /** 页布局（F-R1 双页阅读，per-tab 视图态——与 zoom/color/selectionMode
-   *  同型）：'single'=单列（默认）；'double'=两页一行。生命周期迁移表：
-   *  | openPaper（absent 新建） | 'single'（makeLoadingTab 显式置值） |
-   *  | openPaper（error 重试） | 沿 prev（{...prev,status:'loading'}） |
-   *  | setPageLayout(m) | active tab 写入 m；activeId=null no-op |
-   *  | closeOne(id) | 随 tab 删除；重开同 id=全新 tab='single' |
-   *  | close() | 整体复位 |
-   *  可选字段=存量测试夹具零破坏（消费方 ?? 'single' 兜底）；v1 不落库
-   *  （重开回 single——zoom 同型，票面备案） */
-  pageLayout?: 'single' | 'double'
-}
+// [B1 批] TabState/makeLoadingTab 拆驻 tab-state.ts（store 增研究面板字段
+// 前置瘦身）；再导出保持既有 import 面（factories/useActiveTab 等）零迁移
+export type { TabState } from './tab-state'
 
 /** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
 export interface ProgressFlusher {
@@ -137,6 +109,14 @@ export interface ReaderStore {
   scrollRequest: { paperId: string; page: number; seq: number } | null
   /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
   noteHighlight: { annotationId: string; seq: number } | null
+  /** [B1 批] 右栏研究面板开合（顶层会话态，默认 true）；开关入口=
+   *  ReaderToolbar 研究面板钮（toggle 语义在装配面） */
+  researchOpen: boolean
+  /** [B1 批] 研究面板开合写顶层态（非 per-tab——视图级偏好） */
+  setResearchOpen(open: boolean): void
+  /** [B1 批] 研究面板页签写 active tab（per-tab 会话态——researchTab 缺省
+   *  ai；activeId=null no-op（updateActiveTab 兜底）） */
+  setResearchTab(tab: 'ai' | 'notes'): void
   openPaper(id: string): Promise<void>
   activateTab(id: string): void
   closeTab(id: string): void
@@ -165,7 +145,9 @@ export interface ReaderStore {
   /** pdf 加载/渲染失败置 tab error（open IPC 失败类的补全——INV-15 装配级 e2e
    *  实证缺口：缺失文件走此路径，失败必须在 tab 级可见可关可重试） */
   markTabError(paperId: string): void
-  /** 标注单击→侧栏同步高亮信号（C-05）：OutlineAside 消费（切笔记 tab+滚动） */
+  /** 标注单击→侧栏同步高亮信号（C-05）：消费分工（[B1 审查回炉 B-1]）——
+   *  「开面板+切 notes 页签」副作用驻常挂载层 ReaderPageView（researchOpen
+   *  挂载条件拥有层）；高亮参数派生归 ResearchAside（→FragmentNotesList 滚动） */
   notifyNoteHighlight(annotationId: string): void
   /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
   undo(): Promise<void>
@@ -178,29 +160,11 @@ export function createReaderStoreInitialState() {
     activeId: null as string | null,
     progressFlusher: null as ProgressFlusher | null,
     scrollRequest: null as { paperId: string; page: number; seq: number } | null,
-    noteHighlight: null as { annotationId: string; seq: number } | null
-  }
-}
-
-/** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading） */
-function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
-  if (prev !== undefined) {
-    return { ...prev, status: 'loading' }
-  }
-  return {
-    paperId,
-    fileUrl: '',
-    fileName: '',
-    title: '',
-    page: 0,
-    totalPages: 0,
-    zoom: 1,
-    color: 'yellow',
-    annotations: [],
-    status: 'loading',
-    dirty: false,
-    selectionMode: false,
-    pageLayout: 'single'
+    noteHighlight: null as { annotationId: string; seq: number } | null,
+    // [B1 批] 右栏研究面板开合（会话级视图态——模块级单例生命周期，切视图
+    // 不清；与 outlineOpen 的 ReaderPage 组件态不同载体是有意分工：开合记忆
+    // 随 app 会话驻留）
+    researchOpen: true
   }
 }
 
@@ -251,7 +215,8 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       // paperId 维度仅清属被关 tab 的（他 tab 在途信号不误伤）；noteHighlight
       // 无归属维度且为瞬态通知，仅关激活 tab 时清（门一 W-1：关后台 tab
       // 不得干扰激活 tab 的瞬态通知），残留会被新 tab 生命周期消费
-      // （重开同 id 回跳旧页 / OutlineAside 挂载即闪切 notes）。
+      // （重开同 id 回跳旧页 / [B1 批] 研究面板装配层〔ReaderPageView〕
+      // 挂载即闪切 notes）。
       // [F-UIRES-03 B2] AI 高亮信号同族清理随 AI 反向同步链退役删除
       //（INV-105）。
       ...(scrollRequest?.paperId === id ? { scrollRequest: null } : {}),
@@ -453,6 +418,14 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     notifyNoteHighlight(annotationId) {
       const prev = get().noteHighlight
       set({ noteHighlight: { annotationId, seq: (prev?.seq ?? 0) + 1 } })
+    },
+
+    setResearchOpen(open) {
+      set({ researchOpen: open })
+    },
+
+    setResearchTab(tab) {
+      updateActiveTab((t) => ({ ...t, researchTab: tab }))
     },
 
     async undo() {

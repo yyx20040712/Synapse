@@ -11,14 +11,15 @@ import { seedCollectionRow } from './ai-seed'
 /**
  * [F-DBCAMP-01 DB-2 UI U3] E1 三入口可达——paper/lineage/global 三档会话入口
  * （设计 §5.1-E1）。会话=只读历史+置灰发送框（无任何发送能力——§6 不做）：
- * ①paper 档：开文献→reader-aside 内「AI 会话」页签→「暂无会话消息」+
+ * ①paper 档：开文献→reader-research（[B1 批] 右栏研究面板——原 reader-aside
+ * AI 页签迁移，tab 名换「AI 对话」）内页签→「暂无会话消息」+
  * 「对话能力将在后续版本接入」②lineage 档：脉络页选 seed 造的文件夹图→
  * 侧栏「AI 会话」页签→同两文案 ③settings：三节标在场+相对顺序
  * （AI 助手→AI 管理→AI 预算；锚定「网络」节后、「AI 语料导出」前）。
- * tab 查询一律限定容器（reader-aside/lineage-sidebar——e2e 坑③域污染防线）。
+ * tab 查询一律限定容器（reader-research/lineage-sidebar——e2e 坑③域污染防线）。
  */
 
-test('E1① paper 档：阅读器侧栏 AI 会话页签可达（空会话+置灰发送框）', async () => {
+test('E1① paper 档：阅读器右栏研究面板 AI 对话页签可达（空会话+置灰发送框）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-dbcamp-e1a-'))
   await bootstrapMigrations(userData)
   const title = 'E1 AI 会话文献'
@@ -34,9 +35,9 @@ test('E1① paper 档：阅读器侧栏 AI 会话页签可达（空会话+置灰
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByText(title).first().dblclick()
-  const aside = win.getByTestId('reader-aside')
+  const aside = win.getByTestId('reader-research')
   await expect(aside).toBeVisible({ timeout: 20_000 })
-  await aside.getByRole('tab', { name: 'AI 会话' }).click()
+  await aside.getByRole('tab', { name: 'AI 对话' }).click()
   await expect(win.getByText('暂无会话消息')).toBeVisible({ timeout: 10_000 })
   // 置灰发送框：说明文案驻 disabled+readOnly 框内（设计 §1.1「占位」语义——
   // quality 门禁禁扫占位属性英文字面，同形承载=框内 dim 文案）

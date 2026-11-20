@@ -13,8 +13,9 @@
  * - N4：SelectionLayer 挂内容级稳定包装盒（滚动中锚定页切换不重挂组件→
  *   工具条不闪收）；F-SL：onSaved 闭包捕获渲染帧 paperId（与 props.paperId
  *   同源同帧），store 按其寻址——保存 await 窗内切 tab 不生幽灵标注
- * - 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为
- *   稳定子节点；收起态=目录按钮
+ * - 可拖拽双侧栏（[B1 批] 左=目录/缩略图，右=研究面板 AI 对话/笔记；均
+ *   SplitPane 宽度持久化）：main 槽传 null——主内容外置为稳定子节点；
+ *   开合收口 ReaderToolbar 两端开关（左=ReaderPage 组件态，右=store 会话态）
  * - 状态归属不变：各 state/handler 由宿主 ReaderPage 持有（sr2-lg-08 挂载
  *   效应/F-03 滚动进度 wiring 均留宿主），本件经 props 收值+set 函数回写
  *
@@ -22,18 +23,21 @@
  * - export function ReaderPageView(props: { paperId: string | null;
  *   tabStatus: string | undefined; page; totalPages; zoom; color;
  *   selectionMode; pageLayout; annotations; columnScroll; searchBox; pdfDoc;
- *   outlineOpen; setOutlineOpen; scrollAreaRef; spProg; selectionMount;
+ *   outlineOpen; onToggleOutline; scrollAreaRef; spProg; selectionMount;
  *   setSelectionMount; fileUrl: string | null; setTotalPages; setPdfDoc;
  *   handleColumnReady; handlePdfError; fitWidth; setPage; setZoom; setColor;
  *   addAnnotation }): JSX.Element
+ * - [B1 批] setOutlineOpen→onToggleOutline（toggle 语义收口 toolbar 开关）；
+ *   researchOpen/setResearchOpen 自 store 内取（右栏开合=会话态）
  */
+import { useEffect } from 'react'
 import type { MutableRefObject, ReactNode } from 'react'
 import type { Annotation } from '@shared/models/annotation'
-import { ICON_CHEVRON_RIGHT } from '../../../shared/icons'
 import type { PageScrollRequest } from './PageColumn'
 import type { PageLayout } from './page-column-geometry'
 import type { createReaderScrollProgress } from './scroll-progress'
 import { OutlineAside } from '../panels/OutlineAside'
+import { ResearchAside } from '../panels/ResearchAside'
 import { SplitPane } from '../../../shared/ui/SplitPane'
 import { TabBar } from './TabBar'
 import { PdfDocProvider } from '../state/PdfDocProvider'
@@ -61,7 +65,8 @@ export function ReaderPageView(props: {
   /** pdfjs 文档句柄（OutlinePanel 数据源） */
   pdfDoc: unknown
   outlineOpen: boolean
-  setOutlineOpen: (v: boolean) => void
+  /** [B1 批] 目录侧栏开合 toggle（toolbar 开关唯一入口；宿主 ReaderPage 态） */
+  onToggleOutline: () => void
   scrollAreaRef: MutableRefObject<HTMLDivElement | null>
   spProg: ReturnType<typeof createReaderScrollProgress>
   selectionMount: HTMLDivElement | null
@@ -77,7 +82,22 @@ export function ReaderPageView(props: {
   setColor: ReaderStore['setColor']
   addAnnotation: ReaderStore['addAnnotation']
 }): JSX.Element {
-  const { paperId, tabStatus, page, totalPages, zoom, color, selectionMode, pageLayout, annotations, columnScroll, searchBox, pdfDoc, outlineOpen, setOutlineOpen, scrollAreaRef, spProg, selectionMount, setSelectionMount, fileUrl, setTotalPages, setPdfDoc, handleColumnReady, handlePdfError, fitWidth, setPage, setZoom, setColor, addAnnotation } = props
+  const { paperId, tabStatus, page, totalPages, zoom, color, selectionMode, pageLayout, annotations, columnScroll, searchBox, pdfDoc, outlineOpen, onToggleOutline, scrollAreaRef, spProg, selectionMount, setSelectionMount, fileUrl, setTotalPages, setPdfDoc, handleColumnReady, handlePdfError, fitWidth, setPage, setZoom, setColor, addAnnotation } = props
+  // [B1 批] 右栏研究面板开合（会话态驻 store——切视图不清；toolbar 开关口）
+  const researchOpen = useReaderStore((s) => s.researchOpen)
+  const setResearchOpen = useReaderStore((s) => s.setResearchOpen)
+  const noteHighlight = useReaderStore((s) => s.noteHighlight)
+
+  // [B1 审查回炉 B-1] noteHighlight「开面板+切页签」副作用驻本常挂载层（本件
+  // 早于空态分支返回、恒挂载）：ResearchAside 仅 researchOpen=true 时挂载——
+  // 副作用若驻组件内，面板收起即无订阅者（点标注无反应）。展开责任点收口
+  // 此处=挂载条件的拥有层（单一展开责任点）；页签态写入与高亮派生（纯渲染
+  // 消费 noteHighlight.annotationId）归 ResearchAside/ReaderNotesPanel。
+  useEffect(() => {
+    if (noteHighlight === null) return
+    useReaderStore.getState().setResearchOpen(true)
+    useReaderStore.getState().setResearchTab('notes')
+  }, [noteHighlight])
 
   if (paperId === null || fileUrl === null) {
     // 空态三形合一（无 tab/loading/error）；TabBar 保留——error tab 必须可见可关可切
@@ -136,25 +156,35 @@ export function ReaderPageView(props: {
         onTogglePageLayout={() => {
           useReaderStore.getState().setPageLayout(pageLayout === 'double' ? 'single' : 'double')
         }}
+        outlineOpen={outlineOpen}
+        onToggleOutline={onToggleOutline}
+        researchOpen={researchOpen}
+        onToggleResearch={() => {
+          setResearchOpen(!researchOpen)
+        }}
         searchBox={searchBox} />
       <div className="flex min-h-0 flex-1">
-        {outlineOpen ? (
-          // 可拖拽侧栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点
+        {outlineOpen && (
+          // 左栏（SplitPane，宽度持久化）：main 槽传 null——主内容外置为稳定子节点；
+          // 开合唯一入口=toolbar 目录侧栏钮（[B1 批] 收起钮/浮动 chevron 退役）
           <SplitPane paneId="reader-outline" side="left" defaultWidth={224} min={160} max={480}
             children={{
-              pane: <OutlineAside pdfDoc={pdfDoc} onCollapse={() => setOutlineOpen(false)} />,
+              pane: <OutlineAside pdfDoc={pdfDoc} />,
               main: null
             }} />
-        ) : (
-          // [F-UIRES-02 批 B R4] 收起态「目录」文字钮→右向 chevron（与
-          // OutlineAside 收起钮成对镜像——aria-label/title 同源悬停提示）
-          <button type="button" className="syn-icon-btn shrink-0 self-start border-b border-r px-1.5 py-2 text-xs"
-            aria-label="展开侧栏（目录）" title="展开侧栏（目录）"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }} onClick={() => setOutlineOpen(true)}>
-            {ICON_CHEVRON_RIGHT}
-          </button>
         )}
         {mainContent}
+        {researchOpen && (
+          // [B1 批] 右栏研究面板（AI 对话+笔记——ResearchAside；paneTestId
+          // 独立锚防 e2e strict-mode 与左栏多命中；开合唯一入口=toolbar
+          // 研究面板钮）
+          <SplitPane paneId="reader-research" side="right" defaultWidth={300} min={220} max={480}
+            paneTestId="reader-research-pane"
+            children={{
+              pane: <ResearchAside />,
+              main: null
+            }} />
+        )}
       </div>
     </div>
   )

@@ -28,7 +28,11 @@
  * ── 接口层 ──
  * - export function SplitPane(props: { paneId: string; side: 'left' | 'right';
  *     defaultWidth: number; min: number; max: number; collapsible?: boolean;
- *     children: { pane: ReactNode; main: ReactNode | null } }): JSX.Element
+ *     paneTestId?: string; children: { pane: ReactNode; main: ReactNode | null } }):
+ *     JSX.Element
+ * - [B1 批] paneTestId 可选（缺省 'split-pane-pane' 行为零变）：同页多实例
+ *   （阅读器左栏+右栏研究面板）时右实例换独立 testid——e2e strict-mode
+ *   多命中防线（reader-text.spec P7-A 左栏拖拽锚不迁移）
  *
  * ── 架构层 ──
  * - shared/ui 通用件：不 import store/features；localStorage 直用（renderer 本地
@@ -82,9 +86,11 @@ export function SplitPane(props: {
   min: number
   max: number
   collapsible?: boolean
+  /** [B1 批] pane 槽 testid 覆写（缺省 split-pane-pane——多实例页独立锚） */
+  paneTestId?: string
   children: { pane: ReactNode; main: ReactNode | null }
 }): JSX.Element {
-  const { paneId, side, defaultWidth, min, max, collapsible = false, children } = props
+  const { paneId, side, defaultWidth, min, max, collapsible = false, paneTestId = 'split-pane-pane', children } = props
   const [width, setWidth] = useState(() => loadWidth(paneId, defaultWidth, min, max))
   // 折叠态（双击手柄 toggle——F-UI-03 受控面已退役，仅内部态）
   const [collapsed, setCollapsed] = useState(false)
@@ -160,7 +166,7 @@ export function SplitPane(props: {
   const paneStyle = collapsed ? { width: `${width}px`, display: 'none' } : { width: `${width}px` }
 
   const paneNode = (
-    <div data-testid="split-pane-pane" className="h-full min-h-0 shrink-0 overflow-hidden" style={paneStyle}>
+    <div data-testid={paneTestId} className="h-full min-h-0 shrink-0 overflow-hidden" style={paneStyle}>
       {children.pane}
     </div>
   )

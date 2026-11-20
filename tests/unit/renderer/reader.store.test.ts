@@ -418,7 +418,7 @@ it('缺陷②：open 成功后 tab.title 落账文献名（fileName 语义不变
 // ── F-ARCH1（2026-08-30 架构排查批）：瞬态信号随 tab 关闭失效 —— always-active
 //    （不经 guardedDescribe——三屋新测纪律）。攻击序列=deepseek 架构审 B1：
 //    程序跳页→手动滚→关 tab→重开同 id，陈旧 scrollRequest 被新 tab 生命周期
-//    消费→回跳旧页；noteHighlight 残留→OutlineAside 挂载即闪切 notes。 ──
+//    消费→回跳旧页；noteHighlight 残留→研究面板装配层挂载即闪切 notes。 ──
 describe('F-ARCH1 closeTab 瞬态信号清理', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -446,7 +446,7 @@ describe('F-ARCH1 closeTab 瞬态信号清理', () => {
     expect(useStore.getState().scrollRequest).toEqual({ paperId: 'p-2', page: 5, seq: 1 })
   })
 
-  it('noteHighlight 残留清空（OutlineAside 闪切防线）', async () => {
+  it('noteHighlight 残留清空（研究面板装配层闪切防线）', async () => {
     const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
     await openReady(useStore, 'p-1')
     useStore.getState().notifyNoteHighlight('a-1')
@@ -577,5 +577,84 @@ describe('F-LOCATE-01 早到页码不吞（totalPages=0 未就绪窗口守卫）
     useStore.getState().setTotalPages(0) // landed=0（doc 未就绪/失败终态同形）
     expect(useStore.getState().tabs['p-1']?.page).toBe(3) // 驻留不动——夹取化变异（M4）下=max(0,min(3,-1))=0 必红
     expect(useStore.getState().tabs['p-1']?.totalPages).toBe(0)
+  })
+})
+
+// ── [B1 批] 右栏研究面板会话态（always-active——结构迁移批无独立工单号；
+//    researchOpen=顶层视图态（切视图不清），researchTab=per-tab 页签态
+//    （缺省 ai——openPaper 不写字段，消费方 ?? 'ai' 兜底）──
+describe('B1 研究面板会话态（researchOpen/researchTab）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('researchOpen 默认 true；setResearchOpen 写顶层态（切视图不随 tab 复位）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    expect(useStore.getState().researchOpen, '缺省展开').toBe(true)
+    useStore.getState().setResearchOpen(false)
+    expect(useStore.getState().researchOpen).toBe(false)
+    useStore.getState().setResearchOpen(true)
+    expect(useStore.getState().researchOpen).toBe(true)
+  })
+
+  it('setResearchTab 写 active tab；activeId=null 时 no-op', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setResearchTab('notes')
+    expect(useStore.getState().tabs['p-1']?.researchTab).toBe('notes')
+    useStore.getState().setResearchTab('ai')
+    expect(useStore.getState().tabs['p-1']?.researchTab).toBe('ai')
+    useStore.getState().close()
+    useStore.getState().setResearchTab('notes')
+    expect(useStore.getState().tabs).toEqual({})
+  })
+
+  it('新文献缺省 ai：openPaper 不写 researchTab（字段缺席）；error 重试沿用 prev；幂等激活不重置', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    expect(useStore.getState().tabs['p-1']?.researchTab, 'openPaper 缺省不写字段（消费方 ?? ai 兜底）').toBeUndefined()
+    useStore.getState().setResearchTab('notes')
+    // 幂等激活：字段驻留不被 openPaper 清除
+    await useStore.getState().openPaper('p-1')
+    expect(useStore.getState().tabs['p-1']?.researchTab).toBe('notes')
+    // error 重试路径：makeLoadingTab(prev) 沿用既有显示字段——页签态不丢
+    const openFlaky = vi
+      .fn()
+      .mockImplementationOnce(async () => ({ ok: false as const, error: { code: 'NOT_FOUND', message: '文献不存在' } }))
+      .mockImplementationOnce(async () => ({ ok: true as const, data: { fileUrl: 'app-file://p-2', fileName: 'b.pdf', lastReadPage: 0 } }))
+    const useStore2 = await loadStore({ reader: { open: openFlaky, listAnnotations: listAnnotationsOk } })
+    await expect(useStore2.getState().openPaper('p-2')).rejects.toThrow('文献不存在')
+    useStore2.getState().setResearchTab('notes')
+    await useStore2.getState().openPaper('p-2')
+    expect(useStore2.getState().tabs['p-2']?.researchTab, 'error 重试（loading 态沿 prev）不重置页签').toBe('notes')
+  })
+
+  it('closeTab 随删：重开同 id=全新 tab（researchTab 缺席回缺省 ai）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    useStore.getState().setResearchTab('notes')
+    useStore.getState().closeTab('p-1')
+    expect(useStore.getState().tabs['p-1']).toBeUndefined()
+    await openReady(useStore, 'p-1')
+    expect(useStore.getState().tabs['p-1']?.researchTab, '重开同 id 缺省 ai（selectionMode 同型语义）').toBeUndefined()
+  })
+
+  it('per-tab 隔离：切 activeId 后各 tab 页签独立（S1 不失忆同族）', async () => {
+    const useStore = await loadStore({ reader: { open: openOk, listAnnotations: listAnnotationsOk } })
+    await openReady(useStore, 'p-1')
+    await openReady(useStore, 'p-2')
+    useStore.getState().setResearchTab('notes') // 写 p-2（active）
+    useStore.getState().activateTab('p-1')
+    expect(useStore.getState().tabs['p-1']?.researchTab, 'p-1 未被写（隔离）').toBeUndefined()
+    useStore.getState().setResearchTab('notes')
+    useStore.getState().activateTab('p-2')
+    expect(useStore.getState().tabs['p-2']?.researchTab).toBe('notes')
+    expect(useStore.getState().tabs['p-1']?.researchTab).toBe('notes')
+    // 回 p-1 再切 ai：互不影响
+    useStore.getState().activateTab('p-1')
+    useStore.getState().setResearchTab('ai')
+    expect(useStore.getState().tabs['p-1']?.researchTab).toBe('ai')
+    expect(useStore.getState().tabs['p-2']?.researchTab).toBe('notes')
   })
 })

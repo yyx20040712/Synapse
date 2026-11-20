@@ -15,7 +15,7 @@
  * - export function AiSessionPanel(props: { scope: AiScope; anchorId: string | null }): JSX.Element
  *
  * ── 架构层 ──
- * - 三档薄包装的宿主：PaperAiPanel（reader 侧栏）/LineageAiPanel（脉络侧栏）
+ * - 三档薄包装的宿主：PaperAiPanel（[B1 批] reader 右栏研究面板）/LineageAiPanel（脉络侧栏）
  *   /SettingsPage AI 助手节（global 档 anchorId=null 直挂）；数据面只经
  *   aiSessionStore（open/listMessages 两通道——禁组件直连 api）。
  *
@@ -29,7 +29,7 @@
  * ── 文化层 ──
  * - 测试：e2e E1（三入口空会话+置灰发送框）/E2/E6=ai-tasks-card.spec；单测=
  *   ai-session-store.test（态机轴）+ai-tasks-store.test（任务/审计轴）
- *   +outline-aside.test（reader 集成面）。
+ *   +research-aside.test（reader 集成面）。
  */
 import { useEffect } from 'react'
 import type { AiScope } from '@shared/models/ai-domain'

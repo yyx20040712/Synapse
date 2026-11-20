@@ -10,8 +10,8 @@
  *   ②双页图标随 pageLayout 三元切换（single=单矩形 1 rect/double=双矩形
  *   2 rect）；③选择模式激活=background var(--accent-soft) 常亮填充叠加
  *   borderColor var(--accent)（F-UI-02 反馈强化——两断言并立防单侧退化）。
- * - OutlineAside 面：④三 tab（目录/缩略图/笔记）各含 aria-hidden svg+
- *   textContent 恰=标签（outline-aside:96 toEqual 精确数组兼容面）。
+ * - OutlineAside 面：④两 tab（目录/缩略图）各含 aria-hidden svg+
+ *   textContent 恰=标签（[B1 批] 笔记/AI 页签迁右栏研究面板——数组随缩）。
  *
  * 形态 crib selection-mode.test.tsx（jsdom 指令/api mock/act 环境/直植 props
  * 夹具）+outline-aside.test.tsx（IO 桩+store 布态）。
@@ -126,12 +126,12 @@ describe('F-UI-02 工具栏图标化 —— ReaderToolbar 面', () => {
 })
 
 describe('F-UI-02 侧栏 tab 图标化 —— OutlineAside 面', () => {
-  it('④ 三 tab 各含 aria-hidden svg+textContent 恰=标签（outline-aside:96 精确数组兼容）', () => {
-    mount(<OutlineAside pdfDoc={null} onCollapse={() => undefined} />)
+  it('④ 两 tab 各含 aria-hidden svg+textContent 恰=标签（[B1 批] 笔记/AI 页签迁右栏研究面板——数组随缩）', () => {
+    mount(<OutlineAside pdfDoc={null} />)
     const tabs = Array.from(
       host!.querySelectorAll<HTMLButtonElement>('[data-testid="reader-aside"] [role="tab"]')
     )
-    expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图', '笔记', 'AI 会话'])
+    expect(tabs.map((b) => b.textContent)).toEqual(['目录', '缩略图'])
     for (const t of tabs) {
       expect(t.querySelector('svg[aria-hidden="true"]'), 'tab 应含 aria-hidden svg').not.toBeNull()
     }
