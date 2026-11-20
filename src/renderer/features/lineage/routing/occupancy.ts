@@ -10,13 +10,17 @@
  */
 import { LANE_PITCH, type Interval } from './grid'
 
-/** 占用段（axis 轴·coord 车道坐标·span 行进跨距·owner 边 id；stub=B2 错峰桩区标记） */
+/** 占用段（axis 轴·coord 车道坐标·span 行进跨距·owner 边 id；stub=B2 错峰
+ *  桩区标记；manual=[F-LANEGRID-01 B3b §11-1 甲] manual 边段标记——观测面
+ *  （登记供后续自动边避让；manual 边自身永不被占用阻塞——manual-manual
+ *  叠线放行=裁决甲承诺域） */
 export interface OccupySeg {
   axis: 'v' | 'h'
   coord: number
   span: Interval
   owner: string
   stub?: boolean
+  manual?: boolean
 }
 
 /** 段级占用注册表（B2 分配器按边序逐段登记/查询；B1 合约=register/conflicts/segments） */

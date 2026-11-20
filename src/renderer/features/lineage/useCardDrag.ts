@@ -15,10 +15,12 @@
  * - picker≠idle 禁拖（[②U3] 画线 armed 态——isPicking 形参语义=画线工具
  *   激活）；popover 开禁拖
  * - 跨格序列：拾取中拖禁/弹层开拖禁/拖中弹层不可触发（pointer 在飞）/
- *   settle 接新拖忽略/reorderMonthSlots 与同道写错峰=store 队列 FIFO 既有
+ *   settle 接新拖忽略/applyObstacleReroute 与同道写错峰=store 队列 FIFO 既有
  *
  * ── 写路径（无乐观写——P7B R5 同族）──
- * settle transitionend 清场后才排队：拖拽→onReorderMonthSlots(月组全序)。
+ * settle transitionend 清场后才排队：拖拽→onReorderMonthSlots(月组全序——
+ * Board 接 store.applyObstacleReroute 复合单元〔[F-LANEGRID-01 B3] 槽位
+ * 透写+变化帧 manual 边 via 批清除——一次拖放=一撤销单元〕)。
  * 写失败=error 保存态+toast+重试沿 store 既有，UI 位置不回滚。
  */
 import { useLayoutEffect } from 'react'

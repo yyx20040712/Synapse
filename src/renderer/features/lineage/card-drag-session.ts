@@ -26,7 +26,8 @@
  *
  * ── 写路径（无乐观写——P7B R5 同族）──
  * settle transitionend 清场后才回调 onSettleFinalize（编排层排队
- * onReorderMonthSlots）；写失败沿 store 既有。
+ * onReorderMonthSlots→store.applyObstacleReroute 复合单元〔[F-LANEGRID-01
+ * B3] 槽位透写+变化帧 via 清除——一次拖放=一撤销单元〕）；写失败沿 store 既有。
  */
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'

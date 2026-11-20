@@ -88,8 +88,9 @@ export function EdgeOverlay(props: {
         edgeId: e.id,
         sourceId: e.fromNode,
         targetId: e.toNode,
-        // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（不占锚
-        // 不占车道——[F-LANEGRID-01 B2a] 车道网格分配只对自动边生效）
+        // [F-LINEAGE-02] via 在场 ⇒ chain 构造 manual-override 折线（〔B3b
+        // §11-1 甲〕净空段登记车道占用+锚 commit 供后续自动边避让——manual
+        // 自身永不被占用阻塞；无 laneMarks 观测=缺省）
         via: e.via,
         ...(fa !== undefined ? { fromAnchor: fa } : {}),
         ...(ta !== undefined ? { toAnchor: ta } : {})

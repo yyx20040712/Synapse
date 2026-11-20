@@ -2,9 +2,11 @@
 /**
  * [T3-P8] lineage.store 槽位重排写面测试（[F-LGRAPH-01②U1] 编辑会话
  * 语义重整版：动作入暂存+save 批量落库。锁定合约，always-active）。
- * 覆盖：reorderMonthSlots 月组全序重写（slot=0..n-1 透写+month 保留+队列
- * FIFO）/全字段载荷 month/slot 保留（防半更新清月）/upsert 回填后 nodes=
- * lineageOrder 全序（INV-75 消费面扩）/写失败 error+重试（乐观值保持）。
+ * 覆盖：applyObstacleReroute（[F-LANEGRID-01 B3] 自 reorderMonthSlots 并入
+ * 的拖放 settle 复合单元——via 清除面单测驻 lineage-store-obstacle.test）
+ * 月组全序重写（slot=0..n-1 透写+month 保留+队列 FIFO）/全字段载荷
+ * month/slot 保留（防半更新清月）/upsert 回填后 nodes=lineageOrder 全序
+ * （INV-75 消费面扩）/写失败 error+重试（乐观值保持）。
  * [F-UIRES-03 C3] 改月动作用例组随改月单口裁决退役删除（INV-107——改月
  * 唯一入口=MetaEditDialog；meta-edit-dialog.test 既有承载）；lazy 融合
  * 机制锁改以 reorder×reorder 同节点融合承载（override 轴生产者收窄）。
@@ -96,13 +98,13 @@ beforeEach(() => {
   })
 })
 
-describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分支；②U1 会话语义）', () => {
+describe('[T3-P8] applyObstacleReroute —— 月组全序重写（slot 透写分支；②U1 会话语义；[F-LANEGRID-01 B3] 复合单元承载）', () => {
   it('按传入序 slot=0..n-1：三节点全字段载荷逐个排队（save 派发），month 保留不清', async () => {
     const A = node('A', { month: 9, slot: 0 })
     const B = node('B', { month: 9, slot: 1 })
     const C = node('C', { month: 9, slot: 2 })
     useLineageStore.setState({ nodes: [A, B, C] })
-    state().reorderMonthSlots(['C', 'A', 'B'])
+    state().applyObstacleReroute(['C', 'A', 'B'])
     expect(state().saveStatus).toBe('dirty') // 暂存期不派发（A7）
     expect(stubApi.lineage.patchNode).not.toHaveBeenCalled()
     state().save()
@@ -138,7 +140,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     })
     state().moveNode('A', 2, 2) // 先入暂存
     state().save() // 首动作 flight（gate 悬挂）
-    state().reorderMonthSlots(['B', 'A']) // saving 中编辑=拒绝（原排队语义随 R5 闸退役）
+    state().applyObstacleReroute(['B', 'A']) // saving 中编辑=拒绝（原排队语义随 R5 闸退役）
     await settle()
     expect(stubApi.lineage.patchNode).toHaveBeenCalledTimes(1) // 队首编辑在飞
     expect(state().queue).toHaveLength(1) // 零新入队（重排批被拒）
@@ -146,7 +148,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     await settle()
     expect(state().saveStatus).toBe('clean') // 队列空直接回 clean
     // clean 后重排正常入队（载荷序=slot 透写）
-    state().reorderMonthSlots(['B', 'A'])
+    state().applyObstacleReroute(['B', 'A'])
     expect(state().queue.length).toBeGreaterThan(0)
   })
 
@@ -156,7 +158,7 @@ describe('[T3-P8] reorderMonthSlots —— 月组全序重写（slot 透写分�
     useLineageStore.setState({ nodes: [A, B] })
     stubApi.lineage.patchNode
       .mockRejectedValueOnce(new Error('写入失败'))
-    state().reorderMonthSlots(['B', 'A'])
+    state().applyObstacleReroute(['B', 'A'])
     state().save()
     await settle()
     expect(state().saveStatus).toBe('error')
@@ -185,7 +187,7 @@ describe('[T3-P8] 全字段载荷 month/slot 保留 + 回填重排（INV-75 消�
     const A = node('A', { month: 9, slot: 0, createdAt: 't1' })
     const B = node('B', { month: 9, slot: 1, createdAt: 't2' })
     useLineageStore.setState({ nodes: [A, B] })
-    state().reorderMonthSlots(['B', 'A'])
+    state().applyObstacleReroute(['B', 'A'])
     expect(state().nodes.map((n) => n.id)).toEqual(['B', 'A']) // 乐观重排即时（lineageOrder 单源）
     state().save()
     await settle()
@@ -207,8 +209,8 @@ describe('[T3-P8 回炉] R3 —— patch-node lazy 载荷（②U1 暂存期同�
     const A = node('A', { year: 2022, month: 9, slot: 0 })
     const B = node('B', { year: 2022, month: 9, slot: 1 })
     useLineageStore.setState({ nodes: [A, B] })
-    state().reorderMonthSlots(['B', 'A']) // B slot=0、A slot=1（两条 lazy 入队）
-    state().reorderMonthSlots(['A', 'B']) // 同节点融合：末次 override 整替（A=0、B=1）
+    state().applyObstacleReroute(['B', 'A']) // B slot=0、A slot=1（两条 lazy 入队）
+    state().applyObstacleReroute(['A', 'B']) // 同节点融合：末次 override 整替（A=0、B=1）
     expect(state().queue.length).toBe(2) // 融合按 id 保持两条（非同实体不合并）
     state().save()
     await settle()

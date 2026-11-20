@@ -1,11 +1,15 @@
 /**
  * [F-LGRAPH-01②U5] edge-edit-geom —— 调线几何辅助件（use-edge-edit 拆件——
- * 文件 ≤500 行红线）：全图 12 锚命中（带 side——reconnect 消费）+通道集派生
- * （磁吸候选：行隙/框间带横道+行内列缝竖道）。纯函数。
+ * 文件 ≤500 行红线）：全图 12 锚命中（带 side——reconnect 消费）+车道格线
+ * 集派生（[F-LANEGRID-01 B3b] buildLaneTable 同源直算——磁吸/提交门共用；
+ * 旧通道集 channelsFrom 随通道磁吸 ±6 退役删除）。纯函数（快照入参——DOM
+ * 采集驻 use-edge-edit/buildSnapshot）。
  */
 import type { Pt, Rect, Side } from './routing/anchors'
 import { anchorPoint } from './routing/anchors'
-import { SNAP_R, type Channels } from './edge-edit'
+import { buildLaneTable } from './routing/grid'
+import { SNAP_R, type LaneLines } from './edge-edit'
+import type { LayoutSnapshot } from './lineage-routing'
 
 export function nearestAnchorCard(
   cards: ReadonlyArray<{ nodeId: string; rect: Rect }>,
@@ -31,33 +35,17 @@ export function nearestAnchorCard(
   return best
 }
 
-/** 通道集（磁吸候选——行隙/框间带横道+行内列缝竖道；内容坐标派生） */
-export function channelsFrom(cards: ReadonlyArray<{ rect: Rect }>): Channels {
-  const horizontal: number[] = []
-  const vertical: number[] = []
-  const rows = new Map<number, Rect[]>() // y 键（容差 4 归行）
-  for (const { rect } of cards) {
-    const key = Math.round(rect.y / 4)
-    const list = rows.get(key) ?? []
-    list.push(rect)
-    rows.set(key, list)
-  }
-  const rowArr = [...rows.entries()].sort((a, b) => a[0] - b[0])
-  for (let i = 1; i < rowArr.length; i++) {
-    const prevRow = rowArr[i - 1]!
-    const curRow = rowArr[i]!
-    const prevBottom = Math.max(...prevRow[1].map((r) => r.y + r.h))
-    const curTop = Math.min(...curRow[1].map((r) => r.y))
-    if (curTop - prevBottom > 0) horizontal.push((prevBottom + curTop) / 2)
-  }
-  for (const [, list] of rows) {
-    const sorted = [...list].sort((a, b) => a.x - b.x)
-    for (let i = 1; i < sorted.length; i++) {
-      const gap = sorted[i]!.x - (sorted[i - 1]!.x + sorted[i - 1]!.w)
-      if (gap > 0) vertical.push(sorted[i - 1]!.x + sorted[i - 1]!.w + gap / 2)
-    }
-  }
-  return { horizontal, vertical }
+/** [F-LANEGRID-01 B3b] 车道格线集（buildLaneTable 布局直算——与路由同源
+ *  同参；id 序=坐标升序投影。编辑磁吸与提交门共用单源） */
+export function laneLinesOf(snap: LayoutSnapshot): LaneLines {
+  const t = buildLaneTable({
+    cards: [...snap.cards.values()],
+    labels: snap.labels,
+    yearHeads: snap.yearHeads,
+    frames: snap.frames,
+    contentH: snap.contentH
+  })
+  return { v: t.v.map((l) => l.coord), h: t.h.map((l) => l.coord) }
 }
 
 /** 全点链最近段序（加点/段拖拽命中——点到线段投影距离） */

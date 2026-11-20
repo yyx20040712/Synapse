@@ -21,7 +21,9 @@
  *   via 提交（[R2-C3] 提交门）=一撤销单元（零位移=物化中点=按下即松手
  *   转换末态保形）；
  *   中断（cancel/blur/Esc）不写=不转换（RR2/W-5）；双击加点=即写沿承。
- * - 磁吸±6（先横后竖取近）+穿卡警示（PAD=6）=dragging/selected 渲染态零持久化。
+ * - [F-LANEGRID-01 B3b §11-1 甲] 磁吸=车道格（顶点拖=最近车道交点/段拖=
+ *   法向单轴线，容差 8px；物化与加点=无条件最近交点）+穿卡警示（PAD=6）
+ *   =dragging/selected 渲染态零持久化。
  * - 右键反馈：pointerdown(button=2) 命中对象瞬选（线=selected 高亮+手柄集），
  *   菜单开期间保持、关闭即撤（selectedViaMenu → closeMenu 即 idle）。
  */
@@ -32,17 +34,20 @@ import { anchorPoint, selectAnchor } from './routing/anchors'
 import type { RoutedPath } from './lineage-routing'
 import {
   addPointOnSegment,
-  channelSnap,
   classifyReconnectDrop,
   crossCardSegments,
   dragVertex,
+  laneSnapPoint,
+  materializedSegDrag,
+  nearestLaneIntersection,
   segmentDrag,
   segmentViaIdx,
   viaEquals,
-  type Channels,
-  type EditPolyline
+  type EditPolyline,
+  type LaneLines
 } from './edge-edit'
-import { nearestAnchorCard, channelsFrom, nearestSegmentIdx } from './edge-edit-geom'
+import { nearestAnchorCard, laneLinesOf, nearestSegmentIdx } from './edge-edit-geom'
+import { buildSnapshot } from './edge-overlay-geom'
 import { DRAW_SNAP_R } from './useDrawLine'
 import { runDocDragSession } from './edge-drag-session'
 import { commitEdgeVia } from './edge-via-commit'
@@ -130,25 +135,9 @@ function attachReconnectAutoscroll(args: {
 }
 
 /**
- * [ln-C3] 自动线物化拖段代数（会话驻留件）：单 via 链无 via 内点对——
- * edge-edit.ts 段拖族（segmentDrag）不适用；被拖几何=物化中点，位移=法向
- * 投影（水平骨架段仅 dy/竖直段仅 dx——斜段零位移，口径沿承 [回炉 R3]）
- * +轴过滤磁吸（[RR3] 切向过滤同式——通道集/磁吸单源 channelSnap 复用）。
+ * [ln-C3] 自动线物化拖段代数=edge-edit.materializedSegDrag 单源（〔B3b 行
+ * 数债〕自本件迁驻编辑代数件——纯函数零行为变）。
  */
-function materializedSegDrag(
-  base: EditPolyline,
-  start: Pt,
-  target: Pt,
-  ch: Channels
-): { via: LineageViaPoint[]; snap: { axis: 'h' | 'v'; line: number } | null } {
-  const mid = base.via[0]!
-  const horiz = base.anchorA.y === base.anchorB.y
-  if (!horiz && base.anchorA.x !== base.anchorB.x) return { via: [mid], snap: null } // 斜段零位移不磁吸
-  const p: Pt = horiz ? { x: mid.x, y: mid.y + (target.y - start.y) } : { x: mid.x + (target.x - start.x), y: mid.y }
-  const axisCh: Channels = horiz ? { horizontal: ch.horizontal, vertical: [] } : { horizontal: [], vertical: ch.vertical }
-  const snap = channelSnap(p, axisCh)
-  return snap.snapped ? { via: [snap.p], snap: { axis: snap.axis!, line: snap.axis === 'h' ? snap.p.y : snap.p.x } } : { via: [p], snap: null }
-}
 
 export function useEdgeEdit(args: {
   enabled: boolean
@@ -191,7 +180,10 @@ export function useEdgeEdit(args: {
   // 换算器 z/u 在判定时取值（缩放后不滞留）。
   // [F-VISFB-31] 采集/换算÷s_eff=own 域——与路由快照（pathsRef pts）及
   // SNAP_R/PAD 常量族同系（旧 ÷z 与 own 域路由 pts 混算=u≠1 档调线错位）
+  // [F-LANEGRID-01 B3b] 车道格线集随同键采集（buildSnapshot→laneLinesOf——
+  // 与路由同源同参；磁吸预览与提交门校验共用=所见即所得）
   const cardsRef = useRef<Array<{ nodeId: string; rect: Rect }>>([])
+  const linesRef = useRef<LaneLines>({ v: [], h: [] })
   useEffect(() => {
     const content = args.hostRef.current?.parentElement
     if (!(content instanceof HTMLElement)) return
@@ -200,6 +192,7 @@ export function useEdgeEdit(args: {
       const r = el.getBoundingClientRect()
       return { nodeId: el.dataset.nodeId ?? '', rect: clientToOwnRect(r, base) }
     })
+    linesRef.current = laneLinesOf(buildSnapshot(content))
     setPointConverter((cx, cy) => clientToOwnPt(base, cx, cy))
   }, [args.hostRef, args.recomputeKey])
   const stateRef = useRef(state)
@@ -283,7 +276,8 @@ export function useEdgeEdit(args: {
     [select, enabledRef]
   )
 
-  /** 加点/物化（双击段——§2.3-3；自动线=首 via 落位转 manual-override） */
+  /** 加点/物化（双击段——§2.3-3；自动线=首 via 落位转 manual-override）；
+   *  [F-LANEGRID-01 B3b] 插入点=无条件最近车道交点（段中点未必在格上） */
   const onEdgeHitDbl = useCallback(
     (edgeId: string, pt: Pt): void => {
       if (!enabledRef.current) return
@@ -291,12 +285,12 @@ export function useEdgeEdit(args: {
       const pl = polylineOf(edgeId, e?.via)
       if (e === undefined || pl === null) return
       const seg = nearestSegment(pl, pt)
-      const out = addPointOnSegment(pl, seg)
+      const out = addPointOnSegment(pl, seg, (mid) => nearestLaneIntersection(mid, linesRef.current))
       // [R2-C3] 统一提交门（非法 via 回弹：零写零单元零 dirty+toast）
       commitEdgeVia({ host: args.hostRef.current, edge: e, via: out.via })
       setState({ phase: 'selected', edgeId })
     },
-    [store, polylineOf, nearestSegment, enabledRef]
+    [store, polylineOf, nearestSegment, enabledRef, linesRef]
   )
 
   /** 右键 pointerdown（button=2）瞬态高亮=瞬选（mockup §3.6 二轮批复④）；
@@ -331,17 +325,19 @@ export function useEdgeEdit(args: {
       // 物化面：自动线选中拖顶点不达（无手柄）；拖段路径见 onEdgeHitDown 外的
       // segment 面（下方 move 内判定）
       const onMove = (ev: PointerEvent | MouseEvent): void => {
-        const cards = cardsRef.current
         // 落点=own 域（EdgeOverlay 注入换算器——÷s_eff）
         const target = ptHook.current(ev.clientX, ev.clientY)
-        let work = dragVertex({ anchorA: pl.anchorA, anchorB: pl.anchorB, via: startVia }, idx, target)
-        // 磁吸（先横后竖取近）
-        const ch = channelsFrom(cards)
-        const snap = channelSnap(target, ch)
+        // [F-LANEGRID-01 B3b] 车道格磁吸：最近交点（≤8px 才吸，带外自由——
+        // 提交门兜底）；锚端被动钳制坐标本身在格上（锚道），与吸附正交组合
+        const snap = laneSnapPoint(target, linesRef.current)
+        const aim = snap.snapped ? snap.p : target
+        const work = dragVertex({ anchorA: pl.anchorA, anchorB: pl.anchorB, via: startVia }, idx, aim)
         let snapInfo: { axis: 'h' | 'v'; line: number } | null = null
         if (snap.snapped) {
-          snapInfo = { axis: snap.axis!, line: snap.axis === 'h' ? snap.p.y : snap.p.x }
-          work = dragVertex({ anchorA: pl.anchorA, anchorB: pl.anchorB, via: startVia }, idx, snap.p)
+          // 指示线=主修正轴（并列取横——先横沿承）
+          const dx = Math.abs(snap.p.x - target.x)
+          const dy = Math.abs(snap.p.y - target.y)
+          snapInfo = dy >= dx ? { axis: 'h', line: snap.p.y } : { axis: 'v', line: snap.p.x }
         }
         setState({
           phase: 'dragging',
@@ -371,7 +367,7 @@ export function useEdgeEdit(args: {
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },
-    [store, polylineOf, stateRef, cardsRef]
+    [store, polylineOf, stateRef]
   )
 
   /** 端点圆柄 pointerdown——reconnect 拖拽（换锚/跨卡换端） */
@@ -468,8 +464,12 @@ export function useEdgeEdit(args: {
       if (e === undefined || pl === null) return
       const segIdx = nearestSegment(pl, pt)
       // [ln-C3] 自动线（无 via=锚到锚直线骨架）拖段=本地物化段中点（§2.5
-      // 转换条款）不写库：同手势可拖+中断不转换（旧=按下即写拆两步且拖不动）
-      const mat = pl.via.length === 0 ? addPointOnSegment(pl, segIdx) : null
+      // 转换条款）不写库：同手势可拖+中断不转换（旧=按下即写拆两步且拖不动）；
+      // [F-LANEGRID-01 B3b] 物化点=最近车道交点（新点必须落格）
+      const mat =
+        pl.via.length === 0
+          ? addPointOnSegment(pl, segIdx, (mid) => nearestLaneIntersection(mid, linesRef.current))
+          : null
       // [回炉 R4] 全链段序→via 内点对序：锚 A 短桩（0）/锚 B 短桩（末）均
       // 不参与（return——原 Math.min 钳位使锚 B 短桩误拖末对）；物化链=单点
       const vi = mat !== null ? 0 : segmentViaIdx(pl, segIdx)
@@ -479,14 +479,13 @@ export function useEdgeEdit(args: {
       const startPt = pt
       const onMove = (ev: PointerEvent | MouseEvent): void => {
         const target = ptHook.current(ev.clientX, ev.clientY)
-        const ch = channelsFrom(cardsRef.current)
         // [回炉 R3] 法向投影（水平段仅 dy/竖直段仅 dx——斜段零位移）+磁吸
         // 输入点=被拖段几何（段中点）+吸附位移=snap 点对段原位差（单源代数）；
-        // [ln-C3] 物化链=单点同口径（materializedSegDrag——无 via 内点对）
+        // [ln-C3] 物化链=单点无条件落格（materializedSegDrag——无 via 内点对）
         const work =
           mat !== null
-            ? materializedSegDrag(base, startPt, target, ch)
-            : segmentDrag(base, vi, target.x - startPt.x, target.y - startPt.y, ch)
+            ? materializedSegDrag(base, startPt, target, linesRef.current)
+            : segmentDrag(base, vi, target.x - startPt.x, target.y - startPt.y, linesRef.current)
         setState({ phase: 'dragging', edgeId: cur.edgeId, kind: 'segment', idx: vi, startVia, liveVia: work.via, startPt, snap: work.snap })
       }
       runDragSession(onMove, () => {
@@ -507,7 +506,7 @@ export function useEdgeEdit(args: {
         setState({ phase: 'selected', edgeId: cur.edgeId })
       })
     },
-    [store, polylineOf, nearestSegment, stateRef, cardsRef]
+    [store, polylineOf, nearestSegment, stateRef]
   )
 
   // ── 拖拽会话基建：document 级 move/up+中断 abort（edge-drag-session 拆件）──

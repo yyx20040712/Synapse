@@ -106,7 +106,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     expect(host.saveStatus).toBe('clean')
   })
 
-  it('lazy 融合轴级合并：同节点 patch（x/y）×override（slot 透写语义轴）融合后单发共存（save 时合成读最新行；[F-UIRES-03 C3] 改月 override 形随改月动作退役——例改 reorderMonthSlots 承载，[A3] coreIdea patch 轴退役负锚保持）', async () => {
+  it('lazy 融合轴级合并：同节点 patch（x/y）×override（slot 透写语义轴）融合后单发共存（save 时合成读最新行；[F-UIRES-03 C3] 改月 override 形随改月动作退役——例改 applyObstacleReroute（[F-LANEGRID-01 B3] 复合单元）承载，[A3] coreIdea patch 轴退役负锚保持）', async () => {
     const A = node('A', { year: 2020, month: 5, slot: 2 })
     const B = node('B', { year: 2020, month: 5, slot: 1 })
     useLineageStore.setState({ nodes: [A, B] })
@@ -114,7 +114,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
       ({ ok: true, data: { ...A, ...req } as LineageNode })
     )
     state().moveNode('A', 3, 4) // 入队（lazy：patch={x,y}）
-    state().reorderMonthSlots(['A', 'B']) // A 入队（lazy：override={slot:0}）——与队中项同 id 融合
+    state().applyObstacleReroute(['A', 'B']) // A 入队（lazy：override={slot:0}）——与队中项同 id 融合（[F-LANEGRID-01 B3] 自 reorderMonthSlots 并入的复合单元；无边夹具=纯槽位轴面）
     expect(state().queue.length).toBe(2) // A 融合单条+B 一条（非同实体不合并）
     state().save()
     await settle()

@@ -1,6 +1,10 @@
 /**
  * [F-LGRAPH-01②U5] edge-edit —— 手动调线编辑代数（单源=F-LINEAGE-02
  * design-final §2.3——本件为实现真相源；纯函数零 DOM import）。
+ * [F-LANEGRID-01 B3b §11-1 甲] manual 线入网格：磁吸目标=车道格（buildLaneTable
+ * 坐标族——最近车道交点/法向单轴线，容差 8px=LANE_PITCH；旧通道中线磁吸
+ * ±6 随 channelsFrom 退役）+提交门格点/正交校验纯函数驻本件（门接线=
+ * edge-via-commit）。
  *
  * 全点链=[anchorA, ...via, anchorB]（内容坐标）；锚端=被动（不随拖动迁移）
  * ——首末拐点联动止于短桩（§2.3-1）；via 不变量（正交/无重合/≥1）由编辑
@@ -9,6 +13,7 @@
 import type { LineageViaPoint } from '@shared/models/lineage'
 import type { Pt, Rect, Side } from './routing/anchors'
 import { segHitsRect, PAD } from './routing/avoid'
+import { LANE_PITCH } from './routing/grid'
 
 /** 编辑代数输入（全点链拆分形） */
 export interface EditPolyline {
@@ -109,7 +114,9 @@ export function segmentViaIdx(p: EditPolyline, fullSegIdx: number): number | nul
 }
 
 /**
- * 拖段投影+磁吸（[回炉 R3]——自由路径按段轴取法向分量）：
+ * 拖段投影+磁吸（[回炉 R3]——自由路径按段轴取法向分量；[F-LANEGRID-01 B3b]
+ * 磁吸目标=车道格线——水平段 y 吸最近 h 道/竖直段 x 吸最近 v 道，容差
+ * LANE_SNAP_R=8）：
  * - 位移投影：水平段仅 dy/竖直段仅 dx（法向分量——指针斜移的切向分量丢弃）；
  *   斜段（拖开中途的非正交态）/重合段/短桩界外=不参与（原样 via）。
  * - 磁吸输入点=被拖段几何（段中点+投影位移——非指针轨迹中点）；
@@ -120,7 +127,7 @@ export function segmentDrag(
   segIdx: number,
   dx: number,
   dy: number,
-  ch: Channels
+  lines: LaneLines
 ): { via: LineageViaPoint[]; snap: { axis: 'h' | 'v'; line: number } | null } {
   if (segIdx < 0 || segIdx > p.via.length - 2) return { via: p.via, snap: null }
   const a = p.via[segIdx]!
@@ -132,27 +139,31 @@ export function segmentDrag(
   else return { via: p.via, snap: null } // 斜段禁拖
   let via = dragSegment(p, segIdx, proj.dx, proj.dy).via
   const m0 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } // 段原位中点
-  // [RR3] 磁吸切向过滤：候选通道按段轴正交筛（水平段仅横通道/竖直段仅竖
-  // 通道）——跨轴候选吸附会注入段轴切向位移（水平段被横移=相邻段拉斜）
-  const axisCh: Channels = a.y === b.y ? { horizontal: ch.horizontal, vertical: [] } : { horizontal: [], vertical: ch.vertical }
-  const snap = channelSnap({ x: m0.x + proj.dx, y: m0.y + proj.dy }, axisCh)
-  if (snap.snapped) {
-    via = dragSegment(p, segIdx, snap.p.x - m0.x, snap.p.y - m0.y).via
-    return { via, snap: { axis: snap.axis!, line: snap.axis === 'h' ? snap.p.y : snap.p.x } }
+  // [RR3] 磁吸切向过滤沿承：水平段仅 h 道/竖直段仅 v 道——跨轴吸附会注入
+  // 段轴切向位移（水平段被横移=相邻段拉斜）；且保端点格封闭（竖直段 x 吸
+  // v 道使两端拐点随 Δx 同落 v 道，y 原值保 h 道）
+  const axis: 'h' | 'v' = a.y === b.y ? 'h' : 'v'
+  const line = laneSnapAxis({ x: m0.x + proj.dx, y: m0.y + proj.dy }, axis, lines)
+  if (line !== null) {
+    via = dragSegment(p, segIdx, axis === 'h' ? 0 : line - m0.x, axis === 'h' ? line - m0.y : 0).via
+    return { via, snap: { axis, line } }
   }
   return { via, snap: null }
 }
 
 /**
  * 加点（§2.3-3）：全链段 segIdx（0=锚 A→v0；末=末 v→锚 B）中点插入共线点
- * （初始共线渲染无差异、数据与手柄在场——§2.2 B-2）。
+ * （初始共线渲染无差异、数据与手柄在场——§2.2 B-2）。[F-LANEGRID-01 B3b]
+ * snapMid 注入时插入点=最近车道交点（无条件——新点必须落格，段中点未必
+ * 在格上；缺省=原段中点〔纯代数默认，门不涉〕）。
  */
-export function addPointOnSegment(p: EditPolyline, segIdx: number): EditPolyline {
+export function addPointOnSegment(p: EditPolyline, segIdx: number, snapMid?: (mid: Pt) => Pt): EditPolyline {
   const pts = fullPoints(p)
   if (segIdx < 0 || segIdx > pts.length - 2) return p
   const a = pts[segIdx]!
   const b = pts[segIdx + 1]!
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+  const rawMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+  const mid = snapMid !== undefined ? snapMid(rawMid) : rawMid
   const via = p.via.map(dup)
   via.splice(segIdx, 0, mid as LineageViaPoint) // 段 i 的 via 插位=i（含锚 A 邻段=首插）
   return { anchorA: p.anchorA, anchorB: p.anchorB, via: via as LineageViaPoint[] }
@@ -179,6 +190,30 @@ function stripInterior(via: readonly LineageViaPoint[]): LineageViaPoint[] {
     else i++
   }
   return pts.filter((p, j, arr) => j === 0 || !eq(p, arr[j - 1]!)) as LineageViaPoint[]
+}
+
+/**
+ * [ln-C3] 自动线物化拖段代数：单 via 链无 via 内点对——段拖族（segmentDrag）
+ * 不适用；被拖几何=物化中点，位移=法向投影（水平骨架段仅 dy/竖直段仅 dx
+ * ——斜段零位移，口径沿承 [回炉 R3]）。[F-LANEGRID-01 B3b §11-1 甲] 落点=
+ * 无条件最近车道交点（物化=新点创建必须落格不受 8px 容差限——零位移物化
+ * 亦然，保「按下即松手转换」可用；指示线=主修正轴）。
+ */
+export function materializedSegDrag(
+  base: EditPolyline,
+  start: Pt,
+  target: Pt,
+  lines: LaneLines
+): { via: LineageViaPoint[]; snap: { axis: 'h' | 'v'; line: number } | null } {
+  const mid = base.via[0]!
+  const horiz = base.anchorA.y === base.anchorB.y
+  if (!horiz && base.anchorA.x !== base.anchorB.x) return { via: [mid], snap: null } // 斜段零位移不吸附
+  const p: Pt = horiz ? { x: mid.x, y: mid.y + (target.y - start.y) } : { x: mid.x + (target.x - start.x), y: mid.y }
+  const snapped = nearestLaneIntersection(p, lines)
+  const dx = Math.abs(snapped.x - p.x)
+  const dy = Math.abs(snapped.y - p.y)
+  const axis: 'h' | 'v' = dy >= dx ? 'h' : 'v' // 主修正轴（并列取横——先横沿承）
+  return { via: [snapped], snap: { axis, line: axis === 'h' ? snapped.y : snapped.x } }
 }
 
 /**
@@ -212,45 +247,99 @@ export function deleteVertex(p: EditPolyline, idx: number): EditPolyline {
   } as EditPolyline
 }
 
-/** 通道集（磁吸候选中线——内容坐标；横=行隙/框间带、竖=列缝） */
-export interface Channels {
-  horizontal: number[]
-  vertical: number[]
+/** [F-LANEGRID-01 B3b §11-1 甲] 车道格线集（buildLaneTable 坐标投影——升序；
+ *  v=竖道 x 坐标/h=横道 y 坐标。磁吸与提交门共用单源） */
+export interface LaneLines {
+  v: number[]
+  h: number[]
 }
 
-/** 磁吸半径（§2.3-7 ±6——内容坐标） */
+/** [F-VISFB-66] 换端解锚半径缺省（§2.3-7 ±6 own 域——通道磁吸面已随 B3b
+ *  车道格吸附退役，本常量仅剩 nearestAnchorCard 解锚默认消费） */
 export const SNAP_R = 6
 
-/** 磁吸判定（先横后竖并列取近）：返回吸附点+吸附轴（snapped=false=原点） */
-export function channelSnap(p: Pt, ch: Channels): { p: Pt; axis: 'h' | 'v' | null; snapped: boolean } {
-  let bestAxis: 'h' | 'v' | null = null
-  let bestLine: number | null = null
-  let bestD = SNAP_R
-  // 优先级：横先（并列差值取近——横竖同差取横[N-2 先横后竖]）
-  for (const y of ch.horizontal) {
-    const d = Math.abs(p.y - y)
-    if (d < bestD || (d === bestD && bestAxis === null)) {
+/** 拖拽吸附容差（=LANE_PITCH 8px——裁决① 甲「8px 磁吸替代 ±6 通道磁吸」） */
+export const LANE_SNAP_R = LANE_PITCH
+
+/** 提交门格点容差（0.6——e2e route-stress 采样容差 TOL 同值族：吸附/代数产出
+ *  精确格点，容差面=锚端被动钳制坐标的量化残差（≤0.05）+历史浮点回放裕量） */
+export const GRID_TOL = 0.6
+
+/** 升序表最近坐标（并列取先——首见最小者，确定性并列规则） */
+function nearestCoord(arr: readonly number[], v: number): number | null {
+  let best: number | null = null
+  let bestD = Infinity
+  for (const c of arr) {
+    const d = Math.abs(c - v)
+    if (d < bestD) {
       bestD = d
-      bestAxis = 'h'
-      bestLine = y
+      best = c
     }
   }
-  for (const x of ch.vertical) {
-    const d = Math.abs(p.x - x)
-    // [RR6] 恰 SNAP_R 边界两轴对称（原竖环严格小于才胜=恰 6 不吸附的不对称）；
-    // 并列=横胜保持（bestAxis==='h' 时同差不夺——先横后竖）
-    if (d < bestD || (d === bestD && bestAxis === null)) {
-      bestD = d
-      bestAxis = 'v'
-      bestLine = x
+  return best
+}
+
+/**
+ * 顶点拖拽磁吸：最近车道交点（x∈v 道 ∧ y∈h 道——欧氏距离最近=逐轴最近
+ * 分离式；距交点 ≤ LANE_SNAP_R 才吸附，带外=原点自由〔提交门兜底拒写〕）。
+ * 拖拽预览与松手落点同函数同参（INV-119② 所见即所得沿承）。
+ */
+export function laneSnapPoint(p: Pt, lines: LaneLines, r: number = LANE_SNAP_R): { p: Pt; snapped: boolean } {
+  const x = nearestCoord(lines.v, p.x)
+  const y = nearestCoord(lines.h, p.y)
+  if (x === null || y === null) return { p, snapped: false }
+  if (Math.hypot(x - p.x, y - p.y) > r) return { p, snapped: false }
+  return { p: { x, y }, snapped: true }
+}
+
+/** 无条件最近车道交点（加点插入/自动线物化——新点必须落格，不受容差限） */
+export function nearestLaneIntersection(p: Pt, lines: LaneLines): Pt {
+  const x = nearestCoord(lines.v, p.x) ?? p.x
+  const y = nearestCoord(lines.h, p.y) ?? p.y
+  return { x, y }
+}
+
+/** 法向单轴磁吸（段拖/物化段轴过滤——水平段 y 吸 h 道/竖直段 x 吸 v 道；
+ *  带外=null 自由投影） */
+export function laneSnapAxis(p: Pt, axis: 'h' | 'v', lines: LaneLines, r: number = LANE_SNAP_R): number | null {
+  const c = nearestCoord(axis === 'h' ? lines.h : lines.v, axis === 'h' ? p.y : p.x)
+  if (c === null || Math.abs(c - (axis === 'h' ? p.y : p.x)) > r) return null
+  return c
+}
+
+/**
+ * 提交门格点/正交校验（裁决① 甲「人工调整必须受网格约束」；〔B3 回炉①
+ * blocker〕anchors 提供时正交检面=**全点链**〔含端锚〕全部段——单 via 斜端
+ * 段（锚→via→锚 两段均斜）不再漏检）：
+ * - 逐 via 点在车道交点上（x∈v 道 ∧ y∈h 道，容差 GRID_TOL；端锚=卡派生
+ *   坐标非格点域，不检——检面=via 点，任务口径「逐点」）；
+ * - anchors 缺省（纯函数/探针面）=仅 via 链内部相邻段正交；anchors=[a,b]
+ *   （路由同源锚派生〔钉定直取/主向定边〕——对齐 routeOne manual 分支）
+ *   =全点链 [a, ...via, b] 全部段 |dx|≤tol 或 |dy|≤tol（提交门消费面）。
+ * 返回 true=过检；字符串=中文拒绝 reason（调用方回弹零写）。
+ */
+export function validateViaOnGrid(
+  via: readonly LineageViaPoint[],
+  lines: LaneLines,
+  anchors: readonly Pt[] = [],
+  tol: number = GRID_TOL
+): true | string {
+  for (const p of via) {
+    const x = nearestCoord(lines.v, p.x)
+    const y = nearestCoord(lines.h, p.y)
+    if (x === null || y === null || Math.abs(x - p.x) > tol || Math.abs(y - p.y) > tol) {
+      return `via 路点不在车道格点上（(${String(p.x)},${String(p.y)})——人工调整须受网格约束）`
     }
   }
-  if (bestAxis === null || bestLine === null) return { p, axis: null, snapped: false }
-  return {
-    p: bestAxis === 'h' ? { x: p.x, y: bestLine } : { x: bestLine, y: p.y },
-    axis: bestAxis,
-    snapped: true
+  const chain = [...anchors.slice(0, 1), ...via, ...anchors.slice(1)]
+  for (let i = 1; i < chain.length; i++) {
+    const a = chain[i - 1]!
+    const b = chain[i]!
+    if (Math.abs(a.x - b.x) > tol && Math.abs(a.y - b.y) > tol) {
+      return `via 折线必须横平竖直（(${a.x},${a.y})→(${b.x},${b.y}) 斜向段）`
+    }
   }
+  return true
 }
 
 /** 穿卡警示命中段（§2.3-8/PAD=6 口径）：返回穿卡段序（全链段序）；源/目标

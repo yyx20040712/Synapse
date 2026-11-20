@@ -26,8 +26,9 @@ export interface TimelineCallbacks {
   /** [F-UIRES-03 B5①] 卡面两钮回调（onCardGotoLibrary/Reader）随迁移退役删除
    *  （消费面=SidePanel 操作行经 Page 直连——Board→Timeline→Years 传链同删） */
   /** [T3-P8] 月组槽位全序重排写路径（settle 落定后经 Board 接
-   *  store.reorderMonthSlots——slot=0..n-1 透写；边界实现者定=申报）。
-   *  [F-UIRES-03 C3] 改月回调 prop 随改月链退役删除（INV-107）；
+   *  store.applyObstacleReroute——[F-LANEGRID-01 B3] 复合单元：slot=0..n-1
+   *  透写+变化帧 manual 边 via 批清除〔一次拖放=一撤销单元〕；边界实现者定
+   *  =申报）。[F-UIRES-03 C3] 改月回调 prop 随改链退役删除（INV-107）；
    *  卡双击链（onNodeDblClick）随 v1.7 双击退役删除（全应用唯一保留双击=
    *  详情面板片段条目——B2 终态） */
   onReorderMonthSlots?: (nodeIds: string[]) => void

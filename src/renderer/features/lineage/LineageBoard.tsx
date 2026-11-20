@@ -129,7 +129,7 @@ export function LineageBoard(props: {
           const node = nodes.find((n) => n.id === id)
           if (node !== undefined) setMenu({ node, anchor })
         }}
-        onReorderMonthSlots={(ids) => store().reorderMonthSlots(ids)}
+        onReorderMonthSlots={(ids) => store().applyObstacleReroute(ids)}
       />
 
       {/* 节点菜单（[F-SPLIT-01] 拆件——menu state 归本件，经 set 函数回写；

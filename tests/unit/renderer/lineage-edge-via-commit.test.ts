@@ -44,14 +44,17 @@ function mockRect(el: Element, x: number, y: number, w: number, h: number): void
   })
 }
 
-/** 几何（own 域——content 基准 (0,0)+s_eff=1）：A/B 同列竖叠、C 第三卡右侧
- *  （legal via x=300 空带净空；illegal via x=464 穿 C 膨胀带 [396,532]×[96,176]） */
+/** 几何（own 域——content 基准 (0,0)+s_eff=1）：A/B 同列竖叠、C 第三卡右侧；
+ *  月框 (0,0,1000,800)（车道表源——[B3b] 格点门非空表前提）。v 道含行隙
+ *  {238..386}（A 右 228 锚定 8 步进）与 C 锚 {432,464,496}
+ *  （legal via x=302=238+8·8 行隙格点、空带净空；illegal via x=464=C 锚格点
+ *  但横段/竖段穿 C 膨胀带 [396,532]×[96,176]） */
 const CARDS: Array<[string, number, number]> = [
   ['A', 100, 100],
   ['B', 100, 300],
   ['C', 400, 100]
 ]
-const VIA_LEGAL: LineageViaPoint[] = [{ x: 300, y: 136 }, { x: 300, y: 336 }]
+const VIA_LEGAL: LineageViaPoint[] = [{ x: 302, y: 136 }, { x: 302, y: 336 }]
 const VIA_THROUGH_C: LineageViaPoint[] = [{ x: 464, y: 136 }, { x: 464, y: 336 }]
 
 let content: HTMLElement | null = null
@@ -61,6 +64,12 @@ function mountHost(): SVGSVGElement {
   content = document.createElement('div')
   content.className = 'tl-content'
   mockRect(content, 0, 0, 1000, 800)
+  // [F-LANEGRID-01 B3b] 月框伴生（车道表源——frames 空则车道表空=格点门全拒）
+  const frame = document.createElement('div')
+  frame.className = 'month-frame'
+  frame.dataset.frameKey = 'k'
+  mockRect(frame, 0, 0, 1000, 800)
+  content.appendChild(frame)
   for (const [id, x, y] of CARDS) {
     const card = document.createElement('div')
     card.className = 'tl-card'
@@ -104,7 +113,8 @@ describe('R2-C3 手动调线统一提交门 commitEdgeVia', () => {
     expect(s.edges[0]!.via).toEqual(VIA_LEGAL)
     expect(s.undoStack.length).toBe(before + 1) // 一提交=一编辑单元
     expect(s.saveStatus).toBe('dirty')
-    expect(s.queue.some((a) => a.kind === 'upsert-edge' && a.input.via === VIA_LEGAL)).toBe(true)
+    // [B3 回炉⑥] 落库=门后钳制的规范化值（新数组——引用断言退役，值等沿承）
+    expect(s.queue.some((a) => a.kind === 'upsert-edge' && a.input.via != null && a.input.via.length === VIA_LEGAL.length && a.input.via.every((q: LineageViaPoint, i: number) => q.x === VIA_LEGAL[i]!.x && q.y === VIA_LEGAL[i]!.y))).toBe(true)
   })
 
   it('via 穿第三卡：返回 false+via 原样+零单元零 dirty 零入队+toast 精确文案恰一次', () => {

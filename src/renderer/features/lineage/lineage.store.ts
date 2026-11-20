@@ -119,11 +119,14 @@ export interface LineageStore {
    *  =非孤儿，主控裁决 e 保留）。[F-ALIGN-01] 加节点两型 store 动作随手动
    *  建点路径退役删除——节点唯一来源=入库/移动两路（INV-NEW-1） */
   moveNode(id: string, x: number, y: number): void
-  /** [T3-P8] 月组槽位全序重排：按传入序 slot=0..n-1 逐节点透写排队（settle
-   *  落定后调用；[②U1] 整组=一编辑单元——一次 undo 整组回退）。
-   *  [F-UIRES-03 C3] 改月 store 动作随改月单口裁决退役删除
-   *  （INV-107——改月唯一入口=MetaEditDialog 月份字段经 library.updateMeta） */
-  reorderMonthSlots(nodeIds: string[]): void
+  /** [F-LANEGRID-01 B3 §6.4] 障碍突变复合单元（拖放 settle 落位——card-drag-
+   *  session settle 流单口）：单 beginUnit 内月组槽位全序透写（slot=0..n-1）
+   *  +变化帧 manual 边 via 批清除——**一次拖放=一撤销单元**（多载荷一步回退）。
+   *  清除域=端点卡落在该月组的边（裁决⑥ 月域语义：月内边+直连边；穿框边/
+   *  集外月保留 via）。undo/redo=历史恢复不清 via（恢复的前布局=via 有效
+   *  布局）；仅用户障碍突变（拖放 settle/删卡）经本族清除。旧
+   *  reorderMonthSlots 拖放单口随本动作并入（编辑口 setEdgeVia 沿承不变） */
+  applyObstacleReroute(nodeIds: string[]): void
   /** [F-VISFB-66 裁定 1/2] 画线建边（唯一建边径=锚点显式拖拽——点两卡/右键
    *  链退役后 drawEdge 单径）：视觉字段=当前工具线型+label=当前色行名快照
    *  （P-14 继承制）；**双锚必填**（按下锚=fromAnchor/落点锚=toAnchor——
@@ -272,6 +275,16 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
   // [F-VISFB-62 拆件] 悬浮笔记动作域件（三操作纯移动自本件——
   // lineage-note-ops.ts 单源；解构注入调用面名字零 churn）
   const { addFloatingNote, updateFloatingNote, removeFloatingNote } = createNoteOps({ get, beginUnit: beginUnitGated, enqueue: wq.enqueue })
+  // [F-LANEGRID-01 B3 §6.2/§6.4] 变化帧 manual 边 via 批清除入队（月域语义：
+  // 清除域=端点卡落在变化帧的边——月内边+直连边；穿框边/集外月保留 via。
+  // undo/redo 历史恢复不经此面——store 快照整体回退）
+  const enqueueFrameViaClears = (frameIds: ReadonlySet<string>): void => {
+    for (const e of get().edges) {
+      if (e.via === undefined || e.via.length === 0) continue
+      if (!frameIds.has(e.fromNode) && !frameIds.has(e.toNode)) continue
+      wq.enqueue({ kind: 'upsert-edge', input: materializeEdgeInput(e, { via: null }) })
+    }
+  }
 
   return {
     nodes: [],
@@ -352,14 +365,16 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       wq.enqueue({ kind: 'patch-node', id, patch: { x, y } })
     },
 
-    reorderMonthSlots(nodeIds) {
-      // 月组全序重写：传入序即槽位序（0..n-1 透写）；同实体 lazy 融合
-      // [②U1] 整组=一编辑单元（一次 undo 整组回退）
+    applyObstacleReroute(nodeIds) {
+      // [F-LANEGRID-01 B3] 拖放 settle 复合单元：槽位全序透写（传入序即槽位
+      // 序 0..n-1）+变化帧 manual 边 via 批清除——单 beginUnit（一次拖放=一
+      // 撤销步；同实体 lazy 融合沿承）
       if (!beginUnitGated()) return
       nodeIds.forEach((id, slot) => {
         mustNode(get().nodes, id)
         wq.enqueue({ kind: 'patch-node', id, patch: {}, override: { slot } })
       })
+      enqueueFrameViaClears(new Set(nodeIds))
     },
 
     drawEdge(from, to, payload) {
@@ -452,7 +467,20 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
 
     removeNode(id) {
       if (!beginUnitGated()) return
+      // [F-LANEGRID-01 B3 §6.4] 删卡=用户障碍突变：同帧（年月组）存留卡的
+      // manual 边 via 并入同一撤销单元清除（触亡边先经乐观级联移除——无载荷
+      // 可清）；异帧/穿框边保留 via
+      const n = get().nodes.find((x) => x.id === id)
       wq.enqueue({ kind: 'remove-node', id })
+      if (n !== undefined) {
+        enqueueFrameViaClears(
+          new Set(
+            get()
+              .nodes.filter((x) => x.year === n.year && x.month === n.month && x.id !== id)
+              .map((x) => x.id)
+          )
+        )
+      }
     },
 
     removeEdge(id) {

@@ -10,8 +10,10 @@
  * 1. 车道表 buildLaneTable（布局派生——边集变化不重建，裁决②）+段级占用表：
  *    carried 边 pts 逐段预登记（§6.3 集外不动：早到重排边避让晚到固定边）；
  * 2. 逐边（输入序=DB created_at,rowid 沿承）：端点缺失防御早退（route='grid'
- *    空路径+overlapExempt+blocked）→ manual-override 早退（via 折线、不占锚
- *    不占车道、终门第三方集沿承）→ 自动边：锚选择机制整体沿承（§4：钉定
+ *    空路径+overlapExempt+blocked）→ manual-override 早退（via 折线；〔B3b
+ *    §11-1 甲〕锚占用 commit+净空段登记 LaneOccupancy——后续自动边避让，
+ *    manual 自身永不被占用阻塞/manual-manual 叠线放行；终门第三方集沿承）
+ *    → 自动边：锚选择机制整体沿承（§4：钉定
  *    pin 直取禁动/selectAnchor 主向定边/AnchorUse 散开/12 满共享原锚）→
  *    allocateEdge 单边分配（错峰指派 i=同源锚已到边计数，§3.3）→ 段登记+
  *    错峰计数 → finalize 终门（r=6→3→0 防御层沿承，INV-79：blocked=空 d
@@ -90,8 +92,8 @@ export interface RoutedPath {
   route: RouteTag
   pts: Pt[]
   /** [F-LANEGRID-01 B2a] 占道段观测串（laneMarkOf「轴+坐标:起-止」逗号连接——
-   *  INV-117/120 观测位〔旧 slotMarks 已随六态退役删除〕；manual-override
-   *  不占车道=缺省） */
+   *  INV-117/120 观测位〔旧 slotMarks 已随六态退役删除〕；manual-override 段
+   *  照常登记占用〔B3b §11-1 甲〕但不产出观测串=缺省） */
   laneMarks?: string
   /** [F-LANEGRID-01 B2a] 段级冲突区间串列（§3.4 溢出/§3.3 错峰复用登记——
    *  provenance；非空 ⟹ overlapExempt=true） */
@@ -130,21 +132,32 @@ function replayAnchors(use: AnchorUse, carried: ReadonlyArray<RoutedPath>): void
   }
 }
 
-/** carried 边段预登记：pts 轴对齐段→占用表（§6.3 只读固定；对角/零长残段
- *  防御跳过；登记坐标=两端均值——与 allocate.segsOf 同坍缩口径） */
+/** pts 轴对齐段→占用表登记（对角/零长残段防御跳过；登记坐标=两端均值——
+ *  与 allocate.segsOf 同坍缩口径）。消费两面：carried 集外边段预登记（§6.3
+ *  只读固定）+manual 边段登记（[F-LANEGRID-01 B3b §11-1 甲]——供后续自动
+ *  边避让；manual 观测标记随段透传） */
+function registerSegments(occ: LaneOccupancy, pts: readonly Pt[], owner: string, manual = false): void {
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i - 1]!
+    const q = pts[i]!
+    const dx = Math.abs(q.x - p.x)
+    const dy = Math.abs(q.y - p.y)
+    const flag = manual ? { manual: true } : {}
+    if (dx <= CELL_EPS && dy > CELL_EPS) {
+      occ.register({ axis: 'v', coord: (p.x + q.x) / 2, span: { lo: Math.min(p.y, q.y), hi: Math.max(p.y, q.y) }, owner, ...flag })
+    } else if (dy <= CELL_EPS && dx > CELL_EPS) {
+      occ.register({ axis: 'h', coord: (p.y + q.y) / 2, span: { lo: Math.min(p.x, q.x), hi: Math.max(p.x, q.x) }, owner, ...flag })
+    }
+  }
+}
+
+/** carried 边段预登记（§6.3——manual carried 段随 route 标记；〔B3 回炉⑤〕
+ *  blocked manual 段跳过=不可见线不占道（伪 overlapSpans 绝源；锚回放保留
+ *  ——blocked 只撤销线条不删锚数据语义沿承）；blocked grid pts 恒空自然无段） */
 function replaySegments(occ: LaneOccupancy, carried: ReadonlyArray<RoutedPath>): void {
   for (const c of carried) {
-    for (let i = 1; i < c.pts.length; i++) {
-      const p = c.pts[i - 1]!
-      const q = c.pts[i]!
-      const dx = Math.abs(q.x - p.x)
-      const dy = Math.abs(q.y - p.y)
-      if (dx <= CELL_EPS && dy > CELL_EPS) {
-        occ.register({ axis: 'v', coord: (p.x + q.x) / 2, span: { lo: Math.min(p.y, q.y), hi: Math.max(p.y, q.y) }, owner: c.edgeId })
-      } else if (dy <= CELL_EPS && dx > CELL_EPS) {
-        occ.register({ axis: 'h', coord: (p.y + q.y) / 2, span: { lo: Math.min(p.x, q.x), hi: Math.max(p.x, q.x) }, owner: c.edgeId })
-      }
-    }
+    if (c.route === 'manual-override' && c.clearance === 'blocked') continue
+    registerSegments(occ, c.pts, c.edgeId, c.route === 'manual-override')
   }
 }
 
@@ -172,14 +185,29 @@ function routeOne(
   }
   const fromPin = e.fromAnchor !== undefined ? pinnedPick(src, e.fromAnchor) : undefined
   const toPin = e.toAnchor !== undefined ? pinnedPick(tgt, e.toAnchor) : undefined
-  // manual-override 早退：via 在场（锚=端点卡按主向定边规则定/钉定直取），
-  // 不 commit AnchorUse、不占车道、不参与错峰；终门同检第三方集（源/目标
-  // 卡豁免——R2-C3 沿承：新 via 由提交门先行拦截，本门承接旧 via 兜底）
+  // manual-override 早退：via 在场（锚=端点卡按主向定边规则定/钉定直取）。
+  // [F-LANEGRID-01 B3b §11-1 甲] manual 线入网格——锚占用 commit（与 carried
+  // 回放对称：后续未钉定边散开避让）+净空路径段登记 LaneOccupancy（后续
+  // **自动**边避让；manual 边自身永不被占用阻塞——manual-manual 叠线放行
+  // =裁决甲承诺域；blocked 态不登记=不可见线不占道）。终门同检第三方集
+  // （源/目标卡豁免——R2-C3 沿承：新 via 由提交门先行拦截，本门承接旧 via
+  // 兜底）
   if (e.via !== undefined && e.via.length > 0) {
     const a = fromPin ?? selectAnchor(src, e.via[0]!)
     const b = toPin ?? selectAnchor(tgt, e.via[e.via.length - 1]!)
+    use.commit(e.sourceId, a.side, a.slot)
+    use.commit(e.targetId, b.side, b.slot)
     const skel: Pt[] = [a.pt, ...e.via, b.pt]
     const finalized = finalizePath(skel, [src, tgt], all.filter((o) => o !== src && o !== tgt))
+    if (finalized.clearance === undefined) {
+      registerSegments(occ, skel, e.edgeId, true)
+      // 错峰计数对称（与 carried 预载/B3 replayStubSeq 同口径）：非直连 manual
+      // 边计入同锚计数——后续同源锚自动边指派 i 与全图边序对齐
+      if (skel.length > 2) {
+        const key = `${e.sourceId}|${a.side}|${a.slot}`
+        stubSeq.set(key, (stubSeq.get(key) ?? 0) + 1)
+      }
+    }
     return {
       edgeId: e.edgeId,
       d: finalized.d,
@@ -227,8 +255,28 @@ function routeOne(
 }
 
 /**
+ * carried 边错峰计数预载（§3.3 i=同锚已到边计数——[F-LANEGRID-01 B3]）：
+ * 按 routeOne 增量口径（非 blocked ∧ 非直连——grid 与 manual 同计〔B3 回炉④：
+ * manual carried 不回放则后继自动边增量与干净全算桩段不同〕）以 anchorMarks
+ * 首令牌（源锚）回放 stubSeq，使集内同锚边的走廊指派与全图边序对齐（无预载
+ * 则集内边取 i=0 撞集外边桩段）；直连/blocked/端点缺失防御态不计数。
+ */
+function replayStubSeq(stubSeq: Map<string, number>, carried: ReadonlyArray<RoutedPath>): void {
+  for (const c of carried) {
+    if (c.clearance !== undefined || c.pts.length <= 2) continue
+    if (c.anchorMarks === undefined || c.anchorMarks === '') continue
+    const a = parseAnchorId(c.anchorMarks.split(',')[0]!)
+    if (a === null) continue
+    const key = `${a.cardId}|${a.side}|${a.slot}`
+    stubSeq.set(key, (stubSeq.get(key) ?? 0) + 1)
+  }
+}
+
+/**
  * 全图（或重排集）路由。carried=集外边 RoutedPath 只读表（§6.3 载入占用，
- * B2a 恒空接线、B3 帧差分接入）：其段预登记占用+anchorMarks 回放锚占用——
+ * [F-LANEGRID-01 B3] 帧差分接入）：其段预登记占用+anchorMarks 回放锚占用
+ * +错峰计数预载；**边集含 carried 边时该边直通**（输出=carried 原值引用
+ * ——集外不动逐字节契约；调用方传全集边+集外 carried 得全量 paths）——
  * 纯函数契约：给定 (edges, snap, carried) 恒同输出。
  */
 export function routeAll(
@@ -237,6 +285,7 @@ export function routeAll(
   onWarn: (m: string) => void = () => undefined,
   carried: ReadonlyArray<RoutedPath> = []
 ): RoutedPath[] {
+  const carriedById = new Map(carried.map((p) => [p.edgeId, p] as const))
   const use = new AnchorUse()
   // 阶段 0a 钉定预注册（输入边序——§4 F1a 沿承）；0b carried 锚回放（§3.3）
   for (const e of edges) {
@@ -254,20 +303,26 @@ export function routeAll(
   })
   const occ = new LaneOccupancy()
   replaySegments(occ, carried)
-  // 阶段 2 逐边（输入序）：同锚错峰计数（首段指派 i）随编排序推进
+  // 阶段 2 逐边（输入序）：carried 边直通（不重投影）；重排边同锚错峰计数
+  // （首段指派 i）随编排序推进+carried 预载
   const stubSeq = new Map<string, number>()
+  replayStubSeq(stubSeq, carried)
   const all = allObstacles(snap)
-  return edges.map((e) => routeOne(e, snap, all, use, occ, lanes, stubSeq, onWarn))
+  return edges.map((e) => carriedById.get(e.edgeId) ?? routeOne(e, snap, all, use, occ, lanes, stubSeq, onWarn))
 }
 
 /**
  * [R2-C3] 提交门单边复算（谓词与 routeAll 同源——单边经同一编排体，空
- * AnchorUse/空占用起步；manual 分支不占锚不占车道，单边与全图逐字节同构）。
+ * AnchorUse/空占用起步；manual 分支锚 commit+净空段登记占用〔B3b §11-1 甲〕
+ * ——单边与全图逐字节同构）。
+ * [F-LANEGRID-01 B3 §7] carried=当前全图占用快照（via-only 单边重投影经
+ * planRerun 接入——自动分支〔via 置空回自动〕在此消费占用避让）。
  */
 export function routeEdge(
   e: EdgeGeomInput,
   snap: LayoutSnapshot,
-  onWarn: (m: string) => void = () => undefined
+  onWarn: (m: string) => void = () => undefined,
+  carried: ReadonlyArray<RoutedPath> = []
 ): RoutedPath {
-  return routeAll([e], snap, onWarn)[0]!
+  return routeAll([e], snap, onWarn, carried)[0]!
 }

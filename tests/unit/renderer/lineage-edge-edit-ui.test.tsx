@@ -190,8 +190,8 @@ describe('U5 手动调线编辑态', () => {
     expect(host!.querySelector('[data-testid="edge-handles"]')).not.toBeNull()
   })
 
-  it('双击段=段中点加点（via+1——数据在手柄在场）', () => {
-    layout([{ x: 200, y: 66 }])
+  it('双击段=段中点加点（via+1——数据在手柄在场；[B3b] 夹具 via=格点 198，插入点=最近交点 166=150+8·2）', () => {
+    layout([{ x: 198, y: 66 }])
     act(() => {
       hitOf('e1').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: 140, clientY: 66 }))
     })
@@ -249,7 +249,9 @@ describe('U5 手动调线编辑态', () => {
     docUp(276, 90)
     const s = useLineageStore.getState()
     expect(s.undoStack.length).toBe(before + 1) // 恰一单元（一次拖段≠两步）
-    expect(s.edges[0]?.via).toEqual([{ x: 276, y: 90 }]) // 拖后值（非恒段中点）
+    // [B3b 裁决甲] 物化点=最近交点：物化 (278,66)（276 最近 v 道 278=150+8·16）
+    // +法向投影 dy=24 → (278,90) → 无条件吸附 (278,84)（84=锚 h 道）
+    expect(s.edges[0]?.via).toEqual([{ x: 278, y: 84 }])
     expect(s.saveStatus).toBe('dirty')
   })
 
@@ -261,7 +263,8 @@ describe('U5 手动调线编辑态', () => {
     docUp(276, 66) // 零 move 即松手——零位移也物化
     const s = useLineageStore.getState()
     expect(s.undoStack.length).toBe(before + 1)
-    expect(s.edges[0]?.via).toEqual([{ x: 276, y: 66 }]) // 段中点（(140+412)/2）
+    // [B3b] 段中点 (276,66) → 无条件最近交点 (278,66)（转换末态近似保形）
+    expect(s.edges[0]?.via).toEqual([{ x: 278, y: 66 }])
     expect(s.saveStatus).toBe('dirty')
   })
 
@@ -315,20 +318,30 @@ describe('U5 手动调线编辑态', () => {
   })
 
   it('[R2-C3] 手动 via 拖段沉入第三方卡=提交门回弹（零写零单元零 dirty+toast+selected 保持）', () => {
-    // A(12,30)/B(412,30) 同行，C(206,130) 行下第三方；via 两点水平段 (200,66)-(300,66)
-    // 拖沉 dy=100 → 中段 y=166 穿 C 膨胀带 (202..338)×(126..206) → 三档均碰障回弹
+    // A(12,30)/B(412,30) 同行，C(206,130) 行下第三方；〔B3 回炉①〕全链正交
+    // 构形=锯齿链 via [(198,66),(198,112),(302,112),(302,66)]（全格点：198/
+    // 302=行 1 隙 150+8k、66=A/B 锚、112=行隙 h 道；初始链净空——水平段 y=112
+    // <C 膨胀带 y[124,208]）。拖中段 (v1,v2) 下沉 dy=60 → 吸附 y=166（C 行锚
+    // h 道）→ 中段穿 C 膨胀带 → 三档均碰障回弹（格点+全链正交过、穿障拒）
     layout([
-      { x: 200, y: 66 },
-      { x: 300, y: 66 }
+      { x: 198, y: 66 },
+      { x: 198, y: 112 },
+      { x: 302, y: 112 },
+      { x: 302, y: 66 }
     ], true, [206, 130])
     click(hitOf('e1'))
     const before = useLineageStore.getState().undoStack.length
-    segDown(hitOf('e1'), 250, 66) // via 内点对段
-    docMove(250, 166) // 法向投影 dy=+100（水平段仅 dy）
-    docUp(250, 166)
+    segDown(hitOf('e1'), 250, 112) // via 内点对段 1（(198,112)→(302,112) 水平）
+    docMove(250, 172) // 法向投影 dy=+60（水平段仅 dy）
+    docUp(250, 172)
     const s = useLineageStore.getState()
     expect(s.undoStack.length).toBe(before) // 零撤销单元
-    expect(s.edges[0]?.via).toEqual([{ x: 200, y: 66 }, { x: 300, y: 66 }]) // 零写（回拖前定态）
+    expect(s.edges[0]?.via).toEqual([
+      { x: 198, y: 66 },
+      { x: 198, y: 112 },
+      { x: 302, y: 112 },
+      { x: 302, y: 66 }
+    ]) // 零写（回拖前定态）
     expect(s.saveStatus).toBe('clean') // 零 dirty
     expect(s.queue.length).toBe(0) // 零入队
     expect(toastStoreSpy).toHaveBeenCalledWith('落点无可行走线，已回弹', 'error')
@@ -336,11 +349,14 @@ describe('U5 手动调线编辑态', () => {
   })
 
   it('[R2-C3] 删除顶点 L 重连穿第三方卡=提交门回弹（via 原样零单元零 dirty）', () => {
-    // via=[(170,10),(380,10)] 上行绕行链净空；删 idx0 → L 重连产生
-    // (140,y)→(380,y) 横段穿 C(212,30) 膨胀带 → 回弹（菜单路径经提交门）
+    // via=[(166,12),(444,20)] 上行绕行链（[B3 回炉①] 格点+初始链净空+删后
+    // 全链正交：166=行 1 隙 150+16、12/20=顶带 h 道、444=B 顶锚 v 道——
+    // 中段斜线 (166,12)→(444,20) 在 C(212,30) 膨胀带 y[24,108] 上方掠过）；
+    // 删 idx0 → L 重连拐 (444,48)（48=A 锚 h 道）产生 (140,48)→(444,48)
+    // 横段穿 C 膨胀带 → 回弹（菜单路径经提交门）
     layout([
-      { x: 170, y: 10 },
-      { x: 380, y: 10 }
+      { x: 166, y: 12 },
+      { x: 444, y: 20 }
     ], true, [212, 30])
     click(hitOf('e1'))
     const handles = host!.querySelectorAll('[data-testid="edge-handle-vertex"]')
@@ -354,7 +370,7 @@ describe('U5 手动调线编辑态', () => {
     })
     const s = useLineageStore.getState()
     expect(s.undoStack.length).toBe(before) // 零撤销单元
-    expect(s.edges[0]?.via).toEqual([{ x: 170, y: 10 }, { x: 380, y: 10 }]) // via 原样
+    expect(s.edges[0]?.via).toEqual([{ x: 166, y: 12 }, { x: 444, y: 20 }]) // via 原样
     expect(s.saveStatus).toBe('clean')
     expect(s.queue.length).toBe(0)
     expect(toastStoreSpy).toHaveBeenCalledWith('落点无可行走线，已回弹', 'error')
