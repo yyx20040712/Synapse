@@ -140,5 +140,22 @@
 
 ## §6 验证终态与 CI 回执
 
-- 待填：verify 全量（quality+tickets+lint+typecheck+test+build）+本地
-  test:e2e 全量（161 例）+提交哈希+CI run 结论。
+- 提交=87c1e392（27 文件 +1026/−698）；origin/main=87c1e392（正常推送，
+  非强推——v234 修史链已由用户先行推送消解）。
+- 本地 verify 全量绿（quality+tickets+lint+typecheck+test+build 退出码 0
+  ；quality 449 行 CSS 上限内+零占位/乱码/双常量新增）；本地 test:e2e
+  全量 passed（last-run failedTests=[]；首轮六例 electron.launch 竞态
+  =审查进程污染 SingletonLock，清锁单跑 6/6 绿——flake 台账第 33 条记
+  污染事件）。
+- CI run 44681930043（87c1e392）：**failure——唯一红面=T1 断言迁移段**
+  （画线 r1→r1 背向边后 path=0，两轮 retry 稳定红；本地 1280/1024 两档
+  视口均绿）。**诊断三轮定案链**：轮 1（ddc033e5）T1 加布局稳定双读+
+  诊断分流（expect.poll 10s+现场 dump）→CI 44685089959 现场=toasts 空+
+  blocked 空+卡位正常（排除 bbox 陈旧/blocked 假设）；轮 2（777e4877）
+  down→move 加 300ms 输入竞态窗+诊断增强→CI 44687923917 现场**定案**=
+  `drawingCls 在场`（会话未终结）+`previewCount 0`+**`scrollTop 0→55`**
+  ——拖拽窗口期 .timeline 被滚动锚定调整（CI 视口 720 内容溢出场景；
+  本地 800 视口无溢出不可复现），mouseup 用拖拽前视口坐标随滚动偏移
+  55px 未命中目标锚；轮 3（d61fc18d）mouseup 前重取目标 bbox 重新对准
+  （自愈式），CI run 44690306163（d61fc18d）：**success**——B4 收口达成
+  （T1 修复链三提交 ddc033e5/777e4877/d61fc18d 均随批全量绿）。
