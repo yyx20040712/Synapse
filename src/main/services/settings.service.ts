@@ -7,9 +7,10 @@
  * - get：读 {userDataDir}/settings.json；不存在/损坏/不合 schema → 返回默认
  *   { contactEmail: DEFAULT_CONTACT_EMAIL, theme: 'light', uiScale: 'small' }
  *   （尽力写回文件）
- * - T3-P1 读侧平滑迁移：JSON.parse 成功后、safeParse 前，raw.theme==='system'
- *   改写为 'light'（'system' 枚举退役——A6 不跟随系统；存量 settings.json
- *   兼容，contactEmail/uiScale 零丢失，仅 theme 单字段替换）
+ * - T3-P1/B1 读侧平滑迁移：JSON.parse 成功后、safeParse 前，raw.theme===
+ *   'system'（A6 枚举退役）或 'dark'（B1 暗色主题删除）都改写为 'light'
+ *   （存量 settings.json 兼容，contactEmail/uiScale/aiBudgets 零丢失，仅
+ *   theme 单字段替换）
  * - set：原子写（单源=services/shared/atomic-write，F-DEDUP-01——先写 .tmp
  *   再 rename；req 已由 register 过 appSettingsSchema 校验）
  * - diagNetwork：对 shared/constants 的 ALLOWED_REMOTE_HOSTS 并发 deps.ping(host)，
@@ -21,7 +22,7 @@
  * - [T3-U1] export function readThemeSync(userDataDir): AppSettings['theme']
  *   ——启动同步读主题档（bootstrap 在 createMainWindow 前调，附 ?theme= 参
  *   供 renderer 首帧脚本消费——FOUC 首帧兜底）；与 readSettings 同链
- *   （system→light 迁移+schema 校验），任一环节失败回退默认 light（禁抛），
+ *   （退役档 dark/system→light 迁移+schema 校验），任一环节失败回退默认 light（禁抛），
  *   不写回文件（与 get 的尽力写回不同——启动只读）
  * - 方案 B（主控侦察裁定）：不挂 ServiceBundle（settings 无 repos 依赖，
  *   挂桶需改受锁桩工厂=超票面）——构造点=ipc 工厂 createSettingsIpc 内，
@@ -70,31 +71,32 @@ const DEFAULTS: AppSettings = {
 }
 
 /**
- * [T3-U1] 存量 'system' 主题档迁移（读侧单源——readSettings 与 readThemeSync
- * 共用，行为与 T3-P1 内联版逐位一致）：'system' 枚举退役（A6），单字段替换
- * 后再过 schema，其余字段（contactEmail/uiScale）原样透传零丢失。
+ * [T3-U1/B1] 存量退役主题档迁移（读侧单源——readSettings 与 readThemeSync
+ * 共用）：'dark'（B1 暗色主题删除）与 'system'（A6 枚举退役）都改写为
+ * 'light' 后再过 schema；单字段替换，其余字段（contactEmail/uiScale/
+ * aiBudgets）原样透传零丢失——若不先迁移，safeParse 整档失败会使读取回退
+ * 整份默认值，连带重置用户已存设置。
  */
-function migrateSystemTheme(parsedJson: unknown): void {
-  if (
-    typeof parsedJson === 'object' &&
-    parsedJson !== null &&
-    (parsedJson as { theme?: unknown }).theme === 'system'
-  ) {
-    ;(parsedJson as { theme?: unknown }).theme = 'light'
+function migrateLegacyTheme(parsedJson: unknown): void {
+  if (typeof parsedJson === 'object' && parsedJson !== null) {
+    const holder = parsedJson as { theme?: unknown }
+    if (holder.theme === 'system' || holder.theme === 'dark') {
+      holder.theme = 'light'
+    }
   }
 }
 
 /**
  * [T3-U1] 启动主题档同步读（FOUC 首帧兜底——bootstrap 在 createMainWindow
  * 前调，值经 loadURL/loadFile 附 ?theme= 参给 renderer 首帧脚本）。与
- * readSettings 同一解析链（system→light 迁移+schema 校验）；不存在/损坏/
- * 不合 schema 一律回退默认 light 且禁抛（启动路径），不写回文件。
+ * readSettings 同一解析链（退役档 dark/system→light 迁移+schema 校验）；
+ * 不存在/损坏/不合 schema 一律回退默认 light 且禁抛（启动路径），不写回文件。
  */
 export function readThemeSync(userDataDir: string): AppSettings['theme'] {
   try {
     const raw = readFileSync(join(userDataDir, SETTINGS_FILE_NAME), 'utf-8')
     const parsedJson: unknown = JSON.parse(raw)
-    migrateSystemTheme(parsedJson)
+    migrateLegacyTheme(parsedJson)
     const parsed = appSettingsSchema.safeParse(parsedJson)
     if (parsed.success) {
       return parsed.data.theme
@@ -116,7 +118,7 @@ export function createSettingsService(deps: {
     try {
       const raw = await readFile(settingsPath, 'utf-8')
       const parsedJson: unknown = JSON.parse(raw)
-      migrateSystemTheme(parsedJson)
+      migrateLegacyTheme(parsedJson)
       const parsed = appSettingsSchema.safeParse(parsedJson)
       if (parsed.success) {
         return parsed.data

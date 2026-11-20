@@ -335,7 +335,7 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
 })
 
 describe('T3-P2 状态条——26px 真文本（课题名/篇数/脉络计数/已选/主题名）', () => {
-  it('默认态：课题 默认课题 · 3 篇｜脉络 0 节点 / 0 连线｜已选 0｜主题：白天 · 精密仪表', async () => {
+  it('默认态：课题 默认课题 · 3 篇｜脉络 0 节点 / 0 连线｜已选 0｜主题：正常模式', async () => {
     mount(<App />)
     await flush()
     const bar = document.querySelector('footer.app-statusbar')
@@ -343,7 +343,7 @@ describe('T3-P2 状态条——26px 真文本（课题名/篇数/脉络计数/�
     expect(bar!.textContent).toContain('课题 默认课题 · 3 篇')
     expect(bar!.textContent).toContain('脉络 0 节点 / 0 连线')
     expect(bar!.textContent).toContain('已选 0')
-    expect(bar!.textContent).toContain('主题：白天 · 精密仪表')
+    expect(bar!.textContent).toContain('主题：正常模式')
     expect(bar!.querySelector('.sep'), '弹性分隔 .sep 在场').not.toBeNull()
   })
 
@@ -501,25 +501,25 @@ describe('R2-SET1 界面缩放——App 挂载 load+--ui-scale 变量（数据�
   })
 })
 
-// T3-P1 主题三族接线（always-active——三屋新测试不经 guardedDescribe）：
-// 沿 R2-SET1 先例 mock settings store 通道，锁 data-theme 单点=App effect
+// T3-P1 主题接线（always-active——B1 后两主题；沿 R2-SET1 先例 mock settings
+// store 通道，锁 data-theme 单点=App effect）
 describe('T3-P1 主题接线——documentElement.dataset.theme 随 settings.theme（App effect 单点）', () => {
   afterEach(() => {
     // jsdom 全局态防跨测污染（documentElement 跨 mount 存留——显式清）
     delete document.documentElement.dataset.theme
   })
 
-  it('settings.theme=dark → data-theme=dark', async () => {
+  it('settings.theme=light → data-theme=light', async () => {
     stubApi.settings.get.mockResolvedValue({
       ok: true,
-      data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' }
+      data: { contactEmail: 'a@b.c', theme: 'light', uiScale: 'small' }
     })
     mount(<App />)
     await flush()
     expect(
       document.documentElement.dataset.theme,
-      'dark 档应写 documentElement data-theme=dark（theme.css 覆写族消费钩）'
-    ).toBe('dark')
+      'light 档应写 documentElement data-theme=light（显式档与裸 :root 同观感）'
+    ).toBe('light')
   })
 
   it('settings.theme=sepia → data-theme=sepia', async () => {
@@ -547,14 +547,14 @@ describe('T3-P1 主题接线——documentElement.dataset.theme 随 settings.the
     ).toBe('light')
   })
 
-  it('save({theme}) 落地后 attr 跟随（dark→sepia 变化沿）', async () => {
+  it('save({theme}) 落地后 attr 跟随（light→sepia 变化沿）', async () => {
     stubApi.settings.get.mockResolvedValue({
       ok: true,
-      data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' }
+      data: { contactEmail: 'a@b.c', theme: 'light', uiScale: 'small' }
     })
     mount(<App />)
     await flush()
-    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(document.documentElement.dataset.theme).toBe('light')
     stubApi.settings.set.mockResolvedValueOnce({
       ok: true,
       data: { contactEmail: 'a@b.c', theme: 'sepia', uiScale: 'small' }

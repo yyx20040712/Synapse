@@ -37,12 +37,12 @@ export const MENU_ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-
 /**
  * [T3-P2] 主题名标签单一真相源（自 SettingsPage 提取——状态条「主题：{名}」
  * 与设置页下拉同源；键类型=schemas AppSettings['theme'] 派生[门一 d1-N7 回炉：
- * 手写三值字面量非结构性单源——schema 枚举变更时 tsc 兜底切断]）
+ * 手写字面量非结构性单源——schema 枚举变更时 tsc 兜底切断]）。[B1 暗色退役]
+ * 两主题；文案=v2 设计稿设置卡片标题原文（正常模式/护眼模式）。
  */
 export const THEME_LABEL: Record<AppSettings['theme'], string> = {
-  light: '白天 · 精密仪表',
-  dark: '夜间 · 深灰',
-  sepia: '护眼 · 牛皮纸'
+  light: '正常模式',
+  sepia: '护眼模式'
 }
 
 /**

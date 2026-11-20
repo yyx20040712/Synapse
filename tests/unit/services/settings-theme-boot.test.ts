@@ -1,11 +1,13 @@
 /**
  * [T3-U1] settings.service readThemeSync——FOUC 启动同步读锁。
  *
- * 与 readSettings 同一解析链（system→light 迁移+schema 校验）；不存在/损坏/
+ * 与 readSettings 同一解析链（退役档迁移+schema 校验）；不存在/损坏/
  * 不合 schema 一律回退默认 light 且禁抛（启动路径）。临时目录写真
  * settings.json（文件名单源=shared/constants SETTINGS_FILE_NAME）。
  * 既有 get/set/diagNetwork 行为由受锁 tests/unit/ipc/settings.test.ts 锁定
  * （零改）；本件只锁新增同步读面。
+ * [B1 暗色退役] 存量 'dark' 与 'system' 同链迁移为 light（schema 枚举收窄
+ * light/sepia 前置防线——不迁移则 safeParse 整档失败）。
  */
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -25,9 +27,14 @@ async function writeSettings(content: string): Promise<string> {
 }
 
 describe('services/settings —— T3-U1 readThemeSync 启动主题档同步读', () => {
-  it('theme=dark → dark（合法档透传）', async () => {
+  it('theme=sepia → sepia（合法档透传）', async () => {
+    const dir = await writeSettings(JSON.stringify({ contactEmail: 'a@b.cc', theme: 'sepia', uiScale: 'small' }))
+    expect(readThemeSync(dir)).toBe('sepia')
+  })
+
+  it("存量 'dark' → 迁移 light（B1 暗色退役——读侧单源，与 get 同链同判）", async () => {
     const dir = await writeSettings(JSON.stringify({ contactEmail: 'a@b.cc', theme: 'dark', uiScale: 'small' }))
-    expect(readThemeSync(dir)).toBe('dark')
+    expect(readThemeSync(dir), "dark 枚举退役（B1）——读侧平滑迁 light，不整档回退默认").toBe('light')
   })
 
   it("存量 'system' → 迁移 light（读侧单源——与 get 同链同判）", async () => {

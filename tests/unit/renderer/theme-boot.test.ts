@@ -2,7 +2,8 @@
 /**
  * [T3-U1] FOUC 首帧注入脚本锁（src/renderer/public/theme-boot.js——同步经典
  * 脚本，CSP script-src self 外链面）：读 location.search 的 theme 参，合法
- * 三值才写 documentElement.dataset.theme；非法/缺参零写（留 App effect 单点
+ * 两值（light/sepia——B1 暗色退役后 dark 为非法注入值）才写
+ * documentElement.dataset.theme；非法/缺参零写（留 App effect 单点
  * 真源兜底）。执行方式=vi.resetModules()+非字面量说明符动态 import（每用例
  * 重置模块注册表重跑顶层 IIFE；非字面量=TS 不检 JS 模块声明面[TS7016 规避，
  * 运行时 vite 照常解析]；宪法禁 eval/new Function，不走字符串执行面；query
@@ -28,9 +29,9 @@ afterEach(() => {
 })
 
 describe('renderer/public/theme-boot —— T3-U1 FOUC 首帧注入', () => {
-  it('?theme=dark → dataset.theme=dark', async () => {
+  it('?theme=dark → 零写（B1 暗色退役——dark 非法注入值，不写 attr）', async () => {
     await runBoot('?theme=dark')
-    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(document.documentElement.dataset.theme, 'dark 已退役——零写留 App effect 兜底').toBeUndefined()
   })
 
   it('?theme=sepia → dataset.theme=sepia', async () => {
@@ -38,9 +39,9 @@ describe('renderer/public/theme-boot —— T3-U1 FOUC 首帧注入', () => {
     expect(document.documentElement.dataset.theme).toBe('sepia')
   })
 
-  it('[回炉 R3] ?theme=light → dataset.theme=light（三值正例闭合——INV-71「三值」措辞）', async () => {
+  it('[回炉 R3] ?theme=light → dataset.theme=light（两值正例闭合——INV-71 合法值面）', async () => {
     await runBoot('?theme=light')
-    expect(document.documentElement.dataset.theme, 'light 注入=显式写 attr（非仅 dark/sepia）').toBe('light')
+    expect(document.documentElement.dataset.theme, 'light 注入=显式写 attr（非仅 sepia）').toBe('light')
   })
 
   it('非法值（neon）→ 零写（不写 attr——App effect 兜底，禁伪造档）', async () => {

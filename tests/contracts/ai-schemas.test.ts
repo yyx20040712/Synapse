@@ -201,7 +201,7 @@ describe('contracts/ai-schemas —— AI 域 13 通道+实体/常量契约矩阵
     expect(parsed.aiBudgets.paper).not.toBe(second.aiBudgets.paper)
     const full = {
       contactEmail: 'u@e.com',
-      theme: 'dark' as const,
+      theme: 'sepia' as const,
       uiScale: 'large' as const,
       aiBudgets: M.AI_BUDGET_DEFAULTS
     }

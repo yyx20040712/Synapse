@@ -121,7 +121,7 @@
 .timeline.editing .tl-card:hover .card-anchors { display: block; }
 /* 12 锚 dot（4 side×3 slot ¼/½/¾）：直径单源 var(--anchor-dot-r)（基值
    4px=直径 8 画布 px 沿承——token 定义单源 theme.css 脉络小卡族表）；fill
-   纯白票面语义经 --accent-ink token（三族恒白）+1.5 画布 px 主色描边
+   票面浅色语义经 --accent-ink token 随主题取值+1.5 画布 px 主色描边
    （色值字面量禁令——token 承载）；dot 默认隐藏（两通道规则显启——armed
    全 12/hover 仅 ½） */
 .card-anchor-dot {

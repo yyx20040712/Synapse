@@ -16,10 +16,9 @@
    与 sepia 覆写块逐值誊录；计划=docs/design/2026-11-19_frontend-rework-
    plan.md 第一期）——防漂移锁 = tests/unit/renderer/theme.test.ts。
    v2 无对应 token（--warn/--ok/--sub2/--border-gold 细族/--gold-bright/
-   阴影 tint 族/annotation 五色）保持原值；dark 族块第四期整体删除，
-   中间态只做引用型补值不调色。
-   旧裁决链（--gold 亮面占用/annotation 五色 e2e 锁定）沿承；:root=白天族
-   裸值，:root[data-theme='dark'|'sepia']=覆写族块（App.tsx effect 单点写
+   阴影 tint 族/annotation 五色）保持原值。dark 族块已随 B1 暗色主题删除。
+   旧裁决链（--gold 亮面占用/annotation 五色 e2e 锁定）沿承；:root=正常
+   模式裸值，:root[data-theme='sepia']=护眼覆写族块（App.tsx effect 单点写
    documentElement.dataset.theme）；旧词表（--text/--border/--surface-cool
    等）经 var() 桥接随族重解析。（注：本注释内禁用星号后接斜杠的写法——
    会把 CSS 注释提前终结） */
@@ -46,8 +45,8 @@
   --sidebar: #ecefeb;
   --gold: #a67c3f;
   /* [F-DBCAMP-01 DB-3 U2] QR 码功能色（扫描对比度要求=恒白底黑模块，跨主题
-     不变——非主题装饰色；token 化=INV-11 颜色消费单源）。--qr-bg 纯白三族
-     恒定，与 --panel 白天族值恰白=语义隔离合法共存（T3-P2 d1-W6 豁免判例
+     不变——非主题装饰色；token 化=INV-11 颜色消费单源）。--qr-bg 纯白两
+     主题恒定，与 --panel 亮面值恰白=语义隔离合法共存（T3-P2 d1-W6 豁免判例
      --accent-ink 同型——check-quality SAME_VALUE_EXEMPT_PROPS 注释互指） */
   --qr-bg: #ffffff;
   --qr-ink: #000000;
@@ -56,7 +55,7 @@
   --danger: var(--signal);
   --ok: #2e8b57;
   /* [F-LINT-04-T4PRE] 警示状态色（TabBar dirty dot）；T3-P1 桥接 --warn
-     随族（原橙色字面值退役——三族警示色族源化） */
+     随族（原橙色字面值退役——警示色族源化） */
   --warning: var(--warn);
   --shadow-1: 0 1px 2px rgba(35, 38, 45, 0.06);
   --shadow-2: 0 4px 14px rgba(35, 38, 45, 0.09);
@@ -91,14 +90,13 @@
   --fs-signature: 18px;
   /* [T3-P3] 文献库密度列表/规格表抽屉（值源=mockups/2026-09-26_v2_theme-
      light.html L80-139 逐值；INV-61 档位增补=--fs-metric/--fs-nano；其余三件
-     =三族恒定值[选中外辉/CTA 投影/accent 底字色白]——dark/sepia 结构 CSS
-     同值实证，族块不覆写） */
+     =主题恒定值[选中外辉/CTA 投影/accent 底字色白]——sepia 族块不覆写） */
   --fs-metric: 16px;   /* 指标读数（规格表抽屉四格值——mockup L123 .dr-metrics .v） */
   --fs-nano: 9px;      /* 极微（后置章虚线徽标——值源=mockup L311 .postpone，脉络
      检查面板后置章语汇同源，文献库抽屉随 T3-P3 先引） */
   --shadow-sel-glow: 0 2px 8px rgba(47, 111, 100, 0.14); /* 选中行外辉（基色随 accent） */
   --shadow-cta: 0 2px 6px rgba(47, 111, 100, 0.3);       /* 抽屉主钮投影（基色随 accent） */
-  --accent-ink: #ffffff; /* accent 底上的字色（亮/dark 族恒定白；sepia 族 v2 覆写
+  --accent-ink: #ffffff; /* accent 底上的字色（light 族恒定白；sepia 族 v2 覆写
      暖白（值见族块）；与 --close-red-ink 亮族同值=语义隔离合法共存，
      check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指） */
   /* [T3-P6] 脉络时间线小卡族（值源=mockups/2026-09-26_v2_theme-light.html
@@ -114,10 +112,10 @@
   --anchor-dot-r: 4px; /* 画线锚 dot 半径基值（直径 8 画布 px——theme-lineage-tools
      .card-anchor-dot var() 消费/12 锚定位同源；armed 通道局部覆写 2.5px=直径 5
      〔F-ANCHFIX-01 批 1c 裁决 C——通道覆写驻彼件〕C-4c 语义锚：基值定义单源本表） */
-  /* [T3-P7B] 脉络工具条/弹层族（值源=mockups/2026-09-26_v2_theme-{light,dark,sepia}
-     .html 三稿同值实证 L206-219/L302——主题恒定硬编码注记；shadow 命名独立沿
+  /* [T3-P7B] 脉络工具条/弹层族（值源=mockups/2026-09-26_v2_theme-{light,sepia}
+     .html 两稿同值实证——主题恒定硬编码注记；shadow 命名独立沿
      --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；--signal-a08=mockup 直值
-     （三稿同值）不随族 --signal 漂移；零新 fs token=最近值映射见
+     （两稿同值）不随族 --signal 漂移；零新 fs token=最近值映射见
      theme-lineage.css [T3-P7B] 段注） */
   --shadow-lg-btn: 0 2px 6px rgba(47, 111, 100, 0.28); /* .lg-btn 主钮投影（基色随 accent） */
   --shadow-lg-edit: 0 2px 6px rgba(166, 75, 67, 0.3); /* .lg-btn.editing 编辑态投影（基色随 signal） */
@@ -126,8 +124,8 @@
   --pop-danger-a50: rgba(166, 75, 67, 0.5); /* 同钮描边（基色随 signal） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;
   --ink: #242a27;
-  /* ── 三族族源 token（白天族=裸 :root 值；dark/sepia 覆写块见文件末；
-     --mono/--serif 三族同值只此一处定义，族块不重复）── */
+  /* ── 两主题族源 token（正常模式=裸 :root 值；sepia 覆写块见文件末；
+     --mono/--serif 两主题同值只此一处定义，族块不重复）── */
   --panel-2: #f7f8f6;
   --line: #d9dfda;
   --line-soft: #e9ede9;
@@ -157,7 +155,7 @@
   --annotation-blue: #93c5fd;
   --annotation-red: #fca5a5;
   --annotation-purple: #d8b4fe;
-  /* 标注/搜索色块合成：亮面与护眼族压暗白底并保留黑墨；夜间族在 dark 块覆写 */
+  /* 标注/搜索色块合成：两主题共 multiply（压暗白底并保留黑墨） */
   --annotation-blend: multiply;
   /* ── F-CSS-03 颜色 token（2026-09-09 用户双裁决零视觉差迁移：值原样入库,
      同值合并共享单 token;白→--panel/暖灰描边→--border 直接消费既有 token
@@ -196,8 +194,8 @@
   --panel-a90: rgba(255, 255, 255, 0.9);
   --panel-a92: rgba(255, 255, 255, 0.92);
   /* caption 三键（Windows 系统红）。--close-red-ink=红底上的字色（纯白，
-     三族不变——Windows 系统观感语汇恒定，门一 d1-W6 回炉：原 var(--panel)
-     载体在暗/护眼族翻成深色=红底深字对比失守；与 --panel 白天族同值=语义
+     跨主题不变——Windows 系统观感语汇恒定，门一 d1-W6 回炉：原 var(--panel)
+     载体随主题翻深色=红底深字对比失守；与 --panel 亮面值同值=语义
      隔离合法共存——check-quality SAME_VALUE_EXEMPT_PROPS 豁免单源互指）*/
   --close-red: #e81123;
   --close-red-press: #f1707a;
@@ -219,38 +217,11 @@
   /* 阅读器（划选自绘层灰+页盒/弹层影——影复合值沿 --shadow-* 词汇）*/
   --reader-selection-paint: rgba(0, 0, 0, 0.2);
   /* [T3-P4] 页影换 mockup .page 双层（2026-09-26_v2_theme-light.html L191——
-     三稿同值主题恒定，单 :root 不分族；F-06 单层影退役=值演进注链） */
+     两稿同值主题恒定，单 :root 不分族；F-06 单层影退役=值演进注链；
+     [B1] 夜间反位 --canvas-filter token 随暗色主题删除——两主题纸页均不反色） */
   --shadow-page: 0 1px 4px rgba(20, 26, 40, 0.12), 0 6px 22px rgba(20, 26, 40, 0.08);
-  /* [T3-P4 §7 案 A 裁定] 夜间纸页反位=CSS filter 单点 token：root=none（白天
-     不反色）；dark=invert(1) hue-rotate(180deg)；sepia=none。消费面=
-     theme-reader.css canvas[data-pdf-canvas]+缩略图 canvas 同规则（禁散布
-     第二消费点）；透明底渲染配方零改——黑墨带经 invert 成白字+透明底透出
-     --paper 暗纸；已知权衡=PDF 内嵌图片负片化（暗色阅读器通例，票面备案） */
-  --canvas-filter: none;
   --shadow-pop-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-pop-md: 0 2px 12px rgba(0, 0, 0, 0.18);
-}
-
-/* ── T3-P1 夜间·深灰族（纸页反色 A7）——data-theme=dark 覆写（第四期整体
-   删除；v2 第一期新 token 在此只做引用型补值防浅色漏底，不调色）── */
-:root[data-theme='dark'] {
-  --bg: #14161a; --panel: #1d2026; --panel-2: #181b20; --line: #2c313a; --line-soft: #23272e;
-  --ink: #e6e9ef; --dim: #a6adba; --faint: #6f7684;
-  --accent: #7b93f5; --accent-soft: rgba(123, 147, 245, 0.15); --signal: #ff7a45; --ok: #4ade80; --warn: #e8a33d;
-  --sub2: #2dd4bf; --mini-card: #171a21; --mini-card-line: #2e343f;
-  --sidebar: var(--panel-2); --accent-hover: var(--accent);
-  --month-dash: rgba(123, 147, 245, 0.5);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4); --shadow-drag: 0 14px 36px rgba(0, 0, 0, 0.6);
-  --paper: #242830; --paper-ink: #d8dbe2;
-  /* [T3-P4 §7 案 A] 夜间反位：canvas filter 单点（黑墨带→白字） */
-  --canvas-filter: invert(1) hue-rotate(180deg);
-  /* 反色 canvas 上 screen 保留白字并提亮近黑底 */
-  --annotation-blend: screen;
-  /* screen 下沿用亮面浅色板会使白字对比不足；深色同色相色板供反色白字阅读 */
-  --annotation-yellow: #6f5c00; --annotation-green: #17613a; --annotation-blue: #2b4c78;
-  --annotation-red: #783c3c; --annotation-purple: #5b3b78;
-  /* 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正 */
-  --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }
 
 /* ── 护眼·牛皮纸族（档案语汇）——data-theme=sepia 覆写（v2 稿 L50-73 逐值）── */
@@ -264,8 +235,6 @@
   --month-dash: rgba(89, 107, 78, 0.55);
   --shadow-card: 0 1px 3px rgba(90, 75, 40, 0.16); --shadow-drag: 0 14px 36px rgba(90, 75, 40, 0.32);
   --paper: #fdf8ec; --paper-ink: #403a2e;
-  /* [T3-P4] 护眼族不反位（奶油纸正读） */
-  --canvas-filter: none;
   --annotation-blend: multiply;
   --panel-a35: transparent; --panel-a88: var(--panel); --panel-a90: var(--panel); --panel-a92: var(--panel);
 }

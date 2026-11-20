@@ -3,8 +3,8 @@
  *
  * ── 行为层 ──
  * - 按当前页过滤标注：rects 归一化坐标 → 绝对定位色块（颜色由 kind+color 决定；
- *   整层容器 mix-blend-mode:var(--annotation-blend)——light/sepia 用 multiply、
- *   dark 用 screen；色块位于 canvas 上，PDF 自绘不透明背景不再遮死标注；
+ *   整层容器 mix-blend-mode:var(--annotation-blend)——两主题均 multiply；
+ *   色块位于 canvas 上，PDF 自绘不透明背景不再遮死标注；
  *   下划线为收边后底缘 2px 实条，每行一条——rectStyle 已迁 annotation-style
  *   （F-11 顶/底收边修标注下偏；F-A4 b② 行盒自适应 band——重锚字形带在场
  *   时顶贴字形顶缘底贴底缘）；DOM 回退层行级合并=annotation-anchor.mergeLineRects

@@ -7,7 +7,7 @@
  * 2. canvas（页墨带与 PDF 自绘内容——透明底渲染只移除 pdf.js 默认白底，
  *    不保证文档自身背景透明；pointer-events:none 保持事件穿透）；
  * 3. 标注/搜索色块层（colorBlocks——位于 canvas 之上，经
- *    --annotation-blend 按主题合成：light/sepia=multiply，dark=screen）；
+ *    --annotation-blend 合成——两主题均 multiply）；
  * 4. 自绘选区层（selectionPaint——选区交互视觉保持最上）。
  *
  * 比较域：PageBox 页内容容器（h-fit）isolation:isolate——四层比较封闭在

@@ -1,19 +1,17 @@
 // @vitest-environment jsdom
 /**
- * [T3-P4] 阅读器纸面三态+夜间反色+弹层归一 —— 消费锁（always-active 裸
+ * [T3-P4] 阅读器纸面两主题+反色零残留+弹层归一 —— 消费锁（always-active 裸
  * describe，不经 guardedDescribe——宪法 K3）。
  *
- * 锁三面（值源=docs/design/2026-09-26_theme-trio-final-design.md §2 阅读器段
- * +§7 决策点①案 A 主控裁定；视觉基准=mockups/2026-09-26_v2_theme-light.html
- * L141-199）：
- * - 纸面三态（A7）：PageBox 两处内联 background 消费 var(--paper)（:页盒底
- *   +:canvas 透明底承底层——P1 三族 token 首消费；light=var(--panel) 桥接
- *   白不变）；值面（三族终值）由 theme.test.ts 三族 token 正锚独立锁定。
- * - 夜间反色=案 A：canvas filter 单点规则住 theme-reader.css——
- *   canvas[data-pdf-canvas] 与缩略图 canvas[data-thumb-canvas] 同规则消费
- *   var(--canvas-filter)（dark=invert(1) hue-rotate(180deg) 黑墨带→白字，
- *   透明底透出 --paper 暗纸；缩略图=pdfjs 独立 canvas 渲染——源同规则挂载，
- *   非 drawImage 复制故无二次处理面）。
+ * 锁三面（值源=docs/design/2026-09-26_theme-trio-final-design.md §2 阅读器段；
+ * 视觉基准=mockups/2026-09-26_v2_theme-light.html L141-199；[B1] 暗色主题
+ * 与夜间反位机制已删除——反色面改锁零残留负锚）：
+ * - 纸面（A7）：PageBox 两处内联 background 消费 var(--paper)（页盒底
+ *   +canvas 透明底承底层——token 首消费）；值面（两主题终值 light=#fffefb/
+ *   sepia=#fdf8ec）由 theme.test.ts token 正锚独立锁定。
+ * - 反色零残留（B1）：两主题纸页均不反色——theme.css 零 --canvas-filter
+ *   token、theme-reader.css 零 canvas filter 规则（回填即红；旧
+ *   data-thumb-canvas 选择器锚随规则删除）。
  * - 批注弹层归一：AnnotationEditor textarea 底 var(--bg)→var(--panel-2)
  *   （mockup .anno-pop textarea=panel 底系——弹层皮肤随族）。
  */
@@ -31,6 +29,8 @@ import type { AnnotationRect } from '../../../src/shared/models/annotation'
 
 /** theme-reader.css 文本面（library-cards CSS 读文件先例——规则文本锁） */
 const cssReader = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-reader.css'), 'utf8')
+/** theme.css 文本面（token 零残留负锚——值面正锚住 theme.test.ts） */
+const cssTokens = readFileSync(join(process.cwd(), 'src/renderer/shared/theme.css'), 'utf8')
 
 /** 假 pdf 页（PdfPageCanvas 渲染链最小桩——pdf-page-canvas.test 同配方） */
 function fakeDoc(): PDFDocumentProxy {
@@ -78,8 +78,8 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('T3-P4 纸面三态 —— PageBox 两处 var(--paper) 消费锁', () => {
-  it('页盒底+承底层两处 style.background=var(--paper)（--paper 三族 token 首消费）', () => {
+describe('T3-P4 纸面 —— PageBox 两处 var(--paper) 消费锁', () => {
+  it('页盒底+承底层两处 style.background=var(--paper)（--paper token 首消费）', () => {
     act(() => {
       root!.render(
         <PageBox no={1} size={{ width: 612, height: 792 }} zoom={1} boxWidth={612} rendered={true}
@@ -92,7 +92,7 @@ describe('T3-P4 纸面三态 —— PageBox 两处 var(--paper) 消费锁', () =
     expect(box!.style.background).toBe('var(--paper)')
     const pageRoot = host!.querySelector<HTMLElement>('[data-page-root="1"]')
     const sheet = pageRoot!.firstElementChild as HTMLElement
-    // canvas 透明底承底层=--paper（夜间暗纸从这层透出——案 A 的「暗纸」半边）
+    // canvas 透明底承底层=--paper（透明底渲染的承纸面）
     expect(sheet.style.background).toBe('var(--paper)')
   })
 
@@ -109,24 +109,24 @@ describe('T3-P4 纸面三态 —— PageBox 两处 var(--paper) 消费锁', () =
   })
 })
 
-describe('T3-P4 夜间反色案 A —— canvas filter 单点规则（theme-reader.css）', () => {
-  it('canvas[data-pdf-canvas] 与缩略图 canvas 同规则消费 var(--canvas-filter)', () => {
-    // 规则文本锁：两选择器同体单 filter 声明（单点——散布第二处即回填面）
-    expect(cssReader, '主 canvas+缩略图 canvas 双选择器应同体挂 filter 规则').toMatch(
-      /canvas\[data-pdf-canvas\]\s*,\s*canvas\[data-thumb-canvas\]\s*\{[^}]*filter:\s*var\(--canvas-filter\);/
+describe('B1 暗色退役 —— 纸页反色机制零残留（两主题均不反色）', () => {
+  it('theme-reader.css 零 canvas filter 规则+theme.css 零反色 token 定义（回填即红）', () => {
+    // 旧案 A 单点规则（canvas[data-pdf-canvas],canvas[data-thumb-canvas]
+    // 两选择器同体 filter 声明）已随暗色主题删除——两主题纸页均正读。
+    // 锚消费/定义形态——注释提及退役 token 名不误咬，规则回填才红
+    expect(cssReader, 'canvas filter 规则不得回填（filter: 声明整体零残留）').not.toMatch(
+      /canvas\[[^\]]*\]\s*\{[^}]*filter:/
     )
-    // 门一回炉（k2-N5）：消费点唯一性计数锁——另写一条 canvas filter 规则即红
-    // （上面同体锁不拦「同体规则在+别处再散布一条」的回填形态）
-    const filterSites = cssReader.match(/filter:\s*var\(--canvas-filter\)/g) ?? []
-    expect(filterSites.length, 'canvas filter 消费点应唯一（INV-74 单点）').toBe(1)
+    expect(cssReader, '反色 token var() 消费不得回填').not.toMatch(/var\(--canvas-filter\)/)
+    expect(cssTokens, 'theme.css 反色 token 定义不得回填').not.toMatch(/--canvas-filter\s*:/)
   })
 
-  it('缩略图 canvas 挂 data-thumb-canvas（OutlineThumb=pdfjs 独立渲染——源直挂规则）', () => {
+  it('缩略图 canvas 零 data-thumb-canvas 锚（选择器锚随反位规则删除——无消费面不得回填）', () => {
     act(() => {
       root!.render(<Thumbnail doc={fakeDoc()} pageIndex={0} active={false} onNavigate={() => undefined} />)
     })
     const canvas = host!.querySelector<HTMLCanvasElement>('canvas[data-thumb-canvas]')
-    expect(canvas, '缩略图 canvas 应挂 data-thumb-canvas 选择器锚').not.toBeNull()
+    expect(canvas, 'data-thumb-canvas 已随反位规则退役（锚无消费面）').toBeNull()
   })
 
   it('搜索槽语汇（门一回炉补锚）：panel 底+line 描边+7px 圆角+计数 accent mono tabular-nums', () => {

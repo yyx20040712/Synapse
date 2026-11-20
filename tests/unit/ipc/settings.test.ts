@@ -41,7 +41,7 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
     const ipc = createSettingsIpc(deps)
     const saved = await ipc.set({
       contactEmail: 'me@example.com',
-      theme: 'dark',
+      theme: 'sepia',
       uiScale: 'small',
       aiBudgets: AI_BUDGETS_DEFAULT
     })
@@ -50,7 +50,7 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
     // [F-DBCAMP-01 DB-2 U1] reread 期望含 aiBudgets 默认档字面（值 pin 见文件顶常量）
     expect(reread).toEqual({
       contactEmail: 'me@example.com',
-      theme: 'dark',
+      theme: 'sepia',
       uiScale: 'small',
       aiBudgets: AI_BUDGETS_DEFAULT
     })
@@ -76,23 +76,23 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
     const { writeFile } = await import('node:fs/promises')
     await writeFile(
       join(deps.userDataDir, 'settings.json'),
-      JSON.stringify({ contactEmail: 'me@example.com', theme: 'dark' }),
+      JSON.stringify({ contactEmail: 'me@example.com', theme: 'sepia' }),
       'utf-8'
     )
     const ipc = createSettingsIpc(deps)
     const s = await ipc.get({})
     expect(s.uiScale).toBe('small')
-    expect(s.theme).toBe('dark')
+    expect(s.theme).toBe('sepia')
     expect(s.contactEmail).toBe('me@example.com')
   })
 
   it('R2-SET1 set 带 uiScale=large：持久化回读一致', async () => {
     const deps = await freshDeps()
     const ipc = createSettingsIpc(deps)
-    await ipc.set({ contactEmail: 'me@example.com', theme: 'dark', uiScale: 'large', aiBudgets: AI_BUDGETS_DEFAULT })
+    await ipc.set({ contactEmail: 'me@example.com', theme: 'sepia', uiScale: 'large', aiBudgets: AI_BUDGETS_DEFAULT })
     const reread = await ipc.get({})
     expect(reread.uiScale).toBe('large')
-    expect(reread.theme).toBe('dark')
+    expect(reread.theme).toBe('sepia')
   })
 
   it('T3-P1 旧 settings.json theme=system：get 读侧平滑迁移为 light 且既有字段保全（迁移锁）', async () => {
@@ -108,6 +108,32 @@ guardedDescribe('SR-IPC-08', 'ipc/settings —— JSON 读写与网络诊断', (
     expect(s.theme, "存量 theme:'system' 应迁移为 'light'（枚举退役，A6 不跟随系统）").toBe('light')
     expect(s.contactEmail, '迁移不得丢既有字段').toBe('me@example.com')
     expect(s.uiScale, '迁移不得丢既有字段').toBe('large')
+  })
+
+  it('B1 暗色退役：存量 theme=dark/system → get 迁移为 light 且 contactEmail/uiScale/aiBudgets 全量保全（迁移锁）', async () => {
+    // 迁移必须发生在 safeParse 前：若只收窄 schema 不迁移，整档校验失败会使
+    // get 回退整份默认值，连带重置用户已存的邮箱/缩放/AI 预算（计划 §6.3 风险）
+    const custom = {
+      paper: { cap: 7000, l1: 700, l2Slices: 11, l2Cap: 2100, tail: 900 },
+      lineage: { cap: 5000, l1: 1700, l2Slices: 2, l2Cap: 500, tail: 1100 },
+      global: { cap: 3000, l1: 500, l2Slices: 7, l2Cap: 1100, tail: 900 },
+      agent: { perShot: 700, perRound: 1900 }
+    }
+    for (const legacy of ['dark', 'system'] as const) {
+      const deps = await freshDeps()
+      const { writeFile } = await import('node:fs/promises')
+      await writeFile(
+        join(deps.userDataDir, 'settings.json'),
+        JSON.stringify({ contactEmail: 'keep@example.com', theme: legacy, uiScale: 'medium', aiBudgets: custom }),
+        'utf-8'
+      )
+      const ipc = createSettingsIpc(deps)
+      const s = await ipc.get({})
+      expect(s.theme, `存量 theme:'${legacy}' 应迁移为 'light'（B1/A6 枚举退役）`).toBe('light')
+      expect(s.contactEmail, '迁移不得丢既有字段（否则回退默认邮箱）').toBe('keep@example.com')
+      expect(s.uiScale, '迁移不得丢既有字段（否则回退默认档位）').toBe('medium')
+      expect(s.aiBudgets, '迁移不得丢既有字段（否则回退默认 AI 预算）').toEqual(custom)
+    }
   })
 
   it('diagNetwork：对全部白名单 host 并发 ping', async () => {

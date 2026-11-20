@@ -36,7 +36,7 @@ const CUSTOM_BUDGETS: AiBudgets = {
 }
 
 function settingsFixture(budgets: AiBudgets = CUSTOM_BUDGETS): AppSettings {
-  return { contactEmail: 'set@x.y', theme: 'dark', uiScale: 'medium', aiBudgets: budgets }
+  return { contactEmail: 'set@x.y', theme: 'sepia', uiScale: 'medium', aiBudgets: budgets }
 }
 
 let root: Root | null = null
@@ -208,7 +208,7 @@ describe('F-DBCAMP-01 U6 BudgetSection —— 17 输入+校验三则+态机+全�
     expect(stubApi.settings.set).toHaveBeenCalledTimes(1)
     const req = stubApi.settings.set.mock.calls[0]![0] as Record<string, unknown>
     expect(req.contactEmail, '全量携带：contactEmail').toBe('set@x.y')
-    expect(req.theme, '全量携带：theme').toBe('dark')
+    expect(req.theme, '全量携带：theme').toBe('sepia')
     expect(req.uiScale, '全量携带：uiScale').toBe('medium')
     expect((req.aiBudgets as AiBudgets).paper.cap, '全量携带：aiBudgets').toBe(9999)
     expect(host?.textContent ?? '', 'saved 文案').toContain('已保存')

@@ -10,7 +10,8 @@
  * v2 无对应 token 的处理（2026-11-19 第一期裁决）：--warn/--ok/--sub2/
  * --border-gold 细族/--gold-bright/阴影 tint 族/annotation 五色保持原值
  * （annotation 五色另有 e2e reader-text.spec 三处精确色断言 rgb(253,224,71)
- * 锁定——预知必红则不制造红）。dark 族块第四期整体删除，本批不动。
+ * 锁定——预知必红则不制造红）。dark 族块已随 B1 暗色主题删除（零残留负锚
+ * 见 T3-P1 describe）。
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -88,7 +89,7 @@ const TOKENS: Array<[string, string]> = [
   ['--radius-l', '16px'],
   ['--font-display', "Georgia, 'Times New Roman', 'Songti SC', SimSun, serif"],
   ['--ink', '#242a27'],
-  // ── 三族族源 token（白天族=裸 :root 值；dark/sepia 族块在下方
+  // ── 两主题族源 token（正常模式=裸 :root 值；sepia 族块在下方
   //    describe 块内断言——防值串位到别的块）──
   ['--panel-2', '#f7f8f6'],
   ['--line', '#d9dfda'],
@@ -138,7 +139,7 @@ const TOKENS: Array<[string, string]> = [
   ['--fs-signature', '18px'],
   // ── [T3-P3] 文献库密度列表/规格表抽屉档位与恒定 token（mockup
   //    2026-09-26_v2_theme-light.html L80-139 逐值——INV-61 档位增补登记；
-  //    --shadow-sel-glow/--shadow-cta/--accent-ink=三族恒定值）──
+  //    --shadow-sel-glow/--shadow-cta/--accent-ink=主题恒定值）──
   ['--fs-metric', '16px'],
   ['--fs-nano', '9px'],
   ['--shadow-sel-glow', '0 2px 8px rgba(47, 111, 100, 0.14)'],
@@ -183,7 +184,7 @@ const TOKENS: Array<[string, string]> = [
   ['--panel-a92', 'rgba(255, 255, 255, 0.92)'],
   ['--close-red', '#e81123'],
   ['--close-red-press', '#f1707a'],
-  // [回炉 1 d1-W6] 红底字色 token（三族不变——Windows 系统观感恒定）
+  // [回炉 1 d1-W6] 红底字色 token（跨主题不变——Windows 系统观感恒定）
   ['--close-red-ink', '#ffffff'],
   ['--ink-a18', 'rgba(36, 42, 39, 0.18)'],
   ['--accent-hi', 'var(--accent)'],
@@ -201,13 +202,8 @@ const TOKENS: Array<[string, string]> = [
   ['--note-border', 'rgba(151, 160, 187, 0.28)'],
   ['--reader-selection-paint', 'rgba(0, 0, 0, 0.2)'],
   // [T3-P4] --shadow-page 值锁随改注链：F-06 单层影→mockup .page 双层影
-  // （2026-09-26_v2_theme-light.html L191——三稿同值主题恒定，单 :root 不分族）
+  // （2026-09-26_v2_theme-light.html L191——两稿同值主题恒定，单 :root 不分族）
   ['--shadow-page', '0 1px 4px rgba(20, 26, 40, 0.12), 0 6px 22px rgba(20, 26, 40, 0.08)'],
-  // [T3-P4 §7 案 A] 夜间纸页反色=CSS filter 挂 canvas 层：root=none（白天
-  // 不反色）；dark 族=invert(1) hue-rotate(180deg)（黑墨带→白字+--paper 暗纸
-  // 透出）；sepia=none。消费面=theme-reader.css canvas[data-pdf-canvas]+缩略图
-  // canvas 同规则（r3p4-reader-skin.test 文本锁）；族块值锚见 T3-P1 describe
-  ['--canvas-filter', 'none'],
   ['--shadow-pop-sm', '0 2px 8px rgba(0, 0, 0, 0.15)'],
   ['--shadow-pop-md', '0 2px 12px rgba(0, 0, 0, 0.18)'],
   // ── F-UI-04 顶栏/主区背景冷雾灰（2026-09-20 用户反馈 P4——设计文档
@@ -215,7 +211,7 @@ const TOKENS: Array<[string, string]> = [
   //    theme-shell.css .app-header/.app-main[App.tsx main 挂类]；T3-P1 起
   //    --surface-cool 桥接 --panel-2 随族）──
   ['--surface-cool', 'var(--panel-2)'],
-  // T3-P1 桥接补锚（门一 d1-W6/k1-N1：--warning 桥无正锚——族源 --warn 三族有锚，桥形态独立锁）
+  // T3-P1 桥接补锚（门一 d1-W6/k1-N1：--warning 桥无正锚——族源 --warn 两主题有锚，桥形态独立锁）
   ['--warning', 'var(--warn)']
 ]
 
@@ -260,7 +256,7 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(shellCss, '.app-statusbar 规则体=--panel-2 底+--line 顶边+mono 字').toMatch(
       /\.app-statusbar\s*\{[^}]*background:\s*var\(--panel-2\);[^}]*border-top:\s*1px solid var\(--line\);[^}]*font-family:\s*var\(--mono\);/
     )
-    // [回炉 1 d1-W6] close 红底字色=三族不变 token（var(--panel) 载体暗族翻深失守）
+    // [回炉 1 d1-W6] close 红底字色=跨主题不变 token（var(--panel) 载体随主题翻深失守）
     expect(shellCss, 'close hover 字色应走 --close-red-ink（非 --panel）').toMatch(
       /\.titlebar-btn-close:hover\s*\{[^}]*color:\s*var\(--close-red-ink\);/
     )
@@ -619,58 +615,21 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
   })
 })
 
-describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () => {
+describe('T3-P1 主题两族防漂移锁（sepia 族块+接线面+dark 零残留负锚）', () => {
   /**
-   * 三主题 UI 战役首票（值源=docs/design/2026-09-26_theme-trio-final-design.md
-   * §0 三族终值表，逐值誊录自 mockups/2026-09-26_v2_theme-{dark,sepia}.html）。
-   * 机制=一套布局+theme.css token 三族：:root 白天族裸值+`:root[data-theme=...]`
-   * 覆写块，data-theme 挂 documentElement 由 App.tsx effect 单点写。
-   * 防串位：族值断言先按块选择器正则抽取块体再 toContain——值漂到别的族块
-   * （或只存 :root）即红；白天族值由上方 TOKENS 正锚锁定不在此重复。
+   * 主题机制=一套布局+theme.css token 两主题（B1 暗色退役后）：:root 正常
+   * 模式裸值+`:root[data-theme='sepia']` 护眼覆写块，data-theme 挂
+   * documentElement 由 App.tsx effect 单点写。sepia 值源=v2 设计稿
+   * （synapse-redesign-v2.html 护眼块逐值誊录——2026-11-19 定案）。
+   * 防串位：族值断言先按块选择器正则抽取块体再 toContain——值漂到
+   * :root（或只存族块外）即红；正常模式值由上方 TOKENS 正锚锁定不在此重复。
    */
   /** 按 data-theme 块选择器抽取块体（[^}]* 到首个 } 即停——族块体内注释禁用 }
    *  字符，否则截断致后续断言假红） */
-  const themeBlock = (name: 'dark' | 'sepia'): string => {
+  const themeBlock = (name: 'sepia'): string => {
     const m = css.match(new RegExp(`:root\\[data-theme='${name}'\\]\\s*\\{([^}]*)\\}`))
     return m?.[1] ?? ''
   }
-
-  const DARK_TOKENS: Array<[string, string]> = [
-    ['--bg', '#14161a'],
-    ['--panel', '#1d2026'],
-    ['--panel-2', '#181b20'],
-    ['--line', '#2c313a'],
-    ['--line-soft', '#23272e'],
-    ['--ink', '#e6e9ef'],
-    ['--dim', '#a6adba'],
-    ['--faint', '#6f7684'],
-    ['--accent', '#7b93f5'],
-    ['--accent-soft', 'rgba(123, 147, 245, 0.15)'],
-    ['--signal', '#ff7a45'],
-    ['--ok', '#4ade80'],
-    ['--warn', '#e8a33d'],
-    ['--sub2', '#2dd4bf'],
-    ['--mini-card', '#171a21'],
-    ['--mini-card-line', '#2e343f'],
-    ['--month-dash', 'rgba(123, 147, 245, 0.5)'],
-    ['--shadow-card', '0 1px 3px rgba(0, 0, 0, 0.4)'],
-    ['--shadow-drag', '0 14px 36px rgba(0, 0, 0, 0.6)'],
-    ['--paper', '#242830'],
-    ['--paper-ink', '#d8dbe2'],
-    // [T3-P4 §7 案 A 裁定] 夜间反位=canvas filter 单点 token（dark 族块独有）
-    ['--canvas-filter', 'invert(1) hue-rotate(180deg)'],
-    ['--annotation-blend', 'screen'],
-    ['--annotation-yellow', '#6f5c00'],
-    ['--annotation-green', '#17613a'],
-    ['--annotation-blue', '#2b4c78'],
-    ['--annotation-red', '#783c3c'],
-    ['--annotation-purple', '#5b3b78'],
-    // 桥接族补充：body 丝纹暗底噪声熄灭+弹层白玻璃暗底失读矫正
-    ['--panel-a35', 'transparent'],
-    ['--panel-a88', 'var(--panel)'],
-    ['--panel-a90', 'var(--panel)'],
-    ['--panel-a92', 'var(--panel)']
-  ]
 
   const SEPIA_TOKENS: Array<[string, string]> = [
     ['--bg', '#eee6d6'],
@@ -699,8 +658,6 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--shadow-drag', '0 14px 36px rgba(90, 75, 40, 0.32)'],
     ['--paper', '#fdf8ec'],
     ['--paper-ink', '#403a2e'],
-    // [T3-P4] 护眼族不反色（奶油纸正读——:root 同值 none）
-    ['--canvas-filter', 'none'],
     ['--annotation-blend', 'multiply'],
     ['--panel-a35', 'transparent'],
     ['--panel-a88', 'var(--panel)'],
@@ -708,23 +665,24 @@ describe('T3-P1 主题三族防漂移锁（dark/sepia 族块+接线面）', () =
     ['--panel-a92', 'var(--panel)']
   ]
 
-  it.each(DARK_TOKENS)('dark 族块内 %s 声明为 %s（块内断言防串位）', (token, value) => {
-    const block = themeBlock('dark')
-    expect(block, 'dark 族块应在场（:root[data-theme=dark]）').not.toBe('')
-    expect(block, `dark 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
-  })
-
   it.each(SEPIA_TOKENS)('sepia 族块内 %s 声明为 %s（块内断言防串位）', (token, value) => {
     const block = themeBlock('sepia')
     expect(block, 'sepia 族块应在场（:root[data-theme=sepia]）').not.toBe('')
     expect(block, `sepia 族块应含 "${token}: ${value};"`).toContain(`${token}: ${value};`)
   })
 
+  it('[B1 暗色退役] dark 族块/夜间反色 token 零残留（回填即红）', () => {
+    expect(css, "data-theme='dark' 覆写块不得回填").not.toContain("data-theme='dark'")
+    // 锚声明形态（--canvas-filter:）——注释提及退役名不误咬，token 定义回填才红
+    expect(css, '--canvas-filter token 定义已随暗色删除（两主题均无反色）').not.toMatch(/--canvas-filter\s*:/)
+    expect(css, 'dark 专属深色标注色板不得回填（screen 色板 #6f5c00 族）').not.toContain('#6f5c00')
+    expect(css, 'screen 混合模式不得回填（两主题均 multiply）').not.toContain('--annotation-blend: screen')
+  })
+
   it.each([
     ['light', 'multiply'],
-    ['dark', 'screen'],
     ['sepia', 'multiply']
-  ] as const)('%s 主题计算样式取对应标注混合模式', (theme, expected) => {
+  ] as const)('%s 主题计算样式取标注混合模式 multiply（两主题共用）', (theme, expected) => {
     const dom = new JSDOM('<!doctype html><html><head></head><body><div id="probe"></div></body></html>')
     const { document } = dom.window
     const style = document.createElement('style')

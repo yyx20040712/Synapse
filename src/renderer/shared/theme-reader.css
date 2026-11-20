@@ -1,19 +1,9 @@
 /* [F-CSS-01] 自 theme.css 拆出 2026-09-05——阅读器周边域皮肤：工具栏/tab 条/
    图标钮/等宽数字/侧板节标+R3-U4 设置分节卡与表单 focus。[T3-P4] 阅读器域
    金族消费退役换 mockup .toolbar/.tabbar 语汇（值源=docs/design/mockups/
-   2026-09-26_v2_theme-light.html L141-166）；import 序=theme-buttons.css 之后。 */
-
-/* ══ [T3-P4 §7 案 A 裁定] 夜间纸页反位=canvas filter 单点规则 ══
-   消费面=主渲染 canvas（PdfPageCanvas data-pdf-canvas）+缩略图 canvas
-   （OutlineThumb data-thumb-canvas——pdfjs 独立渲染源直挂）同体单声明；
-   值单源=theme.css --canvas-filter 三族（root/sepia=none、dark=invert(1)
-   hue-rotate(180deg)——黑墨带→白字+透明底透出 --paper 暗纸；透明底渲染
-   配方[ADR-0019 R2]零改；已知权衡=PDF 内嵌图片负片化，票面备案收口轮
-   升用户裁决）。禁散布第二消费点（r3p4-reader-skin.test 文本锁）。 */
-canvas[data-pdf-canvas],
-canvas[data-thumb-canvas] {
-  filter: var(--canvas-filter);
-}
+   2026-09-26_v2_theme-light.html L141-166）；import 序=theme-buttons.css 之后。
+   [B1 暗色退役] 夜间纸页反位规则（canvas filter 消费 --canvas-filter）随
+   暗色主题删除——两主题纸页均不反色（零残留负锚=r3p4-reader-skin.test）。 */
 
 /* ══ R3-U3+T3-P4 阅读器周边皮肤（金族退役：panel 底工具栏+line-soft 条 tab+
    28px 图标钮。ReaderToolbar/TabBar/ReaderSearchBox/ReaderNotesPanel 消费；

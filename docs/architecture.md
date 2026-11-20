@@ -100,9 +100,10 @@ shared/ = 两进程共同 import 的唯一契约（类型 + zod 同源，冻结�
 
 - 窗口 bounds 持久化+屏幕夹取（`window-state.ts`）；单实例锁
   （requestSingleInstanceLock）。
-- 启动主题注入链：main 同步读 settings 附 theme query →
-  `src/renderer/public/theme-boot.js` 首帧写 dataset.theme（FOUC 兜底）→
-  App effect=运行时单点（两者值一致，载入在途窗不回退——INV-71）。
+- 启动主题注入链（两主题 light/sepia——B1 暗色退役）：main 同步读 settings
+  （读侧迁移退役档 dark/system→light）附 theme query →
+  `src/renderer/public/theme-boot.js` 首帧写 dataset.theme（仅合法两值；FOUC
+  兜底）→ App effect=运行时单点（两者值一致，载入在途窗不回退——INV-71）。
 
 ### 3.2 契约机制（防漂移核心）
 

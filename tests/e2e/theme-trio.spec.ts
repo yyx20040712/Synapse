@@ -8,16 +8,16 @@ import { createMultiPagePdf, PDF_KNOWN_TEXT } from '../utils/pdf-factory'
 import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
 
 /**
- * T3-P1 主题三族 e2e（always-active）：设置页三选项（枚举退役 'system'）→
- * 保存后 data-theme 挂 documentElement + body computed backgroundColor 三族
- * 终值实测（真实渲染断言——INV-06 口径，禁只断言 attr 不见色）。值源=
- * docs/design/2026-09-26_theme-trio-final-design.md §0；light/sepia 值随
- * 2026-11-19 v2 定案第一期更新（synapse-redesign-v2.html）：
- * light #f2f4f1 / dark #14161a / sepia #eee6d6。收尾恢复白天（终态=白天，
- * 防污染其他 spec 的视觉断言面）。
+ * 主题两档 e2e（always-active；[B1] 暗色主题退役——原三主题场景中的
+ * 「夜间 · 深灰」保存/dark 底色/dark 桥接级联/dark 纸面反色断言随主题删除）：
+ * 设置页两选项 → 保存后 data-theme 挂 documentElement + body computed
+ * backgroundColor 两主题终值实测（真实渲染断言——INV-06 口径，禁只断言
+ * attr 不见色）+状态条主题名单源跟随。值源=v2 设计稿
+ * （synapse-redesign-v2.html，2026-11-19 定案）：light #f2f4f1 / sepia
+ * #eee6d6。收尾恢复正常模式（终态=light，防污染其他 spec 的视觉断言面）。
  */
 
-/** T3-P4 段共用：设置页切主题并保存→回阅读器视图（tab 驻 store 重挂恢复） */
+/** 阅读器纸面段共用：设置页切主题并保存→回阅读器视图（tab 驻 store 重挂恢复） */
 async function switchTheme(win: Page, label: string): Promise<void> {
   await win.getByRole('button', { name: '设置' }).click()
   await win.getByRole('combobox', { name: '主题' }).selectOption({ label })
@@ -25,77 +25,69 @@ async function switchTheme(win: Page, label: string): Promise<void> {
   await expect(win.getByText('设置已保存')).toBeVisible()
   await win.getByRole('button', { name: '阅读器' }).click()
 }
-test('T3-P1 主题三族：下拉恰三选项无「跟随系统」；切换保存后 data-theme+body 真实渲染色三族实测；收尾恢复白天', async () => {
+
+test('主题两档：下拉恰两选项（正常/护眼）；启动初态 light；切换保存后 data-theme+body 真实渲色+状态条主题名；收尾恢复正常模式', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-theme-trio-'))
   // [F-WS-02] 种子破引导态（设置钮在引导态禁用——smoke.spec 同配方；
   // 主题初态断言不受种子影响：settings.json 仍全新=DEFAULTS light）
   await bootstrapMigrations(userData)
   const sha = 'd'.repeat(64)
-  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, '主题三族种子文献')
+  await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, '主题两档种子文献')
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '设置' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '设置' }).click()
 
-  // 下拉恰三选项且无「跟随系统」（'system' 枚举退役——A6 不跟随系统）
+  // 下拉恰两选项（B1 暗色退役——dark 不再是可选项）
   const select = win.getByRole('combobox', { name: '主题' })
   const labels = await select.locator('option').allTextContents()
-  expect(labels, '主题下拉恰三选项（light/dark/sepia——跟随系统已退役）').toEqual([
-    '白天 · 精密仪表',
-    '夜间 · 深灰',
-    '护眼 · 牛皮纸'
-  ])
+  expect(labels, '主题下拉恰两选项（light/sepia——暗色已退役）').toEqual(['正常模式', '护眼模式'])
 
-  // 初态：全新 userData → DEFAULTS theme=light → data-theme=light + 白天底色
+  // 启动初态：全新 userData → DEFAULTS theme=light → data-theme=light + 正常底色
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgb(242, 244, 241)')
+  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
 
-  // 夜间 · 深灰：保存落地 → data-theme=dark + body 真实渲染色 #14161a
-  await select.selectOption({ label: '夜间 · 深灰' })
+  // 护眼模式：保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
+  await select.selectOption({ label: '护眼模式' })
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.getByText('设置已保存')).toBeVisible()
-  await expect(win.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect
-    .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
-    .toBe('rgb(20, 22, 26)')
-  // 桥接级联锚（门一 d1-W5/k1-N2 补强）：body color=--text→var(--ink) 同元素级联
-  // 重解析，dark 族 #e6e9ef——桥断开/换回字面量/族值漂移此断言即红
-  await expect
-    .poll(() => win.evaluate(() => getComputedStyle(document.body).color))
-    .toBe('rgb(230, 233, 239)')
-
-  // 护眼 · 牛皮纸：保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
-  await select.selectOption({ label: '护眼 · 牛皮纸' })
-  await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'sepia')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgb(238, 230, 214)')
+  // 桥接级联锚（沿门一 d1-W5/k1-N2 先例收窄两主题）：body color=--text→
+  // var(--ink) 同元素级联重解析，sepia 族 #3f392e——桥断开/换回字面量/
+  // 族值漂移此断言即红
+  await expect
+    .poll(() => win.evaluate(() => getComputedStyle(document.body).color))
+    .toBe('rgb(63, 57, 46)')
+  await expect(win.locator('.app-statusbar')).toContainText('主题：护眼模式')
 
-  // 收尾恢复白天（终态=白天——防污染其他 spec）
-  await select.selectOption({ label: '白天 · 精密仪表' })
+  // 收尾恢复正常模式（终态=light——防污染其他 spec）
+  await select.selectOption({ label: '正常模式' })
   await win.getByRole('button', { name: '保存设置' }).click()
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgb(242, 244, 241)')
+  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
 
   await app.close()
 })
 
 /**
- * [T3-P4] 阅读器纸面三态 e2e（always-active）：种子 PDF（seed-paper 先例+
- * reader-text 批 1 配方）→开阅读器渲染出真实文本→三主题下 [data-page-box]
- * computed backgroundColor + canvas[data-pdf-canvas] computed filter 实测。
- * 值源=final-design §0 --paper 三族；light/sepia 随 v2 第一期更新
- * （light=#fffefb=rgb(255,254,251)/dark=#242830=rgb(36,40,48)/sepia=
- * #fdf8ec=rgb(253,248,236)）+§7 案 A（dark=
- * invert(1) hue-rotate(180deg) 黑墨带→白字）。收尾必恢复白天（防污染
- * 他 spec——本 spec 首测同纪律）。
+ * [T3-P4/B1] 阅读器纸面两主题 e2e（always-active）：种子 PDF（seed-paper
+ * 先例+reader-text 批 1 配方）→开阅读器渲染出真实文本→两主题下
+ * [data-page-box] computed backgroundColor + canvas[data-pdf-canvas]
+ * computed filter 实测。值源=v2 设计稿 --paper 两主题（light=#fffefb=
+ * rgb(255,254,251)/sepia=#fdf8ec=rgb(253,248,236)）；[B1] 暗色退役后
+ * 两主题纸页均不反色（filter 恒 none——反色规则已删除，本断言锁「无反色
+ * 回填」）。收尾必恢复正常模式（防污染他 spec——本 spec 首测同纪律）。
  */
-test('T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白纸回归→sepia 奶油纸；收尾恢复白天', async () => {
+test('阅读器纸面两主题：light 暖白纸→sepia 奶油纸，canvas 恒无反色（filter=none）；收尾恢复正常模式', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-t3p4-reader-'))
   // 第一跳：应用自建库表+受管 PDF 文件（reader-text.spec 批 1 同配方）
   await bootstrapMigrations(userData)
@@ -105,12 +97,12 @@ test('T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白�
   const abs = join(userData, 'files', ...fileRef.split('/'))
   mkdirSync(dirname(abs), { recursive: true })
   writeFileSync(abs, bytes)
-  await seedPaperRow(userData, fileRef, sha, 'T3P4 纸面三态文献', 'e2e-t3p4-paper')
+  await seedPaperRow(userData, fileRef, sha, 'T3P4 纸面两主题文献', 'e2e-t3p4-paper')
 
   const app = await launch(userData)
   const win = await app.firstWindow()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
-  await win.getByText('T3P4 纸面三态文献').first().dblclick()
+  await win.getByText('T3P4 纸面两主题文献').first().dblclick()
   // 渲染出真实文本（INV-06 口径——先证渲染链活再断言视觉面）
   await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
 
@@ -128,7 +120,7 @@ test('T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白�
   /**
    * 等待页盒底/canvas filter 双双到达目标态（门一回炉 d1-W2：等待语义由
    * waitForFunction 承载，断言本体改 plain expect——expect.poll 形态不入
-   * test-surface 提取器采集面，三族值锚对指纹机检不可见即失守）。
+   * test-surface 提取器采集面，两主题值锚对指纹机检不可见即失守）。
    */
   const waitForPaperState = async (boxBg: string, canvasFilter: string): Promise<void> => {
     await win.waitForFunction(
@@ -147,37 +139,24 @@ test('T3-P4 阅读器纸面三态：dark 页盒暗纸+canvas 反色→light 白�
     )
   }
 
-  // —— 夜间 · 深灰：页盒=--paper #242830 暗纸+canvas filter 反色（案 A）——
-  await switchTheme(win, '夜间 · 深灰')
-  await expect(win.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
-  await waitForPaperState('rgb(36, 40, 48)', 'invert(1) hue-rotate(180deg)')
-  const dark = await snapshot()
-  expect(dark.boxBg).toBe('rgb(36, 40, 48)')
-  // 反位滤镜完整形态锚（invert+hue-rotate 双段——只 invert 无 hue-rotate 会偏色）
-  expect(dark.canvasFilter).toContain('invert')
-  expect(dark.canvasFilter).toBe('invert(1) hue-rotate(180deg)')
-
-  // —— 白天 · 回归锚：页盒暖白纸（--paper=#fffefb v2 实值——reader-text.spec 同源）
-  await switchTheme(win, '白天 · 精密仪表')
+  // —— 正常模式：页盒暖白纸（--paper=#fffefb v2 实值——reader-text.spec 同源）
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
-  await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
   await waitForPaperState('rgb(255, 254, 251)', 'none')
   const light = await snapshot()
   expect(light.boxBg).toBe('rgb(255, 254, 251)')
-  expect(light.canvasFilter).toBe('none')
+  expect(light.canvasFilter, '两主题均无反色（B1 反位规则已删除）').toBe('none')
 
-  // —— 护眼 · 牛皮纸：页盒=--paper #fdf8ec 奶油纸（不反位——filter 仍 none）
-  await switchTheme(win, '护眼 · 牛皮纸')
+  // —— 护眼模式：页盒=--paper #fdf8ec 奶油纸（不反色——filter 仍 none）
+  await switchTheme(win, '护眼模式')
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'sepia')
   await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
   await waitForPaperState('rgb(253, 248, 236)', 'none')
   const sepia = await snapshot()
   expect(sepia.boxBg).toBe('rgb(253, 248, 236)')
-  expect(sepia.canvasFilter).toBe('none')
+  expect(sepia.canvasFilter, '护眼不反位（奶油纸正读）').toBe('none')
 
-  // 收尾恢复白天（终态=白天——防污染其他 spec，本文件两测同纪律）
-  await switchTheme(win, '白天 · 精密仪表')
+  // 收尾恢复正常模式（终态=light——防污染其他 spec，本文件两测同纪律）
+  await switchTheme(win, '正常模式')
   await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
   await waitForPaperState('rgb(255, 254, 251)', 'none')
   const restored = await snapshot()

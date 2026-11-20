@@ -34,9 +34,9 @@ import { RecoveryBarHost } from './RecoveryBarHost'
 import { useWsGuideImportBridge } from './useWsGuideImportBridge'
 import { prepareRecoveryWorkspaceSwitch } from '../features/lineage/recoveryScheduler'
 
-/** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema） */
+/** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema——B1 后两档） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
-  return value === 'light' || value === 'dark' || value === 'sepia' ? value : undefined
+  return value === 'light' || value === 'sepia' ? value : undefined
 }
 
 /**
@@ -111,9 +111,10 @@ export function App(): JSX.Element {
   useEffect(() => {
     document.documentElement.style.setProperty('--ui-scale', String(UI_SCALE[uiScale]))
   }, [uiScale])
-  // T3-P1 主题三族：data-theme 单点接线（documentElement.dataset.theme——
-  // theme.css :root[data-theme='dark'|'sepia'] 覆写族消费；未载入/缺省兜底
-  // light=appSettingsSchema default 同源；不跟随系统 A6）。
+  // T3-P1 主题两档（B1 暗色退役）：data-theme 单点接线
+  // （documentElement.dataset.theme——theme.css :root[data-theme='sepia']
+  // 覆写族消费，light=裸 :root 值；未载入/缺省兜底 light=appSettingsSchema
+  // default 同源；不跟随系统 A6）。
   // [T3-U1] FOUC 首帧兜底消费位：settings 未载入（load 在途/失败容忍窗）的
   // 过渡档=启动注入值（theme-boot.js 首帧写 dataset.theme——值源同为
   // settings.json，INV-71「两者值一致」）；无注入值回退 light（原 ?? 兜底）

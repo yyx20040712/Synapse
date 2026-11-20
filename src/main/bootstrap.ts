@@ -273,9 +273,9 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   // 宽高、x/y 原样透传，持久化坐标偏下时窗口底边沉入任务栏
   const clamped = clampBounds(bounds, workArea)
   // [T3-U1] FOUC 首帧兜底：启动同步读主题档（settings.service 读侧迁移
-  // 单源——system→light）附 loadURL/loadFile theme query；renderer 首帧
-  // 脚本（public/theme-boot.js）写 documentElement.dataset.theme（首帧前
-  // 生效）。运行时单点真源仍=App effect（两者值一致——INV-71）
+  // 单源——退役档 dark/system→light）附 loadURL/loadFile theme query；
+  // renderer 首帧脚本（public/theme-boot.js）写 documentElement.dataset.theme
+  // （首帧前生效）。运行时单点真源仍=App effect（两者值一致——INV-71）
   const startupTheme = readThemeSync(userDataDir)
   const window = createMainWindow(
     BrowserWindow,

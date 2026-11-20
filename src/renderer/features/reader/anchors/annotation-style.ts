@@ -78,7 +78,7 @@ export function clampedHorizontal(
 
 /** kind+color+归一化矩形 → 色块样式（自 AnnotationLayer 迁入——组件行数
  *  防线；[F-A5/ADR-0019 R4] 色块位于 canvas 之上，经 --annotation-blend
- *  按主题合成（light/sepia=multiply、dark=screen），文字经混合保持可读；
+ *  合成（两主题均 multiply），文字经混合保持可读；
  *  下划线为收边后底缘 2px 实条）。
  *  band 在场=行盒自适应（F-A4 b②：highlight 顶=band.top/高=band.bottom−
  *  band.top——F-A5 起经 bandVertical 单源；underline 实条贴 band.bottom

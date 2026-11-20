@@ -76,7 +76,7 @@ test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K
   // 状态条真实文本（课题名+主题名——THEME_LABEL 单源；种子后 paperCount=1）
   await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇')
   await expect(win.locator('.app-statusbar')).toContainText('脉络 0 节点 / 0 连线')
-  await expect(win.locator('.app-statusbar')).toContainText('主题：白天 · 精密仪表')
+  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
 
   await app.close()
 })

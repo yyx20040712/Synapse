@@ -226,9 +226,9 @@ describe('T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点�
     delete document.documentElement.dataset.theme
   })
 
-  it('挂载前 attr=dark（启动注入）+settings 同值：载入在途窗不回退，载入后保持 dark', async () => {
+  it('挂载前 attr=sepia（启动注入）+settings 同值：载入在途窗不回退，载入后保持 sepia', async () => {
     // 模拟 theme-boot 首帧写入（挂载前 attr 已在场）
-    document.documentElement.dataset.theme = 'dark'
+    document.documentElement.dataset.theme = 'sepia'
     // 模块级 settings store 跨 mount 存留：显式归零模拟「未载入」态（沿
     // app-shell.test 受锁用例「settings 未载入」同款先例）
     const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
@@ -244,14 +244,14 @@ describe('T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点�
     await act(async () => { await Promise.resolve() })
     expect(
       document.documentElement.dataset.theme,
-      '载入在途窗不得用兜底档覆写启动注入值（dark→light→dark=残余闪烁）'
-    ).toBe('dark')
-    resolveGet({ ok: true, data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' } })
+      '载入在途窗不得用兜底档覆写启动注入值（sepia→light→sepia=残余闪烁）'
+    ).toBe('sepia')
+    resolveGet({ ok: true, data: { contactEmail: 'a@b.c', theme: 'sepia', uiScale: 'small' } })
     await flush()
-    expect(document.documentElement.dataset.theme, '载入后与 settings 一致（INV-71 两者值一致）').toBe('dark')
+    expect(document.documentElement.dataset.theme, '载入后与 settings 一致（INV-71 两者值一致）').toBe('sepia')
   })
 
-  it('注入值与 settings 漂移（light→dark）→ App effect 收口为 settings 值（运行时单点真源）', async () => {
+  it('注入值与 settings 漂移（light→sepia）→ App effect 收口为 settings 值（运行时单点真源）', async () => {
     document.documentElement.dataset.theme = 'light'
     const { useSettingsStore } = await import('../../../src/renderer/features/settings/settings.store')
     act(() => {
@@ -259,13 +259,13 @@ describe('T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点�
     })
     stubApi.settings.get.mockResolvedValue({
       ok: true,
-      data: { contactEmail: 'a@b.c', theme: 'dark', uiScale: 'small' }
+      data: { contactEmail: 'a@b.c', theme: 'sepia', uiScale: 'small' }
     })
     mount(<App />)
     await flush()
     expect(
       document.documentElement.dataset.theme,
       '载入后 dataset.theme=settings 值（effect 单点收口——启动注入仅首帧兜底）'
-    ).toBe('dark')
+    ).toBe('sepia')
   })
 })

@@ -29,11 +29,11 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
   it('load 写入 settings', async () => {
     const get = vi.fn(async () => ({
       ok: true as const,
-      data: { contactEmail: 'a@b.c', theme: 'dark' as const }
+      data: { contactEmail: 'a@b.c', theme: 'sepia' as const }
     }))
     const useStore = await loadStore({ settings: { get } })
     await useStore.getState().load()
-    expect(useStore.getState().settings).toEqual({ contactEmail: 'a@b.c', theme: 'dark' })
+    expect(useStore.getState().settings).toEqual({ contactEmail: 'a@b.c', theme: 'sepia' })
   })
 
   it('save：发送补丁，成功后本地合并；saving 复位', async () => {
@@ -73,7 +73,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pLoad = useStore.getState().load() // 慢读悬挂（快照版本 n）
     await useStore.getState().save({ contactEmail: 'new@x.y' }) // 快速保存落地 S1（成功抬版本）
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small', aiBudgets: AI_BUDGETS } }) // 旧快照后到
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'sepia', uiScale: 'small', aiBudgets: AI_BUDGETS } }) // 旧快照后到
     await pLoad
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
   })
@@ -88,7 +88,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const pLoad = useStore.getState().load() // 在途保存期间派发的读
     resolveSave({ ok: true, data: { contactEmail: 'new@x.y', theme: 'light', uiScale: 'small', aiBudgets: AI_BUDGETS } })
     await pSave // 保存落地 S1（成功抬版本）
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small', aiBudgets: AI_BUDGETS } }) // 读旧态的后到响应
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'sepia', uiScale: 'small', aiBudgets: AI_BUDGETS } }) // 读旧态的后到响应
     await pLoad
     expect(useStore.getState().settings?.contactEmail).toBe('new@x.y')
   })
@@ -101,7 +101,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pSave = useStore.getState().save({ contactEmail: 'new@x.y' })
     const pLoad = useStore.getState().load()
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small', aiBudgets: AI_BUDGETS } })
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'sepia', uiScale: 'small', aiBudgets: AI_BUDGETS } })
     await pLoad
     // 瞬态：save 尚未落地，load 的旧读应用（版本未被无谓抬升作废）
     expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')
@@ -120,7 +120,7 @@ guardedDescribe('SR-SET-02', 'settings.store —— 载入与保存', () => {
     const useStore = await loadStore({ settings: { get, set } })
     const pLoad = useStore.getState().load()
     await expect(useStore.getState().save({ contactEmail: 'new@x.y' })).rejects.toThrow('写盘失败')
-    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'dark', uiScale: 'small', aiBudgets: AI_BUDGETS } })
+    resolveLoad({ ok: true, data: { contactEmail: 'old@a.b', theme: 'sepia', uiScale: 'small', aiBudgets: AI_BUDGETS } })
     await pLoad
     // save 失败：持久层（settings.json）真值就是 old@a.b，在途 load 应用是真话不得丢弃
     expect(useStore.getState().settings?.contactEmail).toBe('old@a.b')

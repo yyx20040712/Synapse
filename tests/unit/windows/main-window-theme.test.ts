@@ -39,16 +39,16 @@ const BASE: MainWindowLoad = {
 }
 
 describe('windows/main-window —— T3-U1 FOUC 启动 theme query 双分支', () => {
-  it('dev 分支：loadURL 的 URL 附 theme=dark（searchParams 拼参）', () => {
+  it('dev 分支：loadURL 的 URL 附 theme=light（searchParams 拼参）', () => {
     const { Ctor, loadURL } = makeCtor()
     createMainWindow(
       Ctor,
-      { ...BASE, devServerUrl: 'http://localhost:5173/', startupTheme: 'dark' },
+      { ...BASE, devServerUrl: 'http://localhost:5173/', startupTheme: 'light' },
       { width: 1280, height: 800 }
     )
     const url = String(loadURL.mock.calls[0]?.[0])
-    expect(url, 'loadURL 收到附参 URL').toContain('theme=dark')
-    expect(new URL(url).searchParams.get('theme'), 'theme 参可被 ?theme= 解析（脚本消费口径）').toBe('dark')
+    expect(url, 'loadURL 收到附参 URL').toContain('theme=light')
+    expect(new URL(url).searchParams.get('theme'), 'theme 参可被 ?theme= 解析（脚本消费口径）').toBe('light')
   })
 
   it('生产分支：loadFile 以 { query } 选项承载 theme=sepia（Electron 44 loadFile options）', () => {

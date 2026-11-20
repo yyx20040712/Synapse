@@ -3,8 +3,8 @@
  *
  * ── 行为层 ──
  * - 表单：contactEmail（校验 email；说明"仅用于 CrossRef/OpenAlex 礼貌池标识"）
- * - 主题三选（light/dark/sepia；T3-P1 已接线——App.tsx effect 写 data-theme
- *   切换 theme.css token 三族，保存后即时生效）
+ * - 主题两选（light/sepia；T3-P1 已接线——App.tsx effect 写 data-theme
+ *   切换 theme.css token 两族，保存后即时生效；B1 暗色主题已退役）
  * - 「网络诊断」按钮：settings.store.diagnose → 每行 host ✓ 延迟ms / ✗（安全 §6.4 披露）
  * - 「网络行为披露」静态说明区：列出 3 个白名单 host 与触发时机（仅手动增强/诊断）
  * - 数据目录：v1 不展示路径（避免暴露给 renderer），仅"数据保存在本机"文案

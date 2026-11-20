@@ -499,9 +499,9 @@ export const UI_SCALE: Record<UiScale, number> = { small: 1, medium: 1.1, large:
 export const appSettingsSchema = z
   .object({
     contactEmail: z.string().email(), // 开放 API 礼貌池标识
-    // T3-P1 主题三族：'system' 退役（A6 不跟随系统）——枚举 light/dark/sepia，
-    // 默认白天；存量 settings.json theme:'system' 由 settings.service 读侧迁移
-    theme: z.enum(['light', 'dark', 'sepia']).default('light'),
+    // 主题两档（B1 暗色退役）：枚举 light/sepia，默认 light；存量
+    // settings.json theme:'dark'/'system' 由 settings.service 读侧迁移为 light
+    theme: z.enum(['light', 'sepia']).default('light'),
     uiScale: uiScaleSchema.default('small'),
     // [F-DBCAMP-01 DB-2 U1] AI 域预算档（默认值单源=AI_BUDGET_DEFAULTS）。
     // [R6] default 用函数形+structuredClone——每次 parse 独立深副本，防 parse

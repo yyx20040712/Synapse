@@ -1,6 +1,6 @@
 /* ══ T3-P3 文献库皮肤重写（mockups/2026-09-26_v2_theme-light.html L80-139
    逐值誊录；.lib- 前缀防全局冲突；token 单源=theme.css :root——mockup 主题
-   专属值一律 var() 载体，三族恒定值走 --shadow-sel-glow/--shadow-cta/
+   专属值一律 var() 载体，跨主题承载值走 --shadow-sel-glow/--shadow-cta/
    --accent-ink）。旧卡片网格族（网格容器/卡片族/角饰/宝石位——类名不列，
    结构锁负锚见 library-cards.test）已随「方案切换=删除旧方案」退役；
    标签胶囊族（chip）亦随 TagFilter 退役删除（[F-UIRES-01]——dd 下拉族接替）。

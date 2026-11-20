@@ -293,7 +293,7 @@ const VALID: Record<string, unknown[]> = {
   uiScaleSchema: ['small', 'medium', 'large'],
   appSettingsSchema: [
     { contactEmail: 'user@example.com' },
-    { contactEmail: 'user@example.com', theme: 'dark', uiScale: 'large' }
+    { contactEmail: 'user@example.com', theme: 'sepia', uiScale: 'large' }
   ],
   netDiagItemSchema: [netDiagItem],
   netDiagResSchema: [[netDiagItem], []],
@@ -639,6 +639,9 @@ describe('contracts/schemas —— zod 边界矩阵（schemas.ts 全导出直接
     })
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'not-an-email' }).success).toBe(false)
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', theme: 'blue' }).success).toBe(false)
+    // [B1 暗色退役] dark 越枚举拒（存量文件由 settings.service 读侧迁移，
+    // 直写通道不再接受 dark）
+    expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', theme: 'dark' }).success).toBe(false)
     expect(S.appSettingsSchema.safeParse({ contactEmail: 'user@example.com', uiScale: 'huge' }).success).toBe(false)
     // 档内超限拒：paper l1+l2Cap+tail=800+2200+1001=4001>cap 4000（其余档合法——
     // refine 逐档独立，单档超限整体拒）
