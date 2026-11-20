@@ -125,6 +125,17 @@
   旧节序断言×2（library-density .lib-dr-sec 唯一性→两节数组；lineage T4
   三节 h4 序→四节序含前置「引用」）+F-05 480 压力段双栏挤压（§4-3 裁决：
   收右栏还原单栏受试形态，INV-34 断言面零变）；适配后定向复跑 4/4 绿
-  （library-density 整文件+T4+F-05）。全量第二轮以 CI 为权威门（同口径
-  含 e2e）。
-- CI：〔push 后回填〕
+  （library-density 整文件+T4+F-05）。
+- **CI run 44745409574（b8f9ba36 首推）：failure**——两红面：①T1 断言
+  迁移段 attempt1 红/retry 绿（既有 flake 族复发，台账 idx29 追记计数
+  10→11，非本批引入）；②research-scroll B2 笔记用例双跑全红（CI 1024×720
+  特有）。②根因链（本地注入同视口复现+三轮几何探针实证）：种子 14 条
+  标注 sort 键全同（page/startOffset/endOffset 一致）→sortByDocumentOrder
+  落 id 字符串序（'b2-frag-14'<'b2-frag-2'）→「第14条」实排第 6 位（深处
+  前提坍塌）；自校准滚动用 li.offsetTop（相对静态布局链的 offsetParent
+  高估目标位 609 vs 真实 282）→scrollTop 夹取到 max 351 直接把目标滚进
+  容器上方裁剪区（Playwright toBeInViewport 按祖先裁剪计 ratio=0）。修复
+  （纯测试面）：种子 startOffset 逐条递增（文档序=种子序，末条真深处）+
+  自校准改 boundingRect 差值增量（视口无关）；笔记/AI 两用例同修。验证：
+  本地默认视口（1280×800）3/3 绿+CI 视口（1024×720 注入）笔记用例绿。
+- CI：〔修复推送后回填〕

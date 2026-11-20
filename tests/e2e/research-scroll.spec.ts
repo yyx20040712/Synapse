@@ -29,7 +29,12 @@ async function seedOpenablePaper(userData: string, title: string, id: string): P
   await seedPaperRow(userData, fileRef, sha, title, id)
 }
 
-/** 14 条片段标注（正文可滚量级；末条=深处回读锚） */
+/** 14 条片段标注（正文可滚量级；末条=深处回读锚）。
+ *  startOffset 必须逐条递增：sortByDocumentOrder 键=page→startOffset→
+ *  createdAt→id，键全同时落到 id 字符串序（'b2-frag-14'<'b2-frag-2'——
+ *  第 14 条实际排第 6 位，深处前提坍塌+自校准滚动在高窄视口滚过头把目标
+ *  裁剪出列〔CI 1024×720 实测 viewport ratio 0〕）；递增偏移使文档序=
+ *  种子序，末条真深处 */
 async function seedFragments(userData: string, paperId: string): Promise<void> {
   for (let i = 1; i <= 14; i += 1) {
     await seedAnnotation(userData, {
@@ -41,8 +46,8 @@ async function seedFragments(userData: string, paperId: string): Promise<void> {
       quoteText: `研究面板滚动片段第${i}条引文文本`,
       prefixText: '',
       suffixText: '',
-      startOffset: 0,
-      endOffset: 2,
+      startOffset: i,
+      endOffset: i + 2,
       comment: ''
     })
   }
@@ -66,17 +71,21 @@ test('B2 笔记页签：片段列表滚动→去文献库→回阅读器→滚�
   await research.getByRole('tab', { name: '笔记' }).click()
   await expect(research.locator('[data-fragment-id]')).toHaveCount(14, { timeout: 10_000 })
   const deepText = win.getByText('研究面板滚动片段第14条引文文本')
-  // 自校准滚动：目标条目滚到容器顶；阈值=设置后读回的实际 scrollTop
-  //（offsetTop 相对定位祖先会高估——浏览器夹取后的真实值才是可达恢复位；
-  // 有效滚动容器=fragment-list 父容器）
   const scroller = research.locator('[data-testid="fragment-list"]')
+  // 自校准滚动②：目标条目滚到容器顶下 8px。用 boundingRect 差值推增量——
+  // offsetTop 相对 offsetParent（静态布局链下非滚动容器）会高估目标位，
+  // 高窄视口（CI 1024×720）下夹取到 max 直接把目标滚进容器上方裁剪区；
+  // rect 差值与视口/容器位置无关，逐视口精确
   const scrolled = await scroller.evaluate((el) => {
     const target = Array.from(el.querySelectorAll('li')).find((x) =>
       x.getAttribute('data-fragment-id') === 'b2-frag-14'
     ) as HTMLElement | undefined
-    const top = target !== undefined ? Math.max(0, target.offsetTop - 8) : 320
     const box = el.parentElement as HTMLElement
-    box.scrollTop = top
+    if (target === undefined) {
+      box.scrollTop = 320
+    } else {
+      box.scrollTop += target.getBoundingClientRect().top - box.getBoundingClientRect().top - 8
+    }
     return box.scrollTop
   })
   expect(scrolled, '夹具自检：目标条目在折叠区下方（容器可滚）').toBeGreaterThan(120)
@@ -129,12 +138,17 @@ test('B2 AI 对话页签：消息列表滚动→去文献库→回阅读器→�
   // 深处；阈值=设置后读回的实际 scrollTop——offsetTop 相对定位祖先会高估，
   // 夹取后真实值才是可达恢复位）
   const deepText = win.getByText(/AI 滚动记忆消息第10条内容文本/)
+  // 自校准滚动：rect 差值增量（同笔记用例——offsetTop 相对 offsetParent
+  // 高估，视口无关精确）
   const scrolled = await messageList.evaluate((el) => {
     const target = Array.from(el.querySelectorAll('p')).find((p) =>
       p.textContent?.includes('AI 滚动记忆消息第10条内容文本')
     ) as HTMLElement | undefined
-    const top = target !== undefined ? Math.max(0, target.offsetTop - 8) : 320
-    el.scrollTop = top
+    if (target === undefined) {
+      el.scrollTop = 320
+    } else {
+      el.scrollTop += target.getBoundingClientRect().top - el.getBoundingClientRect().top - 8
+    }
     return el.scrollTop
   })
   expect(scrolled, '夹具自检：目标消息在折叠区下方（列表可滚）').toBeGreaterThan(120)
