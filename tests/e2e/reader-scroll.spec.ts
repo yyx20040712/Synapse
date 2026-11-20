@@ -282,8 +282,13 @@ test.describe('reader-scroll —— F-05 程序滚动单容器收敛', () => {
     await win.getByText('智慧水务 e2e F05 收敛文献').first().dblclick()
     await expect(win.getByText(`P1 ${PDF_KNOWN_TEXT}`).first()).toBeVisible({ timeout: 20_000 })
 
-    // 窄视口：Toolbar flex-wrap 折行增高（辅因）+列宽溢出，构造外层可滚态
+    // 窄视口：Toolbar flex-wrap 折行增高（辅因）+列宽溢出，构造外层可滚态。
+    // [B1] 双侧栏后收右栏还原单栏受试形态（INV-34 断言面零变——本用例受试
+    // 面=程序滚动不外溢，非双栏极窄布局；双栏默认开在 480 下主列被挤至零宽
+    // 属独立布局议题，呈报交接书 §4，不在本断言承载）
     await win.setViewportSize({ width: 480, height: 500 })
+    await win.getByRole('button', { name: '展开或收起研究面板' }).click()
+    await expect(win.getByTestId('reader-research')).toHaveCount(0)
 
     /** 外层滚动面体检（INV-34 断言锚）：viewport（scrollingElement——实测泄漏面，
      *  overflow:hidden 仍可被 scrollIntoView 程序滚动）与 main 双 scrollTop 零位移

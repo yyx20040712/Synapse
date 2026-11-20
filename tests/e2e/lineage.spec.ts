@@ -507,7 +507,8 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // [A3 F-CONTRACTA-01 2026-10-04] core_idea 侧板渲染面随全退役删除——
     // 面板无 idea 区（负锚；原「脉络甲的核心 idea」文本锚消亡）
     await expect(win.getByTestId('lineage-side-idea')).toHaveCount(0)
-    // [B2] 三节新序=DOM 序（h4 标题数组——全文笔记→片段笔记→AI 评估与建议）
+    // [B2] 三节新序=DOM 序（h4 标题数组）；[B3] 前置引用分节（信息区后笔记
+    // 节前）——四节序=引用→全文笔记→片段笔记→AI 评估与建议
     await expect
       .poll(
         async () =>
@@ -515,7 +516,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
             .locator('[data-testid="lineage-side-panel"] h4')
             .evaluateAll((els) => els.map((e) => e.textContent))
       )
-      .toEqual(['全文笔记', '片段笔记', 'AI 评估与建议'])
+      .toEqual(['引用', '全文笔记', '片段笔记', 'AI 评估与建议'])
     const aiSection = win.getByTestId('lineage-side-ai-notes')
     await expect(aiSection.getByRole('heading', { name: '第一问：核心 idea 是什么' })).toBeVisible({ timeout: 10_000 })
     await expect(aiSection.getByRole('heading', { name: '分歧报告' })).toBeVisible()

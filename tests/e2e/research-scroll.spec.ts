@@ -155,3 +155,42 @@ test('B2 AI 对话页签：消息列表滚动→去文献库→回阅读器→�
   await expect(deepText, '深处消息真实文本回读可见').toBeInViewport()
   await app.close()
 })
+
+// [计划 §4 第三期验收] 两个收起按钮在 1280 宽度仍可点击，PDF 正文真实文本
+// 可见（e2e 默认窗口=DEFAULT_BOUNDS 1280×800——双栏同开即验收视口）
+test('B1 双侧栏开关：1280 宽度双钮可点击+双栏开合+PDF 正文可见', async () => {
+  const userData = await mkdtemp(join(tmpdir(), 'synapse-b1-toggles-'))
+  await bootstrapMigrations(userData)
+  const title = '双开关验收文献'
+  await seedOpenablePaper(userData, title, 'b1-tgl-paper')
+
+  const app = await launch(userData)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // 双栏默认同开：左 reader-aside+右 reader-research 在场，PDF 文本可见
+  const outlineToggle = win.getByRole('button', { name: '展开或收起目录侧栏' })
+  const researchToggle = win.getByRole('button', { name: '展开或收起研究面板' })
+  await expect(outlineToggle).toBeVisible()
+  await expect(researchToggle).toBeVisible()
+  await expect(win.getByTestId('reader-aside')).toBeVisible()
+  await expect(win.getByTestId('reader-research')).toBeVisible()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible()
+
+  // 双钮收起：两栏卸载，PDF 文本仍可见
+  await outlineToggle.click()
+  await researchToggle.click()
+  await expect(win.getByTestId('reader-aside')).toHaveCount(0)
+  await expect(win.getByTestId('reader-research')).toHaveCount(0)
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible()
+
+  // 双钮展开：两栏恢复，PDF 文本仍可见
+  await outlineToggle.click()
+  await researchToggle.click()
+  await expect(win.getByTestId('reader-aside')).toBeVisible()
+  await expect(win.getByTestId('reader-research')).toBeVisible()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible()
+  await app.close()
+})

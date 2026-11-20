@@ -121,9 +121,11 @@ test('文献库密度列表：五列表头+行五列真实文本+抽屉四格+�
   // 头区：短号+入库状态点（pending=「待增强」）
   await expect(drawer.locator('.lib-dr-id')).toContainText('e2e-t3p3')
   await expect(drawer.locator('.lib-dr-id')).toContainText('待增强')
-  // 键值行：VENUE 真实文本；关联节已退役（无脉络行/AI 评估行——F-LIBUI-01 ⑤）
+  // 键值行：VENUE 真实文本；关联节已退役（无脉络行/AI 评估行——F-LIBUI-01 ⑤）。
+  // 分节面=[B3] 后=标 签+引用两节序（引用=B3 引用分节，DrKeyVals 后）——数组
+  // 断言保「关联」负锚语义：多/缺节即红
   await expect(drawer.locator('.lib-fld', { hasText: 'VENUE' })).toContainText('Nature Water')
-  await expect(drawer.locator('.lib-dr-sec')).toHaveText('标 签')
+  await expect(drawer.locator('.lib-dr-sec')).toHaveText(['标 签', '引用'])
   await expect(drawer.locator('.lib-postpone')).toHaveCount(0)
 
   // —— F-LIBUI-01 ⑥ 动作区两列 grid（真 Chromium 计算样式锚——⑤h③）——
