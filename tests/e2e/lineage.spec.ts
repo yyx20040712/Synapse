@@ -2684,6 +2684,14 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // blocked 空+卡位正常）；down 后留一拍处理窗再 move
     await win.waitForTimeout(300)
     await win.mouse.move(ab.x + ab.width - 2, ab.y + ab.height / 2, { steps: 8 })
+    // [F-LANEGRID-01 B4·CI 滚动锚定防御] 拖拽窗口期 .timeline 可被滚动锚定
+    // 调整（CI 44687923917 诊断实证 scrollTop 0→55+视口 720 内容溢出——
+    // drawing 会话保持+零预览+零 toast=mouseup 落点随滚动偏移未命中目标锚；
+    // 本地 800 视口无溢出故恒绿）：mouseup 前重取目标 bbox 重新对准（自愈
+    // 式——无论滚动位移多少，最后落点恒对目标锚）
+    const ab2 = await cardA.boundingBox()
+    if (ab2 === null) throw new Error('T1M 目标卡拖拽后不可见')
+    await win.mouse.move(ab2.x + ab2.width - 2, ab2.y + ab2.height / 2, { steps: 2 })
     await win.mouse.up()
     // [F-LANEGRID-01 B4·诊断分流] 10s 轮询窗口（toast「已画线」乐观先行，
     // path 渲染滞后一拍——本地实证）后仍 ≠1 才带出 blocked/toast/卡位现场
