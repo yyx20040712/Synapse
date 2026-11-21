@@ -2674,17 +2674,27 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       await win.waitForTimeout(150)
       if (a === (await rectOf())) break
     }
-    // [F-E2EFLK-01 T1M 根治 v2 2026-11-21] 拖拽前滚动定位：画线拖拽接 drag-autoscroll
-    // （zone=容器高 20%/Vmax 1200px/s——特性正确），CI 1024×768 下目标锚 y≈701/720
-    // 深落底部带→拖拽后半程持续滚屏，慢机帧长使 down/重对准读点陈旧超 ±12 锚容差
-    // （down 未武装或 up 未中锚=静默无边无 toast——run 44846425284 双红；6× CPU
-    // 节流本地复现；证据=仓外档案 20261121-t1m-rootcause）。定位法=把两锚（根/甲
-    // 右中）双向钳出滚动带（zone+50px 裕量防后续漂移入带；只挪甲会把根推进顶带）
-    // ——指针全程不入带=autoscroll 零启动。v2 教训（run 44855427019 复红）：定位必须
-    // 在下方稳定双读**之后**读静止几何（v1 读到过渡帧致 shift 欠量 53px，甲锚仍留
-    // 带内），且施加后复核——布局随滚动再动则重算（≤3 轮；带内不足容纳两锚距时
-    // scrollTop 有界尽力不抛）。
-    for (let round = 0; round < 3; round++) {
+    // [F-E2EFLK-01 T1M 根治 v4 2026-11-21] 拖拽前滚动定位。根因链（四轮 CI 定谳）：
+    // 画线拖拽接 drag-autoscroll（zone=容器高 20%/Vmax 1200px/s），CI 1024×768 目标
+    // 锚深落底部带→拖拽中持续滚屏，慢机帧长使读点陈旧超 ±12 锚容差（44846425284=
+    // up 侧 57px 漂移）；v1（44855427019）=定位块置于稳定双读前读到过渡帧；v2
+    // （44858389954）=两病：①1024 宽下 .lg-toolbar（sticky top:0 z12）换行变高，
+    // 可用窗（工具栏底→底部带）容不下根/甲 241px 锚距——纯滚动定位无解，且定位把
+    // 根锚滚进工具栏下（down 打在工具栏=hintCount 1 零边签名）；②单趟 shift 把两向
+    // 修正求和抵消致轮间振荡不收敛。v4=①测试内注入 .lg-toolbar{position:static}
+    // （工具栏随内容滚走，顶约束回归纯 autoscroll 带——本测试不断言工具栏粘性，
+    // 与后段 #e2e-t1m-scroll-domain 注入同型手法）+.timeline{overflow-anchor:none}
+    // （滚动写入确定性生效）；②定位数学改单趟可行区间取中 Δ（两侧同余量，不再
+    // 求和抵消）；③硬前置断言=两锚出带+down 点不被工具栏遮盖（未达即抛带数字
+    // 诊断，不进必败拖拽）。
+    await win.evaluate(() => {
+      const style = document.createElement('style')
+      style.id = 'e2e-t1m-anchor-off'
+      style.textContent =
+        '.timeline { overflow-anchor: none !important } .lg-toolbar { position: static !important }'
+      document.head.append(style)
+    })
+    for (let round = 0; round < 5; round++) {
       const settled = await win.evaluate((): boolean => {
         const tl = document.querySelector('.timeline')
         const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]'))
@@ -2699,13 +2709,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
           const r = el.getBoundingClientRect()
           return r.y + r.height / 2
         }
-        let shift = 0
         const midA = midOf(aCard)
-        if (midA > cr.bottom - zone) shift += midA - (cr.bottom - zone)
         const midRoot = midOf(rootCard)
-        if (midRoot < cr.top + zone) shift -= cr.top + zone - midRoot
-        if (shift === 0) return true
-        tl.scrollTop += shift
+        // 单趟可行区间取中：需 topLim ≤ midRoot−Δ 且 midA−Δ ≤ botLim →
+        // Δ ∈ [midA−botLim, midRoot−topLim]，取中点=两侧同余量（治求和抵消振荡）
+        const lo = midA - (cr.bottom - zone)
+        const hi = midRoot - (cr.top + zone)
+        if (lo <= 0 && hi >= 0) return true
+        if (lo > hi) return true // 窗容不下锚距——交给断言带数字报出
+        tl.scrollTop += (lo + hi) / 2
         return false
       })
       if (settled) break
@@ -2713,6 +2725,49 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       const a = await rectOf()
       await win.waitForTimeout(150)
       if (a !== (await rectOf())) await win.waitForTimeout(300)
+    }
+    // 硬前置断言：两锚出带+down 点不被（可能残留的）工具栏遮盖
+    const band = await win.evaluate((): {
+      ok: boolean
+      midA: number
+      midRoot: number
+      bandTop: number
+      bandBottom: number
+      rootCovered: boolean
+    } => {
+      const tl = document.querySelector('.timeline')
+      const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]'))
+      const rootCard = cards.find((c) => c.textContent?.includes('脉络根文献'))
+      const aCard = cards.find((c) => c.textContent?.includes('脉络甲文献'))
+      const midOf = (el: Element | undefined): number => {
+        const r = el?.getBoundingClientRect()
+        return r === undefined ? Number.NaN : r.y + r.height / 2
+      }
+      const cr = tl?.getBoundingClientRect()
+      const zone = (cr?.height ?? 0) * 0.2 + 50
+      const rootRect = rootCard?.getBoundingClientRect()
+      const probePt =
+        rootRect === undefined ? null : { x: rootRect.right - 2, y: rootRect.y + rootRect.height / 2 }
+      const covered =
+        probePt === null ||
+        (document.elementFromPoint(probePt.x, probePt.y)?.closest('.lg-toolbar') ?? null) !== null
+      return {
+        ok:
+          cr !== undefined &&
+          midOf(aCard) <= cr.bottom - zone &&
+          midOf(rootCard) >= cr.top + zone &&
+          !covered,
+        midA: midOf(aCard),
+        midRoot: midOf(rootCard),
+        bandTop: (cr?.top ?? 0) + zone,
+        bandBottom: (cr?.bottom ?? 0) - zone,
+        rootCovered: covered
+      }
+    })
+    if (!band.ok) {
+      throw new Error(
+        `T1M 定位未达：midA=${band.midA} 需 ≤ bandBottom=${band.bandBottom}；midRoot=${band.midRoot} 需 ≥ bandTop=${band.bandTop}；rootCovered=${band.rootCovered}（工具栏遮盖——本视口下窗容不下锚距，需查注入）`
+      )
     }
     const rb = await root.boundingBox()
     const ab = await cardA.boundingBox()
