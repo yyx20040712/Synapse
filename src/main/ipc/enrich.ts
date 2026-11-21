@@ -8,7 +8,7 @@
  * - export function createEnrichIpc(deps: IpcDeps): ApiHandlers['enrich']
  *
  * ── 架构层 ──
- * - 纯委托；增强只在此手动触发（安全负面清单：无后台自动出网）
+ * - 纯委托；增强只在此手动触发（安全约束：无后台自动出网）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - service 的 EnrichDomainError（NOT_FOUND）原样上抛，register 折叠为 Result

@@ -57,7 +57,7 @@
  *   （tab-dirty.ts 同型先例——notes.store 不迁不动，归属 notes 域维持）
  *
  * ── 生命周期层 ──
- * - 不做：Markdown 预览（负面清单）；片段层行内编辑（批注写面唯一=标注菜单）
+ * - 不做：Markdown 预览；片段层行内编辑（批注写面唯一=标注菜单）
  *
  * ── 文化层 ──
  * - 组件级测试 tests/unit/renderer/reader-notes-panel.test.tsx：总评层载入/失败

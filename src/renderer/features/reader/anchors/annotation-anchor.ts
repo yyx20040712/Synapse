@@ -40,7 +40,7 @@
  *   后本模块与 pdf-item-geometry 零边）
  *
  * ── 生命周期层 ──
- * - 性能约束：单页千级文本节点 <10ms；不做跨页标注（v1 负面清单）
+ * - 性能约束：单页千级文本节点 <10ms；不做跨页标注（v1）
  *
  * ── 文化层 ──
  * - 测试：tests/unit/renderer/annotation-anchor.test.ts（已锁定，jsdom 环境跑 DOM 用例：

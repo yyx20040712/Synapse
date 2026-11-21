@@ -21,7 +21,7 @@
  * - upsert 用事务保证"查后插"原子（或 INSERT ... ON CONFLICT，注意本表无唯一约束，需先 SELECT）
  *
  * ── 生命周期层 ──
- * - 不做：多笔记/笔记间链接（负面清单，v1 明确不做）
+ * - 不做：多笔记/笔记间链接（v1 不做）
  *
  * ── 文化层 ──
  * - 测试：tests/unit/db/repos/notes.repo.test.ts（已锁定）

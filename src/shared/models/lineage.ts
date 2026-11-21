@@ -336,8 +336,7 @@ export type LineageEdgeUpsert = z.infer<typeof lineageEdgeUpsertSchema>
  * **无 paper_id**（§0-5 裁决负锚：纯画布节点不关联任何文献——strict 拒
  * paperId 键，DDL 无 paper_id 列，测试双负锚锚定）；folderId=域资产
  * （graph 域隔离消费）；x/y=画布 own 域坐标（62 号 UI 按有效缩放换算内容
- * 坐标后存入——61 只存取不换算）；content=纯文本（textarea——明确不做
- * Markdown 富文本）。
+ * 坐标后存入——61 只存取不换算）；content=纯文本（textarea）。
  */
 export const floatingNoteSchema = z
   .object({

@@ -27,7 +27,7 @@ zcode 侧」的安全设计（蓝图 D2b）在三面冲突（触发/出网/回�
   spawn**）：轮询 pending→执行三读（queue 既有幂等）→产物落
   `corpus-ai/<paperId>.json`→移除 job→刷新 status。
 - 应用侧轮询：仅存在 pending job 或笔记面板打开时（fs 轮询，非网络，无
-  常驻后台任务——负面清单精神）；「AI 正在读」状态行消费 status。
+  常驻后台任务）；「AI 正在读」状态行消费 status。
 - 产物格式 `corpus-ai/<paperId>.json`：行式锚定段数组 `{ role, question,
   model, quote_text, prefix_text, suffix_text, anchor_page, content_md }`
   （与 ai_notes 列同形——一行=一锚定段+一问）。

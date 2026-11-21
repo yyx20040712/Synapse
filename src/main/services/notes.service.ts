@@ -16,7 +16,7 @@
  *   耦合），register 经 toAppError 折叠为 AppError
  *
  * ── 生命周期层 ──
- * - 不做：多篇笔记/双链（负面清单）
+ * - 不做：多篇笔记/双链
  *
  * ── 文化层 ──
  * - 测试：tests/unit/services/notes.service.test.ts（已锁定，repos 桩）

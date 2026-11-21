@@ -19,7 +19,7 @@
  * - host 白名单由 http-client 强制（export.arxiv.org 在 src/shared/constants）
  *
  * ── 生命周期层 ──
- * - 不做：全文下载（负面清单：PDF 下载管线不做）
+ * - 不做：全文下载
  *
  * ── 文化层 ──
  * - 测试：tests/unit/services/providers/arxiv.test.ts（已锁定，fetchText 桩返回固定 Atom 文本）

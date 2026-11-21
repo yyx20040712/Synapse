@@ -16,7 +16,6 @@ invariants.md「术语说明」。
     CSP 无 unsafe-eval、出网白名单（详见 docs/security.md）。
   - 分层单向：`ipc → services → repos → db`；`renderer → window.api → ipc`。
   - 契约冻结：跨进程类型单源 `src/shared/`；测试/契约/迁移/配置变更须在提交说明申报（原 sha256 锁已退役）。
-  - 明确不做清单：见 AGENTS.md「明确不做」。
 
 ## 2. 系统边界与方案策略
 

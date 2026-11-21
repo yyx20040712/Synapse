@@ -19,7 +19,7 @@
  *   [回炉码 9：原 findById 票内零消费已删——死代码即删]）
  *
  * ── 生命周期层 ──
- * - 不做：嵌套文件夹/拖拽排序（负面清单）；folder 删除（folders.repo 职责）
+ * - 不做：嵌套文件夹/拖拽排序；folder 删除（folders.repo 职责）
  *
  * ── 文化层 ──
  * - 测试：tests/unit/db/repos/collections.repo.test.ts（[F-FOLDER-01] 随迁收缩）

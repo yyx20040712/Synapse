@@ -44,4 +44,4 @@
   变更）；不变量 INV-35（课题库单活四联：同一时刻至多一个课题库打开、
   switch/create/rename 互斥单飞、首启 legacy 库迁移入 workspaces/default）
   登记 docs/invariants.md。
-- 跨课题全局功能（全局检索/统一标签）未来如需=新裁决，v1 明确不做。
+- 跨课题全局功能（全局检索/统一标签）未来如需=新裁决，v1 不做。

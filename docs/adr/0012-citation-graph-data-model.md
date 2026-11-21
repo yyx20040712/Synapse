@@ -2,11 +2,11 @@
 
 日期：2026-08-25 · 状态：已裁决——暂不实现，条件复审
 
-关联：ADR-0011（语料接口）；ROADMAP 候选池本条目；AGENTS.md 负面清单「知识图谱」边界声明。
+关联：ADR-0011（语料接口）；ROADMAP 候选池本条目。
 
 ## 背景
 
-「跨文献引用关系」在 ROADMAP 候选池只是一句词条目（RIS/EndNote、引用网络等同类），无数据模型设计。2026-08-25 裁决时清查确认：当时 7 张业务表无 paper 间引用关系承载（现行库已演进为 22 表+4 FTS 虚表——src/main/db/migrations/026_baseline.sql）；enrich providers 有引用数据获取的代码预留（src/main/services/enrich/providers/crossref.ts:23「不做：分页/游标/引用关系」、openalex.ts:21「不做：作者实体/机构/引用网络」）；负面清单已裁决不做网络图可视化（线性列表/标签/集合/md 语料承载）。
+「跨文献引用关系」在 ROADMAP 候选池只是一句词条目（RIS/EndNote、引用网络等同类），无数据模型设计。2026-08-25 裁决时清查确认：当时 7 张业务表无 paper 间引用关系承载（现行库已演进为 22 表+4 FTS 虚表——src/main/db/migrations/026_baseline.sql）；enrich providers 有引用数据获取的代码预留（src/main/services/enrich/providers/crossref.ts:23「不做：分页/游标/引用关系」、openalex.ts:21「不做：作者实体/机构/引用网络」）；网络图可视化已裁决不做（线性列表/标签/集合/md 语料承载）。
 
 ## 候选
 

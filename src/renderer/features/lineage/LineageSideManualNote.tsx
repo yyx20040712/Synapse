@@ -6,7 +6,7 @@
  *
  * 行为：选中节点 paperId 驱动惰性取数（notes/get→Note|null）；loading/
  * error+重试/空态（null=「暂无全文笔记」非错误——INV-02 列表型）/
- * contentMd 纯文本呈现（负面清单红线——md 不渲染只展示）。stale 守卫
+ * contentMd 纯文本呈现（md 不渲染只展示）。stale 守卫
  * 同 LineageSideAiNotes（请求序号）。无跳转交互（全文笔记无锚语义——
  * 双击链唯一=片段条目，见 LineageSidePanel 实现注）。
  */
