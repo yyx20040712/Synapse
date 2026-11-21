@@ -111,6 +111,42 @@ async function presetSlot(userData: string, body: string): Promise<void> {
   await writeFile(slotPath, body, 'utf-8')
 }
 
+/** [F-RECOV-04] available 槽预置（旧副本含一条真实笔记文本——defer/恢复真文本断言面） */
+async function presetAvailableSlot(userData: string): Promise<void> {
+  await presetSlot(
+    userData,
+    JSON.stringify({
+      type: 'lineage-session',
+      schemaVersion: 1,
+      token: 'tok-e2e-f4',
+      writtenAt: new Date().toISOString(),
+      lastWriterSession: 'ghost-session',
+      payload: {
+        folderId: '__main__',
+        graph: {
+          nodes: [],
+          edges: [],
+          lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
+          floatingNotes: [
+            { id: 'fn-old', folderId: '__main__', x: 10, y: 10, content: OLD_NOTE, createdAt: 't', updatedAt: 't' }
+          ]
+        },
+        queue: [],
+        draft: null
+      }
+    })
+  )
+}
+
+const OLD_NOTE = '旧副本正文丁'
+
+/** [F-RECOV-04 终裁⑤] 放弃不可逆确认的 e2e 步（R2/R4/R5 与新三面共用） */
+async function confirmDiscard(win: Page, confirmLabel: string): Promise<void> {
+  const dialog = win.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: confirmLabel }).click()
+}
+
 test.describe('恢复副本 e2e（F-VISFB-65 单元一）', () => {
   test('R1 编辑→SIGKILL→二次启动确认条→恢复→真文本+dirty→保存→槽删', async () => {
     const userData = await freshDir()
@@ -166,7 +202,11 @@ test.describe('恢复副本 e2e（F-VISFB-65 单元一）', () => {
     const win2 = await app2.firstWindow()
     const bar = win2.getByTestId('recovery-bar')
     await expect(bar).toBeVisible({ timeout: 20_000 })
+    // [F-RECOV-04 A4] 放弃先经不可逆确认（终裁⑤）——确认后才 release（交互步适配，
+    //  语义面=放弃后条收口+槽删 保持不变）
     await win2.getByTestId('recovery-discard').click()
+    await expect(win2.getByRole('dialog')).toContainText('待保存动作')
+    await confirmDiscard(win2, '放弃副本')
     await expect(win2.getByTestId('recovery-bar')).toHaveCount(0, { timeout: 10_000 })
     for (let i = 0; i < 50 && existsSync(join(userData, SLOT)); i += 1) {
       await new Promise((r) => setTimeout(r, 200))
@@ -237,7 +277,9 @@ test.describe('恢复副本 e2e（F-VISFB-65 单元一）', () => {
     await expect(bar).toContainText('原文件夹已删除，副本无法恢复', { timeout: 10_000 })
     await expect(win.getByTestId('recovery-restore')).toHaveCount(0)
     await expect(win.getByTestId('recovery-defer')).toBeVisible()
+    // [F-RECOV-04 A4] 放弃确认步（语义面保持：槽删）
     await win.getByTestId('recovery-discard').click()
+    await confirmDiscard(win, '放弃副本')
     await expect(win.getByTestId('recovery-bar')).toHaveCount(0, { timeout: 10_000 })
     for (let i = 0; i < 50 && existsSync(join(userData, SLOT)); i += 1) {
       await new Promise((r) => setTimeout(r, 200))
@@ -255,7 +297,92 @@ test.describe('恢复副本 e2e（F-VISFB-65 单元一）', () => {
     await expect(bar).toBeVisible({ timeout: 20_000 })
     await expect(bar).toContainText('无法读取的副本')
     await expect(win.getByTestId('recovery-restore')).toHaveCount(0)
+    // [F-RECOV-04 A4] 放弃确认步（语义面保持：槽删）
     await win.getByTestId('recovery-discard').click()
+    await confirmDiscard(win, '放弃副本')
+    await expect(win.getByTestId('recovery-bar')).toHaveCount(0, { timeout: 10_000 })
+    for (let i = 0; i < 50 && existsSync(join(userData, SLOT)); i += 1) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+    expect(existsSync(join(userData, SLOT))).toBe(false)
+    await app.close()
+  })
+
+  // ── [F-RECOV-04] 新增三面（plan §2.4：available defer/新编辑后旧槽仍存在/确认放弃才删除）──
+
+  test('E6 available defer：稍后处理→chip 常驻+开门可编辑+旧槽保留', async () => {
+    const userData = await freshDir()
+    await presetAvailableSlot(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    const bar = win.getByTestId('recovery-bar')
+    await expect(bar).toBeVisible({ timeout: 20_000 })
+    await expect(win.getByTestId('recovery-defer')).toBeVisible() // available 行 defer 三入口（件一）
+    await win.getByTestId('recovery-defer').click()
+    // chip 常驻（「当前编辑未受保护」）+查看钮
+    const chips = win.getByTestId('recovery-chips')
+    await expect(chips).toBeVisible()
+    await expect(chips).toContainText('恢复副本待处理，当前编辑未受保护')
+    await expect(win.getByTestId('recovery-reopen')).toBeVisible()
+    // defer 开门=编辑可行（真实文本——R1 同构：blur 收口后只读行承载真文本）
+    await openLineageEdit(win)
+    await createNoteTyping(win, '稍后处理新编辑戊')
+    await clickBlank(win)
+    await expect(win.locator('.tl-note-text')).toHaveText('稍后处理新编辑戊')
+    // 旧槽保留（未决策不删——副本文件仍在）
+    expect(existsSync(join(userData, SLOT))).toBe(true)
+    await app.close()
+  })
+
+  test('E7 defer→新编辑→保存→旧槽仍在且未被覆写→重启恢复旧副本真文本', async () => {
+    const userData = await freshDir()
+    await presetAvailableSlot(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    const bar = win.getByTestId('recovery-bar')
+    await expect(bar).toBeVisible({ timeout: 20_000 })
+    await win.getByTestId('recovery-defer').click()
+    await expect(win.getByTestId('recovery-chips')).toContainText('当前编辑未受保护')
+    await openLineageEdit(win)
+    await createNoteTyping(win, '新编辑戊续写更长正文')
+    await win.getByTestId('lineage-save-btn').click()
+    await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 }) // flush clean
+    // clean 后旧槽仍在且 token 未变（槽属他者会话 save=pending 不覆写+gate 不 release）
+    await win.waitForTimeout(1500)
+    expect(existsSync(join(userData, SLOT))).toBe(true)
+    const slot = JSON.parse(await readFile(join(userData, SLOT), 'utf-8')) as { token: string }
+    expect(slot.token).toBe('tok-e2e-f4')
+    await hardKill(userData, app)
+    // 重启：未决策旧副本承接确认条——恢复出旧真文本（未被 defer 后新编辑抹掉）
+    const app2 = await launch(userData)
+    const win2 = await app2.firstWindow()
+    await expect(win2.getByTestId('recovery-bar')).toBeVisible({ timeout: 20_000 })
+    await expect(win2.getByTestId('recovery-bar')).toContainText('待保存动作 0')
+    await win2.getByTestId('recovery-restore').click()
+    await expect(win2.locator('.tl-note-text')).toHaveText(OLD_NOTE, { timeout: 10_000 })
+    await app2.close()
+  })
+
+  test('E8 确认放弃才删除：取消=条与槽保留；确认=槽删', async () => {
+    const userData = await freshDir()
+    await presetAvailableSlot(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    const bar = win.getByTestId('recovery-bar')
+    await expect(bar).toBeVisible({ timeout: 20_000 })
+    // 放弃→确认框（终裁⑤文案：动作数+保护恢复说明）→取消=零删除
+    await win.getByTestId('recovery-discard').click()
+    const dialog = win.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('待保存动作 0')
+    await expect(dialog).toContainText('放弃后不可恢复')
+    await expect(dialog).toContainText('新的编辑将重新受副本保护')
+    await dialog.getByRole('button', { name: '取消' }).click()
+    await expect(win.getByTestId('recovery-bar')).toBeVisible() // 条保留
+    expect(existsSync(join(userData, SLOT))).toBe(true) // 槽未删
+    // 再放弃→确认→条收口+槽删
+    await win.getByTestId('recovery-discard').click()
+    await confirmDiscard(win, '放弃副本')
     await expect(win.getByTestId('recovery-bar')).toHaveCount(0, { timeout: 10_000 })
     for (let i = 0; i < 50 && existsSync(join(userData, SLOT)); i += 1) {
       await new Promise((r) => setTimeout(r, 200))

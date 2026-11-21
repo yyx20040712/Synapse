@@ -39,14 +39,26 @@ import { api, unwrap } from '../../api/client'
 import {
   createRecoveryEntry,
   RECOVERY_TYPE,
+  type PreflightOutcome,
   type RecoveryUiState,
-  type SchedulerPorts
+  type RestoreDecision,
+  type SchedulerPorts,
+  type SettleUnsettledResult
 } from './recoveryEntry'
-import { backoffDelayMs, backoffExhausted, probeDelayMs, probeRestartHint } from './recoveryBackoff'
+import { cleanReleaseBlocked } from './recovery-clean-gate'
+import { backoffDelayMs, backoffExhausted, probeDelayMs, probeRestartHint, withTimeout } from './recoveryBackoff'
 import { createRecoveryWatchdog, type WatchdogOutcome } from './recoveryWatchdog'
 import type { LineageRecoveryPayload } from '@shared/recovery/schemas'
 
-export type { RecoveryPhase, RecoverySlotKind, RecoveryUiState } from './recoveryEntry'
+export type {
+  RecoveryPhase,
+  RecoverySlotKind,
+  RecoveryUiState,
+  RestoreDecision,
+  PreflightOutcome,
+  SettleUnsettledResult
+} from './recoveryEntry'
+export type { PreflightConflict, PreflightView } from './recovery-restore-preflight'
 
 const TRAILING_MS = 300
 const QUIT_TIMEOUT_MS = 1500
@@ -63,6 +75,17 @@ export interface RecoverySchedulerInit {
   /** [回炉 W5] 放弃分支清恢复态 store（宿主=lineage.store.discardSession——
    *  再保存不复活已弃会话；仅恢复流程内调用，defer 后不再清） */
   discardLoadedSession(): void
+  /** [F-RECOV-04] 未落定写谓词（覆盖守卫判定源——queue 非空∨草稿在∨flushing；
+   *  缺省=fail-open 无未落定写，旧测试夹具兼容） */
+  hasUnsettledWrites?(): boolean
+  /** [F-RECOV-04] 恢复决策询问（确认框承载；缺省行为见 recoveryEntry 头注缺省表） */
+  askRestoreDecision?(decision: RestoreDecision): Promise<boolean>
+  /** [回炉 B-2] 落定当前会话写（草稿经既有 commit 入口转队列+flush+落定四条件
+   *  核验 clean∧!flushing∧queue 空∧草稿无；false=落定失败停条可重试不自动续；
+   *  对象形=核验结果+已收口计数——确认文案「已保存当前 N 项修改」数据面） */
+  settleUnsettledWrites?(): Promise<SettleUnsettledResult>
+  /** [F-RECOV-04] 恢复预检（graph/folders 读面装配→纯数据清单；缺省=跳过预检） */
+  runRestorePreflight?(payload: LineageRecoveryPayload): Promise<PreflightOutcome>
 }
 
 type RecoveryHealth = 'ok' | 'slow' | 'stuck'
@@ -116,23 +139,6 @@ function clearTimers(): void {
     clearTimeout(backoffTimer)
     backoffTimer = null
   }
-}
-
-/** 1500ms 硬超时 fail-open（§4：仅确认条动作与退出窗——常态 save 无界，红线①） */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('恢复副本操作超时')), ms)
-    p.then(
-      (v) => {
-        clearTimeout(t)
-        resolve(v)
-      },
-      (e) => {
-        clearTimeout(t)
-        reject(e)
-      }
-    )
-  })
 }
 
 // ── 呈现/复位 helper（W4 复位表单源）───────────────────────
@@ -420,7 +426,7 @@ function bumpGenFullReset(): number {
   return generation
 }
 
-function markCleanAwaitable(reason: 'clean' | 'discard'): Promise<void> {
+function markCleanAwaitable(reason: 'clean' | 'discard', releaseAllowed: boolean): Promise<void> {
   const flight = inFlight // 先捕获（bumpGen R1 弃置将清位——bounded drain 沿用该 promise）
   bumpGenFullReset()
   const ws = initFns?.workspaceId() ?? ''
@@ -443,6 +449,10 @@ function markCleanAwaitable(reason: 'clean' | 'discard'): Promise<void> {
         )
       })
     }
+    // [F-RECOV-04 clean-gate] pendingChip 在场=旧槽未决策：release 不发+账本保留
+    // （主控终裁③——本会话新写 token 留驻，后续工作区切换/放弃确认仍可收口 own 槽）；
+    // gen++/写面复位已照旧（INV-161 复位语义不受 gate 影响）
+    if (!releaseAllowed) return
     const token = lastWrittenToken ?? ownToken
     ownToken = null
     lastWrittenToken = null
@@ -467,10 +477,12 @@ function markCleanAwaitable(reason: 'clean' | 'discard'): Promise<void> {
   return chain
 }
 
-/** clean 四源挂点（flush 全成功/undo 回基线/discardSession/退出 clean）——fire-and-forget */
+/** clean 四源挂点（flush 全成功/undo 回基线/discardSession/退出 clean）——fire-and-forget。
+ *  [F-RECOV-04] pendingChip 在场时 gate 拦截 release（recovery-clean-gate 单源判定；
+ *  工作区切换域级 release 走 prepareRecoveryWorkspaceSwitch 直连 markCleanAwaitable——豁免） */
 export function markRecoveryClean(reason: 'clean' | 'discard'): void {
   if (!inited) return
-  void markCleanAwaitable(reason)
+  void markCleanAwaitable(reason, !cleanReleaseBlocked(uiState))
 }
 
 /** 退出窗收口等待（quit-flush ③ 后消费；release 自带 1500ms 界） */
@@ -483,13 +495,14 @@ export function strongQuitRecoveryBestEffort(): void {
   dispatchImmediateSave()
 }
 
-/** 工作区切换（确认弃置后）：代际先行+弃置 release（reload 竞窗留驻=无害） */
+/** 工作区切换（确认弃置后）：代际先行+弃置 release（reload 竞窗留驻=无害）。
+ *  [F-RECOV-04] 域级 release 直连 markCleanAwaitable——clean-gate 豁免面（B7） */
 export function prepareRecoveryWorkspaceSwitch(): Promise<void> {
   if (!inited) return Promise.resolve()
   // [d1-N2 主控亲笔] drain 等待 1500ms 封顶：在途 save 永不 settle 时切换不
   // 永久 busy；迟到 release=INV-167 无害族（副本留驻下次屏障承接）
   return Promise.race([
-    markCleanAwaitable('discard'),
+    markCleanAwaitable('discard', true),
     new Promise<void>((resolve) => {
       setTimeout(resolve, 1500)
     })

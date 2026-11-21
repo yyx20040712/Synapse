@@ -233,6 +233,29 @@ describe('W8 remap 分支当前图矫正主图', () => {
   })
 })
 
+describe('F-RECOV-04 defer 后 discardSession 不 release（clean-gate——B5 store 形）', () => {
+  it('defer→编辑→discardSession→release 零调用+chip 保持（新图弃置不动旧槽决策）', async () => {
+    const { deferRecoverySlot, getRecoveryState } = await import(
+      '../../../src/renderer/features/lineage/recoveryScheduler'
+    )
+    stubApi.recovery.peek.mockResolvedValue({
+      ok: true,
+      data: { slots: { 'lineage-session': { status: 'available', epoch: 0, file: { token: 'tok-r1', writtenAt: '', lastWriterSession: 'old', actionCount: 1, draftPresent: false } } } }
+    })
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    expect(getRecoveryState().pendingChip).toBe(true)
+    state().moveNode('A', 1, 2)
+    await vi.advanceTimersByTimeAsync(300)
+    stubApi.recovery.release.mockClear()
+    useLineageStore.getState().discardSession()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useLineageStore.getState().saveStatus).toBe('clean')
+    expect(stubApi.recovery.release).not.toHaveBeenCalled() // gate 拦截（B5）
+    expect(getRecoveryState().pendingChip).toBe(true)
+  })
+})
+
 describe('Z4 重放幽灵 patch：节点缺席按 CONFLICT 丢弃收口（不死循环）', () => {
   it('恢复载荷 [patch A, remove A]（A 不在图）重放→patch 丢弃+remove 正常→clean+重拉', async () => {
     // 手工构造恢复态队列（applyRecoverySession 等价面——A 缺席图）

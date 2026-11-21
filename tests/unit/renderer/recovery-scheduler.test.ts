@@ -26,6 +26,7 @@ import {
   recoveryBlocked,
   resetRecoveryScheduler,
   restoreRecoverySlot,
+  reopenRecoveryBar,
   strongQuitRecoveryBestEffort,
   awaitRecoveryQuitSettled
 } from '../../../src/renderer/features/lineage/recoveryScheduler'
@@ -1259,5 +1260,468 @@ describe('F-RECOV-01 恢复接管面溢出契约（N8 消费点穷举：takeOver
     expect(getRecoveryState().phase).toBe('await-decision') // 条保留（未成不收）
     expect(getRecoveryState().busy).toBe(false)
     expect(recoveryBlocked()).toBe(true)
+  })
+})
+
+// ── F-RECOV-04（设计稿=docs/design/2026-11-21_f-recov04-design.md §2.2/§2.3/§3.3；
+//    U1 红测试转绿后=回归锁；clean-gate=recovery-clean-gate.ts 单源判定）──
+
+describe('F-RECOV-04 clean-gate 与恢复守卫（U1 红1 转绿回归锁）', () => {
+  it('F-RECOV-04 B2：pendingChip 在场时 flush 收尾 clean 化不得 release 未决策旧槽（红1 转绿）', async () => {
+    init()
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-slot'))
+    await enterWorkspaceRecovery()
+    expect(getRecoveryState().phase).toBe('await-decision')
+    deferRecoverySlot() // 稍后处理：开门+chip——旧槽未决策
+    expect(getRecoveryState().pendingChip).toBe(true)
+    expect(recoveryBlocked()).toBe(false)
+    // 新编辑会话保存成功（stub 记账 token——账本持有本会话新写 token）
+    current = payload('new-edit')
+    notifyRecoverySaveNow()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(stubApi.recovery.save).toHaveBeenCalledTimes(1)
+    // flush 收尾路径（lineage-write-queue.ts:516 同一 markRecoveryClean 入口）：
+    // 设计语义=pendingChip 在场时 gen++/写面复位照旧，release 不得发出
+    stubApi.recovery.release.mockClear()
+    markRecoveryClean('clean')
+    await awaitRecoveryQuitSettled()
+    expect(stubApi.recovery.release).not.toHaveBeenCalled() // gate 拦截（B2）
+    expect(getRecoveryState().pendingChip).toBe(true) // 旧槽未决策——chip 必须仍在
+  })
+
+  it('F-RECOV-04 B5：defer 后 discardSession 域（reason=discard）同受 gate——旧槽不删', async () => {
+    init()
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-b5'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    current = payload('b5')
+    notifyRecoverySaveNow()
+    await vi.advanceTimersByTimeAsync(0)
+    stubApi.recovery.release.mockClear()
+    markRecoveryClean('discard')
+    await awaitRecoveryQuitSettled()
+    expect(stubApi.recovery.release).not.toHaveBeenCalled()
+    expect(getRecoveryState().pendingChip).toBe(true)
+  })
+
+  it('F-RECOV-04 B7：工作区切换域级 release 豁免 gate——pendingChip 在场照发 discard', async () => {
+    init()
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-b7'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    expect(getRecoveryState().pendingChip).toBe(true)
+    current = payload('b7')
+    notifyRecoverySaveNow()
+    await vi.advanceTimersByTimeAsync(0)
+    const { prepareRecoveryWorkspaceSwitch } = await import(
+      '../../../src/renderer/features/lineage/recoveryScheduler'
+    )
+    await prepareRecoveryWorkspaceSwitch()
+    expect(stubApi.recovery.release).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: 'ws-1', reason: 'discard' })
+    )
+  })
+
+  it('F-RECOV-04 终裁③：gate 拦截时账本保留——拦截后工作区切换仍可收口本会话新写 token', async () => {
+    init()
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-c3'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    current = payload('c3')
+    notifyRecoverySaveNow()
+    await vi.advanceTimersByTimeAsync(0) // saved('tok-1')——账本 tok-1
+    markRecoveryClean('clean') // gate 拦截——账本保留
+    await awaitRecoveryQuitSettled()
+    expect(stubApi.recovery.release).not.toHaveBeenCalled()
+    const { prepareRecoveryWorkspaceSwitch } = await import(
+      '../../../src/renderer/features/lineage/recoveryScheduler'
+    )
+    await prepareRecoveryWorkspaceSwitch() // 豁免面收口 own 槽
+    expect(stubApi.recovery.release).toHaveBeenCalledWith(expect.objectContaining({ token: 'tok-1' }))
+  })
+
+  it('F-RECOV-04 终裁①：busy 期 defer 禁用（恢复在途 defer 零效果）', async () => {
+    init()
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-busy'))
+    stubApi.recovery.read.mockReturnValue(new Promise(() => undefined) as never) // 恢复 read 永挂=busy 在途
+    await enterWorkspaceRecovery()
+    void restoreRecoverySlot()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(getRecoveryState().busy).toBe(true)
+    deferRecoverySlot()
+    expect(getRecoveryState().phase).toBe('await-decision') // 未开门
+    expect(getRecoveryState().pendingChip).toBe(false) // chip 未置
+    expect(recoveryBlocked()).toBe(true) // 门维持冻结
+  })
+})
+
+// ── F-RECOV-04 恢复覆盖守卫与确认流（宿主钩子可注入——§2.3/§3.4 主控终裁版）──
+
+import type { PreflightOutcome, RestoreDecision } from '../../../src/renderer/features/lineage/recoveryScheduler'
+
+interface HostHooks {
+  hasUnsettledWrites?(): boolean
+  askRestoreDecision?(d: RestoreDecision): Promise<boolean>
+  settleUnsettledWrites?(): Promise<boolean>
+  runRestorePreflight?(p: LineageRecoveryPayload): Promise<PreflightOutcome>
+}
+
+/** F-RECOV-04 扩展装配：宿主钩子可注入（谓词/询问/落定/预检——生产宿主=Host 恒装配） */
+function initExt(hooks: HostHooks): void {
+  initRecoveryScheduler({
+    workspaceId: () => 'ws-1',
+    snapshot: () => current,
+    loadPayload: (p) => (loaded = p),
+    onRestored: (p) => (restored = p),
+    openLineageView: () => (openedView += 1),
+    discardLoadedSession: () => (discardedLoads += 1),
+    ...hooks
+  })
+}
+
+describe('F-RECOV-04 恢复覆盖守卫与确认流（终裁⑥复审修正版——先落定后单次替换确认）', () => {
+  it('F-RECOV-04 C3：defer 后未落定写在场→恢复不 read 不 load（询问未接线=取消 fail-closed）', async () => {
+    const unsettled = true
+    initExt({ hasUnsettledWrites: () => unsettled })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g1'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    current = payload('g1-new')
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(stubApi.recovery.read).not.toHaveBeenCalled() // 守卫在 read 前
+    expect(loaded).toBeNull()
+    expect(getRecoveryState().phase).toBe('await-decision') // 停在确认分支
+    expect(getRecoveryState().busy).toBe(false)
+  })
+
+  it('F-RECOV-04 C4：落定成功→单次替换确认→预检无冲突→载入（无二次替换确认）', async () => {
+    let unsettled = true
+    const decisions: string[] = []
+    initExt({
+      hasUnsettledWrites: () => unsettled,
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return Promise.resolve(true)
+      },
+      settleUnsettledWrites: () => {
+        unsettled = false
+        return Promise.resolve(true)
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'ran', conflicts: [] })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g2'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('g2-old') } })
+    stubApi.recovery.save.mockResolvedValue(saved('tok-g2-new'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(decisions).toEqual(['settle-replace']) // 先落定后单次替换确认（终裁⑥复审修正版——确认在落定后）
+    expect(loaded).toEqual(payload('g2-old'))
+    expect(stubApi.recovery.save).toHaveBeenCalledWith(expect.objectContaining({ takeOverToken: 'tok-g2' }))
+    expect(getRecoveryState().phase).toBe('open')
+    expect(getRecoveryState().pendingChip).toBe(false) // 恢复成功清 chip（W2 同族）
+  })
+
+  it('F-RECOV-04 C4 变体：落定失败→停条可重试不自动续（不 read 不载入）', async () => {
+    const unsettled = true
+    initExt({
+      hasUnsettledWrites: () => unsettled,
+      askRestoreDecision: () => Promise.resolve(true),
+      settleUnsettledWrites: () => Promise.resolve(false) // flush 失败
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g3'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(stubApi.recovery.read).not.toHaveBeenCalled()
+    expect(loaded).toBeNull()
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().busy).toBe(false)
+  })
+
+  it('F-RECOV-04 D2：预检有冲突→清单确认（取消=副本保留；继续=载入）', async () => {
+    const conflicts = [{ index: 0, kind: 'patch-node' as const, level: 'lost' as const, reason: '第 1 项：节点调整的目标节点已不存在' }]
+    let lastDecision: RestoreDecision | null = null
+    let proceed = false
+    initExt({
+      askRestoreDecision: (d) => {
+        lastDecision = d
+        return Promise.resolve(proceed)
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'ran', conflicts })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g4'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('g4-old') } })
+    stubApi.recovery.save.mockResolvedValue(saved('tok-g4'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot() // chip=t——冲突清单带替换警示
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(lastDecision).toMatchObject({ kind: 'conflicts', replaceWarning: true, conflicts })
+    expect(loaded).toBeNull() // 取消=零载入
+    expect(getRecoveryState().busy).toBe(false)
+    expect(getRecoveryState().phase).toBe('await-decision')
+    proceed = true
+    await restoreRecoverySlot()
+    expect(loaded).toEqual(payload('g4-old')) // 确认后载入
+    expect(getRecoveryState().phase).toBe('open')
+  })
+
+  it('F-RECOV-04 C5：defer 后已落定→替换确认（取消=零载入；确认=载入清 chip）', async () => {
+    const decisions: string[] = []
+    let proceed = false
+    initExt({
+      hasUnsettledWrites: () => false,
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return Promise.resolve(proceed)
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'ran', conflicts: [] })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g5'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('g5-old') } })
+    stubApi.recovery.save.mockResolvedValue(saved('tok-g5'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(decisions).toEqual(['replace']) // 无未落定写=只替换确认
+    expect(loaded).toBeNull()
+    proceed = true
+    await restoreRecoverySlot()
+    expect(loaded).toEqual(payload('g5-old'))
+    expect(getRecoveryState().pendingChip).toBe(false)
+    expect(getRecoveryState().phase).toBe('open')
+  })
+
+  it('F-RECOV-04 非 defer 流：chip=f 无冲突零确认直达载入（A3——启动屏障语义保持）', async () => {
+    const decisions: string[] = []
+    initExt({
+      hasUnsettledWrites: () => false,
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return Promise.resolve(false)
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'ran', conflicts: [] })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g6'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('g6-old') } })
+    stubApi.recovery.save.mockResolvedValue(saved('tok-g6'))
+    await enterWorkspaceRecovery()
+    await restoreRecoverySlot()
+    expect(decisions).toEqual([]) // 零确认（e2e R1-R5 语义保持）
+    expect(loaded).toEqual(payload('g6-old'))
+    expect(getRecoveryState().phase).toBe('open')
+  })
+
+  it('F-RECOV-04 D3：预检读取失败=阻断可重试（与冲突不同态——不呈现清单不载入）', async () => {
+    const decisions: RestoreDecision[] = []
+    initExt({
+      askRestoreDecision: (d) => {
+        decisions.push(d)
+        return Promise.resolve(false) // 通知型「好」
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'read-failed' })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-g7'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('g7-old') } })
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    await restoreRecoverySlot()
+    expect(decisions).toEqual([expect.objectContaining({ kind: 'preflight-unavailable' })])
+    expect(loaded).toBeNull()
+    expect(getRecoveryState().busy).toBe(false)
+    expect(getRecoveryState().phase).toBe('await-decision') // 条保留可重试
+  })
+
+  it('F-RECOV-04 A4：放弃确认框——取消=零 release；确认=release(discard)', async () => {
+    let proceed = false
+    const decisions: string[] = []
+    initExt({
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return Promise.resolve(proceed)
+      }
+    })
+    stubApi.recovery.peek.mockResolvedValue({
+      ok: true,
+      data: { slots: { 'lineage-session': { status: 'available', epoch: 0, file: { token: 'tok-g8', writtenAt: 'w', lastWriterSession: 'old', actionCount: 2, draftPresent: true } } } }
+    })
+    await enterWorkspaceRecovery()
+    await discardRecoverySlot()
+    expect(decisions).toEqual(['discard'])
+    expect(stubApi.recovery.release).not.toHaveBeenCalled() // 确认前不 release
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().busy).toBe(false)
+    proceed = true
+    await discardRecoverySlot()
+    expect(stubApi.recovery.release).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'tok-g8', reason: 'discard' })
+    )
+    expect(getRecoveryState().phase).toBe('open')
+    expect(recoveryBlocked()).toBe(false)
+  })
+
+  // ── [回炉 B-3] 确认流跨代判废（opSeq 与 gen 分轴——enter/reset 作废旧操作）──
+  // 审查探针形态（b0-impl/review-entry-race-probe.ts）：旧确认未决时重入工作区，
+  // 旧确认迟到放行仍执行 read→loadPayload→takeOver 并把新决策条改 open。
+  // gen 检查不设防：内部 save() 自身可触发 clean-gen 增长，旧操作迟到时 gen 快照
+  // 已与新代际同值——判废须走操作序号轴，不走 gen 轴。
+
+  it('F-RECOV-04 B-3 竞态（恢复路）：确认未决→enter 重入→旧确认迟到=零副作用', async () => {
+    let unsettled = true
+    const decisions: string[] = []
+    let resolveAsk: (v: boolean) => void = () => undefined
+    initExt({
+      hasUnsettledWrites: () => unsettled,
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return new Promise<boolean>((r) => {
+          resolveAsk = r
+        })
+      },
+      settleUnsettledWrites: () => {
+        unsettled = false
+        return Promise.resolve(true)
+      },
+      runRestorePreflight: () => Promise.resolve({ kind: 'ran', conflicts: [] })
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-old'))
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: payload('old') } })
+    stubApi.recovery.save.mockResolvedValue(saved('tok-takeover'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    const oldRestore = restoreRecoverySlot() // 旧确认未决（ask 挂起）
+    await vi.advanceTimersByTimeAsync(0)
+    expect(decisions).toEqual(['settle-replace']) // 旧操作已到确认步
+    // 重入工作区：enter bumpGen+重 peek——新决策条=tok-new，旧操作身份作废
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-new'))
+    await enterWorkspaceRecovery()
+    expect(getRecoveryState().file?.token).toBe('tok-new')
+    expect(getRecoveryState().busy).toBe(false) // enter 已清 busy
+    resolveAsk(true) // 旧确认迟到
+    await oldRestore
+    // 旧操作零副作用：不 read、不载入、不动新条状态、不复写 busy、不开门
+    expect(stubApi.recovery.read).not.toHaveBeenCalled()
+    expect(loaded).toBeNull()
+    expect(getRecoveryState().file?.token).toBe('tok-new')
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().busy).toBe(false)
+    expect(recoveryBlocked()).toBe(true) // 门维持冻结（旧操作不得开门）
+  })
+
+  it('F-RECOV-04 B-3 竞态（放弃路）：确认未决→enter 重入→旧确认迟到=零 release', async () => {
+    const decisions: string[] = []
+    let resolveAsk: (v: boolean) => void = () => undefined
+    initExt({
+      askRestoreDecision: (d) => {
+        decisions.push(d.kind)
+        return new Promise<boolean>((r) => {
+          resolveAsk = r
+        })
+      }
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-old'))
+    stubApi.recovery.release.mockResolvedValue({ ok: true, data: { status: 'released', epoch: 1 } })
+    await enterWorkspaceRecovery()
+    const oldDiscard = discardRecoverySlot() // 放弃确认未决
+    await vi.advanceTimersByTimeAsync(0)
+    expect(decisions).toEqual(['discard'])
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-new'))
+    await enterWorkspaceRecovery()
+    expect(getRecoveryState().file?.token).toBe('tok-new')
+    resolveAsk(true) // 旧确认迟到
+    await oldDiscard
+    // 旧操作零副作用：release（唯一删除径）零调用、新条状态与门不动
+    expect(stubApi.recovery.release).not.toHaveBeenCalled()
+    expect(getRecoveryState().file?.token).toBe('tok-new')
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().busy).toBe(false)
+    expect(recoveryBlocked()).toBe(true)
+  })
+
+  // ── [复审 R2] 三边界缺口回归锁（探针形态=review2-entry-await-probe.ts）──
+
+  it('F-RECOV-04 R2-B1：旧 enter 的 peek 迟到 reject 不得覆盖新决策条/解冻新门', async () => {
+    initExt({})
+    let rejectPeek: (e: Error) => void = () => undefined
+    stubApi.recovery.peek.mockImplementationOnce(
+      () =>
+        new Promise((_res, rej) => {
+          rejectPeek = rej
+        })
+    )
+    const oldEnter = enterWorkspaceRecovery() // 旧 enter 挂在 peek
+    await vi.advanceTimersByTimeAsync(0)
+    // 重入：新 enter 得新槽=await-decision 冻结
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-new-enter'))
+    await enterWorkspaceRecovery()
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().file?.token).toBe('tok-new-enter')
+    expect(recoveryBlocked()).toBe(true)
+    rejectPeek(new Error('peek late')) // 旧 peek 迟到失败
+    await oldEnter
+    // 旧失败零副作用：新条不动、门维持冻结、不置 degraded
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().file?.token).toBe('tok-new-enter')
+    expect(recoveryBlocked()).toBe(true)
+    expect(getRecoveryState().degraded).toBe(false)
+  })
+
+  it('F-RECOV-04 R2-B2：落定钩子 reject=停条 busy=f 门回冻结可重试（read/load 零调用）', async () => {
+    initExt({
+      hasUnsettledWrites: () => true,
+      settleUnsettledWrites: () => Promise.reject(new Error('settle exploded'))
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-r2b2'))
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    reopenRecoveryBar()
+    await restoreRecoverySlot() // 现实现向外 reject=红；修复后停条收口
+    expect(getRecoveryState().busy).toBe(false)
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(recoveryBlocked()).toBe(true) // 门回冻结（开门窗收口）
+    expect(stubApi.recovery.read).not.toHaveBeenCalled()
+    expect(loaded).toBeNull()
+  })
+
+  it('F-RECOV-04 R2-W1：folder 清单挂起→enter 重入→旧响应放行=旧操作零预检派发', async () => {
+    const preflightCalls: number[] = []
+    let resolveFolders: (v: unknown) => void = () => undefined
+    initExt({
+      runRestorePreflight: () => {
+        preflightCalls.push(1)
+        return Promise.resolve({ kind: 'ran', conflicts: [] })
+      }
+    })
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-r2w1'))
+    // 非 __main__ folderId 才走 folders.list（主图短路同步真）
+    const f1Payload = { ...payload('r2w1'), folderId: 'f1' }
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: f1Payload } })
+    stubApi.folders.list.mockImplementationOnce(
+      () =>
+        new Promise((res) => {
+          resolveFolders = res
+        })
+    )
+    await enterWorkspaceRecovery()
+    const oldRestore = restoreRecoverySlot() // 旧操作挂在 folderAlive 的清单读
+    await vi.advanceTimersByTimeAsync(0)
+    stubApi.recovery.peek.mockResolvedValue(availPeek('tok-new-w1'))
+    await enterWorkspaceRecovery() // 重入作废旧操作
+    expect(getRecoveryState().file?.token).toBe('tok-new-w1')
+    resolveFolders({ ok: true, data: [{ id: 'f1', name: '夹', position: 0, createdAt: 't' }] })
+    await oldRestore
+    // 判废在预检派发前（现实现仍派发 1 次=红）；load 零调用、新条不动
+    expect(preflightCalls).toHaveLength(0)
+    expect(loaded).toBeNull()
+    expect(getRecoveryState().file?.token).toBe('tok-new-w1')
+    expect(getRecoveryState().phase).toBe('await-decision')
+    expect(getRecoveryState().busy).toBe(false)
   })
 })

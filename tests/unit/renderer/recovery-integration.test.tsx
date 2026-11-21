@@ -250,6 +250,165 @@ describe('F-VISFB-65 草稿四态：commit 窗去重判据+快照生命周期（
   })
 })
 
+// ── F-RECOV-04（设计稿=docs/design/2026-11-21_f-recov04-design.md §2.2/§2.3；
+//    U1 红测试转绿后=回归锁；宿主谓词接线=覆盖守卫判定源）──
+
+describe('F-RECOV-04 defer 后恢复覆盖守卫（U1 红2 转绿回归锁）', () => {
+  it('F-RECOV-04 C3：defer 后当前会话 queue 非空时恢复不得直接 loadPayload 覆盖（红2 转绿）', async () => {
+    // 本用例自装配捕获 loadPayload（既有 beforeEach 桩为 no-op——零改既有行）；
+    // 宿主谓词接线=覆盖守卫判定源（queue 非空∨草稿在∨flushing——设计稿 §3.4）
+    let loadedPayload: LineageRecoveryPayload | null = null
+    resetRecoveryScheduler()
+    initRecoveryScheduler({
+      workspaceId: () => 'ws-1',
+      snapshot: payloadOf,
+      loadPayload: (p) => {
+        loadedPayload = p
+      },
+      onRestored: () => undefined,
+      openLineageView: () => undefined,
+      discardLoadedSession: () => useLineageStore.getState().discardSession(),
+      hasUnsettledWrites: () => {
+        const s = useLineageStore.getState()
+        return s.queue.length > 0 || s.flushing || noteDraftSnapshot() !== null
+      }
+    })
+    const { deferRecoverySlot, reopenRecoveryBar, restoreRecoverySlot } = await import(
+      '../../../src/renderer/features/lineage/recoveryScheduler'
+    )
+    stubApi.recovery.peek.mockResolvedValue({
+      ok: true,
+      data: {
+        slots: {
+          'lineage-session': {
+            status: 'available',
+            epoch: 0,
+            file: { token: 'tok-slot', writtenAt: '', lastWriterSession: 'old', actionCount: 1, draftPresent: false }
+          }
+        }
+      }
+    })
+    await enterWorkspaceRecovery()
+    expect(getRecoveryState().phase).toBe('await-decision')
+    deferRecoverySlot() // 开门+chip——进入编辑期
+    expect(getRecoveryState().pendingChip).toBe(true)
+    // 新编辑未落定：queue 非空（moveNode 入队+置脏）
+    useLineageStore.getState().moveNode('A', 3, 4)
+    expect(useLineageStore.getState().queue.length).toBe(1)
+    // 查看重开→恢复：覆盖守卫语义=未落定写在场时不 read 后直接 loadPayload、不 takeOver
+    reopenRecoveryBar()
+    expect(getRecoveryState().phase).toBe('await-decision')
+    const oldSnapshot: LineageRecoveryPayload = {
+      folderId: '__main__',
+      graph: {
+        nodes: [node('OLD')],
+        edges: [],
+        lineTypeNames: ['一', '二', '三', '四', '五', '六'],
+        floatingNotes: []
+      },
+      queue: [],
+      draft: null
+    }
+    stubApi.recovery.read.mockResolvedValue({ ok: true, data: { status: 'found', payload: oldSnapshot } })
+    stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'saved', token: 'tok-takeover', epoch: 0 } })
+    stubApi.recovery.save.mockClear()
+    await restoreRecoverySlot()
+    try {
+      expect(loadedPayload).toBeNull() // ← 现实现 recoveryEntry.ts:165 无条件载入=红
+      expect(stubApi.recovery.save).not.toHaveBeenCalled() // 未接管（现实现 takeOver 已发=红）
+      expect(useLineageStore.getState().queue.length).toBe(1) // 新编辑未被旧快照清场
+    } finally {
+      // 收尾清残留脏态（finally——红态下也执行）：后续用例的 beforeEach 中
+      // enterWorkspaceRecovery 先于 store 复位执行，脏快照会经 W9 开门补存 arm
+      // 真实 trailing timer，占住 trailingTimer 位污染后续假计时器窗口
+      useLineageStore.setState({ saveStatus: 'clean', queue: [], undoStack: [], redoStack: [], needsReload: false })
+    }
+  })
+})
+
+describe('F-RECOV-04 defer 后 clean 化与放弃（真实 store+scheduler 序列——设计稿 §2.2 B2/B3/B5+§2.3 C6）', () => {
+  /** defer 前置：重 enter available 槽+稍后处理（复用本文件 beforeEach 装配） */
+  async function deferWithSlot(token: string): Promise<void> {
+    const { deferRecoverySlot } = await import('../../../src/renderer/features/lineage/recoveryScheduler')
+    stubApi.recovery.peek.mockResolvedValue({
+      ok: true,
+      data: { slots: { 'lineage-session': { status: 'available', epoch: 0, file: { token, writtenAt: '', lastWriterSession: 'old', actionCount: 1, draftPresent: false } } } }
+    })
+    await enterWorkspaceRecovery()
+    deferRecoverySlot()
+    expect(getRecoveryState().pendingChip).toBe(true)
+  }
+
+  it('F-RECOV-04 B2：defer→编辑→flush 全成功→release 零调用（旧槽保留）+chip 常驻', async () => {
+    await deferWithSlot('tok-i1')
+    stubApi.recovery.release.mockClear()
+    useLineageStore.getState().moveNode('A', 3, 4)
+    await useLineageStore.getState().save()
+    await settle()
+    expect(useLineageStore.getState().saveStatus).toBe('clean')
+    expect(stubApi.recovery.release).not.toHaveBeenCalled() // clean-gate 拦截
+    expect(getRecoveryState().pendingChip).toBe(true)
+  })
+
+  it('F-RECOV-04 B3：defer→编辑→undo 回基线→release 零调用', async () => {
+    await deferWithSlot('tok-i2')
+    useLineageStore.getState().moveNode('A', 3, 4)
+    await settle()
+    stubApi.recovery.release.mockClear()
+    useLineageStore.getState().undo()
+    await settle(20)
+    expect(useLineageStore.getState().saveStatus).toBe('clean')
+    expect(stubApi.recovery.release).not.toHaveBeenCalled()
+  })
+
+  it('F-RECOV-04 B5：defer→编辑→discardSession→release 零调用（新图弃置不动旧槽决策）', async () => {
+    await deferWithSlot('tok-i3')
+    useLineageStore.getState().moveNode('A', 3, 4)
+    await settle()
+    stubApi.recovery.release.mockClear()
+    useLineageStore.getState().discardSession()
+    await settle(20)
+    expect(stubApi.recovery.release).not.toHaveBeenCalled()
+    expect(getRecoveryState().pendingChip).toBe(true)
+  })
+
+  it('F-RECOV-04 C6：defer→编辑→查看→放弃（确认）→只删旧槽不清 defer 后新图', async () => {
+    try {
+      // 重装配注入确认钩子（既有 beforeEach 装配无钩子——本用例自扩）
+      resetRecoveryScheduler()
+      initRecoveryScheduler({
+        workspaceId: () => 'ws-1',
+        snapshot: payloadOf,
+        loadPayload: () => undefined,
+        onRestored: () => undefined,
+        openLineageView: () => undefined,
+        discardLoadedSession: () => useLineageStore.getState().discardSession(),
+        askRestoreDecision: () => Promise.resolve(true)
+      })
+      await deferWithSlot('tok-i4')
+      useLineageStore.getState().moveNode('A', 3, 4)
+      await settle()
+      stubApi.recovery.release.mockClear()
+      const { reopenRecoveryBar, discardRecoverySlot } = await import(
+        '../../../src/renderer/features/lineage/recoveryScheduler'
+      )
+      reopenRecoveryBar()
+      expect(getRecoveryState().phase).toBe('await-decision')
+      await discardRecoverySlot()
+      expect(stubApi.recovery.release).toHaveBeenCalledWith(
+        expect.objectContaining({ token: 'tok-i4', reason: 'discard' })
+      )
+      // 新图保留：restoredLoaded=false（defer 置）——弃置清态不触发
+      expect(useLineageStore.getState().queue).toHaveLength(1)
+      expect(useLineageStore.getState().saveStatus).toBe('dirty')
+    } finally {
+      // 收尾清残留脏态（U1 处置沿——防 beforeEach W9 补存 arm trailing timer 污染
+      // 后续 fake-timer 用例）
+      useLineageStore.setState({ saveStatus: 'clean', queue: [], undoStack: [], redoStack: [], needsReload: false })
+    }
+  })
+})
+
 describe('F-RECOV-01 溢出契约贯通（N4：queue-overflow→退避→unavailable→成功清除）', () => {
   it('save=queue-overflow：编辑路径计 failStreak 走退避；4 连溢出→degraded(kind=unavailable)；成功清除', async () => {
     vi.useFakeTimers()

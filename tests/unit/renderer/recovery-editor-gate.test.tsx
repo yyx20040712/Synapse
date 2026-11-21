@@ -161,6 +161,31 @@ describe('R5 冻结期编辑器门（recoveryBlocked 挂 interactive）', () => 
   })
 })
 
+describe('F-RECOV-04 defer 后编辑解锁（冻结→稍后处理→可编辑——E2 面）', () => {
+  it('available 确认条期不开编辑器；defer 开门后可开', async () => {
+    const { deferRecoverySlot } = await import('../../../src/renderer/features/lineage/recoveryScheduler')
+    stubApi.recovery.peek.mockResolvedValue({
+      ok: true,
+      data: { slots: { 'lineage-session': { status: 'available', epoch: 0, file: { token: 'tok-e1', writtenAt: '', lastWriterSession: 'old', actionCount: 1, draftPresent: false } } } }
+    })
+    mountNotes()
+    openEditor()
+    expect(document.querySelector('.tl-note-input')).toBeNull() // 装配即冻结（W9 既有）
+    await act(async () => {
+      await enterWorkspaceRecovery() // available → 确认条（仍冻结）
+      await settle()
+    })
+    openEditor()
+    expect(document.querySelector('.tl-note-input')).toBeNull() // 确认条期拒
+    await act(async () => {
+      deferRecoverySlot() // 稍后处理开门
+      await settle()
+    })
+    openEditor()
+    expect(document.querySelector('.tl-note-input')).not.toBeNull() // defer 解锁
+  })
+})
+
 describe('d1-W1 冻结期卸载残留快照页内再水化（主控亲笔）', () => {
   it('残留快照在场笔记：重挂载即再水化（冻结期让位只读——解冻后 textarea 重现正文）', async () => {
     act(() => {

@@ -53,17 +53,28 @@ const barText = (): string => document.querySelector('[data-testid="recovery-bar
 const testid = (id: string): HTMLElement | null => document.querySelector(`[data-testid="${id}"]`)
 
 describe('F-VISFB-65 RecoveryBar —— 确认条四行形+chip（§6 呈现锚）', () => {
-  it('available 行：会话名+本地时间+待保存动作 N（含草稿）+恢复/放弃', () => {
+  it('available 行：会话名+本地时间+待保存动作 N（含草稿）+恢复/放弃/稍后处理三入口+冻结说明', () => {
     mountBar(state())
     expect(barText()).toContain('脉络图暂存会话')
     expect(barText()).toContain('待保存动作 3')
     expect(barText()).toContain('含未收口草稿')
     expect(testid('recovery-restore')).not.toBeNull()
     expect(testid('recovery-discard')).not.toBeNull()
-    expect(testid('recovery-defer')).toBeNull()
+    // [F-RECOV-04 件一] available 行 defer 三入口（原「仅恢复/放弃且无 defer」
+    // 断言随批改三入口——主控授权修改；plan §2.4 迁移清单）
+    expect(testid('recovery-defer')).not.toBeNull()
+    // [F-RECOV-04 件六] 冻结原因外显
+    expect(barText()).toContain('确认前编辑暂不可用')
   })
 
-  it('invalid 行：无法读取的副本——仅放弃（foreign-version 同形）', () => {
+  it('available 行 busy：恢复/放弃/稍后处理全钮禁用（F-RECOV-04 终裁①——defer 同禁）', () => {
+    mountBar(state({ busy: true }))
+    expect((testid('recovery-restore') as HTMLButtonElement).disabled).toBe(true)
+    expect((testid('recovery-discard') as HTMLButtonElement).disabled).toBe(true)
+    expect((testid('recovery-defer') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('invalid 行：无法读取的副本——仅放弃（foreign-version 同形；不提供 defer）', () => {
     mountBar(state({ slotKind: 'invalid', file: { ...FILE, writtenAt: '', actionCount: 0, draftPresent: false } }))
     expect(barText()).toContain('无法读取的副本')
     expect(testid('recovery-restore')).toBeNull()

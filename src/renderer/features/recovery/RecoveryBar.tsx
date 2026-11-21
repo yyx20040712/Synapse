@@ -1,15 +1,16 @@
 /**
- * [F-VISFB-65 U7] RecoveryBar —— 恢复副本确认条（纯展示件——props 驱动，
- * 跨域接线在 app/RecoveryBarHost 组合层；设计书 §6）。
+ * [F-VISFB-65 U7 → F-RECOV-04] RecoveryBar —— 恢复副本确认条（纯展示件——
+ * props 驱动，跨域接线在 app/RecoveryBarHost 组合层；设计书 §6）。
  *
  * 行为面（状态×呈现全表）：
  * - available：「脉络图暂存会话·<writtenAt 本地时间>·待保存动作 N（含未收口
- *   草稿）」+〔恢复〕〔放弃〕
+ *   草稿）」+〔恢复〕〔放弃〕〔稍后处理〕（F-RECOV-04 件一——defer 三入口；
+ *   确认条说明行=冻结原因外显〔件六〕）
  * - invalid/foreign-version：「无法读取的副本」+〔放弃〕（仅——INV-160 用户
- *   release 唯一删除径）
+ *   release 唯一删除径；不提供 defer）
  * - 死文件夹（deadFolder）：「原文件夹已删除，副本无法恢复」+〔放弃〕（主）
  *   +〔稍后处理〕（收起条开门可编辑——W-07）
- * - busy（恢复/放弃在途）：行按钮禁用
+ * - busy（恢复/放弃在途）：行按钮全禁用（defer 同禁——F-RECOV-04 终裁①）
  * - 收起后 chip（pendingChip）：「恢复副本待处理，当前编辑未受保护」常驻
  *   +〔查看〕重开条（再冻结直到决策）
  * - degraded chip（INV-166——不 toast 轰炸、不阻断编辑）[F-RECOV-01 三档]：
@@ -63,7 +64,14 @@ export function RecoveryBar(props: RecoveryBarProps): JSX.Element | null {
     const title = state.deadFolder ? '原文件夹已删除，副本无法恢复' : summary
     return (
       <div className="recovery-bar" role="region" aria-label="恢复副本确认条" data-testid="recovery-bar">
-        <span className="recovery-bar-text">{title}</span>
+        <span className="recovery-bar-text">
+          {title}
+          {/* [F-RECOV-04 件六] 冻结原因外显：决策前编辑被门拒写的说明承载于本条
+              （不重构 LineageToolbar——E 批统一控件禁用形态） */}
+          <span className="recovery-bar-note" data-testid="recovery-freeze-note">
+            ·恢复副本待决策，确认前编辑暂不可用
+          </span>
+        </span>
         <span className="recovery-bar-actions">
           {isAvailable && !state.deadFolder && (
             <button type="button" disabled={state.busy} onClick={props.onRestore} data-testid="recovery-restore">
@@ -79,7 +87,9 @@ export function RecoveryBar(props: RecoveryBarProps): JSX.Element | null {
           >
             放弃
           </button>
-          {state.deadFolder && (
+          {/* [F-RECOV-04 件一] available 槽 defer 可见入口（deadFolder 行既有 defer
+              一并由 slotKind==='available' 覆盖；invalid/foreign-version 不提供） */}
+          {isAvailable && (
             <button type="button" disabled={state.busy} onClick={props.onDefer} data-testid="recovery-defer">
               稍后处理
             </button>

@@ -37,3 +37,22 @@ export function probeDelayMs(probeFailStreak: number): number {
 export function probeRestartHint(probeFailStreak: number): boolean {
   return probeFailStreak >= PROBE_RESTART_HINT_AT
 }
+
+/** [F-RECOV-04 随批迁入] 1500ms 硬超时 fail-open（§4：仅确认条动作与退出窗——
+ *  常态 save 无界，红线①；自 recoveryScheduler 迁入——本件=recovery 域计时
+ *  纯函数族归置，max-lines 收口，行为零变） */
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('恢复副本操作超时')), ms)
+    p.then(
+      (v) => {
+        clearTimeout(t)
+        resolve(v)
+      },
+      (e) => {
+        clearTimeout(t)
+        reject(e)
+      }
+    )
+  })
+}
