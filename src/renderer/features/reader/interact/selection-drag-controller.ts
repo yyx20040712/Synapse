@@ -65,6 +65,7 @@ import { collectSpans } from '../anchors/annotation-anchor'
 import { boxOf } from '../anchors/anchor-blank-snap'
 import { authorizeBlockPoint, detectBlockLayout, type TextBlock } from './selection-block-layout'
 import type { LineBox } from './selection-column-layout'
+import { bandAtY, projectCaretTo, rowBandsOf, type SlotItem } from './selection-slot-projection'
 
 /** 归一化振荡重试上限（B4 有界退出；回炉 W-1 语义显式化）：限写=**每
  *  mousemove 写窗** ≤3——用户输入事件重开预算（归一化事件无伴随 move〔探针
@@ -88,15 +89,13 @@ export interface SelectionDragHandle {
 }
 
 /** 量测项：textLayer 本地行盒+其文本节点（行盒=layout 成员引用恒定——回映依据） */
-interface DragItem {
-  box: LineBox
-  text: Text
-}
+type DragItem = SlotItem
 
 /** 拖选会话（S1 态全量——纯可变数据，无 DOM 写缓存）。[F-SELBLK-01] 字段
  *  迁移：anchorColumn/otherColumn/twoColumn/colItems/colX0/colX1 →
  *  anchorBlock/blockItems/blockX0/blockX1（违例判据=member≠anchorBlock，
- *  单栏会话同样 enforce）。 */
+ *  单栏会话同样 enforce）。[B1-U2 单元 1] 追加 textLayer（容器元素槽位判定
+ *  宿主）与 down（mousedown 原点——容器槽位 anchor 投影依据）。 */
 interface DragSession {
   anchorBlock: number
   items: DragItem[]
@@ -104,8 +103,10 @@ interface DragSession {
   blockItems: DragItem[]
   blockX0: number
   blockX1: number
+  textLayer: HTMLElement
   originX: number
   originY: number
+  down: { x: number; y: number }
   pointer: { x: number; y: number }
   writes: number
 }
@@ -170,21 +171,8 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     return null
   }
 
-  /** 锚栏行带（y 重叠传递链，相切不算重叠——51 号 rowBands 同式，作用域=锚栏） */
-  function rowBandsOf(items: DragItem[]): Array<{ items: DragItem[]; top: number; bottom: number }> {
-    const sorted = [...items].sort((a, b) => a.box.y - b.box.y)
-    const bands: Array<{ items: DragItem[]; top: number; bottom: number }> = []
-    for (const it of sorted) {
-      const cur = bands[bands.length - 1]
-      if (cur !== undefined && it.box.y < cur.bottom) {
-        cur.items.push(it)
-        cur.bottom = Math.max(cur.bottom, it.box.y + it.box.h)
-      } else {
-        bands.push({ items: [it], top: it.box.y, bottom: it.box.y + it.box.h })
-      }
-    }
-    return bands
-  }
+  /** 锚栏行带（y 重叠传递链，相切不算重叠——51 号 rowBands 同式，作用域=锚栏）
+   *  [B1-U2] 实现迁至 selection-slot-projection（与槽位投影共用单源） */
 
   /** 投影目标（头注行为层投影语义——[F-VISFB-53CI-02] B1/B2/B3，作用域=锚块）：
    *  y→锚块内行带映射（带内=该带；间隙=距 y 最近带，等距取上带；越顶/越底=
@@ -193,38 +181,49 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
   function projectTo(s: DragSession, y: number, rowEnd: boolean): DragBoundary | null {
     const items = s.blockItems
     if (items.length === 0) return null
-    const bands = rowBandsOf(items)
-    let band = bands[0]!
-    const last = bands[bands.length - 1]!
-    if (y > last.bottom) {
-      band = last // 越末带底 → 视觉末带
-    } else if (y >= band.top) {
-      // 带内或间隙：首个 y ≤ bottom 的带；y < 其 top=间隙 → 距 y 最近带（等距取上带）
-      for (let i = 0; i < bands.length; i += 1) {
-        const b = bands[i]!
-        if (y > b.bottom) continue
-        if (y >= b.top) {
-          band = b
-        } else {
-          const prev = bands[i - 1]!
-          band = y - prev.bottom <= b.top - y ? prev : b
-        }
-        break
-      }
-    }
-    // y < bands[0].top=越首带顶 → band 初值（视觉首带）直用
+    const band = bandAtY(rowBandsOf(items), y)
+    if (band === null) return null
     const pick = band.items.reduce((m, it) => (rowEnd ? it.box.x + it.box.w > m.box.x + m.box.w : it.box.x < m.box.x) ? it : m)
     return rowEnd ? { node: pick.text, offset: pick.text.data.length } : { node: pick.text, offset: 0 }
   }
 
-  /** 违例核查+钳制写（幂等；会话外/坍缩零写）。[F-SELBLK-01] 违例判据=边界
-   *  项 member 存在且 ≠ 锚块（flow/full-span/rotated 统一）；单栏会话同样执行
-   *  （52 号 twoColumn no-op 取消）。 */
+  /** [B1-U2 单元 1-②] textLayer 容器元素槽位判定：边界节点是 textLayer 容器
+   *  自身（(DIV.textLayer, k) 形态——Chromium 对无 span 点的 caret 解析）。
+   *  span 元素槽位（(span,0)）仍走 itemOf 既有归属路径，不在此列。 */
+  function isContainerSlot(node: Node, s: DragSession): boolean {
+    return node.nodeType === Node.ELEMENT_NODE && node === s.textLayer
+  }
+
+  /** [B1-U2 单元 1-②] 容器槽位 → 新投影路径（带内最近盒按 x 距离）写回。
+   *  [B1-U3 单元 6] origin=session.down——同域约束域锚（focus 路径指针未命中
+   *  带内任何盒时收窄 down 命中盒 x 域；anchor 路径 x/y=down 自身，指针命中
+   *  盒内=收窄门不触发，收窄自洽行为零变）。 */
+  function projectSlot(s: DragSession, x: number, y: number): DragBoundary | null {
+    return projectCaretTo(s.blockItems, x, y, s.down)
+  }
+
+  /** 违例核查+钳制写（幂等；会话外零写）。[F-SELBLK-01] 违例判据=边界项
+   *  member 存在且 ≠ 锚块（flow/full-span/rotated 统一）；单栏会话同样执行
+   *  （52 号 twoColumn no-op 取消）。[B1-U2 单元 1-②] textLayer 容器元素槽位
+   *  （itemOf=null）自本批起为可解析违例：focus 按 session.pointer、anchor 按
+   *  mousedown 原点投影（新投影路径=带内最近盒按 x 距离；projectTo 二值路径
+   *  行为零变）。坍缩选区（mousedown 默认动作覆写形态）若边界仍为容器槽位，
+   *  按同一投影路径重写坍缩光标（主控终裁 1 增补规格）。 */
   function enforce(): void {
     const s = session
     if (s === null) return
     const sel = window.getSelection()
-    if (sel === null || sel.rangeCount === 0 || sel.isCollapsed || sel.anchorNode === null || sel.focusNode === null) {
+    if (sel === null || sel.rangeCount === 0 || sel.anchorNode === null || sel.focusNode === null) {
+      return
+    }
+    if (sel.isCollapsed) {
+      if (!isContainerSlot(sel.anchorNode, s)) return
+      const proj = projectSlot(s, s.pointer.x, s.pointer.y)
+      if (proj === null || (proj.node === sel.anchorNode && proj.offset === sel.anchorOffset)) return
+      if (s.writes >= WRITE_RETRY_CAP) return
+      sel.setBaseAndExtent(proj.node, proj.offset, proj.node, proj.offset)
+      ownWrite = { anchorNode: proj.node, anchorOffset: proj.offset, focusNode: proj.node, focusOffset: proj.offset }
+      s.writes += 1
       return
     }
     let anchorNode: Node = sel.anchorNode
@@ -232,23 +231,42 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
     let focusNode: Node = sel.focusNode
     let focusOffset = sel.focusOffset
     let changed = false
-    const aItem = itemOf(anchorNode, s.items)
-    if (aItem !== null && s.member.get(aItem.box) !== undefined && s.member.get(aItem.box) !== s.anchorBlock) {
-      const cy = aItem.box.y + aItem.box.h / 2
-      const proj = projectTo(s, cy, aItem.box.x >= s.blockX1)
+    if (isContainerSlot(anchorNode, s)) {
+      // 容器槽位 anchor（shift+click/翻转态）：按 mousedown 原点投影回锚块
+      const proj = projectSlot(s, s.down.x, s.down.y)
       if (proj !== null && (proj.node !== anchorNode || proj.offset !== anchorOffset)) {
         anchorNode = proj.node
         anchorOffset = proj.offset
         changed = true
       }
+    } else {
+      const aItem = itemOf(anchorNode, s.items)
+      if (aItem !== null && s.member.get(aItem.box) !== undefined && s.member.get(aItem.box) !== s.anchorBlock) {
+        const cy = aItem.box.y + aItem.box.h / 2
+        const proj = projectTo(s, cy, aItem.box.x >= s.blockX1)
+        if (proj !== null && (proj.node !== anchorNode || proj.offset !== anchorOffset)) {
+          anchorNode = proj.node
+          anchorOffset = proj.offset
+          changed = true
+        }
+      }
     }
-    const fItem = itemOf(focusNode, s.items)
-    if (fItem !== null && s.member.get(fItem.box) !== undefined && s.member.get(fItem.box) !== s.anchorBlock) {
-      const proj = projectTo(s, s.pointer.y, s.pointer.x >= s.blockX1)
+    if (isContainerSlot(focusNode, s)) {
+      const proj = projectSlot(s, s.pointer.x, s.pointer.y)
       if (proj !== null && (proj.node !== focusNode || proj.offset !== focusOffset)) {
         focusNode = proj.node
         focusOffset = proj.offset
         changed = true
+      }
+    } else {
+      const fItem = itemOf(focusNode, s.items)
+      if (fItem !== null && s.member.get(fItem.box) !== undefined && s.member.get(fItem.box) !== s.anchorBlock) {
+        const proj = projectTo(s, s.pointer.y, s.pointer.x >= s.blockX1)
+        if (proj !== null && (proj.node !== focusNode || proj.offset !== focusOffset)) {
+          focusNode = proj.node
+          focusOffset = proj.offset
+          changed = true
+        }
       }
     }
     if (!changed) return
@@ -270,6 +288,19 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
   return {
     onMouseDown(e: MouseEvent): void {
       if (e.button !== 0 || !(e.target instanceof Element)) return
+      // [B1-U2 单元 2 —— A1 拦截语义恢复] 常规模式 mousedown 命中标注矩形
+      // （pageRoot 内）→ preventDefault 杀原生垃圾选区链（S5/S7：矩形槽位在
+      // DOM 序位于整个 textLayer 之后）+ 不启动会话。选择模式矩形带
+      // pointer-events:none 恒不命中（AnnotationLayer 既有分支，本件不触）。
+      // Chromium 下 mousedown preventDefault 不取消 click——标注点击开菜单
+      // 语义由既有 annotation-menu 测试链承载。
+      const rectEl = e.target.closest('[data-testid="annotation-rect"]')
+      if (rectEl !== null && pageRoot.contains(rectEl)) {
+        ownWrite = null
+        session = null
+        e.preventDefault()
+        return
+      }
       const textLayer = e.target.closest('.textLayer')
       if (textLayer === null || !pageRoot.contains(textLayer)) return
       // [回炉 B-1] 新 drag epoch=新签名域：授权/未授权两径均清旧纪自写签名
@@ -289,17 +320,35 @@ export function createSelectionDragController(opts: { pageRoot: HTMLElement }): 
         for (const b of block.boxes) member.set(b, block.id)
       }
       const block: TextBlock = layout.blocks[auth.blockId]!
-      session = {
+      const s: DragSession = {
         anchorBlock: auth.blockId,
         items,
         member,
         blockItems: block.boxes.map((b) => items.find((it) => it.box === b)!),
         blockX0: block.x0,
         blockX1: block.x1,
+        textLayer: textLayer as HTMLElement,
         originX: ox,
         originY: oy,
+        down: { x: px, y: py },
         pointer: { x: px, y: py },
         writes: 0
+      }
+      session = s
+      // [B1-U2 单元 1-① —— 主控终裁 1 路径 a：仅写不阻默认] 非 span 授权点
+      // （textLayer 容器/图区空白等，经最近块回退授权）：mousedown 时刻程序化
+      // 置坍缩光标于几何投影位（新投影路径），不 preventDefault——原生拖选
+      // 扩展保持启动，拖选期槽位由 selectionchange→enforce（含坍缩槽位再锚）
+      // 逐帧纠正。span 命中点零变（原生锚已正确）。
+      const spanEl = e.target.closest('span')
+      const onSpan = spanEl !== null && (textLayer as HTMLElement).contains(spanEl)
+      if (!onSpan) {
+        const proj = projectSlot(s, px, py)
+        const sel = window.getSelection()
+        if (proj !== null && sel !== null) {
+          sel.setBaseAndExtent(proj.node, proj.offset, proj.node, proj.offset)
+          ownWrite = { anchorNode: proj.node, anchorOffset: proj.offset, focusNode: proj.node, focusOffset: proj.offset }
+        }
       }
     },
     enforce,

@@ -59,13 +59,26 @@ export function bandVertical(band: { top: number; bottom: number }): { top: stri
   return { top: pct(band.top), height: pct(band.bottom - band.top) }
 }
 
+/** [B1-U3 单元 5c] 禁压缩比值门：r.w > 3×带水平域宽 → 带水平域不可能是该
+ *  rect 本体的文字域（错带压缩形态——A5a 261px rect/3px 带域实测 86×），用
+ *  rect 自身 x/w 原样（夹取只允许收窄越界端，不把宽 rect 压进窄带）。依据=
+ *  合法比值簇实测 ≤1.5（a2 行盒噪声面 1.33、档1 带端点与 rect 同源=1.0），
+ *  阈值区间 (1.5, 86) 取 3，两侧余量 2×/28×（设计稿 §5 单元 5c——⊇ 包含判据
+ *  被受锁 selection-paint a2 实测否定，定稿比例判据） */
+const BAND_CLAMP_SQUEEZE_RATIO = 3
+
 /** [F-A5 a 面] 自绘块水平界=行簇 span 实际端点：rect 越出簇 [x0,x1] → 左右
- *  夹入（票面 §0a「水平左右越出文字区」根治）；端点缺省/退化 → 原样透传 */
+ *  夹入（票面 §0a「水平左右越出文字区」根治）；端点缺省/退化 → 原样透传；
+ *  [B1-U3 单元 5c] r.w > 3×带宽 → rect 原样（禁压缩——比值 ≤3 既有夹取语义
+ *  零变，部分越界一端收窄保持） */
 export function clampedHorizontal(
   r: AnnotationRect,
   band?: { x0?: number; x1?: number }
 ): { left: string; width: string } {
   if (band?.x0 === undefined || band.x1 === undefined || band.x1 <= band.x0) {
+    return { left: `${r.x * 100}%`, width: `${r.w * 100}%` }
+  }
+  if (r.w > BAND_CLAMP_SQUEEZE_RATIO * (band.x1 - band.x0)) {
     return { left: `${r.x * 100}%`, width: `${r.w * 100}%` }
   }
   const left = Math.max(r.x, band.x0)

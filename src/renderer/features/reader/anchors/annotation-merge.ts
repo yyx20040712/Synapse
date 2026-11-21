@@ -52,6 +52,7 @@
  *   tests/e2e/reader-text.spec.ts 多行划选用例（保存路径/装配级）
  */
 import type { AnnotationRect } from '@shared/models/annotation'
+import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './geometry-types'
 
 /** 滤零宽阈值（INV-C）：归一化域近似 1px@612pt 标准页宽 */
 export const W_MIN = 1 / 612
@@ -140,33 +141,76 @@ export function mergeRects(rects: AnnotationRect[], lineH?: number): AnnotationR
       nearest.medianC = lowerMedian(nearest.centerYs)
     }
   }
-  // ④ 行内归并（INV-B）：x 并集；h/中心y 取行内下中位数；page 取最小（防御）
-  const merged = rows.map((row): AnnotationRect => {
-    const only = row.members[0]!
-    if (row.members.length === 1) {
-      // 单成员恒等（deep equal——不经中心 y 浮点往返，幂等精度的根基）
-      return { page: only.page, x: only.x, y: only.y, w: only.w, h: only.h }
+  // ④ 行内归并（INV-B 修订：**每行每连续段至多一块**）：行簇内按 x 升序，
+  //    相邻段间隙 > 单源阈值 max(COLUMN_GAP_H_FACTOR×行簇中位段高,
+  //    COLUMN_GAP_PAGE_RATIO×1)（归一化域页宽=1；严格不等号——annotation-
+  //    merge ⑩ 混排字号间隙恰=0.02 保持并段=回归锚）断段；段内 x 并集，
+  //    h/中心y 取段内下中位数；page 取最小（防御）
+  const merged: Array<{ rect: AnnotationRect; row: number }> = []
+  rows.forEach((row, rowIndex) => {
+    const gapThreshold = Math.max(COLUMN_GAP_H_FACTOR * row.medianH, COLUMN_GAP_PAGE_RATIO)
+    const byX = [...row.members].sort((a, b) => a.x - b.x)
+    let segment: AnnotationRect[] = []
+    let segRight = Number.NEGATIVE_INFINITY
+    const flush = (): void => {
+      if (segment.length > 0) {
+        merged.push({ rect: mergeSegment(segment), row: rowIndex })
+        segment = []
+      }
     }
-    const left = Math.min(...row.members.map((r) => r.x))
-    const right = Math.max(...row.members.map((r) => r.x + r.w))
-    const h = lowerMedian(row.heights)
-    const c = lowerMedian(row.centerYs)
-    return {
-      page: Math.min(...row.members.map((r) => r.page)),
-      x: left,
-      w: right - left,
-      h,
-      y: c - h / 2
+    for (const r of byX) {
+      if (segment.length > 0 && r.x - segRight > gapThreshold) {
+        flush()
+        segRight = Number.NEGATIVE_INFINITY
+      }
+      segment.push(r)
+      segRight = Math.max(segRight, r.x + r.w)
     }
+    flush()
   })
-  // ⑤ 行间钳制（INV-D/INV-A）：按 y 升序；下行顶不低于上行底
-  merged.sort((a, b) => a.y - b.y || a.x - b.x)
-  for (let i = 1; i < merged.length; i += 1) {
-    const prevBottom = merged[i - 1]!.y + merged[i - 1]!.h
-    if (merged[i]!.y < prevBottom) {
-      merged[i] = { ...merged[i]!, y: prevBottom }
+  // ⑤ 行间钳制（INV-D/INV-A）：按行簇分组（同一行簇的 x 断段产物共享视觉
+  //    行，互不钳制），行簇按最上缘 y 升序（等距取最左 x）；下行顶不低于上一
+  //    行最大下缘。单行单段时与原「逐块相邻」语义逐值同。
+  const groups: AnnotationRect[][] = rows.map(() => [])
+  for (const m of merged) groups[m.row]!.push(m.rect)
+  groups.sort((a, b) => topOf(a) - topOf(b) || leftOf(a) - leftOf(b))
+  let prevBottom = Number.NEGATIVE_INFINITY
+  for (const group of groups) {
+    for (const r of group) {
+      if (r.y < prevBottom) r.y = prevBottom
     }
+    prevBottom = Math.max(...group.map((r) => r.y + r.h))
   }
+  const out = groups.flat()
   // ⑥ 输出按 (y, x) 稳定排序（钳制只下推不乱序，此步为形状兜底）
-  return merged.sort((a, b) => a.y - b.y || a.x - b.x)
+  return out.sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+/** 行簇最上缘/最左缘（行簇钳制排序键——防御空簇） */
+function topOf(group: AnnotationRect[]): number {
+  return group.length > 0 ? Math.min(...group.map((r) => r.y)) : Number.POSITIVE_INFINITY
+}
+
+function leftOf(group: AnnotationRect[]): number {
+  return group.length > 0 ? Math.min(...group.map((r) => r.x)) : Number.POSITIVE_INFINITY
+}
+
+/** 连续段归并（INV-B）：单成员恒等（deep equal——幂等精度根基）；多成员
+ *  x 并集 + h/中心 y 取段内下中位数 + page 取最小 */
+function mergeSegment(members: AnnotationRect[]): AnnotationRect {
+  const only = members[0]!
+  if (members.length === 1) {
+    return { page: only.page, x: only.x, y: only.y, w: only.w, h: only.h }
+  }
+  const left = Math.min(...members.map((r) => r.x))
+  const right = Math.max(...members.map((r) => r.x + r.w))
+  const h = lowerMedian(members.map((r) => r.h))
+  const c = lowerMedian(members.map(centerY))
+  return {
+    page: Math.min(...members.map((r) => r.page)),
+    x: left,
+    w: right - left,
+    h,
+    y: c - h / 2
+  }
 }

@@ -67,8 +67,16 @@
  */
 import type { AnnotationRect } from '@shared/models/annotation'
 import { mergeRects, W_MIN } from './annotation-merge'
+import { mergeFragmentRows } from './baseline-fragment-merge'
 import type { PdfTextItem, PdfTextStyle, PixelBox, RowBand } from './geometry-types'
 import { COLUMN_GAP_H_FACTOR, COLUMN_GAP_PAGE_RATIO } from './geometry-types'
+import { selectionHealth, type ItemBox, type SelectionHealth } from './pdf-selection-health'
+
+// [B1-U2] ItemBox 与 G2 检测器自本件拆出（pdf-selection-health.ts）——公共面
+// 经此再导出，受锁导入路径（pdf-item-geometry.test / annotation-resolve-layered）
+// 零变。拆件=设计稿 §6 行数预算前置（原 509 行超 500）。
+export { selectionHealth, SELECTION_DEV_RATIO_THRESHOLD, SELECTION_RIGHT_OVERFLOW_PX } from './pdf-selection-health'
+export type { ItemBox, SelectionHealth } from './pdf-selection-health'
 
 /** viewport 通道（C1）：与 canvas 渲染的 page.getViewport({scale}) 同构输入——
  *  rotate/view 来自 PdfPageGeometry（b1 下钻真值），scale=当前 zoom 经 clampScale
@@ -186,17 +194,6 @@ export function reconcileItemsWithDom(items: PdfTextItem[], domText: string): bo
 
 // ── 项盒（ItemBox=像素矩形+基线 v 轴投影+字高——基线分组的聚类输入）──
 
-/** 项声明几何产物：rect=viewport CSS px 域轴对齐包围盒；vProj=基线点在行分隔
- *  轴 v=(−sinA,cosA) 上的投影（angle=0 退化为主导 y；/Rotate 90 为 −tx4——
- *  行分隔随旋转轴换，取证 baselineRowTruth 同式）；fontH=字高 px（容差源）；
- *  angle=行进角（弧度，vertical 已折入——mergeRects 终裁的角度门输入） */
-export interface ItemBox {
-  rect: PixelBox
-  vProj: number
-  fontH: number
-  angle: number
-}
-
 /** 单项盒（官方公式 pdf.mjs #appendText 同构：盒原点=基线点+ascent×fontH×
  *  (sinA,−cosA)；行进 u=(cosA,sinA) 宽 w 沿此；v=(−sinA,cosA) 高 h 沿此；
  *  任意角以四角轴对齐包围盒落地）。selStart/selEnd 与 span 同偏移域；非有限
@@ -309,20 +306,24 @@ export function itemRects(
 //    x 大间隙断段[票面 §1-3「并集/断段」——镜像 mergeLineRects COLUMN_GAP 语义；
 //    COLUMN_GAP_* 真源=geometry-types（F-GEOM-01-G1 M0 切环），顶部 import]）──
 
-/** v 轴投影聚类（排序+相邻差>tol 断簇——与取证 baselineRowTruth 同语义同容差） */
+/** v 轴投影聚类（[B1-U3 单元 5a] 簇界判据=**行锚**：box.vProj − 簇首成员
+ *  vProj > tol 断簇——旧实现与「上一成员 vTail」比距的传递更新是链行逐步吞并
+ *  远行的机制本体〔probe2 链行 vSpread 14.23>行距 10.44〕，废除）。tol 语义
+ *  零变（仍=max(2, 0.5×被选项 fontH 下中位)，由调用方传入）；碎片行（全成员
+ *  字高 < 全局主导×0.85）经 mergeFragmentRows 并入 y 包络重叠+x 净空最近的
+ *  正文行（拆行侧治理——判别拆件 baseline-fragment-merge.ts）。 */
 function groupByBaseline(boxes: ItemBox[], tolPx: number): ItemBox[][] {
   const sorted = [...boxes].sort((a, b) => a.vProj - b.vProj)
-  const rows: Array<{ vTail: number; members: ItemBox[] }> = []
+  const rows: ItemBox[][] = []
   for (const box of sorted) {
     const last = rows[rows.length - 1]
-    if (last === undefined || box.vProj - last.vTail > tolPx) {
-      rows.push({ vTail: box.vProj, members: [box] })
+    if (last === undefined || box.vProj - last[0]!.vProj > tolPx) {
+      rows.push([box])
     } else {
-      last.vTail = box.vProj
-      last.members.push(box)
+      last.push(box)
     }
   }
-  return rows.map((r) => r.members)
+  return mergeFragmentRows(rows)
 }
 
 function unionOf(members: ItemBox[]): PixelBox {
@@ -339,22 +340,35 @@ function unionOf(members: ItemBox[]): PixelBox {
 export function baselineGroupBlocks(boxes: ItemBox[], tolPx: number, pageWidthPx: number): PixelBox[] {
   const out: PixelBox[] = []
   for (const row of groupByBaseline(boxes, tolPx)) {
-    const dom = unionOf(row)
-    const gapThreshold = Math.max(COLUMN_GAP_H_FACTOR * dom.h, COLUMN_GAP_PAGE_RATIO * pageWidthPx)
-    const byX = [...row].sort((a, b) => a.rect.x - b.rect.x)
-    let segment: ItemBox[] = []
-    let segRight = Number.NEGATIVE_INFINITY
-    for (const box of byX) {
-      if (segment.length > 0 && box.rect.x - segRight > gapThreshold) {
-        out.push(unionOf(segment))
-        segment = []
-      }
-      segment.push(box)
-      segRight = Math.max(segRight, box.rect.x + box.rect.w)
+    for (const segment of splitRowByXGap(row, pageWidthPx)) {
+      out.push(unionOf(segment))
     }
-    if (segment.length > 0) out.push(unionOf(segment))
   }
   return out.sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+/** 行内 x 大间隙断段（单源：baselineGroupBlocks 与 bandsFromItems 共用）：
+ *  行内项盒按 x 升序，相邻段间隙 > max(COLUMN_GAP_H_FACTOR×行高,
+ *  COLUMN_GAP_PAGE_RATIO×页宽) 断段——与 annotation-merge 行簇断段同阈值
+ *  公式（严格不等号：间隙恰等于阈值不裂）。阈值行高取行联合盒高（与
+ *  baselineGroupBlocks 原口径逐值同）。 */
+function splitRowByXGap(row: readonly ItemBox[], pageWidthPx: number): ItemBox[][] {
+  const union = unionOf([...row])
+  const gapThreshold = Math.max(COLUMN_GAP_H_FACTOR * union.h, COLUMN_GAP_PAGE_RATIO * pageWidthPx)
+  const byX = [...row].sort((a, b) => a.rect.x - b.rect.x)
+  const segments: ItemBox[][] = []
+  let segment: ItemBox[] = []
+  let segRight = Number.NEGATIVE_INFINITY
+  for (const box of byX) {
+    if (segment.length > 0 && box.rect.x - segRight > gapThreshold) {
+      segments.push(segment)
+      segment = []
+    }
+    segment.push(box)
+    segRight = Math.max(segRight, box.rect.x + box.rect.w)
+  }
+  if (segment.length > 0) segments.push(segment)
+  return segments
 }
 
 /** bands 同源派生（C5）：每基线行一带——top/bottom=行内项盒纵向并集（声明
@@ -362,84 +376,39 @@ export function baselineGroupBlocks(boxes: ItemBox[], tolPx: number, pageWidthPx
  *  （**盒本地帧**——见 itemSelectionGeometry 头注：viewport.transform 产出=
  *  盒本地域，gBCR 基准盒只消费宽高，盒原点不参与=平移不变；第三轮取证
  *  f-a6-diag-out-r3a 实证减原点域差会令全部项盒判盒外触发 G2 全抑制）。
- *  center 用未 clamp 原始值（annotation-resolve bandFromMetrics :93-97 口径） */
+ *  center 用未 clamp 原始值（annotation-resolve bandFromMetrics :93-97 口径）。
+ *  [B1-U2 单元 3] 同行按 x 大间隙分段：每段=一带（x0/x1=段端点，不跨缝）——
+ *  与 baselineGroupBlocks 的断段单源（splitRowByXGap）。
+ *  [B1-U3 单元 5b] 随带记录 rowFontH=行段成员 fontH 最大值/base.h 归一化
+ *  （行主导字高——异常带护栏判据基准；档1 独有字段，档2/档3 派生不记录=
+ *  护栏无判据回退零变）。 */
 export function bandsFromItems(boxes: ItemBox[], base: PixelBox, tolPx: number): RowBand[] {
   if (base.w <= 0 || base.h <= 0 || boxes.length === 0) return []
   const bands: RowBand[] = []
   for (const row of groupByBaseline(boxes, tolPx)) {
-    const top = Math.min(...row.map((m) => m.rect.y))
-    const bottom = Math.max(...row.map((m) => m.rect.y + m.rect.h))
-    const x0 = Math.min(...row.map((m) => m.rect.x))
-    const x1 = Math.max(...row.map((m) => m.rect.x + m.rect.w))
-    const rawTop = top / base.h
-    const rawBottom = bottom / base.h
-    if (!(rawBottom > rawTop)) continue
-    bands.push({
-      top: clamp01(rawTop),
-      bottom: clamp01(rawBottom),
-      center: (rawTop + rawBottom) / 2,
-      x0: x0 / base.w,
-      x1: x1 / base.w
-    })
+    for (const segment of splitRowByXGap(row, base.w)) {
+      const top = Math.min(...segment.map((m) => m.rect.y))
+      const bottom = Math.max(...segment.map((m) => m.rect.y + m.rect.h))
+      const x0 = Math.min(...segment.map((m) => m.rect.x))
+      const x1 = Math.max(...segment.map((m) => m.rect.x + m.rect.w))
+      const rawTop = top / base.h
+      const rawBottom = bottom / base.h
+      if (!(rawBottom > rawTop)) continue
+      bands.push({
+        top: clamp01(rawTop),
+        bottom: clamp01(rawBottom),
+        center: (rawTop + rawBottom) / 2,
+        x0: x0 / base.w,
+        x1: x1 / base.w,
+        rowFontH: Math.max(...segment.map((m) => m.fontH)) / base.h
+      })
+    }
   }
   return bands
 }
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v))
-}
-
-// ── G2 降级门检测器（裁决表 §6：R-迁移路线口径——项矩形 vs textLayer 盒）──
-
-/** 偏离率阈值：健康页 0~0.12% vs 病理页 25%~62.5%（间隔 ≥200 倍，5% 阈值
- *  >4 倍安全边距）——「仅新增复现证据时启用」的 active 落地常量 */
-export const SELECTION_DEV_RATIO_THRESHOLD = 0.05
-
-/** 块右溢阈值（px）：**占位阈值**——取证全样本右溢=0 无观测支撑（裁决表 §6
- *  N1），随真实复现证据联动校准 */
-export const SELECTION_RIGHT_OVERFLOW_PX = 2
-
-/** 盒外判定的亚像素容差（px）：canvas CSS 盒 Math.floor 与未取整 viewport
- *  数学的分数 view 差（b1 §10：1c2d 分数页 ~0.5px 右缘——度量精度边界非病理） */
-const HEALTH_EPS_PX = 0.5
-
-export interface SelectionHealth {
-  unhealthy: boolean
-  /** 被选项盒落 textLayer 盒外的比率（A2 形态：outsideCount/被选项数） */
-  outsideRatio: number
-  /** 并块右缘超出 textLayer 盒右缘的最大 px（>0 即溢出） */
-  rightOverflowPx: number
-}
-
-/** G2 检测器：偏离率 ≥5% 或任一并块右溢 >2px → unhealthy（消费方挂点=拖选
- *  期抑制渲染+mouseup 时刻 toast 拒绝——门一 W2 口径；真实健康页 0~0.12%
- *  永不误伤）。
- *  **盒本地帧**：项盒=viewport.transform 产出（textLayer 盒本地域），base
- *  只消费宽高（盒原点不参与）——gBCR 视口绝对原点与本地域混用会把全部
- *  项盒误判盒外（第三轮取证 r3a 实证：G2 全抑制=paint 0 块，检测器按设计
- *  拦截了域差错几何——反向验证了门的有效性） */
-export function selectionHealth(boxes: ItemBox[], blocks: PixelBox[], base: PixelBox): SelectionHealth {
-  let outside = 0
-  for (const box of boxes) {
-    const r = box.rect
-    const out =
-      r.x < -HEALTH_EPS_PX ||
-      r.y < -HEALTH_EPS_PX ||
-      r.x + r.w > base.w + HEALTH_EPS_PX ||
-      r.y + r.h > base.h + HEALTH_EPS_PX
-    if (out) outside += 1
-  }
-  const outsideRatio = boxes.length > 0 ? outside / boxes.length : 0
-  let overflow = 0
-  for (const blk of blocks) {
-    overflow = Math.max(overflow, blk.x + blk.w - base.w)
-  }
-  return {
-    unhealthy:
-      outsideRatio >= SELECTION_DEV_RATIO_THRESHOLD || overflow > SELECTION_RIGHT_OVERFLOW_PX,
-    outsideRatio,
-    rightOverflowPx: Math.max(0, overflow)
-  }
 }
 
 // ── 管线装配件（SelectionLayer evaluate 消费——乙2 验证管线同构：

@@ -85,7 +85,10 @@ export interface PixelBox {
 /** 行簇字形带（归一化域；center=带中心——渲染块匹配键；x0/x1=行簇 span
  *  实际端点——F-A5 a 面自绘块水平界夹取源，缺省=该带无端点量测；
  *  calTop/calBottom [F-A9]=渲染时刻 textLayer span 盒实测校准值（方案 A
- *  ——annotation-band-calibrate 注入；缺省=无校准材料回退派生值） */
+ *  ——annotation-band-calibrate 注入；缺省=无校准材料回退派生值）；
+ *  rowFontH [B1-U3 单元 5b]=行主导字高（行段成员 fontH 最大值/base.h 归一化
+ *  ——bandsFromItems 派生随带记录，档1 独有；档2/档3 不记录=undefined=异常带
+ *  护栏无判据回退零变，档位绑定语义不破——INV-68 禁第四推导条款不动） */
 export interface RowBand {
   top: number
   bottom: number
@@ -94,6 +97,7 @@ export interface RowBand {
   x1?: number
   calTop?: number
   calBottom?: number
+  rowFontH?: number
 }
 
 /** 簇内 x 大间隙断段阈值（[F-LINT-03] reader 几何单源真源驻本件——

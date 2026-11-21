@@ -105,11 +105,59 @@ export function bandFromMetrics(
   }
 }
 
+/** [B1-U3 单元 5b] 异常带护栏比值：派生垂直域高 > 1.3×rowFontH → 异常带
+ *  （跨行链带/两行并集形态）。依据=合法带派生比值簇实测 ≤1.08、异常面 ≥1.73，
+ *  阈值区间 (1.08, 1.73) 取 1.3（两侧余量 ≥1.2×/≥1.3×）；判据用**派生域**
+ *  而非校准域——校准合法拉伸（A9/D1 面 span 盒并集可达派生域 1.6×）不得触发
+ *  拒带，M4 校准放大以「派生域已跨行」为先决条件经本门传递治理
+ *  （设计稿 §5 单元 5b） */
+const BAND_GUARD_ROW_RATIO = 1.3
+
+/** 异常带判据（rowFontH 缺席/非正=无此判据——档2 bandsForTextNodes/档3
+ *  bandsNearRects 手造带回退语义零变）：派生域高 > 1.3×rowFontH */
+function isAbnormalBand(b: RowBand): boolean {
+  return b.rowFontH !== undefined && b.rowFontH > 0 && b.bottom - b.top > BAND_GUARD_ROW_RATIO * b.rowFontH
+}
+
+/** [B1-RW 单元 5e] 候选带行一致性门（错行绑带治理——INV-180 补充判据）：
+ *  ①垂直重叠门（全档）：rect 与带垂直域交叠 >0 才可匹配——零重叠带不得经
+ *  最近中心窗吸附；无重叠候选 → matchBand 返回 undefined 回退 rect 自身几何
+ *  （与 5b 拒带回退同路径）。
+ *  ②档1 顶界一致门（rowFontH 在场=档1 bandsFromItems 产物）：rect.top ≥
+ *  band.top。依据=档1 产链结构关系：rect 块与带同源（groupByBaseline 同一
+ *  行簇——baselineGroupBlocks 块垂直域与 bandsFromItems 带垂直域逐值同），
+ *  mergeRects 行间钳制只下推（annotation-merge ⑤ r.y=prevBottom 单向）→
+ *  跨行错绑（钳制下推 rect 绑邻行带）的候选带 top 高于 rect.top，被本门排除。
+ *  已知边界（review2 N-1）：mergeRects④ 行内多成员中位归并（同中心混合字高
+ *  形态）可令 rect.top 高于同源带 top 亚像素级（探针实测 0.25px）——该形态
+ *  同源带被过滤后重选同中心满足不变量的带，视觉差亚像素级且无漏绘/双绘
+ *  （回归锚=selection-b1-rw-crossband ⑧ 混合字高案）。
+ *  B-1 实测形态（S4b 公式密集区）：钳制级联下推的 rect 以 0.85×带高的正重叠
+ *  绑到下一行带（rect13 src[271.55,283.13]→band15[276.33,284.3]，top 低于带顶
+ *  4.78px）——重叠量阈值无法同时拒它并保留合法 0.89 同带绑定（rect16 0.89×
+ *  带高），故用结构判据不用量阈值（设计稿 §5 单元 5e 实测区间）。
+ *  档2/档3（rowFontH 缺席）rect（行盒）与带（字形带/span 盒）存在结构性偏移
+ *  （行盒 ⊇ 字形带——selection-paint a1 实测 1px）不满足该不变量，顶界门
+ *  不启用（档2/档3 匹配语义零变——⑤⑥ 用例锚）。 */
+function bandRowConsistent(b: RowBand, r: AnnotationRect): boolean {
+  if (Math.min(r.y + r.h, b.bottom) - Math.max(r.y, b.top) <= 0) {
+    return false
+  }
+  return b.rowFontH === undefined || r.y >= b.top
+}
+
 /** 渲染块 → 最近中心带（|Δcenter| ≤ rect.h 才匹配；bands 空→undefined；
  *  返回含 x0/x1（在场时）——F-A5 a 面自绘块水平界夹取源。
  *  [F-A9] cal 域在场 → 返回 top/bottom 替换为校准值（渲染时刻 DOM span 校准
  *  ——annotation-band-calibrate 注入；**匹配仍按派生 center**——校准位移不
- *  参与行归属判定=错绑零风险；cal 缺席 → 派生值原样=回退语义零变） */
+ *  参与行归属判定=错绑零风险；cal 缺席 → 派生值原样=回退语义零变）。
+ *  [B1-U3 单元 5b] 异常带拒用整条（含 calTop/calBottom 校准域）→ 返回
+ *  undefined，SelectionPaint 与 AnnotationLayer rectStyle 两消费面回退 rect
+ *  自身 y/h（INV-D 钳制保证回退几何不重叠）——异常带不驱动任何渲染，本函数
+ *  为两消费面共同匹配单点。
+ *  [B1-RW 单元 5e] 候选先经 bandRowConsistent 行一致性门（垂直重叠>0 全档+
+ *  档1 顶界一致）——错行绑带（钳制下推 rect 绑邻行带=本行漏绘+邻行双绘）
+ *  在候选面排除；无一致候选 → undefined 回退（同 5b 拒带路径）。 */
 export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { top: number; bottom: number; x0?: number; x1?: number } | undefined {
   if (bands === undefined || bands.length === 0) {
     return undefined
@@ -117,11 +165,14 @@ export function matchBand(bands: RowBand[] | undefined, r: AnnotationRect): { to
   const c = r.y + r.h / 2
   let best: RowBand | null = null
   for (const b of bands) {
+    if (!bandRowConsistent(b, r)) {
+      continue
+    }
     if (best === null || Math.abs(b.center - c) < Math.abs(best.center - c)) {
       best = b
     }
   }
-  return best !== null && Math.abs(best.center - c) <= r.h
+  return best !== null && Math.abs(best.center - c) <= r.h && !isAbnormalBand(best)
     ? { top: best.calTop ?? best.top, bottom: best.calBottom ?? best.bottom, x0: best.x0, x1: best.x1 }
     : undefined
 }

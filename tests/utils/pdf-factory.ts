@@ -264,6 +264,216 @@ export function createTwoColumnPdf(): Uint8Array {
   return assemblePdf(objects)
 }
 
+// ── [B1-U1 A1–A5] 选区正确性战役合成配方（2026-11-21；探针 b1-probe 真实页
+//    形态的合成等价物——真实整篇 PDF 不入库，几何契约由单测断言锚定）──
+
+/** A2 双栏窄缝页：缝带单源（pt，用户空间——左栏文本右缘至右栏恒起 x）。
+ *  左栏行文本（60 字符）实测宽 ≈206–245pt（右缘 ≤300）→ 行内缝 = 318−右缘
+ *  ≥18pt > 断段阈值 max(1.5×行高8, 2%×612)=12.24pt——当前 mergeRects 无缝
+ *  感知必并（红证据）、修复后单源断段必裂（绿）的判别几何。右栏恒起 x=318
+ *  （同 0C fixture）。实测真 pdfjs 对本 fixture 不在栏间插空白补位项（相邻
+ *  项不同基线不合并——12 项=12 个 Tj 原样）。 */
+export const PDF_GAPCOL_GUTTER = { right: 318, rows: 6 } as const
+/** A2 哨兵（行前缀——DOM/项序断言用） */
+export const PDF_GAPCOL_LEFT = 'LGAP SENTINEL HEAD'
+export const PDF_GAPCOL_RIGHT = 'RGAP SENTINEL HEAD'
+
+/** A2 左栏行文本（60 字符：哨兵行前缀大写较宽 ≈245pt、正文行 ≈206pt——
+ *  右缘 [260,300] 恒 <318−断段阈值 12.24，行内缝 [18,58]pt 恒 > 断段阈值） */
+function gapcolLeftRow(n: number): string {
+  const body = 'cross column merge gutter probe line filler text unit '
+  return `${n === 0 ? PDF_GAPCOL_LEFT : 'lgap row'} ${String(n).padStart(2, '0')} ${body}`.slice(0, 60)
+}
+
+/**
+ * A2 双栏窄缝页（同视觉行左右栏+可测缝——跨栏行 x 并集判别 fixture）。
+ * 612×792 单页：6 个视觉行（基线 700..640、行距 12、字号 8），每行=左栏
+ * 长行（x=54..≤294）+右栏短行（x=318..）——每行左右项基线相同（同一
+ * 基线分组行），缝带 [左栏右缘,318] ≥24pt。DOM/项序=列序（左列 6 行先、
+ * 右列 6 行后——真实双栏 PDF 的内容流形态）。对象布局同 createTinyPdf。
+ */
+export function createTwoColumnGapPdf(): Uint8Array {
+  const rows: string[] = []
+  for (let i = 0; i < PDF_GAPCOL_GUTTER.rows; i += 1) {
+    rows.push(textLine(gapcolLeftRow(i), 8, 54, 700 - i * 12))
+  }
+  rows.push(textLine(PDF_GAPCOL_RIGHT, 8, 318, 700))
+  for (let i = 1; i < PDF_GAPCOL_GUTTER.rows; i += 1) {
+    rows.push(textLine(`rgap row ${String(i).padStart(2, '0')}`, 8, 318, 700 - i * 12))
+  }
+  const stream = rows.join('\n')
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (GAPCOL TEST DOC) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
+/** A3 公式页哨兵（上下标/正文片段——项形态断言用同一字符串） */
+export const PDF_FORMULA_HEAD = 'R(t)='
+export const PDF_FORMULA_SUP = 'n'
+export const PDF_FORMULA_TAIL = 'k+1'
+export const PDF_FORMULA_SUB = 'i'
+/** 公式行基线（pt，用户空间 y-up）；上下标基线偏移 ±3pt（真实页 5.18px vs
+ *  7.97px 字号分离+独立基线的合成等价物） */
+export const PDF_FORMULA_BASELINE = { y: 700, supDy: 3, subDy: -3, bodySize: 8, scriptSize: 5 } as const
+
+/**
+ * A3 公式页（上下标独立基线+行内大空隙+缝内空白项——碎片形态 fixture）。
+ * 612×792 单页：公式行（基线 700）= 正文片段 `R(t)=`（fs8 x=72）+ 上标 `n`
+ * （fs5 x=94 基线 703）+ 空白项 `  `（fs8 x=110——行内空隙内的纯空白项）+
+ * 正文片段 `k+1`（fs8 x=140）+ 下标 `i`（fs5 x=158 基线 697）；片段间行内
+ * 空隙 ≥8pt（真实页 caret 落容器槽位的行内大空隙形态）。下方 4 行正文
+ * （基线 660..600、fs8 x=54——槽位重定向「偏移区间爆炸」的目标行族）。
+ * 对象布局同 createTinyPdf。
+ */
+export function createFormulaPagePdf(): Uint8Array {
+  const { y, supDy, subDy, bodySize, scriptSize } = PDF_FORMULA_BASELINE
+  const rows: string[] = [
+    textLine(PDF_FORMULA_HEAD, bodySize, 72, y),
+    textLine(PDF_FORMULA_SUP, scriptSize, 94, y + supDy),
+    textLine('  ', bodySize, 110, y),
+    textLine(PDF_FORMULA_TAIL, bodySize, 140, y),
+    textLine(PDF_FORMULA_SUB, scriptSize, 158, y + subDy)
+  ]
+  for (let i = 0; i < 4; i += 1) {
+    rows.push(textLine(`FORMULA BODY LINE ${String(i).padStart(2, '0')}`, bodySize, 54, 660 - i * 20))
+  }
+  const stream = rows.join('\n')
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (FORMULA PAGE TEST DOC) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
+/** A5 角标页哨兵（行首上标 a–c 与机构正文行——微缝几何断言用） */
+export const PDF_AFFIL_SUPS = ['a', 'b', 'c'] as const
+/** 角标几何单源：上标 fs5 x=54、正文 fs8 x=58.5（缝 ≈1.5pt——真实页 1.5px
+ *  微缝的合成等价物：上标列与正文列被检测为缝带=该点不授权的设计语义） */
+export const PDF_AFFIL_GEOM = { supX: 54, bodyX: 58.5, supSize: 5, bodySize: 8, rows: 3, pitch: 16, baseY: 700 } as const
+
+/**
+ * A5 角标页（行首上标 a–c+机构正文列微缝——角标独立块/微缝 fixture）。
+ * 612×792 单页：3 个视觉行（基线 700/684/668），每行=行首上标单字
+ * （fs5 x=54）+机构正文行（fs8 x=58.5，缝 ≈1.5pt）。DOM/项序=行序（上标
+ * 项在正文项之前——阅读序=流序）。对象布局同 createTinyPdf。
+ */
+export function createSuperscriptAffilPdf(): Uint8Array {
+  const rows: string[] = []
+  for (let i = 0; i < PDF_AFFIL_GEOM.rows; i += 1) {
+    const y = PDF_AFFIL_GEOM.baseY - i * PDF_AFFIL_GEOM.pitch
+    rows.push(textLine(PDF_AFFIL_SUPS[i]!, PDF_AFFIL_GEOM.supSize, PDF_AFFIL_GEOM.supX, y))
+    rows.push(textLine(`AFFILIATION LINE ${String(i).padStart(2, '0')} DEPT`, PDF_AFFIL_GEOM.bodySize, PDF_AFFIL_GEOM.bodyX, y))
+  }
+  const stream = rows.join('\n')
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (AFFIL SUPERSCRIPT TEST DOC) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
+// ── [B1-U3 单元 5/6] 绘制链缺陷配方（2026-11-21；探针 b1-probe2 定谳形态的
+//    合成等价物——红测试见 selection-b1-u3-*.test.ts，规格=设计稿单元 5/6）──
+
+/** R1 公式链行几何单源：正文 fs8/碎片 fs6.5、行距 pitch 16pt；链行碎片 vProj
+ *  台阶 3pt ≤ tol=max(2,0.5×6.5)=3.25（vTail 传递链并行形态——当前树把两行
+ *  正文链成一行），链行左右段 x 缝 46.4pt > 断段阈值 1.5×行联合盒高 ≈38.7pt
+ *  （行内断段→两段带垂直域交叠=双绘判别几何）。 */
+export const PDF_CHAIN_GEOM = { bodySize: 8, scriptSize: 6.5, pitch: 16 } as const
+export const PDF_CHAIN_BODY = 'state reward'
+export const PDF_CHAIN_BODY2 = 'each control'
+
+/**
+ * R1 公式碎片链行页（探针 G5f 链行形态合成等价）。612×792 单页：
+ * 链行区（基线 y_pdf 700/684，行距 16）= 左段（正文 `state reward` fs8@72+
+ * 碎片 k/t/s fs6.5@124/132/140，vProj 89/92/95/98）+右段（碎片 j/i/u fs6.5@
+ * 200/208/216，vProj 101/104/107+正文 `each control` fs8@214，vProj 108）
+ * ——vProj 排序后相邻差全 ≤3.25=tol，groupByBaseline vTail 传递链把两行正文
+ * 链成一行（vSpread 19>行距 16）；行内 x 缝 46.4pt 断成两段，两段带垂直域
+ * [83.8,99.3]/[95.8,109.6] 交叠 3.5px=双绘形态。下方 2 行正文（基线 668/652
+ * ——邻行对照，vProj 124/140 与链行差 16>tol 不并）。对象布局同 createTinyPdf。
+ */
+export function createFormulaChainPdf(): Uint8Array {
+  const { bodySize: b, scriptSize: s } = PDF_CHAIN_GEOM
+  // 流序=左段 4 项 → 邻行正文（基线 668——跨行项隔断 pdfjs 行内补位，防其
+  // 以空白项桥接左右段 x 缝）→ 右段 4 项 → 末行正文。
+  const rows = [
+    textLine(PDF_CHAIN_BODY, b, 72, 700),
+    textLine('k', s, 124, 703),
+    textLine('t', s, 132, 697),
+    textLine('s', s, 140, 694),
+    textLine('Boundary inflow', b, 72, 668),
+    textLine('j', s, 200, 691),
+    textLine('i', s, 208, 688),
+    textLine('u', s, 216, 685),
+    textLine(PDF_CHAIN_BODY2, b, 224, 688),
+    textLine('runoff volume', b, 72, 652)
+  ]
+  const stream = rows.join('\n')
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (FORMULA CHAIN TEST DOC) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
+/** R2 机构上标拆行几何单源：上标 fs5 抬升 3pt（vProj 差 3>tol=max(2,0.5×5)=
+ *  2.5——被选项全小字时容差漂移拆行形态①）+上标/正文 x 缝 ≈1.7pt（mergeRects
+ *  centerY 再并材料）。 */
+export const PDF_AFFIL_SPLIT_GEOM = { supSize: 5, bodySize: 8, supRaise: 3, supX: 54, bodyX: 58.5, rows: 3, pitch: 16, baseY: 700 } as const
+
+/**
+ * R2 机构上标拆行页（探针 A5a 形态①合成等价——上标基线抬升版角标页）。
+ * 612×792 单页：3 个视觉行（基线 700/684/668），每行=行首上标单字（fs5@54，
+ * 基线抬升 +3pt）+机构正文行（fs8@58.5，同视觉行）。上标与正文 vProj 差 3pt
+ * > tol 2.5（被选项 fontH 下中位=5 时）→ groupByBaseline 拆行；两块 centerY
+ * 距 ≤ 容差 → mergeRects 再并=宽而矮杂交 rect → matchBand 吸上标窄带+
+ * clampedHorizontal 压缩=正文零覆盖。DOM/项序=行序（上标项在正文项前）。
+ * 对象布局同 createTinyPdf。
+ */
+export function createSuperscriptSplitPdf(): Uint8Array {
+  const { supSize, bodySize, supRaise, supX, bodyX, rows, pitch, baseY } = PDF_AFFIL_SPLIT_GEOM
+  const lines: string[] = []
+  for (let i = 0; i < rows; i += 1) {
+    const y = baseY - i * pitch
+    lines.push(textLine(['a', 'b', 'c'][i]!, supSize, supX, y + supRaise))
+    lines.push(textLine(`AFFILIATION SPLIT LINE ${String(i).padStart(2, '0')} DEPT`, bodySize, bodyX, y))
+  }
+  const stream = lines.join('\n')
+  const streamBytes = new TextEncoder().encode(stream).length
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${streamBytes} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Title (AFFIL SPLIT TEST DOC) /Producer (synapse-test-factory) >>`
+  ]
+  return assemblePdf(objects)
+}
+
 /** [F-VISFB-43 裁决部 P1-2] raster 图表 fixture 哨兵（e2e 断言用同一字符串） */
 export const PDF_RASTER_TITLE = 'RASTER FIGURE E2E DOC'
 /** 内嵌图像几何单源：400×300px DeviceRGB 绘制在 300×225pt——提取三阈值全过
