@@ -158,8 +158,6 @@ PDF 下载管线（CARSI/CDP/Sci-Hub）已移出负面清单，进入测试版�
 - 主控=主会话；设计岗=会话内图像通道；其余岗位=会话内子代理承载；
   岗位与派发配置单源=技能（项目文档不记载）。组织差异回灌=.zcode/org-delta.jsonl。
 - 技能版本不锚定：宪法不绑定 ai-dev-org 的版本号/提交号，跟随当前安装版。
-- 组织账本=.zcode/org-ledger.jsonl（行 schema 单源=技能 references/02 §9）；
-  结项前跑技能 scripts/health-scan.mjs（RED=0 方可结项）。
 - 段预算机检：本段 ≤600 非空白字符
   （技能 scripts/check-constitution-budget.mjs AGENTS.md）。
 <!-- ORG-SEG:END v2 -->
