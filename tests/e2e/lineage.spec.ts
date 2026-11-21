@@ -2669,6 +2669,35 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
           })
         )
       )
+    // [F-E2EFLK-01 T1M 根治 2026-11-21] 拖拽前滚动定位：画线拖拽接 drag-autoscroll
+    // （zone=容器高 20%/Vmax 1200px/s——特性正确），CI 1024×768 下目标锚 y≈701/720
+    // 深落底部带→拖拽后半程持续滚屏，慢机帧长使 down/重对准读点陈旧超 ±12 锚容差
+    // （down 未武装或 up 未中锚=静默无边无 toast——run 44846425284 双红；6× CPU
+    // 节流本地复现；证据=仓外档案 20261121-t1m-rootcause）。定位法=把两锚（根/甲
+    // 右中）双向钳出滚动带（zone+20px 安全距；只挪甲会把根推进顶带）——指针全程
+    // 不入带=autoscroll 零启动；两锚距超出安全窗时 scrollTop 有界尽力（不抛）。
+    // 定位后由下方稳定双读复核静止，rb/ab 读取与拖拽序列不变。
+    await win.evaluate(() => {
+      const tl = document.querySelector('.timeline')
+      const cards = Array.from(document.querySelectorAll('.tl-card[data-node-id]'))
+      const byTitle = (t: string): HTMLElement | undefined =>
+        cards.find((c) => c.textContent?.includes(t)) as HTMLElement | undefined
+      const rootCard = byTitle('脉络根文献')
+      const aCard = byTitle('脉络甲文献')
+      if (tl === null || rootCard === undefined || aCard === undefined) return
+      const cr = tl.getBoundingClientRect()
+      const zone = cr.height * 0.2 + 20
+      const midOf = (el: HTMLElement): number => {
+        const r = el.getBoundingClientRect()
+        return r.y + r.height / 2
+      }
+      let shift = 0
+      const midA = midOf(aCard)
+      if (midA > cr.bottom - zone) shift += midA - (cr.bottom - zone)
+      const midRoot = midOf(rootCard)
+      if (midRoot < cr.top + zone) shift -= cr.top + zone - midRoot
+      if (shift !== 0) tl.scrollTop += shift
+    })
     for (let i = 0; i < 20; i++) {
       const a = await rectOf()
       await win.waitForTimeout(150)
