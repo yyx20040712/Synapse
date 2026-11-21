@@ -239,11 +239,23 @@ async function sel53CacheAnchor(win: Page, x: number, y: number): Promise<void> 
 /** [F-VISFB-53CI-01 修复·A'] 程序化扩展写：caretRangeFromPoint 焦点投影+
  *  setBaseAndExtent 原子写（禁 removeAllRanges+addRange——中间空态污染空帧断言
  *  〔k1-N2 复还〕）；守卫全计入 skips（拖后断言=0）；写→画节拍=每步
- *  80ms 等待+断言轮询，不依赖单帧序（k1-N1）。 */
-async function sel53ExtendSelectionTo(win: Page, x: number, y: number): Promise<void> {
+ *  80ms 等待+断言轮询，不依赖单帧序（k1-N1）。
+ *  [F-SELCORR-01 CI 回执修复] opts.syncPointer=true 时写前派发合成 mousemove
+ *  同步拖选会话指针到扩展前沿——仅限指针停驶为伪迹的调用点（53 案微移位
+ *  停驶：B1 起 enforce 对容器槽位边界按 session.pointer 投影，真拖拽指针恒在
+ *  选区前沿，停驶指针令终局投影回锚行=选区变短〔CI 窄视口 ey 钳 vh-24 终点
+ *  caret 落空白解析为槽位，本地宽视口落 span 故本地不复现〕）。默认 false：
+ *  SELBLK A/B 与间隙段案的指针系**先真实 move 摆位**（行尾二值/间隙取带判据
+ *  的输入），不得覆盖。untrusted 事件不触发原生选区默认动作——「扩展期停发
+ *  真实 mousemove/选区唯一源=程序化写」契约（B4/W4）保持；断言面零改。 */
+async function sel53ExtendSelectionTo(win: Page, x: number, y: number, opts?: { syncPointer?: boolean }): Promise<void> {
+  const syncPointer = opts?.syncPointer === true
   await win.evaluate(
-    ({ x, y }) =>
+    ({ x, y, syncPointer }) =>
       new Promise<void>((resolve) => {
+        if (syncPointer) {
+          document.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }))
+        }
         const w = window as unknown as { __sel53ext?: { anchorNode: Node; anchorOffset: number; skips: number } }
         const ext = w.__sel53ext
         const settle = (): void => {
@@ -279,7 +291,7 @@ async function sel53ExtendSelectionTo(win: Page, x: number, y: number): Promise<
         }
         settle()
       }),
-    { x, y }
+    { x, y, syncPointer }
   )
 }
 
@@ -374,7 +386,7 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     // [F-VISFB-53CI-01 修复·A'] 扩展期停发真实 mousemove（B4/W4——双平台选区
     // 唯一源）；循环 5 步至 5/6 插值点（d1-W1：终点步留停顿后=真渐进）
     for (let i = 1; i <= 5; i += 1) {
-      await sel53ExtendSelectionTo(win, sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6)
+      await sel53ExtendSelectionTo(win, sx + ((ex - sx) * i) / 6, sy + ((ey - sy) * i) / 6, { syncPointer: true })
       await win.waitForTimeout(80)
     }
     // [F-VISFB-53CI-01 修复·A' 轮二] 采样前静默（排空+并块迁移落定后快照）
@@ -391,7 +403,7 @@ test('F-VISFB-53 双栏拖选闪烁收口：慢拖+停顿无空帧无跳变+pain
     expect(new Set(pauseSamples).size, `停顿窗几何序列单调稳定（采样序=${pauseSamples.join(' => ')}）`).toBe(1)
     // [F-VISFB-53CI-01 修复·A'] 续拖小步=停顿后第 6 步渐进写至终点（d1-W1）；
     // 释放=真实 mouseup 于微移位非终点（d1-W2 释放点在锚行内=零重定向）
-    await sel53ExtendSelectionTo(win, ex, ey)
+    await sel53ExtendSelectionTo(win, ex, ey, { syncPointer: true })
     await win.mouse.up()
 
     // 终局：工具条在场（mouseup 全量锚定成功——anchor 未退化）
