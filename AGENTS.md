@@ -139,25 +139,3 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 - Linux 无 PowerShell：`npm run ticket:new` 不可用——建工单手工复制
   registry 既有行改字段，typecheck 绿后提交
 
-## 明确不做（防止顺手实现）
-
-知识图谱（指自动引文网络图可视化；人工策展的核心 idea 时间树不在此
-列）、翻译、Scopus/WoS、插件系统、i18n 多语言、云同步、EPUB、多窗口
-（OS 级多 BrowserWindow；单窗口内多标签页不在此列）、遥测、后台自动
-网络任务（增强只手动触发）、Markdown 富文本编辑器（textarea 即可）。
-
-PDF 下载管线（CARSI/CDP/Sci-Hub）已移出负面清单，进入测试版后的开发
-方向；届时新增出网 host 仍须 ADR，后台自动网络任务「只手动触发」约束
-是否随 AI 管线放宽，届时由用户裁决。
-
-<!-- ORG-SEG:BEGIN v2 -->
-### 组织协作通用层（技能 ai-dev-org）
-
-- 跨项目组织规范（岗位×输入边界×成本纪律）=用户全局技能
-  ai-dev-org；本宪法为其项目实例，冲突时以本宪法为准。
-- 主控=主会话；设计岗=会话内图像通道；其余岗位=会话内子代理承载；
-  岗位与派发配置单源=技能（项目文档不记载）。组织差异回灌=.zcode/org-delta.jsonl。
-- 技能版本不锚定：宪法不绑定 ai-dev-org 的版本号/提交号，跟随当前安装版。
-- 段预算机检：本段 ≤600 非空白字符
-  （技能 scripts/check-constitution-budget.mjs AGENTS.md）。
-<!-- ORG-SEG:END v2 -->
