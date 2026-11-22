@@ -65,9 +65,7 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
   实现者可以新增测试（在提交说明中申报）；修改既有断言或共享契约
   （`src/shared`、migrations、CI）须主控或用户裁决
 - 卡住就停下报告卡点；不删检查、不放宽断言、不引入新依赖
-- 弱模型领单：读 `tickets/registry.ts` 找 `status: 'open'` 且
-  `owner: 'weak'` 的工单，只改工单指向的文件（禁改测试与契约文件），
-  `npm run verify` 绿后报告人类审查 diff，由人类更新状态并提交
+- 工作流程如有相关插件或技能约束，则以其内容为准
 
 ## 文档
 
@@ -138,4 +136,3 @@ Electron + 纯 TypeScript。项目处于半成品阶段：功能按需生长，�
 - 探针代码写成文件后 `node 文件` 运行；`node -e` 仅限纯 ASCII 单行
 - Linux 无 PowerShell：`npm run ticket:new` 不可用——建工单手工复制
   registry 既有行改字段，typecheck 绿后提交
-
