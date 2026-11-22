@@ -28,6 +28,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { PDFDocumentProxy } from '../state/PdfDocProvider'
+import { pdfDocumentCache } from '../state/pdf-document-cache'
 import type { PdfPageGeometry, PdfTextContent } from './PdfPageCanvas'
 import { PageColumnView } from './PageColumnView'
 import {
@@ -95,10 +96,16 @@ export function PageColumn(props: {
   usePageScrollRequest(props.scrollRequest, pageSizes, totalPages, rootRef)
   useScrollTopMirror(props.scrollContainerRef, liveScrollTop)
 
-  // 段①就绪管线：doc/totalPages 变化→逐页 getPage→view 尺寸数组（缓存单源）→占位
-  // 全列→onReady(列宽基准——当前布局口径)；zoom/layout 不入依赖（缓存乘法非重取）
+  // 段①就绪管线：先按 doc 所属 fileUrl 条目读尺寸缓存；命中即 setPageSizes+onReady，
+  // 未命中走原逐页 getPage 管线，并在完成处单点回写。zoom/layout 不入依赖。
   useEffect(() => {
     if (doc === null || totalPages <= 0) { setPageSizes(null); setSizesError(false); return }
+    const cached = pdfDocumentCache.readPageSizes(doc)
+    if (cached !== null && cached.length === totalPages) {
+      setPageSizes(cached)
+      onReadyRef.current?.(columnWidthFor(cached, 1, layoutRef.current))
+      return
+    }
     let cancelled = false
     const load = async (): Promise<void> => {
       const sizes: PageBoxSize[] = []
@@ -110,6 +117,7 @@ export function PageColumn(props: {
         sizes.push(rot % 180 === 90 ? { width: (page.view[3] ?? 0) - (page.view[1] ?? 0), height: (page.view[2] ?? 0) - (page.view[0] ?? 0) } : { width: (page.view[2] ?? 0) - (page.view[0] ?? 0), height: (page.view[3] ?? 0) - (page.view[1] ?? 0) })
       }
       if (!cancelled) {
+        pdfDocumentCache.writePageSizes(doc, sizes)
         setPageSizes(sizes)
         onReadyRef.current?.(columnWidthFor(sizes, 1, layoutRef.current))
       }

@@ -193,6 +193,8 @@ describe('T3-P2 App 壳——38px 顶栏+72px 窄轨结构锁', () => {
     await flush()
     expect(document.querySelector('main.app-main')).not.toBeNull()
   })
+
+  it('rail 阅读器 lazy 装配：先挂占位，等待后空态引导真文本在场', async () => { mount(<App />); await flush(); act(() => { railButton('阅读器')!.click() }); expect(document.querySelector('main [data-reader-lazy="true"]'), 'ReaderPage 动态块在途时挂一帧占位').not.toBeNull(); await flush(); const main = document.querySelector('main.app-main')!; await vi.waitFor(() => { expect(main.querySelector('[data-reader-lazy="true"]'), '动态块就绪后撤下占位').toBeNull(); expect(main.textContent).toContain('阅读器'); expect(main.textContent).toContain('从文献库打开一篇文献（双击文献行）') }, { timeout: 20000, interval: 50 }) }, 30000)
 })
 
 describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹层退役承接）', () => {

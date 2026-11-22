@@ -5,9 +5,9 @@
  *
  * ── 行为层 ──
  * - worker 本地打包（ADR-0002：禁 CDN）+ getDocument({url,isEvalSupported:false})
- *   加载 fileUrl（app-file://）；loadingTask.destroy() 对"加载中"是中止、对
- *   "已加载"是销毁（换文档/卸载即销毁，句柄生命周期归本组件）
- * - doc 就绪经 children render-prop 下发（每 tab 一份——挂 ReaderPage 主区）；
+ *   加载 fileUrl（app-file://）；loadingTask 工厂注入 pdfDocumentCache，lease
+ *   计数与同 fileUrl 单飞由缓存持有，卸载/fileUrl 变化只 release 旧 lease
+ * - doc 就绪经 children render-prop 下发（同 fileUrl 可共享一份——挂 ReaderPage 主区）；
  *   未就绪渲染空占位（tab 级 loading/error 态由 ReaderPage 空态分支承载）
  *
  * ── 接口层 ──
@@ -36,14 +36,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { pdfDocumentCache } from './pdf-document-cache'
 
 // worker 本地打包（ADR-0002 硬约束：禁 CDN）；?url 在 dev 是 dev-server 地址、
 // 构建后是产物内文件 URL，两者都在 CSP worker-src 'self' 范围内（spike 实证）
 GlobalWorkerOptions.workerSrc = workerUrl
 
+// 保持 pdfjs 物理 import 在五文件白名单内；缓存只接收同形 loadingTask 工厂。
+pdfDocumentCache.configure((fileUrl) => getDocument({ url: fileUrl, isEvalSupported: false }))
+
 /** pdfjs 类型再导出（INV-16：白名单外文件的类型消费统一经本文件——消费方
  *  不 import pdfjs-dist，含 import type；RenderTask 供 OutlineThumb 等取消渲染） */
-export type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
+export type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -68,14 +72,12 @@ export function PdfDocProvider(props: {
   onDocReadyRef.current = props.onDocReady
   onErrorRef.current = props.onError
 
-  // 文档生命周期（原 PdfCanvas 配方原样）：fileUrl 变化 → 弃旧文档（销毁连带
-  // worker 侧资源）→ 异步加载新文档
+  // fileUrl 变化：release 旧 lease + acquire 新 lease；回调重渲不触发重取。
   useEffect(() => {
     let cancelled = false
     setDoc(null)
-    // isEvalSupported: false——CSP 禁 unsafe-eval，显式关掉 pdfjs 的 eval 快路径
-    const task = getDocument({ url: fileUrl, isEvalSupported: false })
-    task.promise
+    const lease = pdfDocumentCache.acquire(fileUrl)
+    lease.promise
       .then((loaded) => {
         if (!cancelled) {
           // 页数随文档就绪上报（先于 setDoc，父组件可同步置 totalPages 供首帧渲染）
@@ -91,8 +93,7 @@ export function PdfDocProvider(props: {
       })
     return () => {
       cancelled = true
-      // loadingTask 拥有 document：destroy 对"加载中"是中止、对"已加载"是销毁
-      void task.destroy().catch(() => undefined)
+      lease.release()
     }
   }, [fileUrl])
 
