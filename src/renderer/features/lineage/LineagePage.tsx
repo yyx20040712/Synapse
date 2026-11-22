@@ -68,9 +68,25 @@ export function LineagePage(): JSX.Element {
     // ——mockup §2.6-6；load 互锁同族兜底）
     if (useLineageStore.getState().saveStatus !== 'clean') return
     const scope = useLibraryStore.getState().query.folderScope
-    useLineageStore.getState().setFolder(
-      scope?.kind === 'folder' ? scope.folderId : MAIN_GRAPH_ID
-    )
+    const target = scope?.kind === 'folder' ? scope.folderId : MAIN_GRAPH_ID
+    // [B2 D5] 同图跳过（仅挂载编排层）：store 已 ready+同 folderId+needsReload
+    // 未清（INV-175 和解位）且已驻留非空图时零新增 graph IPC——渲染走 store
+    // 驻留数据（P-2）。空图无驻留价值，保持既「挂载取数」契约（App 级组合根
+    // 用例锁：ready 空载夹具仍须经 graph 取数建立图态）；真机路径 store 初态
+    // =loading，不落入本分支。
+    // 互斥红线：setFolder 本体不做同值守卫（切图恒重取=store 明文语义，本批
+    // 零改）——手工同值重选仍重取；B4/B5 再统一。
+    const current = useLineageStore.getState()
+    const resident = current.nodes.length > 0 || current.edges.length > 0
+    if (
+      resident &&
+      current.status === 'ready' &&
+      current.folderId === target &&
+      !current.needsReload
+    ) {
+      return
+    }
+    useLineageStore.getState().setFolder(target)
   }, [])
 
   // [F-LGRAPH-01②U1] Ctrl+Z/Ctrl+Y 键盘撤销/重做（edit 模式；输入焦点内不

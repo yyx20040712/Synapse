@@ -1,65 +1,37 @@
 /**
  * 应用骨架（infra，无工单）：[T3-P2] 壳层改版——grid 38px/1fr/26px 三行
- * （顶栏 wordmark 签名+居中 gsearch+caption 三键｜Rail 72px 窄轨+main｜状态条）
+ * （顶栏 wordmark 签名+居中 gsearch+caption 三键｜Rail 72px 窄轨+ViewHost｜状态条）
  * +视图切换+错误边界。F-UI-03 折叠 nav 面已退役（方案切换=删除旧方案）。
- * 各页面组件来自 features/*。[T3-P1] ErrorBoundary 拆 ./ErrorBoundary。
+ * [T3-P1] ErrorBoundary 随 ViewHost 拆件（视图边界迁驻）。
+ * [B2 §3.1] 组合根只持值型/装配面：视图路由=ViewHost、状态条数据=
+ * AppStatusBarHost——nodes/edges 数组本体与 noteByPaper 对象本体只由宿主/投影
+ * 订阅（App 根仅取布尔投影，见 app-b2-host-isolation 探针）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LibraryPage } from '../features/library/LibraryPage'
-import { ReaderPage } from '../features/reader/view/ReaderPage'
-import { SettingsPage } from '../features/settings/SettingsPage'
-import { LineagePage } from '../features/lineage/LineagePage'
 import { ConflictDialog } from '../features/lineage/ConflictDialog'
 import { ToastHost } from '../shared/ui/Toast'
-import { useTabDirtyAggregate, useTabDirtySignals, useTabOpenCount } from '../features/reader/state/tab-dirty'
-import { useLineageDirty, useLineageStore } from '../features/lineage/lineage.store'
+import { useTabAutosaveSignals } from '../features/reader/state/tab-dirty'
+import { useLineageDirty } from '../features/lineage/lineage.store'
 import { useNoteDraftPending } from '../features/lineage/lineage-note-draft'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 import { useFigureExtractionBridge } from '../shared/figures/useFigureExtractionBridge'
 import { useSettingsStore } from '../features/settings/settings.store'
-import { useLibraryStore } from '../features/library/library.store'
 import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
-import { WorkspacesPage } from '../features/workspaces/WorkspacesPage'
-import { selectDisplayWsName, isGuideState, useWorkspaceStore } from '../features/workspaces/workspace.store'
+import { isGuideState, useWorkspaceStore } from '../features/workspaces/workspace.store'
 import { THEME_LABEL } from '../shared/ui-constants'
 import { registerKeymap, unregisterKeymap } from '../shared/keymap'
 import { Rail, type ViewId } from './Rail'
-import { StatusBar, type AutosaveStatus } from './StatusBar'
 import { TitleBarControls } from './TitleBarControls'
-import { ErrorBoundary } from './ErrorBoundary'
 import { useViewBridges } from './useViewBridges'
 import { switchViewWithFlush } from './view-flush'
-// [F-VISFB-65] 恢复副本确认条组合根（app 层跨 feature 聚合）+引导态桥拆件
 import { RecoveryBarHost } from './RecoveryBarHost'
 import { useWsGuideImportBridge } from './useWsGuideImportBridge'
-import { prepareRecoveryWorkspaceSwitch } from '../features/lineage/recoveryScheduler'
+import { ViewHost } from './ViewHost'
+import { AppStatusBarHost } from './AppStatusBarHost'
 
 /** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema——B1 后两档） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
   return value === 'light' || value === 'sepia' ? value : undefined
-}
-
-/**
- * [T3-U1] 状态条自动保存槽 worst-of 聚合（纯函数——tab 双源分档 ∪ lineage
- * saveStatus →三态真文本；null=槽省略）。序=failed > saving > saved；
- * [回炉 R2/W3 终裁分档] annoDirty=真失败→failed；notePending=在途+失败混合
- * →saving；lineage dirty=[②U1] 会话暂存未落库如实呈现；干净+有 tab=saved；
- * 无 tab 空闲=null（禁假「已保存」造作信号）。
- * [F-VISFB-14] 返回型=SaveUiState|null（StatusBar 槽位单源——INV-141⑤；
- * lineage error 在此归一为 failed〔钮面族四态枚举，文本同为「保存失败」〕）。
- */
-function autosaveWorstOf(
-  annoDirty: boolean,
-  notePending: boolean,
-  lineage: 'clean' | 'dirty' | 'saving' | 'error',
-  openTabs: number
-): AutosaveStatus {
-  if (annoDirty || lineage === 'error') return 'failed'
-  if (notePending || lineage === 'saving') return 'saving'
-  // [F-LGRAPH-01②U1] lineage dirty=编辑会话暂存未落库（保存语义反转：
-  // autosave-first→会话暂存+点保存——「待保存」档如实呈现非假「保存中」）
-  if (lineage === 'dirty') return 'dirty'
-  return openTabs > 0 ? 'saved' : null
 }
 
 export function App(): JSX.Element {
@@ -70,20 +42,14 @@ export function App(): JSX.Element {
   // 读 main 缓存）。LG-03 扩面（ADR-0014+INV-22）：图保存态≠saved 即脏——组合根
   // 单点扩（tab ∪ lineage dirty ∪ noteDraft——F-VISFB-63）。三 hook 必须无条件
   // 调用（P7-C 崩溃修复 2026-08-27）：`||` 短路→hooks 数量随渲染漂移（Rules of
-  // Hooks 违规，commit 链错位崩；回归锁=app-quit-dirty.test.tsx）
-  const tabDirty = useTabDirtyAggregate()
+  // Hooks 违规，commit 链错位崩；回归锁=app-quit-dirty.test.tsx）。
+  // [B2 §3.2] tab 面改经 useTabAutosaveSignals 投影（pending/annoDirty 布尔，
+  // useShallow 浅比）——不订阅 noteByPaper 对象本体；布尔或=与
+  // useTabDirtyAggregate 同语义（受锁导出零触碰）。
+  const { annoDirty, notePending } = useTabAutosaveSignals()
   const lineageDirty = useLineageDirty()
   const noteDraft = useNoteDraftPending() // [F-VISFB-63] 悬浮笔记编辑草稿（lineage-note-draft 注册族）
-  const quitDirty = tabDirty || lineageDirty || noteDraft
-  // [T3-U1 回炉 R2/W3 终裁] 状态条自动保存槽聚合（沿上方 dirty 聚合同源信号
-  // 族扩 worst-of）：tab 双源分档（annoDirty→error/notePending→saving——
-  // useTabDirtySignals facade）∪ lineage saveStatus 三态 →三态真文本注入
-  // StatusBar（null=无可写面信号槽省略——纯函数见文件头）。quitDirty 链
-  // （上方 useTabDirtyAggregate 或聚合）零触碰——TABS-04 行为面不动
-  const tabOpenCount = useTabOpenCount()
-  const { annoDirty, notePending } = useTabDirtySignals()
-  const lineageSave = useLineageStore((s) => s.saveStatus)
-  const autosave = autosaveWorstOf(annoDirty, notePending, lineageSave, tabOpenCount)
+  const quitDirty = annoDirty || notePending || lineageDirty || noteDraft
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
@@ -97,6 +63,9 @@ export function App(): JSX.Element {
   useEffect(() => {
     void wsLoad()
   }, [wsLoad])
+  // 引导态布尔投影（导入升格桥+ViewHost guideHidden 消费）——只订阅派生布尔，
+  // 课题列表数组本体归 AppStatusBarHost（§3.2 禁双层订阅）
+  const wsGuide = useWorkspaceStore((s) => isGuideState(s))
   // R2-SET1 界面缩放：设置驻留加载（挂载点在组合根——设置页外也要有档位）。
   // 失败容忍：load 抛错静默用默认档 small（`?? 'small'` 兜底；设置页自身 load
   // 失败会 toast，用户可见面不缺——INV-02 的「用户触发」面在设置页）
@@ -136,19 +105,6 @@ export function App(): JSX.Element {
   // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
   // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）
   useViewBridges(changeView)
-
-  // T3-P2 状态条数据（组合根单点订阅——StatusBar 哑件 props 注入先例）：
-  // 课题名/篇数/脉络计数/已选 0-1/主题名单源推导；[F-WS-02] 显示位=
-  // selectDisplayWsName（引导态=待选择——INV-87）
-  const wsItems = useWorkspaceStore((s) => s.items)
-  const wsCurrentId = useWorkspaceStore((s) => s.currentId)
-  const wsCurrent = wsItems.find((w) => w.id === wsCurrentId)
-  const wsDisplayName = selectDisplayWsName({ items: wsItems, currentId: wsCurrentId })
-  const wsGuide = isGuideState({ items: wsItems, currentId: wsCurrentId })
-  const lineageNodes = useLineageStore((s) => s.nodes)
-  const lineageEdges = useLineageStore((s) => s.edges)
-  const selectedId = useLibraryStore((s) => s.selectedId)
-
   // [F-WS-02] 导入升格桥（D2——[F-VISFB-65] 拆件 useWsGuideImportBridge：
   // 纯移动零语义改，App 行数红线；语义面见该件头注）
   useWsGuideImportBridge(wsGuide)
@@ -207,31 +163,11 @@ export function App(): JSX.Element {
       <div className="app-content-row">
         {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役） */}
         <Rail view={view} onView={changeView} />
-        <main className="app-main min-w-0 flex-1 overflow-auto">
-          <ErrorBoundary>
-            {view === 'library' && <LibraryPage guideHidden={wsGuide} />}
-            {view === 'reader' && <ReaderPage />}
-            {view === 'settings' && <SettingsPage />}
-            {view === 'lineage' && <LineagePage />}
-            {view === 'workspaces' && (
-              <WorkspacesPage dirty={quitDirty} onSwitched={prepareRecoveryWorkspaceSwitch} />
-            )}
-          </ErrorBoundary>
-        </main>
+        <ViewHost view={view} changeView={changeView} quitDirty={quitDirty} guideHidden={wsGuide} />
       </div>
       </div>
       {/* T3-P2 状态条 26px（等宽字仪表带——真文本槽位锁在 app-shell.test） */}
-      <footer className="app-statusbar">
-        <StatusBar
-          wsName={wsDisplayName}
-          paperCount={wsCurrent?.paperCount ?? 0}
-          nodeCount={lineageNodes.length}
-          edgeCount={lineageEdges.length}
-          selectedCount={selectedId !== null ? 1 : 0}
-          themeLabel={THEME_LABEL[theme]}
-          autosave={autosave}
-        />
-      </footer>
+      <AppStatusBarHost themeLabel={THEME_LABEL[theme]} />
       <ToastHost />
       {/* [F-VISFB-65 单元二] GHOST_FOLDER 降级询问（app 级——quit 交叠期任意
           视图可见；无待决渲染 null） */}

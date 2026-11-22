@@ -110,6 +110,29 @@ export function useTabDirtySignals(): TabDirtySignalPair {
   return { annoDirty, notePending }
 }
 
+/**
+ * [B2 §3.2] 状态条自动保存槽投影（App 组合根/AppStatusBarHost 消费）——
+ * 与 useTabDirtySignals 同语义的降维版：
+ * - annoDirty=annotations 面保存失败残留（布尔选择器，Object.is 比较）；
+ * - notePending=notes 面 pending 按 **reader tab 键集**投影（useShallow 浅比
+ *   同文件 useNotesDrafts 先例）——打字期 contentMd 等非 pending 字段变化不
+ *   重渲；已关闭 tab 的 noteByPaper 残留不参与（键集限定同 useTabDirtySignals）。
+ * 既有 useTabDirtyAggregate/useTabDirtySignals 导出与语义零触碰（受锁面）。
+ */
+export function useTabAutosaveSignals(): TabDirtySignalPair {
+  const tabIds = useReaderStore((s) => s.order)
+  const annoDirty = useReaderStore((s) => s.order.some((id) => s.tabs[id]?.dirty === true))
+  const pendingByTab = useNotesStore(
+    useShallow((s) => {
+      const out: Record<string, boolean> = {}
+      for (const id of tabIds) out[id] = s.noteByPaper[id]?.pending === true
+      return out
+    })
+  )
+  const notePending = tabIds.some((id) => pendingByTab[id] === true)
+  return { annoDirty, notePending }
+}
+
 /** notes 面草稿字典（pending 镜像）的响应式转手——TabBar 等消费方经本聚合器
  * 订阅（本模块是 reader 域唯一 notes.store 引用点，check-quality 白名单例外）。
  *  只投影 pending 布尔并 useShallow 比较：打字期的 contentMd 变化不触发
