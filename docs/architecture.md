@@ -242,7 +242,7 @@ flowchart TB
     清除免门直写回自动路由）。
   - 交互=use-edge-edit 调线态机+useDrawLine 画线+12 锚吸附
     （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
-    drag-autoscroll 四会话统一自动滚动（INV-80）。
+    drag-autoscroll 四会话统一自动滚动（INV-154）。
   - 悬浮笔记=LineageFloatingNotes（交互门四源：edit∧select∧非 saving∧非 recovery 冻结——INV-149）
     +lineage-note-draft 草稿四落定（INV-150）。
   - 写路径=lineage-write-queue（FIFO；upsert 同 id 整替、patch-node 字段级融合）+recoveryScheduler（恢复副本）
