@@ -114,7 +114,15 @@ const pUp = (x: number, y: number): void => {
 }
 const fireEnd = (el: Element): void => {
   act(() => {
-    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'left' }))
+    // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化）
+    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' }))
+  })
+}
+
+/** [B3 §9 新增行] rAF 队列冲洗一帧（本 describe 拖拽用例局部 stub 同族——指针派发后即时断言先 flush） */
+const flushRafs = (queue: FrameRequestCallback[]): void => {
+  act(() => {
+    queue.splice(0).forEach((cb) => cb(performance.now()))
   })
 }
 
@@ -236,7 +244,11 @@ describe('[F-VISFB-31] 接缝③buildSnapshot=own 域（路由 px 常量族同�
 })
 
 describe('[F-VISFB-31] 接缝①拖拽会话 C3 补偿段=own 域', () => {
-  it('激活/移动帧 inline 写回 own px：u=1.25 卡 client 160×90 → width 写 128px、move 帧 left=Δclient÷u（旧 ÷z 写 160px/80px 红）', () => {
+  it('激活/移动帧 inline 写回 own px：u=1.25 卡 client 160×90 → width 写 128px、move 帧 translate=own 域差值（旧 left=Δclient÷u 断言随 [B3 §9] 迁移）', () => {
+    // [B3 §9 新增行] rAF 捕获队列（本例局部 stub）：pMove 后即时断言先 flush（两态兼容冲洗）
+    const rafs: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => { rafs.push(cb); return rafs.length })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
     const nodes = [node('A'), node('B'), node('C')]
     mount(nodes)
     setU('1.25')
@@ -244,29 +256,45 @@ describe('[F-VISFB-31] 接缝①拖拽会话 C3 补偿段=own 域', () => {
     stubRect(req('.month-frame'), 0, 0, 600, 200)
     pDown(cardOf('A'), 310, 166)
     pMove(330, 176)
+    flushRafs(rafs) // [B3 §9] 帧批激活
     const card = cardOf('A')
     expect(card.style.position).toBe('absolute')
     expect(card.style.width).toBe('128px')
     pMove(390, 166)
-    expect(parseFloat(card.style.left)).toBeCloseTo(64, 10)
-    expect(parseFloat(card.style.top)).toBeCloseTo(0, 10)
+    flushRafs(rafs) // [B3 §9] 指针批
+    // [B3 §9 断言迁移] move 帧 left/top 值断言→translate 值域（own 差值——translate=(390/1.25−48)−200, (166/1.25−28.8)−104=(64,0)）
+    const tr = (card.style.getPropertyValue('translate') || '').split(/[\s,]+/).filter((x) => x !== '')
+    expect(parseFloat(tr[0] ?? 'NaN')).toBeCloseTo(64, 10)
+    expect(parseFloat(tr[1] ?? 'NaN')).toBeCloseTo(0, 10)
     pUp(390, 166)
     fireEnd(cardOf('A'))
+    vi.unstubAllGlobals()
   })
 
   it('pullPx 连续跟随量=own px：u=1.25 指针越底缘 50 own px → --lg-pull=50px、越 100 own px 封顶 82px（旧 client 量 62.5px 红）', () => {
+    // [B3 §9 新增行] rAF 捕获队列（本例局部 stub）：--lg-pull 即时断言先 flush（帧批直写驱动）
+    const rafs: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+      rafs.push(cb)
+      return rafs.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
     const nodes = [node('A'), node('B'), node('C')]
     mount(nodes)
     setU('1.25')
     stubRect(req('.month-frame'), 0, 0, 600, 200)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
+    flushRafs(rafs) // [B3 §9] 帧批激活（冻结基准校准）
     pMove(300, 262.5)
+    flushRafs(rafs) // [B3 §9] 指针批（入带写值）
     expect((req('.month-frame') as HTMLElement).style.getPropertyValue('--lg-pull')).toBe('50px')
     pMove(300, 325)
+    flushRafs(rafs) // [B3 §9] 指针批（封顶）
     expect((req('.month-frame') as HTMLElement).style.getPropertyValue('--lg-pull')).toBe('82px')
     pUp(300, 325)
     fireEnd(cardOf('A'))
+    vi.unstubAllGlobals()
   })
 })
 
@@ -489,24 +517,32 @@ describe('[F-VISFB-31·R1] 自查面补强锚（W-1——四处独立红锚）',
     }
     startFlight(card, job, content)
     expect(card.style.position).toBe('absolute')
-    expect(card.style.left).toBe('80px')
+    // [B3 §9 断言迁移] 起点 left=from−ho 断言→translate=(from−target) own 域差值
+    //（from=(100,50)；target=client÷1.25=(200,100) → translate=(−100,−50)——锚 left=target−ho=(180,90)）
+    expect(card.style.translate).toBe('-100px -50px')
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
-    expect(card.style.left).toBe('180px')
-    expect(card.style.top).toBe('90px')
+    expect(card.style.translate).toBe('0px 0px')
   })
 
   it('下拉带域=own px（W-1②）：u=1.25 clientY=290（=200+72own≤带内界 302.5）松手→带内落位改写（旧 82client 带=282 带外回弹零写红）', () => {
     const nodes = [node('A'), node('B'), node('C')]
     mount(nodes)
     setU('1.25')
+    // [B3 §9 新增行] rAF 捕获队列（本例局部 stub）：指针派发后 flush（帧批路径驱动——下拉带松手例）
+    const rafs: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => { rafs.push(cb); return rafs.length })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
     stubRect(req('.month-frame'), 0, 0, 600, 200)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
+    flushRafs(rafs) // [B3 §9] 帧批激活
     pMove(300, 290)
+    flushRafs(rafs) // [B3 §9] 指针批（own 域带内 extend）
     pUp(300, 290)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
     expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    vi.unstubAllGlobals()
   })
 
   it('吸附高亮 r=屏幕域 12px 承诺（W-1③）：u=1.25 hint dot r=4.8/环 r=7.2（旧 z 单因子 r=6/9 红）', () => {

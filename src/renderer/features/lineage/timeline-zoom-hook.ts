@@ -20,6 +20,10 @@ export function useTimelineZoom(args: {
   contentRef: RefObject<HTMLDivElement | null>
   /** 内容布局变化键（渲染组引用——jsdom 无 RO 的量测兜底触发） */
   recomputeKey: unknown
+  /** [B3 §3.5.5] 挂起窗 getter（dragging 激活起→布局终局止——ref-latest 稳定引用）：
+   *  measure() 顶部统一守卫——useLayoutEffect 同步调用与 RO 两路同受（挂起期不做自然尺寸量测/force；
+   *  最终量测由 layoutEpoch bump 后 ref 已 false 的 effect 重跑承载） */
+  isSuspended?: () => boolean
 }): {
   /** .tl-content 内联样式（transform——100%=无变换键） */
   contentStyle: CSSProperties
@@ -53,6 +57,7 @@ export function useTimelineZoom(args: {
     const content = args.contentRef.current
     if (content === null) return
     const measure = (): void => {
+      if (args.isSuspended?.() === true) return // [B3 §3.5.5] 挂起期统一守卫（同步 measure 与 RO 两路同受）
       const w = content.offsetWidth
       const h = content.offsetHeight
       if (w !== naturalRef.current.w || h !== naturalRef.current.h) {
@@ -65,7 +70,7 @@ export function useTimelineZoom(args: {
     const ro = new ResizeObserver(measure)
     ro.observe(content)
     return () => ro.disconnect()
-  }, [args.contentRef, args.recomputeKey])
+  }, [args.contentRef, args.recomputeKey, args.isSuspended])
 
   const n = naturalRef.current
   return {

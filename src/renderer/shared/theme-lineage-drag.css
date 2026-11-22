@@ -1,0 +1,81 @@
+/* [B3] 拖拽会话域皮肤（自 theme-lineage.css 分域拆件 2026-11-22——commit A
+   纯物理拆件：六族规则文本搬迁零值改；拆出规则与主文件零重叠=层叠序不敏感，
+   main.tsx 按 theme-lineage.css 之后段序导入。消费方=card-drag-session/
+   TimelineMonthFrame（extend 类）/card-drag-session（--lg-pull 帧批直写点——B3 §3.4）/DragCandidates/LineageTimeline
+   dimmed 传参。文本锁测试读面=双文件拼读（theme.test lineageCssAll+
+   slot-visibility/b3-css/b3-frame F4/edge-overlay-css）；
+   --shadow-drag token 本体留守 theme.css :root 单源零迁） */
+
+/* [T3-P8] 拖起态（mockup L248 逐值：离流+z99+拖起阴影+微倾放大+grabbing+
+   pointer-events none=settle 期重触发忽略的 CSS 同义面）；[②U7] 定位=
+   absolute 包含块=.month-frame（offsetParent 链——.tl-row static 不变），
+   own 域经 frameOrigin/hostOffset 补偿（INV-96 族；[B3 §12.11②] 原「absolute
+   驻 .tl-content」表述随包含块实态校正） */
+.tl-card.dragging {
+  position: absolute;
+  z-index: 99;
+  box-shadow: var(--shadow-drag);
+  transform: rotate(2deg) scale(1.05);
+  cursor: grabbing;
+  pointer-events: none;
+}
+/* [T3-P8] 候选文献位虚线槽（B1——[F-LINEAGE-02 ①a] 128×72 dashed accent
+   accent-soft 底「置 入」letter-spacing 3px；opacity .2s 过渡；9px→--fs-micro
+   同值映射）。[B3 §6.7] 边界型对比（M3/M4 锁）：虚线=加深目标（target）
+   专属、实线=空位候选（faded 覆写 border-style: solid）——不只靠文字辨认 */
+.drag-slot {
+  width: 128px;
+  min-height: 72px;
+  border: 1.8px dashed var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-micro);
+  color: var(--accent);
+  letter-spacing: 3px;
+  transition: opacity .2s;
+}
+/* [B3 §6.7] 空位候选显著度：opacity 定值 .55（≥0.5 验收线——F-DRAGVIS-01
+   自身验收；旧 .35 未达线随 occupancy mask 退役）+实线边（边界型对比——
+   虚线为加深目标专属）。候选槽不再与卡同 cell（旧「被卡覆盖」病灶随
+   mask 方案退役——opacity 提升承载真机可辨度） */
+.drag-slot.faded {
+  opacity: .55;
+  border-style: solid;
+}
+/* [B3 §6.3] 唯一加深槽=target：拖起相位 slot.active=true 且 overFrame=true
+   恰 1 个（全 DOM 数量口径——M2/G9/INV-145④ 草案同式）；候选零 target、
+   settle（active=false）恒 0。虚线保留（加深目标专属——faded 已覆写实线），
+   底色/边框对比高于 faded（accent 实底+accent-ink 字 vs faded 半透明
+   accent-soft 面）——不只靠「置 入」文字辨认 */
+.drag-slot.target {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* [F-VISFB-22 C5→B3 §6.8] 候选槽提层：cand 族 z3（卡 z2 之上/连线命中层
+   z4 与拖卡 z99 之下）——INV-145④ 层级契约保留（slot-visibility 测试锁）；
+   旧覆盖病灶描述（faded 候选与流内卡 1:1 重合被整面覆盖）随 occupancy
+   mask 退役——候选=末行未占 cell，不再与卡同 cell，覆盖场景不存在 */
+.drag-slot.cand { z-index: 3; }
+/* [F-LGRAPH-01②U6] 框底缘下拉：拖过底缘=padding-bottom 增高腾新行（height
+   auto 不可插值——padding 变化承载 .38s 同曲线下拉动画；mockup §3.5 承载面
+   申报：现行 height .38s 过渡字段保留不拆）。
+   [F-VISFB-22 C6] 94=12+82 值耦合改 CSS 变量化（INV-100 在档可选项落法）：
+   增量=--lg-pull（会话侧帧批直写连续写入——未拉伸底缘起跟随量，
+   PULL_BAND_PX=82 封顶单源在 drag-session-geometry.ts（B3 commit A 随
+   geometry 拆件自 card-drag-session.ts 迁驻）；CSS 只知基准+变量，
+   字面 94 退役）；缺省 82px=var 缺席兜底（旧全量语义）。
+   [F-LANEGRID-01 B4] 基准 12→38px=FRAME_PAD_BOTTOM 同步（底 padding
+   12→38 对称变更随批）——stretch 挂载瞬间基准不跳（38→38+pull 连续），
+   全拉伸态 38+82=120。
+   [B3 §7 G2-2] transition:none=拖中过渡抑制：活动 stretch 期逐帧 --lg-pull
+   直写须即时生效=跟手（裁决 8；保留 .38s 过渡则每帧目标变更重定向过渡≈
+   指数追赶=滞后追手）。已知边界 §12.10：stretch 期 height/border-color/
+   background 过渡同被压制——拖中无这些状态变化，不拆属性另造规则 */
+.month-frame.stretch {
+  padding-bottom: calc(38px + var(--lg-pull, 82px));
+  transition: none;
+}
+/* 拖起 dimmed（mockup .tl-svg.dimmed opacity .18——飞行脱节已知限制掩盖面） */
+.tl-edges.dimmed { opacity: .18; }

@@ -98,7 +98,8 @@ const pUp = (x: number, y: number): void => {
 }
 const fireEnd = (el: Element): void => {
   act(() => {
-    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'left' }))
+    // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化——finishOnce 消费面随批迁移）
+    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' }))
   })
 }
 const click = (el: Element): void => {
@@ -121,6 +122,11 @@ beforeEach(() => {
   onNodeClick.mockClear()
   // [F-LGRAPH-01①U3] 模式态单源复位（P-1 缺省 browse——composer 受控注入面）
   useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
+  // [B3 §9 新增行] rAF 捕获队列（b3 守卫同族）：pMove 后即时断言先 flushRaf——
+  // 帧批化后事件时点只记点，flush=驱动一帧（现行同步路径=无害冲洗，两态共用）
+  rafs = []
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => { rafs.push(cb); return rafs.length })
+  vi.stubGlobal('cancelAnimationFrame', () => undefined)
 })
 
 /** 进编辑模式（三模式栏写路径等价——「编辑脉络」toggle 已随 U3 退役） */
@@ -138,7 +144,16 @@ afterEach(() => {
   host?.remove()
   host = null
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
+
+/** [B3 §9 新增行] rAF 队列冲洗一帧（帧批驱动——激活/指针批/滚动子批同用） */
+let rafs: FrameRequestCallback[] = []
+const flushRaf = (): void => {
+  act(() => {
+    rafs.splice(0).forEach((cb) => cb(performance.now()))
+  })
+}
 
 describe('[T3-P8] 纯函数直测（frameKeyOf）', () => {
   // [F-SLOTGRID-01 U4] describe 退役名改（旧名含 applyMovePreview/
@@ -163,10 +178,11 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(onNodeClick).toHaveBeenCalledWith('A', expect.anything())
   })
 
-  it('过 5px 阈值激活：占位槽「置 入」在场+拖卡 .dragging+连线层 dimmed（view 态可拖）', () => {
+  it('过 5px 阈值激活：占位槽「置 入」在场+拖卡 .dragging+连线层 dimmed（edit 专属闸）', () => {
     mount([node('A'), node('B')])
     pDown(cardOf('A'), 150, 200)
     pMove(158, 204)
+    flushRaf() // [B3 §9] 帧批激活——flush 后占位槽/拖拽类在场
     const ph = req('.drag-slot')
     expect(ph.textContent).toBe('置 入')
     expect(cardOf('A').classList.contains('dragging')).toBe(true)
@@ -183,16 +199,19 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     stubRowFollowFlow(f)
     pDown(cardOf('A'), 60, 40)
     pMove(66, 44)
+    flushRaf() // [B3 §9] 激活帧
     let ph = req('.drag-slot')
     expect(ph.classList.contains('faded')).toBe(false) // 框内不淡化
     // [F-SLOTGRID-01 U3] 指针落 B（cell1）中心 276 右侧（x=350——unmeasured
     // 单行算术：col=round((350-76)/200)=1→after B）→ 插位=B 后 C 前
     pMove(350, 40)
+    flushRaf() // [B3 §9] 指针批
     ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     expect(ph.previousElementSibling?.isEqualNode(cardOf('B'))).toBe(true)
     // 指针出框（x=999）→ 淡化+插位保持（框外不更新槽位）
     pMove(999, 40)
+    flushRaf() // [B3 §9] 指针批（框外不更新插位）
     ph = req('.drag-slot')
     expect(ph.classList.contains('faded')).toBe(true)
     // [②U6/退役行 7] 框外松手=物理域回弹原位：无 toast+零重排写（回弹=no-op
@@ -219,6 +238,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     // [F-SLOTGRID-01 U3] unmeasured 单行算术：py=130 脱行带行钳回 row0；x=300
     // 落 B（cell1）中心 276 右侧→after B→插 C 前（跨带指针恒按 px 中心序）
     pMove(300, 130)
+    flushRaf() // [B3 §9] 帧批激活+指针批
     const ph = req('.drag-slot')
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     pUp(300, 100)
@@ -240,8 +260,8 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     const order = [...req('.month-frame').querySelectorAll('.tl-card')].map((c) => (c as HTMLElement).dataset.nodeId)
     expect(order).toEqual(['B', 'C', 'A'])
     const card = cardOf('A')
-    expect(card.style.transition).toContain('left .32s cubic-bezier(.22,.9,.26,1)')
-    expect(card.style.transition).toContain('top .32s cubic-bezier(.22,.9,.26,1)')
+    // [B3 §9 断言迁移] settle 过渡承载键 left/top→translate（值断言等价迁移——§5 飞行 translate 化）
+    expect(card.style.transition).toContain('translate .32s cubic-bezier(.22,.9,.26,1)')
     expect(req('.tl-edges').classList.contains('dimmed')).toBe(false) // 拖起摘除（settle 期无 dimmed）
     expect(reorder).not.toHaveBeenCalled() // settle 落定（transitionend）后才排队
     fireEnd(card)
@@ -364,6 +384,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     const spyTop = vi.spyOn(cardOf('A'), 'offsetTop', 'get')
     spyTop.mockReturnValue(999)
     pMove(66, 44)
+    flushRaf() // [B3 §9] 帧批激活
     expect(cardOf('A').classList.contains('dragging')).toBe(true)
     expect(cardOf('A').style.marginLeft).toBe('0px') // dragging 期恒压 0px（会话防御写沿承——U3 网格联动重估）
     expect(req('.tl-content').classList.contains('tl-measure')).toBe(false)
@@ -460,9 +481,11 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     // 奇行卡 D 起拖（指针=卡中心）→激活→移至 B 左半（插入区=异行位 idx1）
     pDown(cardOf('D'), 176, 198)
     pMove(182, 202)
+    flushRaf() // [B3 §9] 帧批激活
     expect(cardOf('D').classList.contains('dragging')).toBe(true)
     expect(cardOf('D').style.position).toBe('absolute') // 离流单源（.dragging——无双计载体确认）
     pMove(244, 54)
+    flushRaf() // [B3 §9] 指针批（异行插位）
     await expect.poll(async () => q('.drag-slot:not(.cand)') !== null).toBe(true)
     pUp(244, 54)
     expect(reorder).not.toHaveBeenCalled() // settle 落定（transitionend/兜底）后才写
@@ -512,6 +535,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     const pre = cardOf('A')
     pDown(pre, 76, 54)
     pMove(82, 58)
+    flushRaf() // [B3 §9] 帧批激活
     const post = cardOf('A')
     expect(post).toBe(pre) // 激活帧同父 keyed 调和=节点保育（跨父 remount 修复面）
     expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')
@@ -524,12 +548,14 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(tailRow!.classList.contains('odd'), '保育行=原行非末行奇行（激活帧行为）').toBe(false)
     // ② 后续 pointermove：findCard 重查新节点补写 left/top（节点此后恒稳）
     pMove(86, 60)
+    flushRaf() // [B3 §9] 指针批（left/top=激活锚存续）
     const post2 = cardOf('A')
     expect(post2).toBe(post) // move 期不再换节点（remount 仅激活提交帧）
     expect(post2.style.left, '后续 move 补写 left（会话对 remount 健在）').not.toBe('')
     expect(post2.style.top, '后续 move 补写 top').not.toBe('')
     // settle 照常：行0 插位（350>B cell1 中心 276→插位 1）→松手→清场+重排单次
     pMove(350, 40)
+    flushRaf() // [B3 §9] 指针批（插位 1）
     await expect.poll(async () => q('.drag-slot:not(.cand)') !== null).toBe(true)
     pUp(350, 40)
     expect(reorder).not.toHaveBeenCalled() // settle 落定后才写
@@ -573,6 +599,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     const pre = cardOf('D')
     pDown(pre, 176, 198)
     pMove(182, 202)
+    flushRaf() // [B3 §9] 帧批激活
     const post = cardOf('D')
     expect(post).toBe(pre) // 激活帧同父 keyed 调和=节点保育（中行源卡面）
     expect(post.style.position, 'ghost inline 全键存续（position——离流单源）').toBe('absolute')

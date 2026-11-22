@@ -9,7 +9,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const css = readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8')
+/** [B3] 拖拽分域拆件（2026-11-22 commit A）读面=双文件拼读（机械防御——本件
+ *  锁面 .tl-edges/.tl-edge 基础族=留守件，拆件零触及；断言本体零改）。 */
+const css =
+  readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage.css'), 'utf8') +
+  readFileSync(join(process.cwd(), 'src/renderer/shared/theme-lineage-drag.css'), 'utf8')
 
 describe('T3-P7A/P7B EdgeOverlay CSS 锁（D-1/D-2/D-22；U8 视觉内联）', () => {
   it('CSS 锁：svg z=1 低于卡 2+inset/overflow；opacity --dur-tint 过渡（[F-SLOTGRID-01 U1] 测量冻结 opacity:0 规则随瀑布退役删）；命中层 stroke 8 且 P7a 期 pointer-events:none；图例族零残留', () => {

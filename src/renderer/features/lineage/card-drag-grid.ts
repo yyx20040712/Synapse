@@ -19,6 +19,7 @@ import {
   FRAME_PAD_TOP,
   PITCH_X,
   PITCH_Y,
+  capacityOfRow,
   hitTest,
   partitionRows,
   phaseOfRow,
@@ -56,10 +57,11 @@ export function insertIndexFromGrid(
 
 /**
  * 候选槽 cell k 坐标（F-DRAGVIS-01：候选槽位阵列=算术网格，含 φ_r 奇偶
- * 相位，随容量公式实时重排——D8）。k∈[0,total-1] 即含源网格全体 cell（每格
- * 一候选=插入位 0..others.length 与 cell 集 1:1）；与松手落点同源=松手落
- * cell insertIdx（settle 往返恒等——cellByWalk 独立 oracle 对账单测锁）。
- * 坐标=月框 padding-box px（drag-slot-candidates absolute 定位域同基准）。
+ * 相位，随容量公式实时重排——D8）。candidateSlotAt 只提供 cell 坐标；有限
+ * 空槽集由 candidateCells 计算（B3 commit C），落点与候选显示同源但非逐格
+ * 插入预告；与松手落点同源=松手落 cell insertIdx（settle 往返恒等——
+ * cellByWalk 独立 oracle 对账单测锁）。坐标=月框 padding-box px
+ * （drag-slot-candidates absolute 定位域同基准）。
  */
 export function candidateSlotAt(k: number, w: number): { x: number; y: number } {
   const { row, col } = positionOf(k, w)
@@ -67,4 +69,27 @@ export function candidateSlotAt(k: number, w: number): { x: number; y: number } 
     x: FRAME_PAD_LEFT + phaseOfRow(row) + PITCH_X * col,
     y: FRAME_PAD_TOP + PITCH_Y * row
   }
+}
+
+/**
+ * 有限空槽 mask（B3 §6.1-4 单源——G 空槽 occupancy；B3 commit C 新增）：
+ * rows=partitionRows(total,w)（预览行集合——total=srcIds.length 含源，占位
+ * 槽参与分行）；候选=末行中 index≥total 的 cell（=capacityOfRow(末行)−末行
+ * 实有数——末行物理追加位，行集合之外的行零候选）。被占格（cells
+ * 0..total−1，除当前 insertIdx 为实态槽）零候选；unmeasured（w≤0/非有限）
+ * →[]（有限网格降级——jsdom/空图同态，不画无限未来行）。
+ * occupancy/目标位置/松手落点同源：候选坐标=candidateSlotAt（同一数学单源
+ * ——positionOf）；落点算术=insertIndexFromGrid（钳制恒落 [0,total−1]）——
+ * 候选槽是「该行有空位」的提示面，非逐格插入位预告（指向哪格都不改落位
+ * 算术）。零 DOM 零 React（纯函数，直测面=tests/unit/renderer/
+ * lineage-drag-grid.test.ts B3 §6 describe）。
+ */
+export function candidateCells(total: number, w: number): number[] {
+  if (!(total > 0) || !Number.isFinite(w) || w <= 0) return []
+  const rows = partitionRows(total, w)
+  const lastRow = rows.length - 1
+  const spare = capacityOfRow(lastRow, w) - rows[lastRow]!.length
+  const cells: number[] = []
+  for (let k = 0; k < spare; k++) cells.push(total + k)
+  return cells
 }

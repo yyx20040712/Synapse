@@ -13,7 +13,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toastStoreSpy } from '../../utils/api-client-mock'
-import { stubLiveFrame } from '../../utils/live-frame'
+import { stubLiveFrame, stubRowFollowFlow } from '../../utils/live-frame'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -86,7 +86,8 @@ const pUp = (x: number, y: number): void => {
 }
 const fireEnd = (el: Element): void => {
   act(() => {
-    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'left' }))
+    // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化）
+    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' }))
   })
 }
 
@@ -162,6 +163,7 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     pMove(66, 44)
     flushRaf() // 激活后 rAF 校准冲洗（未入带——校准读占位槽首帧稳态值同 200）
     pMove(240, 240) // x 带 [0,600] 内 ∧ y=bottom0+40 ∈ (200,282]
+    flushRaf() // [B3 §9] 指针批（入带 stretch 挂载）
     expect(frame.classList.contains('stretch')).toBe(true)
     const ph = req('.drag-slot:not(.cand)')
     expect(ph.classList.contains('faded')).toBe(false)
@@ -175,10 +177,13 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     pMove(66, 44)
     flushRaf()
     pMove(240, 250) // bottom0+50：首次入带——stretch 挂载+实态槽组末（实时底缘→386）
+    flushRaf() // [B3 §9] 指针批（入带）
     expect(frame.classList.contains('stretch')).toBe(true)
     pMove(240, 260) // bottom0+60：读实时 rect 必落回撑高框内（extend 必失=振荡）——冻结基准稳定
+    flushRaf() // [B3 §9] 指针批（微动消振荡）
     expect(frame.classList.contains('stretch')).toBe(true)
     pMove(240, 90) // 回框内（y<bottom0）→ 下拉态撤销
+    flushRaf() // [B3 §9] 指针批（出带摘除）
     expect(frame.classList.contains('stretch')).toBe(false)
   })
 
@@ -188,6 +193,7 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     pMove(66, 44)
     flushRaf()
     pMove(240, 240)
+    flushRaf() // [B3 §9] 指针批（入带+组末插位）
     pUp(240, 240) // 框已撑高（实时框内）——松手落位组末（松手面沿实时单源）
     expect(q('.month-frame.stretch')).toBeNull()
     const order = [...req('.month-frame').querySelectorAll('.tl-card')].map((c) => (c as HTMLElement).dataset.nodeId)
@@ -195,6 +201,29 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     expect(reorder).not.toHaveBeenCalled()
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+  })
+
+  // [B3 §9/§13 commit B 门] 松手终态=更新后分布（现状守卫绿，非新红例——随批申报新增）：
+  // stubRowFollowFlow 随动夹具按**当前 DOM 流序**派生卡 rect——settle 提交后 flow 量取 target
+  // =更新后卡槽分布 [B,C,A] 的 A 槽位（index2=(308,18)），flight inline translate=from−target
+  // =(192,218)−(308,18)=(−116,200)。回退到旧位（index0=(12,18)）则 translate=180px 200px 即红
+  // （防 G2 松手终态退化为恒回旧位/38px 字面——§7「量取=更新后分布的真实布局」锚）。
+  it('[B3 §7] 松手终态=更新后分布（现状守卫绿）：flight flow 量取 target=更新后卡槽位（随动模型 DOM 序派生）', () => {
+    mount()
+    const frame = req('.month-frame') as HTMLElement
+    stubRowFollowFlow(frame, { frameW: 600, frameH: 200 })
+    pDown(cardOf('A'), 60, 40) // grab：A 在流 index0=(12,18)——ox=(60−12)=48/oy=(40−18)=22
+    pMove(66, 44)
+    flushRaf()
+    pMove(240, 240) // 入带组末插位；末指针 ghost=(240−48,240−22)=(192,218)
+    flushRaf()
+    pUp(240, 240) // settle 提交 [B,C,A]→flow 量取 target=index2=(308,18)
+    const card = cardOf('A')
+    expect(card.style.translate, 'translate=from−target（target=更新后分布槽位）').toBe('-116px 200px')
+    expect(card.style.left, 'left=target−frameOrigin12（INV-96 补偿域）').toBe('296px')
+    expect(card.style.top).toBe('0px')
+    fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
   })
 })

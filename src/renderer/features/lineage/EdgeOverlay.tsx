@@ -40,7 +40,7 @@ export function EdgeOverlay(props: {
   /** 回炉 1 W1/W6：父组件布局变更（W 变/拖拽 settle）bump——子 effect 再触发信号 */
   routeEpoch: number
   /** [T3-P8] 拖起态连线层淡化（mockup .dimmed opacity .18——飞行脱节已知
-   *  限制的掩盖面：拖起+settle transitionend 单次重算，不帧随动） */
+   *  限制的掩盖面：拖起期挂起路由重算，布局终局单次重算，不帧随动） */
   dimmed?: boolean
   /** [②U7/P-18] 聚焦 dim 激活（根类 .dimmed-focus 态标记；集空由容器不挂）；
    *  [F-VISFB-21 C4] 逐径 dim 判定集=brightIds——两端均非 bright 才 dim（至
@@ -60,6 +60,10 @@ export function EdgeOverlay(props: {
    *  时 W 未必变（布局可同宽），快照÷s_eff 因子仍须重算+调线域卡 rect 重采集；
    *  数值本体不消费（buildSnapshot/换算器判定时点自读 effectiveScale）） */
   uiScale?: number
+  /** [B3 §3.5] 挂起窗 getter（拖拽会话 dragging 激活起→布局终局止——宿主
+   *  LineageTimeline 经 useCardDrag 稳定引用透传；run/rAF 执行前查位，挂起期
+   *  不 buildSnapshot/setPaths/publish，RO 保持连接不 disconnect） */
+  isSuspended?: () => boolean
 }): JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null)
   // [回炉 R2] 悬停高亮=命中层驱动：可见层 pointer-events:none 使 :hover 恒
@@ -104,7 +108,8 @@ export function EdgeOverlay(props: {
     shiftedIds: props.shiftedIds,
     groups: props.groups,
     routeEpoch: props.routeEpoch,
-    uiScale: props.uiScale
+    uiScale: props.uiScale,
+    isSuspended: props.isSuspended
   })
   // [②U5] 调线域 refs：路由骨架（物化/手柄几何源）+内容坐标卡 rect（锚/磁吸/穿卡）
   const pathsRef = useRef<RoutedPath[]>([])

@@ -11,7 +11,7 @@
  * - [F-VISFB-22 P2 闸②] 交互域拆件=timeline-interactions.ts（回调契约
  *   TimelineCallbacks+聚焦三派生+根容器类名+卡点击/星标分派——行为零变）。
  */
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { nodePubNoMap, type LineageEdge, type LineageNode } from '@shared/models/lineage'
 import { UI_SCALE, type LineagePaperMetrics } from '@shared/ipc/schemas'
 import { groupTimeline } from './lineage-timeline'
@@ -29,7 +29,7 @@ import { useCapacityLayout } from './use-capacity-layout'
 import { useTimelinePan } from './timeline-pan'
 import { useTimelineZoom } from './timeline-zoom-hook'
 import { ZoomBadge } from './ZoomBadge'
-import { createTimelineCardHandlers, timelineClassOf, useTimelineFocusSets, type TimelineCallbacks } from './timeline-interactions'
+import { timelineClassOf, useTimelineCardHandlers, useTimelineFocusSets, type TimelineCallbacks } from './timeline-interactions'
 
 /** [F-ALIGN-01] 工具条 props 面随建点入口退役删除（TimelineToolbarProps
  *  唯一成员=onAddNode 对话框开关——工具组其余控件直连双 store，容器零注入） */
@@ -38,6 +38,12 @@ import { createTimelineCardHandlers, timelineClassOf, useTimelineFocusSets, type
  *  退役绝源——prop 面留驻待 U2 走线重基线处置；模块级常量=引用稳定，
  *  EdgeOverlay effect deps 消费面零扰动） */
 const EMPTY_SHIFTED: ReadonlySet<string> = new Set()
+// [B3 §8] 缺省空表=模块级常量（引用稳定——memo 配套：props 缺省面每渲染新
+// 对象会击穿 LineageTimelineCard/TimelineMonthFrame memo；真实缺省=宿主
+// store selector 引用面稳定，此处兜底同稳）
+const EMPTY_METRICS: Record<string, LineagePaperMetrics> = {}
+const EMPTY_PUBNOS: Record<string, number> = {}
+const EMPTY_TAGS: Record<string, string[]> = {}
 
 export function LineageTimeline(props: {
   nodes: LineageNode[]
@@ -56,9 +62,9 @@ export function LineageTimeline(props: {
   tagNames?: Record<string, string[]>
 } & TimelineCallbacks): JSX.Element {
   const { nodes, edges } = props
-  const paperMetrics = props.paperMetrics ?? {}
-  const pubNos = props.pubNos ?? {}
-  const tagNames = props.tagNames ?? {}
+  const paperMetrics = props.paperMetrics ?? EMPTY_METRICS
+  const pubNos = props.pubNos ?? EMPTY_PUBNOS
+  const tagNames = props.tagNames ?? EMPTY_TAGS
   const groups = useMemo(() => groupTimeline(nodes), [nodes])
   const pubNoByNode = useMemo(() => nodePubNoMap(nodes, pubNos), [nodes, pubNos])
 
@@ -77,12 +83,16 @@ export function LineageTimeline(props: {
   // 四键共入；数值面=高亮补偿与 EdgeOverlay 重算键消费
   const uiScaleTier = useSettingsStore((s) => s.settings?.uiScale ?? 'small')
   const uiScaleNum = UI_SCALE[uiScaleTier]
-  const layoutKey = useMemo(() => [groups, uiScaleTier] as const, [groups, uiScaleTier])
+  // [B3 §3.5.4] layoutEpoch=布局终局量测键（layoutFinishOnce 恰一次 bump——
+  // 屏障解除后 zoom/useCapacityLayout/nav 以最终布局重跑一次；groups/uiScale 沿承）
+  const [layoutEpoch, setLayoutEpoch] = useState(0)
+  const layoutKey = useMemo(() => [groups, uiScaleTier, layoutEpoch] as const, [groups, uiScaleTier, layoutEpoch])
 
   // 滚动容器 ref 两面：content=.tl-content（W 量测）/timeline=根（导航+平移）
   const contentRef = useRef<HTMLDivElement | null>(null)
   const timelineRef = useRef<HTMLDivElement | null>(null)
-  // 拖拽清场→routeEpoch 前置接线（hook 初始化序约束——ref 晚绑定）
+  // [B3 §3.5.4] 布局终局 routeEpoch bump 接线（hook 初始化序约束——ref 晚绑定；
+  // flight finish 不再直 bump——barrier layoutFinishOnce 触发）
   const bumpRouteRef = useRef<() => void>(() => undefined)
 
   // [②U3] 画线子态机（armed=工具态；容器 pointer 流——拖拽互斥闸）
@@ -97,7 +107,8 @@ export function LineageTimeline(props: {
     popOpen: false,
     contentRef,
     onReorderMonthSlots: props.onReorderMonthSlots,
-    onRouteRecalc: () => bumpRouteRef.current()
+    onRouteRecalc: () => bumpRouteRef.current(),
+    onLayoutSettled: () => setLayoutEpoch((v) => v + 1)
   })
   // [F-SLOTGRID-01 U1] W 量测+布局变更信号（机制本体=use-capacity-layout.ts
   // 拆件——组件 250 行红线；unmeasured 降级/rAF 合并细节见该件头注；
@@ -118,11 +129,11 @@ export function LineageTimeline(props: {
   // 角标复位（T9 单动作）；机制本体=timeline-zoom-hook.ts 拆件；
   // [F-VISFB-31] 量测键含 uiScale（自然尺寸=own px 随档重排——jsdom 无 RO
   // 兜底路径同键覆盖）
-  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: layoutKey })
+  const zoom = useTimelineZoom({ timelineRef, contentRef, recomputeKey: layoutKey, isSuspended: drag.isSuspended })
   // [F-VISFB-22 P2 闸②] 根容器类名+卡点击/星标分派=timeline-interactions 拆件
   //（行为零变——分派序与守卫逐句保形迁驻）
   const timelineCls = timelineClassOf(viewMode, pan.panning)
-  const handlers = createTimelineCardHandlers({
+  const handlers = useTimelineCardHandlers({
     nodes,
     tool,
     viewMode,
@@ -162,6 +173,7 @@ export function LineageTimeline(props: {
           shiftedIds={EMPTY_SHIFTED}
           groups={groups}
           routeEpoch={routeEpoch}
+          isSuspended={drag.isSuspended}
           dimmed={drag.phase === 'dragging'}
           focusDim={dimActive}
           brightIds={brightIds}

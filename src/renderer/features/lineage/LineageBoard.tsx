@@ -79,7 +79,7 @@
  *   导入草稿入口（动作件）随草稿导入链退役删除
  *   （用户裁决 2026-09-30——ADR-0022）
  */
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useLineageStore } from './lineage.store'
 import { LineageTimeline } from './LineageTimeline'
 import { LineageBoardMenu, type MenuTarget } from './LineageBoardMenu'
@@ -97,16 +97,30 @@ export function LineageBoard(props: {
   const pubNos = useLineageStore((s) => s.pubNos)
   // [A1a] 文献库标签名组表下发（卡标签行换源——Timeline 经此单源传入）
   const tagNames = useLineageStore((s) => s.tagNames)
-  const store = useLineageStore.getState
-
   const [menu, setMenu] = useState<MenuTarget | null>(null)
 
   // [F-VISFB-66 裁定 2/3] 旧右键目标选取模式与其互斥闸/消费段整体退役删除
   // ——唯一建边径=锚点显式拖拽（drawEdge 单径）；旧换父业务由线条编辑换端
   // 承载（reconnectEdge）
-  const handleNodeClick = (nodeId: string): void => {
-    props.onSelectNode(nodeId)
-  }
+  // [B3 §8 B6] 三回调 useCallback 稳定化（memo 配套回调链源头——渲染间
+  // props diff 恒 false）
+  const handleNodeClick = useCallback(
+    (nodeId: string): void => {
+      props.onSelectNode(nodeId)
+    },
+    [props.onSelectNode]
+  )
+  const handleNodeContextMenu = useCallback(
+    (id: string, anchor: { x: number; y: number }): void => {
+      const node = nodes.find((n) => n.id === id)
+      if (node !== undefined) setMenu({ node, anchor })
+    },
+    [nodes]
+  )
+  const handleReorderMonthSlots = useCallback((ids: string[]): void => {
+    // getState 静态单源（store 面稳定——deps 空）
+    useLineageStore.getState().applyObstacleReroute(ids)
+  }, [])
 
   return (
     <div className="relative h-full">
@@ -125,11 +139,8 @@ export function LineageBoard(props: {
         selectedNodeId={props.selectedNodeId ?? null}
         contextNodeId={menu?.node.id ?? null}
         onNodeClick={handleNodeClick}
-        onNodeContextMenu={(id, anchor) => {
-          const node = nodes.find((n) => n.id === id)
-          if (node !== undefined) setMenu({ node, anchor })
-        }}
-        onReorderMonthSlots={(ids) => store().applyObstacleReroute(ids)}
+        onNodeContextMenu={handleNodeContextMenu}
+        onReorderMonthSlots={handleReorderMonthSlots}
       />
 
       {/* 节点菜单（[F-SPLIT-01] 拆件——menu state 归本件，经 set 函数回写；

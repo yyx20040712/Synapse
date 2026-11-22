@@ -28,6 +28,7 @@
  * - data-node-id=e2e/测试结构锚；[F-SLOTGRID-01 U1] 瀑布错位 offset prop
  *   （inline margin-left 承载）随瀑布退役删除——卡位=行容器网格（.tl-row）。
  */
+import { memo } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { type LineageNode } from '@shared/models/lineage'
 import type { LineagePaperMetrics } from '@shared/ipc/schemas'
@@ -38,7 +39,9 @@ import type { TimelineCallbacks } from './timeline-interactions'
 /** L1 标签呈现上限（溢出「+N」——mockup §3.4 最多 2） */
 const TAG_LIMIT = 2
 
-export function LineageTimelineCard(props: {
+// [B3 §8] memo 化（B6——配套稳定 props 链：handleCardPointerDown/Board 两回调/
+// handlers useMemo/consume* 稳定化+缺省空表常量；缺一即 memo 每渲染被击穿）
+export const LineageTimelineCard = memo(function LineageTimelineCard(props: {
   node: LineageNode
   /** 骑缝编号（INV-92——Timeline 经 nodePubNoMap 单源全图一次传入） */
   no: number
@@ -141,4 +144,4 @@ export function LineageTimelineCard(props: {
       <CardAnchorDots nodeId={props.node.id} />
     </article>
   )
-}
+})

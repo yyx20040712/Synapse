@@ -30,6 +30,10 @@ export function useLineageRoutes(args: {
   groups: readonly unknown[]
   routeEpoch: number
   uiScale?: number
+  /** [B3 §3.5] 挂起窗 getter（dragging 激活起→布局终局止——ref-latest 稳定引用）：
+   *  run 执行前查位，挂起期不 buildSnapshot/setPaths/publish；RO/rAF 保持连接（挂起不 disconnect），
+   *  挂起期路由意图由布局终局 routeEpoch bump 归并（零重醒缺口——L1） */
+  isSuspended?: () => boolean
 }): RoutedPath[] {
   const [paths, setPaths] = useState<RoutedPath[]>([])
   const notifiedBlocked = useRef<Set<string>>(new Set())
@@ -43,6 +47,7 @@ export function useLineageRoutes(args: {
     const warn = (msg: string): void => console.warn(msg)
     const run = (): void => {
       raf = 0
+      if (args.isSuspended?.() === true) return // [B3 §3.5] 挂起期早退——最终重算由布局终局 bump 承载
       const snap = buildSnapshot(content)
       const plan = planRerun({
         prev: prevRef.current,
@@ -88,7 +93,7 @@ export function useLineageRoutes(args: {
       if (raf !== 0) cancelAnimationFrame(raf)
       ro?.disconnect()
     }
-  }, [args.hostRef, args.inputs, args.shiftedIds, args.groups, args.routeEpoch, args.uiScale])
+  }, [args.hostRef, args.inputs, args.shiftedIds, args.groups, args.routeEpoch, args.uiScale, args.isSuspended])
 
   return paths
 }

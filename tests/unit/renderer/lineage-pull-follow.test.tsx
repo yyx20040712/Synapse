@@ -85,7 +85,8 @@ const pUp = (x: number, y: number): void => {
 }
 const fireEnd = (el: Element): void => {
   act(() => {
-    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'left' }))
+    // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化）
+    el.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' }))
   })
 }
 
@@ -188,9 +189,11 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     const frame = setup()
     beginDrag(frame)
     pMove(240, 210)
+    flushRaf() // [B3 §9] 指针批（入带跟随）
     expect(frame.classList.contains('stretch')).toBe(true)
     expect(pullOf(frame)).toBe(10)
     pMove(240, 250)
+    flushRaf() // [B3 §9] 指针批（连续跟随）
     expect(frame.classList.contains('stretch')).toBe(true)
     expect(pullOf(frame)).toBe(50)
   })
@@ -201,17 +204,21 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     const bottoms: number[] = []
     const bottomNow = (): number => frame.getBoundingClientRect().bottom
     pMove(240, 240)
+    flushRaf() // [B3 §9] 指针批（入带）
     expect(frame.classList.contains('stretch')).toBe(true)
     bottoms.push(bottomNow())
     pMove(240, 290)
+    flushRaf() // [B3 §9] 指针批（超封顶）
     expect(frame.classList.contains('stretch'), '超 +82（+90）extend 保持').toBe(true)
     expect(pullOf(frame)).toBe(82)
     bottoms.push(bottomNow())
     pMove(240, 320)
+    flushRaf() // [B3 §9] 指针批（封顶保持）
     expect(frame.classList.contains('stretch'), '再拖一段（+120）extend 保持').toBe(true)
     expect(pullOf(frame)).toBe(82)
     bottoms.push(bottomNow())
     pMove(240, 350)
+    flushRaf() // [B3 §9] 指针批（封顶保持二段）
     expect(frame.classList.contains('stretch'), '再拖二段（+150）extend 保持').toBe(true)
     expect(pullOf(frame)).toBe(82)
     bottoms.push(bottomNow())
@@ -224,10 +231,13 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     const frame = setup()
     beginDrag(frame)
     pMove(240, 290)
+    flushRaf() // [B3 §9] 指针批（超封顶）
     pMove(240, 292)
+    flushRaf() // [B3 §9] 指针批（候选不淡化面）
     const ph = req('.drag-slot:not(.cand)')
     expect(ph.classList.contains('faded')).toBe(false)
     pMove(240, 90)
+    flushRaf() // [B3 §9] 指针批（回框撤销）
     expect(frame.classList.contains('stretch')).toBe(false)
     expect(pullOf(frame)).toBe(0)
   })
@@ -236,6 +246,7 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     const frame = setup()
     beginDrag(frame)
     pMove(240, 290)
+    flushRaf() // [B3 §9] 指针批（入带组末）
     pUp(240, 290)
     expect(q('.month-frame.stretch')).toBeNull()
     const order = [...req('.month-frame').querySelectorAll('.tl-card')].map((c) => (c as HTMLElement).dataset.nodeId)
@@ -250,6 +261,7 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     const frame = setup()
     beginDrag(frame)
     pMove(650, 250)
+    flushRaf() // [B3 §9] 指针批（x 带外）
     expect(frame.classList.contains('stretch')).toBe(false)
     const ph = q('.drag-slot:not(.cand)')
     expect(ph?.classList.contains('faded')).toBe(true)

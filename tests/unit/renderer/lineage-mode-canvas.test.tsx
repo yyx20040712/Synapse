@@ -125,15 +125,26 @@ describe('F-LGRAPH-01①U5 三模式画布行为闸 —— 拖拽闸（拖卡=ed
   })
 
   it('edit 闸开：过阈值激活占位槽（拖拽专属域）', () => {
+    // [B3 §9 新增行] rAF 捕获队列（本例局部 stub——b3 守卫同族）：pMove 后即时断言先 flushRaf（两态兼容冲洗）
+    const rafs: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => { rafs.push(cb); return rafs.length })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
     mount([node('A'), node('B')])
     setMode('edit')
     pDown(cardOf('A'), 150, 200)
     pMove(158, 204)
+    act(() => {
+      rafs.splice(0).forEach((cb) => {
+        cb(performance.now())
+      })
+    })
     expect(q('.drag-slot')).not.toBeNull()
     pUp(158, 204)
+    // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化）
     act(() => {
-      cardOf('A').dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'left' }))
+      cardOf('A').dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' }))
     })
+    vi.unstubAllGlobals()
   })
 })
 

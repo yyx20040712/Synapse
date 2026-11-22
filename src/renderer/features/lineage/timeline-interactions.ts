@@ -8,8 +8,8 @@
  *   [F-VISFB-22] 自 LineageTimeline 迁驻——消费方 import 随迁）；
  * - useTimelineFocusSets —— P-8 聚焦集/bright 邻接集/dim 激活派生；
  * - timelineClassOf —— 根容器类名装配（模式类/平移/编辑）；
- * - createTimelineCardHandlers —— 卡点击/星标点击分派工厂（纯函数件——
- *   每渲染重建闭包=原组件内联函数同生命周期）。
+ * - useTimelineCardHandlers —— 卡点击/星标点击分派工厂（hook：useMemo 包裹
+ *   闭包，deps=nodes/tool/viewMode/onNodeClick——引用跨渲染恒定，memo 配套）。
  */
 import { useMemo } from 'react'
 import type { LineageEdge, LineageNode } from '@shared/models/lineage'
@@ -64,14 +64,17 @@ export function timelineClassOf(viewMode: LineageViewMode, panning: boolean): st
 }
 
 /** [F-VISFB-22 P2 闸②] 卡点击/星标分派工厂（自 LineageTimeline 迁驻——行为
- * 零变：分派序与守卫逐句保形；事件时点读闭包值=原内联函数同源） */
-export function createTimelineCardHandlers(deps: {
+ * 零变：分派序与守卫逐句保形；事件时点读闭包值=原内联函数同源）。
+ * [B3 §8] hook 化+useMemo 包裹（B6——memo 配套：deps 最小化=nodes/tool/
+ * viewMode/onNodeClick；consumeDragClick/consumeDrawClick 由 useCardDrag/
+ * useDrawLine useCallback([]) 稳定引用提供，不进 deps） */
+export function useTimelineCardHandlers(deps: {
   nodes: LineageNode[]
   tool: LineageTool
   viewMode: LineageViewMode
-  /** [T3-P8] 拖后 click 抑制（一次性——drag 会话） */
+  /** [T3-P8] 拖后 click 抑制（一次性——drag 会话；稳定引用） */
   consumeDragClick(): boolean
-  /** [②U3] 画线收尾后 click 抑制（防误选——draw 域） */
+  /** [②U3] 画线收尾后 click 抑制（防误选——draw 域；稳定引用） */
   consumeDrawClick(): boolean
   onNodeClick?: TimelineCallbacks['onNodeClick']
 }): {
@@ -79,34 +82,37 @@ export function createTimelineCardHandlers(deps: {
   onCardStarClick(nodeId: string): void
 } {
   const { nodes, tool, viewMode } = deps
-  const onCardClick = (
-    nodeId: string,
-    ev: { clientX: number; clientY: number; stopPropagation(): void }
-  ): void => {
-    if (deps.consumeDragClick()) return // [T3-P8] 拖后 click 抑制（一次性）
-    if (deps.consumeDrawClick()) return // [②U3] 画线收尾后 click 抑制（防误选）
-    // [F-VISFB-66 裁定 2·B1a] draw 工具=纯拖拽工具：点卡=吞咽（不 pickCard、
-    // 不开详情——裁决 11a 沿承；点两卡连边链退役后唯一建边径=锚点显式拖拽）
-    if (tool !== 'select') return
-    // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
-    // 照常转发——toggle 与详情面板联动并行不冲突）
-    if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
-    deps.onNodeClick?.(nodeId, ev)
-  }
+  return useMemo(() => {
+    const onCardClick = (
+      nodeId: string,
+      ev: { clientX: number; clientY: number; stopPropagation(): void }
+    ): void => {
+      if (deps.consumeDragClick()) return // [T3-P8] 拖后 click 抑制（一次性）
+      if (deps.consumeDrawClick()) return // [②U3] 画线收尾后 click 抑制（防误选）
+      // [F-VISFB-66 裁定 2·B1a] draw 工具=纯拖拽工具：点卡=吞咽（不 pickCard、
+      // 不开详情——裁决 11a 沿承；点两卡连边链退役后唯一建边径=锚点显式拖拽）
+      if (tool !== 'select') return
+      // [F-LGRAPH-01①U5] focus 点卡=toggle focusSet（再点同卡取消；P-13 选中
+      // 照常转发——toggle 与详情面板联动并行不冲突）
+      if (viewMode === 'focus') useLineageViewStore.getState().toggleFocus(nodeId)
+      deps.onNodeClick?.(nodeId, ev)
+    }
 
-  // [F-DBCAMP-01 DB-4 / F-STAR-01 A3 点亮] 星标区分派（卡内已 stopProp——星标域
-  // 优先不触发卡身）：三模式（edit/browse/focus）均 toggle 星标（P-11 退出
-  // 条件——edit 态 transitional「星标域点击=选中卡」分派随星标语义回归退役：
-  // 卡选中经卡身点击既有通道不损失）；仅拖后 click 抑制守卫沿承（T3-P8）。
-  // 载荷=props 节点快照（store 节点面解耦——见 lineage.store toggleNodeStar）
-  const onCardStarClick = (nodeId: string): void => {
-    if (deps.consumeDragClick()) return
-    const node = nodes.find((n) => n.id === nodeId)
-    if (node === undefined || node.paperId === null) return
-    void useLineageStore
-      .getState()
-      .toggleNodeStar({ id: node.id, paperId: node.paperId, isStarred: node.isStarred })
-  }
+    // [F-DBCAMP-01 DB-4 / F-STAR-01 A3 点亮] 星标区分派（卡内已 stopProp——星标域
+    // 优先不触发卡身）：三模式（edit/browse/focus）均 toggle 星标（P-11 退出
+    // 条件——edit 态 transitional「星标域点击=选中卡」分派随星标语义回归退役：
+    // 卡选中经卡身点击既有通道不损失）；仅拖后 click 抑制守卫沿承（T3-P8）。
+    // 载荷=props 节点快照（store 节点面解耦——见 lineage.store toggleNodeStar）
+    const onCardStarClick = (nodeId: string): void => {
+      if (deps.consumeDragClick()) return
+      const node = nodes.find((n) => n.id === nodeId)
+      if (node === undefined || node.paperId === null) return
+      void useLineageStore
+        .getState()
+        .toggleNodeStar({ id: node.id, paperId: node.paperId, isStarred: node.isStarred })
+    }
 
-  return { onCardClick, onCardStarClick }
+    return { onCardClick, onCardStarClick }
+    // [B3 §8] deps 最小化（consume* 稳定引用不列——引用恒定无陈旧面）
+  }, [nodes, tool, viewMode, deps.onNodeClick])
 }

@@ -59,6 +59,15 @@ const lineageCss = readFileSync(
   fileURLToPath(new URL('../../../src/renderer/shared/theme-lineage.css', import.meta.url)),
   'utf8'
 )
+/** [B3] theme-lineage 拖拽分域拆件（2026-11-22 commit A——六族拖拽规则自
+ *  theme-lineage.css 拆出 theme-lineage-drag.css，规则文本零值改）：联合扫描
+ *  面=主文件+拖拽件拼读，全部 lineage 扫描面统一消费（断言本体零改——机械
+ *  扩面：拆出规则与主文件零重叠，负锚/计数语义等价）。 */
+const lineageDragCss = readFileSync(
+  fileURLToPath(new URL('../../../src/renderer/shared/theme-lineage-drag.css', import.meta.url)),
+  'utf8'
+)
+const lineageCssAll = lineageCss + lineageDragCss
 
 /** [token 声明, 期望值]——css 内应含 "<token>: <value>;"（含尾分号防 --gold 匹配到 --gold-soft 系前缀） */
 const TOKENS: Array<[string, string]> = [
@@ -271,7 +280,7 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
       ),
       'utf8'
     )
-    const SKIN_CSS = [css, shellCss, buttonsCss, readerCss, lineageCss, libCss, wsCssLocal]
+    const SKIN_CSS = [css, shellCss, buttonsCss, readerCss, lineageCssAll, libCss, wsCssLocal]
     for (const skin of SKIN_CSS) {
       expect(skin, '退役 token var() 消费回填即红（--nav-*/--ink-deep/--ink-hi/--ink-legacy）').not.toMatch(
         /var\(--(nav-|ink-deep|ink-hi|ink-legacy)/
@@ -374,7 +383,7 @@ describe('R2-SH2 决5——衬线消费清零+gold-night 别名退役（源码�
     expect(shellCss, 'theme-shell.css 衬线消费应清零').not.toContain('var(--font-display)')
     expect(buttonsCss, 'theme-buttons.css 衬线消费应清零').not.toContain('var(--font-display)')
     expect(readerCss, 'theme-reader.css 衬线消费应清零').not.toContain('var(--font-display)')
-    expect(lineageCss, 'theme-lineage.css 衬线消费应清零').not.toContain('var(--font-display)')
+    expect(lineageCssAll, 'theme-lineage.css 衬线消费应清零').not.toContain('var(--font-display)')
   })
 })
 
@@ -430,49 +439,49 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     ['0.08s', shellCss, 0],
     ['0.08s', buttonsCss, 0],
     ['0.08s', readerCss, 0],
-    ['0.08s', lineageCss, 0],
+    ['0.08s', lineageCssAll, 0],
     ['0.12s', css, 1],
     ['0.12s', wsCss, 0],
     ['0.12s', libCss, 0],
     ['0.12s', shellCss, 0],
     ['0.12s', buttonsCss, 0],
     ['0.12s', readerCss, 0],
-    ['0.12s', lineageCss, 0],
+    ['0.12s', lineageCssAll, 0],
     ['0.14s', css, 1],
     ['0.14s', wsCss, 0],
     ['0.14s', libCss, 0],
     ['0.14s', shellCss, 0],
     ['0.14s', buttonsCss, 0],
     ['0.14s', readerCss, 0],
-    ['0.14s', lineageCss, 0],
+    ['0.14s', lineageCssAll, 0],
     ['0.18s', css, 1],
     ['0.18s', wsCss, 0],
     ['0.18s', libCss, 0],
     ['0.18s', shellCss, 0],
     ['0.18s', buttonsCss, 0],
     ['0.18s', readerCss, 0],
-    ['0.18s', lineageCss, 0],
+    ['0.18s', lineageCssAll, 0],
     ['0.2s', css, 1],
     ['0.2s', wsCss, 0],
     ['0.2s', libCss, 0],
     ['0.2s', shellCss, 0],
     ['0.2s', buttonsCss, 0],
     ['0.2s', readerCss, 0],
-    ['0.2s', lineageCss, 0],
+    ['0.2s', lineageCssAll, 0],
     ['0.22s', css, 1],
     ['0.22s', wsCss, 0],
     ['0.22s', libCss, 0],
     ['0.22s', shellCss, 0],
     ['0.22s', buttonsCss, 0],
     ['0.22s', readerCss, 0],
-    ['0.22s', lineageCss, 0],
+    ['0.22s', lineageCssAll, 0],
     ['0.3s', css, 1],
     ['0.3s', wsCss, 0],
     ['0.3s', libCss, 0],
     ['0.3s', shellCss, 0],
     ['0.3s', buttonsCss, 0],
     ['0.3s', readerCss, 0],
-    ['0.3s', lineageCss, 0]
+    ['0.3s', lineageCssAll, 0]
   ]
 
   it.each(DURATION_COUNTS)('duration 字面量 %s 消费后仅存 token 定义处（出现 %s 次）', (literal, text, expected) => {
@@ -484,7 +493,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(shellCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
     expect(buttonsCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
     expect(readerCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
-    expect(lineageCss).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
+    expect(lineageCssAll).not.toMatch(/z-index:\s*(10|20|40|50)\b/)
   })
 
   it('弹层九 tsx 禁 z-(10|20|40|50) 裸值 class（v4 变量简写形态锁）', () => {
@@ -508,7 +517,7 @@ describe('P7D-01 批一 token 收敛防线（三轴形态锁）', () => {
     expect(shellCss).not.toMatch(MS_DECL)
     expect(buttonsCss).not.toMatch(MS_DECL)
     expect(readerCss).not.toMatch(MS_DECL)
-    expect(lineageCss).not.toMatch(MS_DECL)
+    expect(lineageCssAll).not.toMatch(MS_DECL)
   })
 
   it('lineage 六件禁数值间距属性（inline 间距清扫到 tailwind class）', () => {
@@ -574,7 +583,7 @@ describe('P7D-01 批二 字号六档语义刻度防线（消费面负锚+@theme 
     ['theme-shell.css', shellCss],
     ['theme-buttons.css', buttonsCss],
     ['theme-reader.css', readerCss],
-    ['theme-lineage.css', lineageCss],
+    ['theme-lineage.css', lineageCssAll],
     ['library.css', libCss],
     ['workspace.css', wsFsCss]
   ]

@@ -383,8 +383,9 @@ for (const sp of SENTINEL_SCAN_FILES) {
 // DYNAMIC_TOKENS=C-4c 白名单单源——注入点代码侧注释回指本常量名（双向互指辅链）：
 //   --ui-scale     → App.tsx:136（documentElement.style.setProperty 动态注入）
 //   --scale-factor → TextLayer.tsx:151（textLayer 容器 style 键动态注入）
-//   --lg-pull      → TimelineYears.tsx pullStyle（month-frame inline style 键
-//                    动态注入——[F-VISFB-22 C6] 框底连续跟随量，会话侧逐 move 写入）
+//   --lg-pull      → card-drag-session.ts 帧批段 0/段 1（frame.style 直写——[B3 §3.4]
+//                    pullPx 脱离 React；month-frame inline style 键动态注入——[F-VISFB-22 C6]
+//                    框底连续跟随量，extend=true 帧条件写/真变假 removeProperty）
 //   --lib-fnav-w / --lib-drawer-w → use-lib-pane-widths.ts（.lib-page 页根 inline
 //                    style 单点写——[F-VISFB-41 B3] 库页双侧栏宽；CSS 消费带
 //                    缺省回退 var(--lib-fnav-w,224px)，静态定义缺席=动态语义）

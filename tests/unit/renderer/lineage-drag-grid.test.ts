@@ -22,9 +22,12 @@ import {
   PITCH_X,
   PITCH_Y,
   capacities,
+  capacityOfRow,
+  indexOf,
   partitionRows
 } from '../../../src/renderer/features/lineage/capacity'
 import {
+  candidateCells,
   candidateSlotAt,
   insertIndexFromGrid
 } from '../../../src/renderer/features/lineage/card-drag-grid'
@@ -158,6 +161,57 @@ describe('[F-SLOTGRID-01 U3] candidateSlotAt（F-DRAGVIS-01 候选阵列算术�
     expect(candidateSlotAt(4, W1000)).toEqual({
       x: FRAME_PAD_LEFT,
       y: FRAME_PAD_TOP + PITCH_Y * 4
+    })
+  })
+})
+
+// ── [B3 §6 commit C] candidateCells 有限空槽 mask 直测（新增先红后绿——
+//    occupancy/目标位置/松手落点同源单源；设计稿 §9「candidateCells 直测
+//    （或驻 drag-grid 件）」落点）。候选=末行中 index≥total 的 cell
+//    （=capacityOfRow(末行)−末行实有数）；被占格 0..total−1 零候选；
+//    unmeasured→∅（有限网格降级）。 ──
+describe('[B3 §6] candidateCells（有限空槽 mask——末行未占 cell 全画）', () => {
+  it('末行空格全画：3 卡 W=728（cap4/M3）→rows [3] 末行空 1 格→候选=[3]（偶行追加位）', () => {
+    expect(partitionRows(3, 728).map((r) => r.length)).toEqual([3])
+    expect(candidateCells(3, 728)).toEqual([3])
+  })
+
+  it('非末行恒满前提（rows 前缀行恒满）：4 卡 W1280→[3,1]——候选全落末行（≥total 且 <末行容量上界），被占格 0..total−1 零候选', () => {
+    expect(partitionRows(4, W1280).map((r) => r.length)).toEqual([3, 1])
+    const cells = candidateCells(4, W1280)
+    expect(cells).toEqual([4])
+    const rows = partitionRows(4, W1280)
+    const upper = indexOf(rows.length - 1, 0, W1280) + capacityOfRow(rows.length - 1, W1280)
+    for (const k of cells) {
+      expect(k, `候选 cell ${k} 须≥total=4（被占格不画）`).toBeGreaterThanOrEqual(4)
+      expect(k, `候选 cell ${k} 须<末行容量上界 ${upper}（行集合之外零候选）`).toBeLessThan(upper)
+    }
+  })
+
+  it('行满=零候选：4 卡 W=728→[4] 末行满→∅（行满月组负锚——M5 夹具同构）；cap1 纵排 3 卡 W=269→[1,1,1] 全满→∅', () => {
+    expect(candidateCells(4, 728)).toEqual([])
+    expect(candidateCells(3, 269)).toEqual([])
+  })
+
+  it('unmeasured（w≤0/非有限）→∅（有限网格降级——不画无限未来行）；total≤0→∅', () => {
+    expect(candidateCells(3, 0)).toEqual([])
+    expect(candidateCells(3, -10)).toEqual([])
+    expect(candidateCells(3, NaN)).toEqual([])
+    expect(candidateCells(0, 728)).toEqual([])
+  })
+
+  it('砖砌奇偶相位：奇行候选（W1280 total=4 末行 row1 cap2 空 1→cell4 x=12+100+200）与偶行候选（W728 total=3→cell3 x=12+600）两支——候选坐标=candidateSlotAt 同源', () => {
+    const odd = candidateCells(4, W1280)
+    expect(odd).toEqual([4])
+    expect(candidateSlotAt(odd[0]!, W1280)).toEqual({
+      x: FRAME_PAD_LEFT + OFFSET_O + PITCH_X,
+      y: FRAME_PAD_TOP + PITCH_Y
+    })
+    const even = candidateCells(3, 728)
+    expect(even).toEqual([3])
+    expect(candidateSlotAt(even[0]!, 728)).toEqual({
+      x: FRAME_PAD_LEFT + PITCH_X * 3,
+      y: FRAME_PAD_TOP
     })
   })
 })

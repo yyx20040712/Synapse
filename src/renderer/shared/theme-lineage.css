@@ -14,7 +14,12 @@
    恢复区吞掉 .timeline 规则——2026-09-27 P7B e2e 探针实证。）
    字号零新 token（票面）=最近值映射：12px→--fs-body；11.5px/11px→--fs-body；
    10.5px→--fs-tl-hint；10px/9px/9.5px→--fs-micro。阴影/编辑提示底/移除钮
-   色值=mockup 三稿同值主题恒定，经 theme.css [T3-P7B] token 承载。 */
+   色值=mockup 三稿同值主题恒定，经 theme.css [T3-P7B] token 承载。
+   [B3] 拖拽会话域六族（.tl-card.dragging/.drag-slot/.drag-slot.faded/
+   .drag-slot.cand/
+   .month-frame.stretch/.tl-edges.dimmed）拆出 theme-lineage-drag.css
+   2026-11-22（commit A 纯物理拆件——规则文本零值改；--shadow-drag token
+   本体留守 theme.css :root 单源；文本锁测试读面=双文件拼读）。 */
 
 /* ══ [T3-P6] 脉络时间线（纵向年+月 DOM 时间线——mockup L203-262 逐值）══ */
 /* 滚动容器（pan/zoom INV-43/44 退役→滚动定位语义）；height:100%=Board 块级
@@ -86,7 +91,10 @@
   min-width: var(--tl-frame-min);
   position: relative;
   overflow: hidden;
-  transition: height .38s cubic-bezier(.22,.9,.26,1), border-color var(--dur-lazy), background var(--dur-lazy);
+  /* [B3 §7 G2-1] padding-bottom 回落过渡承载：松手 .stretch 摘除→padding 由
+     calc(38px+pull) 回 38px 基准（「摘类回落」标准式——布局屏障回落事件源） */
+  transition: height .38s cubic-bezier(.22,.9,.26,1), padding-bottom .38s cubic-bezier(.22,.9,.26,1),
+    border-color var(--dur-lazy), background var(--dur-lazy);
 }
 /* [F-SLOTGRID-01 U1] 行容器：行内卡列隙 72（节距 200=卡 128+72）；奇行
    padding-left 100=错位相位 o（呈裁点 1 定值）；**不得加 position**——
@@ -145,52 +153,8 @@
   z-index: 2;
   user-select: none;
 }
-/* [T3-P8] 拖起态（mockup L248 逐值：离流+z99+拖起阴影+微倾放大+grabbing+
-   pointer-events none=settle 期重触发忽略的 CSS 同义面）；[②U7] 定位=
-   absolute 驻 .tl-content（transform 祖先劫持 fixed 包含块——内容坐标域） */
-.tl-card.dragging {
-  position: absolute;
-  z-index: 99;
-  box-shadow: var(--shadow-drag);
-  transform: rotate(2deg) scale(1.05);
-  cursor: grabbing;
-  pointer-events: none;
-}
-/* [T3-P8] 候选文献位虚线槽（B1——[F-LINEAGE-02 ①a] 128×72 dashed accent
-   accent-soft 底「置 入」letter-spacing 3px；opacity .2s 过渡+框外 .faded
-   .35 淡化；9px→--fs-micro 同值映射） */
-.drag-slot {
-  width: 128px;
-  min-height: 72px;
-  border: 1.8px dashed var(--accent);
-  border-radius: 8px;
-  background: var(--accent-soft);
-  display: grid;
-  place-items: center;
-  font-size: var(--fs-micro);
-  color: var(--accent);
-  letter-spacing: 3px;
-  transition: opacity .2s;
-}
-.drag-slot.faded { opacity: .35; }
-/* [F-VISFB-22 C5] 候选槽提层：cand 族 z3（卡 z2 之上/连线命中层 z4 与拖卡
-   z99 之下）——真实浏览器探针实证 faded 候选恒被流内卡整面覆盖（含源保守
-   语义下候选 cell 与其余卡 cell 1:1 重合，elementFromPoint 5/5 命中卡）
-   =「候选槽不显示」病灶；实态槽占空位不被覆盖，基类零提层 */
-.drag-slot.cand { z-index: 3; }
 /* [F-UIRES-03 C3] 月标 chip（.c-ym）+改月飞行框高亮（.month-frame.flash）
    随改月链退役删除（INV-107——改月唯一入口=MetaEditDialog） */
-/* [F-LGRAPH-01②U6] 框底缘下拉：拖过底缘=padding-bottom 增高腾新行（height
-   auto 不可插值——padding 变化承载 .38s 同曲线下拉动画；mockup §3.5 承载面
-   申报：现行 height .38s 过渡字段保留不拆）。
-   [F-VISFB-22 C6] 94=12+82 值耦合改 CSS 变量化（INV-100 在档可选项落法）：
-   增量=--lg-pull（会话侧逐 move 连续写入——未拉伸底缘起跟随量，
-   PULL_BAND_PX=82 封顶单源在 card-drag-session.ts；CSS 只知基准+变量，
-   字面 94 退役）；缺省 82px=var 缺席兜底（旧全量语义）。
-   [F-LANEGRID-01 B4] 基准 12→38px=FRAME_PAD_BOTTOM 同步（底 padding
-   12→38 对称变更随批）——stretch 挂载瞬间基准不跳（38→38+pull 连续），
-   全拉伸态 38+82=120 */
-.month-frame.stretch { padding-bottom: calc(38px + var(--lg-pull, 82px)); }
 
 /* ══ [T3-P7A] 连线层（svg.tl-edges——D-1/D-2/D-18；z 序=svg 1<卡 2<月标签 3）══ */
 /* 绝对铺满 .tl-content 内容盒（inset:0 含滚动内容高——随文档流滚动零跟随）；
@@ -413,8 +377,6 @@
 /* ══ [T3-P8] 拖拽连线层淡化+改月弹层+检查面板族（mockup L223/L312-318/
    L264-281 逐值；字号 token 映射：14px→--fs-title/12px→--fs-body/11.5px→
    --fs-body/10.5px→--fs-tl-hint/10px·9.5px→--fs-micro/9px→--fs-nano）══ */
-/* 拖起 dimmed（mockup .tl-svg.dimmed opacity .18——飞行脱节已知限制掩盖面） */
-.tl-edges.dimmed { opacity: .18; }
 /* [F-LGRAPH-01②U7/P-12/P-18] 聚焦 dim：非聚焦卡 0.3（hover 临时回升 0.6——
    可读探查）；全部线 0.3+hover 回升 0.6（[RR5] P-12/P-18 定案含线——原
    root opacity 乘法族阻断单线回升[父 .3×子 .6=.18 反更暗]，线 dim 移驻
