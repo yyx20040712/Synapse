@@ -1,8 +1,8 @@
 /**
  * [F-UIRES-01 批 A U4→批 B 三项版] PaperRowMenu —— 文献行右键菜单（R12/P-10：
  * 「在阅读器中打开」+「移动到文件夹 ▸」+「删除文献」（danger——批 B 点亮，
- * §3.5）；星标项 DB 窗口点亮——不渲染禁用项=零死交互）。移动子面=folders.list
- * （[F-ALIGN-01 D5] 「移出」尾项随 D5 退役删除——子项纯文件夹
+ * §3.5）；星标项 DB 窗口点亮——不渲染禁用项=零死交互）。移动子面=catalog
+ * 共享读面（folder-catalog.store——[F-ALIGN-01 D5] 「移出」尾项随 D5 退役删除——子项纯文件夹
  * 清单；原地展开子列表——飞出子面板形态自裁申报）；移动执行走宿主注入的
  * onMove（movePaperToFolder 收口链）；删除执行走宿主注入的
  * onDelete（usePaperDelete 预检分流——静默直删/保护弹窗两分支在 hook+宿主）。
@@ -10,8 +10,7 @@
  */
 import { useEffect, useState } from 'react'
 import { MENU_ITEM_STYLE } from '../../shared/ui-constants'
-import { api, unwrap } from '../../api/client'
-import { useAsync } from '../../shared/hooks/useAsync'
+import { useFolderCatalog } from './folder-catalog.store'
 
 export function PaperRowMenu(props: {
   paper: { id: string; title: string; isStarred: boolean }
@@ -30,11 +29,11 @@ export function PaperRowMenu(props: {
 }): JSX.Element {
   const { paper, anchor } = props
   const [expanded, setExpanded] = useState(false)
-  // folders.list 自取（移动子面数据——useAsync 静态参考数据先例）
-  const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
+  // 移动子面数据=catalog 共享读面（B2①收口——已载不重取，新鲜度随失效沿；未载引导一次）
+  const { folders, load: loadCatalog } = useFolderCatalog()
   useEffect(() => {
-    void loadFolders()
-  }, [loadFolders])
+    if (folders === null) void loadCatalog()
+  }, [folders, loadCatalog])
 
   // Esc 关闭：挂 document 捕获，unmount 成对移除
   useEffect(() => {

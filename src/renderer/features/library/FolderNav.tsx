@@ -10,13 +10,14 @@
  *   右键三件=行内重命名（三键+F2+双击等价——批 α 2026-10-03 用户裁决翻转）
  *   /静默判据删除/P-8 脉络跳转；
  *   CONFLICT→toast+保留输入；行内编辑×folders.changed=输入保留；busy 禁用
- *   清单（§2.1）；folders.changed 双失效+选中夹消失回退（刷新落定后判）
+ *   清单（§2.1）；folders.changed 失效沿派生+选中夹消失回退（刷新落定后判）
  *
  * ── 接口层 ──
  * - export function FolderNav(props: { query; onChange; onMutated; guideHidden? })
  *
  * ── 架构层 ──
- * - folders.list 自取；写路径 api 直调；计数=folders.list 载荷单源（RR1-2——零 store 消费）
+ * - 目录数据=folder-catalog.store 共享读面（B2①收口——folders.list 域内单飞
+ *   单点）；写路径 api 直调（hook 内）；计数=folders.list 载荷单源（RR1-2）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/folder-nav.test.tsx
@@ -24,13 +25,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Folder } from '@shared/models/folder'
 import type { LibraryQuery } from '@shared/models/paper'
-import { api, unwrap, apiEvents } from '../../api/client'
-import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
 import { requestOpenLineage } from '../../shared/open-lineage-bus'
 import { FolderDeleteDialog } from './FolderDialogs'
 import { FolderMenu } from './FolderMenu'
 import { FolderNavRows } from './FolderNavRows'
+import { useFolderCatalog } from './folder-catalog.store'
 import { useCascadeGuard } from './useCascadeGuard'
 import { useFolderDeleteFlow } from './useFolderDelete'
 import { useFolderNavEdit } from './useFolderNavEdit'
@@ -52,7 +52,10 @@ export function FolderNav(props: {
 }): JSX.Element {
   const { query, onChange, onMutated } = props
   const guideHidden = props.guideHidden ?? false
-  const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
+  // 共享目录读面（B2①收口——changed 订阅单点在 store；写路径收口链的 reload
+  // 同走 catalog 单飞口）
+  const { folders, invalidations, loading: catalogLoading, load: loadFolders } = useFolderCatalog()
+  const catalogError = useFolderCatalog((s) => s.error)
   const importBusy = useImportBusyStore((s) => s.busy)
   const dndOver = useLibraryDnd((s) => s.over)
   const { rowDragOver, rowDragLeave, rowDrop, navDragOver, navDrop } = useFolderDrop(folders)
@@ -78,30 +81,26 @@ export function FolderNav(props: {
     void loadFolders()
   }, [loadFolders])
 
-  // folders.changed 双失效消费（首拉不触发 onMutated——changedRef 区分）；
-  // 计数面同沿刷新（moveFolder/删除/新建全走 folders.changed 广播）
-  const changedRef = useRef(false)
-  useEffect(
-    () =>
-      apiEvents.onFoldersChanged(() => {
-        changedRef.current = true
-        void loadFolders()
-      }),
-    [loadFolders]
-  )
+  // folders.changed 派生语义（组件层保留——订阅收口在 store）：失效沿计数差
+  // =changedRef 区分的等价物；首拉（seen=null）与自驱重载（新建/重命名/删除
+  // 流 reload——计数不变）不触发 onMutated，仅失效沿落定后回退判别+联动
+  //（计数面同沿刷新——moveFolder/删除/新建全走 folders.changed 广播）
+  const seenInvRef = useRef<number | null>(null)
   useEffect(() => {
-    if (folders === null || !changedRef.current) return
-    changedRef.current = false
-    const scopeNow = query.folderScope
-    if (
-      scopeNow?.kind === 'folder' &&
-      !folders.some((f) => f.id === (scopeNow.kind === 'folder' ? scopeNow.folderId : ''))
-    ) {
+    if (catalogLoading || catalogError !== null || folders === null) return
+    if (seenInvRef.current === null) {
+      seenInvRef.current = invalidations
+      return
+    }
+    if (invalidations === seenInvRef.current) return
+    seenInvRef.current = invalidations
+    const scope = query.folderScope
+    if (scope?.kind === 'folder' && !folders.some((f) => f.id === scope.folderId)) {
       // 选中文件夹消失（并发删除）→回退全部文献（死 folderId 空列表窗防线）
       onChange({ folderScope: undefined })
     }
     onMutated()
-  }, [folders])
+  }, [folders, invalidations, catalogLoading, catalogError, onChange, onMutated, query.folderScope])
 
   // [RR1] 行内编辑流拆件（新建/重命名/提交门/在途守卫——useFolderNavEdit）
   const edit = useFolderNavEdit({

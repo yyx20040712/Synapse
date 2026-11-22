@@ -17,7 +17,8 @@
  *   renderer 全程不接触路径串；busy 期 drop 短路提示（零 invoke）
  * - drop 热区=导入条本体 div 级保持零变（R3——div 级热区语义不变）
  * - 目标徽标（.lib-import-target）：恒显「导入到：X」——X=当前夹名或主图名
- *   （folders.list 名解析=每渲染 find；取数两路=挂载+folders.changed）
+ *   （catalog 名解析=每渲染 find；取数=挂载单飞，changed 失效沿自动保鲜——
+ *   订阅收口 folder-catalog.store）
  * - 进行中：订阅 apiEvents.onImportProgress 显示进度（文件名 current/total）
  * - 进度事件会话身份过滤（F-D4 B 面，INV-52）：busy=false 忽略+sessionRef
  *   首事件锚定异身份忽略；busyRef 镜像解决订阅回调旧闭包
@@ -40,11 +41,11 @@ import type { DragEvent } from 'react'
 import { api, apiEvents, ApiClientError, unwrap } from '../../api/client'
 import type { Result } from '@shared/app-error'
 import type { ImportProgressEvent, ImportResult } from '@shared/ipc/schemas'
-import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
 import { Button } from '../../shared/ui/Button'
 import { showToast } from '../../shared/ui/Toast'
 import type { ToastKind } from '../../shared/ui/Toast'
+import { useFolderCatalog } from './folder-catalog.store'
 
 /** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const IMPORT_FAILED = '导入失败'
@@ -107,17 +108,14 @@ export function ImportDropZone(props: {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<ImportProgressEvent | null>(null)
   const [dragging, setDragging] = useState(false)
-  // [RR1-9/d1-N7 勘正] 文件夹名解析（folders.list 自取静态参考数据——仅取名）：
-  // 取数两路=挂载+folders.changed（他页变更/导入链 moveFolder 广播）；名解析=
+  // [RR1-9/d1-N7 勘正] 文件夹名解析（catalog 共享读面——仅取名）：取数=挂载
+  // 单飞，changed 失效沿自动保鲜（他页变更/导入链 moveFolder 广播）；名解析=
   // 每渲染 find（targetFolderId 切换不重取——数据已覆盖全部文件夹行）
-  const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
+  const folders = useFolderCatalog((s) => s.folders)
+  const loadCatalog = useFolderCatalog((s) => s.load)
   useEffect(() => {
-    void loadFolders()
-  }, [loadFolders])
-  useEffect(
-    () => apiEvents.onFoldersChanged(() => void loadFolders()),
-    [loadFolders]
-  )
+    void loadCatalog()
+  }, [loadCatalog])
   const targetName = folders?.find((f) => f.id === targetFolderId)?.name
   // busy 全局信号（S2 消费源——FolderNav 导航/脉络页图切换器禁切）
   const setImportBusy = useImportBusyStore((s) => s.setBusy)
