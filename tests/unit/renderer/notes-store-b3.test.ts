@@ -23,7 +23,8 @@
  * 切走切回/退出两族 + reader-notes-panel-b3.test.tsx 关面板族（组件级）。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
+// [B4-A R1 迁移] 节拍常量 IDLE_FLUSH_MS(600s)→IDLE_FLUSH_MS(1.5s，批注/总评共用单源)
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
 
 async function loadStore(api: unknown) {
   vi.resetModules()
@@ -32,10 +33,21 @@ async function loadStore(api: unknown) {
   return mod.useNotesStore
 }
 
-/** 退出拦截族消费的 dirty 信号源（tab-dirty 读 noteByPaper.pending——INV-22） */
+/** 退出拦截族消费的 IO 信号源（[B4-A R2 迁移] tabDirtySignals 退役——灰点改
+ * U 单源后，quitDirty 的 notes 输入=noteByPaper.pending 直读（useTabAutosaveSignals
+ * 的 notePending 同源；resetModules 后装载=同实例） */
 async function loadTabDirty() {
-  const mod = await import('../../../src/renderer/features/reader/state/tab-dirty')
-  return mod.tabDirtySignals
+  const mod = await import('../../../src/renderer/features/notes/notes.store')
+  return (paperId: string) => ({
+    notesPending: mod.useNotesStore.getState().noteByPaper[paperId]?.pending === true
+  })
+}
+
+
+/** [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务：冲恰一拍
+ *  （链任务起步=API 已派发、回包未处理——saving 在途窗口）再断言派发 */
+async function laneTick(): Promise<void> {
+  await Promise.resolve()
 }
 
 function saved(contentMd: string, updatedAt: string) {
@@ -79,7 +91,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '新' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS - 1)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS - 1)
     expect(save).not.toHaveBeenCalled() // T 未到不派发
     await vi.advanceTimersByTimeAsync(1)
     expect(save).toHaveBeenCalledTimes(1)
@@ -101,6 +113,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
 
     useStore.getState().saveNow('p-1')
     expect(vi.getTimerCount()).toBe(0) // 点击先清 T
+    await laneTick()
     expect(save).toHaveBeenCalledTimes(1) // 未到 1.5s 即落盘
     expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' })
     expect(useStore.getState().noteByPaper['p-1']?.saving).toBe(true)
@@ -121,12 +134,12 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     useStore.getState().edit('p-1', { contentMd: '首载窗口输入' })
     useStore.getState().saveSoon('p-1')
     useStore.getState().saveNow('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).not.toHaveBeenCalled() // 零 timer 零在途——点击零派发
 
     resolveGet(saved('服务器内容', 't1'))
     await loading // 合并落地（保用户字段）+自动补存排程
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).toHaveBeenCalledTimes(1) // 承接方=合并+补存
     expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '首载窗口输入' })
   })
@@ -137,7 +150,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 在途（载荷=「第一次」闭包快照）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 在途（载荷=「第一次」闭包快照）
     expect(useStore.getState().noteByPaper['p-1']?.saving).toBe(true)
 
     useStore.getState().edit('p-1', { contentMd: '第二次' }) // saving 中新输入
@@ -162,7 +175,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 在途
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 在途
     useStore.getState().edit('p-1', { contentMd: '第二次' }) // 派发后新编辑（缓冲）
 
     resolveSave(saved('第一次', 't2'))
@@ -173,7 +186,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     expect(d?.pending).toBe(true) // 转 dirty（未落库）
     expect(vi.getTimerCount()).toBe(1) // 启新防抖 T（消费时点一）
 
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 新 T 到：合并态落库
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 新 T 到：合并态落库
     expect(save).toHaveBeenCalledTimes(2)
     expect(save.mock.calls[1]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '第二次' })
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false) // clean
@@ -184,7 +197,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '唯一' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     const d = useStore.getState().noteByPaper['p-1']
     expect(d?.saving).toBe(false)
     expect(d?.pending).toBe(false)
@@ -198,7 +211,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '草稿' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     const d = useStore.getState().noteByPaper['p-1']
     expect(d?.saving).toBe(false)
     expect(d?.saveFailed).toBe(true) // error
@@ -211,7 +224,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '草稿' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // error
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // error
     expect(useStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
 
     useStore.getState().edit('p-1', { contentMd: '再输入' })
@@ -228,10 +241,11 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '合并态' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // error（pending 保持）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // error（pending 保持）
     expect(useStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
 
     useStore.getState().saveNow('p-1') // 点击重试
+    await laneTick()
     expect(save).toHaveBeenCalledTimes(2)
     expect(save.mock.calls[1]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '合并态' }) // 载荷=pending 合并态
     const mid = useStore.getState().noteByPaper['p-1']
@@ -251,7 +265,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 在途
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 在途
     useStore.getState().edit('p-1', { contentMd: '第二次' }) // pending 缓冲
 
     const flushing = useStore.getState().flush('p-1') // 卸载时调（不 await 在途前的派发）
@@ -272,7 +286,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     const useStore = await freshStore(save)
     useStore.getState().edit('p-1', { contentMd: '草稿' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // error（无 timer、无在途）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // error（无 timer、无在途）
     expect(vi.getTimerCount()).toBe(0)
 
     await useStore.getState().flush('p-1') // 卸载：立即重试一次
@@ -290,7 +304,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     await useStore.getState().flush('p-1')
     expect(save).not.toHaveBeenCalled() // 不抢跑：普通 dirty 由既有防抖通道落盘
     expect(vi.getTimerCount()).toBe(1)
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).toHaveBeenCalledTimes(1) // 既有通道兑现
   })
 
@@ -313,7 +327,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
 
     useStore.getState().edit('p-1', { contentMd: '切走前输入' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 在途（挂起）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 在途（挂起）
     useStore.getState().edit('p-1', { contentMd: '切走瞬间输入' }) // pending 维
 
     const flushing = useStore.getState().flush('p-1') // 切走
@@ -340,7 +354,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
 
     useStore.getState().edit('p-1', { contentMd: '退出窗口' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 在途
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 在途
     useStore.getState().edit('p-1', { contentMd: '退出窗口二' }) // saving∧pending
     expect(signals('p-1').notesPending).toBe(true) // 退出拦截信号在途保持
 
@@ -348,7 +362,7 @@ describe('F-UIRES-03 B3 notes.store 状态机全格（四态钮后端契约）',
     await vi.advanceTimersByTimeAsync(0) // 成功但 pending 存在（消费时点一→dirty）
     expect(signals('p-1').notesPending).toBe(true) // 新防抖未落库——仍拦截
 
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 新 T 到：失败→error
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 新 T 到：失败→error
     expect(useStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
     expect(signals('p-1').notesPending).toBe(true) // error 态仍拦截（卸载重试=面板路径）
 

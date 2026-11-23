@@ -44,6 +44,8 @@ import { App } from '../../../src/renderer/app/App'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { setNoteDraftPending } from '../../../src/renderer/features/lineage/lineage-note-draft'
+import { LINEAGE_UNFINALIZED_R2, useSaveAggregates } from '../../../src/renderer/app/use-save-aggregates'
+import { makeTab } from '../../utils/factories'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -152,5 +154,98 @@ describe('App 组合根 —— hook 链稳定性（P7-C 崩溃回归锁）', () 
     await flush()
     const calls2 = stubApi.system.setQuitDirty.mock.calls
     expect(calls2[calls2.length - 1]?.[0]).toEqual({ dirty: false, lineagePending: false })
+  })
+
+  it('[B4-A R2 §2.5 #37/INV-22] U=1 且 Q0：quitDirty=false（灰点不卡退出）；notes Q1 翻真 dirty=true', async () => {
+    mount(<App />)
+    await flush()
+    // U=1/Q0：灰点在、待写零——上报 clean
+    act(() => {
+      useReaderStore.setState({ tabs: { p1: makeTab('p1') }, order: ['p1'], activeId: 'p1' })
+    })
+    act(() => {
+      useReaderStore.getState().markTabUnfinalized('p1')
+    })
+    await flush()
+    expect(stubApi.system.setQuitDirty.mock.calls.at(-1)?.[0]).toEqual({ dirty: false, lineagePending: false })
+    // Q1（notes pending=真实待写）：dirty=true（IO 单源）
+    act(() => {
+      useNotesStore.setState({
+        noteByPaper: {
+          p1: { contentMd: 'e2e 总评内容', saving: false, savedAt: null, pending: true, saveFailed: false }
+        }
+      })
+    })
+    await flush()
+    expect(stubApi.system.setQuitDirty.mock.calls.at(-1)?.[0]).toEqual({ dirty: true, lineagePending: false })
+  })
+})
+
+// ── [B4-A R2 §15 R2 占位/聚合单源] useSaveAggregates 分列（主控终裁 7）──
+describe('useSaveAggregates —— IO quitDirty/U 角标/lineagePending 分列（B4-A R2 §10.1）', () => {
+  function mountProbe(): () => ReturnType<typeof useSaveAggregates> {
+    let value: ReturnType<typeof useSaveAggregates> | null = null
+    function Probe(): JSX.Element {
+      value = useSaveAggregates()
+      return <span />
+    }
+    mount(<Probe />)
+    return () => value!
+  }
+
+  it('lineage unfinalized=R2 占位常量恒 false（主控终裁 7——L1 接管真值并移除占位）', () => {
+    expect(LINEAGE_UNFINALIZED_R2).toBe(false)
+  })
+
+  it('聚合分列：U=1/Q0 → quitDirty=false+readerUnfinalized=true+lineageUnfinalized=false；IO Q1 → quitDirty=true', () => {
+    const read = mountProbe()
+    act(() => {
+      useReaderStore.setState({ tabs: { p1: makeTab('p1') }, order: ['p1'], activeId: null })
+    })
+    act(() => {
+      useReaderStore.getState().markTabUnfinalized('p1')
+    })
+    expect(read()).toEqual({ quitDirty: false, readerUnfinalized: true, lineageUnfinalized: false, lineagePending: false })
+    act(() => {
+      useNotesStore.setState({
+        noteByPaper: { p1: { contentMd: 'x', saving: false, savedAt: null, pending: true, saveFailed: false } }
+      })
+    })
+    expect(read().quitDirty).toBe(true)
+  })
+
+  it('lineagePending=lineage IO（saveStatus≠clean）——U/reader 面不参与', async () => {
+    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
+    const read = mountProbe()
+    expect(read().lineagePending).toBe(false)
+    act(() => {
+      useLineageStore.setState({ saveStatus: 'dirty' })
+    })
+    expect(read().lineagePending).toBe(true)
+    act(() => {
+      useLineageStore.setState({ saveStatus: 'clean' })
+    })
+    expect(read().lineagePending).toBe(false)
+  })
+})
+
+describe('App 装配 —— reader 角标 props 注入（§10.1「App/Rail 通过 props 接收两个 OR 布尔」）', () => {
+  it('reader tab U=1 → rail-reader-dot 在场；清账（revision 匹配）后缺席', async () => {
+    mount(<App />)
+    await flush()
+    expect(document.querySelector('[data-testid="rail-reader-dot"]')).toBeNull()
+    await act(async () => {
+      useReaderStore.setState({
+        tabs: { 'p-rail-u': makeTab('p-rail-u') },
+        order: ['p-rail-u'],
+        activeId: 'p-rail-u'
+      })
+      useReaderStore.getState().markTabUnfinalized('p-rail-u')
+    })
+    expect(document.querySelector('[data-testid="rail-reader-dot"]')).not.toBeNull()
+    await act(async () => {
+      useReaderStore.getState().finalizeTabUnfinalized('p-rail-u', 1)
+    })
+    expect(document.querySelector('[data-testid="rail-reader-dot"]')).toBeNull()
   })
 })

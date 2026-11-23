@@ -1,109 +1,196 @@
 // b3: P7-B
 /**
- * [SR2-UNDO-01] annotation-undo —— 标注操作级撤销栈（工单：done / strong）
+ * [SR2-UNDO-01] annotation-undo —— 标注操作级 undo/redo 纯栈（[B4-A R1] 两层历史
+ * （§11.1 拆件：纯操作 undo/redo 栈、id remap；API 执行外移
+ * reader-history-commands.ts，本件零 api import）。
  *
- * ── 行为层 ──
- * - 操作级 undo（非全文 undo 树）：三类操作的逆操作
- *   | 原操作 | 逆操作（undo） |
- *   | create（SelectionLayer 保存） | delete（api.deleteAnnotation + apply remove） |
- *   | delete（菜单删除） | re-create（api.saveAnnotation——**repo.insert 不接受显式 id**
- *     （annotations.repo.ts:167 内部 randomUUID），re-create 得新 id；同 id 引用残留
- *     清点：当前无其他表/组件长期持有 annotation id，安全） |
- *   | comment-edit（AnnotationEditor 保存） | update 回旧 comment（before 全量快照） |
- * - 栈 per-tab、模块级自持（Record<paperId, entry[]>——不进 TabState，避免
- *   reader.store↔本模块循环依赖，plan 门 W2 裁决），随 closeTab 清理
- *   （reader.store.closeOne 调 clearStack(paperId)——接缝一行）；深度上限
- *   UNDO_DEPTH_MAX=50（FIFO 截断丢最旧）
- * - undo 执行：api 返回 !ok 或抛异常 → **不弹栈**（深度不变，可重试）+
- *   返回 {done:false, reason:'api-failed'}；成功 → 弹栈 + 返回 apply 指令
- *   （store 同步由调用侧 reader.store.undo() 执行，本模块不 import reader.store
- *   也不 import Toast——失败 toast 在 store 消费边界发，INV-02）
- * - **id remap**：delete 逆重建分配新 id 后，全栈
- *   改写该标注旧 id 引用（create/delete/comment-edit 三类条目）——否则连撤
- *   两次时第二次按旧 id 落空，重建标注永久残留
- * - **in-flight 互斥**：撤销进行中再触发 →
- *   {done:false, reason:'busy'}（消费方静默合并——连按 ctrl+z 等价一次撤销）
- * - 撤销会话状态机（宪法前置表）：
- *   | 态（per-paper） | pushUndo | undo 触发 | api 成功 | api !ok/异常 |
- *   | empty | →ready(1) | no-op→empty | — | — |
- *   | ready | →ready(+1；≥50 时 FIFO 头部截断) | →in-flight | →ready（按身份移除被撤条目） | →ready（栈不变，可重试） |
- *   | in-flight | →ready(+1；新条目在下标上顶替，移除按身份不受影响) | busy 拒绝 | 同上 | 同上 |
- *   跨篇：in-flight 互不阻塞（Set 互斥）；closeTab/clearStack：任意态→empty（栈随 tab 丢弃）
- * - redo 不做（用户需求只有撤销；全文 undo 依赖 textarea 原生——B1 §7-3 对策）
- * - 触发：ctrl+z 经 keymap 注册（editable 避让自动生效——textarea 内是原生
- *   undo，本栈不接管编辑场景）；栈空时 no-op（不触 api）
+ * ── 行为层（设计稿 §4.2）──
+ * - 操作项形状：{id, kind:'create'|'delete'} 与 {id, kind:'comment-edit',
+ *   before+after 完整项}；id 由 pushUndo 盖章（调用方只给操作载荷）。
+ * - 栈 per-tab、模块级自持（Record<paperId, {past, future}>——不进 TabState），
+ *   随 closeTab 清理；深度上限 HISTORY_DEPTH_MAX=10（@shared/constants 单源，
+ *   双向 FIFO 截断）。
+ * - 新操作提交（pushUndo）：push past + 清 redo（§2.5 #2「成功提交一个操作单元：
+ *   undo≤10、redo 清」——redo 的真正销毁时点=新操作提交）。
+ * - undo/redo：执行器 peek 取顶（失败不弹栈可重试）→ 经 per-tab lane 完成反向/
+ *   顺向写 → 成功才 settle 移栈（按条目对象身份——await 期间入栈/截断不错弹）。
+ * - **id remap**（§4.2：重建得新 id 后，undo/redo 两栈内全部同旧 id 引用做同一
+ *   remap）：条目字段原地改写——对象身份不变（在途命令的 settle 仍按身份命中；
+ *   被撤销/重做的条目自身也改指新 id，redo→undo 往返不落空）。
+ * - **批注编辑合并会话**（§4.2：一个批注编辑会话只在操作层建立一条 comment-edit，
+ *   后续 1.5s 文本单元更新它的 after）：recordCommentEdit 首写建条目并记为会话，
+ *   同会话后续写只推进 after；会话随 blur/切目标/显式保存/操作层历史命令终止
+ *   （endCommentEditSession）。文本反向写（undo/redo）不新建操作项，只推进该标注
+ *   最近一条 comment-edit 的 after（touchCommentEditAfter）。
+ * - clearRedo（显式保存 finalize——只清 redo、undo 保留）。
  *
  * ── 接口层 ──
- * - export type UndoEntry（三类逆操作载荷的判别联合）
- * - export type UndoApply = { type:'remove'; id } | { type:'upsert'; annotation }
- *   （re-create 新 id → upsert 追加；comment-edit 同 id → upsert 替换）
- * - export type UndoOutcome = { done:false; reason:'empty'|'api-failed' } |
- *   { done:true; apply: UndoApply }
- * - export function pushUndo(paperId, entry): void / undo(paperId): Promise<UndoOutcome>
- *   / clearStack(paperId): void / stackDepth(paperId): number（测试锚）/
- *   UNDO_DEPTH_MAX（常量锚）
+ * - export type ReaderOperationEntry / ReaderOperationInput / OpApply
+ * - pushUndo/recordCommentEdit/touchCommentEditAfter/endCommentEditSession/
+ *   peekUndo/settleUndo/peekRedo/settleRedo/stackDepth/redoDepth/clearStack/
+ *   clearRedo/remapAnnotationIds/toOperationInput
+ * - export const OP_DEPTH_MAX（共享单源再导出——测试锚）
  *
  * ── 架构层 ──
- * - 纯逻辑+api 调用收口；接缝（本工单改动面）：SelectionLayer.save 成功路径
- *   push create、AnnotationLayer.saveComment/deleteAnnotation 成功路径 push
- *   comment-edit（before=预编辑快照）/delete、ReaderShortcuts 键位表加 ctrl+z、
- *   reader.store closeOne 清理一行+undo() 动作（api 调用与 store 同步收口单点，
- *   组件不直接执行 undo）
- *
- * ── 生命周期层 ──
- * - 预留：redo（P8+）；不做：跨 tab 撤销（栈随 closeTab 丢弃）
- *
- * ── 文化层 ──
- * - 测试：tests/unit/renderer/annotation-undo.test.ts（新建，受锁）：三逆操作
- *   正确性（含 input 去 id 断言）、LIFO、深度截断、api 失败不弹栈+重试、空栈
- *   no-op、per-tab 隔离+clearStack
+ * - 纯栈逻辑+类型；api 调用/lane 编排/文本代际失效在 reader-history-commands.ts。
+ * - 测试：tests/unit/renderer/annotation-undo.test.ts（受锁）。
  */
-import { api, ApiClientError } from '../../../api/client'
-import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import type { Annotation, AnnotationInput } from '@shared/models/annotation'
+import { HISTORY_DEPTH_MAX } from '@shared/constants'
 
-/** 三类逆操作载荷（判别联合——kind 即原操作名） */
-export type UndoEntry =
-  | { kind: 'create'; annotation: Annotation }
-  | { kind: 'delete'; annotation: Annotation }
-  | { kind: 'comment-edit'; before: Annotation }
+/** 深度上限（共享单源再导出——本地 50 旧常量退役） */
+export const OP_DEPTH_MAX = HISTORY_DEPTH_MAX
 
-/** undo 成功后调用侧的 store 同步指令 */
-export type UndoApply =
+/** 三类操作项（判别联合——kind 即原操作名；comment-edit 携 before/after 完整项） */
+export type ReaderOperationEntry =
+  | { id: string; kind: 'create'; annotation: Annotation }
+  | { id: string; kind: 'delete'; annotation: Annotation }
+  | { id: string; kind: 'comment-edit'; before: Annotation; after: Annotation }
+
+type WithoutId<T> = T extends unknown ? { [K in Exclude<keyof T, 'id'>]: T[K] } : never
+
+/** pushUndo 入参（操作载荷——id 由栈盖章） */
+export type ReaderOperationInput = WithoutId<ReaderOperationEntry>
+
+/** undo/redo 成功后调用侧的 store 同步指令 */
+export type OpApply =
   | { type: 'remove'; id: string }
   | { type: 'upsert'; annotation: Annotation }
 
-export type UndoOutcome =
-  | { done: false; reason: 'empty' | 'api-failed' | 'busy' }
-  | { done: true; apply: UndoApply }
-
-/** 深度上限（FIFO 截断丢最旧） */
-export const UNDO_DEPTH_MAX = 50
-
-/** per-tab 栈（模块级自持——不进 TabState） */
-const stacks: Record<string, UndoEntry[]> = {}
-
-/** 栈深（测试与调试锚） */
-export function stackDepth(paperId: string): number {
-  return stacks[paperId]?.length ?? 0
+interface OpStacks {
+  past: ReaderOperationEntry[]
+  future: ReaderOperationEntry[]
+  /** 打开中的批注编辑合并会话条目（同会话后续文本写只推进其 after） */
+  session: ReaderOperationEntry | null
 }
 
-export function pushUndo(paperId: string, entry: UndoEntry): void {
-  const s = stacks[paperId] ?? (stacks[paperId] = [])
-  s.push(entry)
-  if (s.length > UNDO_DEPTH_MAX) {
-    s.splice(0, s.length - UNDO_DEPTH_MAX)
+/** per-tab 双栈（模块级自持——不进 TabState） */
+const stacks: Record<string, OpStacks> = {}
+
+/** 条目 id 序号（会话内唯一——调试归属与条目身份） */
+let opSeq = 0
+
+function stacksOf(paperId: string): OpStacks {
+  return stacks[paperId] ?? (stacks[paperId] = { past: [], future: [], session: null })
+}
+
+/** undo 深度（测试与调试锚） */
+export function stackDepth(paperId: string): number {
+  return stacks[paperId]?.past.length ?? 0
+}
+
+/** redo 深度（测试与调试锚） */
+export function redoDepth(paperId: string): number {
+  return stacks[paperId]?.future.length ?? 0
+}
+
+/** 新操作提交：盖章+push past+清 redo（§2.5 #2）+FIFO 截断；返回入栈条目 */
+export function pushUndo(paperId: string, input: ReaderOperationInput): ReaderOperationEntry {
+  const s = stacksOf(paperId)
+  const entry: ReaderOperationEntry = { id: `op-${++opSeq}`, ...input }
+  s.past.push(entry)
+  s.future = []
+  if (s.past.length > OP_DEPTH_MAX) {
+    s.past.splice(0, s.past.length - OP_DEPTH_MAX)
+  }
+  return entry
+}
+
+/**
+ * 批注文本写成功后的操作层记账（§4.2 合并会话）：同标注会话已开→只推进 after；
+ * 否则新建 comment-edit（before=本次写前的标注现值）并记为会话。
+ * 返回会话条目。
+ */
+export function recordCommentEdit(paperId: string, before: Annotation, after: Annotation): ReaderOperationEntry {
+  const s = stacksOf(paperId)
+  const open = s.session
+  if (open !== null && open.kind === 'comment-edit' && open.before.id === before.id) {
+    open.after = after
+    return open
+  }
+  const entry = pushUndo(paperId, { kind: 'comment-edit', before, after })
+  s.session = entry
+  return entry
+}
+
+/** 文本反向写（undo/redo）成功后：推进该标注最近一条 comment-edit 的 after
+ *  （redo 顺写值与库一致）；不新建操作项。 */
+export function touchCommentEditAfter(paperId: string, annotationId: string, after: Annotation): void {
+  const s = stacks[paperId]
+  if (s === undefined) return
+  for (let i = s.past.length - 1; i >= 0; i--) {
+    const e = s.past[i]!
+    if (e.kind === 'comment-edit' && e.after.id === annotationId) {
+      e.after = after
+      return
+    }
   }
 }
 
-/** closeTab 清理接缝（reader.store.closeOne 调用） */
+/** 终止批注编辑合并会话（blur/切目标/显式保存/操作层历史命令后新输入开新条目） */
+export function endCommentEditSession(paperId: string): void {
+  const s = stacks[paperId]
+  if (s !== undefined) s.session = null
+}
+
+/** undo 顶（不弹——失败不弹栈语义；空栈 null） */
+export function peekUndo(paperId: string): ReaderOperationEntry | null {
+  const s = stacks[paperId]
+  if (s === undefined || s.past.length === 0) return null
+  return s.past[s.past.length - 1]!
+}
+
+/** undo 成功结算：past 按身份移除 + future 头插（截断≤10） */
+export function settleUndo(paperId: string, entry: ReaderOperationEntry): void {
+  const s = stacks[paperId]
+  if (s === undefined) return
+  const idx = s.past.indexOf(entry)
+  if (idx !== -1) {
+    s.past.splice(idx, 1)
+  }
+  s.future.unshift(entry)
+  if (s.future.length > OP_DEPTH_MAX) {
+    s.future.length = OP_DEPTH_MAX
+  }
+}
+
+/** redo 顶（不弹；空栈 null） */
+export function peekRedo(paperId: string): ReaderOperationEntry | null {
+  const s = stacks[paperId]
+  if (s === undefined || s.future.length === 0) return null
+  return s.future[0]!
+}
+
+/** redo 成功结算：future 按身份移除 + past 尾插（截断≤10） */
+export function settleRedo(paperId: string, entry: ReaderOperationEntry): void {
+  const s = stacks[paperId]
+  if (s === undefined) return
+  const idx = s.future.indexOf(entry)
+  if (idx !== -1) {
+    s.future.splice(idx, 1)
+  }
+  s.past.push(entry)
+  if (s.past.length > OP_DEPTH_MAX) {
+    s.past.splice(0, s.past.length - OP_DEPTH_MAX)
+  }
+}
+
+/** closeTab 清理接缝（双栈与合并会话随 tab 关闭丢弃） */
 export function clearStack(paperId: string): void {
   delete stacks[paperId]
 }
 
+/** 显式保存 finalize：只清 redo、undo 保留（§3 显式保存行） */
+export function clearRedo(paperId: string): void {
+  const s = stacks[paperId]
+  if (s !== undefined) {
+    s.future = []
+  }
+}
+
 /** re-create 载荷：剥离 id/paperId/时间戳（repo 生成）——input 口径与
- *  annotationInputSchema 对齐（omit 同源） */
-function toInput(a: Annotation): AnnotationInput {
+ *  annotationInputSchema 对齐（omit 同源；执行器消费） */
+export function toOperationInput(a: Annotation): AnnotationInput {
   return {
     page: a.page,
     kind: a.kind,
@@ -118,82 +205,24 @@ function toInput(a: Annotation): AnnotationInput {
   }
 }
 
-/** re-create 后全栈改写旧 id 引用（重建分配新 id，
- *  栈内更早的 create/delete/comment-edit 条目若仍引旧 id，后续按序撤销会
- *  deleteAnnotation/updateAnnotation 落空——同一标注的操作链必须整体改指新 id）。
- *  skip=正被撤销的条目（**按对象身份**跳过：await 期间同篇可能已入栈，下标
- *  会漂移；保持其对象身份稳定供成功后按身份移除） */
-function remapStackIds(s: UndoEntry[], oldId: string, newId: string, skip: UndoEntry): void {
-  for (let i = 0; i < s.length; i++) {
-    const e = s[i]!
-    if (e === skip) continue
+/** 重建（新 id）后双栈全部旧 id 引用原地改写（create/delete/comment-edit 三类；
+ *  条目对象身份不变——在途命令 settle 按身份命中，被重建条目自身亦改指新 id）。
+ *  目标换 id=旧编辑目标消亡，合并会话终止。 */
+export function remapAnnotationIds(paperId: string, oldId: string, newId: string): void {
+  const s = stacks[paperId]
+  if (s === undefined) return
+  const remap = (e: ReaderOperationEntry): void => {
     if (e.kind === 'comment-edit') {
       if (e.before.id === oldId) {
-        s[i] = { kind: 'comment-edit', before: { ...e.before, id: newId } }
+        e.before = { ...e.before, id: newId }
+        e.after = { ...e.after, id: newId }
       }
-    } else if (e.annotation.id === oldId) {
-      s[i] = { kind: e.kind, annotation: { ...e.annotation, id: newId } }
+      return
+    }
+    if (e.annotation.id === oldId) {
+      e.annotation = { ...e.annotation, id: newId }
     }
   }
-}
-
-/** in-flight 互斥（实现为 **Set**）：
- *  per-paper 互斥集合——同篇撤销进行中再触发返回 busy（消费方静默合并），
- *  他篇互不阻塞（单槽变量会被并发篇覆盖导致互斥失效，Set 各篇独立） */
-const undoInFlightPapers = new Set<string>()
-
-/** 执行栈顶逆操作：成功后精确移除正被撤销的条目并返回 apply；api 失败/异常
- * 不弹栈可重试；空栈 no-op；同篇撤销进行中 busy 拒绝。
- * [F-VISFB-64·回炉 W1] closing gate：undo 逆写=用户动作，冻结期拒绝（复用
- * busy 消费语义——调用方静默合并，栈不变零 api） */
-export async function undo(paperId: string): Promise<UndoOutcome> {
-  if (quitWriteBlocked() || undoInFlightPapers.has(paperId)) {
-    return { done: false, reason: 'busy' }
-  }
-  const s = stacks[paperId]
-  if (s === undefined || s.length === 0) {
-    return { done: false, reason: 'empty' }
-  }
-  undoInFlightPapers.add(paperId)
-  const top = s[s.length - 1]!
-  let apply: UndoApply
-  try {
-    if (top.kind === 'create') {
-      const r = await api.reader.deleteAnnotation({ annotationId: top.annotation.id })
-      if (!r.ok) {
-        return { done: false, reason: 'api-failed' }
-      }
-      apply = { type: 'remove', id: top.annotation.id }
-    } else if (top.kind === 'delete') {
-      const r = await api.reader.saveAnnotation({ paperId, annotation: toInput(top.annotation) })
-      if (!r.ok) {
-        return { done: false, reason: 'api-failed' }
-      }
-      // 重建得新 id：全栈改写该标注旧 id 引用（按身份跳过本条）
-      remapStackIds(s, top.annotation.id, r.data.id, top)
-      apply = { type: 'upsert', annotation: r.data }
-    } else {
-      const r = await api.reader.updateAnnotation({ annotation: top.before })
-      if (!r.ok) {
-        return { done: false, reason: 'api-failed' }
-      }
-      apply = { type: 'upsert', annotation: r.data }
-    }
-    // 按身份移除（非下标——await 期间同篇入栈触发 FIFO 截断会使下标左移甚至
-    // 把本条挤出栈；身份不在则自然跳过；互斥保证无并发撤销写栈。）
-    const idx = s.indexOf(top)
-    if (idx !== -1) {
-      s.splice(idx, 1)
-    }
-    return { done: true, apply }
-  } catch (e) {
-    // 非 API 层异常打到控制台（编程错误不静默）；结果仍按
-    // 可重试失败返回（下次 dirty/undo 沿自愈）
-    if (!(e instanceof ApiClientError)) {
-      console.error('[annotation-undo] 撤销异常', e)
-    }
-    return { done: false, reason: 'api-failed' }
-  } finally {
-    undoInFlightPapers.delete(paperId)
-  }
+  for (const e of s.past) remap(e)
+  for (const e of s.future) remap(e)
 }

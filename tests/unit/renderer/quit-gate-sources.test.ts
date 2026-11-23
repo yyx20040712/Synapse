@@ -4,7 +4,7 @@
  * 设计稿 §④ 写源清单表+§⑦「逐写源断言」字面——每源至少一红一绿判别对）。
  *
  * 覆盖面（blocked=冻结期拒绝 / allowed=closing 外正常）：
- * - tab-dirty 三用户命令：requestCloseTab/switchTabFlushFirst/confirmCloseDirty；
+ * - 关 tab/切 tab 用户命令闸（requestCloseTab〔reader-close-tab〕/switchTabFlushFirst）；
  * - 标注命令族（W1）：saveComment/deleteAnnotation（annotation-popups-actions
  *   用户入口）+ annotation-undo 逆写；autosaveComment 不闸=timer/收口驱动非
  *   用户命令入口（quit flush ② 经 draft.flush→onAutosave 消费——闸则自锁，
@@ -37,11 +37,8 @@ makeApiStub({
 import { setQuitClosing } from '../../../src/renderer/app/quit-closing-gate'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
-import {
-  confirmCloseDirty,
-  requestCloseTab,
-  switchTabFlushFirst
-} from '../../../src/renderer/features/reader/state/tab-dirty'
+import { switchTabFlushFirst } from '../../../src/renderer/features/reader/state/tab-dirty'
+import { requestCloseTab } from '../../../src/renderer/features/reader/state/reader-close-tab'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { noteDraftPending, setNoteDraftPending } from '../../../src/renderer/features/lineage/lineage-note-draft'
@@ -59,9 +56,10 @@ import {
 import {
   clearStack,
   pushUndo,
-  stackDepth,
-  undo as annotationUndo
+  stackDepth
 } from '../../../src/renderer/features/reader/state/annotation-undo'
+// [B4-A R1 迁移] undo 执行自 annotation-undo 外迁驻 reader-history-commands
+import { undoTabOperations as annotationUndo } from '../../../src/renderer/features/reader/state/reader-history-commands'
 import { LineageFloatingNotes } from '../../../src/renderer/features/lineage/LineageFloatingNotes'
 import type { FloatingNote } from '../../../src/shared/models/lineage'
 
@@ -91,8 +89,8 @@ function mountProbe(): AnnotationPopupActions {
       setBusy: vi.fn(),
       closeEditing: vi.fn(),
       closeMenu: vi.fn(),
-      onChanged: vi.fn(),
-      editingId: null
+      onChanged: vi.fn()
+      // [B4-A R1 迁移·夹具] editingId 实参退役——编辑合并会话改由 blur/卸载终止
     })
     return null
   }
@@ -121,10 +119,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   setQuitClosing(false)
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
-  for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
-    useNotesStore.getState().discardPendingEdit(k)
-  }
-  useNotesStore.setState({ noteByPaper: {} })
+  // notes 编辑态清扫（弃改 API 退役——测试隔离锚）
+  useNotesStore.getState().resetEditStateForTests()
   useLineageStore.setState({
     floatingNotes: [NOTE],
     nodes: [],
@@ -180,16 +176,28 @@ describe('quit-gate-sources —— 逐写源判别（F-VISFB-64 回炉 W1/W2/W7�
     expect(useReaderStore.getState().activeId).toBe('p2')
   })
 
-  it('tab-dirty confirmCloseDirty：冻结期拒绝（返回 false）；closing 外 clean 直通 true', () => {
+  it('[B4-A R2 迁移] 关 tab closing 状态机整体用户命令闸：冻结期 U=1+IO 脏也拒（零 flush 零 closing 相位）；解冻后承接', async () => {
+    // 旧 confirmCloseDirty 闸随二选 Dialog 退役——confirm/error 相的入口闸
+    // 收敛为 requestCloseTab 入口（ADR-0026 同步 closing gate 挂点保持）
+    useNotesStore.getState().edit('p1', { contentMd: '门控草稿' })
     useReaderStore.setState({
       tabs: { p1: makeTab('p1') },
       order: ['p1'],
       activeId: 'p1'
     })
+    useReaderStore.getState().markTabUnfinalized('p1')
     setQuitClosing(true)
-    expect(confirmCloseDirty('p1')).toBe(false)
+    await expect(requestCloseTab('p1')).resolves.toBe(false)
+    // 冻结期零 flush（notesSave 不发）且 closing 相位不动（none）
+    expect(useReaderStore.getState().tabs['p1']?.closing ?? { phase: 'none' }).toEqual({ phase: 'none' })
     setQuitClosing(false)
-    expect(confirmCloseDirty('p1')).toBe(true)
+    // 解冻后走正道：error 相（门控 pending）承接决策
+    const closing = requestCloseTab('p1')
+    for (let i = 0; i < 20; i++) await Promise.resolve()
+    expect(useReaderStore.getState().tabs['p1']?.closing?.phase).toBe('error')
+    const { chooseCloseTabDecision } = await import('../../../src/renderer/features/reader/state/reader-close-tab')
+    chooseCloseTabDecision('p1', false)
+    await expect(closing).resolves.toBe(false)
   })
 
   it('标注 saveComment（W1 用户入口）：冻结期拒绝零 api 写；closing 外真实写', async () => {

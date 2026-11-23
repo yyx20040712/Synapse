@@ -91,10 +91,8 @@ beforeEach(() => {
   mocks.notesGet.mockReset()
   mocks.notesSave.mockReset()
   mocks.patchNode.mockReset()
-  for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
-    useNotesStore.getState().discardPendingEdit(k)
-  }
-  useNotesStore.setState({ noteByPaper: {} })
+  // notes 编辑态清扫（弃改 API 退役——测试隔离锚）
+  useNotesStore.getState().resetEditStateForTests()
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
   useLineageStore.setState({
     nodes: [],
@@ -124,6 +122,19 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
     expect(mocks.notesSave).not.toHaveBeenCalled()
     expect(stillDirty).toBe(true)
     expect(useNotesStore.getState().noteByPaper['qp-2']?.pending).toBe(true)
+  })
+
+  it('[B4-A R2 §2.5 #37] U=1 且 Q0：stillDirty=false（灰点不入 quit 判定——idle-flush 落库即 clean 回执）', async () => {
+    useReaderStore.setState({
+      tabs: { 'qp-u': makeTab('qp-u') },
+      order: ['qp-u'],
+      activeId: 'qp-u'
+    })
+    // 真实输入链置 U（编辑器控制器沿）+已全部落库（Q0/无失败残留）
+    useReaderStore.getState().markTabUnfinalized('qp-u')
+    expect(useReaderStore.getState().tabs['qp-u']?.unfinalized).toBe(true)
+    const stillDirty = await runQuitFlush()
+    expect(stillDirty).toBe(false)
   })
 
   it('③收口后查失败态：写失败→saveFailed 置位→仍脏（收口后查草稿失败态）', async () => {
@@ -237,18 +248,16 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
     }
   })
 
-  it('[回炉 W-2] 纯在途×pendingEdit 无键（弃改后残余写）：收口等待在途 settle（不写途 destroy）', async () => {
+  it('[回炉 W-2] 纯在途×pendingEdit 无键（冗余 saveNow 在途）：收口等待在途 settle（不写途 destroy）', async () => {
     mocks.notesGet.mockResolvedValueOnce(noteResult('qp-12', '基线'))
     await useNotesStore.getState().load('qp-12')
     let resolveSave!: (v: ReturnType<typeof noteResult>) => void
     mocks.notesSave.mockImplementationOnce(
       () => new Promise((r) => { resolveSave = r as typeof resolveSave })
     )
-    useNotesStore.getState().edit('qp-12', { contentMd: '在途值' })
+    // 冗余 saveNow（无未保存编辑仍派发写）——pendingEdit 无键而在途写仍飞；
+    // 纯在途面由 flushAllNow 的在途兜底等待（弃改残余写源已随 discard API 退役）
     void useNotesStore.getState().saveNow('qp-12')
-    // 弃改收口（代际守卫）——pendingEdit 清空而在途写仍飞（弃改窄窗=写途
-    // DB 落地毫秒窗；INV-50「DB 落地毫秒窗票面已接受」的收口侧对应面）
-    useNotesStore.getState().discardPendingEdit('qp-12')
     let settled = false
     const quit = runQuitFlush().then((d) => {
       settled = true
@@ -330,13 +339,13 @@ describe('quit-flush —— renderer 收口序列（F-VISFB-14）', () => {
       expect(mocks.notesSave).toHaveBeenLastCalledWith({ paperId: 'qp-b1', contentMd: '在途值' })
     } finally {
       // 红证失败路径不留悬挂在途（inflight 模块闭包跨用例——残余未 settle 写
-      // 会挂死下游用例的收口在途网）：deferred 兜底 resolve+quit 收尾+弃改清扫
+      // 会挂死下游用例的收口在途网）：deferred 兜底 resolve+quit 收尾+编辑态清扫
       setQuitClosing(false)
       if (quit !== null) {
         settle(noteResult('qp-b1', '在途值'))
         await quit.catch(() => undefined)
       }
-      useNotesStore.getState().discardPendingEdit('qp-b1')
+      useNotesStore.getState().resetEditStateForTests()
     }
   })
 })
@@ -374,8 +383,9 @@ describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISF
     }
   })
 
-  /** 挂载真实弹层+<800ms 窗内值输入（un-attempted 形）+手动保存在途 */
-  function mountEditorBusySave(anno: Annotation): void {
+  /** 挂载真实弹层+<1.5s 窗内值输入（un-attempted 形）+手动保存在途
+   *  [B4-A R1 迁移·async 调用] 手动保存经 per-tab lane 入链——API 派发在微任务 */
+  async function mountEditorBusySave(anno: Annotation): Promise<void> {
     ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
     mountedIds.push(anno.id)
     host = document.createElement('div')
@@ -401,7 +411,7 @@ describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISF
       ta.dispatchEvent(new Event('input', { bubbles: true }))
     })
     const saveBtn = host.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!
-    act(() => {
+    await act(async () => {
       saveBtn.click()
     })
   }
@@ -413,7 +423,7 @@ describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISF
       () => new Promise<AnnoResult>((r) => { resolveManual = r })
     )
     annoWriteR6.mockResolvedValueOnce({ ok: false, error: { code: 'E', message: '写失败' } })
-    mountEditorBusySave(anno)
+    await mountEditorBusySave(anno)
     expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
     let settled = false
     const quit = runQuitFlush().then((d) => {
@@ -447,7 +457,7 @@ describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISF
     annoWriteR6.mockImplementationOnce(
       () => new Promise<AnnoResult>((r) => { resolveManual = r })
     )
-    mountEditorBusySave(anno)
+    await mountEditorBusySave(anno)
     expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
     const quit = runQuitFlush()
     await drain()

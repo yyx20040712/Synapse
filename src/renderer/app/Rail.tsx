@@ -18,13 +18,15 @@
  *   条课题名 reload 后自新（跨格序列锁=app-shell.test 视图页+引导态 describe）
  *
  * ── 接口层 ──
- * - export function Rail(props: { view: ViewId; onView(v: ViewId): void })
+ * - export function Rail(props: { view: ViewId; onView(v: ViewId): void;
+ *     readerUnfinalized?: boolean; lineageUnfinalized?: boolean })
  *   （[F-WS-02] dirty 参数随弹层退役删除——管理页的 dirty 由 App 直注
- *   WorkspacesPage，Rail 零消费）
+ *   WorkspacesPage，Rail 零消费；[B4-A R2 §10.1] 两个 U 角标 props 经 App
+ *   组合根 use-save-aggregates 注入——本件不引 reader/lineage 域 store）
  *
  * ── 架构层 ──
  * - app/ 组合根件（App 同级）：可引 features 域 store（workspace.store），
- *   禁引 reader/lineage 域（dirty 由 App 注入）；皮肤住 theme-shell.css
+ *   禁引 reader/lineage 域（U 角标由 App 注入）；皮肤住 theme-shell.css
  *
  * ── 生命周期层 ──
  * - 不做：下载引擎本体（A8 占位）；课题管理本体（workspaces 管理页）
@@ -102,7 +104,15 @@ function shortNameOf(name: string): string {
   return Array.from(name).slice(0, 4).join('')
 }
 
-export function Rail(props: { view: ViewId; onView: (v: ViewId) => void }): JSX.Element {
+export function Rail(props: {
+  view: ViewId
+  onView: (v: ViewId) => void
+  /** [B4-A R2 §10.1] 阅读器角标=全部打开 tab 的 unfinalized OR（App 注入） */
+  readerUnfinalized?: boolean
+  /** [B4-A R2 §10.1/§15] 脉络角标=全部 folder 会话 unfinalized OR（R2 阶段
+   *  App 侧恒 false 占位——主控终裁 7；L1 换真值） */
+  lineageUnfinalized?: boolean
+}): JSX.Element {
   const items = useWorkspaceStore((s) => s.items)
   const currentId = useWorkspaceStore((s) => s.currentId)
   // [F-WS-02] 引导态推导（INV-87 三条件——store 纯函数单源）
@@ -157,6 +167,14 @@ export function Rail(props: { view: ViewId; onView: (v: ViewId) => void }): JSX.
         >
           {item.icon}
           <span className="lb">{item.label}</span>
+          {/* [B4-A R2 §10.1] U 角标（未定稿 OR——值经 props 注入；reader=真值
+              翻转、lineage=R2 恒 false 占位）；角标不参与可点性 */}
+          {item.id === 'reader' && props.readerUnfinalized === true && (
+            <span className="rail-dot" data-testid="rail-reader-dot" aria-hidden="true" />
+          )}
+          {item.id === 'lineage' && props.lineageUnfinalized === true && (
+            <span className="rail-dot" data-testid="rail-lineage-dot" aria-hidden="true" />
+          )}
         </button>
       ))}
       <button

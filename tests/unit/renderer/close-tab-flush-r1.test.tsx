@@ -4,6 +4,9 @@
  * always-active；自 close-tab-flush.test.tsx 拆出——该件 467 行扩格必超
  * max-lines 500，拆件先例=annotation-popups-autosave 自 editor-ux 拆出）。
  *
+ * [B4-A R2 迁移] 三轮复扫夹具迁 lane 顺序与 closing 相位（confirm/error 经
+ * chooseCloseTabDecision 注入——native confirm 退役）；竞态覆盖全保留。
+ *
  * 锁链（门一回炉 R1/R3/R5/R7）：
  * - [R1] 复扫收敛：关 A 在途（X 句柄挂起）→窗内切 Y+输入窗内值→X settle→
  *   复扫轮收 Y→关闭 true 且 Y 值已写（apiUpdate 断言）——一次性快照漏扫
@@ -20,7 +23,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeAnnotation, makeTab } from '../../utils/factories'
-import { requestCloseTab, switchTabFlushFirst } from '../../../src/renderer/features/reader/state/tab-dirty'
+import { switchTabFlushFirst } from '../../../src/renderer/features/reader/state/tab-dirty'
+import { requestCloseTab, chooseCloseTabDecision } from '../../../src/renderer/features/reader/state/reader-close-tab'
 import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import { switchViewWithFlush } from '../../../src/renderer/app/view-flush'
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
@@ -62,10 +66,8 @@ beforeEach(() => {
   mocks.notesGet.mockReset()
   mocks.notesSave.mockReset()
   mocks.annoUpdate.mockReset()
-  for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
-    useNotesStore.getState().discardPendingEdit(k)
-  }
-  useNotesStore.setState({ noteByPaper: {} })
+  // notes 编辑态清扫（弃改 API 退役——测试隔离锚）
+  useNotesStore.getState().resetEditStateForTests()
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 })
@@ -134,15 +136,20 @@ describe('F-VISFB-15 回炉 R1/R3/R5/R7 —— 关 tab 复扫收敛/同步 throw
     // 让轮 0 快照已取且 X 写挂起（句柄在途）
     await drain(20)
     expect(mocks.annoUpdate).toHaveBeenCalledTimes(1)
+    // [R2] 输入已置 A.unfinalized——flush 成功后走 confirm 相（二选）
     // await 窗内真实切换径：面1 挂点在切换刻 fire-first 消费离场篇句柄（X
     // 幂等零二写——hook savingRef 串行）+Y 挂载+输入窗内值
     switchTabFlushFirst('r1-y')
     mountPopups(annoY)
     typeWindowValue('Y窗内值')
     resolveX({ ok: true, data: { ...annoX, comment: 'X窗内值' } })
+    await drain(40)
+    // U=1 → confirm 相就位；点「是」放行（#27）
+    expect(useReaderStore.getState().tabs['r1-a']?.closing?.phase).toBe('confirm')
+    chooseCloseTabDecision('r1-a', true)
     await expect(closing).resolves.toBe(true)
     // close 恰消费 X（1 写=X 窗内值落库）；Y 未被 close 越权消费——新活动篇
-    // 编辑器存续（窗内值由其自身 800ms timer 承接=非丢值面）
+    // 编辑器存续（窗内值由其自身 1.5s timer 承接=非丢值面）
     expect(mocks.annoUpdate).toHaveBeenCalledTimes(1)
     expect(mocks.annoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ annotation: expect.objectContaining({ comment: 'X窗内值' }) })
@@ -187,8 +194,7 @@ describe('F-VISFB-15 回炉 R1/R3/R5/R7 —— 关 tab 复扫收敛/同步 throw
     confirmSpy.mockRestore()
   })
 
-  it('[回炉2 N-1] 恒 dirty 句柄：3 轮达顶→markTabDirty→confirmCloseDirty 承接（上限语义锁）', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('[回炉2 N-1] 恒 dirty 句柄：3 轮达顶→markTabDirty→error 相承接（上限语义锁）', async () => {
     useReaderStore.setState({
       tabs: { 'r2-cap': makeTab('r2-cap') },
       order: ['r2-cap'],
@@ -197,15 +203,18 @@ describe('F-VISFB-15 回炉 R1/R3/R5/R7 —— 关 tab 复扫收敛/同步 throw
     const flush = vi.fn(async () => 'dirty' as const)
     registerDraftFlush('anno-r2cap', flush)
     try {
-      await expect(requestCloseTab('r2-cap')).resolves.toBe(false)
-      // 轮上限=3 恰锁（每轮全量 flush——dirty 终态续轮）
+      const closing = requestCloseTab('r2-cap')
+      await drain(30)
+      // 轮上限=3 恰锁（每轮全量 flush——dirty 终态续轮）；达顶→markTabDirty
+      // →error 相（#29——重试/留下，无放弃径）
       expect(flush).toHaveBeenCalledTimes(3)
       expect(useReaderStore.getState().tabs['r2-cap']?.dirty).toBe(true)
-      expect(confirmSpy).toHaveBeenCalledTimes(1)
+      expect(useReaderStore.getState().tabs['r2-cap']?.closing?.phase).toBe('error')
+      chooseCloseTabDecision('r2-cap', false)
+      await expect(closing).resolves.toBe(false)
     } finally {
       unregisterDraftFlush('anno-r2cap')
     }
-    confirmSpy.mockRestore()
   })
 
   it('[轮2补遗 W-1] 末轮 await 窗切换+A saved+Y fresh 交叉：post-loop 不误归因——A 零误脏零 confirm 放行 true', async () => {
@@ -288,8 +297,7 @@ describe('F-VISFB-15 回炉 R1/R3/R5/R7 —— 关 tab 复扫收敛/同步 throw
     confirmSpy.mockRestore()
   })
 
-  it('[R3] 同步 throw 句柄：归 failed 映射→仍脏 confirm 显式放弃（零抛零静默放行）', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('[R3] 同步 throw 句柄：归 failed 映射→error 相承接（零抛零静默放行）', async () => {
     useReaderStore.setState({
       tabs: { 'r1-t': makeTab('r1-t') },
       order: ['r1-t'],
@@ -299,13 +307,15 @@ describe('F-VISFB-15 回炉 R1/R3/R5/R7 —— 关 tab 复扫收敛/同步 throw
       throw new Error('sync boom')
     })
     try {
-      await expect(requestCloseTab('r1-t')).resolves.toBe(false)
-      expect(confirmSpy).toHaveBeenCalledTimes(1)
+      const closing = requestCloseTab('r1-t')
+      await drain(10)
+      expect(useReaderStore.getState().tabs['r1-t']?.closing?.phase).toBe('error')
       expect(useReaderStore.getState().tabs['r1-t']?.dirty).toBe(true)
+      chooseCloseTabDecision('r1-t', false)
+      await expect(closing).resolves.toBe(false)
     } finally {
       unregisterDraftFlush('anno-r1t')
     }
-    confirmSpy.mockRestore()
   })
 
   it('[R5 面1] 真实编辑器 un-attempted 窗内值→switchTabFlushFirst→值经句柄链立存（不阻切换）', async () => {

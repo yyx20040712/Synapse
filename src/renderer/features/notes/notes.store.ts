@@ -2,66 +2,48 @@
  * [SR-NOTE-02] notes.store —— 笔记编辑状态（工单：done / weak）
  *
  * ── 行为层 ──
- * - { noteByPaper: Record<string, { contentMd: string; saving: boolean;
- *     savedAt: string | null; pending: boolean }> }（pending=未落库编辑镜像，见
- *     NoteDraft 字段注释——面板"未保存/已保存"诚实显示的依据；
- *     [A2 F-CONTRACTA-01 2026-10-04] title 停用——草稿/编辑域坍缩为
- *     contentMd 单字段，字段级合并语义随之单字段化）
- * - load(paperId)：unwrap(api.notes.get) 重建草稿（无笔记 → 空草稿，savedAt=null）；
- *   带请求序号 stale-guard（对齐 library.store）——晚到的旧响应（含旧失败）直接
- *   丢弃。落地不变量：本地存在未保存编辑（模块级 pendingEdit，save 成功清、
- *   失败不清）→ 一律字段级合并——用户碰过的字段保草稿值、未碰过的取服务器、
- *   savedAt 取服务器（无半成品、无整版覆盖，时间先后不参与判定），触碰记录
- *   保留到补存真正落库（save 成功才清），打首载标记并补存挂起编辑；无未保存
- *   编辑 → 整版落地并打首载标记（失败不打——面板禁用无输入，重试成功走合并+补存）
- * - edit(paperId, patch)（同步写草稿；并记模块级编辑时间戳、编辑序号、已触碰
- *   字段与未保存标记）；saveSoon(paperId)（防抖 AUTOSAVE_DEBOUNCE_MS=600s
- *   〔F-VISFB-11：单源 @shared/constants，本地副本已退役〕，重排重置计时，只保存
- *   最新内容；首载落地前挂起——从未成功载入且草稿含用户编辑时不排程，重开
- *   面板不受影响：既有草稿是完整基线非半成品，正常防抖；save 成功仅在派发
- *   后无新编辑（编辑序号守卫）时清未保存标记与触碰记录）
- * - [F-UIRES-03 B3] saveNow(paperId)：点击立即落盘——清防抖 T+同步派发（与
- *   防抖到期共用 dispatchSave；首载门控同 saveSoon——服务器基线未知不抢存，
- *   由 load 合并+补存承接）；[F-VISFB-11] 返回 Promise<void>（可等待面）；
- *   flushAll()：全量收口面——遍历 pendingEdit 快照逐篇串行 flush（退出握手
- *   14 票的地基，不用 Promise.all）；[F-VISFB-14] flushNow(paperId)/
- *   flushAllNow()：立存收口变体（关 tab/退出握手消费——INV-141①普通 dirty
- *   转可等待立存：flush 后仍 pending 即 saveNow，防抖 timer 通道不承接
- *   收口面〔收口后 renderer 可能即亡〕）；flush(paperId)：卸载面收口（切文献/面板卸载时
- *   调）——pending∧saving 在途：等在途完成后以 pending 合并态**立即**落盘
- *   （消费时点一的新防抖由此提前兑现）；pending∧error：立即重试落盘一次；
- *   普遍 dirty（防抖在排）：no-op——既有 timer 通道承接（不抢跑）。应用退出
- *   无 renderer 侧预卸载事件（destroy 绕过 beforeunload）——退出通道=既有
- *   quit-dirty 拦截（INV-22：pending 镜像含 error 态恒拦，拦截窗内 timer/在途
- *   照常落盘）
- * - [F-UIRES-03 B3] 状态机补格（四态钮后端，INV-106）：派发即清 saveFailed
- *   （error+点击→saving）；成功且派发后无新编辑→clean；成功但又有新编辑→
- *   pending 合并态转 dirty 且**启新防抖 T**（消费时点一——保存期输入由新周期
- *   收尾，不再依赖组件恰好在 edit 时重排）；失败→saveFailed 置位（error）且
- *   pending/savedAt 不动（INV-04）；edit 清 saveFailed（error+输入→dirty）
- * - discardPendingEdit(paperId)（单篇弃改收口——关脏 tab 确认丢弃后调）：清
- *   防抖句柄+全部模块级编辑元数据（pendingEdit/touchedFields/lastEditedAt/
- *   editSeq）+noteByPaper 条目（幂等——不存在亦无害），discardGen 自增使在途
- *   save 回调按代际守卫全 no-op；discardAllPendingEdits()（全量弃改收口——
- *   切课题确认后调）：遍历 pendingEdit 快照逐篇同收口。代际守卫一句话：弃改
- *   后到达的保存回调不得复活任何本地状态（条目/pending 镜像/未保存标记——
- *   in-flight 残余仅剩 DB 落地毫秒窗，票面已接受；跨格序列语义见锁定测试
- *   「discard 族（A3 悬置写修票）」：①discard→重开=整版落地②discard→回调
- *   到达=零状态变更③discardAll=零 timer 零草稿④App 切视图不 discard——
- *   autosave-first 草稿存活）
- * - 错误契约（全 store 统一）：load 属动作型——失败上抛（unwrap 的 ApiClientError），
- *   由 NotesPanel catch 后 toast；saveSoon 失败时 saving 必须复位且 savedAt 不推进
- *   （= 仍有未保存内容，不静默丢稿），下一次 edit 再次触发 saveSoon 即自然重试
+ * - { noteByPaper: Record<string, { contentMd; saving; savedAt; pending; saveFailed }> }
+ *   （pending=未落库编辑镜像——面板"未保存/已保存"诚实显示的依据；saveFailed=
+ *   最近一次保存失败——四态钮 error 态单源；[A2 F-CONTRACTA-01] title 停用，
+ *   编辑域=contentMd 单字段）
+ * - load：unwrap(api.notes.get) 重建草稿；请求序号 stale-guard 丢弃晚到旧响应
+ *   （含旧失败）。落地不变量：本地有未保存编辑（pendingEdit）→ 一律字段级合并
+ *   （碰过的字段保草稿、未碰的取服务器、savedAt 取服务器——时间先后不参与），
+ *   打首载标记并补存挂起编辑；无未保存编辑 → 整版落地+首载标记（失败不打）
+ * - edit：同步写草稿+模块级编辑元数据打点（时刻/编辑序号/触碰字段/未保存标记）
+ * - saveSoon：防抖 IDLE_FLUSH_MS（[B4-A R1] @shared/constants 单源——批注文本
+ *   与总评共用 1.5s）只存最新内容；首载落地前挂起（服务器基线未知不抢存）
+ * - saveSoon/saveNow/persistNow 保存成功仅在派发后无新编辑（编辑序号守卫）时清
+ *   未保存标记与触碰记录；失败不推进 savedAt、pending 保留（INV-04）
+ * - [B4-A R1] persistNow：立存并回报终态（reader 文本控制器 persist 端口——
+ *   总评单元 1.5s 空闲/blur/flush 的落库通道）；true=当前草稿已在库
+ * - [B4-A 回炉 R5] 文本 undo/redo 的两笔写经裸写体（控制器把 history 命令做成
+ *   复合链任务，任务体内直调——不自行入链）：persistNowRaw=命令预 flush（写当前
+ *   草稿，结算同普通写）；historyWriteNow=反向写（写指定值，**不写进草稿**——
+ *   history 在途窗内的新输入显示值保留，§2.5 #16b；结算按内容：草稿≠已写值→草稿
+ *   保未保存标记，由控制器落库调度承接）。反向值进草稿只经 adoptPersisted
+ *   （控制器采纳已落库反向值时的镜像——不打新编辑点）；反向写失败=草稿与未保存
+ *   标记不动（反向值不本地应用，失败两栈不动），有待写草稿才置 saveFailed
+ * - saveNow：点击立即落盘（closing gate 用户入口）；flushAll/flushNow/
+ *   flushAllNow：收口面（实现驻 notes.persistence）；状态机补格（四态钮后端，
+ *   INV-106）：派发即清 saveFailed、成功且无新编辑→clean、成功但有新编辑→
+ *   pending 合并态+启新防抖 T、失败→saveFailed
+ * - 弃改收口（discardPendingEdit/discardAllPendingEdits）已退役：课题切换改
+ *   「先全量 flush 成功再切换」、关闭失败不再有确认放弃径（B4 设计 §2.5 #38/
+ *   §10.2/§13.2），弃改代际守卫随之删除；在途回调只余编辑序号守卫（editSeq）
+ * - resetEditStateForTests：测试隔离锚（生产代码不调用）
+ * - 错误契约：load 属动作型（失败上抛由组件 toast）；保存失败 saving 复位且
+ *   savedAt 不推进，下次 edit→saveSoon 自然重试
  *
  * ── 接口层 ──
- * - export const useNotesStore: UseBoundStore<...>
+ * - export const useNotesStore: UseBoundStore<NotesStore>
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
- * - 防抖句柄按 paperId 分键（模块闭包，不进 state）；编辑元数据（时间戳/已触碰
- *   字段/首载标记/未保存编辑标记）为模块级 Map/Set——不进 state 亦不入 NoteDraft
- *   导出契约；条目随会话内触碰过的文献线性增长（单用户本地应用为 KB 量级，接受
- *   不驱逐）；无笔记/有笔记共用同一草稿槽
+ * - 防抖句柄按 paperId 分键（闭包，不进 state）；编辑元数据为模块级 Map/Set
+ *   （不进 state 亦不入 NoteDraft 契约——五模块分布式状态机=ADR-0008 裁决
+ *   不坍缩）；条目随会话内触碰过的文献线性增长（KB 量级，接受不驱逐）；
+ *   写派发与收口面驻 notes.persistence.ts（写体经 per-tab lane 串行）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/notes.store.test.ts（已锁定，api 桩 + fake timers）
@@ -69,81 +51,67 @@
 import { create } from 'zustand'
 import { api, unwrap } from '../../api/client'
 import type { Note } from '@shared/models/note'
-import { AUTOSAVE_DEBOUNCE_MS } from '@shared/constants'
+import { IDLE_FLUSH_MS } from '@shared/constants'
 import { quitWriteBlocked } from '../../app/quit-closing-gate'
+import {
+  createNotesCloseout,
+  createNotesPersistence,
+  type NotesCloseout,
+  type NotesDispatchCtx,
+  type NotesDispatchResult
+} from './notes.persistence'
 
 export interface NoteDraft {
   contentMd: string
   saving: boolean
   savedAt: string | null
-  /** 草稿含未落库编辑（模块级 pendingEdit 的响应式镜像，面板"未保存"显示依据）。
-   *  四个同步点与 pendingEdit 一一对应：edit 置 true / save 成功且派发后无新编辑
-   *  清 false / 合并落地置 true / 整版落地置 false（save 失败与派发后有新编辑不动） */
+  /** 草稿含未落库编辑（模块级 pendingEdit 的响应式镜像，面板"未保存"显示依据）：
+   *  edit 置 true / save 成功且无新编辑清 false / 合并落地置 true / 整版落地置 false */
   pending: boolean
-  /** [F-UIRES-03 B3] 最近一次保存失败（error 态判定入 store——四态钮/重试路径
-   *  单源；取代组件层周期终点判定）。同步点：save 失败置 true / 派发即清
-   *  （error+点击→saving）/ edit 清（error+输入→dirty）/ 整版与合并落地清 */
+  /** [F-UIRES-03 B3] 最近一次保存失败（error 态判定入 store——四态钮/重试单源）：
+   *  save 失败置 true / 派发即清 / edit 清 / 整版与合并落地清 */
   saveFailed: boolean
 }
 
-export interface NotesStore {
+export interface NotesStore extends NotesCloseout {
   noteByPaper: Record<string, NoteDraft>
   load(paperId: string): Promise<void>
   edit(paperId: string, patch: { contentMd?: string }): void
   saveSoon(paperId: string): void
-  /** [F-UIRES-03 B3] 点击立即落盘：清防抖 T+同步派发（首载门控同 saveSoon）。
-   *  [F-VISFB-11] 返回 Promise<void>——直通 dispatchSave 在途（退出握手/收口
-   *  面可等待落库完成）；门控命中分支=已决议空 promise，语义零改 */
+  /** [F-UIRES-03 B3] 点击立即落盘；返回 Promise<void>（可等待面——门控命中=已决议空 promise） */
   saveNow(paperId: string): Promise<void>
-  /** [F-UIRES-03 B3] 卸载面收口（切文献/面板卸载）：在途完成后 pending 立即
-   *  落盘 / error 立即重试一次 / 普遍 dirty no-op（timer 通道承接） */
-  flush(paperId: string): Promise<void>
-  /** [F-VISFB-11] 全量收口面（退出握手等地基）：遍历 pendingEdit 快照逐篇
-   *  串行 flush（与 discardAllPendingEdits 同型快照遍历——不用 Promise.all） */
-  flushAll(): Promise<void>
-  /** [F-VISFB-14] 单篇立存收口（关 tab/退出握手消费——INV-141①普通 dirty
-   *  转可等待立存）：flush 语义+「普遍 dirty 不再留给 timer 通道」——收口
-   *  后仍 pending 即 saveNow 立即落库；gated（首载门控）保持 no-op 残留
-   *  pending（INV-141②失败格由收口方呈现）；在途让位的新在途等待到 settle */
-  flushNow(paperId: string): Promise<void>
-  /** [F-VISFB-14] 全量立存收口（退出握手消费）：遍历 pendingEdit 快照逐篇
-   *  串行 flushNow（退出后 timer 永不触发——timer 通道不承接退出面） */
-  flushAllNow(): Promise<void>
-  /** 单篇弃改收口（关脏 tab 确认丢弃后调）——幂等，条目/元数据不存在亦无害 */
-  discardPendingEdit(paperId: string): void
-  /** 全量弃改收口（切课题确认后调）——遍历 pendingEdit 快照逐篇同收口 */
-  discardAllPendingEdits(): void
+  /** [B4-A R1] 立存并回报终态（reader 文本控制器 persist 端口）：true=当前草稿已在库 */
+  persistNow(paperId: string): Promise<boolean>
+  /** [B4-A 回炉 R5] 立存裸写（控制器 history 复合任务体内直调——不自行入链）：
+   *  写当前草稿；true=当前草稿已在库；首载门控命中=false */
+  persistNowRaw(paperId: string): Promise<boolean>
+  /** [B4-A 回炉 R5] 文本 undo/redo 反向写裸体（控制器链任务体内直调——不自行入
+   *  链）：把 value 写入库，true=该值已在库；反向值不写进草稿（窗内新输入保留） */
+  historyWriteNow(paperId: string, value: string): Promise<boolean>
+  /** [B4-A 回炉 R5] 已落库值采纳（控制器采纳 undo/redo 成功的反向值）：草稿置为
+   *  该值并清未保存标记；不按新编辑打点 */
+  adoptPersisted(paperId: string, contentMd: string): void
+  /** 测试隔离锚（生产代码不调用——tab-write-lane resetTabLanes 同型）：清全部篇的
+   *  防抖计时与编辑元数据（pendingEdit/touchedFields/lastEditedAt/editSeq）并清空
+   *  条目。loadedOnce 不清（首载门控打卡跨用例保持——与既有清理口径一致） */
+  resetEditStateForTests(): void
 }
 
 const EMPTY_DRAFT: NoteDraft = { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false }
 
-/** 每篇文献最近一次 edit 的时刻（Date.now()）——saveSoon 首载门控的判定依据（仅取存在性） */
+// 模块级编辑元数据（ADR-0008 五模块分布式状态机，不坍缩）：
+// lastEditedAt=最近 edit 时刻（saveSoon 首载门控仅取存在性）；
+// touchedFields=用户已触碰字段（edit 打点/save 成功与整版落地清/合并保留）；
+// loadedOnce=已落地过服务器基线的文献（load 成功打点——首载完成前挂起自动保存）；
+// pendingEdit=本地存在未保存编辑的文献（edit 打点/save 成功且无新编辑清、失败不清
+//   ——load 落地时「有则字段级合并、无则整版」的判定）；
+// editSeq=编辑序号（edit 自增——save 回调比对派发快照：派发后又有新编辑则不清
+//   未保存标记，新编辑由重排的防抖收尾）
 const lastEditedAt = new Map<string, number>()
-
-/** 每篇文献"用户已触碰字段"（edit 打点；save 成功清/整版落地清，合并路径保留）——字段级合并的依据 */
 const touchedFields = new Map<string, { contentMd?: boolean }>()
-
-/** 已成功落地过服务器基线的文献（load 成功路径打点，失败不打）——首载完成前挂起自动保存的门控 */
 const loadedOnce = new Set<string>()
-
-/** 本地存在未保存编辑的文献（edit 打点；save 成功清、失败不清）——load 落地时合并/整版的判定：
- *  不变量——存在未保存编辑一律字段级合并（含"失败→重试成功""防抖窗口内切走切回"等
- *  编辑早于本次 load 的场景），无未保存编辑才整版落地 */
 const pendingEdit = new Set<string>()
-
-/** 每篇文献的编辑序号（edit 自增）——save 成功回调比对"派发快照"：派发后又有
- *  新编辑（序号前进）则不清未保存标记，新编辑由重排的防抖保存收尾 */
 const editSeq = new Map<string, number>()
-
-/** 每篇文献的弃改代际（discard 自增）——save 回调比对"派发快照"：弃改后到达的
- *  保存回调不得复活任何本地状态（代际已变即全 no-op；gen 在每次派发时重取，
- *  discard 后的新编辑链不受误伤）。in-flight 残余=仅 DB 落地毫秒窗（票面已接受） */
-const discardGen = new Map<string, number>()
-
-/** [F-UIRES-03 B3] 每篇文献在途保存的 promise（flush 等待在途完成的依据）。
- *  同篇并发在途（防抖到期撞上未完在途——既有行为）时记最新一笔；早到笔
- *  settle 时若 map 已指向新笔则不删（flush 语义按最新在途收敛） */
-const inflight = new Map<string, Promise<void>>()
 
 export const useNotesStore = create<NotesStore>()((set, get) => {
   // 每篇文献一个防抖句柄；换文献互不干扰
@@ -171,94 +139,81 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     })
   }
 
-  // [F-UIRES-03 B3] 保存派发单口（防抖到期/saveNow 点击/flush 重试三路共用）：
-  // 载荷=调用时草稿闭包快照（saving 中新编辑不覆盖在途载荷——派发后 edit 只写
-  // 草稿与编辑序号）；派发即清 saveFailed（error+点击→saving 格）。成功且派发
-  // 后无新编辑→clean；成功但又有新编辑→pending 合并态转 dirty 且启新防抖 T
-  // （消费时点一——不依赖组件恰在 edit 时重排，卸载后同样有收尾通道）；失败→
-  // saveFailed 置位（error）且 pending/savedAt 不动（INV-04）。返回在途 promise
-  // （flush 等待用；永不 reject——catch 已内吞）
-  const dispatchSave = (paperId: string): Promise<void> => {
-    const draft = get().noteByPaper[paperId]
-    if (draft === undefined) {
-      return Promise.resolve()
-    }
-    // 派发快照：本次保存对应的编辑序号（派发后若又有 edit，序号前进）与
-    // 弃改代际（弃改后到达的回调按代际守卫全 no-op）
-    const seqAtDispatch = editSeq.get(paperId) ?? 0
-    const genAtDispatch = discardGen.get(paperId) ?? 0
-    setDraft(paperId, { saving: true, saveFailed: false })
-    const flight: Promise<void> = unwrap(
-      api.notes.save({ paperId, contentMd: draft.contentMd })
-    )
-      .then((saved: Note) => {
-        // 代际守卫（首行）：discard 已发生——全 no-op，不 setDraft、不动
-        // pendingEdit/touchedFields（setDraft 会经 draftOf 重建已删条目+置
-        // pending 镜像，即"回调复活"；既有 editSeq 守卫在其后保持原位）
-        if ((discardGen.get(paperId) ?? 0) !== genAtDispatch) return
-        // 编辑已落库：清"未保存编辑"标记与触碰记录（草稿自此等于服务器基线）
-        // ——仅当派发后无新编辑（编辑序号未前进）；有新编辑则不清（新编辑仍
-        // 受合并保护，由重排的防抖保存收尾）。失败路径不清——仍是未保存，
-        // load 继续合并保护
-        if ((editSeq.get(paperId) ?? 0) === seqAtDispatch) {
-          pendingEdit.delete(paperId)
-          touchedFields.delete(paperId)
-          // 与 pendingEdit 同点同条件清镜像：草稿自此等于服务器基线
-          setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: false })
-        } else {
-          // 派发后又有新编辑：pendingEdit 保留，镜像显式置 true（与同步点对偶，
-          // 不靠"上一帧必为 true"的隐式假设）
-          setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
-          // [B3 消费时点一] pending 合并态转 dirty：启新防抖 T（复刻 load 补存
-          // 语义——新输入无论组件在否都由新周期收尾；flush 在途等待后可提前兑现）
-          get().saveSoon(paperId)
-        }
-      })
-      .catch(() => {
-        // 代际守卫（首行）：discard 已发生——全 no-op（条目已删，setDraft 会
-        // 重建它）；失败复位语义只对"未弃改"的保存链生效
-        if ((discardGen.get(paperId) ?? 0) !== genAtDispatch) return
-        // 失败不推进 savedAt（未保存态延续）；saving 复位后下次 edit→saveSoon 重试；
-        // pendingEdit 与镜像 pending 均保留——内容未落库，面板继续显示未保存。
-        // [B3] saveFailed 置位（error 态入 store——四态钮红描边/重试的单源）
-        setDraft(paperId, { saving: false, saveFailed: true })
-      })
-      .finally(() => {
-        // 同篇并发在途时只清自己（map 已指向新笔则保留——flush 按最新在途收敛）
-        if (inflight.get(paperId) === flight) {
-          inflight.delete(paperId)
-        }
-      })
-    inflight.set(paperId, flight)
-    return flight
-  }
-
-  // [F-VISFB-64·回炉 B1] 立存核心（无闸）：saveNow 用户命令入口与 flushNow
-  // 收口链共用（首载门控+清防抖+同步派发——[B3 格3/格9]/[F-VISFB-11] 语义原位）；
-  // 闸只挂用户入口，收口链豁免不依赖豁免域
-  const dispatchSaveNow = (paperId: string): Promise<void> => {
-    if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve()
-    clearTimer(paperId)
-    return dispatchSave(paperId)
-  }
-
-  // 弃改收口私有实现（单篇，discardPendingEdit 与 discardAllPendingEdits 共用）：
-  // 清防抖句柄+全部模块级编辑元数据+条目；discardGen 自增使在途 save 回调按
-  // 代际守卫全 no-op（防回调重建条目/pending 镜像）。全操作幂等——条目/元数据
-  // 不存在亦无害。跨格序列：①此后 load 走整版落地（pendingEdit 已清，不合并
-  // 回填）②在途 save 回调到达=零状态变更③discardAll 逐篇调用=零 timer 零草稿
-  // ④App 切视图（无确认）不经此处——autosave-first 草稿存活（既有语义保持）
-  const discardOne = (paperId: string): void => {
-    clearTimer(paperId)
+  // 编辑已落库：清「未保存编辑」标记与触碰记录（草稿自此等于服务器基线）
+  const markSaved = (paperId: string, savedAt: string): void => {
     pendingEdit.delete(paperId)
     touchedFields.delete(paperId)
-    lastEditedAt.delete(paperId)
-    editSeq.delete(paperId)
-    discardGen.set(paperId, (discardGen.get(paperId) ?? 0) + 1)
-    const rest = { ...get().noteByPaper }
-    delete rest[paperId]
-    set({ noteByPaper: rest })
+    setDraft(paperId, { saving: false, savedAt, pending: false })
   }
+
+  // [B4-A R1 §11.1] 保存派发单口驻 notes.persistence.ts——本闭包即 ports 装配点
+  const persistence = createNotesPersistence({
+    readPayload: (paperId) => {
+      const draft = get().noteByPaper[paperId]
+      return draft === undefined ? undefined : { contentMd: draft.contentMd }
+    },
+    captureCtx: (paperId) => ({
+      // 派发快照：本次保存对应的编辑序号（派发后若又有 edit，序号前进）
+      seqAtDispatch: editSeq.get(paperId) ?? 0
+    }),
+    onDispatch: (paperId) => {
+      setDraft(paperId, { saving: true, saveFailed: false })
+    },
+    onSettled: (paperId, saved, ctx: NotesDispatchCtx) => {
+      // 编辑已落库：清"未保存编辑"标记与触碰记录——仅当派发后无新编辑（编辑
+      // 序号未前进）；有新编辑则不清（仍受合并保护，由重排的防抖收尾）
+      if ((editSeq.get(paperId) ?? 0) === ctx.seqAtDispatch) {
+        // 与 pendingEdit 同点同条件清镜像：草稿自此等于服务器基线
+        markSaved(paperId, saved.updatedAt)
+      } else {
+        // 派发后又有新编辑：pendingEdit 保留，镜像显式置 true（与同步点对偶，
+        // 不靠"上一帧必为 true"的隐式假设）
+        setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
+        // [B3 消费时点一] pending 合并态转 dirty：启新防抖 T（复刻 load 补存
+        // 语义——新输入无论组件在否都由新周期收尾；flush 在途等待后可提前兑现）
+        get().saveSoon(paperId)
+      }
+    },
+    onFailed: (paperId, _ctx) => {
+      // 失败不推进 savedAt、pending 保留（未保存态延续）；[B3] saveFailed 置位
+      setDraft(paperId, { saving: false, saveFailed: true })
+    },
+    // [B4-A 回炉 R5] 反向写成功（库值=content）：草稿仍=content→已落库；草稿≠content
+    // （history 在途窗内的新输入，或控制器尚未采纳的旧值）→草稿未落库，置未保存标记
+    // （不启防抖——由控制器的落库调度承接；采纳经 adoptPersisted 落定）
+    onSettledContent: (paperId, saved, content) => {
+      if (get().noteByPaper[paperId]?.contentMd === content) {
+        markSaved(paperId, saved.updatedAt)
+        return
+      }
+      pendingEdit.add(paperId)
+      const touched = touchedFields.get(paperId) ?? {}
+      touched.contentMd = true
+      touchedFields.set(paperId, touched)
+      setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
+    }
+  })
+
+  // [F-VISFB-64·回炉 B1] 立存核心（无闸）：saveNow/persistNow 与 flushNow 收口链
+  // 共用（首载门控+清防抖+同步派发）；闸只挂用户入口。门控命中=null
+  const dispatchSaveNow = (paperId: string): Promise<NotesDispatchResult | null> => {
+    if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve(null)
+    clearTimer(paperId)
+    return persistence.dispatch(paperId)
+  }
+
+  // 收口面（flush/flushAll/flushNow/flushAllNow）实现驻 notes.persistence——
+  // 本闭包装配依赖（在途句柄/草稿失败标记/pending 快照/立存核心）
+  const closeout = createNotesCloseout({
+    inflightOf: (paperId) => persistence.inflightOf(paperId),
+    inflightIds: () => persistence.inflightIds(),
+    pendingIds: () => [...pendingEdit],
+    hasPending: (paperId) => pendingEdit.has(paperId),
+    readFailed: (paperId) => get().noteByPaper[paperId]?.saveFailed,
+    clearTimer,
+    dispatch: (paperId) => persistence.dispatch(paperId),
+    dispatchNow: dispatchSaveNow
+  })
 
   return {
     noteByPaper: {},
@@ -268,13 +223,11 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       const seq = ++loadSeq
       try {
         const note = await unwrap(api.notes.get({ paperId }))
-        // 旧响应晚到（load 已被再次发起）：丢弃，不覆盖新结果/编辑中的草稿
+        // 旧响应晚到：丢弃，不覆盖新结果/编辑中的草稿
         if (seq !== loadSeq) return
         const serverContent = note?.contentMd ?? ''
         const serverSavedAt = note?.updatedAt ?? null
-        // 不变量：本地存在未保存编辑（pendingEdit，含保存失败）→ 一律字段级合并：
-        // 碰过的字段保用户输入，未碰过的取服务器，savedAt 取服务器（无半成品、
-        // 无整版覆盖）——时间先后不参与判定
+        // 不变量：本地有未保存编辑（含保存失败）→ 字段级合并（头注）
         if (pendingEdit.has(paperId)) {
           const draft = get().noteByPaper[paperId] ?? EMPTY_DRAFT
           const touched = touchedFields.get(paperId)
@@ -288,16 +241,13 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
             // [B3] 载入重建基线：旧失败态不跨 load 延续（补存派发时本也会清）
             saveFailed: false
           })
-          // 触碰记录不清：合并后的草稿仍是未落库的用户内容（补存失败或挂起时，
-          // 下次合并须继续按 touched 保用户字段）；作废点在 save 成功回调（与
-          // 未保存标记同点同条件）
+          // 触碰记录不清（合并产物仍未落库——作废点在 save 成功回调）
           loadedOnce.add(paperId)
-          // 把挂起的用户编辑落库（首载门控吞掉的防抖在此补上；须在 loadedOnce
-          // 打点之后调，否则被 saveSoon 门控再次吞掉）
+          // 补存挂起的用户编辑（须在 loadedOnce 打点之后——否则被门控吞掉）
           get().saveSoon(paperId)
           return
         }
-        // 整版落地：清"已触碰字段"（无未保存编辑，触碰值已落库/被覆盖，回到同步态语义）
+        // 整版落地：清"已触碰字段"（回到同步态语义）
         touchedFields.delete(paperId)
         setDraft(paperId, {
           contentMd: serverContent,
@@ -308,19 +258,15 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
         })
         loadedOnce.add(paperId)
       } catch (e) {
-        // 旧请求的失败同样按迟到丢弃（面板已发起更新的 load），仅最新请求失败上抛
-        if (seq !== loadSeq) return
+        if (seq !== loadSeq) return // 旧请求的失败按迟到丢弃
         throw e
       }
     },
 
     edit(paperId, patch) {
-      // [F-VISFB-64] closing gate：退出握手冻结期用户输入拒绝（α——④查态后
-      // 写面新鲜性；quit 收口 ① 的补存经 runQuitInternal 豁免域放行不自锁）
+      // [F-VISFB-64] closing gate：冻结期用户输入拒绝（quit 收口补存经豁免域放行）
       if (quitWriteBlocked()) return
-      // 编辑元数据打点（模块级，不入 NoteDraft 契约）：lastEditedAt 供 saveSoon
-      // 首载门控，touched 供字段级合并，pendingEdit 标记"本地存在未保存编辑"，
-      // editSeq 供保存成功回调判定"派发后是否又有新编辑"
+      // 编辑元数据打点（模块级，不入 NoteDraft 契约——各 Map 头注）
       lastEditedAt.set(paperId, Date.now())
       pendingEdit.add(paperId)
       editSeq.set(paperId, (editSeq.get(paperId) ?? 0) + 1)
@@ -333,102 +279,78 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     },
 
     saveSoon(paperId) {
-      // 首载完成前挂起保存：从未成功载入且草稿已含用户编辑（服务器基线未知，
-      // 可能半成品——如正文有输入而服务器侧尚无对应行）时不排程自动保存。用户输入由
-      // load 的字段级合并保护、落地后补存；load 失败不打卡（面板禁用无输入，
-      // 重试成功走合并+补存）。重开面板不受影响：loadedOnce 已打卡，正常防抖
+      // 首载完成前挂起保存（服务器基线未知——用户输入由 load 合并保护、落地后
+      // 补存；load 失败不打卡）；重开面板不受影响：loadedOnce 已打卡
       if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return
       clearTimer(paperId)
       timers[paperId] = setTimeout(() => {
         delete timers[paperId]
-        void dispatchSave(paperId)
-      }, AUTOSAVE_DEBOUNCE_MS)
+        void persistence.dispatch(paperId)
+      }, IDLE_FLUSH_MS)
     },
 
     saveNow(paperId) {
-      // [F-VISFB-64·回炉 B1] closing gate：saveNow=用户命令入口（保存按钮），
-      // 冻结期拒绝；收口链（flushAllNow→flushNow）走 dispatchSaveNow 核心
-      // （豁免域=同步域不跨 await——异步链深处禁依赖豁免，闸点收窄到命令入口）
+      // [F-VISFB-64·回炉 B1] closing gate：saveNow=用户命令入口；收口链走
+      // dispatchSaveNow 核心（闸点收窄到命令入口——异步链深处禁依赖豁免域）
       if (quitWriteBlocked()) return Promise.resolve()
-      return dispatchSaveNow(paperId)
+      return dispatchSaveNow(paperId).then(() => undefined)
     },
 
-    async flush(paperId) {
-      // [B3 卸载面] 切文献/面板卸载时收口（fire-and-forget 调用方；本方法可 await
-      // 供测试钉终态）。三路：①pending∧saving 在途——等在途完成（成功侧已启新
-      // 防抖/失败侧落 error），完成后仍有未落库编辑即立即落盘（不等新防抖）；
-      // ②pending∧error——立即重试落盘一次；③普遍 dirty（防抖在排）——no-op，
-      // 既有 timer 通道承接（模块级 timer 不随组件卸载清除）。等待期间若已有
-      // 新在途接管（并发防抖撞上）则让位——其载荷即最新合并态
-      const hadFlight = inflight.get(paperId)
-      if (hadFlight !== undefined) {
-        await hadFlight
-        if (inflight.get(paperId) !== undefined) return
-      }
-      const draft = get().noteByPaper[paperId]
-      if (draft === undefined || !pendingEdit.has(paperId)) return
-      if (hadFlight === undefined && !draft.saveFailed) return
-      clearTimer(paperId)
-      await dispatchSave(paperId)
-    },
-
-    async flushAll() {
-      // [F-VISFB-11] 全量收口面：遍历 pendingEdit 快照逐篇串行 flush（快照防
-      // 遍历中变异——flush 成功路径会 delete pendingEdit 键，与
-      // discardAllPendingEdits 同型；串行=前篇落库完成后才处理后篇，不用
-      // Promise.all 并发派发——14 票退出握手的逐篇可等待地基）
-      for (const paperId of [...pendingEdit]) {
-        await get().flush(paperId)
-      }
-    },
-
-    async flushNow(paperId) {
-      // [F-VISFB-14] 立存收口：flush（在途收敛+error 重试+clean no-op）后
-      // 仍 pending 即 saveNow 立即落库（防抖 timer 通道不承接关 tab/退出面
-      // ——收口后 renderer 可能即亡，timer 永不触发）。flush 让位的新在途
-      // （并发防抖撞上）等待到 settle 再判（在途可见性=模块闭包，本方法驻
-      // store 内单点可判）。gated：saveNow 门控 no-op→pending 残留=INV-141②
-      // 失败格，由收口方（关 tab confirm/退出握手）呈现。saveNow 派发后的
-      // 新防抖 timer（收口期再有新编辑——关 tab/退出面无并发输入）不追等，
-      // 边界申报
-      await get().flush(paperId)
-      let flight = inflight.get(paperId)
+    async persistNow(paperId) {
+      let flight = persistence.inflightOf(paperId)
       while (flight !== undefined) {
         await flight
-        flight = inflight.get(paperId)
+        flight = persistence.inflightOf(paperId)
       }
-      if (!pendingEdit.has(paperId)) return
-      // [F-VISFB-64·回炉 B1] 收口核心路径（无用户入口闸——saveNow 闸不拦收口）
-      await dispatchSaveNow(paperId)
+      const draft = get().noteByPaper[paperId]
+      // 无草稿条目/无未保存编辑=当前草稿已在库，零写
+      if (draft === undefined || !pendingEdit.has(paperId)) return true
+      const result = await dispatchSaveNow(paperId)
+      // true 的充要条件：本次写成功 且 写入内容=当前草稿（派发后又有新编辑则 false）
+      return result !== null && result.ok && get().noteByPaper[paperId]?.contentMd === result.content
     },
 
-    async flushAllNow() {
-      // [F-VISFB-14] 全量立存收口（退出握手）：pendingEdit 快照逐篇串行
-      // flushNow（与 flushAll 同型快照遍历；退出后 timer 永不触发——立存）。
-      // [回炉 W-2] 纯在途面兜底：pendingEdit 无键而在途的写（弃改后残余写/
-      // 冗余 saveNow 在途）同样等待 settle——退出收口不漏任何写途，终态判定
-      // 在全部 settle 后由收口方查态（快照重取循环：settle 期新接管的在途
-      // 〔并发防抖撞上〕次轮兜住；退出面无用户输入，有界收敛）
-      for (const paperId of [...pendingEdit]) {
-        await get().flushNow(paperId)
-      }
-      let inflightIds = [...inflight.keys()]
-      while (inflightIds.length > 0) {
-        await Promise.all(inflightIds.map((id) => inflight.get(id)!))
-        inflightIds = [...inflight.keys()]
-      }
+    async persistNowRaw(paperId) {
+      // 首载门控同 persistNow（服务器基线未知不抢存）；在途等待不需要——调用方
+      // （控制器链任务）在链上已排在本篇全部已入链写之后
+      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return false
+      const draft = get().noteByPaper[paperId]
+      if (draft === undefined || !pendingEdit.has(paperId)) return true
+      clearTimer(paperId)
+      const result = await persistence.writeDraftRaw(paperId)
+      return result.ok && get().noteByPaper[paperId]?.contentMd === result.content
     },
 
-    discardPendingEdit(paperId) {
-      discardOne(paperId)
+    async historyWriteNow(paperId, value) {
+      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return false
+      clearTimer(paperId)
+      const result = await persistence.writeValueRaw(paperId, value)
+      // 失败：草稿与未保存标记不动（反向值不本地应用）。有待写草稿（在途窗内新输入）
+      // 才置错误态——错误态的重试（定稿/关闭预 flush）须有物可写；无待写时置位=重试
+      // 恒 no-op，失败改由宿主 toast 呈现
+      if (!result.ok) setDraft(paperId, { saving: false, saveFailed: pendingEdit.has(paperId) })
+      return result.ok
     },
 
-    discardAllPendingEdits() {
-      // 遍历 pendingEdit 快照逐篇调同一私有实现（防遍历中变异——discardOne
-      // 会 delete pendingEdit 键）
-      for (const paperId of [...pendingEdit]) {
-        discardOne(paperId)
-      }
+    adoptPersisted(paperId, contentMd) {
+      pendingEdit.delete(paperId)
+      touchedFields.delete(paperId)
+      setDraft(paperId, { contentMd, saving: false, pending: false, saveFailed: false })
+    },
+
+    flush: closeout.flush,
+    flushAll: closeout.flushAll,
+    flushNow: closeout.flushNow,
+    flushAllNow: closeout.flushAllNow,
+
+    resetEditStateForTests() {
+      // 遍历键快照（clearTimer 删键）
+      for (const paperId of Object.keys(timers)) clearTimer(paperId)
+      pendingEdit.clear()
+      touchedFields.clear()
+      lastEditedAt.clear()
+      editSeq.clear()
+      set({ noteByPaper: {} })
     }
   }
 })

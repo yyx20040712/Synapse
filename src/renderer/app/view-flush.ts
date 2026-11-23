@@ -6,7 +6,7 @@
  * 挂载编辑器恒属 ACTIVE tab（AnnotationLayer 只随活动篇渲染）——视图路由离场
  * 'reader'（Rail 点击/跨页事件桥两入口，经 App.changeView 单点收口）时
  * fire-first 消费 allDraftFlushHandles() 全量句柄：un-attempted dirty
- * （<800ms 防抖窗内值——INV-141④「未尝试 dirty 不入表」锚面）随 ReaderPage
+ * （<1.5s 空闲窗内值〔B4-A R1 节拍〕——INV-141④「未尝试 dirty 不入表」锚面）随 ReaderPage
  * 卸载无恢复面的丢值由 flush 预防（非入表——锚不动）；不阻路由（零新增用户
  * 可见等待）；失败承接=句柄 failed→卸载注册承接重挂载重试（12 号机制）+写
  * 路径 markTabDirty 观测面（fireAllDraftFlushes 单源）。

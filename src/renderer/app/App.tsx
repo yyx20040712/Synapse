@@ -10,9 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ConflictDialog } from '../features/lineage/ConflictDialog'
 import { ToastHost } from '../shared/ui/Toast'
-import { useTabAutosaveSignals } from '../features/reader/state/tab-dirty'
-import { useLineageDirty } from '../features/lineage/lineage.store'
-import { useNoteDraftPending } from '../features/lineage/lineage-note-draft'
+import { useSaveAggregates } from './use-save-aggregates'
 import { useExportCorpusEvents } from '../features/settings/useExportCorpusEvents'
 import { useFigureExtractionBridge } from '../shared/figures/useFigureExtractionBridge'
 import { useSettingsStore } from '../features/settings/settings.store'
@@ -38,18 +36,11 @@ export function App(): JSX.Element {
   const [view, setView] = useState<ViewId>('library')
   // [F-VISFB-15①面3/63] 视图切换包装：离场 'reader'/'lineage' 先立存（语义单源=view-flush.ts）
   const changeView = useCallback((next: ViewId): void => switchViewWithFlush(view, next, setView), [view])
-  // TABS-04：聚合 dirty（任一 tab 任一写面）变化沿 push 上报 main（close 拦截
-  // 读 main 缓存）。LG-03 扩面（ADR-0014+INV-22）：图保存态≠saved 即脏——组合根
-  // 单点扩（tab ∪ lineage dirty ∪ noteDraft——F-VISFB-63）。三 hook 必须无条件
-  // 调用（P7-C 崩溃修复 2026-08-27）：`||` 短路→hooks 数量随渲染漂移（Rules of
-  // Hooks 违规，commit 链错位崩；回归锁=app-quit-dirty.test.tsx）。
-  // [B2 §3.2] tab 面改经 useTabAutosaveSignals 投影（pending/annoDirty 布尔，
-  // useShallow 浅比）——不订阅 noteByPaper 对象本体；布尔或=与
-  // useTabDirtyAggregate 同语义（受锁导出零触碰）。
-  const { annoDirty, notePending } = useTabAutosaveSignals()
-  const lineageDirty = useLineageDirty()
-  const noteDraft = useNoteDraftPending() // [F-VISFB-63] 悬浮笔记编辑草稿（lineage-note-draft 注册族）
-  const quitDirty = annoDirty || notePending || lineageDirty || noteDraft
+  // TABS-04→[B4-A R2 §10.1]：保存聚合分列单源=use-save-aggregates（IO quitDirty
+  // /lineagePending/两域 U 角标）。quitDirty 只消费 IO（U 不入——INV-22/187：
+  // 灰点不卡退出）；lineagePending=INV-91 结构写互斥输入。hook 内部多订阅
+  // 无条件调用（Rules of Hooks——P7-C 崩溃回归锁 app-quit-dirty.test.tsx）。
+  const { quitDirty, readerUnfinalized, lineageUnfinalized, lineagePending } = useSaveAggregates()
   // AI-04：AI 语料导出事件桥（progress→store/extract-request→提取器/终局
   // toast）——App 根挂载一次，与 Settings/Reader 挂载态零耦合（R14）
   useExportCorpusEvents()
@@ -94,13 +85,13 @@ export function App(): JSX.Element {
   }, [theme])
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）。
-    // [F-FOLDER-01] INV-91 S1 队列闸：lineagePending（脉络写队列 pending 独立
-    // 信号——folders/papers.move/updateMeta 写入口互斥判定源）随同载荷上报，
-    // 依赖列并入 lineageDirty（两信号各自变化沿都触发重报）
+    // [F-FOLDER-01] INV-91 S1 队列闸：lineagePending（脉络写队列 IO 独立信号
+    // ——folders/papers.move/updateMeta 写入口互斥判定源）随同载荷上报。
+    // [B4-A R2 §2.5 #37] U 不参与 quit/lineagePending（聚合单源已分列）
     window.api.system
-      .setQuitDirty({ dirty: quitDirty, lineagePending: lineageDirty })
+      .setQuitDirty({ dirty: quitDirty, lineagePending })
       .catch(() => undefined)
-  }, [quitDirty, lineageDirty, noteDraft])
+  }, [quitDirty, lineagePending])
 
   // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
   // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）
@@ -161,8 +152,9 @@ export function App(): JSX.Element {
       <div className="app-content-zone">
       <RecoveryBarHost />
       <div className="app-content-row">
-        {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役） */}
-        <Rail view={view} onView={changeView} />
+        {/* T3-P2：72px 窄轨（课题钮=workspaces 视图路由——F-WS-02 弹层退役）；
+            [B4-A R2 §10.1] 两 U 角标经 props 注入（Rail 不引域 store） */}
+        <Rail view={view} onView={changeView} readerUnfinalized={readerUnfinalized} lineageUnfinalized={lineageUnfinalized} />
         <ViewHost view={view} changeView={changeView} quitDirty={quitDirty} guideHidden={wsGuide} />
       </div>
       </div>

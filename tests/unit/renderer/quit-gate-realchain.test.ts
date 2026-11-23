@@ -72,10 +72,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   setQuitClosing(false)
   useReaderStore.setState({ tabs: {}, order: [], activeId: null })
-  for (const k of Object.keys(useNotesStore.getState().noteByPaper)) {
-    useNotesStore.getState().discardPendingEdit(k)
-  }
-  useNotesStore.setState({ noteByPaper: {} })
+  // notes 编辑态清扫（弃改 API 退役——测试隔离锚）
+  useNotesStore.getState().resetEditStateForTests()
   useLineageStore.setState({
     floatingNotes: [NOTE],
     nodes: [],
@@ -174,8 +172,17 @@ describe('quit-gate-realchain —— closing gate 真实链判别（F-VISFB-64�
   it('[门二 P0-1·主控终裁承接] 批注草稿值入口（typing/undo/redo）：冻结期拒绝（值+栈+保存态不变）；closing 外正常迁移', async () => {
     let draft: ReturnType<typeof useAnnotationDraft> | null = null
     function Host(): null {
-      draft = useAnnotationDraft('anno-typ-64', 'init', async () => true)
+      // [B4-A R1 迁移] hook 签名改 TextTargetKey+opts（批注/总评共用文本控制器）
+      draft = useAnnotationDraft(
+        { paperId: 'paper-gate-64', kind: 'annotation-comment', annotationId: 'anno-typ-64' },
+        'init',
+        { onAutosave: async () => true, onAutosaveRaw: async () => true }
+      )
       return null
+    }
+    /** [B4-A R1 迁移] 文本 undo/redo=异步真实链（冲微任务到终态） */
+    const settle = async (): Promise<void> => {
+      for (let i = 0; i < 12; i++) await Promise.resolve()
     }
     ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
     host = document.createElement('div')
@@ -198,9 +205,10 @@ describe('quit-gate-realchain —— closing gate 真实链判别（F-VISFB-64�
     })
     expect(draft!.comment).toBe('用户输入')
     expect(draft!.saveState).toBe('dirty')
-    // 冻结期：undo 拒绝——栈不弹、值不变
-    act(() => {
-      draft!.undoEdit()
+    // 冻结期：undo 拒绝——栈不弹、值不变（异步链：冲到终态后断言）
+    await act(async () => {
+      void draft!.undoEdit()
+      await settle()
     })
     expect(draft!.comment).toBe('用户输入')
     expect(draft!.canUndo).toBe(true)
@@ -211,21 +219,26 @@ describe('quit-gate-realchain —— closing gate 真实链判别（F-VISFB-64�
     })
     expect(draft!.comment).toBe('解冻输入')
     // redo 面（终裁条件——门二 GO_WITH_CONDITIONS 唯一条件）：解冻后 undo 建
-    // redo 栈，再冻结 redo 拒绝（栈不弹值不变）、解冻恢复
-    act(() => {
-      draft!.undoEdit()
+    // redo 栈，再冻结 redo 拒绝（栈不弹值不变）、解冻恢复。
+    // [B4-A R1 迁移·断言翻转] 「用户输入」与「解冻输入」间无提交边界（冻结期
+    // 输入被拒不成边界）——同属一个文本单元：undo 一步回到单元 before='init'
+    await act(async () => {
+      void draft!.undoEdit()
+      await settle()
     })
-    expect(draft!.comment).toBe('用户输入')
+    expect(draft!.comment).toBe('init')
     expect(draft!.canRedo).toBe(true)
     setQuitClosing(true)
-    act(() => {
-      draft!.redoEdit()
+    await act(async () => {
+      void draft!.redoEdit()
+      await settle()
     })
-    expect(draft!.comment).toBe('用户输入')
+    expect(draft!.comment).toBe('init')
     expect(draft!.canRedo).toBe(true)
     setQuitClosing(false)
-    act(() => {
-      draft!.redoEdit()
+    await act(async () => {
+      void draft!.redoEdit()
+      await settle()
     })
     expect(draft!.comment).toBe('解冻输入')
   })

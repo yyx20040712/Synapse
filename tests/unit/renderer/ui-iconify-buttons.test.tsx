@@ -163,7 +163,7 @@ describe('F-UIRES-02 批 B Reader 域', () => {
     mount(
       <AnnotationEditor annotation={annotation} rect={{ page: 0, x: 0.1, y: 0.1, w: 0.2, h: 0.02 }}
         busy={false} onCancel={() => undefined} onSave={() => undefined} onDelete={() => undefined}
-        onAutosave={() => Promise.resolve(true)} />
+        onAutosave={() => Promise.resolve(true)} onAutosaveRaw={() => Promise.resolve(true)} />
     )
     for (const testid of ['annotation-editor-undo', 'annotation-editor-redo']) {
       const btn = host!.querySelector<HTMLButtonElement>(`[data-testid="${testid}"]`)!

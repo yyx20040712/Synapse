@@ -65,11 +65,14 @@ describe('F-ARCH2 undo 并发编辑不覆盖（回归锁）', () => {
     useStore.getState().addAnnotation('p-1', annBase)
     undoMod.pushUndo('p-1', { kind: 'create', annotation: annBase })
     const pUndo = useStore.getState().undo()
+    // [B4-A R1 迁移·async 调用] undo=排队链+per-tab lane：逆写 API 在微任务派发——
+    // 冲到挂起窗口形成后再注入并发编辑
+    for (let i = 0; i < 12; i++) await Promise.resolve()
     // undo 挂起中：用户并发保存了一条新标注（SelectionLayer→addAnnotation 路径）
     const concurrent: Annotation = { ...annBase, id: 'a-2', quoteText: 'concurrent' }
     useStore.getState().addAnnotation('p-1', concurrent)
     resolveDelete({ ok: true, data: undefined })
-    await pUndo
+    await expect(pUndo).resolves.toBe(true) // 完整动作成功
     const list = useStore.getState().tabs['p-1']?.annotations ?? []
     // 撤销的 a-1 移除 + 并发的 a-2 保留——两者同时成立
     expect(list.some((x) => x.id === 'a-1')).toBe(false)

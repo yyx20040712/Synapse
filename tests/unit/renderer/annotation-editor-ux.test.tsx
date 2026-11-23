@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
 /**
- * [F-A11] 笔记编辑 UX 双缺组件测试（新建，always-active——ADR-0017 裁决 3）。
+ * [F-A11] 笔记编辑 UX 双缺组件测试（[B4-A R1] 受锁迁移）（新建，always-active——ADR-0017 裁决 3）。
  *
  * 锁两个缺项：
- * ① 自动保存反馈——输入停顿 800ms 触发 onAutosave（防抖合并、与已存值相同
- *   不触发），resolve true→「已保存」标记 / false→「保存失败」标记；
- *   保存中续输的跨格序列（宪法状态机前置：结果不作废 dirty 态）。
- * ② 撤销/重做值栈——按钮对（栈空 disabled）+ 键盘 Ctrl+Z/Ctrl+Y/
- *   Ctrl+Shift+Z 拦截接值栈 + 100 步上限 + IME composition 整段一步。
+ * ① 自动保存反馈——输入停顿 1.5s 触发 onAutosave（[B4-A R1] IDLE_FLUSH_MS 共享
+ *   单源，旧 800ms 退役；窗口内续输合并同一单元、与已存值相同不触发），resolve
+ *   true→「已保存」标记 / false→「保存失败」标记；保存中续输的跨格序列（宪法
+ *   状态机前置：结果不作废 dirty 态）。
+ * ② 撤销/重做值栈——按钮对（栈空 disabled）+ 键盘 Ctrl+Z/Ctrl+Y/Ctrl+Shift+Z
+ *   拦截接值栈 + 深度上限 10（[B4-A R1] 旧 100 步退役）+ IME composition 整段一步。
+ *   [B4-A R1 受锁迁移] 文本 undo/redo 改异步真实链（关闭单元→预 flush+drain→
+ *   反向写→成功才移栈，设计稿 §3）：同步断言迁 await；步进例的「步」=独立单元
+ *   （空格/空闲提交边界构造——连续键入合并为一个单元）。
+ * 单元边界语义全表（1_499/1_500、空格/回车/粘贴独立、blur、代际失效等）在
+ * annotation-editor-units.test.tsx（R1 新增件——本件近 max-lines 500）。
  * AnnotationPopups 接线面（含 [W-A 门二] busy 串行竞态）在
  * annotation-popups-autosave.test.tsx（门二轮拆件——本件曾超 max-lines 500）。
  * React act 环境对齐 annotation-layer.test.tsx 既有形态；输入模拟对齐
@@ -17,7 +23,9 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeAnnotation } from '../../utils/factories'
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
 import type { AnnotationRect } from '../../../src/shared/models/annotation'
+import { clearAllTextHistory, TEXT_HISTORY_DEPTH_MAX } from '../../../src/renderer/features/reader/state/reader-text-history'
 import { AnnotationEditor } from '../../../src/renderer/features/reader/view/AnnotationEditor'
 
 /** 完整形态最小标注（comment 可覆写——lastSaved 语义用例需非空初值） */
@@ -44,6 +52,8 @@ afterEach(() => {
   document.body.innerHTML = ''
   vi.useRealTimers()
   vi.clearAllMocks()
+  // [B4-A R1] 文本值历史注册表模块态隔离（跨视图驻留语义——用例间按 target 清）
+  clearAllTextHistory()
 })
 
 /** textarea 输入（lineage-tag-edit 同款：native setter + input 事件） */
@@ -52,6 +62,13 @@ function typeInto(el: HTMLTextAreaElement, text: string): void {
   act(() => {
     setter?.call(el, text)
     el.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+/** [B4-A R1] 异步 undo/redo 推进（关闭单元→drain→反向写→成功移栈——冲微任务到终态） */
+async function settleAsync(): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(0)
   })
 }
 
@@ -76,6 +93,7 @@ function renderEditor(
 ): { onAutosave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn> } {
   const onAutosave = vi.fn(() => Promise.resolve(true))
   const onCancel = vi.fn()
+  // [B4-A 回炉 R5 fixture migration] 裸写体端口必选：夹具写体本就不入链，同一桩兼作裸通道
   act(() => {
     root!.render(
       <AnnotationEditor
@@ -86,6 +104,7 @@ function renderEditor(
         onSave={vi.fn()}
         onDelete={vi.fn()}
         onAutosave={onAutosave}
+        onAutosaveRaw={props.onAutosave ?? onAutosave}
         {...props}
       />
     )
@@ -112,7 +131,7 @@ function savedFlag(): Element | null {
 }
 
 describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
-  it('初始态：无已保存标记、撤销/重做均禁用、800ms 后未输入不触发自动保存', async () => {
+  it('初始态：无已保存标记、撤销/重做均禁用、1.5s 后未输入不触发自动保存', async () => {
     const { onAutosave } = renderEditor()
     expect(savedFlag()).toBeNull()
     expect(undoBtn().disabled).toBe(true)
@@ -123,15 +142,16 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     expect(onAutosave).not.toHaveBeenCalled()
   })
 
-  it('输入停顿 800ms → onAutosave 收值且 resolve true → 「已保存」标记在场', async () => {
+  it('输入停顿 1.5s（1_499 零写/1_500 恰写一次）→ onAutosave 收值且 resolve true → 「已保存」标记在场', async () => {
     const { onAutosave } = renderEditor()
     typeInto(textarea(), '我是奶龙')
+    // [B4-A R1] 合同值以字面量锚定（常量改值时窗口不随常量同移——防边界用例退化为同义反复）
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(700)
+      await vi.advanceTimersByTimeAsync(1_499)
     })
     expect(onAutosave).not.toHaveBeenCalled()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(100)
+      await vi.advanceTimersByTimeAsync(1)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     expect(onAutosave).toHaveBeenCalledWith('我是奶龙')
@@ -145,8 +165,13 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
       await vi.advanceTimersByTimeAsync(400)
     })
     typeInto(textarea(), '我是奶龙')
+    // [B4-A R1] 每次输入重排同一 1.5s 计时（窗口内续输不提前落库）
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS - 500)
+    })
+    expect(onAutosave).not.toHaveBeenCalled()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     expect(onAutosave).toHaveBeenCalledWith('我是奶龙')
@@ -156,7 +181,7 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     renderEditor({ onAutosave: vi.fn(() => Promise.resolve(false)) })
     typeInto(textarea(), 'x')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(savedFlag()?.textContent).toBe('保存失败')
   })
@@ -168,7 +193,7 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     renderEditor({ onAutosave })
     typeInto(textarea(), 'a')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     typeInto(textarea(), 'ab')
@@ -178,7 +203,7 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     })
     expect(savedFlag()).toBeNull()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(2)
     expect(onAutosave).toHaveBeenLastCalledWith('ab')
@@ -189,31 +214,30 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     expect(savedFlag()?.textContent).toBe('已保存')
   })
 
-  it('在途保存×期间回退 lastSaved（W-1 跨格）：resolve 后防抖重挂 → 第二次收当前值落盘', async () => {
+  it('[B4-A R1 迁移·断言翻转] 在途保存×期间 undo（W-1 跨格）：undo 等在途写落定后反向写——第二发收 orig，终态即「已保存」', async () => {
     const d1 = deferred<boolean>()
     const onAutosave = vi.fn((c: string) => (c === 'x' ? d1.promise : Promise.resolve(true)))
     renderEditor({ annotation: makeAnnotation('orig'), onAutosave })
     typeInto(textarea(), 'x')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
-    // 在途（saving(x) 未 resolve）时 undo 回初始值=lastSaved → clean 分支撤 timer
+    // 在途（saving(x) 未 resolve）时 undo：先 drain 在途写——落定前值不动、零反向写
     act(() => {
       undoBtn().click()
     })
-    expect(textarea().value).toBe('orig')
+    await settleAsync()
+    expect(textarea().value).toBe('x')
+    expect(onAutosave).toHaveBeenCalledTimes(1)
     await act(async () => {
       d1.resolve(true)
-      await vi.advanceTimersByTimeAsync(0)
+      await settleAsync()
     })
-    // lastSaved 已随 resolve 前进为 x，当前值 orig≠x——无标记且必须重挂防抖
-    expect(savedFlag()).toBeNull()
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
-    })
+    // 在途写落定后反向写落库（第二发收 orig——不再是防抖重挂的延迟写）
     expect(onAutosave).toHaveBeenCalledTimes(2)
     expect(onAutosave).toHaveBeenNthCalledWith(2, 'orig')
+    expect(textarea().value).toBe('orig')
     expect(savedFlag()?.textContent).toBe('已保存')
   })
 
@@ -223,33 +247,36 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     renderEditor({ onAutosave })
     typeInto(textarea(), 'a')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(savedFlag()?.textContent).toBe('保存失败')
     typeInto(textarea(), 'ab')
     expect(savedFlag()).toBeNull()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenNthCalledWith(2, 'ab')
     expect(savedFlag()?.textContent).toBe('已保存')
   })
 
-  it('回退到初始值也再存（lastSaved 语义）：存 x 后 undo 回初始 → 第二次调用收初始值', async () => {
+  it('[B4-A R1 迁移] 回退到初始值也再存（lastSaved 语义）：存 x 后 undo → 反向写即第二发收初始值', async () => {
     const { onAutosave } = renderEditor({ annotation: makeAnnotation('orig') })
     typeInto(textarea(), 'x')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenNthCalledWith(1, 'x')
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(textarea().value).toBe('orig')
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
-    })
+    // 反向写已落库（undo 成功即 lastSaved 推进）——无延迟防抖补写
     expect(onAutosave).toHaveBeenNthCalledWith(2, 'orig')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
+    })
+    expect(onAutosave).toHaveBeenCalledTimes(2)
   })
 
   it('卸载时清防抖：到期后不调 onAutosave 不抛错', async () => {
@@ -277,105 +304,136 @@ describe('F-A11 ① 自动保存反馈 —— AnnotationEditor', () => {
     renderEditor({ annotation: makeAnnotation('orig'), onAutosave })
     typeInto(textarea(), 'x')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
-    // 失败轮在途：undo 回初始值=已存值（clean 撤 timer）
+    // 失败轮在途：undo 先等在途写（drain）
     act(() => {
       undoBtn().click()
     })
-    expect(textarea().value).toBe('orig')
+    await settleAsync()
+    expect(onAutosave).toHaveBeenCalledTimes(1)
     await act(async () => {
       d1.resolve(false)
-      await vi.advanceTimersByTimeAsync(0)
+      await settleAsync()
     })
-    expect(savedFlag()).toBeNull()
-    // 值已回退到已存值：不再重试不再空写
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600)
-    })
+    // [B4-A R1 迁移·断言翻转] 预 flush 失败（§2.5 #14）：undo 不执行反向写——值与
+    // 栈不动（撤销仍可点），呈现保存失败态
     expect(onAutosave).toHaveBeenCalledTimes(1)
-    // 再输入：重试链恢复正常
+    expect(textarea().value).toBe('x')
+    expect(savedFlag()?.textContent).toBe('保存失败')
+    expect(undoBtn().disabled).toBe(false)
+    // 未落库值不丢写：在途期重挂的空闲计时到期自动重试
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2 * IDLE_FLUSH_MS)
+    })
+    expect(onAutosave).toHaveBeenNthCalledWith(2, 'x')
+    expect(savedFlag()?.textContent).toBe('已保存')
+    // 再输入：重试链正常
     typeInto(textarea(), 'y')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
-    expect(onAutosave).toHaveBeenNthCalledWith(2, 'y')
+    expect(onAutosave).toHaveBeenNthCalledWith(3, 'y')
     expect(savedFlag()?.textContent).toBe('已保存')
   })
 })
 
 describe('F-A11 ② 撤销/重做值栈 —— AnnotationEditor', () => {
-  it('按钮对逐步回退/复原：三步输入 → 撤两步 → 重做一步，disabled 态随栈变化', () => {
+  it('[B4-A R1 迁移] 按钮对逐步回退/复原：三个独立单元（每步后空闲提交）→ 撤两步 → 重做一步，disabled 态随栈变化', async () => {
     renderEditor()
     const ta = textarea()
-    typeInto(ta, 'a')
-    typeInto(ta, 'ab')
-    typeInto(ta, 'abc')
+    // [B4-A R1] 连续键入合并为一个单元——「步」以空闲提交边界构造
+    for (const step of ['a', 'ab', 'abc']) {
+      typeInto(ta, step)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
+      })
+    }
     expect(undoBtn().disabled).toBe(false)
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('ab')
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('a')
     expect(redoBtn().disabled).toBe(false)
     act(() => {
       redoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('ab')
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('a')
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('')
     expect(undoBtn().disabled).toBe(true)
   })
 
-  it('键盘拦截接值栈：ctrl+z 回退、ctrl+y / ctrl+shift+z 重做，均 preventDefault', () => {
+  it('[B4-A R1 迁移] 键盘拦截接值栈：ctrl+z 回退、ctrl+y / ctrl+shift+z 重做，均 preventDefault', async () => {
     renderEditor()
     const ta = textarea()
-    typeInto(ta, 'a')
-    typeInto(ta, 'ab')
+    for (const step of ['a', 'ab']) {
+      typeInto(ta, step)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
+      })
+    }
     const undoEvt = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true })
     act(() => {
       ta.dispatchEvent(undoEvt)
     })
+    await settleAsync()
     expect(ta.value).toBe('a')
     expect(undoEvt.defaultPrevented).toBe(true)
     pressKey(ta, { key: 'y', ctrlKey: true })
+    await settleAsync()
     expect(ta.value).toBe('ab')
     pressKey(ta, { key: 'z', ctrlKey: true })
+    await settleAsync()
     expect(ta.value).toBe('a')
     pressKey(ta, { key: 'Z', ctrlKey: true, shiftKey: true })
+    await settleAsync()
     expect(ta.value).toBe('ab')
   })
 
-  it('栈上限 100：105 步输入后撤 100 步达第 5 值且撤销禁用，重做可复 1 步', () => {
+  it('[B4-A R1 迁移·断言翻转] 栈上限 10：12 个独立单元（空格边界）后撤 10 步达第 2 值且撤销禁用，重做可复 1 步', async () => {
     renderEditor()
     const ta = textarea()
-    for (let i = 1; i <= 105; i++) {
-      typeInto(ta, String(i).padStart(3, '0'))
+    // 每步=追加「补零序号」+ 一次空格键（真实键入逐字符派发 input——空格并入
+    // 当前单元后立即关闭，下一字符开新单元）
+    const acc = (n: number): string => Array.from({ length: n }, (_, k) => String(k + 1).padStart(3, '0')).join(' ') + (n > 0 ? ' ' : '')
+    for (let i = 1; i <= TEXT_HISTORY_DEPTH_MAX + 2; i++) {
+      typeInto(ta, `${acc(i - 1)}${String(i).padStart(3, '0')}`)
+      typeInto(ta, acc(i))
     }
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < TEXT_HISTORY_DEPTH_MAX; i++) {
       act(() => {
         undoBtn().click()
       })
+      await settleAsync()
     }
-    expect(ta.value).toBe('005')
+    // 最旧两值被 FIFO 截断：撤满 10 步落在第 2 值
+    expect(ta.value).toBe(acc(2))
     expect(undoBtn().disabled).toBe(true)
     act(() => {
       redoBtn().click()
     })
-    expect(ta.value).toBe('006')
+    await settleAsync()
+    expect(ta.value).toBe(acc(3))
   })
 
-  it('IME composition（N-6）：两片段期间不入栈，end 后整段一步——undo 一步回退整段', () => {
+  it('[B4-A R1 迁移] IME composition（N-6）：两片段期间不入栈，end 后整段一步——undo 一步回退整段', async () => {
     renderEditor()
     const ta = textarea()
     act(() => {
@@ -392,15 +450,17 @@ describe('F-A11 ② 撤销/重做值栈 —— AnnotationEditor', () => {
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('')
     expect(undoBtn().disabled).toBe(true)
     act(() => {
       redoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('我是奶龙')
   })
 
-  it('IME end 后同值 change（N-B）：幂等不入栈——undo 仍一步整段回退', () => {
+  it('[B4-A R1 迁移] IME end 后同值 change（N-B）：幂等不入栈——undo 仍一步整段回退', async () => {
     renderEditor()
     const ta = textarea()
     act(() => {
@@ -416,11 +476,13 @@ describe('F-A11 ② 撤销/重做值栈 —— AnnotationEditor', () => {
     act(() => {
       undoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('')
     expect(undoBtn().disabled).toBe(true)
     act(() => {
       redoBtn().click()
     })
+    await settleAsync()
     expect(ta.value).toBe('我是奶龙')
   })
 })

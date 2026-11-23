@@ -14,7 +14,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
-import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
+// [B4-A R1 迁移] 节拍常量 IDLE_FLUSH_MS(600s)→IDLE_FLUSH_MS(1.5s，批注/总评共用单源)
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
@@ -120,7 +121,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
 
     // saving：禁用 spinner+「保存中」（⟳=共享 Button loading 态图标——textContent 含图标符）
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     expect(notesSave).toHaveBeenCalledTimes(1)
     expect(btn.disabled).toBe(true)
@@ -157,14 +158,21 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
     await act(async () => {
       saveButton().dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(notesSave).toHaveBeenCalledTimes(1) // 立即落盘（未推进定时器）
-    expect(notesSave.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' })
-    expect(vi.getTimerCount()).toBe(0) // 点击先清防抖
+    // [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
     })
+    expect(notesSave).toHaveBeenCalledTimes(1) // 立即落盘（未推进定时器）
+    expect(notesSave.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' })
+    // [B4-A R1 迁移·断言翻转] store 防抖通道零 timer；仍在排的 1 个=文本控制器的
+    // 空闲计时（单元提交用——不随点击清除；到期时值已落库→零写）
+    expect(vi.getTimerCount()).toBe(1)
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false)
     expect(saveButton().textContent).toBe('已保存') // 落库后 clean
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
+    })
+    expect(notesSave).toHaveBeenCalledTimes(1)
   })
 
   it('error 态点击→saving（载荷=pending 合并态——消费时点二）', async () => {
@@ -183,12 +191,14 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '草稿')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 防抖到期：失败→error
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 防抖到期：失败→error
     })
     expect(saveButton().textContent).toBe('重试')
 
     await act(async () => {
       saveButton().dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      // [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务
+      await vi.advanceTimersByTimeAsync(0)
     })
     expect(notesSave).toHaveBeenCalledTimes(2)
     expect(notesSave.mock.calls[1]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' }) // 合并态载荷
@@ -215,7 +225,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '草稿')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // error（无 timer、无在途）
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // error（无 timer、无在途）
     })
     expect(useNotesStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
     expect(notesSave).toHaveBeenCalledTimes(1)
@@ -254,7 +264,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '第一次')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // p-1 在途
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // p-1 在途
     })
     await act(async () => {
       typeInto(body, '第二次') // saving∧pending（缓冲）

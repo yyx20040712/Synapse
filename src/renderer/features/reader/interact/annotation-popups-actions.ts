@@ -1,53 +1,53 @@
 /**
- * [F-VISFB-15] annotation-popups-actions —— 弹层 busy 族动作域 hook（自
- * AnnotationPopups 拆出 2026-10-17——组件 250 行关口，先例=use-annotation-draft
- * 自 AnnotationEditor 拆出；组件留 JSX 接线。copyQuote〔菜单 UI 动作，零 busy
- * 面〕留驻组件）。
+ * [F-VISFB-15] annotation-popups-actions（[B4-A R1] lane 化） —— 弹层 busy 族动作域 hook。
  *
- * ── 行为层（AnnotationPopups 原 busy 族动作——语义随迁单源驻本件）──
- * - saveComment：api 成功 → store 同步 → pushUndo → 收层 → onChanged 通知
- *   （[F-VISFB-12] W1 零写/W2 迟到判废/W3 等值清+TABS-03 两写面语句零变）。
- * - [F-VISFB-15 ②] autosaveComment busy 返回态收口（票面 busy 清单 1-4 全量）：
- *   旧病=busy 期乐观返回 true——「手动保存在途×失败」「删除在途×失败」两窄窗
- *   草稿 believing-saved（值从未落库+flush 判据 commentRef===lastSavedRef→
- *   no-op 不再重写——丢值窗=直到用户再编辑该草稿）；「quit flush 撞 busy」
- *   句柄终态 'saved' 失真→stillDirty 误判 false→无确认 destroy（丢稿级，
- *   INV-141⑥ 已知残余）；「切目标 fire-first flush 撞 busy」同族。
- *   新语义=busy 在途 **等待 settle 后复判**：
- *   ① settle 信号=busyFlightRef（save/autosave/delete 三链统一登记的共享
- *   在途 promise；finally 只清自己——接力在途不误清）；
- *   ② settle 后复判存活：现取 annotationWriteGen/isAnnotationWriteLive
- *   （删除已成功→墓碑/代际变→零写返回 false，复活防线沿承）；
- *   ③ settle 后复判值（[回炉 R2] 双条件）：lastPersistedRef（本组件最近一次
- *   成功落盘的 {id, comment}）命中同目标同值 **AND** store 现值等值
- *   （storeAnnotationComment——undo 第二写源共证，查无不命中）→真实结果=
- *   已落库，返回 true 零冗余重写（W-A 反向竞态格）；
- *   ④ 未命中→真实写链（busy 置位+登记新在途）返回**真实结果**。
- *   [回炉2 裁决·已知边界申报残余不修] R2 双条件的 µs 级跨链交错窗：undo 的
- *   DB 写与 reader.store apply 之间的微任务间隙（reader.store.ts undo=先
- *   await runUndo 再同步 apply）内恰有等待者 settle 时，store 现值尚未投影
- *   ——共证暂不可见；与 R1 末轮窗同量级以下，申报残余。
- *   约束：等待零新弹窗/toast/用户可见等待（busy=毫秒级串行窗——busy 期按钮
- *   禁用+hook savingRef 串行使等待者至多一，续轮等待有界收敛）；quit 侧在
- *   QUIT_FLUSH_TIMEOUT_MS=5s 预算内。
- * - [F-VISFB-15 ③] 删除失败补偿（W-1 正身）：deleteAnnotation 的
- *   discardAnnotationDraft 出表前快照（take=出表+取值）；api 失败分支回填
- *   （saveAnnotationDraft 恢复——仅墓碑未打路径；成功路径现状零回填）。
- *   编辑器挂载期删除=挂载恢复已消费条目→快照 null 零回填面（草稿在 hook
- *   自持，删除失败编辑器不收层零丢失）；busy-Escape 在途注册面（12 号
- *   回炉轮 1 B-2）与本补偿正交共存。
- * - [F-A11] 自动保存 pushUndo 会话守卫：编辑会话（editing 目标切换）重置——
- *   同一会话内多次自动保存只推一条 comment-edit（before=预编辑快照），避免
- *   灌满 UNDO_DEPTH_MAX=50 全局撤销栈。
+ * ── 行为层（B4-A R1：写经 per-tab lane 串行链——§4.3「busy 等待、值复判与删除
+ *   补偿迁移到链任务结果，不另建第二条直接 API 写路」）──
+ * - saveComment（手动）/autosaveComment（文本单元写）/deleteAnnotation：liveness
+ *   预判→**单次入链**→链任务内运行时复判（排队期间目标已删→判废零写；值已由
+ *   前序写落库→lastPersisted+store 现值双证短路返回 true）。busy=链任务体置位/
+ *   复位（旧 busyFlightRef 等待窗由 lane 排队替代——W-A 正/反向与 busy-1/2/A6/R2
+ *   观测终态不变）。单层入链契约：autosaveComment 由文本控制器在链外调用
+ *   （timer/blur/flush 普通写），自身入链一次。
+ * - [B4-A 回炉 R5] 裸写体 autosaveCommentRaw/writeCommentRaw（文本 undo/redo 的
+ *   预 flush/反向写）：**不自行入链**——控制器把 history 命令做成复合链任务（起步
+ *   即入链占位），任务体内直调本件裸写体；任务体内再入链=循环等待。反向写沿
+ *   touch（免会话：不新建操作项——既有语义不变）；操作层 history 命令的预 flush 同体
+ *   直调 autosaveCommentRaw（[回炉三 A]）。[回炉三 B] 反向写失败不置 tab IO 错误旗标
+ *   （反向值不本地应用=无未落库修改；置位即定稿恒失败、关闭重试恒 no-op），专用文案 toast 可见。
+ * - 操作层记账（§4.2 合并会话）：文本单元写与手动保存成功→recordCommentEdit
+ *   （同标注会话已开只推进 after，否则建 comment-edit：before=本次写前 store
+ *   现值）；文本反向写→touchCommentEditAfter（不新建操作项）。会话随 blur/
+ *   编辑目标切换终止（endEditSession——其后新输入开新操作项）。
+ * - editRevision 语义（§2.2「每次用户新编辑/undo/redo 同步递增」）：只认用户编辑
+ *   动作——文本输入由控制器 onUserEdit 在输入刻置 U（#1）、删除成功=操作单元提交
+ *   （#2）。文本写的落库回显是既有编辑的入库，不递增 revision：否则「批注输入后
+ *   不等空闲直接显式保存」必被自身写回推进 revision，finalize 永远清不了灰点。
+ * - 迟到回显寻址（§2.5 #19）：update/remove 写标注归属的原 tab（store 按
+ *   paperId/标注 id 寻址），不读 activeId——await 窗内切 tab 时回执仍归原篇。
+ * - 冻结门（saveComment/deleteAnnotation 用户命令入口）：全局 quit 门 + 目标 tab
+ *   关闭在途门（tab-closing-gate，§2.5 #2「命令通过 gate」）；autosave/raw 不闸
+ *   （单元/收口驱动，非用户命令入口）。
+ * - 删除：成功即该标注文本 target 代际失效（§4.2）+push delete 项。删除失败
+ *   补偿（③）与墓碑/代际守卫原样保留。
+ * - [F-VISFB-12] W1 零写/W2 迟到判废/W3 等值清/TABS-03 两写面语句零变。
  *
  * ── 接口层 ──
  * - export function useAnnotationPopupActions(args): AnnotationPopupActions
- *   （纯函数动作族——无 JSX；closeEditing/closeMenu 结构收层器由组件接线）
+ *   （saveComment/autosaveComment/autosaveCommentRaw/writeCommentRaw/
+ *   deleteAnnotation/endEditSession）
  */
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { api, unwrap, ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
-import { pushUndo } from '../state/annotation-undo'
+import { enqueueTabTask } from '../../../shared/tab-write-lane'
+import {
+  endCommentEditSession,
+  pushUndo,
+  recordCommentEdit,
+  touchCommentEditAfter
+} from '../state/annotation-undo'
+import { invalidateAnnotationText } from '../state/reader-history-commands'
 import { useReaderStore } from '../state/reader.store'
 import {
   annotationDraftSaved,
@@ -59,19 +59,33 @@ import {
   takeAnnotationDraft
 } from './annotation-draft-registry'
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
+import { tabWriteBlocked } from '../state/tab-closing-gate'
 import type { Annotation } from '@shared/models/annotation'
 
-/** 意外异常（非 ApiClientError）时的兜底中文消息 */
 const UPDATE_FAILED = '标注保存失败'
+/** [B4-A 回炉三 B] 文本 undo/redo 反向写失败（总评宿主 ReaderNotesPanel 同形文案） */
+const REVERSE_WRITE_FAILED = '标注保存失败，撤销/重做未生效'
 const DELETE_FAILED = '标注删除失败'
 const DELETE_CONFIRM = '删除这条标注？'
 
 /** busy 族动作（AnnotationPopups JSX 接线消费） */
 export interface AnnotationPopupActions {
   saveComment(a: Annotation, comment: string): Promise<void>
+  /** 文本单元写（控制器 persist 端口——timer/blur/flush 在链外调用，本件入链一次） */
   autosaveComment(a: Annotation, comment: string): Promise<boolean>
-  deleteAnnotation(a: Annotation): Promise<void>
+  /** [B4-A 回炉 R5] 文本单元写裸体（控制器 persistRaw 端口——history 命令的预
+   *  flush）：仅供控制器链任务体内直调，不自行入链（单层入链契约） */
+  autosaveCommentRaw(a: Annotation, comment: string): Promise<boolean>
+  /** [B4-A 回炉 R5] 文本 undo/redo 反向写裸体（控制器 historyWriteRaw 端口）：仅供
+   *  控制器链任务体内直调，不自行入链；免会话——不新建操作项 */
+  writeCommentRaw(a: Annotation, comment: string): Promise<boolean>
+  deleteAnnotation(a: Annotation): void
+  /** 终止批注编辑合并会话（编辑器 blur——其后新输入开新操作项） */
+  endEditSession(paperId: string): void
 }
+
+/** 文本写记账方式：session=建/推进合并会话条目；touch=仅推进最近一条的 after */
+type WriteTrack = 'session' | 'touch'
 
 export function useAnnotationPopupActions(args: {
   busy: boolean
@@ -79,192 +93,134 @@ export function useAnnotationPopupActions(args: {
   closeEditing: () => void
   closeMenu: () => void
   onChanged: () => void
-  editingId: string | null
 }): AnnotationPopupActions {
-  const { busy, setBusy, closeEditing, closeMenu, onChanged, editingId } = args
+  const { busy, setBusy, closeEditing, closeMenu, onChanged } = args
 
-  // [F-A11] pushUndo 会话守卫：编辑目标切换（含 null→目标）重置——同会话单 entry
-  const pushedSessionRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (editingId !== null) {
-      pushedSessionRef.current = null
-    }
-  }, [editingId])
-
-  // [F-VISFB-15 ②] 共享在途动作 promise（settle 信号源）：busy 期 autosave 的
-  // 等待对象；runBusyAction 统一登记（finally 只清自己——接力在途不误清）
-  const busyFlightRef = useRef<Promise<unknown> | null>(null)
-  // [F-VISFB-15 ②] 最近一次成功落盘面（复判值用）：{id, comment}——[回炉 R2]
-  // 单条**不足以**证 DB 现值（undo 链=弹层族外第二写源），值复判须 store
-  // 现值共证（storeAnnotationComment——查无不命中走真实写链）
+  // 最近一次成功落盘面（链任务运行时值复判第一证——undo 第二写源在场）
   const lastPersistedRef = useRef<{ id: string; comment: string } | null>(null)
 
-  /** busy 动作统一包装：登记在途 promise（settle 后清零） */
-  async function runBusyAction<T>(body: () => Promise<T>): Promise<T> {
-    const flight = body()
-    busyFlightRef.current = flight
-    try {
-      return await flight
-    } finally {
-      if (busyFlightRef.current === flight) {
-        busyFlightRef.current = null
-      }
-    }
-  }
-
-  /**
-   * [回炉 R2] store 现值（tabs→篇→annotations 按 id 匹配项 comment；查无=
-   * null）：undo 链（annotation-undo comment-edit 逆操作经 api.reader.
-   * updateAnnotation(top.before) 真实落库+store upsert）构成弹层族之外的
-   * 第二写源——lastPersistedRef 单条不足以证 DB 现值，值复判须 store 现值
-   * 共证（查无=不命中走真实写链，liveness 兜底）。
-   */
+  /** store 现值（undo 链=弹层族外第二写源——查无=不命中走真实写链） */
   function storeAnnotationComment(a: Annotation): string | null {
-    const annotations = useReaderStore.getState().tabs[a.paperId]?.annotations
-    const hit = annotations?.find((x) => x.id === a.id)
-    return hit?.comment ?? null
+    const annotations = useReaderStore.getState().tabs?.[a.paperId]?.annotations
+    return annotations?.find((x) => x.id === a.id)?.comment ?? null
   }
 
-  /** 批注保存：api 成功 → store 同步 → 收起弹层 → onChanged 通知。
-   *  [F-VISFB-64·回炉 W1] closing gate 用户命令入口（手动保存）；autosaveComment
-   *  不闸=timer/收口驱动非用户命令入口（quit flush ② 经 draft.flush→onAutosave
-   *  消费——闸则收口自锁；800ms 计时器写=非用户异步写，由②等在途+④查态覆盖） */
+  /** 本次写前的标注现值（comment-edit 的 before——同标注多会话各取各的基线） */
+  function beforeSnapshot(a: Annotation): Annotation {
+    return { ...a, comment: storeAnnotationComment(a) ?? a.comment }
+  }
+
+  /** 链任务写体（save/autosave/raw 共用）：运行时复判存活+值，真实结果返回 */
+  async function writeTask(a: Annotation, comment: string, gen: number, track: WriteTrack): Promise<boolean> {
+    setBusy(true)
+    try {
+      // 运行时复判存活：排队期间目标已删（墓碑/代际变）→判废零写
+      if (!isAnnotationWriteLive(a.id, gen)) return false
+      // 值复判（链任务运行时——排队期间前序写可能已落同值）：lastPersisted 命中
+      // **AND** store 现值等值（双证）→真实结果=已落库，true 零冗余重写
+      const persisted = lastPersistedRef.current
+      if (persisted !== null && persisted.id === a.id && persisted.comment === comment && storeAnnotationComment(a) === comment) {
+        return true
+      }
+      const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
+      // 写前快照须先于 store 回写取（comment-edit 的 before=本次写前的标注现值）
+      const before = beforeSnapshot(a)
+      const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
+      // W2：迟到写判废——删除发起后代际已变，零 store 同步零记账（防复活）
+      if (!isAnnotationWriteLive(a.id, gen)) return false
+      // 回显写标注归属的原 tab（不读 activeId——§2.5 #19；store 按 paperId 寻址）
+      useReaderStore.getState().updateAnnotation(saved)
+      if (track === 'session') {
+        // comment-edit 条目随落库建立/推进；U/revision 已在输入刻置位（控制器
+        // onUserEdit），写回不递增 revision
+        recordCommentEdit(a.paperId, before, saved)
+      } else touchCommentEditAfter(a.paperId, a.id, saved)
+      // W3：成功等值清注册表条目（后台立存落库后不留过期恢复面）
+      annotationDraftSaved(a.id, comment)
+      useReaderStore.getState().clearTabDirty(a.paperId)
+      lastPersistedRef.current = { id: a.id, comment }
+      return true
+    } catch (e) {
+      // 保存失败：tab IO 错误旗标置位（TABS-03 两写面之一）。反向写（touch）失败不置位：
+      // 反向值不本地应用、无未落库修改可重试（notes.store.historyWriteNow「有待写才置」同义）
+      if (track !== 'touch') useReaderStore.getState().markTabDirty(a.paperId)
+      showToast(track === 'touch' ? REVERSE_WRITE_FAILED : e instanceof ApiClientError ? e.message : UPDATE_FAILED, 'error')
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** 批注保存（手动——成功收层+onChanged）。冻结门用户命令入口（quit+目标 tab
+   *  关闭在途）；autosave/raw 不闸=单元/收口驱动非用户命令入口（闸则收口自锁） */
   async function saveComment(a: Annotation, comment: string): Promise<void> {
-    if (busy || quitWriteBlocked()) {
-      return
-    }
-    // [F-VISFB-12] W1：目标已删零写（删除跳过 flush 面）
+    if (busy || quitWriteBlocked() || tabWriteBlocked(a.paperId)) return
     const gen = annotationWriteGen(a.id)
-    if (!isAnnotationWriteLive(a.id, gen)) {
-      return
-    }
-    return runBusyAction(async () => {
-      setBusy(true)
-      try {
-        const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
-        const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
-        // [F-VISFB-12] W2：迟到写判废——删除发起后代际已变，零 store 同步（防复活）
-        if (!isAnnotationWriteLive(a.id, gen)) {
-          return
-        }
-        useReaderStore.getState().updateAnnotation(saved)
-        pushUndo(a.paperId, { kind: 'comment-edit', before: a })
-        annotationDraftSaved(a.id, comment)
-        useReaderStore.getState().clearTabDirty(a.paperId)
-        // [F-VISFB-15 ②] 成功落盘面回填（autosave 等待者复判值用）
-        lastPersistedRef.current = { id: a.id, comment }
+    if (!isAnnotationWriteLive(a.id, gen)) return
+    await enqueueTabTask(a.paperId, async () => {
+      const ok = await writeTask(a, comment, gen, 'session')
+      if (ok && isAnnotationWriteLive(a.id, gen)) {
         closeEditing()
         onChanged()
-      } catch (e) {
-        // 保存失败：tab 灰点置位（TABS-03 两写面之一）
-        useReaderStore.getState().markTabDirty(a.paperId)
-        showToast(e instanceof ApiClientError ? e.message : UPDATE_FAILED, 'error')
-      } finally {
-        setBusy(false)
       }
     })
   }
 
-  /**
-   * [F-A11] 自动保存（saveComment 的静默变体）：复用 api 链+store 同步+pushUndo
-   * （会话单 entry），不收层不 onChanged。[W-A 门二] busy 毫秒级串行互斥沿承
-   * （autosave 在途置 busy→按钮禁用）；[F-VISFB-15 ②] busy 返回态收口：撞
-   * busy 不再乐观 true——等待 settle 后复判（存活/值）再走真实写链返回真实
-   * 结果（头注行为层②节态表）。
-   */
-  async function autosaveComment(a: Annotation, comment: string): Promise<boolean> {
-    // [F-VISFB-15 ②] busy 在途：等待 settle 后复判（乐观 true 收口——窄窗
-    // believing-saved 丢值：手动保存在途×失败/删除在途×失败/quit·切目标
-    // flush 撞 busy 全族由此承接收口）
-    while (busyFlightRef.current !== null) {
-      const inflight = busyFlightRef.current
-      await inflight.then(() => undefined, () => undefined)
-      // settle 后复判存活（现取代际）：删除已成功（墓碑/代际变）→零写 false
-      if (!isAnnotationWriteLive(a.id, annotationWriteGen(a.id))) {
-        return false
-      }
-      // settle 后复判值（[回炉 R2] 双条件）：lastPersisted 命中 **AND** store
-      // 现值等值（undo 第二写源否决单条命中——查无=不命中）→真实结果=已落库，
-      // true 零冗余重写
-      const persisted = lastPersistedRef.current
-      if (
-        persisted !== null &&
-        persisted.id === a.id &&
-        persisted.comment === comment &&
-        storeAnnotationComment(a) === comment
-      ) {
-        return true
-      }
-    }
-    // [F-VISFB-12] W1：目标已删零写（复判后现取——等待窗内目标可能已死）
+  /** 文本单元写（saveComment 的静默变体）：链任务+运行时复判，不收层不 onChanged */
+  function autosaveComment(a: Annotation, comment: string): Promise<boolean> {
     const gen = annotationWriteGen(a.id)
-    if (!isAnnotationWriteLive(a.id, gen)) {
-      return false
-    }
-    return runBusyAction(async () => {
-      setBusy(true)
-      try {
-        const next: Annotation = { ...a, comment, updatedAt: new Date().toISOString() }
-        const saved = await unwrap(api.reader.updateAnnotation({ annotation: next }))
-        // [F-VISFB-12] W2：迟到写判废——删除发起后代际已变，零 store 同步零 pushUndo（防复活）
-        if (!isAnnotationWriteLive(a.id, gen)) {
-          return false
-        }
-        useReaderStore.getState().updateAnnotation(saved)
-        if (pushedSessionRef.current !== a.id) {
-          pushUndo(a.paperId, { kind: 'comment-edit', before: a })
-          pushedSessionRef.current = a.id
-        }
-        // [F-VISFB-12] W3：成功等值清注册表条目（后台立存落库后不留过期恢复面）
-        annotationDraftSaved(a.id, comment)
-        useReaderStore.getState().clearTabDirty(a.paperId)
-        // [F-VISFB-15 ②] 成功落盘面回填（后续等待者复判值用）
-        lastPersistedRef.current = { id: a.id, comment }
-        return true
-      } catch (e) {
-        useReaderStore.getState().markTabDirty(a.paperId)
-        showToast(e instanceof ApiClientError ? e.message : UPDATE_FAILED, 'error')
-        return false
-      } finally {
-        setBusy(false)
-      }
-    })
+    if (!isAnnotationWriteLive(a.id, gen)) return Promise.resolve(false)
+    return enqueueTabTask(a.paperId, () => writeTask(a, comment, gen, 'session'))
   }
 
-  /** 删除：confirm 确认 → api → store 同步 → 收起（菜单/编辑器一并）→ onChanged。
-   *  [F-VISFB-64·回炉 W1] closing gate 用户命令入口（冻结期零 confirm 零 api） */
+  /** 文本单元写裸体（控制器 history 复合任务体内直调——[回炉 R5]）：运行时复判同上 */
+  function autosaveCommentRaw(a: Annotation, comment: string): Promise<boolean> {
+    const gen = annotationWriteGen(a.id)
+    if (!isAnnotationWriteLive(a.id, gen)) return Promise.resolve(false)
+    return writeTask(a, comment, gen, 'session')
+  }
+
+  /** 文本反向写裸体（undo/redo 通道——控制器 history 复合任务体内直调，[回炉 R5]）：
+   *  落库；该标注最近一条 comment-edit 仅推进 after */
+  function writeCommentRaw(a: Annotation, comment: string): Promise<boolean> {
+    const gen = annotationWriteGen(a.id)
+    if (!isAnnotationWriteLive(a.id, gen)) return Promise.resolve(false)
+    return writeTask(a, comment, gen, 'touch')
+  }
+
+  /** 删除：confirm 确认 → 链任务 → store 同步 → 收起（菜单/编辑器一并）。 */
   async function deleteAnnotation(a: Annotation): Promise<void> {
-    if (quitWriteBlocked()) {
-      return
-    }
-    if (busy || !window.confirm(DELETE_CONFIRM)) {
-      return
-    }
-    // [F-VISFB-15 ③] 出表前快照：api 失败分支回填恢复面（take=出表+取值——
-    // 编辑器挂载期草稿在 hook 自持→快照 null 零回填面）
+    if (quitWriteBlocked() || tabWriteBlocked(a.paperId)) return
+    if (busy || !window.confirm(DELETE_CONFIRM)) return
+    // ③出表前快照：api 失败分支回填恢复面（编辑器挂载期草稿在控制器自持→null 零回填面）
     const snapshot = takeAnnotationDraft(a.id)
-    // [F-VISFB-12] 删除发起即收口：草稿出注册表+写代际自增（此后到达的在途写
-    // 按 isWriteLive 判废；编辑器卸载清理的入表被墓碑拒——删除跳过 flush）
+    // delete 项载荷=删除前的标注现值（含本编辑会话已落库的批注——undo 重建不丢）；
+    // 须先于 store 移除取（移除后 store 现值查无，会回退到挂载时的陈旧对象）
+    const deleted = beforeSnapshot(a)
+    // 删除发起即收口：草稿出注册表+写代际自增（此后到达的在途写判废）
     discardAnnotationDraft(a.id)
-    return runBusyAction(async () => {
+    await enqueueTabTask(a.paperId, async () => {
       setBusy(true)
       try {
         await unwrap(api.reader.deleteAnnotation({ annotationId: a.id }))
-        // [F-VISFB-12] R7：删除成功打墓碑——save 拒入/take 恒 null/写全判废
+        // R7：删除成功打墓碑——save 拒入/take 恒 null/写全判废
         markAnnotationDeleted(a.id)
+        // 删除回显写标注归属的原 tab（不读 activeId——§2.5 #19；store 按 id 定位）
         useReaderStore.getState().removeAnnotation(a.id)
-        pushUndo(a.paperId, { kind: 'delete', annotation: a })
+        pushUndo(a.paperId, { kind: 'delete', annotation: deleted })
+        // [B4-A R2 §2.5 #2] 操作单元成功提交（delete）=新编辑事件：U=1
+        useReaderStore.getState().markTabUnfinalized(a.paperId)
+        // 删除使该标注文本 target 代际失效（§4.2——旧文本 past/future 不再可撤）
+        invalidateAnnotationText(a.paperId, a.id)
         useReaderStore.getState().clearTabDirty(a.paperId)
         closeEditing()
         closeMenu()
         onChanged()
       } catch (e) {
-        // [F-VISFB-15 ③] 删除失败补偿：快照回填（仅墓碑未打路径——恢复面不丢；
-        // 成功路径现状零回填）
+        // ③删除失败补偿：快照回填（仅墓碑未打路径——恢复面不丢）
         if (snapshot !== null) {
           saveAnnotationDraft(a.id, snapshot.comment, snapshot.failed)
         }
-        // 删除失败：tab 灰点置位（TABS-03 两写面之一）
         useReaderStore.getState().markTabDirty(a.paperId)
         showToast(e instanceof ApiClientError ? e.message : DELETE_FAILED, 'error')
       } finally {
@@ -273,5 +229,12 @@ export function useAnnotationPopupActions(args: {
     })
   }
 
-  return { saveComment, autosaveComment, deleteAnnotation }
+  return {
+    saveComment,
+    autosaveComment,
+    autosaveCommentRaw,
+    writeCommentRaw,
+    deleteAnnotation,
+    endEditSession: endCommentEditSession
+  }
 }

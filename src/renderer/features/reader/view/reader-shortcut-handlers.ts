@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useReaderStore } from '../state/reader.store'
 import { readActiveTab } from '../state/useActiveTab'
+import { finalizeActiveTab } from '../state/reader-save-coordinator'
 import { useReaderShortcuts, SCROLL_STEP_RATIO } from './ReaderShortcuts'
 import { ZOOM_STEP, round2 } from './ReaderToolbar'
 
@@ -35,7 +36,9 @@ export function useReaderShortcutHandlers(scrollAreaRef: RefObject<HTMLDivElemen
           const t = readActiveTab()
           if (t !== undefined) useReaderStore.getState().setZoom(round2(t.zoom + dir * ZOOM_STEP))
         },
-        undo: () => void useReaderStore.getState().undo()
+        undo: () => void useReaderStore.getState().undo(),
+        redo: () => void useReaderStore.getState().redo(),
+        save: () => void finalizeActiveTab()
       }
     }, [])
   )

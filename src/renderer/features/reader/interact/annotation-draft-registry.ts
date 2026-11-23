@@ -3,29 +3,30 @@
  *
  * ── 行为层（态×事件全表见 tests/unit/renderer/annotation-draft-flush.test.tsx
  *    头注与批次报告；INV-141 语义对齐：fulfilled≠已落库——flush 结果须查态）──
- * - 草稿表 drafts: Map<annotationId, { comment, failed }>——组件卸载时
- *   「已尝试未落盘」（failed/saving）或「本挂载恢复携带」的草稿入表（消费方
- *   use-annotation-draft 卸载清理判定）；同目标重挂载 take 一次性消费恢复
- *   「最新值+failed 可重试态」。未尝试 dirty 不入表（锁定锚：annotation-
- *   editor-ux「卸载清防抖」等用例共享固定 id 'anno-1'，入表即跨用例泄漏）——
- *   该面由取消/切目标先 flush 立存承接。
- * - flush 句柄表 flushHandles: Map<annotationId, () => Promise<unknown>>——
- *   编辑器挂载期注册 draft.flush，切目标（点击他条标注）时消费：fire-first
- *   发起立存不阻菜单（AnnotationLayer 点击处）。
+ * - 草稿表 drafts: Map<草稿键, { comment, failed }>——组件卸载时「已尝试未落盘」
+ *   （failed/saving）或「本挂载恢复携带」的草稿入表；同目标重挂载 take 一次性
+ *   消费恢复「最新值+failed 可重试态」。未尝试 dirty 不入表（锁定锚：annotation-
+ *   editor-ux「卸载清防抖」等用例共享固定 id）——该面由取消/切目标先 flush 承接。
+ * - flush 句柄表 flushHandles: Map<草稿键, () => Promise<unknown>>——文本控制器
+ *   挂载期注册 flush（批注=annotation.id；总评=note:<paperId>），切目标/切 tab/
+ *   定稿/退出收口消费（fire-first 立存不阻交互）。[B4-A 回炉三 A] 同一条目可携操作层
+ *   history 命令的预 flush 准备（rawPreflush——批注+总评两宿主同一注册点）。
  * - 写侧守卫（防迟到写复活，notes.store 代际先例）：annotationWriteGen 派发前
  *   捕获代际；isAnnotationWriteLive 结果到达时判定（代际变∨墓碑=目标已删判废，
- *   零 store 同步）；annotationDraftSaved 写成功等值清条目（后台写落库后注册表
- *   不留过期恢复面）。边界声明：删除 API 失败窄窗内到达的单发成功写按判废静默
- *   丢弃（服务器已有该值，本地 store 陈旧至下次事件自愈——13/14 票若需补偿
- *   再立项）。
+ *   零 store 同步）；annotationDraftSaved 写成功等值清条目。边界：删除 API 失败
+ *   窄窗内到达的单发成功写按判废静默丢弃（服务器已有该值，本地 store 陈旧至
+ *   下次事件自愈——13/14 票若需补偿再立项）。
  * - 删除侧：discardAnnotationDraft 删除发起即条目出表+代际自增；markAnnotationDeleted
  *   删除成功打墓碑（幂等）——此后 save 拒入/take 恒 null/写全判废（不复活已删目标）。
  *
  * ── 接口层 ──
- * - 全部导出为纯函数（无 React 依赖）；模块级 Map/Set 随会话存活（单用户本地
- *   应用，KB 量级线性增长接受——notes.store 模块级元数据同口径）
+ * - 全部导出为纯函数（无 React 依赖；useTextDraftRegistryBinding 例外——控制器
+ *   挂载绑定）；模块级 Map/Set 随会话存活（单用户本地应用，KB 量级线性增长
+ *   接受——notes.store 模块级元数据同口径）
  */
+import { useLayoutEffect } from 'react'
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
+import type { RawPreflush } from '../state/reader-text-controller'
 
 /** 卸载期草稿快照：comment=最新未落盘值；failed=最近一次保存尝试是否失败（重挂载恢复态依据） */
 export interface AnnotationDraftSnapshot {
@@ -36,11 +37,18 @@ export interface AnnotationDraftSnapshot {
 /** flush 句柄形态（结构兼容 use-annotation-draft 的 draft.flush；不 import 其类型以避循环） */
 export type AnnotationDraftFlush = () => Promise<unknown>
 
+/** [B4-A 回炉三 A] 操作层 history 命令的预 flush 准备（controller.flushPendingRaw——
+ *  命令起步时同步调用，返回链任务体内直调的裸预 flush 体）；paperId=控制器所属 tab */
+export interface AnnotationDraftRawPreflush {
+  paperId: string
+  prepare(): RawPreflush
+}
+
 /** 卸载后可重试的最新草稿（重挂载恢复面） */
 const drafts = new Map<string, AnnotationDraftSnapshot>()
 
-/** 挂载期 flush 句柄（切目标立存面） */
-const flushHandles = new Map<string, AnnotationDraftFlush>()
+/** 挂载期 flush 句柄（切目标立存面）；rawPreflush=[回炉三 A] 操作层预 flush 准备（可缺） */
+const flushHandles = new Map<string, { flush: AnnotationDraftFlush; rawPreflush?: AnnotationDraftRawPreflush }>()
 
 /** 每目标写代际：删除发起自增——先捕获的写在结果到达时代际不匹配即判废 */
 const generations = new Map<string, number>()
@@ -77,14 +85,14 @@ export function annotationDraftSaved(id: string, comment: string): void {
   }
 }
 
-/** 挂载期注册 flush 句柄（编辑器 mount effect；重复注册=同 id 单编辑器，覆盖无害）。
+/** 挂载期注册 flush 句柄（重复注册=同 id 单编辑器，覆盖无害）。
  *  [F-VISFB-64] closing gate：冻结期句柄变更拒绝（挂载/卸载用户命令——设计 §④） */
-export function registerDraftFlush(id: string, flush: AnnotationDraftFlush): void {
+export function registerDraftFlush(id: string, flush: AnnotationDraftFlush, rawPreflush?: AnnotationDraftRawPreflush): void {
   if (quitWriteBlocked()) return
-  flushHandles.set(id, flush)
+  flushHandles.set(id, { flush, rawPreflush })
 }
 
-/** 卸载注销 flush 句柄（[F-VISFB-64] closing gate 同上——冻结期拒绝） */
+/** 卸载注销 flush 句柄（closing gate 同上——冻结期拒绝） */
 export function unregisterDraftFlush(id: string): void {
   if (quitWriteBlocked()) return
   flushHandles.delete(id)
@@ -92,7 +100,7 @@ export function unregisterDraftFlush(id: string): void {
 
 /** 切目标消费：发起该目标 draft.flush（fire-first 立存）；无挂载句柄返回 null */
 export function flushAnnotationDraft(id: string): Promise<unknown> | null {
-  const handle = flushHandles.get(id)
+  const handle = flushHandles.get(id)?.flush
   if (handle === undefined) {
     return null
   }
@@ -100,23 +108,90 @@ export function flushAnnotationDraft(id: string): Promise<unknown> | null {
 }
 
 /**
+ * [B4-A R1 §11.1] 文本控制器挂载绑定（use-annotation-draft 的注册表接线——
+ * 草稿、flush 句柄与文本 target 身份适配；状态机驻控制器）。useLayoutEffect
+ * （key=草稿注册表键）：①attach（存活位复位+注册表订阅——StrictMode 重挂回真）
+ * ②恢复（H1）卸载草稿命中且≠服务器值→恢复值+态 ③flush 句柄注册（finalize/quit/
+ * 切目标收口消费面）④卸载=注销句柄+dispose+按 R1 入表（未尝试 dirty 不入表锚保持）。
+ */
+export interface TextDraftBindingDeps {
+  /** 草稿注册表键（批注=annotation.id；总评=note:<paperId>）——句柄/草稿表同键；
+   *  null=无编辑目标（空态规约：不注册、不恢复） */
+  id: string | null
+  initial: string
+  attach(): void
+  getComment(): string
+  /** 已知落库值（null=当前显示值来源未落库） */
+  getLastSaved(): string | null
+  getState(): 'clean' | 'dirty' | 'saving' | 'saved' | 'failed'
+  /** 恢复携带（调用侧置 restored 标志+按值/failed 应用恢复态） */
+  applyRestore(comment: string, failed: boolean): void
+  wasRestored(): boolean
+  flush(): Promise<unknown>
+  dispose(): void
+  /** 卸载即收口（总评 true：离场先关闭单元并无在途写时 fire flush——其空闲计时
+   *  随卸载消亡；批注编辑器 false：未尝试 dirty 不入表锚，由切目标/离场挂点承接） */
+  closeoutOnUnmount: boolean
+  /** 卸载收口体（闭合单元+条件立存） */
+  closeout(): void
+  /** [B4-A 回炉三 A] 操作层 history 命令的预 flush 准备（controller.flushPendingRaw） */
+  rawPreflush?(): AnnotationDraftRawPreflush
+}
+
+export function useTextDraftRegistryBinding(deps: TextDraftBindingDeps): void {
+  useLayoutEffect(() => {
+    const d = deps
+    const id = d.id
+    if (id === null) return
+    d.attach()
+    const entry = takeAnnotationDraft(id)
+    if (entry !== null && entry.comment !== d.initial) {
+      d.applyRestore(entry.comment, entry.failed)
+    }
+    registerDraftFlush(id, () => d.flush(), d.rawPreflush?.())
+    return () => {
+      // 先闭合单元+条件立存（链任务不随卸载消亡），再销毁控制器
+      if (d.closeoutOnUnmount) d.closeout()
+      unregisterDraftFlush(id)
+      d.dispose()
+      // 卸载注册（R1）：已尝试未落盘（failed/saving）或恢复携带的草稿入表；
+      // 未尝试 dirty 不入（锁定锚语义保持）
+      const state = d.getState()
+      const attempted = state === 'failed' || state === 'saving'
+      if (d.getComment() !== d.getLastSaved() && (attempted || d.wasRestored())) {
+        saveAnnotationDraft(id, d.getComment(), state === 'failed')
+      }
+    }
+    // 依赖=草稿注册表键：target 变更换控制器——整段重挂（deps 其余成员随 key 闭包稳定）
+  }, [deps.id])
+}
+
+/**
  * [F-VISFB-14] 全量 flush 句柄快照（退出握手/关 tab 收口消费）：已挂载编辑器
  * 的句柄数组（快照——遍历期注册/注销不破坏）；clean 编辑器 flush=no-op（值
  * 等于 lastSaved 零写发出）。消费方 await 全部句柄后查各自返回态（句柄返回
- * use-annotation-draft 的 SaveState——'failed' 即未落库，INV-141 fulfilled≠
- * 已落库）。
+ * 控制器 SaveState——'failed' 即未落库，INV-141 fulfilled≠已落库）。
  */
 export function allDraftFlushHandles(): AnnotationDraftFlush[] {
-  return [...flushHandles.values()]
+  return [...flushHandles.values()].map((h) => h.flush)
+}
+
+/** [B4-A 回炉三 A] 操作层 history 命令目标 tab 的预 flush 准备快照（命令起步时逐个
+ *  调 prepare）。只取该 tab 的控制器——裸预 flush 体由调用方链任务承载，他 tab 归其写链 */
+export function allDraftRawPreflushes(paperId: string): AnnotationDraftRawPreflush[] {
+  return [...flushHandles.values()].flatMap((h) =>
+    h.rawPreflush !== undefined && h.rawPreflush.paperId === paperId ? [h.rawPreflush] : []
+  )
 }
 
 /**
  * [F-VISFB-15 ①面1/3] fire-first 全量句柄立存（切 tab 离场/视图路由离场
- * 'reader' 消费——un-attempted dirty〔<800ms 防抖窗内值，INV-141④ 不入表面〕
- * 随组件消亡丢值的预防面）：同步发起各句柄 flush 不阻离场（零新增用户可见
- * 等待）；失败承接=句柄 failed→卸载注册承接重挂载重试+写路径 markTabDirty
- * 观测面；句柄异常吞接（零 unhandled rejection）。挂载编辑器恒属 ACTIVE
- * tab（AnnotationLayer 只随活动篇渲染）——离场消费即定向，无需 paperId 键。
+ * 'reader' 消费——un-attempted dirty〔<1.5s 空闲窗内值，INV-141④ 不入表面〕
+ * 随组件消亡丢值的预防面；[B4-A R1 §3] 离场先关闭离场目标单元并 fire flush）：
+ * 同步发起各句柄 flush 不阻离场（零新增用户可见等待）；失败承接=句柄 failed→
+ * 卸载注册承接重挂载重试+写路径 markTabDirty 观测面；句柄异常吞接（零
+ * unhandled rejection）。挂载编辑器恒属 ACTIVE tab（AnnotationLayer 只随
+ * 活动篇渲染；总评面板同）——离场消费即定向，无需 paperId 键。
  */
 export function fireAllDraftFlushes(): void {
   for (const flush of allDraftFlushHandles()) {

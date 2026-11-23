@@ -78,12 +78,12 @@ describe('workspace.store', () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('switchTo dirty 且用户取消：confirm 弹「切换课题将丢弃未保存」文案，IPC 与 reload 均不被调', async () => {
+  it('switchTo dirty 且用户取消：confirm 弹「先保存全部修改」文案，IPC 与 reload 均不被调', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => false)
     useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
     await useWorkspaceStore.getState().switchTo('b', { dirty: true })
     expect(confirmSpy).toHaveBeenCalledTimes(1)
-    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('切换课题将丢弃未保存')
+    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('先保存全部修改')
     expect(stubApi.workspaces.switch).not.toHaveBeenCalled()
     expect(reloadSpy).not.toHaveBeenCalled()
   })
@@ -125,35 +125,57 @@ describe('workspace.store', () => {
   })
 })
 
-// ── A3 悬置写修票（2026-09-02，always-active——文末追加）──
-// switchTo 兼任切课题弃改收口点（INV-35④ 显式防悬置写）：确认通过/clean 直达
-// 即 discardAll notes 悬置编辑（reload 前零 timer 零内存草稿）；取消不弃改。
-// 经真实 notes.store 状态断言（edit 同步打点，不经 api——本文件 api 桩无 notes 域）。
-describe('workspace.store switchTo 弃改收口（A3/INV-35④）', () => {
+// ── A3 悬置写修票（2026-09-02→B4-A R2 迁移 2026-11-23）──
+// 旧「确认后 discardAll notes 悬置编辑」弃改收口随 R2 退役（§2.5 #38）：
+// 确认通过后必须全量 prepare（flush+清史编排）成功才 switch——失败留旧课题
+// 零副作用（不 discard 不清史）；U 单独不触发确认。
+describe('workspace.store switchTo 全量 prepare 编排（B4-A R2 §2.5 #38）', () => {
   beforeEach(() => {
     useNotesStore.setState({ noteByPaper: {} })
   })
 
-  it('确认接受→discardAll 生效（两篇 pending→零条目）；取消不弃改；clean 直达幂等', async () => {
+  it('prepare 失败：留旧课题（零 IPC 零 reload 零弃改——草稿/状态全保留）', async () => {
     useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
     useNotesStore.getState().edit('p-1', { contentMd: '甲草稿' })
-    useNotesStore.getState().edit('p-2', { contentMd: '乙草稿' })
-    // 取消：零 IPC 零弃改（弃改语义只在确认后）
-    vi.spyOn(window, 'confirm').mockImplementation(() => false)
-    await useWorkspaceStore.getState().switchTo('b', { dirty: true })
-    expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
-    expect(stubApi.workspaces.switch).not.toHaveBeenCalled()
-    // 确认接受：discardAll 收口（M4 锚：接线缺席即红）——reload 桩维持既有形态
     vi.spyOn(window, 'confirm').mockImplementation(() => true)
-    await useWorkspaceStore.getState().switchTo('b', { dirty: true })
-    expect(useNotesStore.getState().noteByPaper['p-1']).toBeUndefined()
-    expect(useNotesStore.getState().noteByPaper['p-2']).toBeUndefined()
+    const prepare = vi.fn(async () => false)
+    await useWorkspaceStore.getState().switchTo('b', { dirty: true, prepare })
+    expect(prepare).toHaveBeenCalledTimes(1)
+    expect(stubApi.workspaces.switch).not.toHaveBeenCalled()
+    expect(reloadSpy).not.toHaveBeenCalled()
+    // 零弃改：pending 草稿原样保留（失败可重试——不执行 discard）
+    expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
+  })
+
+  it('prepare 成功：release（onConfirmed）→switch→reload；确认在 prepare 之前', async () => {
+    vi.spyOn(window, 'confirm').mockImplementation(() => true)
+    useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
+    const calls: string[] = []
+    const prepare = vi.fn(async () => {
+      calls.push('prepare')
+      return true
+    })
+    const onConfirmed = vi.fn(async () => {
+      calls.push('release')
+    })
+    stubApi.workspaces.switch.mockImplementation(async () => {
+      calls.push('switch')
+      return { ok: true, data: { ok: true } }
+    })
+    await useWorkspaceStore.getState().switchTo('b', { dirty: true, prepare, onConfirmed })
+    expect(calls).toEqual(['prepare', 'release', 'switch'])
+    expect(reloadSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('无 dirty（IO 净）不弹确认；prepare 仍在 switch 之前执行（无论是否确认都全量 flush）', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
+    const prepare = vi.fn(async () => true)
+    await useWorkspaceStore.getState().switchTo('b', { dirty: false, prepare })
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(prepare).toHaveBeenCalledTimes(1)
     expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'b' })
     expect(reloadSpy).toHaveBeenCalledTimes(1)
-    // clean 直达：收口调用幂等（无 pending 时 no-op 不抛）
-    useWorkspaceStore.setState({ items: [WS_A, WS_B], currentId: 'a' })
-    await useWorkspaceStore.getState().switchTo('b', { dirty: false })
-    expect(reloadSpy).toHaveBeenCalledTimes(2)
   })
 })
 

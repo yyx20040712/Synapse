@@ -147,7 +147,7 @@ describe('T3-P4 批注弹层归一 —— AnnotationEditor textarea 底=--panel-
       root!.render(
         <AnnotationEditor annotation={makeAnnotation('批注草稿')} rect={rect} busy={false}
           onCancel={() => undefined} onSave={() => undefined} onDelete={() => undefined}
-          onAutosave={async () => true} />
+          onAutosave={async () => true} onAutosaveRaw={async () => true} />
       )
     })
     const textarea = host!.querySelector<HTMLTextAreaElement>('textarea[aria-label="批注内容"]')

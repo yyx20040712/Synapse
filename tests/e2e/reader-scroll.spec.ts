@@ -240,12 +240,12 @@ test.describe('reader-scroll —— F-04 收官', () => {
     // ── 七、进度恢复（收官链尾）：底部中心页记账→关 tab flush→重开滚回记忆页 ──
     const lastPage = await centerPageBox()
     expect(lastPage).toBeGreaterThanOrEqual(5)
-    // 高亮保存已置 dirty：关 tab 走 window.confirm 二次确认——自动接受
-    win.on('dialog', (d) => {
-      void d.accept()
-    })
+    // [B4-A R2 §12.3 迁移] 高亮创建已置 unfinalized：关 tab 走自绘二选 Dialog
+    // （原生 window.confirm 退役）——点击「是」确认关闭
     const tabBar = win.getByRole('tablist', { name: '打开的文献' })
     await tabBar.getByRole('tab').first().getByRole('button').click()
+    await expect(win.getByText('当前文件未被标记为已保存，是否确认关闭？')).toBeVisible({ timeout: 5_000 })
+    await win.getByTestId('close-tab-confirm-yes').click()
     await expect(tabBar.getByRole('tab')).toHaveCount(0)
     await win.getByRole('button', { name: '文献库' }).click()
     await win.getByText('智慧水务 e2e F04 收官文献').first().dblclick()

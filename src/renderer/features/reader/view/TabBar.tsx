@@ -8,22 +8,23 @@
  * - 每个 tab 项：标题（title 优先——file_ref 为内容寻址哈希名不可读，2026-08-27
  *   用户视检缺陷②；fileName 去扩展名兜底，超长截断省略）、激活态高亮、
  *   loading 态 spinner、error 态红字、关闭叉（closeTab）
+ * - [B4-A R2 §10.1] 灰点=tab.unfinalized（U 轴单源——「未定稿」非「未落库」；
+ *   idle-flush 落库后灰点仍在，显式保存清）；旧 annoDirty||notesPending 双源
+ *   灰点语义退役
  * - 点击 tab 体 = activateTab(id)（换 tab 暂停非卸载——TABS-01 语义）
  * - 空态：无 tab（order 空）时整栏不渲染
  * - 键盘可达：容器 role="tablist"，tab 项 role="tab" + roving tabindex
  *   （ArrowLeft/Right 在项间循环移动焦点——TabBar 组件主语管理；焦点内按键
  *   属 DOM 语义非全局快捷键，不经 keymap）
+ * - [B4-A R2 §10.2] 关闭二选/失败 Dialog 宿主=CloseTabDialogHost（自本件拆出）
  *
  * ── 接口层 ──
  * - export function TabBar(): JSX.Element | null（空态返回 null）
- *   （数据自取 store；无 props——装配点是 ReaderPage 返回根 div 顶部，
- *   TABS-01 选择器同族）
+ *   （数据自取 store；无 props——装配点是 ReaderPage 返回根 div 顶部）
  *
  * ── 架构层 ──
- * - renderer features/reader 域内组件；只 import reader.store；
- *   接缝：ReaderPage.tsx 顶部装配（本工单改动面）
- * - 灰点位（tab 项上的圆点标记）与关闭脏 tab 确认框属 TABS-03——本单
- *   关闭即关（无确认），dirty 信号接入后升级
+ * - renderer features/reader 域内组件；只 import reader.store/reader-close-tab；
+ *   接缝：ReaderPage.tsx 顶部装配
  *
  * ── 生命周期层 ──
  * - 预留：tab 拖拽排序（P8+）；不做：多行 tab 折叠（单行滚动即可）
@@ -33,17 +34,17 @@
  * - 测试：tests/unit/renderer/tab-bar.test.tsx（受锁）：渲染序=order、
  *   激活高亮、点击 activate、关闭叉 closeTab、loading/error 态呈现、空态隐藏、
  *   role="tablist"/"tab" 语义、roving 键盘（左右+循环）
- * - [R3-RDR→T3-P4 皮肤票] tab 条=.rdr-tabbar（mockup .tabbar：line-soft 条+
- *   圆角顶 tab）；active=panel 底+accent 2px 底缘（.rdr-tab-active）；dirty
- *   灰点=6px 圆（.rdr-dirty-dot）；关闭叉 hover=token 承载（.rdr-tab-close
- *   ——旧 hover:bg-black/10 硬编码退役）；role/aria/tabIndex/.truncate 结构
- *   零变（tab-bar.test 断言面）
+ * - [T3-P4] tab 条=.rdr-tabbar；active=.rdr-tab-active；灰点=.rdr-dirty-dot；
+ *   关闭叉=.rdr-tab-close；role/aria/tabIndex/.truncate 结构零变（tab-bar.test
+ *   断言面）
  */
 import { useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { ICON_X } from '../../../shared/icons'
 import { useReaderStore } from '../state/reader.store'
-import { isTabDirty, requestCloseTab, switchTabFlushFirst, useNotesDrafts } from '../state/tab-dirty'
+import { switchTabFlushFirst } from '../state/tab-dirty'
+import { requestCloseTab } from '../state/reader-close-tab'
+import { CloseTabDialogHost } from './CloseTabDialogHost'
 import type { TabState } from '../state/reader.store'
 
 /** tab 项标题：title 优先（文献名——缺陷②）；空 title 兜底 fileName 去扩展名
@@ -59,9 +60,6 @@ export function TabBar(): JSX.Element | null {
   const activeId = useReaderStore((s) => s.activeId)
   const tabs = useReaderStore((s) => s.tabs)
   const closeTab = useReaderStore((s) => s.closeTab)
-  // notes 面灰点信号（TABS-03）：per-paper pending 镜像（字典订阅——dirty
-  // 写频极低，细粒度化按 Rule of Three 缓议）
-  const notesByPaper = useNotesDrafts()
   // roving 焦点位：焦点所在项 tabIndex=0（未聚焦时=激活项）；Arrow 移动后随焦点走
   const [focusedId, setFocusedId] = useState<string | null>(null)
 
@@ -86,12 +84,23 @@ export function TabBar(): JSX.Element | null {
     next?.focus()
   }
 
+  /** 关闭命令（关闭叉/Delete 键两位）：requestCloseTab 二选/失败状态机收口——
+   *  true 才执行 closeTab（清史接缝在 store）。关闭流程在途期间的重复请求拿到的
+   *  是同一 promise（§2.5 #24），多个等待方同获 true——tab 仍在才收口，store 接缝
+   *  只执行一次 */
+  const runClose = (id: string): void => {
+    void requestCloseTab(id)
+      .then((allow) => {
+        if (allow && useReaderStore.getState().tabs[id] !== undefined) closeTab(id)
+      })
+      .catch(() => undefined)
+  }
+
   return (
     <div
       role="tablist"
       aria-label="打开的文献"
-      // [T3-P4] tab 条皮肤=.rdr-tabbar（mockup .tabbar：line-soft 条+34px——
-      // theme-reader.css 单源）；overflow-x 单行滚动（单行滚动即可——P8 预留注）
+      // [T3-P4] tab 条皮肤=.rdr-tabbar；overflow-x 单行滚动（单行滚动即可）
       className="rdr-tabbar shrink-0 overflow-x-auto"
       onKeyDown={onKeyDown}
     >
@@ -100,11 +109,8 @@ export function TabBar(): JSX.Element | null {
         if (tab === undefined) return null
         const active = id === activeId
         const title = tabTitle(tab)
-        // 两写面灰点（TABS-03）：annotations 失败残留 ∥ notes 未落库
-        const dirty = isTabDirty(id, {
-          annoDirty: tab.dirty,
-          notesPending: notesByPaper[id] ?? false
-        })
+        // [B4-A R2 §10.1] 灰点=未定稿轴（idle-flush 落库不清；显式保存清）
+        const unfinalized = tab.unfinalized === true
         return (
           <div
             key={id}
@@ -112,8 +118,6 @@ export function TabBar(): JSX.Element | null {
             aria-selected={active}
             tabIndex={id === rovingId ? 0 : -1}
             data-tab-id={id}
-            // [T3-P4] tab 基形+active 态全住皮肤类（.rdr-tab/.rdr-tab-active——
-            // mockup .tab 语汇）；error 红字仍内联（条件色无类载体）
             className={`rdr-tab min-w-0 shrink-0 cursor-pointer${active ? ' rdr-tab-active' : ''}`}
             style={{ color: tab.status === 'error' ? 'var(--danger)' : undefined }}
             onClick={() => switchTabFlushFirst(id)}
@@ -121,27 +125,23 @@ export function TabBar(): JSX.Element | null {
             onKeyDown={(ev) => {
               // 键盘激活（div[role=tab] 无内建行为）：Enter/Space 等价点击 tab 体；
               // Delete 关闭（关闭叉已退出 Tab 序——纯键盘用户的关闭替代路径）。
-              // 激活两径经 switchTabFlushFirst（[回炉 B-1] 离场篇 flush-first
-              // 立存）；关闭经 requestCloseTab（[F-VISFB-14] flush-first 守门）
+              // 激活两径经 switchTabFlushFirst（离场篇 flush-first 立存）；关闭经
+              // requestCloseTab（[B4-A R2] closing 状态机——二选/失败 Dialog）
               if (ev.key === 'Enter' || ev.key === ' ') {
                 ev.preventDefault()
                 switchTabFlushFirst(id)
               } else if (ev.key === 'Delete') {
                 ev.preventDefault()
-                void requestCloseTab(id)
-                  .then((allow) => {
-                    if (allow) closeTab(id)
-                  })
-                  .catch(() => undefined)
+                runClose(id)
               }
             }}
           >
-            {dirty && (
+            {unfinalized && (
               <span
-                title="有未保存修改"
-                aria-label="有未保存修改"
+                title="未标记为已保存"
+                aria-label="未标记为已保存"
                 data-testid="tab-dirty-dot"
-                // [T3-P4] 6px 圆灰点（mockup .dirty-dot——旧 ● 字符退役）
+                // [T3-P4] 6px 圆灰点（.rdr-dirty-dot）
                 className="rdr-dirty-dot"
               />
             )}
@@ -151,21 +151,11 @@ export function TabBar(): JSX.Element | null {
               aria-label={`关闭 ${title}`}
               title={`关闭 ${title}`}
               tabIndex={-1}
-              // [T3-P4] 关闭叉语汇住皮肤类（.rdr-tab-close——hover=token 承载，
-              // 旧 hover:bg-black/10 硬编码退役）；[F-UIRES-02 批 B] ✕ 字符→
-              // ICON_X 图标（aria-label 受锁锚零变+title 同源悬停提示）
+              // [T3-P4] 关闭叉语汇住皮肤类；[F-UIRES-02 批 B] ✕ 字符→ICON_X
               className="rdr-tab-close syn-icon-btn ml-1 shrink-0 leading-none"
               onClick={(ev) => {
                 ev.stopPropagation()
-                // [F-VISFB-14 C-A3 翻案] 关闭叉=flush-first 异步收口：dirty 先
-                // 立存最新值（重入锁挡连点第二击），净=关闭/失败=显式放弃路径
-                // （[回炉 W-4] .catch 补 rejection 面——requestCloseTab 自身已
-                // 内吞 flushNow 异常，此处为接线位兜底）
-                void requestCloseTab(id)
-                  .then((allow) => {
-                    if (allow) closeTab(id)
-                  })
-                  .catch(() => undefined)
+                runClose(id)
               }}
             >
               {ICON_X}
@@ -173,6 +163,9 @@ export function TabBar(): JSX.Element | null {
           </div>
         )
       })}
+      {/* [B4-A R2 §10.2] 关闭二选/失败 Dialog 宿主（fixed 定位——随本栏挂载，
+          关闭中的 tab 恒在 order 内故空态 null 不吞对话框） */}
+      <CloseTabDialogHost />
     </div>
   )
 }

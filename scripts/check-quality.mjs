@@ -92,10 +92,10 @@ for (const f of [...srcFiles, ...testFiles, join(root, 'AGENTS.md'), join(root, 
 //    是脉络侧板的 AI 笔记分节（蓝图 N3 四区之一），分色/中文标签消费
 //    ai-note-style 单源（INV-11——跨域复用与域内复写二害取轻：白名单受控
 //    例外防映射双源；数据面走 window.api 直连不经 reader store，见该域
-//    W4 裁决），lineage 域其余文件引用 reader 仍是红线。A3（2026-09-02）：
-//    workspace.store 是课题切换弃改收口点（INV-35④ 显式防悬置写兑现——切课题
-//    确认后 discardAll notes 悬置编辑，聚合职责即消费 notes.store），
-//    workspaces 域其余文件引用 notes 仍是红线
+//    W4 裁决），lineage 域其余文件引用 reader 仍是红线。A3（2026-09-02→
+//    B4-A R2 2026-11-23 退役）：workspace.store 曾是课题切换弃改收口点
+//    （确认后 discardAll notes 悬置编辑）——R2 起课题切换改「先全量 flush
+//    成功再切换」（§2.5 #38），该文件不再引 notes.store，白名单行随批删除
 // F-LGRAPH-01①U4（2026-10-01）：LineagePage 挂载时读 library.store
 // query.folderScope 一次（缺省图=库页文件夹上下文同步——mockup §3.2 明文；
 // 接缝双向锚定两 store 头注），聚合消费单点受控例外，lineage 域其余文件
@@ -108,10 +108,13 @@ const COMPOSITION_ROOT_ALLOW = new Map([
   ['src/renderer/features/library/PaperDetailPanel.tsx', ['tags/TagEditor']],
   ['src/renderer/features/library/FilterBar.tsx', ['tags/TagDropdown']],
   ['src/renderer/features/reader/state/tab-dirty.ts', ['notes/notes.store']],
+  // [B4-A R2 2026-11-23] reader-close-tab 是关 tab 收口组合点（closing 状态机
+  // 迁驻——tab-dirty 同型先例：notes flushNow/查态经白名单受控消费），reader
+  // 域其余文件引用 notes 仍是红线。
+  ['src/renderer/features/reader/state/reader-close-tab.ts', ['notes/notes.store']],
   ['src/renderer/features/reader/panels/ReaderNotesPanel.tsx', ['notes/notes.store']],
   ['src/renderer/features/settings/useExportCorpusEvents.ts', ['reader/state/CorpusExtractor']],
   ['src/renderer/features/lineage/LineageSideAiNotes.tsx', ['reader/anchors/ai-note-style']],
-  ['src/renderer/features/workspaces/workspace.store.ts', ['notes/notes.store']],
   ['src/renderer/features/lineage/LineagePage.tsx', ['library/library.store']],
   ['src/renderer/features/lineage/LineageSideFragments.tsx', ['reader/anchors/annotation-style']],
   // [B3 批 2026-11-20] LineageSidePanel 引用分节消费 library/DrCitation（两

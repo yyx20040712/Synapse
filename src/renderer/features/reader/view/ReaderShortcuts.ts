@@ -14,8 +14,12 @@
  * - 空格=下滚一屏（F-03 新增，满屏步长 spaceScroll；editable 避让=既有 keymap 层
  *   保障——textarea 内原生输入透传）；preventDefault 保留（语义=统一滚动步长，
  *   阻断原生滚动/翻页默认行为防双移动）
- * - ctrl+z：撤销标注操作栈（actions.undo——reader.store.undo 动作面）；editable
- *   焦点由 keymap 避让走 textarea 原生 undo（UNDO-01：本栈不接管编辑场景）
+ * - ctrl+z：操作层撤销（actions.undo——reader.store.undo 协调链）；editable
+ *   焦点由 keymap 避让（批注/总评 textarea 内为文本值层接管——B4-A R1 §10.3
+ *   焦点分层：本表只服务非 editable 目标）
+ * - [B4-A R1] ctrl+y / ctrl+shift+z：操作层重做（actions.redo）；ctrl+s：
+ *   显式保存=tab 级 finalize（actions.save——非 editable 面；textarea 内由
+ *   编辑器/笔记面板局部接管同一定稿命令）
  * - ctrl+滚轮缩放：document wheel 监听（本模块统一持有，成对注销，passive:false
  *   以允许 preventDefault 阻止 Chromium 页面缩放）；ctrlKey 时 preventDefault 并调
  *   actions.zoomStep(±1)（deltaY<0=上滚放大）；无 ctrl 透传
@@ -83,15 +87,23 @@ export interface ReaderShortcutActions {
   /** 空格：下滚一屏（满屏步长——F-03 新增） */
   spaceScroll(): void
   zoomStep(dir: 1 | -1): void
+  /** 操作层撤销（非 editable——keymap 避让 editable） */
   undo(): void
+  /** 操作层重做（ctrl+y 与 ctrl+shift+z 同命令） */
+  redo(): void
+  /** 显式保存=当前 tab finalize（ctrl+s） */
+  save(): void
 }
 
 export function useReaderShortcuts(actions: ReaderShortcutActions): void {
-  const { prevPage, nextPage, spaceScroll, zoomStep, undo } = actions
+  const { prevPage, nextPage, spaceScroll, zoomStep, undo, redo, save } = actions
   useEffect(() => {
     const bindings: readonly KeyBinding[] = [
       { key: 'c', ctrl: true, preventDefault: true, handler: copySelection },
       { key: 'z', ctrl: true, preventDefault: true, handler: undo },
+      { key: 'z', ctrl: true, shift: true, preventDefault: true, handler: redo },
+      { key: 'y', ctrl: true, preventDefault: true, handler: redo },
+      { key: 's', ctrl: true, preventDefault: true, handler: save },
       // 滚动步键 preventDefault：阻断原生滚动/空格翻页默认行为——统一滚动步长
       // 由动作面执行（F-03 语义迁移：步长常量 SCROLL_STEP_RATIO 单源）
       ...PAGE_KEYS.map(
@@ -119,5 +131,5 @@ export function useReaderShortcuts(actions: ReaderShortcutActions): void {
       unregisterKeymap(KEYMAP_ID)
       document.removeEventListener('wheel', onWheel)
     }
-  }, [prevPage, nextPage, spaceScroll, zoomStep, undo])
+  }, [prevPage, nextPage, spaceScroll, zoomStep, undo, redo, save])
 }

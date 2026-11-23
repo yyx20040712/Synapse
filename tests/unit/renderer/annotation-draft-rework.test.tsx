@@ -24,6 +24,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeAnnotation } from '../../utils/factories'
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
+import type * as annotationUndoModule from '../../../src/renderer/features/reader/state/annotation-undo'
 import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
 import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import { AnnotationEditor } from '../../../src/renderer/features/reader/view/AnnotationEditor'
@@ -37,6 +39,7 @@ const mocks = vi.hoisted(() => ({
   apiDelete: vi.fn(),
   storeUpdateAnnotation: vi.fn(),
   storeMarkTabDirty: vi.fn(),
+  storeMarkTabUnfinalized: vi.fn(),
   storeClearTabDirty: vi.fn(),
   storeRemoveAnnotation: vi.fn(),
   storeNotifyNoteHighlight: vi.fn(),
@@ -51,6 +54,8 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => {
   const storeActions = {
     updateAnnotation: mocks.storeUpdateAnnotation,
     markTabDirty: mocks.storeMarkTabDirty,
+    // [B4-A R2 fixture migration] U-axis write point (controller edit chain)
+    markTabUnfinalized: mocks.storeMarkTabUnfinalized,
     clearTabDirty: mocks.storeClearTabDirty,
     removeAnnotation: mocks.storeRemoveAnnotation,
     notifyNoteHighlight: mocks.storeNotifyNoteHighlight
@@ -63,13 +68,26 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => {
   }
 })
 
-vi.mock('../../../src/renderer/features/reader/state/annotation-undo', () => ({
-  pushUndo: mocks.pushUndo,
-  undo: vi.fn(),
-  clearStack: vi.fn(),
-  stackDepth: vi.fn(() => 0),
-  UNDO_DEPTH_MAX: 50
-}))
+// [B4-A R1 迁移] annotation-undo 替身改展开型：合并会话记账（recordCommentEdit/
+// endCommentEditSession/touchCommentEditAfter）用真实现，pushUndo 保留调用 spy（透传）
+vi.mock('../../../src/renderer/features/reader/state/annotation-undo', async (importOriginal) => {
+  const real = await importOriginal<typeof annotationUndoModule>()
+  return {
+    ...real,
+    clearStack: vi.fn(),
+    pushUndo: (...args: Parameters<typeof real.pushUndo>) => {
+      mocks.pushUndo(...args)
+      return real.pushUndo(...args)
+    },
+    // 合并会话：会话内新条目入栈（栈深前进）才计入 pushUndo spy——同会话续写不新建条目
+    recordCommentEdit: (...args: Parameters<typeof real.recordCommentEdit>) => {
+      const depthBefore = real.stackDepth(args[0])
+      const entry = real.recordCommentEdit(...args)
+      if (real.stackDepth(args[0]) > depthBefore) mocks.pushUndo(args[0], entry)
+      return entry
+    }
+  }
+})
 
 const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
 
@@ -147,6 +165,7 @@ function renderEditor(
 ): { onAutosave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn> } {
   const onAutosave = (props.onAutosave ?? vi.fn(() => Promise.resolve(true))) as ReturnType<typeof vi.fn>
   const onCancel = (props.onCancel ?? vi.fn()) as ReturnType<typeof vi.fn>
+  // [B4-A 回炉 R5 fixture migration] 裸写体端口必选：夹具写体本就不入链，同一桩兼作裸通道
   act(() => {
     root!.render(
       <AnnotationEditor
@@ -157,6 +176,7 @@ function renderEditor(
         onSave={props.onSave ?? vi.fn()}
         onDelete={props.onDelete ?? vi.fn()}
         onAutosave={onAutosave}
+        onAutosaveRaw={onAutosave}
       />
     )
   })
@@ -213,7 +233,7 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     expect(textarea().value).toBe('x')
     expect(savedFlag()).toBeNull()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     expect(onAutosave).toHaveBeenLastCalledWith('x')
@@ -255,7 +275,7 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     expect(takeAnnotationDraft(a.id)).toEqual({ comment: 'f', failed: true })
   })
 
-  it('S8（W-1 删除失败序列）：删除 API 失败后在途写判废静默丢弃，目标仍活新写 live 自愈', async () => {
+  it('S8（W-1 删除失败序列）：[B4-A R1 lane 顺序] 删除排在在途写之后——写在删除发起后落定即判废静默丢弃，删除失败后目标仍活新写 live 自愈', async () => {
     const a = annoOf('f12r-d1')
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const d1 = deferred<{ ok: boolean; data: Annotation }>()
@@ -285,28 +305,33 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     })
     typeInto(textarea(), 'x')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     act(() => {
       buttonByLabel('删除').click()
     })
-    await act(async () => {
-      delD.reject(new Error('delete failed'))
-      await vi.advanceTimersByTimeAsync(0)
-    })
-    expect(mocks.apiDelete).toHaveBeenCalledTimes(1)
-    expect(mocks.storeRemoveAnnotation).not.toHaveBeenCalled()
-    expect(mocks.storeMarkTabDirty).toHaveBeenCalledWith(a.paperId)
-    expect(setEditingSpy).not.toHaveBeenCalled()
+    // [B4-A R1 迁移] 同目标删除与在途写不并发：删除任务入 per-tab lane 排在该写
+    // 之后——写未落定前零删除派发
+    expect(mocks.apiDelete).not.toHaveBeenCalled()
     await act(async () => {
       d1.resolve({ ok: true, data: { ...a, comment: 'x' } })
       await vi.advanceTimersByTimeAsync(0)
     })
+    // 删除发起后在途写落定：代际已变→判废静默丢弃（零 store 同步零复活）
     expect(mocks.storeUpdateAnnotation).not.toHaveBeenCalled()
+    // 写落定后删除任务起步（API 已派发——delD 挂起）
+    expect(mocks.apiDelete).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      delD.reject(new Error('delete failed'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(mocks.storeRemoveAnnotation).not.toHaveBeenCalled()
+    expect(mocks.storeMarkTabDirty).toHaveBeenCalledWith(a.paperId)
+    expect(setEditingSpy).not.toHaveBeenCalled()
     typeInto(textarea(), 'x2')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(2)
     expect(mocks.storeUpdateAnnotation).toHaveBeenCalledTimes(1)
@@ -393,6 +418,7 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
             onSave={vi.fn()}
             onDelete={vi.fn()}
             onAutosave={onAutosave}
+            onAutosaveRaw={onAutosave}
           />
         </StrictMode>
       )
@@ -401,7 +427,7 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
     expect(savedFlag()?.textContent).toBe('保存失败')
     typeInto(textarea(), 'sm2')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     expect(onAutosave).toHaveBeenLastCalledWith('sm2')

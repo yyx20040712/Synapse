@@ -49,6 +49,37 @@ export function deriveSaveUiState(saving: boolean, saveFailed: boolean, pending:
   return 'saved'
 }
 
+/**
+ * [B4-A R2 §10.1] 保存对象聚合输入（IO 轴 + U 轴分列——INV-187「定稿≠落库」）：
+ * - busy：finalize/flush/history 在途（普通写 saving 不置 busy——§10.4）
+ * - error：无在途时的可重试 IO 错误（annotations 失败残留/notes saveFailed）
+ * - pending：待写（queue/草稿 pending——Q 面；无在途时可点保存收口）
+ * - unfinalized：自最近一次显式保存后有新编辑/undo/redo（灰点轴——不表示
+ *   queue 非空；即使 Q0 也可点）
+ */
+export interface SaveAggregateInput {
+  busy: boolean
+  error: boolean
+  pending: boolean
+  unfinalized: boolean
+}
+
+/**
+ * [B4-A R2 §10.1] IO+U→SaveUiState 单源（保存钮/命令状态消费）：
+ * - saving：有 finalize/flush/history 在途；
+ * - failed：无在途且有可重试 IO 错误；
+ * - dirty：无在途无 IO 错误且 unfinalized=true——即使 Q0 也可点（idle-flush
+ *   落库后仍 dirty）；pending 面（Q1 无在途）并入 dirty 可点档（保存=收口）；
+ * - saved：unfinalized=false 且无 IO 工作——禁用。
+ * 优先级 saving > failed > dirty > saved（与既有四态钮族一致）。
+ */
+export function aggregateSaveUiState(input: SaveAggregateInput): SaveUiState {
+  if (input.busy) return 'saving'
+  if (input.error) return 'failed'
+  if (input.unfinalized || input.pending) return 'dirty'
+  return 'saved'
+}
+
 /** [F-VISFB-13] 批注轴五格映射：clean 并入 saved（无待存=已存基线），余四格直通 */
 export function editorSaveUiState(s: EditorSaveState): SaveUiState {
   if (s === 'saving') return 'saving'

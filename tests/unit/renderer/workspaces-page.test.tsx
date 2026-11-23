@@ -181,7 +181,7 @@ describe('F-WS-02 课题管理页——点选切换（switchTo 既有链路零�
     })
     await flush()
     expect(confirmSpy).toHaveBeenCalledTimes(1)
-    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('切换课题将丢弃未保存')
+    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('先保存全部修改')
     expect(stubApi.workspaces.switch, '用户取消=零 IPC 零 reload').not.toHaveBeenCalled()
     expect(reloadSpy).not.toHaveBeenCalled()
   })

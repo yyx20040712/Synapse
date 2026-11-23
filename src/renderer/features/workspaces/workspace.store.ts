@@ -9,14 +9,14 @@
  * - create(name)：透传 IPC 返回新 id，成功后自动 load 刷新清单（「创建即切」
  *   若被 dirty 取消，新课题仍须出现在侧栏/设置面列表）
  * - rename(id, name)：成功后 items 内即时改名（侧栏与设置面同源生效）
- * - switchTo(id, { dirty })：dirty 聚合值由 App 经 props/回调注入（禁跨域 store
- *   互引——本文件不 import reader/lineage 域；唯一受控例外=notes.store：本
- *   函数兼任切课题弃改收口点，A3/INV-35④ 显式防悬置写——check-quality
- *   COMPOSITION_ROOT_ALLOW 白名单在案，workspaces 域其余文件引 notes 仍是
- *   红线）。流程：
- *   幂等（id===currentId 直返）→ dirty 且未确认 → 取消（false，零 IPC）；
- *   确认或无 dirty → discardAllPendingEdits（弃置全部 notes 悬置编辑——
- *   reload 前零 timer 零内存草稿，clean 直达=no-op 幂等）→ api.switch →
+ * - switchTo(id, { dirty, prepare, onConfirmed })（[B4-A R2 §2.5 #38]）：
+ *   dirty 聚合值与全量 prepare 编排均由 App 经 props/回调注入（禁跨域 store
+ *   互引——本文件不 import reader/lineage/notes 域；旧「确认后
+ *   discardAllPendingEdits 弃改收口」随 R2 退役：U 单独不触发确认，确认通过
+ *   后必须全量 flush 成功才清史切换——失败留旧课题零副作用，不执行 discard）。
+ *   流程：幂等（id===currentId 直返）→ IO dirty 且未确认 → 取消（false 零
+ *   IPC）→ prepare()（全量 flush+清史编排）false → 留旧课题（false）→
+ *   onConfirmed()（恢复副本 release——携旧 ws id）→ api.switch →
  *   window.location.reload()（ADR-0018 裁决：全新 stores 零 stale 态）→ true
  *
  * ── 接口层 ──
@@ -39,10 +39,9 @@ import { create } from 'zustand'
 import { api, ApiClientError, unwrap } from '../../api/client'
 import type { WorkspaceItem } from '@shared/ipc/schemas'
 import { DEFAULT_WS_ID, DEFAULT_WS_NAME } from '@shared/constants'
-import { useNotesStore } from '../notes/notes.store'
 
-/** dirty 确认文案（沿用 main-window 退出守卫「说明+确认？」风格） */
-export const SWITCH_DIRTY_TEXT = '切换课题将丢弃未保存的标注/脉络修改。确认切换？'
+/** dirty 确认文案（[B4-A R2 §2.5 #38]「先保存全部修改再切换」——弃改语义退役） */
+export const SWITCH_DIRTY_TEXT = '有未落库修改，切换前将先保存全部修改。确认切换？'
 
 /** 列表加载失败的兜底中文消息（仅捕获到非 ApiClientError 的意外异常时使用） */
 const WS_LIST_FAILED = '课题列表加载失败'
@@ -58,12 +57,16 @@ export interface WorkspaceStore {
   /** 动作型：失败上抛；成功后 items 即时改名 */
   rename(id: string, name: string): Promise<void>
   /**
-   * 动作型：失败上抛。返回 true=已切换（reload 已触发）；false=幂等或用户
-   * 在 dirty 确认中取消（零副作用）。[F-VISFB-65 回炉 R3] onConfirmed=确认
-   * 通过后、api.switch **之前**调用并 await（恢复副本弃置 release 携旧 ws
-   * id 时 main 侧未切=guardWorkspace 放行；await 收束再 switch=零竞窗）。
+   * 动作型：失败上抛。返回 true=已切换（reload 已触发）；false=幂等、用户在
+   * IO dirty 确认中取消、或全量 prepare 失败（留旧课题零副作用——§2.5 #38）。
+   * [F-VISFB-65 回炉 R3] onConfirmed=确认通过后、api.switch **之前**调用并
+   * await（恢复副本弃置 release 携旧 ws id 时 main 侧未切=guardWorkspace
+   * 放行；await 收束再 switch=零竞窗）。
+   * [B4-A R2 §2.5 #38] prepare=确认通过后先行的全量 flush+清史编排（App 注入
+   * workspace-switch.prepareWorkspaceSwitch）；false=flush 失败留旧课题（不
+   * discard 不清史）。
    */
-  switchTo(id: string, opts: { dirty: boolean; onConfirmed?: () => void | Promise<void> }): Promise<boolean>
+  switchTo(id: string, opts: { dirty: boolean; prepare?: () => Promise<boolean>; onConfirmed?: () => void | Promise<void> }): Promise<boolean>
 }
 
 export function createWorkspaceStoreInitialState() {
@@ -131,16 +134,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => {
       await unwrap(api.workspaces.rename({ id, name }))
       set({ items: get().items.map((w) => (w.id === id ? { ...w, name } : w)) })
     },
-    switchTo: async (id, { dirty, onConfirmed }) => {
+    switchTo: async (id, { dirty, prepare, onConfirmed }) => {
       if (id === get().currentId) return false
-      // [F-VISFB-14 d1 W4① 维持现状申报] 课题切换弃改路径（confirm→discardAll
-      // →reload）本票不动——flush-first 翻案面收敛于关 tab/退出握手，不扩大
-      // 到 workspace 切换（reload 语义=全新 stores，discard 即弃改收口正道）
+      // [B4-A R2 §2.5 #38/§17 终裁 6] IO dirty 才触发既有确认（U 单独不触发）；
+      // 确认通过或无 IO 脏后必须全量 flush 成功才清史并切换
       if (dirty && !window.confirm(SWITCH_DIRTY_TEXT)) return false
-      // 弃改收口（A3/INV-35④ 显式防悬置写）：确认通过即弃置全部 notes 悬置
-      // 编辑（含清防抖句柄+在途 save 代际守卫打点）——reload 前零 timer 零内存
-      // 草稿，切课题悬置写 renderer 面闭（clean 直达=no-op 幂等）
-      useNotesStore.getState().discardAllPendingEdits()
+      // 全量 prepare（App 注入）：flush 失败=留旧课题（不 discard 不清史——
+      // 用户重试保存后再切换；零副作用）
+      if (prepare !== undefined && !(await prepare())) return false
       // [F-VISFB-65 回炉 R3] 确认通过→恢复副本弃置收口先于 api.switch 完成
       await onConfirmed?.()
       await unwrap(api.workspaces.switch({ id }))

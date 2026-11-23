@@ -74,6 +74,8 @@ import { SelectionPaint } from './selection-paint'
 import { wireSelectionEvents, type SelectionEventsHandle } from './selection-events'
 import { useReaderStore } from '../state/reader.store'
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
+import { enqueueTabTask } from '../../../shared/tab-write-lane'
+import { tabWriteBlocked } from '../state/tab-closing-gate'
 
 // 纯函数页盒遍历（F-02）在 selection-geometry.ts——F-A4 拆件，导出面经本文件再导出（票面 §2）
 export { closestPageRoot, pageIndexOf } from './selection-geometry'
@@ -113,7 +115,8 @@ export function SelectionLayer(props: {
   async function save(kind: AnnotationKind): Promise<void> {
     // [F-VISFB-64·轮2 W-r1-03] closing gate：create 链用户命令入口（设计 §④
     // 「标注增删改」字面——冻结期拒绝零 api，选区保持）
-    if (pending === null || busy || quitWriteBlocked()) return
+    // [B4-A R2 §2.5 #2] 目标 tab 关闭在途同拒（命令通过 gate；按 paperId 寻址）
+    if (pending === null || busy || quitWriteBlocked() || tabWriteBlocked(paperId)) return
     const input: AnnotationInput = {
       page: pending.pageNo, kind, color,
       quoteText: pending.anchor.quote, prefixText: pending.anchor.prefix,
@@ -124,10 +127,16 @@ export function SelectionLayer(props: {
     }
     setBusy(true)
     try {
-      const saved = await unwrap(api.reader.saveAnnotation({ paperId, annotation: input }))
+      // [B4-A R1 §4.3/§11.1] 创建标注写经 per-tab lane（与批注文本写/操作层
+      // undo-redo 反向写互斥不并发——同一标注的增删与历史命令不同时在途）
+      const saved = await enqueueTabTask(paperId, () =>
+        unwrap(api.reader.saveAnnotation({ paperId, annotation: input }))
+      )
       onSaved(saved)
       // 撤销栈：create 逆=delete（UNDO-01 成功路径入栈）
       pushUndo(paperId, { kind: 'create', annotation: saved })
+      // [B4-A R2 §2.5 #2] 操作单元成功提交=新编辑事件：U=1
+      useReaderStore.getState().markTabUnfinalized(paperId)
       // 保存落地即清除该面灰点（TABS-03 乐观清除语义）
       useReaderStore.getState().clearTabDirty(paperId)
       setPending(null)

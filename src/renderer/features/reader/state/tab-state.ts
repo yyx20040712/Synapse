@@ -75,10 +75,52 @@ export interface TabState {
    *  事件监听）；恢复=容器 scrollTop 直写（INV-34 例外登记），严禁经
    *  setPage/scrollRequest（INV-29/118 双源分离） */
   researchScroll?: { ai?: number; notes?: number }
+  /** [B4-A R2 §2.1/§2.5 #1-#2/#16-#17] 未定稿轴（unfinalized）：自最近一次显式
+   *  保存后有新编辑/undo/redo 即 true；idle-flush 与 reconcile 不动；仅成功
+   *  finalize 且保存期间无新编辑（editRevision 未前进）清 false（§2.5 #21）。
+   *  灰点/rail 阅读器角标=本轴单源（§10.1）；不表示 queue 非空/DB 在途。
+   *  生命周期迁移表：| openPaper（两分支） | 沿 prev 字段（重试）/缺省 false（新建） |
+   *  | markTabUnfinalized | true+editRevision++（新编辑/undo/redo/操作单元提交） |
+   *  | finalizeTab 成功（revision 未前进） | false（#21） |
+   *  | finalize 期间新编辑（revision 前进） | 保持 true（#22——旧回执不清新灰点） |
+   *  | closeOne(id) | 随 tab 删除；重开同 id=全新 false |
+   *  | close() | 整体复位 |
+   *  可选字段=存量测试夹具零破坏（消费方 ?? false 兜底——selectionMode 同型） */
+  unfinalized?: boolean
+  /** [B4-A R2 §2.2] 编辑修订号：每次用户新编辑/undo/redo 同步递增
+   *  （markTabUnfinalized 单写点）。finalize 入口捕获、成功回执比对——
+   *  「保存期间有新编辑」的判据（§2.5 #22 revision>finalizeRevision） */
+  editRevision?: number
+  /** [B4-A R2 §2.1/§2.5 #24-#29] 关闭子态（closing 轴）：none=常规；flushing=关
+   *  闭预写在途（提交该 tab 文本并 flush）；confirm=flush 成功且 U=1 的二选
+   *  待决（是/否）；error=flush 失败（error=真实失败原因——只提供重试/留下）。
+   *  重入只返回同一关闭流程（closingTabs 锁在 reader-close-tab）。 */
+  closing?: TabClosingState
+}
+
+/** [B4-A R2 §2.1] reader tab 关闭子态四相（closing 轴投影类型） */
+export type TabClosingPhase = 'none' | 'flushing' | 'confirm' | 'error'
+
+/** [B4-A R2 §10.2] 关闭子态值：error 携真实失败原因（<reason> 进冻结文案） */
+export interface TabClosingState {
+  phase: TabClosingPhase
+  error: string | null
+}
+
+/** [B4-A R2 §10.1] tab 保存状态聚合的 IO 输入投影（U 另轴输入）：
+ *  pending=有待写（notes pending/注册表草稿——Q 面）；busy=finalize/flush/
+ *  history 在途；error=可重试 IO 错误（annotations 失败残留/notes saveFailed）。
+ *  IO 不表示是否被用户显式标记为已保存（§2.1 术语表） */
+export interface TabSaveIoProjection {
+  pending: boolean
+  busy: boolean
+  error: boolean
 }
 
 /** 新建 loading 态 tab（error 重试时沿用既有显示字段，status 归 loading；
- *  [B1 批] researchTab 两分支均不写——新建缺省 ai、重试沿 prev 字段） */
+ *  [B1 批] researchTab 两分支均不写——新建缺省 ai、重试沿 prev 字段；
+ *  [B4-A R2] unfinalized/editRevision/closing 两分支均不写——新建缺省
+ *  false/0/none（消费方 ?? 兜底），重试沿 prev（error 重试不是新编辑） */
 export function makeLoadingTab(paperId: string, prev: TabState | undefined): TabState {
   if (prev !== undefined) {
     return { ...prev, status: 'loading' }

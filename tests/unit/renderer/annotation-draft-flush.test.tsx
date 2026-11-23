@@ -19,6 +19,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeAnnotation } from '../../utils/factories'
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
+import type * as annotationUndoModule from '../../../src/renderer/features/reader/state/annotation-undo'
 import type { Annotation, AnnotationRect } from '../../../src/shared/models/annotation'
 import { AnnotationLayer } from '../../../src/renderer/features/reader/view/AnnotationLayer'
 import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
@@ -35,12 +37,14 @@ import {
   takeAnnotationDraft,
   unregisterDraftFlush
 } from '../../../src/renderer/features/reader/interact/annotation-draft-registry'
+import { resetTabLanes } from '../../../src/renderer/shared/tab-write-lane'
 
 const mocks = vi.hoisted(() => ({
   apiUpdate: vi.fn(),
   apiDelete: vi.fn(),
   storeUpdateAnnotation: vi.fn(),
   storeMarkTabDirty: vi.fn(),
+  storeMarkTabUnfinalized: vi.fn(),
   storeClearTabDirty: vi.fn(),
   storeRemoveAnnotation: vi.fn(),
   storeNotifyNoteHighlight: vi.fn(),
@@ -55,6 +59,8 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => {
   const storeActions = {
     updateAnnotation: mocks.storeUpdateAnnotation,
     markTabDirty: mocks.storeMarkTabDirty,
+    // [B4-A R2 fixture migration] U-axis write point (controller edit chain)
+    markTabUnfinalized: mocks.storeMarkTabUnfinalized,
     clearTabDirty: mocks.storeClearTabDirty,
     removeAnnotation: mocks.storeRemoveAnnotation,
     notifyNoteHighlight: mocks.storeNotifyNoteHighlight
@@ -67,13 +73,26 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => {
   }
 })
 
-vi.mock('../../../src/renderer/features/reader/state/annotation-undo', () => ({
-  pushUndo: mocks.pushUndo,
-  undo: vi.fn(),
-  clearStack: vi.fn(),
-  stackDepth: vi.fn(() => 0),
-  UNDO_DEPTH_MAX: 50
-}))
+// [B4-A R1 迁移] annotation-undo 替身改展开型：合并会话记账（recordCommentEdit/
+// endCommentEditSession/touchCommentEditAfter）用真实现，pushUndo 保留调用 spy（透传）
+vi.mock('../../../src/renderer/features/reader/state/annotation-undo', async (importOriginal) => {
+  const real = await importOriginal<typeof annotationUndoModule>()
+  return {
+    ...real,
+    clearStack: vi.fn(),
+    pushUndo: (...args: Parameters<typeof real.pushUndo>) => {
+      mocks.pushUndo(...args)
+      return real.pushUndo(...args)
+    },
+    // 合并会话：会话内新条目入栈（栈深前进）才计入 pushUndo spy——同会话续写不新建条目
+    recordCommentEdit: (...args: Parameters<typeof real.recordCommentEdit>) => {
+      const depthBefore = real.stackDepth(args[0])
+      const entry = real.recordCommentEdit(...args)
+      if (real.stackDepth(args[0]) > depthBefore) mocks.pushUndo(args[0], entry)
+      return entry
+    }
+  }
+})
 
 const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
 
@@ -98,6 +117,8 @@ afterEach(() => {
   document.body.innerHTML = ''
   vi.useRealTimers()
   vi.clearAllMocks()
+  // [B4-A R1] per-tab lane 模块态隔离（挂起任务不堵后续用例同 tab 入链）
+  resetTabLanes()
 })
 
 /** textarea 输入（annotation-editor-ux 同款：native setter + input 事件） */
@@ -145,6 +166,7 @@ function renderEditor(
 ): { onAutosave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn> } {
   const onAutosave = (props.onAutosave ?? vi.fn(() => Promise.resolve(true))) as ReturnType<typeof vi.fn>
   const onCancel = (props.onCancel ?? vi.fn()) as ReturnType<typeof vi.fn>
+  // [B4-A 回炉 R5 fixture migration] 裸写体端口必选：夹具写体本就不入链，同一桩兼作裸通道
   act(() => {
     root!.render(
       <AnnotationEditor
@@ -155,6 +177,7 @@ function renderEditor(
         onSave={props.onSave ?? vi.fn()}
         onDelete={props.onDelete ?? vi.fn()}
         onAutosave={onAutosave}
+        onAutosaveRaw={onAutosave}
       />
     )
   })
@@ -214,7 +237,7 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
     renderEditor(a, { onAutosave })
     typeInto(textarea(), '奶龙草稿')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(savedFlag()?.textContent).toBe('保存失败')
     act(() => {
@@ -225,7 +248,7 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
     expect(savedFlag()?.textContent).toBe('保存失败')
     typeInto(textarea(), '奶龙草稿重试')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenLastCalledWith('奶龙草稿重试')
     expect(savedFlag()?.textContent).toBe('已保存')
@@ -306,7 +329,7 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
     renderEditor(a, { onAutosave })
     typeInto(textarea(), 'v')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(1)
     act(() => {
@@ -320,7 +343,7 @@ describe('F-VISFB-12 ② AnnotationEditor —— 卸载恢复与取消先 flush'
     expect(textarea().value).toBe('v')
     expect(savedFlag()).toBeNull()
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(onAutosave).toHaveBeenCalledTimes(2)
     expect(onAutosave).toHaveBeenLastCalledWith('v')
@@ -410,7 +433,7 @@ describe('F-VISFB-12 ③ 删除链与切目标 —— AnnotationPopups/Annotatio
     renderPopups(a)
     typeInto(textarea(), 'w')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(800)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     act(() => {
@@ -449,8 +472,11 @@ describe('F-VISFB-12 ③ 删除链与切目标 —— AnnotationPopups/Annotatio
     })
     expect(host!.querySelector('[data-testid="annotation-editor"]')).not.toBeNull()
     typeInto(textarea(), '切目标草稿')
-    act(() => {
+    // [B4-A R1 迁移·async 调用] fire-first 句柄经 per-tab lane 入链——API 派发在
+    // 微任务（不阻点击：菜单即开同步成立）
+    await act(async () => {
       rects()[1]!.click()
+      await vi.advanceTimersByTimeAsync(0)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     expect(mocks.apiUpdate.mock.calls[0]![0].annotation.comment).toBe('切目标草稿')

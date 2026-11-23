@@ -58,11 +58,17 @@ export const TAG_COLOR_NONE_DISPLAY = '#9aa4b2'
 export const MAX_PAGE_SIZE = 200
 
 /**
- * [F-VISFB-11] 笔记自动保存防抖窗口（毫秒）——notes.store 单源消费
- * （视检反馈战役 §0-3 裁决：600s；dup-constants 负锚——renderer 侧不得
- * 留本地同值副本，改值须提交说明申报）
+ * [B4-A R1] 文本单元空闲落库窗口（毫秒）——设计稿 §3 单源：批注 comment 与
+ * 总评 contentMd 共用（连续输入 1.5s 空闲即提交单元并落库）；notes.store 防抖
+ * 通道同源消费。旧 AUTOSAVE_DEBOUNCE_MS=600_000 随 B4-A R1 退役（同批删）。
  */
-export const AUTOSAVE_DEBOUNCE_MS = 600_000
+export const IDLE_FLUSH_MS = 1_500
+
+/**
+ * [B4-A R1] 历史/撤销深度上限——设计稿 §3/§4 单源：文本值层每 target
+ * past/future 各≤10，reader 操作层每 tab undo/redo 各≤10。
+ */
+export const HISTORY_DEPTH_MAX = 10
 
 /**
  * [F-VISFB-64] 退出握手等待预算（毫秒）——main 侧 quit-close-policy 分级等待

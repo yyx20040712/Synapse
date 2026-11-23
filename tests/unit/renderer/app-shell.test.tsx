@@ -277,7 +277,7 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
     })
     await flush()
     expect(confirmSpy).toHaveBeenCalledTimes(1)
-    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('切换课题将丢弃未保存')
+    expect(String(confirmSpy.mock.calls[0]?.[0])).toContain('先保存全部修改')
     expect(stubApi.workspaces.switch, '用户取消=零 IPC 零 reload（拦截即不切）').not.toHaveBeenCalled()
     expect(reloadSpy).not.toHaveBeenCalled()
     expect(document.querySelector('main .ws-page'), 'dirty 取消后留在本页（可换选）').not.toBeNull()

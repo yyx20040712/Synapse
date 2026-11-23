@@ -1,97 +1,27 @@
 // b3: P7-B
 /**
- * [SR2-TABS-01] reader.store —— per-tab 多文献状态（工单：open / strong）
- *
- * ── 行为层 ──
- * - 状态形状：{ tabs: Record<paperId, TabState>; order: paperId[]; activeId: string | null }
- *   TabState = { paperId; fileUrl; fileName; title; page; totalPages; zoom;
- *   color; annotations; status: 'loading' | 'ready' | 'error'; dirty: boolean }
- *   （title=文献名（PaperDetail.title）——标签页可读名单源；fileName 是
- *   file_ref 内容寻址哈希基名不可读，2026-08-27 用户视检缺陷②）
- *   （dirty 建位于本单、恒 false——信号写入路径归 TABS-03（其改动面含本
- *   文件）；undo 栈不进 TabState，归 UNDO-01 模块级自持，plan 门 W2 裁决）
- *   （顶层便捷字段全部下钻 TabState——单一真相源，禁投影双源；消费方经
- *   s.tabs[s.activeId ?? ''] 选择器取）
- * - tab 生命周期状态机（宪法状态机前置；跨格序列为审计重点）。事件×态全表
- *   （closeTab/activateTab 对任意态生效，openPaper 按 tab 现态分支）：
- *   | 事件 | loading | ready | error | absent |
- *   | openPaper(id) 载入成功 | → ready | 幂等激活 | 重试：→loading | →loading（追加+激活） |
- *   | openPaper(id) 载入失败 | → error | —（幂等激活不重载） | 保持 error | → error（占位 tab） |
- *   | activateTab(id) | 激活不变态 | 激活不变态 | 激活不变态 | —（id 必须存在，不存在 no-op） |
- *   | closeTab(id) | → absent（在途响应到达按规则①丢弃） | → absent | → absent | — |
- *   - closeTab 收缩序：关 activeId 时取右邻（无右邻取左邻，全空 → activeId=null
- *     空态提示，不隐式切 App 视图）；order 同步移除
- * - 竞态守卫（INV-03 per-tab 化，模块级 loadSeq 总序号）——迟到响应三规则：
- *   ① 响应到达时 tab 已 absent（被关）→ 丢弃
- *   ② tab 存在但已发起新一轮加载（seq 过期）→ 丢弃
- *   ③ tab 存在且 seq 最新 → 写入该 tab（即使 activeId 已切走——旧 tab 数据照常
- *   落账，绝不覆盖展示中的新 tab）
- *   - 跨格序列（锁定测试锚定）：
- *     S1 换 tab：open(A) ready → open(B) ready（A 保留）→ activate(A) → A 的
- *        page/zoom/annotations 原样恢复（状态未失忆）
- *     S2 关 tab：open(A) open(B) → close(B)（activeId 回 A）→ close(A) →
- *        activeId=null（空态）；order 收缩序正确
- *     S3 加载中切换：open(A) loading → open(B) ready → A 响应迟到 → 只写入
- *        A 的 tab（B 展示不受干扰）；loading 中 close(A) → A 迟到响应丢弃（规则①）
- * - 进度防抖（F-03 拆链）：防抖定时器+pendingProgress 账本已整体迁
- *   scroll-progress.ts（语义保持）；本 store 只留接线——progressFlusher
- *   注册口（装配面 ReaderPage 注册/注销成对），closeTab 时 flush(paperId)、
- *   close() 时 flushAll()（立即收账，尽力而为 catch 吞由消费方承载）
- * - 标注「选择模式」态（F-A3/INV-42，per-tab 与 zoom/color 同型）：载体=
- *   TabState.selectionMode（false=常规=默认；true=选择）。生命周期迁移表
- *   （票面 §0 面③原文）：
- *   | 事件 | selectionMode 迁移 |
- *   | openPaper（absent 新建） | false（makeLoadingTab 默认） |
- *   | openPaper（error 重试） | 沿用 prev（{...prev, status:'loading'}） |
- *   | setSelectionMode(m) | active tab 写入 m；activeId=null no-op |
- *   | closeOne(id) | 随 tab 删除；重开同 id=全新 tab=false |
- *   | close()（closeAll） | 整体复位（初始态工厂） |
- * - 旧 setter（setPage/setZoom/setTotalPages/setColor/updateAnnotation/
- *   removeAnnotation/setSelectionMode）作用于 active tab；activeId=null 时
- *   no-op。例外 addAnnotation=per-paperId 寻址（F-SL/INV-03 写方向同族）：
- *   签名 (paperId, a) 不读 activeId——SelectionLayer 保存 await 窗内切 tab
- *   不得把 A 的标注写进 B 的 tab（幽灵标注，AUDIT-C §1.2-c）；tab 缺席（已
- *   关）no-op（DB 已落，重开自 DB 读对齐——undo 同语义）
- * - setPage 第三参（F-01/INV-29 双源机制）：opts?:{scroll?:'to'|'none'} 默认
- *   'to'——程序跳页语义，bump scrollRequest={paperId,page,seq} 信号（消费者=
- *   ReaderPage→PageColumn.scrollToPage 单口程序滚动到盒顶）；'none'=滚动位置
- *   回写语义（页码本就从滚动位置算出），只落账不 bump 信号、不触发程序滚动
- *   （防「程序跳页↔滚动回写」回弹死循环）；既有消费面不传第三参=默认值零改
- *
- * ── 接口层 ──
- * - export interface TabState / ReaderStore（形状如上）
- * - export const useReaderStore: UseBoundStore<...>
- * - openPaper(id) 保留动作型错误契约（失败上抛由消费方 toast，tab 置 error）
- *
- * ── 架构层 ──
- * - 只 import api/client 与 shared 模型；禁止 import 组件
- * - 接缝（本工单改动面）：ReaderPage.tsx:49-78 / SelectionLayer.tsx:67-68 选择器
- *   迁移（s.paperId → s.tabs[s.activeId ?? '']?.paperId 等，行为不变）；
- *   AnnotationLayer.tsx:146/176 零改动（方法签名不变）
- *
- * ── 生命周期层 ──
- * - 预留：TabState.dirty 信号写入（TABS-03）；不做：tab 拖拽排序、会话恢复
- *
- * ── 文化层 ──
- * - 测试：tests/unit/renderer/reader.store.test.ts 随本单迁移（受锁
- *   [locked-change]：旧 7 用例断言路径下钻 per-tab（单 tab 场景语义不变）+
- *   新增 per-tab 组：幂等激活/S1/S2/S3 三序列/进度 flush）
- * - docs/invariants.md INV-03 行随本单更新（stale-guard per-tab 变体描述）——
- *   登记册列本单改动面（plan 门 W3 处置）
- * - INV-14 不适用（无 DOM 监听面）
+ * [SR2-TABS-01] reader.store —— per-tab 多文献状态（[B4-A R1] store 薄壳；装载机
+ * 驻 reader-store-load、操作层执行驻 reader-history-commands）。tab 生命周期
+ * 状态机与竞态守卫（INV-03 三规则在 load 件）；closeOne 接缝清理=进度账+操作
+ * 双栈+文本历史+写链+装载账（§3 关闭 tab 行）；undo/redo=await 协调链→本件增量
+ * apply（await 后重读现态——并发编辑不覆盖）→失败 toast；PDF 未 ready 为 no-op
+ * （§2.5 #12）。测试=reader.store.test（受锁）+undo-race 回归锁。
  */
 import { create } from 'zustand'
-import { api, unwrap } from '../../../api/client'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
-import { clearStack, undo as runUndo, type UndoOutcome } from './annotation-undo'
+import { clearStack, type OpApply } from './annotation-undo'
+import { redoTabOperations, undoTabOperations, type OpHistoryOutcome } from './reader-history-commands'
 import { showToast } from '../../../shared/ui/toast-store'
-import { makeLoadingTab, type TabState } from './tab-state'
+import type { TabState } from './tab-state'
+import { createReaderLoad } from './reader-store-load'
+import { clearAllTextHistory, clearTabTextHistory } from './reader-text-history'
+import { laneClearTab } from '../../../shared/tab-write-lane'
+import type { TabClosingState } from './tab-state'
 
 // [B1 批] TabState/makeLoadingTab 拆驻 tab-state.ts（store 增研究面板字段
 // 前置瘦身）；再导出保持既有 import 面（factories/useActiveTab 等）零迁移
 export type { TabState } from './tab-state'
 
-/** 进度收账口（F-03 接线：装配面 ReaderPage 注册/注销成对；closeTab/close 消费） */
 export interface ProgressFlusher {
   flush(paperId: string): void
   flushAll(): void
@@ -103,25 +33,13 @@ export interface ReaderStore {
   activeId: string | null
   progressFlusher: ProgressFlusher | null
   registerProgressFlusher(f: ProgressFlusher | null): void
-  /** 程序跳页滚动信号（F-01 双源机制/INV-29）：setPage 默认（scroll:'to'）时
-   *  bump——消费者（ReaderPage→PageColumn.scrollToPage 单口）据此程序滚动到
-   *  盒顶；{scroll:'none'}（滚动位置回写）不 bump，防回弹死循环 */
+  /** 程序跳页滚动信号（F-01 双源/INV-29；'none'=回写不 bump 防回弹） */
   scrollRequest: { paperId: string; page: number; seq: number } | null
-  /** 标注单击反向同步信号（C-05 N1 方案a）：seq 递增触发消费方 effect */
+  /** 标注单击反向同步信号（C-05）：seq 递增触发消费方 effect */
   noteHighlight: { annotationId: string; seq: number } | null
-  /** [B1 批] 右栏研究面板开合（顶层会话态，默认 true）；开关入口=
-   *  ReaderToolbar 研究面板钮（toggle 语义在装配面） */
   researchOpen: boolean
-  /** [B1 批] 研究面板开合写顶层态（非 per-tab——视图级偏好） */
   setResearchOpen(open: boolean): void
-  /** [B1 批] 研究面板页签写 active tab（per-tab 会话态——researchTab 缺省
-   *  ai；activeId=null no-op（updateActiveTab 兜底）） */
   setResearchTab(tab: 'ai' | 'notes'): void
-  /** [B2 批] 研究面板滚动收账（per-tab 分槽）：显式 paperId 寻址不读
-   *  activeId——卸载/切换收账闭包捕获的旧文献场景更稳（addAnnotation
-   *  INV-03 写方向同族）；tab 缺席（已关）no-op；负值夹 0；**不 bump
-   *  scrollRequest**（INV-29/INV-118 双源分离——右栏 scrollTop 与 PDF 程序
-   *  滚动互不触发） */
   saveResearchScroll(paperId: string, tab: 'ai' | 'notes', scrollTop: number): void
   openPaper(id: string): Promise<void>
   activateTab(id: string): void
@@ -131,32 +49,30 @@ export interface ReaderStore {
   setZoom(zoom: number): void
   setTotalPages(total: number): void
   setColor(color: AnnotationColor): void
-  /** 标注「选择模式」写 active tab（F-A3/INV-42）：toggle 语义在装配面
-   *  ReaderPage（工具栏纯受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
   setSelectionMode(mode: boolean): void
-  /** 页布局写 active tab（F-R1）：toggle 语义在装配面 ReaderPage（工具栏纯
-   *  受控只上抛）；activeId=null no-op（updateActiveTab 兜底） */
   setPageLayout(layout: 'single' | 'double'): void
-  /** 标注追加（F-SL，INV-03 写方向同族）：per-paperId 寻址不读 activeId——
-   *  发起身份由调用方捕获（ReaderPage 接线闭包传渲染帧 paperId，与
-   *  SelectionLayer props.paperId 同源同帧）；tab 已关 → no-op（DB 已落，
-   *  重开自 DB 读对齐——undo 关 tab 路径同语义） */
+  /** 标注追加（F-SL）：per-paperId 寻址不读 activeId（幽灵标注守卫） */
   addAnnotation(paperId: string, a: Annotation): void
+  /** [B4-A R2 §2.5 #19] 迟到回显改/删写标注归属的原 tab（不读 activeId）：update
+   *  按回显携带的 paperId 寻址；remove 按标注 id 定位归属 tab（addAnnotation 同族） */
   updateAnnotation(a: Annotation): void
   removeAnnotation(id: string): void
-  /** annotations 面灰点信号（TABS-03）：保存失败置位/重试成功清除（参数化
-   *  paperId——异步失败可能迟到于 tab 切换） */
   markTabDirty(paperId: string): void
   clearTabDirty(paperId: string): void
-  /** pdf 加载/渲染失败置 tab error（open IPC 失败类的补全——INV-15 装配级 e2e
-   *  实证缺口：缺失文件走此路径，失败必须在 tab 级可见可关可重试） */
+  /** [B4-A R2 §2.5 #1-#2/#16-#17] 未定稿轴置位+editRevision 递增（新编辑/undo/
+   *  redo/操作单元提交的统一写点——灰点/rail 阅读器角标单源） */
+  markTabUnfinalized(paperId: string): void
+  /** [B4-A R2 §2.5 #21-#22] finalize 成功回执的清账：atRevision=finalize 入口捕获
+   *  的 editRevision；期间有新编辑（revision 前进）不清——旧保存回执不得误清
+   *  新编辑灰点 */
+  finalizeTabUnfinalized(paperId: string, atRevision: number): void
+  /** [B4-A R2 §2.5 #24-#29] 关闭子态写点（reader-close-tab 状态机单写方） */
+  setTabClosing(paperId: string, closing: TabClosingState): void
   markTabError(paperId: string): void
-  /** 标注单击→侧栏同步高亮信号（C-05）：消费分工（[B1 审查回炉 B-1]）——
-   *  「开面板+切 notes 页签」副作用驻常挂载层 ReaderPageView（researchOpen
-   *  挂载条件拥有层）；高亮参数派生归 ResearchAside（→FragmentNotesList 滚动） */
   notifyNoteHighlight(annotationId: string): void
-  /** 撤销栈顶逆操作（UNDO-01）：作用于 active tab；api 调用与 store 同步收口单点 */
-  undo(): Promise<void>
+  /** 操作层 undo/redo（await 协调链→本件增量 apply）；返回完整动作成功；PDF 未 ready 即拒（§2.5 #12） */
+  undo(): Promise<boolean>
+  redo(): Promise<boolean>
 }
 
 export function createReaderStoreInitialState() {
@@ -167,43 +83,34 @@ export function createReaderStoreInitialState() {
     progressFlusher: null as ProgressFlusher | null,
     scrollRequest: null as { paperId: string; page: number; seq: number } | null,
     noteHighlight: null as { annotationId: string; seq: number } | null,
-    // [B1 批] 右栏研究面板开合（会话级视图态——模块级单例生命周期，切视图
-    // 不清；与 outlineOpen 的 ReaderPage 组件态不同载体是有意分工：开合记忆
-    // 随 app 会话驻留）
-    researchOpen: true
+    researchOpen: true // [B1 批] 会话级视图态——切视图不清
   }
 }
 
 export const useReaderStore = create<ReaderStore>()((set, get) => {
-  // 加载总序号：每次 openPaper 发起自增；tabLoadSeq 记录每 tab 最新发起的序号
-  // （迟到响应三规则的判定输入）；inflightOpen 让 loading 态重入尾随在途加载
-  // （不提前 resolve——重入方 await 到的是同一加载的完成信号，失败由首调方报告）
-  let loadSeq = 0
-  const tabLoadSeq = new Map<string, number>()
-  const inflightOpen = new Map<string, Promise<void>>()
+  // [B4-A R1 §11.1 拆件] 加载机迁驻 reader-store-load.ts（行为零变）
+  const loader = createReaderLoad(set, get)
 
-  /** 本次响应是否仍是该 tab 的最新加载（规则①②判定：tab 已关或已被新一轮顶替即过期） */
-  const isCurrentLoad = (paperId: string, seq: number): boolean => {
-    return get().tabs[paperId] !== undefined && tabLoadSeq.get(paperId) === seq
-  }
-
-  /** 作用于 active tab 的统一入口（activeId=null 时 no-op——空态规约） */
+  // tab 寻址写：updateActiveTab=作用于 active tab（activeId=null no-op）；
+  // updateTabById=显式 paperId 寻址（tab 缺席 no-op——F-SL/TABS-03 写方向同族）
   const updateActiveTab = (fn: (tab: TabState) => TabState): void => {
-    const { activeId, tabs } = get()
-    if (activeId === null) return
-    const tab = tabs[activeId]
+    updateTabById(get().activeId, fn)
+  }
+  const updateTabById = (id: string | null, fn: (tab: TabState) => TabState): void => {
+    if (id === null) return
+    const { tabs } = get()
+    const tab = tabs[id]
     if (tab === undefined) return
-    set({ tabs: { ...tabs, [activeId]: fn(tab) } })
+    set({ tabs: { ...tabs, [id]: fn(tab) } })
   }
 
-  /** 关单个 tab：进度账立即 flush（F-03 接线）；关 active 时收缩到右邻（无右邻左邻，全空 null） */
+  /** 关单个 tab：进度账 flush；操作双栈/文本历史/写链/装载账同接缝清理（§3 关闭 tab 行） */
   const closeOne = (id: string): void => {
-    // 该 tab 的 pending 进度立即落库（关 tab 后无人再等防抖窗口）
     get().progressFlusher?.flush(id)
-    tabLoadSeq.delete(id)
-    inflightOpen.delete(id)
-    // 撤销栈随 tab 关闭丢弃（UNDO-01 接缝：栈随 closeTab 清理，不做跨 tab 撤销）
+    loader.forget(id)
     clearStack(id)
+    clearTabTextHistory(id)
+    laneClearTab(id)
     const { tabs, order, activeId, scrollRequest, noteHighlight } = get()
     const nextTabs = { ...tabs }
     delete nextTabs[id]
@@ -217,89 +124,31 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
       tabs: nextTabs,
       order: nextOrder,
       activeId: nextActive,
-      // F-ARCH1（2026-08-30 架构排查批）：瞬态信号随 tab 关闭失效——scrollRequest 有
-      // paperId 维度仅清属被关 tab 的（他 tab 在途信号不误伤）；noteHighlight
-      // 无归属维度且为瞬态通知，仅关激活 tab 时清（门一 W-1：关后台 tab
-      // 不得干扰激活 tab 的瞬态通知），残留会被新 tab 生命周期消费
-      // （重开同 id 回跳旧页 / [B1 批] 研究面板装配层〔ReaderPageView〕
-      // 挂载即闪切 notes）。
-      // [F-UIRES-03 B2] AI 高亮信号同族清理随 AI 反向同步链退役删除
-      //（INV-105）。
+      // F-ARCH1：瞬态信号随 tab 关闭失效——scrollRequest 有 paperId 维度仅清
+      // 属被关 tab 的；noteHighlight 无归属维度仅关激活 tab 时清（门一 W-1，
+      // 残留会被新 tab 生命周期消费）；[F-UIRES-03 B2] AI 信号清理随退役删除
       ...(scrollRequest?.paperId === id ? { scrollRequest: null } : {}),
       ...(activeId === id && noteHighlight !== null ? { noteHighlight: null } : {})
     })
   }
 
-  /** 关闭全部（App 切视图/全关语义）：全部进度账落账后整体复位 */
+  // 关闭全部（App 切视图/全关语义）：全部进度账落账后整体复位
   const closeAll = (): void => {
     get().progressFlusher?.flushAll()
-    tabLoadSeq.clear()
-    inflightOpen.clear()
+    loader.forgetAll()
+    for (const id of get().order) {
+      clearStack(id)
+      laneClearTab(id)
+    }
+    clearAllTextHistory()
     set(createReaderStoreInitialState())
   }
 
   return {
     ...createReaderStoreInitialState(),
 
-    async openPaper(id) {
-      const existing = get().tabs[id]
-      if (existing !== undefined && (existing.status === 'ready' || existing.status === 'loading')) {
-        set({ activeId: id })
-        // loading 重入：尾随在途加载（吞 rejection——失败 toast 由首调方报告，不双弹）
-        const inflight = inflightOpen.get(id)
-        if (existing.status === 'loading' && inflight !== undefined) {
-          await inflight.catch(() => undefined)
-        }
-        return
-      }
-      // absent（新建）或 error（重试）→ loading
-      const seq = ++loadSeq
-      tabLoadSeq.set(id, seq)
-      set((s) => ({
-        tabs: { ...s.tabs, [id]: makeLoadingTab(id, existing) },
-        order: s.order.includes(id) ? s.order : [...s.order, id],
-        activeId: id
-      }))
-      let load: Promise<void> | null = null
-      const p = (async (): Promise<void> => {
-        try {
-          const d = await unwrap(api.reader.open({ paperId: id }))
-          if (!isCurrentLoad(id, seq)) return
-          const anns = await unwrap(api.reader.listAnnotations({ paperId: id }))
-          if (!isCurrentLoad(id, seq)) return
-          set((s) => ({
-            tabs: {
-              ...s.tabs,
-              [id]: {
-                ...(s.tabs[id] ?? makeLoadingTab(id, undefined)),
-                fileUrl: d.fileUrl,
-                fileName: d.fileName,
-                title: d.title,
-                page: d.lastReadPage,
-                annotations: anns,
-                status: 'ready'
-              }
-            }
-          }))
-        } catch (e) {
-          if (!isCurrentLoad(id, seq)) return
-          // 最新加载的失败才可见（旧一轮失败已被重试顶替，静默）；tab 置 error
-          // 占位（tab 栏可显示，重入即重试），错误仍上抛消费方 toast
-          set((s) => ({
-            tabs: s.tabs[id] === undefined ? s.tabs : { ...s.tabs, [id]: { ...s.tabs[id]!, status: 'error' } }
-          }))
-          throw e
-        } finally {
-          // 身份校验：仅当 Map 记录仍是本加载才删（closeTab 后立即重开同 id 时，
-          // Map 里已是新加载的记录，旧 finally 不得误删）
-          if (load !== null && inflightOpen.get(id) === load) {
-            inflightOpen.delete(id)
-          }
-        }
-      })()
-      load = p
-      inflightOpen.set(id, load)
-      return load
+    openPaper(id) {
+      return loader.openPaper(id)
     },
 
     activateTab(id) {
@@ -320,15 +169,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     setPage(page, opts) {
-      // 0 基页码夹取到 [0, totalPages-1]；[F-LOCATE-01] totalPages 未知（0）=
-      // doc 未就绪窗口——不夹上界（负值仍拦 0），页码原值驻留+scrollRequest
-      // 原值驱动段⑤就绪补滚（usePageColumnScroll deps 含 pageSizes/totalPages，
-      // 就绪重触发）；渲染链 clampPageToColumn 兜底滚动侧——页码/滚动两侧
-      // 分工（INV-118 早到页码不吞：locateAnchor 的 setPage(anchorPage) 常撞
-      // 此窗口，吞 0=跨视图跳转停开篇页缺陷的病根）。
-      // F-01 双源机制（INV-29）：第三参缺省/'to'=程序跳页→bump scrollRequest
-      // （信号驱动 PageColumn.scrollToPage，页列就绪后滚到盒顶）；
-      // 'none'=页码来自滚动位置回写→只落账不 bump，不触发程序滚动（防回弹）
+      // 0 基页码夹取；totalPages=0 不夹上界（INV-118 早到页码不吞）
       const { activeId } = get()
       if (activeId === null) return
       const tab = get().tabs[activeId]
@@ -343,8 +184,7 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
           ? { scrollRequest: { paperId: activeId, page: clamped, seq: (s.scrollRequest?.seq ?? 0) + 1 } }
           : {})
       }))
-      // 进度记账/防抖已拆至 scroll-progress（F-03）：程序跳页的入账由装配面
-      // beginProgramScroll（scrollRequest 消费）承载，滚动回写由状态机承载
+      // 进度记账/防抖已拆至 scroll-progress（F-03）
     },
 
     setZoom(zoom) {
@@ -352,12 +192,9 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     setTotalPages(total) {
-      // totalPages 落定=页码侧收敛点（INV-118 收敛条款）：totalPages=0 窗口驻留的
-      // 超界页码在此夹回（落定值 landed>0 时 page=Math.max(0,Math.min(page,landed-1))；
-      // landed=0 时 page 不动——守卫窗口语义：未就绪窗口 0 与真 0 页/加载失败终态 0
-      // 代码不可区分，page 不动=保住件①驻留值，写成夹取即病根以本函数吞驻留形态
-      // 复活〔格 e 守卫〕）；scrollRequest 不 bump（滚动侧由段⑤消费时
-      // clampPageToColumn 自夹，两侧终态一致——格 d 断言固化）
+      // totalPages 落定=页码侧收敛点（INV-118）：landed>0 夹回驻留超界页码；
+      // landed=0 page 不动（守卫窗口语义——未就绪 0 与真 0 不可区分，格 e）；
+      // scrollRequest 不 bump（滚动侧 clampPageToColumn 自夹——格 d）
       const landed = Math.max(0, Math.floor(total))
       updateActiveTab((tab) => ({
         ...tab,
@@ -379,46 +216,55 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     addAnnotation(paperId, a) {
-      // F-SL（INV-03 写方向同族）：per-paperId 寻址不读 activeId——SelectionLayer
-      // 保存 await 窗内切 tab 时按发起身份落账（幽灵标注守卫）；tab 已关 →
-      // no-op（DB 已落，重开自 DB 读对齐——与 undo 关 tab 路径同语义）
-      const { tabs } = get()
-      const tab = tabs[paperId]
-      if (tab === undefined) return
-      set({ tabs: { ...tabs, [paperId]: { ...tab, annotations: [...tab.annotations, a] } } })
+      updateTabById(paperId, (t) => ({ ...t, annotations: [...t.annotations, a] })) // F-SL 寻址守卫
     },
 
     updateAnnotation(a) {
-      updateActiveTab((tab) => ({
+      updateTabById(a.paperId, (tab) => ({
         ...tab,
         annotations: tab.annotations.map((x) => (x.id === a.id ? a : x))
       }))
     },
 
     removeAnnotation(id) {
-      updateActiveTab((tab) => ({
-        ...tab,
-        annotations: tab.annotations.filter((x) => x.id !== id)
-      }))
+      for (const [paperId, tab] of Object.entries(get().tabs)) {
+        if (!tab.annotations.some((x) => x.id === id)) continue
+        updateTabById(paperId, (t) => ({
+          ...t,
+          annotations: t.annotations.filter((x) => x.id !== id)
+        }))
+        return
+      }
     },
 
     markTabDirty(paperId) {
-      const { tabs } = get()
-      if (tabs[paperId] === undefined) return
-      set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: true } } })
+      updateTabById(paperId, (t) => ({ ...t, dirty: true }))
     },
 
     clearTabDirty(paperId) {
-      const { tabs } = get()
-      if (tabs[paperId] === undefined) return
-      set({ tabs: { ...tabs, [paperId]: { ...tabs[paperId]!, dirty: false } } })
+      updateTabById(paperId, (t) => ({ ...t, dirty: false }))
+    },
+
+    markTabUnfinalized(paperId) {
+      updateTabById(paperId, (t) => ({
+        ...t,
+        unfinalized: true,
+        editRevision: (t.editRevision ?? 0) + 1
+      }))
+    },
+
+    finalizeTabUnfinalized(paperId, atRevision) {
+      updateTabById(paperId, (t) =>
+        (t.editRevision ?? 0) === atRevision ? { ...t, unfinalized: false } : t
+      )
+    },
+
+    setTabClosing(paperId, closing) {
+      updateTabById(paperId, (t) => ({ ...t, closing }))
     },
 
     markTabError(paperId) {
-      const { tabs } = get()
-      const tab = tabs[paperId]
-      if (tab === undefined || tab.status === 'error') return
-      set({ tabs: { ...tabs, [paperId]: { ...tab, status: 'error' } } })
+      updateTabById(paperId, (t) => (t.status === 'error' ? t : { ...t, status: 'error' }))
     },
 
     notifyNoteHighlight(annotationId) {
@@ -435,48 +281,60 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     saveResearchScroll(paperId, tab, scrollTop) {
-      const { tabs } = get()
-      const t = tabs[paperId]
-      if (t === undefined) return
-      set({
-        tabs: {
-          ...tabs,
-          [paperId]: { ...t, researchScroll: { ...t.researchScroll, [tab]: Math.max(0, scrollTop) } }
-        }
-      })
+      updateTabById(paperId, (t) => ({ ...t, researchScroll: { ...t.researchScroll, [tab]: Math.max(0, scrollTop) } }))
     },
 
-    async undo() {
-      // paperId 在 await 前捕获——undo 期间切换 tab 不得把同步落到别的 tab（INV-03 同族）
-      const paperId = get().activeId
-      if (paperId === null) return
-      let outcome: UndoOutcome
-      try {
-        outcome = await runUndo(paperId)
-      } catch (e) {
-        // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误
-        console.error('[reader.store] undo 异常', e)
-        showToast('撤销失败，请重试', 'error')
-        return
-      }
-      if (!outcome.done) {
-        if (outcome.reason === 'api-failed') {
-          showToast('撤销失败，请重试', 'error')
-        }
-        return
-      }
-      const { tabs } = get()
-      const tab = tabs[paperId]
-      // undo 期间 tab 被关：DB 已撤销，列表随重开对齐，不追写已删 TabState
-      if (tab === undefined) return
-      const act = outcome.apply
-      const next =
-        act.type === 'remove'
-          ? tab.annotations.filter((x) => x.id !== act.id)
-          : tab.annotations.some((x) => x.id === act.annotation.id)
-            ? tab.annotations.map((x) => (x.id === act.annotation.id ? act.annotation : x))
-            : [...tab.annotations, act.annotation]
-      set({ tabs: { ...tabs, [paperId]: { ...tab, annotations: next } } })
+    undo() {
+      return applyOpHistory('undo')
+    },
+
+    redo() {
+      return applyOpHistory('redo')
     }
+  }
+
+  // 操作层 undo/redo 共用收口（paperId await 前捕获——期间切 tab 不误落）：
+  // 执行（起步入链复合任务〔裸预 flush→反向写〕+settle+代际失效在 commands）→ store 同步 →
+  // 失败 toast；返回完整动作成功
+  async function applyOpHistory(direction: 'undo' | 'redo'): Promise<boolean> {
+    const before = get()
+    const paperId = before.activeId
+    // §2.5 #12 no-op 判据：PDF 未 ready（tab 缺席/loading/error）不触历史命令
+    if (paperId === null || before.tabs[paperId]?.status !== 'ready') return false
+    let outcome: OpHistoryOutcome
+    try {
+      outcome = direction === 'undo' ? await undoTabOperations(paperId) : await redoTabOperations(paperId)
+    } catch (e) {
+      // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误
+      console.error('[reader.store] 操作历史异常', e)
+      showToast('撤销失败，请重试', 'error')
+      return false
+    }
+    if (!outcome.done) {
+      // 预 flush 失败（write-failed）的真实写失败已由写路径 toast——不叠发
+      if (outcome.reason === 'api-failed') {
+        showToast(direction === 'undo' ? '撤销失败，请重试' : '重做失败，请重试', 'error')
+      }
+      return false
+    }
+    const { tabs } = get()
+    const tab = tabs[paperId]
+    // 期间 tab 被关：DB 已撤销/重做，列表随重开对齐，不追写已删 TabState
+    if (tab === undefined) return true
+    const act: OpApply = outcome.apply
+    const next =
+      act.type === 'remove'
+        ? tab.annotations.filter((x) => x.id !== act.id)
+        : tab.annotations.some((x) => x.id === act.annotation.id)
+          ? tab.annotations.map((x) => x.id === act.annotation.id ? act.annotation : x)
+          : [...tab.annotations, act.annotation]
+    // [B4-A R2 §2.5 #16/#17] undo/redo 成功=新编辑事件：U=1、revision++
+    set({
+      tabs: {
+        ...tabs,
+        [paperId]: { ...tab, annotations: next, unfinalized: true, editRevision: (tab.editRevision ?? 0) + 1 }
+      }
+    })
+    return true
   }
 })

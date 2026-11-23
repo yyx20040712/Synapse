@@ -14,7 +14,8 @@ import type { Annotation, AnnotationKind } from '../../../src/shared/models/anno
 import { guardedDescribe } from '../../utils/guard'
 import { makeApiStub } from '../../utils/api-client-mock'
 import { makeTab } from '../../utils/factories'
-import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
+// [B4-A R1 迁移] 节拍常量 IDLE_FLUSH_MS(600s)→IDLE_FLUSH_MS(1.5s，批注/总评共用单源)
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
 
 const stubApi = makeApiStub({ notes: { get: vi.fn(), save: vi.fn() } })
 const notesGet = vi.fn()
@@ -127,15 +128,31 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     expect(btn.textContent).toBe('保存')
     expect(btn.disabled).toBe(false)
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     expect(notesSave).toHaveBeenCalled()
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false)
-    expect(host?.textContent).toContain('已保存')
+    // [B4-A R2 §10.1 断言翻转] idle-flush 落库≠定稿：Q0+U1=dirty 可点（「保存」）
+    expect(btn.textContent).toBe('保存')
+    expect(btn.disabled).toBe(false)
+    // 显式保存（钮=tab 级 finalize）成功清 U → saved「已保存」
+    await act(async () => {
+      btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(btn.disabled).toBe(true)
+    expect(btn.textContent).toBe('已保存')
   })
 
   it('换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）', async () => {
     notesGet.mockResolvedValue({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: 'C', createdAt: 't', updatedAt: 't' } })
+    // [B4-A R1 迁移·断言翻转] 离场即关闭单元并 fire flush（§3 切 tab 行——旧「防抖
+    // 定时器保持 pending」不再成立）：立存在途未落定时草稿驻 store，切回 load 走
+    // 合并保护（U2 五模块语义——pendingEdit 路径）
+    let resolveSave!: (v: unknown) => void
+    notesSave.mockImplementation(
+      () => new Promise((r) => { resolveSave = r })
+    )
     mount(<ReaderNotesPanel annotations={[]} onLocate={() => undefined} />)
     await act(async () => {
       await vi.runOnlyPendingTimersAsync()
@@ -144,16 +161,16 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     await act(async () => {
       typeInto(body, '编辑过')
     })
-    // 切走：activeId=p-2（面板随 active tab 换 paperId 重新 load）——只冲微任务，
-    // 防抖定时器保持 pending（saveSoon 窗口内切走正是 U2 合并保护的场景）
+    // 切走：activeId=p-2（面板随 active tab 换 paperId 重新 load）
     notesGet.mockResolvedValue({ ok: true, data: null })
     act(() => {
       useReaderStore.setState({ activeId: 'p-2' })
     })
     await act(async () => {
-      await Promise.resolve()
+      await vi.advanceTimersByTimeAsync(0)
     })
-    // p-1 草稿仍驻 store（未丢失）
+    // 离场立存已派发（载荷=窗内值，不等空闲计时）；p-1 草稿仍驻 store（未丢失）
+    expect(notesSave).toHaveBeenCalledWith({ paperId: 'p-1', contentMd: '编辑过' })
     expect(useNotesStore.getState().noteByPaper['p-1']?.contentMd).toBe('编辑过')
     // 切回 p-1：合并保护保用户字段（U2 五模块语义——pendingEdit 路径）
     act(() => {
@@ -164,6 +181,11 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
     })
     const bodyBack = host?.querySelector('textarea[aria-label="笔记正文"]') as HTMLTextAreaElement
     expect(bodyBack.value).toBe('编辑过')
+    // 收尾：离场立存落定（模块态跨用例——不留挂起在途）
+    await act(async () => {
+      resolveSave({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: '编辑过', createdAt: 't', updatedAt: 't2' } })
+      for (let i = 0; i < 12; i++) await Promise.resolve()
+    })
   })
 
   it('跨 paper 周期隔离（deepseek B1）：A 保存失败落地于切到 B 之后——B 不得误显「保存失败」', async () => {
@@ -182,7 +204,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       typeInto(body, 'A 的编辑')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     // saving 在飞时切到 B（B 载入空笔记）
     notesGet.mockResolvedValue({ ok: true, data: null })

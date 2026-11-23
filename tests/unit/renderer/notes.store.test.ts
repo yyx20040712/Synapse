@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { guardedDescribe } from '../../utils/guard'
-import { AUTOSAVE_DEBOUNCE_MS } from '../../../src/shared/constants'
+// [B4-A R1 迁移] 节拍常量 AUTOSAVE_DEBOUNCE_MS(600s)→IDLE_FLUSH_MS(1.5s，批注/总评共用单源)
+import { IDLE_FLUSH_MS } from '../../../src/shared/constants'
+
+
+/** [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务：冲恰一拍
+ *  （链任务起步=API 已派发、回包未处理——saving 在途窗口）再断言派发 */
+async function laneTick(): Promise<void> {
+  await Promise.resolve()
+}
 
 async function loadStore(api: unknown) {
   vi.resetModules()
@@ -40,7 +48,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     useStore.getState().saveSoon('p-1')
     expect(save).not.toHaveBeenCalled()
 
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).toHaveBeenCalledTimes(1)
     expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '新2' })
   })
@@ -55,7 +63,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     const useStore = await loadStore({ notes: { get: vi.fn(), save } })
     useStore.setState({ noteByPaper: { 'p-1': { contentMd: '', saving: false, savedAt: null, pending: false, saveFailed: false } } })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(useStore.getState().noteByPaper['p-1']?.savedAt).toBe('t2')
   })
 
@@ -92,7 +100,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore3.getState().load('p-1') // 首载落地（打首载标记，防抖门控放行）
     useStore3.getState().edit('p-1', { contentMd: '已保存编辑' })
     useStore3.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 防抖到期：保存成功，未保存标记清
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 防抖到期：保存成功，未保存标记清
     await useStore3.getState().load('p-1') // 无未保存编辑 → 整版落地
     const landed = useStore3.getState().noteByPaper['p-1']
     expect(landed?.contentMd).toBe('服务器旧内容')
@@ -148,7 +156,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     const loading = useStore.getState().load('p-1')
     useStore.getState().edit('p-1', { contentMd: '用户输入' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 防抖窗口跨过：首载未落地不得保存半成品
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 防抖窗口跨过：首载未落地不得保存半成品
     expect(save).not.toHaveBeenCalled()
 
     resolveGet({
@@ -156,7 +164,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       data: { id: 'n-1', paperId: 'p-1', contentMd: '服务器旧内容', createdAt: 't', updatedAt: 't' }
     })
     await loading // 保护合并落地 → 自动补存排程
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).toHaveBeenCalledTimes(1)
     expect(save.mock.calls[0]?.[0]).toMatchObject({
       paperId: 'p-1',
@@ -184,12 +192,12 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     // 失败后的编辑（store 契约层面：编辑时刻早于重试 load 的发起时刻）
     useStore.getState().edit('p-1', { contentMd: '用户输入' })
     useStore.getState().saveSoon('p-1')
-    vi.advanceTimersByTime(AUTOSAVE_DEBOUNCE_MS + 500) // 用户稍后才点重试：编辑时刻严格早于重试发起时刻
+    vi.advanceTimersByTime(IDLE_FLUSH_MS + 500) // 用户稍后才点重试：编辑时刻严格早于重试发起时刻
     // 重试成功：编辑早于本次 load——仍须合并而非整版覆盖
     await useStore.getState().load('p-1')
     const merged = useStore.getState().noteByPaper['p-1']
     expect(merged?.contentMd).toBe('用户输入')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(save).toHaveBeenCalledTimes(1) // 恰一次：合并路径的补存
     expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '用户输入' })
   })
@@ -229,7 +237,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     await useStore.getState().load('p-1') // 首载落地
     useStore.getState().edit('p-1', { contentMd: '第一次编辑' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 防抖到期：save 派发但挂起（in-flight）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 防抖到期：save 派发但挂起（in-flight）
     expect(save).toHaveBeenCalledTimes(1)
 
     useStore.getState().edit('p-1', { contentMd: '新编辑' }) // 保存进行中再编辑（面板会重排防抖）
@@ -258,7 +266,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     useStore.getState().edit('p-1', { contentMd: '用户输入' }) // 挂起期编辑（首载门控吞防抖）
     await loading // 合并落地：contentMd 保用户输入；排补存
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true) // 合并产物未落库——面板显示"未保存"
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 补存到期：保存失败——触碰记录必须仍在
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 补存到期：保存失败——触碰记录必须仍在
     expect(save).toHaveBeenCalledTimes(1)
     expect(useStore.getState().noteByPaper['p-1']?.saving).toBe(false)
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true) // 失败保留——面板经周期判定显示"保存失败"
@@ -290,13 +298,13 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
 
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 成功且派发后无新编辑 → 清
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 成功且派发后无新编辑 → 清
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
 
     useStore.getState().edit('p-1', { contentMd: 'y' })
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 失败 → 保留（未保存态延续）
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 失败 → 保留（未保存态延续）
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
   })
 
@@ -310,7 +318,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
 
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 派发（快照 seq=1），保存悬挂
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 派发（快照 seq=1），保存悬挂
     useStore.getState().edit('p-1', { contentMd: '第二次' }) // 派发后新编辑（seq=2）
     resolveSave({ ok: true, data: { id: 'n-1', paperId: 'p-1', contentMd: '', createdAt: 't', updatedAt: 't3' } })
     await vi.advanceTimersByTimeAsync(0)
@@ -336,7 +344,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
 
     // 补存成功后清
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
 
     // 整版路径：无未保存编辑 → pending=false
@@ -406,7 +414,7 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
           useStore.getState().edit('p-1', { contentMd: lastUser })
         } else if (op < 0.75) {
           useStore.getState().saveSoon('p-1')
-          await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 派发+settle（成功则服务器推进）
+          await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 派发+settle（成功则服务器推进）
         } else {
           await useStore.getState().load('p-1') // 合并或整版（按 pendingEdit 分岔）
         }
@@ -414,153 +422,20 @@ guardedDescribe('SR-NOTE-02', 'notes.store —— 防抖自动保存', () => {
       }
       // 收尾排空：最终保存落库后再 load 整版——终态同样守恒
       useStore.getState().saveSoon('p-1')
-      await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
       await useStore.getState().load('p-1')
       assertInvariants()
     }
   })
 })
 
-// ── A3 悬置写修票（2026-09-02，always-active——不经 guardedDescribe）──
-// 跨格序列锚（态空间表）：①dirty→discard→重开=整版落地（内存复活面闭）
-// ②saving→discard→回调到达=零状态变更（代际守卫防回调复活条目/pending 镜像，
-// in-flight 残余=仅 DB 落地毫秒窗，票面已接受）③dirty×N→discardAll=零 timer
-// 零内存草稿（切课题悬置写 renderer 面闭）④closeAll（App 切视图，无确认）
-// 不 discard——autosave-first 草稿存活+timer 继续跑（既有语义显式保持，不触碰）。
-describe('notes.store discard 族（A3 悬置写修票）', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-  })
-
-  const SERVER_NOTE = {
-    id: 'n-1',
-    paperId: 'p-1',
-    contentMd: '服务器内容',
-    createdAt: 't',
-    updatedAt: 't'
-  }
-
-  it('discard 清 timer 与条目：edit+saveSoon→discard→防抖到期 save 零调用', async () => {
-    const save = vi.fn(async () => ({ ok: true as const, data: { ...SERVER_NOTE } }))
-    const get = vi.fn(async () => ({ ok: true as const, data: SERVER_NOTE }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1') // 首载落地（过防抖门控）
-    useStore.getState().edit('p-1', { contentMd: '草稿' })
-    useStore.getState().saveSoon('p-1')
-    expect(vi.getTimerCount()).toBe(1) // 防抖已排程
-    useStore.getState().discardPendingEdit('p-1')
-    expect(vi.getTimerCount()).toBe(0) // timer 已清（M1 锚：残留即红）
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined() // 条目删除
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
-    expect(save).not.toHaveBeenCalled() // 悬置写不发生
-  })
-
-  it('序列①：dirty→discard→重开 load 整版落地（pendingEdit 已清，不合并回填草稿值）', async () => {
-    const save = vi.fn(async () => ({ ok: true as const, data: { ...SERVER_NOTE } }))
-    const get = vi.fn(async () => ({ ok: true as const, data: SERVER_NOTE }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1')
-    useStore.getState().edit('p-1', { contentMd: '被弃草稿' })
-    useStore.getState().discardPendingEdit('p-1')
-    await useStore.getState().load('p-1') // 重开
-    const landed = useStore.getState().noteByPaper['p-1']
-    expect(landed?.contentMd).toBe('服务器内容') // 整版落地非合并：内存复活面闭
-    expect(landed?.pending).toBe(false)
-    expect(save).not.toHaveBeenCalled() // 弃草稿不补存
-  })
-
-  it('序列②：saving→discard→save 回调到达=零状态变更（条目不得被重建）', async () => {
-    let resolveSave!: (v: unknown) => void
-    const save = vi.fn().mockImplementation(() => new Promise((r) => { resolveSave = r }))
-    const get = vi.fn(async () => ({ ok: true as const, data: SERVER_NOTE }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1')
-    useStore.getState().edit('p-1', { contentMd: '在途草稿' })
-    useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 派发：save 已调未 resolve（in-flight）
-    expect(save).toHaveBeenCalledTimes(1)
-    useStore.getState().discardPendingEdit('p-1')
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined()
-    resolveSave({ ok: true, data: { ...SERVER_NOTE, updatedAt: 't2' } })
-    await vi.advanceTimersByTimeAsync(0) // 回调落地：代际守卫=全 no-op
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined() // M2 锚：条目未被回调重建
-    await useStore.getState().load('p-1') // pendingEdit 语义面复核：整版落地
-    expect(useStore.getState().noteByPaper['p-1']?.contentMd).toBe('服务器内容')
-    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
-  })
-
-  it('序列③：两篇 pending→discardAll→防抖到期 save 零调用', async () => {
-    const save = vi.fn(async () => ({ ok: true as const, data: { ...SERVER_NOTE } }))
-    const get = vi.fn(async () => ({ ok: true as const, data: null }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1')
-    await useStore.getState().load('p-2')
-    useStore.getState().edit('p-1', { contentMd: '甲草稿' })
-    useStore.getState().saveSoon('p-1')
-    useStore.getState().edit('p-2', { contentMd: '乙草稿' })
-    useStore.getState().saveSoon('p-2')
-    useStore.getState().discardAllPendingEdits()
-    expect(vi.getTimerCount()).toBe(0) // 零 timer
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined() // 零内存草稿
-    expect(useStore.getState().noteByPaper['p-2']).toBeUndefined()
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100)
-    expect(save).not.toHaveBeenCalled() // 切课题悬置写 renderer 面闭
-  })
-
-  it('discard 后再 edit：正常重新起步（代际守卫不误伤后续编辑链，gen 每次派发重取）', async () => {
-    const save = vi.fn(
-      async (_req: { paperId: string; contentMd: string }) => ({
-        ok: true as const,
-        data: { ...SERVER_NOTE, updatedAt: 't2' }
-      })
-    )
-    const get = vi.fn(async () => ({ ok: true as const, data: SERVER_NOTE }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1')
-    useStore.getState().edit('p-1', { contentMd: '弃' })
-    useStore.getState().saveSoon('p-1')
-    useStore.getState().discardPendingEdit('p-1')
-    useStore.getState().edit('p-1', { contentMd: '新草稿' }) // 重新起步
-    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
-    useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 新派发快照新代际：守卫放行
-    expect(save).toHaveBeenCalledTimes(1)
-    expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '新草稿' })
-    expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false) // 成功回调正常清
-    expect(useStore.getState().noteByPaper['p-1']?.savedAt).toBe('t2')
-  })
-
-  // A3 门一 W1 补锚（主控压缩票直做）：reject 版序列②——.catch 代际守卫单独承载面。
-  // 变异「仅摘 .catch 守卫保留 .then 守卫」时本用例红：setDraft(saving:false) 经
-  // draftOf 重建已删条目（回调复活面——本票要杀的正是它）
-  it('序列②-reject：saving→discard→save 拒绝到达=零状态变更（.catch 守卫面）', async () => {
-    let rejectSave!: (e: Error) => void
-    const save = vi.fn().mockImplementation(() => new Promise((_, rej) => { rejectSave = rej }))
-    const get = vi.fn(async () => ({ ok: true as const, data: SERVER_NOTE }))
-    const useStore = await loadStore({ notes: { get, save } })
-    await useStore.getState().load('p-1')
-    useStore.getState().edit('p-1', { contentMd: '在途草稿' })
-    useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 100) // 派发：save 已调未 settle（in-flight）
-    expect(save).toHaveBeenCalledTimes(1)
-    useStore.getState().discardPendingEdit('p-1')
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined()
-    rejectSave(new Error('保存失败'))
-    await vi.advanceTimersByTimeAsync(0) // catch 回调落地：代际守卫=全 no-op
-    expect(useStore.getState().noteByPaper['p-1']).toBeUndefined() // 条目未被 catch 重建
-  })
-})
-
-// ── F-VISFB-11（视检反馈战役 B1-11）：600s 自动保存节拍 + 可等待收口面 ──
+// ── F-VISFB-11（视检反馈战役 B1-11）→ [B4-A R1] 1.5s 自动保存节拍 + 可等待收口面 ──
 // always-active（不经 guardedDescribe）。节拍合同值在本块以字面量锚定
-// （599_999/600_000）——若改引共享常量推导，变异「常量改值」时窗口随常量
-// 同移，边界用例退化为同义反复（恒绿假阳性）；其余窗口推进统一用
-// AUTOSAVE_DEBOUNCE_MS 派生（常量真值钉在本块、其余派生的分层）。
-describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
+// （1_499/1_500——[B4-A R1 迁移·断言翻转] 旧 600s 合同值退役）——若改引共享
+// 常量推导，变异「常量改值」时窗口随常量同移，边界用例退化为同义反复（恒绿
+// 假阳性）；其余窗口推进统一用 IDLE_FLUSH_MS 派生（常量真值钉在本块、其余
+// 派生的分层）。
+describe('notes.store 1.5s 节拍与可等待收口面（F-VISFB-11→B4-A R1）', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })
@@ -575,25 +450,25 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     data: { id: 'n-1', paperId, contentMd: '', createdAt: 't', updatedAt }
   })
 
-  it('节拍边界下沿：599_999ms 零写（api.notes.save 零调用）', async () => {
+  it('节拍边界下沿：1_499ms 零写（api.notes.save 零调用）', async () => {
     const save = vi.fn(async () => noteOk('p-1', 't1'))
     const get = vi.fn(async () => ({ ok: true as const, data: null }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1')
     useStore.getState().edit('p-1', { contentMd: '草稿' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(599_999)
+    await vi.advanceTimersByTimeAsync(1_499)
     expect(save).not.toHaveBeenCalled()
   })
 
-  it('节拍边界上沿：600_000ms 恰写一次（载荷=最新草稿）', async () => {
+  it('节拍边界上沿：1_500ms 恰写一次（载荷=最新草稿）', async () => {
     const save = vi.fn(async (_req: { paperId: string; contentMd: string }) => noteOk('p-1', 't1'))
     const get = vi.fn(async () => ({ ok: true as const, data: null }))
     const useStore = await loadStore({ notes: { get, save } })
     await useStore.getState().load('p-1')
     useStore.getState().edit('p-1', { contentMd: '草稿' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(1_500)
     expect(save).toHaveBeenCalledTimes(1)
     expect(save.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' })
   })
@@ -609,7 +484,7 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     useStore.getState().edit('p-1', { contentMd: '第一次' })
     useStore.getState().saveSoon('p-1')
     // 防抖到期：在途（载荷=「第一次」闭包快照），save 挂起不 resolve
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     expect(save).toHaveBeenCalledTimes(1)
     // 在途新输入（面板契约：edit+saveSoon 成对——防抖重排）
     useStore.getState().edit('p-1', { contentMd: '最新值' })
@@ -618,7 +493,7 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     await vi.advanceTimersByTimeAsync(0)
     // 序号守卫：派发后又有新编辑——旧成功不清未保存标记
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(true)
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     expect(save).toHaveBeenCalledTimes(2)
     expect(save.mock.calls[1]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '最新值' })
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
@@ -633,6 +508,8 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     useStore.getState().edit('p-1', { contentMd: '立即存' })
     let settled = false
     const saving = useStore.getState().saveNow('p-1').then(() => { settled = true })
+    expect(settled).toBe(false)
+    await laneTick()
     expect(settled).toBe(false)
     expect(save).toHaveBeenCalledTimes(1)
     resolveSave(noteOk('p-1', 't2'))
@@ -653,7 +530,7 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     // p-1：防抖到期即失败（error 态——flush 的立即重试面）
     useStore.getState().edit('p-1', { contentMd: '甲' })
     useStore.getState().saveSoon('p-1')
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     expect(useStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
     // p-2：dirty（timer 在排——flush 的 no-op 面，既有通道承接）
     useStore.getState().edit('p-2', { contentMd: '乙' })
@@ -664,7 +541,7 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     expect(useStore.getState().noteByPaper['p-1']?.pending).toBe(false)
     expect(useStore.getState().noteByPaper['p-2']?.pending).toBe(true)
     expect(vi.getTimerCount()).toBe(1)
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     expect(save).toHaveBeenCalledTimes(3)
     expect(save.mock.calls[2]?.[0]).toMatchObject({ paperId: 'p-2', contentMd: '乙' })
     expect(useStore.getState().noteByPaper['p-2']?.pending).toBe(false)
@@ -686,11 +563,12 @@ describe('notes.store 600s 节拍与可等待收口面（F-VISFB-11）', () => {
     useStore.getState().saveSoon('p-1')
     useStore.getState().edit('p-2', { contentMd: '乙' })
     useStore.getState().saveSoon('p-2')
-    await vi.advanceTimersByTimeAsync(600_000)
+    await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     expect(useStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
     expect(useStore.getState().noteByPaper['p-2']?.saveFailed).toBe(true)
     const flushing = useStore.getState().flushAll()
     // p-1 的重试挂起（save 第三笔）——串行语义：p-2 的重试不得先行派发
+    await laneTick()
     expect(save).toHaveBeenCalledTimes(3)
     resolveThird(noteOk('p-1', 't3'))
     await flushing

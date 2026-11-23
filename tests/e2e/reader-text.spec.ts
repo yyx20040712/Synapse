@@ -652,7 +652,11 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   // ——改锁显式保存链（saveNow 点击→四态钮 clean「已保存」；节拍数学=单测 fake
   // timers 域）；[F-VISFB-13] 恒 aria-label 后 dirty 态 accessible name=「立即保存」
   // （exact 全串防子串误中「已保存/保存中」——:1230 同口径）
-  await panel.getByRole('button', { name: '立即保存', exact: true }).click()
+  // [B4-A R2] 点击取钮面内边距位+微延迟：默认中心点击命中钮内 svg 图标，在
+  // Linux Xvfb+Electron 下瞬时 down-up 被 svg 原生拖拽面吞掉（pd/md/mu 到达而
+  // click 事件不派发——探针实证 probe-run12/14/15，仓外档案区）；定位+延迟后
+  // 全链稳定。单元级点击→finalize 语义由 reader-notes-panel.test 锁定。
+  await panel.getByRole('button', { name: '立即保存', exact: true }).click({ position: { x: 6, y: 11 }, delay: 60 })
   await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
 
   // 片段单击 → C-05 定位服务：同页 exact → 标注元素滚动+locate-flash 闪烁
@@ -1272,12 +1276,13 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   // 语义等价锁定：dirty 未达成即红（saved 态名=「已保存」不误中）
   await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
 
-  // [F-VISFB-14 C-A3 翻案（任务书 §0-1，2026-10-17）] 关 tab 默认=flush-first
-  // 立存（成功零弹窗即关；discard 仅显式放弃路径——confirmCloseDirty 失败分支，
-  // 单元级 close-tab-flush 用例族承载（14 例——回炉轮 1 扩，计数勿内联易漂移）。本用例不挂 dialog 自动接受器：
-  // 若回归旧「关脏 tab 恒 confirm 弃改」行为，原生模态无处理器=默认 dismiss
-  // （取消）→tab 不关→下行 toHaveCount(0) 红（零弹窗断言比旧 mock-accept 更严）。
+  // [F-VISFB-14 C-A3 翻案→B4-A R2 §2.5 #26 迁移] 关 tab=flush-first 立存；
+  // 输入已置 unfinalized——flush 成功后走自绘二选 Dialog（冻结文案），点「是」
+  // 确认关闭（原生 window.confirm 退役；失败分支二选 Dialog 归 R2 用例与单元级
+  // close-tab-flush 族承载）
   await win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab').first().getByRole('button').click()
+  await expect(win.getByText('当前文件未被标记为已保存，是否确认关闭？')).toBeVisible({ timeout: 5_000 })
+  await win.getByTestId('close-tab-confirm-yes').click()
   await expect(win.getByRole('tablist', { name: '打开的文献' }).getByRole('tab')).toHaveCount(0)
 
   // 时序稳定等待（600s 防抖时代「跨防抖窗」语义已不成立〔门一 N-3 勘误〕：
@@ -1295,5 +1300,200 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   await expect(panel2.getByText('已保存')).toBeVisible({ timeout: 10_000 })
   const body2 = panel2.getByLabel('笔记正文')
   await expect(body2).toHaveValue('A3 悬置写输入')
+  await app.close()
+})
+
+/** [B4-A R1 §3/§4/§15] reader 两层历史真链（api+db 回读）：
+ *  - 文本值层（批注/总评 textarea 接管 ctrl+z / ctrl+y）：单元级 undo·redo；
+ *  - 显式保存 ctrl+s（tab 级 finalize）：redo 清、undo 保留；
+ *  - 操作层（非 editable 焦点的页面级 ctrl+z / ctrl+y）：撤/复最近的批注编辑
+ *    操作项，恢复后该批注的文本历史代际失效（编辑器 undo/redo 均禁用）；
+ *  - 重开应用回读真实文本（DB 真相源）。灰点/关闭二选归 R2，不在本用例。 */
+test('B4-A R1 两层历史：批注/总评文本 undo·redo+ctrl+s 定稿清 redo+操作层 undo·redo+重开回读', async () => {
+  skipIfPending(C_DEPS)
+  const title = '智慧水务 B4-A R1 文本历史文献'
+  const { app, userData } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  const known = win.getByText(PDF_KNOWN_TEXT).first()
+  await expect(known).toBeVisible({ timeout: 20_000 })
+
+  // 划选高亮→开批注编辑器
+  await known.selectText()
+  await expect(win.getByTestId('selection-toolbar')).toBeVisible()
+  await win.getByRole('button', { name: '高亮' }).click()
+  await expect(win.getByTestId('annotation-rect').first()).toBeVisible()
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  const editor = win.getByTestId('annotation-editor')
+  await expect(editor).toBeVisible()
+  const ta = editor.getByRole('textbox', { name: '批注内容' })
+  const undoBtn = editor.getByTestId('annotation-editor-undo')
+  const redoBtn = editor.getByTestId('annotation-editor-redo')
+
+  // fill=一个输入事件=一个单元；逐键键入「空格+乙」——空格关闭当前单元、乙开新单元
+  await ta.fill('甲')
+  await ta.pressSequentially(' 乙')
+  // ① 文本层 undo：先关闭打开单元再撤——回到「甲 」（真实渲染值）；redo 可用
+  await ta.press('Control+z')
+  await expect(ta).toHaveValue('甲 ')
+  await expect(redoBtn).toBeEnabled()
+  await ta.press('Control+y')
+  await expect(ta).toHaveValue('甲 乙')
+  // ② ctrl+s 显式保存（tab 级 finalize）：redo 清空（重做钮禁用）、undo 保留
+  await ta.press('Control+z')
+  await expect(ta).toHaveValue('甲 ')
+  await ta.press('Control+s')
+  await expect(redoBtn).toBeDisabled()
+  await ta.press('Control+y')
+  await expect(ta).toHaveValue('甲 ')
+  await expect(redoBtn).toBeDisabled()
+  // 保存后 undo 仍有效（已落库修改可撤销）——一步回到首单元 before
+  await ta.press('Control+z')
+  await expect(ta).toHaveValue('')
+  await ta.press('Control+y')
+  await expect(ta).toHaveValue('甲 ')
+  // 追加续写→1.5s 空闲落库（「已保存」标记在场）
+  await ta.pressSequentially('丁')
+  await expect(ta).toHaveValue('甲 丁')
+  await expect(editor.getByTestId('annotation-saved-flag')).toContainText('已保存', { timeout: 8_000 })
+  await ta.press('Escape')
+  await expect(editor).toHaveCount(0)
+
+  // ③ 操作层（焦点已回页面——非 editable）。ctrl+s 已结束定稿前的编辑合并会话
+  //    （§4.2：定稿后的新输入开启新操作项）——操作栈两条 comment-edit：
+  //    会话一「''→'甲 '」、会话二「'甲 '→'甲 丁'」。ctrl+z 撤会话二→批注回到
+  //    '甲 '；该批注文本历史代际失效（编辑器 undo/redo 均禁用）
+  await win.keyboard.press('Control+z')
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  await expect(ta).toHaveValue('甲 ')
+  await expect(undoBtn).toBeDisabled()
+  await expect(redoBtn).toBeDisabled()
+  await ta.press('Escape')
+  await expect(editor).toHaveCount(0)
+  //    再撤会话一→回到编辑前的空批注
+  await win.keyboard.press('Control+z')
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  await expect(ta).toHaveValue('')
+  await expect(undoBtn).toBeDisabled()
+  await ta.press('Escape')
+  await expect(editor).toHaveCount(0)
+  //    ctrl+y 逐步重做：'甲 '→'甲 丁'
+  await win.keyboard.press('Control+y')
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  await expect(ta).toHaveValue('甲 ')
+  await ta.press('Escape')
+  await expect(editor).toHaveCount(0)
+  await win.keyboard.press('Control+y')
+  await win.getByTestId('annotation-rect').first().click()
+  await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  await expect(ta).toHaveValue('甲 丁')
+  await ta.press('Escape')
+  await expect(editor).toHaveCount(0)
+
+  // ④ 总评（同共享文本控制器——只有文本值层）
+  const research = win.getByTestId('reader-research')
+  await research.getByRole('tab', { name: '笔记' }).click()
+  const panel = win.getByTestId('reader-notes-panel')
+  await expect(panel).toBeVisible()
+  // [B4-A R2 §10.1 断言翻转] 载入完成锚改「保存钮在场」：tab 聚合含本用例先前
+  // 批注编辑的 U（idle-flush 落库≠定稿——钮恒 dirty 不再回「已保存」）；钮只在
+  // notes entry 落地后渲染（load 完成判据等价保持）
+  const panelSaveBtn = panel.getByRole('button', { name: /保存/, exact: false })
+  await expect(panelSaveBtn).toBeVisible({ timeout: 10_000 })
+  const body = panel.getByLabel('笔记正文')
+  await body.fill('总评甲')
+  await body.pressSequentially(' 乙')
+  await body.press('Control+z')
+  await expect(body).toHaveValue('总评甲 ')
+  await body.press('Control+y')
+  await expect(body).toHaveValue('总评甲 乙')
+  await body.press('Control+z')
+  await expect(body).toHaveValue('总评甲 ')
+  await body.press('Control+s')
+  // 定稿清 redo：重做不再可用（反向写为 IPC 往返——留出落定窗口后断值不变）
+  await body.press('Control+y')
+  await win.waitForTimeout(600)
+  await expect(body).toHaveValue('总评甲 ')
+  await body.press('Control+y')
+  await expect(body).toHaveValue('总评甲 ')
+  // 保存后 undo 仍有效
+  await body.press('Control+z')
+  await expect(body).toHaveValue('')
+  await body.press('Control+y')
+  await expect(body).toHaveValue('总评甲 ')
+  await body.pressSequentially('丙')
+  await expect(body).toHaveValue('总评甲 丙')
+  // [B4-A R2 §10.1 断言翻转] idle 落库后 Q0+U1=dirty 可点（「保存」非「已保存」
+  // ——idle-flush≠定稿）；等 1.5s 真实 idle 落库后再关（⑤重开回读证 DB 值——
+  // 旧「已保存」锚隐式等待落库，改锚后须显式等真实计时）
+  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible({ timeout: 8_000 })
+  await win.waitForTimeout(2_200)
+  await app.close()
+
+  // ⑤ 重开应用：DB 真相源回读（批注+总评真实文本）
+  const app2 = await launch(userData)
+  const win2 = await app2.firstWindow()
+  await expect(win2.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win2.getByText(title).first().dblclick()
+  await expect(win2.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+  await win2.getByTestId('annotation-rect').first().click()
+  await win2.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
+  await expect(win2.getByTestId('annotation-editor').getByRole('textbox', { name: '批注内容' })).toHaveValue('甲 丁')
+  await win2.getByTestId('annotation-editor').getByRole('textbox', { name: '批注内容' }).press('Escape')
+  await win2.getByTestId('reader-research').getByRole('tab', { name: '笔记' }).click()
+  const panel2 = win2.getByTestId('reader-notes-panel')
+  await expect(panel2.getByText('已保存')).toBeVisible({ timeout: 10_000 })
+  await expect(panel2.getByLabel('笔记正文')).toHaveValue('总评甲 丙')
+  await app2.close()
+})
+
+/** [B4-A R2 §10.1/§10.2/§15 R2 验证门] 灰点跨真实 idle 与关闭二选：
+ *  - 输入→灰点立即出（U 轴）；1.5s 真实 idle 落库（Q0）后灰点仍在（idle-flush
+ *    ≠定稿）；ctrl+s 显式保存→灰点清（#21）；
+ *  - 关闭二选：再输入→关 tab→冻结文案 Dialog——「否」=留下（tab/灰点原样）、
+ *    再关→「是」=关闭清史（#26-#28）。 */
+test('B4-A R2 灰点跨真实 idle：输入→idle 落库灰点仍在→显式保存灰点清+关闭二选（否/是）', async () => {
+  skipIfPending(A3_DEPS)
+  const title = '智慧水务 B4-A R2 灰点二选文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  // 总评输入：灰点立即出（U 轴——不等单元提交）
+  const research = win.getByTestId('reader-research')
+  await research.getByRole('tab', { name: '笔记' }).click()
+  const panel = win.getByTestId('reader-notes-panel')
+  await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
+  const tabBar = win.getByRole('tablist', { name: '打开的文献' })
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(0)
+  await panel.getByLabel('笔记正文').fill('R2 灰点输入')
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
+
+  // 1.5s 真实 idle：单元提交+落库（Q0——防抖窗自然到期非立存）；灰点仍在
+  await win.waitForTimeout(2_200)
+  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
+
+  // 关闭二选·否：输入已置 U——Dialog 冻结文案；「否」=留下（tab/灰点原样）
+  await tabBar.getByRole('tab').first().getByRole('button').click()
+  await expect(win.getByText('当前文件未被标记为已保存，是否确认关闭？')).toBeVisible({ timeout: 5_000 })
+  await win.getByRole('button', { name: '否', exact: true }).click()
+  await expect(tabBar.getByRole('tab')).toHaveCount(1)
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
+
+  // ctrl+s 显式保存（tab 级 finalize）：灰点清（#21）
+  await panel.getByLabel('笔记正文').press('Control+s')
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(0, { timeout: 5_000 })
+
+  // U=0 关闭：零弹窗直关（#25）
+  await tabBar.getByRole('tab').first().getByRole('button').click()
+  await expect(tabBar.getByRole('tab')).toHaveCount(0)
   await app.close()
 })

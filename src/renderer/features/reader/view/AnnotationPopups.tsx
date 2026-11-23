@@ -13,8 +13,12 @@
  *   改造点与态表驻彼）。
  * - 弹层无本地状态（禁改状态归属）——menu/editing/busy 由宿主 AnnotationLayer
  *   持有，本件经 props 收值+set 函数回写；本件经域 hook 接线动作族。
- * - AnnotationEditor 自动保存接线：onAutosave→actions.autosaveComment（编辑器
- *   内 800ms 停顿触发，反馈标记在编辑器本件）。
+ * - AnnotationEditor 文本写接线（[B4-A R1]）：onAutosave→actions.autosaveComment
+ *   （文本单元 1.5s 空闲/blur/flush 落库）、onSessionEnd→actions.endEditSession
+ *   （blur 与卸载结束操作层编辑合并会话）；反馈标记在编辑器本件。
+ *   [B4-A 回炉 R5] 文本 undo/redo 的两笔写经裸体接线（控制器链任务体内直调）：
+ *   onAutosaveRaw→actions.autosaveCommentRaw（预 flush）、onHistoryWriteRaw→
+ *   actions.writeCommentRaw（反向写）。
  *
  * ── 接口层 ──
  * - export function AnnotationPopups(props: { menu: PopupTarget | null;
@@ -56,8 +60,7 @@ export function AnnotationPopups(props: {
     setBusy,
     closeEditing: () => setEditing(null),
     closeMenu: () => setMenu(null),
-    onChanged,
-    editingId: editing?.annotation.id ?? null
+    onChanged
   })
 
   /** 复制引文：双路径失败 toast（同步异常/写入拒绝，INV-02 动作型）→ 收起菜单 */
@@ -98,6 +101,9 @@ export function AnnotationPopups(props: {
           onSave={(comment) => void actions.saveComment(editing.annotation, comment)}
           onDelete={() => void actions.deleteAnnotation(editing.annotation)}
           onAutosave={(comment) => actions.autosaveComment(editing.annotation, comment)}
+          onAutosaveRaw={(comment) => actions.autosaveCommentRaw(editing.annotation, comment)}
+          onHistoryWriteRaw={(comment) => actions.writeCommentRaw(editing.annotation, comment)}
+          onSessionEnd={() => actions.endEditSession(editing.annotation.paperId)}
         />
       )}
     </>

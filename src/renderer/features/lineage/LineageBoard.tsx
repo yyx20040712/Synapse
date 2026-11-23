@@ -29,7 +29,7 @@
  *   十一域穷举不变）
  * - **退出拦截聚合面扩**（ADR-0014 接缝条款：图视图工单自带，**不动
  *   TABS-04 已冻结行为面**）：lineage.store 导出 dirty 布尔（保存态≠
- *   saved 即脏）；App.tsx 退出判定=useTabDirtyAggregate() ||
+ *   saved 即脏）；App.tsx 退出判定=use-save-aggregates（IO 聚合）||
  *   useLineageDirty()（组合根单点扩——tab-dirty.ts **行为面零触碰**，
  *   仅其头注 :14「（TABS-04 的 dirty 输入）」stale 声明行随单更新为
  *   「tabs∪lineage」——注释级非行为；**接缝双向锚定两文件=lineage.

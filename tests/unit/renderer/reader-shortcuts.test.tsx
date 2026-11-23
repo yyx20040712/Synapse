@@ -70,7 +70,10 @@ function makeActions() {
     nextPage: vi.fn(),
     spaceScroll: vi.fn(),
     zoomStep: vi.fn(),
-    undo: vi.fn()
+    undo: vi.fn(),
+    // [B4-A R1] 动作夹具加 redo/save（§12.2 reader-shortcuts 行）
+    redo: vi.fn(),
+    save: vi.fn()
   }
 }
 
@@ -98,13 +101,67 @@ guardedDescribe('SR2-KEY-02', 'ReaderShortcuts —— 阅读器快捷键与滚�
     unmount()
   })
 
-  it('ctrl+z：撤销标注操作栈触发（UNDO-01 键位面；editable 避让由 keymap 层保障——textarea 内为原生 undo）', () => {
+  it('[B4-A R1 迁移] ctrl+z：非 editable 焦点触发操作层撤销（editable 避让由 keymap 层保障——批注/总评 textarea 内为文本值层局部接管）', () => {
     const a = makeActions()
     const unmount = mountShortcuts(a)
     const z = key(document, { key: 'z', ctrlKey: true })
     expect(a.undo).toHaveBeenCalledTimes(1)
+    expect(a.redo).not.toHaveBeenCalled()
     expect(z.defaultPrevented).toBe(true)
     unmount()
+  })
+
+  it('[B4-A R1] ctrl+y 与 ctrl+shift+z：操作层重做（同一命令）；ctrl+shift+z 不误触撤销', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const y = key(document, { key: 'y', ctrlKey: true })
+    expect(a.redo).toHaveBeenCalledTimes(1)
+    expect(y.defaultPrevented).toBe(true)
+    const shiftZ = key(document, { key: 'Z', ctrlKey: true, shiftKey: true })
+    expect(a.redo).toHaveBeenCalledTimes(2)
+    expect(shiftZ.defaultPrevented).toBe(true)
+    expect(a.undo).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('[B4-A R1] ctrl+s：显式保存=当前 tab finalize（非 editable 面）', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const ev = key(document, { key: 's', ctrlKey: true })
+    expect(a.save).toHaveBeenCalledTimes(1)
+    expect(ev.defaultPrevented).toBe(true)
+    unmount()
+  })
+
+  it('[B4-A R1] editable 避让：textarea 内 ctrl+z/y/s 不经页面级操作层（textarea 自身局部接管文本层与定稿）', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    const ta = document.createElement('textarea')
+    document.body.appendChild(ta)
+    for (const init of [
+      { key: 'z', ctrlKey: true },
+      { key: 'y', ctrlKey: true },
+      { key: 'Z', ctrlKey: true, shiftKey: true },
+      { key: 's', ctrlKey: true }
+    ]) {
+      const ev = key(ta, init)
+      expect(ev.defaultPrevented).toBe(false)
+    }
+    expect(a.undo).not.toHaveBeenCalled()
+    expect(a.redo).not.toHaveBeenCalled()
+    expect(a.save).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('[B4-A R1] 卸载成对清理：unmount 后 redo/save 键位不再触发（INV-14）', () => {
+    const a = makeActions()
+    const unmount = mountShortcuts(a)
+    unmount()
+    key(document, { key: 'y', ctrlKey: true })
+    key(document, { key: 'Z', ctrlKey: true, shiftKey: true })
+    key(document, { key: 's', ctrlKey: true })
+    expect(a.redo).not.toHaveBeenCalled()
+    expect(a.save).not.toHaveBeenCalled()
   })
 
   it('ctrl+c：非 editable 选区写入剪贴板', () => {

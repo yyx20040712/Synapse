@@ -12,10 +12,14 @@
  *    落库；flushing 窗 no-op——pending 保真由 ④ 查态承接）；
  * ③ lineage saveStatus≠clean → await save()（写队列正道——不旁路队列，
  *    硬约束；flushing 中让位早退由 ④ 查态兜住）；
+ * ③.5 [B4-A R2 §2.5 #37] reader 各打开 tab 的写链 drain（tab-write-lane）：
+ *    在途 history-unit 与普通写属 IO——无人 await 的链任务（快捷键 undo/redo、
+ *    切 tab fire-first 立存）在最终查态前落定；失败结果由 ④ 查态承接；
  * ④ 收口后最新 dirty 判定（INV-141：不把任一 Promise fulfilled 直接等同
- *    「最新值已落库」，一律查态）：
+ *    「最新值已落库」，一律查态；[B4-A R2 §2.5 #37] IO 单源——U/unfinalized
+ *    不入 stillDirty：灰点不卡退出，idle-flush 已落库即 clean 回执）：
  *    notes：noteByPaper 任一 pending∨saveFailed（含已关 tab 残留——退出面
- *    全量收口，不限开 tab 键集，与 useTabDirtyAggregate 的开 tab 限定分野）；
+ *    全量收口，不限开 tab 键集）；
  *    annotations：开 tab TabState.dirty（API 失败残留——关 tab 卸载注册承接
  *    不属本判定）∨ 句柄终态未落库 ∨ 注册表未落盘残留（hasPending）；
  *    lineage：saveStatus≠clean（error/saving 均脏——saving=未知按脏）；
@@ -34,6 +38,7 @@ import {
   awaitRecoveryQuitSettled,
   strongQuitRecoveryBestEffort
 } from '../features/lineage/recoveryScheduler'
+import { laneDrain } from '../shared/tab-write-lane'
 import { runQuitInternal } from './quit-closing-gate'
 
 /**
@@ -66,6 +71,9 @@ export async function runQuitFlush(): Promise<boolean> {
   if (lineageBefore.saveStatus !== 'clean') {
     await lineageBefore.save()
   }
+  // ③.5 [B4-A R2 §2.5 #37] reader 各打开 tab 的写链 drain——在途 history/普通写
+  // 属 IO：最终查态前落定（各 tab 链互不阻塞，并行等待）
+  await Promise.all(useReaderStore.getState().order.map((id) => laneDrain(id)))
   // ④ 收口后最新 dirty 判定（查态——四面或；noteDraftPending=②.5 fire no-op
   // 〔flushing 窗〕或无句柄时的未收口草稿残留面）
   const notes = useNotesStore.getState().noteByPaper
