@@ -90,17 +90,21 @@ reader 每个 tab 一条串行写命令链；lineage 每个 folder 一条串行�
 | `loadSeq/inflightGraph` | integer、Promise 外部句柄 | 防止同一 folder 重复取数与迟到覆盖；Promise 不进响应式快照；和解读复用同一单飞句柄 |
 | `invalidationEpoch` | 单调整数，初值 0 | folders.changed/lineage.changed 空载荷事件到达时，全 registry 未删会话（含 loading）各 +1（§2.6 #41）；keyed 读（graph/reconcile 单飞）发起时捕获当前值；读的复用与 needsReload 清位要求读捕获值 ≥ 会话当前值（事件只增，等价于相等；§2.6 #34a/#43） |
 | `queue` | `WriteAction[]` | 仅实际待落库普通编辑动作；不放历史项，不持久化进 SessionSnapshot |
-| `inflight` | 当前写/flush/history/reconcile 描述 | 回写前校验 folderId+generation+flight id |
+| `inflight` | `{kind:'write'}`、`{kind:'flush'}`、`{kind:'history',unitId,direction}`、`{kind:'reconcile',epoch}` 之一，或 null | 回写前校验 folderId+generation（lineage-writeback-admission 唯一准入函数）。**字段级偏差（未按本行设计落地）**：普通 write/flush 的 `inflight` 没有 flight id。等价防护=同会话写链串行（响应只可能属于当前在途任务）＋generation 准入；history 响应另核 `folderId`/`unitId`，keyed 读另核 `loadSeq` 与读捕获的 `epoch` |
 | `idleTimer` | 模块侧句柄 | 新编辑重排；显式保存/切换/关闭/退出先取消；不在恢复副本中 |
 | `ioPhase/lastWriteError` | 上述 IO 状态 | 只由本 folder 写链迁移 |
 | `undoStack/redoStack` | `LineageHistoryEntry[]`，各≤10 | 页面切换与 folder 切换保留；显式保存只清 redo；恢复替换/删夹/课题切换清 |
+| `staleHistory` | `{direction, entryId, reason, message}` 或 null，初值 null | 过期历史标记：history-unit 以 CONFLICT 拒绝的方向栈顶历史项（方向＋历史项 id＋拒因与消息；判据=lineage-history-stale）。置位=history-unit 的拒绝分支；清除=成功移栈、显式保存清 redo（redo 方向）、新编辑单元入栈（recorder，R11）、用户在保存错误行出口确认丢弃；标记项不再位于其方向栈顶时读点判失效（§2.5 #18a） |
 | `unfinalized` | boolean | 新编辑/undo/redo 置真；仅成功 finalize 按 revision 清；idle-flush 与 reconcile 不动 |
 | `needsReload` | boolean | INV-175 的每 folder 权威和解位；不再是全局单槽；后台失效事件是它的新触发源，清位还要求清位读捕获 epoch ≥ 会话当前 epoch（§2.6 #35/#43） |
+| `restoredAwaitingCommand` | boolean，初值 false | 恢复待令：真=恢复载入后、本会话写链尚无任务起步。置位=`applyRecoverySession`；清除=本会话写链任一任务起步（lineage-session-lane 的入链口——settleEdit、historyCommand、finalize、save、flushFirst、reconcileNow、idle 到期 flush 共七处）与会话替换/移除/课题切换 reset；读点=LineagePage 挂载效应与 #41 结构事件——为真时 needsReload=1 也不自动和解，和解时点=首次命令入链（§2.5 #34/#39、§2.6 #10a/#41） |
 | `focusSet` | string[] | §14 终裁 2；按 folder 挂起，返回原图恢复，切 folder 不清其他图；课题切换全清 |
 | `interaction` | `{dragging:boolean; settleFlight:Promise<void>\|null; layoutActive:boolean}` | B3 桥接两态：dragging=已激活未松手（无 FlightJob）；settleFlight=FlightJob 已建后的可等待句柄（600ms 兜底承诺域）；两态均阻塞同会话保存/历史命令起步，layoutActive 只继续 B3 指针与重算屏障（§9.3） |
-| `lastProtectedRevision` | number | 仅 recovery owner 记录最近成功快照 revision；不表示 DB 已落库 |
+| `lastProtectedRevision` | —（字段已删除） | 未落地：无消费者，已随 B4-B 删除（R-O1 裁定）；恢复副本的代际由物理账本 token/gen 承载 |
 
 注册表另有 `activeFolder`、`switchSeq`、`workspaceGeneration` 与唯一 `recoveryOwner`。`useLineageStore` 可作为现有组件的活动投影保留，但所有写必须经 registry 的单一 `updateSession` 同步投影；后台响应禁止直接写活动投影。rail/quit 聚合读取 registry，不读取活动投影代替全集。
+
+本表是设计口径，不是落地清单——不表示字段全部落地：`inflight` 无 flight id、`lastProtectedRevision` 已删除（两行内已写明）。字段的驻留位置（`entry.data`，或 `entry` 旁侧的 `inflightGraph`/`interaction`/`drag` 句柄与 lane 持有的 idle timer）以 `LineageSession` 接口与 lineage-session-registry 头注为准。
 
 ### 2.4 IO×queue/inflight 合法态全表
 
@@ -128,7 +132,7 @@ reader 每个 tab 一条串行写命令链；lineage 每个 folder 一条串行�
 | 2 | 新标注操作 | 命令通过 gate | 入 reader 链；空闲即 saving，否则排队 | 成功提交一个操作单元：U=1、undo≤10、redo 清 | 失败保留可重试写并显示错误 |
 | 3 | 新 lineage 编辑单元 | 同会话非 saving（含 reconcile 在途）、非 recovery/quit/conflict 冻结、无未完成拖拽两态（§9.3） | 乐观应用+入队，Q=1 | 同一同步 recorder 完整完成后才 U=1、undo+1、redo 清；异常回滚本单元 | 排 1.5s idle-flush+300ms recovery trailing |
 | 4 | 同 #3，但任一 gate 拒绝 | — | 不变 | 不变，零半成品历史 | 原因按现有 UI 可见；不得先清 redo 再拒写 |
-| 5 | 1.5s 到期 | 有打开单元或 Q=1、F=0 | 提交单元→saving/F=1 | 切一个文本单元并清 redo 一次；U 保持 1；undo 保留 | 同一信号启动 flush |
+| 5 | 1.5s 到期 | reader：有打开文本单元或 Q=1、F=0；lineage：活动会话有未收口的悬浮笔记草稿或 Q=1、F=0 | reader 提交文本单元；lineage 把草稿正文提交为编辑单元并入队（D-3）；随后同一信号启动 flush→saving/F=1 | 切一个单元并清 redo 一次；U 保持 1；undo 保留 | lineage 悬浮笔记：提交不关闭编辑器、不夺焦点；只有这次提交随之而来的 saving 窗不卸载 textarea（keepOpen 窄口径，R3），其他写触发的 saving 窗仍让位；输入法合成期不提交、compositionend 后重新计时 1.5s（R1，对齐阅读器文本单元），合成片段不进草稿快照、恢复副本与编辑单元（两项的已知限制见 §14）。提交被拒（同会话在途、拖拽两态、冻结、合成期）且 idle 提交句柄已挂载时重排 |
 | 6 | 1.5s 到期 | 无单元且 Q=0 | 不变 | 不变 | 纯 no-op |
 | 7 | 普通写单条成功 | 后续仍有 Q | 出队，继续 saving | U/H/R 全不变 | lineage 出队即存 recovery 最新剩余 queue |
 | 8 | 普通写最后一条成功 | 无后续 Q | idle/Q0/F0 | **U 不变、undo 不变、redo 不变** | 可按 §8 释放/转移 recoveryOwner；不是定稿；needsReload=1 时链尾接和解任务（§2.6） |
@@ -144,6 +148,7 @@ reader 每个 tab 一条串行写命令链；lineage 每个 folder 一条串行�
 | 17 | redo 成功（无后续任务） | 同 #16 | idle/Q0/F0 | U=1；undo+1、redo−1 | 同 #16 |
 | 17b | redo 成功（history 在途期间出现新编辑） | 同 #16b | 同 #16b | U=1；undo+1、redo−1 | 同 #16b |
 | 18 | history-unit 失败/冲突 | 同上 | error/F0 | **两栈不动，U 不改为已定稿** | 原历史可重试；文献消失等冲突给具体原因 |
+| 18a | 过期历史项的标记与丢弃出口（D-1＝甲，适用面＝乙） | 撤销/重做被 history-unit 以 CONFLICT 拒绝，且拒因属四种拒因之一：HISTORY_STALE、HISTORY_PAPER_MISSING、HISTORY_FOLDER_MISSING、HISTORY_GRAPH_INVALID（值域单源=`src/shared/ipc/lineage-history.schemas` 的 `HISTORY_UNIT_CONFLICT_REASONS`） | error/F0（同 #18） | 两栈不动；按历史项 id 写入过期标记 `staleHistory`（方向＋历史项 id＋拒因＋消息） | 保存错误行内出现「丢弃这条过期历史」出口：须用户点击并确认才移除该方向栈顶项并清标记——纯内存操作，不写数据库，不自动执行更旧项。标记项已不在其方向栈顶、或写链在途=出口不出现、丢弃不适用。系统失败（非 CONFLICT）不标记、不给出口。出口只在 edit 模式工具组的保存错误行可见（R4，§14 限制） |
 | 19 | 迟到的 history/flush 回显 | 任一身份键不匹配 | 只更新原会话的物理结果账本；活动投影不变 | 不弹新会话栈，不清新会话错误 | 可触发原会话下一次串行收尾，不写其他对象 |
 | 20 | 显式保存 | tab/folder 可用；先取消 idle timer、提交所有打开单元 | drain 至该调用 revision 的写全部成功；无 Q 也进入定稿步骤 | 捕获 finalizeRevision；H 不动 | 仅同对象已有 finalize 或 history 在途时拒绝重复命令（busy 不含普通写 saving，普通写 saving 不排斥 #13 的 drain）；needsReload=1 时定稿步骤前先等和解（§2.6） |
 | 21 | 显式保存成功 | 保存期间无 revision>finalizeRevision，且同 generation 权威和解已完成（needsReload=0） | idle/Q0/F0 | **redo 清空、undo 保留、U=0** | 灰点清；保存钮 saved 禁用 |
@@ -157,14 +162,14 @@ reader 每个 tab 一条串行写命令链；lineage 每个 folder 一条串行�
 | 29 | 关闭预 flush 失败 | — | error | U/H/R 原样 | C=error，显示实际失败；只提供重试/留下，不提供“放弃未落库修改” |
 | 30 | 页面切换 | 非 closing | 离场先提交并 fire flush，不等回执再切视图 | 所有 reader/lineage 历史、U、focusSet 保留 | 返回既有会话不重建历史 |
 | 31 | reader 切 tab | 目标存在 | 离场 tab 提交+fire flush；activeId 同步切 | 两 tab 栈均不动 | 目标 tab 不错误消费离场 tab 的句柄 |
-| 32 | folder 切换 | 任意 outgoing IO | 离场取消 timer、发最新 recovery 快照并 flush-first；activeFolder 随即切 | 每图 U/H/R/focusSet 保留 | 不弹弃改框；ownership 按 §8，不由 saving 阻切 |
-| 33 | 返回有内存 folder | ready 且 needsReload=0 | 不 graph IPC | 恢复原图栈/focusSet | 不双取，不覆盖未落定值 |
-| 34 | 返回 needsReload 会话 | Q0/F0 | 允许一次 keyed graph 权威读（单飞，捕获发起时刻 `invalidationEpoch`） | 历史/U 不清；迟到响应只写原图 | 这是 INV-175 的必要例外，不是每次返回双取 |
+| 32 | folder 切换（含脉络页挂载时目标≠当前图的同步） | 任意 outgoing IO | 离场取消 timer、发最新 recovery 快照并 flush-first；activeFolder 随即切 | 每图 U/H/R/focusSet 保留 | 不弹弃改框；ownership 按 §8，不由 saving 阻切。脉络页挂载时目标≠当前图同样经本行切换：离场会话的未落定写由快照请求与 flush-first 承接，不以 IO 状态跳过目标图同步（R-W2） |
+| 33 | 返回有内存 folder | ready 且 needsReload=0（不论图是否为空、不论 saveStatus） | 不 graph IPC | 恢复原图栈/focusSet | 不双取，不覆盖未落定值。「ready 空图挂载重取」例外已退役（R-W2）：只有悬浮笔记的图也是 ready 会话，后台失效由 #41 置 needsReload 承接 |
+| 34 | 返回 needsReload 会话 | Q0/F0，且非恢复待令（`restoredAwaitingCommand`=假） | 允许一次 keyed graph 权威读（单飞，捕获发起时刻 `invalidationEpoch`） | 历史/U 不清；迟到响应只写原图 | 这是 INV-175 的必要例外，不是每次返回双取。恢复待令会话虽 needsReload=1 也不在本行和解——页面挂载与返回零 graph IPC（R-B9）；用户在图下拉显式重选同一图不经挂载效应，仍按本行和解 |
 | 35 | 首次 graph 响应/和解解读应用成功 | 会话仍在、loadSeq 最新、读捕获 epoch ≥ 会话当前 epoch、Q0，且（F=0 或在途任务恰为本响应所属的 graph/reconcile 任务，身份键匹配） | idle | 新会话 H/R 空、U=0；已有会话 H/R/U 不变 | 写原 folder；权威应用分支=needsReload 唯一清位点；应用后本次任务完成并清本 F；已有会话的普通刷新不得清历史（B2 处置：本响应自身的 F=reconcile 不拦本回执） |
 | 36 | graph 响应迟到/会话已有写 | 非最新或 Q>0，或读捕获 epoch < 会话当前 epoch，或在途任务存在但不是本响应所属的 graph/reconcile 任务 | 不写图态 | 不清栈 | 原会话保持 ready/现值；needsReload 保留并按 §2.6 显式续拉；本响应所属任务自身的在途不拦本回执（#35） |
-| 37 | 应用退出握手 | 全局 closing gate 开 | 提交并 flush **所有 tab+所有 folder**；仍脏只由 IO/草稿/inflight 判定 | 不做 finalize；U 不进入 stillDirty；历史直到进程销毁 | abort 只解冻，已完成的 idle-flush 不清灰点/栈；拖拽两态按 §9.3 有界收口 |
-| 38 | 课题切换 | 既有确认只以实际 IO 脏为触发；确认通过或无 IO 脏后，全量 flush 成功 | 全部 IO idle | 然后清全部 H/R/U/focusSet，再 release、switch、reload | U 单独不触发确认；失败则保留全部状态并留旧课题，不执行 discard |
-| 39 | 恢复副本载入 | 目标 folder 当前写已落定且替换确认完成 | 目标会话 Q=payload.queue、U=1 | 目标 H/R 清（崩溃后内存史本就不存在）；其他 folder 不动 | needsReload=1；owner 按接管结果设置 |
+| 37 | 应用退出握手 | 全局 closing gate 开 | 提交并 flush **所有 tab+所有 folder**；lineage 的等待名单=全部 IO 未落定的会话（`ioUnsettled`：队列非空 ∨ 在途 ∨ 相位非 clean——Q 与 F 直判，不经相位推断）；仍脏只由 IO/草稿判定 | 不做 finalize；U 不进入 stillDirty；历史直到进程销毁 | abort 只解冻，已完成的 idle-flush 不清灰点/栈；拖拽两态按 §9.3 有界收口；提交未能执行的悬浮笔记草稿残留经内部 settle 写路径落库（§9.3） |
+| 38 | 课题切换 | 既有确认只以实际 IO 脏为触发；确认通过或无 IO 脏后，全量 flush 成功 | 全部会话 IO 落定（等待名单同 #37：`ioUnsettled`） | 然后清全部 H/R/U/focusSet，再 release、switch、reload | U 单独不触发确认；失败则保留全部状态并留旧课题，不执行 discard；草稿残留出口同 #37 |
+| 39 | 恢复副本载入 | 目标 folder 当前写已落定且替换确认完成 | 目标会话 Q=payload.queue、U=1 | 目标 H/R 清（崩溃后内存史本就不存在）；其他 folder 不动 | needsReload=1，并置恢复待令 `restoredAwaitingCommand`=真：和解时点=首次命令入链，页面挂载、返回与 #41 结构事件都不自动和解（R-B9）；owner 按接管结果设置 |
 | 40 | 删除 folder | 本域正常路径 | INV-91 保证注册表任一会话有 Q/F 时删除先被拒 | IO clean 的挂起会话可清；有未决写不得静默清 | 回退主图/既有冲突径；owner 安全转移或保留 chip |
 
 ### 2.6 权威和解链与后台事件失效补行（审查处置新增）
@@ -173,23 +178,23 @@ reader 每个 tab 一条串行写命令链；lineage 每个 folder 一条串行�
 
 | # | 起点/事件 | 条件 | IO 迁移 | unfinalized 与历史 | closing/其他副作用 |
 |---:|---|---|---|---|---|
-| 10a | 和解链任务入链（等待） | flush 尾 conflictTouched∨needsReload=1，或显式保存/undo/redo 命令入链时发现 needsReload=1 | saving/F=reconcile；同 folder 单飞 keyed graph 读（folderId+sessionGeneration+loadSeq，捕获当前 `invalidationEpoch`），重复触发按 #34a 复用 | U/H/R 全不变 | needsReload 保持至权威应用；链内顺序=和解先于 history/finalize 清账 |
+| 10a | 和解链任务入链（等待） | flush 尾 conflictTouched∨needsReload=1，或显式保存/undo/redo 命令入链时发现 needsReload=1 | saving/F=reconcile；同 folder 单飞 keyed graph 读（folderId+sessionGeneration+loadSeq，捕获当前 `invalidationEpoch`），重复触发按 #34a 复用 | U/H/R 全不变 | needsReload 保持至权威应用；链内顺序=和解先于 history/finalize 清账。恢复待令会话在本行和解：本会话写链任一任务起步即清 `restoredAwaitingCommand`，随后按本行入和解链任务（§2.5 #39） |
 | 10b | 和解成功（#35 应用分支） | 会话存在、generation 匹配、loadSeq 最新、读捕获 epoch ≥ 会话当前 epoch、应用时刻 Q0；在途即本和解任务自身（F=reconcile 不拦本回执，其余在途按 #10d 拒绝） | idle/Q0/F0；needsReload 清位 | U/H/R 全不变（和解≠定稿） | 此后 #21 才可清 redo/U，#13 的 history 在已和解图上执行 |
 | 10c | 和解失败 | keyed 读失败或应用前会话失效 | error/F0；needsReload 保留 | U/H/R 全不变 | finalize 不定稿、history 不执行、不弹栈；重试=下次命令入链或返回触发单飞 |
-| 10d | 和解响应迟到/被丢（迟到+新编辑） | 身份键任一不符、读捕获 epoch < 会话当前 epoch、应用时刻 Q>0，或存在非本和解任务的其他在途任务 | 不写图态；needsReload 保留 | U/H/R 全不变 | 链在 drain 完成后显式续拉（按当前 epoch 重新单飞，不并发两读）；lineage 同会话新编辑本就被 #3 gate 拒绝，gate 旁路（后台事件/恢复载入路径）由本行兜底 |
+| 10d | 和解响应迟到/被丢（迟到+新编辑） | 身份键任一不符、读捕获 epoch < 会话当前 epoch、应用时刻 Q>0，或存在非本和解任务的其他在途任务 | 不写图态；needsReload 保留 | U/H/R 全不变 | 链在 drain 完成后显式续拉（lineage-reconcile-tail；用户裁决 D-2＝甲）：先核会话存活——孤儿会话（恢复替换、删除、remap 离场）停止，不再发 keyed 读；drain 新 Q；再按当前 epoch 重新单飞（不并发两读）。上界 `RECONCILE_TAIL_MAX_ROUNDS`=3 轮和解（含首次；每轮和解任务体自身至多 2 次 keyed 读）——达上界即停止、位保留、写链让出，下一次命令入链时再续拉；续拉前新写系统型失败=停止（error、失败写保留）；和解失败（#10c）不续拉。接入点三处：flush 尾、finalize 前（#20c）、history 前（#13c）。lineage 同会话新编辑本就被 #3 gate 拒绝，gate 旁路（后台事件/恢复载入路径）由本行兜底 |
 | 13a | history 前等待和解（等待） | #13 预 drain 成功且 needsReload=1 | saving/F=reconcile | 尚未弹栈，U/H/R 不变 | 和解成功后才开始 history-unit；本行使「正在返回的 graph 因 F=history 被丢」不再发生——graph 在 history 前落地 |
 | 13b | history 前和解失败（失败） | 同 #10c | error/F0 | 不弹栈、不改 redo、不改 U | history 不执行；错误可见，可重试 |
-| 13c | 和解读迟到（迟到） | 同 #10d 身份不符 | 不写图态；needsReload 保留 | 栈不动 | 链尾续拉；不得在未和解图上执行 history |
+| 13c | 和解读迟到（迟到） | 同 #10d 身份不符 | 不写图态；needsReload 保留 | 栈不动 | 链尾续拉（#10d 的存活核对、drain 与上界）；续拉成功才执行 history-unit，续拉仍未应用或续拉前新写失败=不执行、两栈不动；不得在未和解图上执行 history |
 | 13d | 等待期间新 undo/redo 请求（新编辑） | 同对象 reconcile/history busy | 排队，不并发 | 不变 | busy 判据含 reconcile 在途；不破坏在途和解 |
 | 20a | finalize 前等待和解（等待） | #20 进入定稿步骤时 needsReload=1 | saving/F=reconcile | H 不动 | 同 generation 权威 graph 成功应用后才允许 #21/#22 的清账 |
 | 20b | finalize 前和解失败（失败） | 同 #10c | error/F0 | redo/U/undo 全保留 | 本次 finalize 记失败；无 saved 反馈；保存钮回可重试 |
-| 20c | finalize 前和解响应迟到（迟到） | 同 #10d 身份不符 | 不写图态；needsReload 保留 | 不清账 | 链尾续拉后再完成 finalize；不按未和解图清 redo/U |
+| 20c | finalize 前和解响应迟到（迟到） | 同 #10d 身份不符 | 不写图态；needsReload 保留 | 不清账 | 链尾续拉（#10d 的存活核对、drain 与上界）成功后才定稿；续拉仍未应用=不定稿，redo/U 保留；续拉前新写失败=按预 flush 失败处置；续拉各轮 drain 的 CONFLICT 丢弃并入本次 finalize 的 #10 记失败判据；不按未和解图清 redo/U |
 | 20d | 等待期间新编辑（新编辑） | lineage 同会话 gate 拒绝（#4）；gate 旁路路径按 #10d 兜底 | 和解照常完成 | 按 #22 revision 规则处理保存期间新编辑 | 和解不被拒绝的新编辑失效 |
 | 34a | 和解读在途重复触发（等待） | #34 返回或 #41 事件命中已在途和解，且在途读捕获 epoch ≥ 会话当前 epoch | 复用在途单飞句柄；epoch 已被事件推进则旧读不可复用，按当前 epoch 重新单飞 | 不变 | 不并发第二次 keyed 读（B4 处置） |
 | 34b | 和解读失败（失败） | 同 #10c | 会话 error；needsReload 保留 | 不变 | 返回/下次命令重试 |
 | 34c | 和解响应迟到（迟到） | 身份键任一不符 | 丢弃，不写任何会话 | 不变 | 新会话 needsReload 不受旧响应影响 |
-| 34d | 应用判据失败（新编辑） | 应用时刻 Q>0，或存在非本和解任务的其他在途任务 | 图态不写；needsReload 保留 | 不变 | drain 后链尾显式续拉 |
-| 41 | folders.changed/lineage.changed（后台失效） | 空载荷事件（`shared/ipc/schemas.ts:633-636` 实测）到达 | **全 registry 未删会话（loading/ready/error，非 deleted）标 needsReload=1 且各 `invalidationEpoch` +1（§2.3）**；活动会话 IO clean→立即按 #34 单飞和解（捕获新 epoch）；活动/缓存会话有 Q/F→位保留、链尾按 10a 自动续拉（新单飞捕获新 epoch） | 历史与 U 不动 | 无会话 folder 不创建；默认方案不扩事件载荷——扩载荷携带源/目标 folder 列属另一 shared 合约变更，须主控裁决并申报，本稿不默认做 |
+| 34d | 应用判据失败（新编辑） | 应用时刻 Q>0，或存在非本和解任务的其他在途任务 | 图态不写；needsReload 保留 | 不变 | drain 后链尾显式续拉（#10d 的存活核对与上界）；`reconcileNow`（#41 的活动会话立即和解）被丢后不续拉，位保留到下一次命令入链 |
+| 41 | folders.changed/lineage.changed（后台失效） | 空载荷事件（`shared/ipc/schemas.ts:633-636` 实测）到达 | **全 registry 未删会话（loading/ready/error，非 deleted）标 needsReload=1 且各 `invalidationEpoch` +1（§2.3）**；活动会话 ready 且 IO clean（Q0、无在途写、无草稿）→立即按 #34 单飞和解（捕获新 epoch）；活动/缓存会话有 Q/F/草稿→位保留、链尾按 10a 自动续拉（新单飞捕获新 epoch）；loading 会话由 loader 按新 epoch 续拉（已有在途 keyed 读，不另发第二读） | 历史与 U 不动 | **恢复待令会话例外**：活动会话 `restoredAwaitingCommand`=真时同样位保留——它的和解时点是首次命令入链，#41 的立即和解是自动和解的另一条路径，对它同样不适用；该例外不并入 #42 的「IO clean 可清会话」判据。无会话 folder 不创建；默认方案不扩事件载荷——扩载荷携带源/目标 folder 列属另一 shared 合约变更，须主控裁决并申报，本稿不默认做 |
 | 42 | 后台删夹 | 删夹成功事件命中 cached 会话 | 会话标 deleted；owner 会话按 §8.4 处置（IO clean 可清+转移；有未决写走冲突不静默清） | 目标会话历史清 | 返回该 folder 回退主图（现行 nav-graph-picker S4 路径 registry 化） |
 | 43 | 后台失效的权威响应归属 | 任何迟到响应（含和解读与事件前发起的 graph 读） | 身份键（folderId+sessionGeneration+loadSeq）全部匹配、且读捕获 epoch ≥ 会话当前 epoch，才写原会话；任一不符丢弃 | 不写活动投影或其他会话 | 是 #19/#36 在 registry 的明确化；事件前发起的旧读不得清 needsReload、不得应用图态（B4 处置） |
 
@@ -366,8 +371,9 @@ folder 删除生命周期（B5 处置：删事件实体名为 collections）：�
 - 恢复时 graph 是乐观终态，queue 是仍需写 DB 的动作；两者继续同时存在。history-unit 已提交的事务不因旧副本而再次执行。
 - deferred 恢复守卫拆为：
   - `hasUnsettledWrites = 任意目标 folder Q/F/draft`：决定是否先 flush；flush 不做 finalize。该谓词即 §8.1 恢复价值谓词，两处同源单义。
-  - `hasReplaceableSession = 目标/活动会话有 Q/F/draft 或 unfinalized 或 undo/redo 非空`：决定是否必须确认替换。
+  - `hasReplaceableSession = 目标会话有 Q/F/draft 或 unfinalized 或 undo/redo 非空`：决定是否必须确认替换。**只看目标会话**（用户裁决 R2，2026-11-24）：活动会话≠目标会话时，活动会话的 U/H/R 不计——载入只替换目标会话，不触活动会话的历史与未保存标记。草稿属活动图：草稿在场恒真（它同时使 `hasUnsettledWrites` 为真，落定步先行）。
   - 有历史但 IO clean 时无需为了恢复先清 redo/灰点；只确认替换，成功载入后才清目标会话历史。
+  - 替换守卫的落地形态：纯函数 `hasReplaceableSession(view, draftOpen)`（recovery-clean-lifecycle.ts，与 `hasUnsettledWrites` 同源）＋生产装配 `anyReplaceable(folderId)`（recovery-host-ports.ts：草稿在场→真；否则目标会话存在且该纯函数为真；无会话的 folder→假）。流程体（recovery-restore-flow.ts）在 read 到 payload 后以 `payload.folderId` 求值一次。仅 U/H/R（IO clean）时只弹一次替换确认、不调落定步；用户拒绝=不载入、条回 busy=false 可重试；宿主未提供该谓词=旧语义（不确认）。
 
 ## 7. history-unit IPC 与 main 事务方案
 
@@ -414,7 +420,7 @@ interface LineageHistoryUnitRes {
 
 ### 7.4 repo 原语与安全
 
-新 `lineage-history.repo.ts` 只提供 history 所需的 `putNodeExact/putEdgeExact/putFloatingNoteExact/remove*` 与读行原语，不暴露 SQL 字符串模板给 service。列名是源码固定常量，值全用命名/位置参数绑定；folderId、id、时间戳均作为参数。另提供只读原语 `readMaxDeletedAt(entity,id)`，供 §7.5 恢复点守卫在同一事务内取该 id 既有 tombstone 的最大 `deleted_at`。putExact 更新既有行的语句沿用三 repo upsert 的同一 SQL 标量 max 公式（§7.5 普通写点守卫）：UPDATE 分支 `updated_at = max(@updatedAt, strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'))`；INSERT 分支写调用方传入值（恢复插入=恢复点守卫计算值，普通反向更新=事务时间）——单一公式三处落位（三 repo upsert + putExact），不写第二份 TS 实现。主图/普通 folder 都经 folder 存在性检查。新 IPC 不接收路径、不新增出网 host、不改 CSP。
+新 `lineage-history.repo.ts` 只提供 history 所需的 `putNodeExact/putEdgeExact/putFloatingNoteExact/remove*` 与读行原语，不暴露 SQL 字符串模板给 service。列名是源码固定常量，值全用命名/位置参数绑定；folderId、id、时间戳均作为参数。另提供只读原语 `readMaxDeletedAt(entity,id)`，供 §7.5 恢复点守卫在同一事务内取该 id 既有 tombstone 的最大 `deleted_at`。putExact 更新既有行的语句沿用三 repo upsert 的同一 SQL 标量 max 公式（§7.5 普通写点守卫；落地面含 COALESCE 包装——追认说明见 §7.5）：UPDATE 分支 `updated_at = max(@updatedAt, COALESCE(strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'), @updatedAt))`；INSERT 分支写调用方传入值（恢复插入=恢复点守卫计算值，普通反向更新=事务时间）——单一公式三处落位（三 repo upsert + putExact），不写第二份 TS 实现。主图/普通 folder 都经 folder 存在性检查。新 IPC 不接收路径、不新增出网 host、不改 CSP。
 
 ### 7.5 INV-132 冲突的解法：快照三段闭环与写点单调守卫（D1 已终裁，§17）
 
@@ -455,8 +461,15 @@ String(row.updated_at) > deleted_at    → 跳过删除，stats.skippedSupersede
 
   ```sql
   updated_at = max(excluded.updated_at,
-                   strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'))
+                   COALESCE(strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'),
+                            excluded.updated_at))
   ```
+
+  〔2026-11-24 收尾追认（B4-B L1 裁决）〕落地面（`src/main/db/repos/updated-at-guard.ts`
+  单源生成三 repo 语句）把「旧行+1ms」项包 `COALESCE`：合法 ISO 值与上式语义逐字等价；
+  `strftime` 对畸形 `updated_at`（库外手改/历史脏值）返回 NULL 时，`max()` 会整体返回
+  NULL 吞掉新值——`COALESCE` 使该项退化为 `excluded.updated_at`（新写值胜出），防 NULL
+  吞没。删事件触发器同形（`max(now, COALESCE(OLD.updated_at+1ms, now))`）。
 
   INSERT 分支（新行）原样写 `@now`（无旧值可比）。选型理由：(a) 单语句内闭合——不变量由 SQL 语义保证，不依赖任何调用方记得先读旧行；(b) TS 侧写前读 existing 再计算 max 退役——需在热路径每写多一次预读 SELECT（现 repo 已有写后读作返回值），且把 028 已验证的 +1ms 进位算术复制成第二份 TS 实现，违背公式单源。两候选经 §18.3 处置单列为选型比对，(a) 为决定。
 
@@ -544,7 +557,9 @@ A flush 成功后：若 A 已是 activeFolder，owner 可留 A；否则若 B/其
 |---|---|---|---|
 | 首次编辑 | 空槽、owner null | null→folder（saved 回执后生效） | 记 own/lastWritten token |
 | 首次编辑 | 外会话槽未决 | 保持 null/foreign | pending 拒写，chip 真 |
-| idle/显式 flush 全成功 | owner=folder，其他会话无需保护 | folder→null（release 后） | 普通 clean 仍受 pendingChip gate |
+| chip 显示判据 | 存在有未落库写的会话（`unlandedSessions`：Q>0 或在途 write/flush/history——仅和解读在途不算；草稿并入活动会话），且该会话既不是 owner、也不是认领在途的会话；正在 clean 的会话不计入自身 | owner 不变 | 「当前编辑未受保护」chip 为真，否则为假。认领、转移与 flush-first 仍读 §8.1 恢复价值谓词（Q∨F，含和解读在途） |
+| idle/显式 flush 全成功 | owner=folder，其他会话无需保护 | folder→null（release 后；回执在途期来过编辑触发则不发布 null，见下一行） | 普通 clean 仍受 pendingChip gate |
+| release 回执在途期同会话来新编辑 | owner=该会话，release 回执未落定 | 不发布 null，owner 留该会话 | 不清 chip；其快照写由那次编辑的触发面（trailing）派发；回执落定后不主动补发快照 |
 | folder 离场成功 | owner=A，B 需保护 | A→B（B saved 后） | 复用本会话合法覆写；无“先删后写”空窗 |
 | folder 离场失败 | owner=A | 保持 A | 其他图未受保护 chip |
 | owner 迟到 save | owner generation 已变 | 不改变新 owner | 只按现有物理 token 账本记账；不得清 chip |
@@ -579,7 +594,8 @@ registry 交互态拆为两态，命令出口分别定义：
 
 - **态一 pending/dragging（已激活、未松手、无 FlightJob）：** quit/folder 切换/页面切换的出口=按现行 pointercancel 同型**有界 settle**——以 `lastClient` 判定落位（`card-drag-session.ts` endSession 的 `judgeByLastClient` 路径），同步完成 pointer 批与 planSettle，构造 FlightJob 后转入态二。**决定=不提供零写 cancel。** 理由（RW2 处置重写）：激活期只写视觉/布局状态——`card.style.translate`、`--lg-pull` 与 React 拖拽预览（slot 的 `insertIdx/overFrame/extend`，实测 `card-drag-session.ts:151-167`），真实 store/queue 写发生在 settle 提交链（`useCardDrag` settle layout effect → `startFlight` → FlightJob `finish` 的 `onReorderMonthSlots`，`card-drag-session.ts:241-246`）；因此零写 cancel 并不弃任何已入 store/queue 的待写，其真实代价是制造第二种取消语义——现行 pointercancel 的取消判定用 `lastClient`，零写 cancel 会让同一拖拽出现「取消=丢布局意向」与「取消=有界落位」两套出口；有界 settle 复用现行 cancel 判定链，不新增机制。快捷键 save/undo/redo 在本态直接拒绝。
 - **态二 settle-flight（FlightJob 已建）：** 600ms 数据写兜底承诺仅在本态成立（`card-drag-flight.ts` 定时器自 startFlight 起，pending/dragging 期间无此 timer——审查 W1 核实）。registry 挂可等待句柄 `settleFlight: Promise<void>`（finishOnce 触发 resolve）；quit/folder 切换/页面切换 await 该句柄后再 drain，600ms 是兜底上界不是常规耗时承诺。
-- `useCardDrag` 的回调必须捕获 folderId+sessionGeneration+drag id；组件因页面/folder 切换卸载后，兜底写仍只到原会话。若会话已因课题切换/恢复替换失效，则丢弃并记录冲突，不写新图。
+- 内部 settle 写路径（`lane.settleEdit`）：两类写不经用户编辑闸（quit/recovery/conflict 冻结、同会话 saving 锁、未完成拖拽两态），以普通任务类串行入**原会话**写链，任务体内同步执行写体；写体仍经同一 recorder——历史项与队列写不另起一套。①拖拽落位的数据写：原缺陷是 quit closing 时落位被冻结门静默吞掉，退出握手仍按 clean 回执。②未收口草稿残留的出口（lineage-note-draft-settle）：提交因落库在途被跳过、或编辑器已卸载而草稿仍在时，正文经本路径落库——接在退出握手与课题切换的无句柄分支、恢复落定步、切 folder 四处。约束：不自带 drain——落位写留在暂存，落库由出口紧随其后的 flush（`save()`/`flushFirst()`）或 idle timer 承担；写失败=error 且队首保留，由 IO 查态承接。草稿残留出口入链后另 await `lane.save()`。
+- `useCardDrag` 的回调必须捕获 folderId+sessionGeneration+drag id；组件因页面/folder 切换卸载后，兜底写仍只到原会话。若会话已因课题切换/恢复替换失效，则丢弃并记录冲突，不写新图。落位写准入=`registry.admitDragLanding`：会话在册且未删，且（代际相等，或该 entry 上已收尾的拖拽记录与「drag id＋激活时捕获的代际」全等）——后者覆盖 ghost remap 落库后存活主图会话就地换代的情形，落位按 drag id 重锚、不丢。`reorderMonthSlots` 返回 true=落位已被会话写链接纳，false=会话已失效。
 - settle-flight 数据提交完成后，save/undo/redo 可执行；B3 的 `layoutActive` 继续只阻止新 pointerdown 并挂起路由/zoom，终局 routeEpoch/layoutEpoch 读取最新图态。无需把 padding 动画期扩成 DB 写锁。
 - 新红测试必须覆盖两态四出口：激活未松手 quit（态一→有界 settle→数据写落原 folder）、settle 已启动 quit（await 句柄，≤600ms 兜底）、folder 切换两态、页面切换两态；既有「flight 未提交时切 folder、旧 flight 不写 B、不覆盖 undo 后值、布局终局只重算一次」断言保留。
 
@@ -642,7 +658,7 @@ interface LineageHistoryCommands {
 |---|---:|---:|---|
 | `src/shared/constants.ts` | 121 | ≤150 | 1.5s/10 单源；shared 变更申报 |
 | `reader/state/annotation-undo.ts` | 199 | ≤260 | 纯操作 undo/redo 栈、id remap；API 执行外移 |
-| `reader/interact/use-annotation-draft.ts` | 309 | ≤200 | React 薄适配；值栈/timer/写链迁出 |
+| `reader/interact/use-annotation-draft.ts` | 309（收尾 197） | ≤200 | React 薄适配；值栈/timer/写链迁出。persist 与 persistRaw 两个端口出口在宿主回报「该值已在库」时清除阅读器草稿注册表的对应条目（annotationDraftSaved，等值才清）——总评正文写在途时离开阅读器后条目不清的 B4-A 遗留回归在此修复（B4-B·W-C） |
 | 新 `reader/state/reader-text-history.ts` | — | ≤280 | target 值栈、generation、跨视图驻留 |
 | 新 `reader/state/reader-text-unit.ts` | — | ≤220 | IME/1.5s/空白/粘贴纯状态机 |
 | 新 `reader/state/reader-write-lane.ts` | — | ≤260 | per-tab 串行任务、drain、迟到身份 |
@@ -694,22 +710,41 @@ interface LineageHistoryCommands {
 | `lineage.store.ts` | 607 | ≤280 | 活动投影+公开动作薄壳；数据写归 registry |
 | 新 `lineage-session-model.ts` | — | ≤200 | 会话/IO/交互类型 |
 | 新 `lineage-session-registry.ts` | — | ≤380 | 每 folder 会话（含 `invalidationEpoch`，§2.3）、active 投影、focusSet、聚合 |
+| 新 `lineage-session-core.ts`（表外件） | 37 | ≤60 | 注册表内部面的类型契约——自 registry 外移的裁决件（rekey/remap/drag/projection）经它读写会话表、活动键、代际计数与单一写路径，不 import registry 运行时 |
+| 新 `lineage-session-projection.ts`（表外件） | 122 | ≤160 | registry 的单一写路径（apply）与活动投影：PROJECT_KEYS、projectPatch/projectAll、投影宿主持有、活动投影写闸落地（W-D2a 拆件） |
+| 新 `lineage-session-fresh.ts`（表外件） | 50 | ≤80 | 新建会话初值 freshSession——恢复替换、移除后重建、课题切换 reset 共用 |
+| 新 `lineage-session-rekey.ts`（表外件） | 76 | ≤100 | 活动投影写闸的落地裁决：植入就地合并；携 folderId 的植入=当前会话换新身份（新代际、新 lane），只作用于当前会话 |
+| 新 `lineage-session-remap.ts`（表外件） | 100 | ≤140 | ghost remap 落库后的会话终态迁移：主图恰一个会话并换代；被矫正会话移除（历史清、unfinalized 并入存活会话） |
 | 新 `lineage-session-loader.ts` | — | ≤240 | keyed graph、单飞（含和解解读复用与读捕获 `invalidationEpoch`）、needsReload |
+| 新 `lineage-writeback-admission.ts`（表外件） | 81 | ≤120 | 脉络域异步回写的唯一准入函数：folderId＋sessionGeneration（keyed 读另含 loadSeq 与读捕获 epoch）全匹配才写原会话 |
+| 新 `lineage-session-lane.ts`（表外件） | 327 | ≤340 | 每 folder 一条串行写命令链：编辑单元闸、historyCommand/finalize/save/flushFirst/reconcileNow、内部 settle 写路径（§9.3）、恢复待令标记的入链清除点 |
+| 新 `lineage-idle-scheduler.ts`（表外件） | 126 | ≤160 | 每会话 idle-flush 调度纯件：timer 句柄、代际、arm/cancel 与到期分发（W-D2a 拆件；到期分发可直接驱动） |
+| 新 `lineage-io-phase.ts`（表外件） | 42 | ≤60 | IO 未落定判据 ioUnsettled 与在途收尾相位 settledIoPhase（§2.5 #37/#38 等待名单的单源） |
 | 新 `lineage-edit-commands.ts` | — | ≤400 | 13 入口接线与同步单元边界 |
 | `lineage-write-queue.ts` | 531 | ≤320 | queue/flush；删快照与清栈；flush 尾和解任务替代 `void load()` |
+| 新 `lineage-write-executor.ts`（表外件） | 121 | ≤160 | 单条写动作的落库执行与实体回显：applyAction 七 kind（W-D2a 拆件；queue 只留融合、drain、chain/flush） |
 | 新 `lineage-write-actions.ts` | — | ≤300 | 乐观应用、lazy 物化、API 映射；lineTypeNames 请求注入 folderId 适配函数（§5.4） |
 | 新 `lineage-write-conflicts.ts` | — | ≤240 | CONFLICT/GHOST_FOLDER 策略与和解链任务（§2.6）：入链等待、失败不定稿、丢弃续拉 |
 | `lineage-session-ops.ts` | 115 | ≤240 | 改 recorder；restore(SessionSnapshot) 删除 |
+| `lineage-note-ops.ts`（表外件） | 91 | ≤120 | 悬浮笔记三操作的编辑单元接线（自 lineage.store 拆出的既有件；B4-B 由快照撤销域改接同步 recorder） |
+| 新 `lineage-reconcile-tail.ts`（表外件） | 82 | ≤120 | 和解读被丢后的链尾续拉：核会话存活→drain 新 Q→按当前 epoch 重新单飞；上界 RECONCILE_TAIL_MAX_ROUNDS=3（§2.6 #10d） |
 | 新 `lineage-history-commands.ts` | — | ≤300 | 13 命令 changes 构造与矩阵纯测试 |
 | 新 `lineage-history-unit.ts` | — | ≤260 | renderer flush-then-unit、响应应用、失败不弹栈 |
+| 新 `lineage-history-stale.ts`（表外件） | 91 | ≤120 | 过期历史项：拒因集合、标记类型、适用性判据 staleHistoryAtTop 与丢弃 dropStaleHistory（纯函数；§2.5 #18a） |
+| 新 `LineageStaleHistoryDrop.tsx`（表外件） | 84 | ≤120 | 保存错误行内的「丢弃这条过期历史」出口与确认框（纯受控件，零 IPC） |
 | `lineage-view.store.ts` | 254 | ≤260 | mode/tool；focusSet 数据移 registry，只保留 active 适配 |
-| `nav-graph-picker.tsx` | 207 | ≤220 | 删 dirty 弃改框；切换调 registry；活动图重拉职责移交 #41 和解链 |
-| 新 `lineage-folder-reconcile.ts` | — | ≤220 | folders.changed/lineage.changed 全 registry 失效与 `invalidationEpoch` 推进（§2.6 #41）、后台删夹会话处置与回退主图（#42）、迟到响应归属（#43，含读捕获 epoch 校验） |
+| `nav-graph-picker.tsx` | 207（收尾 149） | ≤220 | 删 dirty 弃改框；切换调 registry；活动图重拉职责移交 #41 和解链；打开图下拉即重拉活夹清单（E4），清单落定后交 lineage-folder-reconcile 处置已删会话 |
+| 新 `lineage-folder-reconcile.ts` | — | ≤220 | folders.changed/lineage.changed 全 registry 失效与 `invalidationEpoch` 推进（§2.6 #41，恢复待令会话位保留）、后台删夹会话处置与回退主图（#42）、迟到响应归属（#43，含读捕获 epoch 校验） |
 | `LineagePage.tsx` | 219 | ≤200 | 页面组合；快捷键拆件 |
 | 新 `use-lineage-history-shortcuts.ts` | — | ≤150 | 三模式 Ctrl+S/Z/Y，editable 分层 |
-| `LineageToolbar.tsx` | 231 | ≤200 | 先拆保存/历史按钮；B5 再做排版 |
+| `LineageToolbar.tsx` | 231（收尾 192） | ≤200 | 先拆保存/历史按钮；B5 再做排版。保存错误行在场时工具组挂 has-save-error 修饰类——错误行独占工具组下一行，布局规则只挂在出错态（R-D1 呈现修复，规则驻 theme-lineage-tools.css） |
+| `LineTypeMenu.tsx`（表外件） | 172 | ≤200 | 线型列表与展开钮（自 LineageToolbar 拆出的既有件——色板族；行内改名=一编辑单元） |
 | 新 `LineageSaveButton.tsx` / `LineageHistoryButtons.tsx` | — | 各≤140/120 | B4 状态纯受控件 |
+| 新 `lineage-command-state-model.ts`（表外件） | 62 | ≤100 | 会话命令状态纯投影：isLineageBusy、lineageIoPhase、lineageCommandState（W-D2a 拆件；model 件 re-export 保既有导入面） |
+| 新 `use-lineage-command-state.ts`（表外件） | 42 | ≤80 | HistoryCommandState 装配点：读活动会话 IO 与 unfinalized，供工具组的保存/撤销/重做钮消费 |
 | `useCardDrag.ts` | 111 | ≤170 | flight 数据写携带 folder/generation/drag id；拖拽两态桥接 registry（dragging 置位/settleFlight 句柄，§9.3） |
+| 新 `lineage-session-drag.ts`（表外件） | 143 | ≤160 | 拖拽两态桥接态（registry 侧）：awaitDragSettle 有界收口、落位写准入 admitLanding（按 drag id 重锚） |
+| 新 `card-drag-registry.ts`（表外件） | 90 | ≤120 | 拖拽两态桥接 registry 的非 React 部分：拖拽身份捕获、dragStart/Flight/End 与 settle 桥（W-D2a 拆件；useCardDrag 只留 React 与 pointer 编排） |
 | `card-drag-session.ts` | 335 | ≤350 | B3 件行为零改；endSession 判定链（judgeByLastClient）复用为态一有界 settle 出口 |
 | `card-drag-flight.ts` | 138 | ≤150 | 600ms 兜底定时器保持 startFlight 起（态二承诺域）；finish 句柄供 registry settleFlight |
 | `LineageTimeline.tsx` | 226 | ≤240 | 只透传交互状态/回调；B3 帧与布局屏障机制不改 |
@@ -718,14 +753,22 @@ interface LineageHistoryCommands {
 | `lineage-note-geom.ts` | 77 | ≤100 | `notesInteractive` 交互门改读活动 folder IO（审查 W2）；禁用全局 saveStatus 兼容壳 |
 | `use-note-drag.ts` | 166 | ≤200 | saving 上升沿丢弃改读活动 folder IO（审查 W2） |
 | `LineageFloatingNotes.tsx` | 242 | ≤250 | saving 订阅改读活动 folder IO（审查 W2）；只读与菜单关闭语义不变 |
+| 新 `use-note-edit-session.ts`（表外件） | 254 | ≤280 | 悬浮笔记编辑会话 hook（自 LineageFloatingNotes 迁出）：恰一编辑会话、会话收口单点 closeEdit、idle 到期提交不关编辑器（keepOpen 窄口径）、输入法合成期不提交 |
+| `lineage-note-draft.ts`（表外件） | 408 | ≤420 | 悬浮笔记草稿注册族：草稿四落定、内容快照单源（恢复副本 draft 字段的数据源）、残留再水化 |
+| 新 `lineage-note-draft-settle.ts`（表外件） | 55 | ≤80 | 未收口草稿残留的出口 settleNoteDraftResidual：正文经内部 settle 写路径串行入所属会话写链并落库 |
 | `RecoveryBarHost.tsx` | 225 | ≤160 | 组合根；ports/文案先拆；discardLoadedSession 恢复放弃入口保留（§6.1） |
 | 新 `recovery-host-ports.ts` | — | ≤280 | registry 快照、flush/替换谓词、恢复载入 |
 | 新 `recovery-decision-view.ts` | — | ≤180 | 决策文案纯函数 |
 | `recoveryScheduler.ts` | 656 | ≤340 | 单槽 pump/token/gen；owner 逻辑外移 |
+| 新 `recovery-dispatch.ts`（表外件） | 301 | ≤320 | 单槽写面派发：trailing 节流、单飞、最新快照合流、live settle 裁决、补发判定（W-D2b 拆件） |
+| 新 `recovery-scheduler-triggers.ts`（表外件） | 229 | ≤240 | 调度器触发面与对外门面：notify 族、订阅/状态读面、clean 与 ws-entry 族转调、装配入参契约 RecoverySchedulerInit（W-D2b 拆件；recoveryScheduler 原名再导出） |
 | 新 `recovery-owner.ts` | — | ≤280 | owner 状态机与切换握手 |
+| 新 `recovery-owner-decision.ts`（表外件） | 90 | ≤120 | owner 转移/释放裁决的回执准入凭据（决策票与账本）与 release 回执落定裁决 releaseVerdict |
 | 新 `recovery-clean-lifecycle.ts` | — | ≤240 | clean/drain/release/workspace reset |
 | 新 `recovery-probe-controller.ts` | — | ≤260 | degraded/probe 编排；watchdog/backoff 既有件复用 |
 | `recoveryEntry.ts` | 426 | ≤250 | enter/discard/defer；restore 流拆出；`restoredLoaded→discardLoadedSession` 保留（§6.1） |
+| 新 `recovery-restore-contract.ts`（表外件） | 33 | ≤60 | 恢复决策、落定结果与预检结果的契约类型（自 recoveryEntry 迁出，原名再导出） |
+| 新 `recovery-entry-model.ts`（表外件） | 98 | ≤120 | recoveryEntry 的呈现态与两端端口契约类型：RecoveryUiState、SchedulerPorts、RecoveryEntryHost（纯类型件；entry 原名再导出——W-D2b 拆件） |
 | 新 `recovery-restore-flow.ts` | — | ≤320 | flush≠finalize、替换确认、preflight、takeOver |
 | `shared/models/lineage.ts` | 366 | ≤400 | D2 校正 folder 色行名注释（§17）；历史 schema 不在模型件双写 |
 | `shared/recovery/schemas.ts` | 250 | ≤280 | queue 仍是 WriteAction（7 kind 不变）；只校正注释，不增历史字段；lineTypeNames action 不扩 folderId 字段（§5.4 适配层注入） |
@@ -739,15 +782,19 @@ interface LineageHistoryCommands {
 | 新 `lineage-history-guards.ts` | — | ≤240 | 纯图守卫复用 |
 | `main/db/repos/lineage.repo.ts` | 263 | ≤295 | folder 化 lineTypes（get/set keyed + removeMeta 原语）；upsertNode/upsertEdge 语句 UPDATE 分支增写点单调守卫（§7.5 普通写点守卫，B1 三轮）；精确恢复不塞本件 |
 | `main/db/repos/floating-notes.repo.ts` | 107 | ≤130 | upsert 语句 UPDATE 分支增写点单调守卫（§7.5 普通写点守卫，B1 三轮） |
+| 新 `main/db/repos/updated-at-guard.ts`（表外件） | 31 | ≤60 | 写点单调守卫的 updated_at 标量表达式单源 monotonicUpdatedAt——三 repo upsert 与 lineage-history.repo putExact 族的 UPDATE 分支共用（§7.4/§7.5） |
 | 新 `main/db/repos/lineage-history.repo.ts` | — | ≤300 | prepared exact put/remove/read + `readMaxDeletedAt`（§7.4 恢复点守卫）；putExact UPDATE 分支同一 SQL max 公式（§7.4/§7.5） |
 | `main/services/folders.service.ts` | 187 | ≤220 | 删夹事务同事务删除 keyed meta 行（§5.4；repo.removeMeta） |
 | `main/services/index.ts` | 305 | ≤350 | 装配 history service/repo 依赖；corpus export lineTypeNames 取主图键（D2，§17 裁决行） |
 | `main/db/repos/index.ts` | 125 | ≤155 | 新 repo 装配，withTransaction 复用 |
-| `main/services/snapshot/import-snapshot.service.ts` | 320 | ≤355 | §7.5 三段闭环：段二顺序、段三删事件代际判定（含防御相等分支）+`skippedSuperseded`、删夹（`entity='collections'`）graph_meta 派生清理 |
+| `main/services/snapshot/import-snapshot.service.ts` | 320（收尾 353） | ≤355 | §7.5 三段闭环：段二顺序、段三删事件代际判定（含防御相等分支）+`skippedSuperseded`、删夹（`entity='collections'`）graph_meta 派生清理。导入结果为 applied 且非 noop 时，在事务返回之后、回执之前双播 folders.changed 与 lineage.changed（X-IMP——落点在 service 层，先 folders 后 lineage） |
+| 新 `main/services/snapshot/import-snapshot.guards.ts`（表外件） | 49 | ≤80 | 快照导入的无状态校验助手：envelopeShapeOk、sameKeySet、contentEqual（自 import-snapshot.service 迁出，使该件回到预算内） |
 | `scripts/check-quality.mjs` | 537 | 零新增、净减≥1 | 只删 workspace.store 旧 notes 例外；reader 复用现有白名单 |
 | 新 `src/main/db/migrations/027_lineage_meta_folder.sql` | — | ≤100 | D2 folder 色行名数据迁移（§17 用户终裁 A） |
 | 新 `src/main/db/migrations/028_deletion_log_write_guard.sql` | — | ≤120 | 重建 7 个含 `updated_at` 表的 deletion_log 触发器为写点单调守卫形态（§7.5）；`NO_UPDATED_AT` 三表触发器不改；migrations 变更申报 |
 | `docs/architecture.md` / `docs/invariants.md` | 448 / 245 | 相关章节重写 | 同批回写保存、历史、防复活和会话归属 |
+
+表外件登记与收尾实测（2026-11-24 `wc -l`）：标「表外件」的行在 2026-11-22 稿内没有预算——它们是实现与回炉各波新建的件，或稿内漏列的既有件；这些行的「实测」列是收尾时的实测行数。既有件的收尾实测写在原「实测」值后的括号里。预算列不带标注的取值是已采纳的建议（W-D2 拆件的八行）；标的取值由收尾批按收尾实测加余量提出，未经裁决，主控或用户确认后去掉标注。表内其余各件收尾实测均在预算内；例外=`scripts/check-quality.mjs` 540 行（B4-A R2 白名单新增的已申报偏差，见 §11.1 实施注记第 2 条①）。
 
 ## 12. 受锁测试迁移映射
 
@@ -874,7 +921,7 @@ e2e 必须断言渲染出的真实文本和必要 DB 回读，不接受只看按
 
 ### Status
 
-Proposed。正式 ADR 与 L1 同批入库（D1 原 id 防复活例外与 D2 色行名 folder 存储已获用户终裁，§17）；不修改历史 ADR 让其看似从未包含旧语义。
+Proposed。决策记录＝本稿 §17 裁决单与 §14 Decision 段、ADR-0027 限制段；正式 B4 ADR 未随批建档，列入 B5 前文档债清理（D1 原 id 防复活例外与 D2 色行名 folder 存储已获用户终裁，§17）；不修改历史 ADR 让其看似从未包含旧语义。
 
 ### Context
 
@@ -897,7 +944,13 @@ Proposed。正式 ADR 与 L1 同批入库（D1 原 id 防复活例外与 D2 色�
 
 - 正向：已落库修改可撤销；删除复合操作可原子恢复；灰点不再阻塞退出；A/B 图历史与聚焦可独立驻留；恢复副本不会因历史快照重复写 DB。
 - 成本：新增 reader 串行协调器、lineage registry、一个 IPC/service/repo、事务与延迟响应测试、D2 数据迁移与 028 触发器重建迁移。
-- 限制：历史/focusSet 仍只活于应用运行期；单槽不能同时保护多个未落库 folder，非 owner 必须以 chip 明示；paper/folder 已消失时 undo 可失败并保留历史。
+- 限制：
+  - 历史/focusSet 仍只活于应用运行期；单槽不能同时保护多个未落库 folder，非 owner 必须以 chip 明示。
+  - 过期历史项的出口只在 edit 模式可见（用户裁决 R4）：保存错误行与「丢弃这条过期历史」出口都挂在 edit 模式工具组内；browse/focus 模式下撤销/重做被拒只有 toast，须切到 edit 模式才能丢弃。出口只在 history-unit 以 CONFLICT 拒绝的四种拒因下出现，丢弃范围是该方向栈顶一项且须用户确认；系统失败可重试、历史项未失效，不给出口。被拒的栈顶项在用户丢弃之前一直挡住其下更旧的历史。是否在 browse/focus 模式给入口留 B5 评估。
+  - 其他写触发的 saving 窗仍卸载笔记编辑器（用户裁决 R3）：keepOpen 取窄口径——只有悬浮笔记自身 idle 提交随之而来的 saving 窗不卸载 textarea；其他写触发的 saving 窗沿用让位（textarea 卸载、草稿驻组件态、saving 结束回挂）。输入法合成期是另一个不让位条件（卸载会打断合成），合成结束即恢复让位。是否放宽留 B5 评估。
+  - keepOpen 的真机缺口（F-KEEPOPN-01）：自身 idle 提交随之而来的 saving 窗内，textarea 在真机上被卸载后重挂并失焦一次（setKeepOpen 与 store 写入不在同一渲染批）；jsdom 测试因 act 合批看不到这次卸载，「同一 DOM 节点」断言只在 jsdom 成立。内容与编辑器不丢。B5 前评估修复。
+  - 悬浮笔记与阅读器的合成期差异（用户裁决 R1）：两域都是合成期不提交、compositionend 后重新计时 1.5s。阅读器在 compositionend 立即以「组词前值→终值」切出一个历史项；悬浮笔记到下一次提交（idle 到期或收口）才成一个编辑单元，一次停顿内的多次组词合并为一步撤销。
+  - 合成期收口提交的是编辑器里的实际文本：合成期的 blur、打断收口与离开页面仍立即提交，写入的文本可能含尚未确认的合成串——这是显式收口动作的既有语义，与 idle 提交「合成期不提交」不同。closeEdit 入口的合成标记复位位于全部早退之前：被 closing/recovery 门拒绝、或因落库在途而不收口的 blur 同样终止合成标记，否则门冻结期标记滞留、解冻后真稿永不提交（复审 review4 修复）。
 - 回滚：shared/main/renderer 必须同一逻辑回滚点；若 D2 数据迁移已对用户库执行，代码回滚必须同时恢复事前 DB 备份或提供明确的前向兼容迁移，禁止只回滚 UI。
 - 验证：§12 全矩阵、真库原子失败、snapshot 防复活与三段闭环序列 1–8、CONFLICT 和解链四类迁移、A/B/A 延迟响应、folder-reconcile 失效矩阵（含 epoch 判别例）、六个 e2e 文件和 `npm run verify`。
 

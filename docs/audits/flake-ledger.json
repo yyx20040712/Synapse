@@ -293,6 +293,24 @@
       "spec": "theme-trio/ui-scale-viewport/workspaces/zcode-link 六例",
       "count": 1,
       "cause": "环境干扰非测试逻辑：B4 批独立审查进程误 kill 并发 e2e 的 electron 进程，残留 SingletonLock（~/.config/Electron，13:18）指向死 PID——后继首轮 electron.launch 秒失败（Target page/browser closed，~190ms）经 Playwright retry 定绿（E2E_EXIT=0+last-run passed）；清锁后单跑 6/6 绿（53.7s）。无代码处置；台账记录污染事件供区分自然 flake（runId=20261119-lanegrid B4）"
+    },
+    {
+      "date": "2026-11-24",
+      "spec": "library-explorer.spec.ts:196 S5b-2",
+      "count": 1,
+      "cause": "启动挂起型首现（全量 run1）：用例跑满 90s＋worker teardown 90s，非断言红；单例重跑 3 次全过。定性＝既有应用启动挂起，HEAD 可复现（300 遍挂 2 次）；根因未定，立案＝F-E2EHANG-01；明细＝b4b-accept3/controller-log.md §8"
+    },
+    {
+      "date": "2026-11-24",
+      "spec": "smoke.spec.ts:37",
+      "count": 4,
+      "cause": "启动挂起型同日 4 次（超「同用例两次即立案」线）：签名同 S5b-2；当前树 200 遍挂 1、HEAD 300 遍挂 2；缓解＝e2e-env.ts launch() 有界等待＋一次重试（用户裁决①，随 B4-B 落地，只认挂起签名超时，LAUNCH-HANG-RETRY 标记计数）；立案＝F-E2EHANG-01"
+    },
+    {
+      "date": "2026-11-23",
+      "spec": "recovery 链 3（E7）",
+      "count": 1,
+      "cause": "已修闭环（快照 closeSteps ⑥）：首现→立案→根因＝R-B9（恢复条在确认后未复位 busy）→W-B3 修复→复跑绿。留档完整闭环样例"
     }
   ]
 }

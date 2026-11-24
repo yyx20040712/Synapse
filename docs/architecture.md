@@ -244,13 +244,34 @@ flowchart TB
     （钉定锚体系）/ card-drag-grid 拖拽算术落点 /
     drag-autoscroll 四会话统一自动滚动（INV-154）。
   - 悬浮笔记=LineageFloatingNotes（交互门四源：edit∧select∧非 saving∧非 recovery 冻结——INV-149）
-    +lineage-note-draft 草稿四落定（INV-150）。
-  - 写路径=lineage-write-queue（FIFO；upsert 同 id 整替、patch-node 字段级融合）+recoveryScheduler（恢复副本）
-    +lineage.store 编辑会话（beginUnit 快照式 undo/redo，保存成功清栈——INV-94）。
+    +use-note-edit-session 编辑会话 hook（恰一编辑会话、会话收口单点 closeEdit；idle 到期
+    提交正文不关编辑器；输入法合成期不提交）+lineage-note-draft 草稿注册族（草稿四落定
+    INV-150；内容快照是草稿状态的数据单源，恢复副本 draft 字段直读）
+    +lineage-note-draft-settle 未收口草稿残留的出口。
+  - 会话与写路径（B4-B）：lineage-session-registry（per-folder 会话注册表——数据面单源）
+    →lineage-session-lane（每 folder 一条串行写命令链；1.5s idle-flush 的 timer 排布、取消
+    与到期分发=lineage-idle-scheduler）→lineage-write-queue（暂存队列、融合、drain、串行链
+    ——upsert 同 id 整替、patch-node 字段级融合；单条动作落库与实体回显
+    =lineage-write-executor）+recoveryScheduler（恢复副本）；lineage.store=活动会话的投影
+    薄壳（公开动作转发）。注册表的拆件：单一写路径与活动投影=lineage-session-projection；
+    改键=lineage-session-rekey；ghost remap 落库后的会话终态=lineage-session-remap（二者经
+    lineage-session-core 契约读写注册表内部面）；keyed graph 单飞读=lineage-session-loader；
+    异步回写的身份准入=lineage-writeback-admission；IO 未落定判据=lineage-io-phase；后台
+    结构事件的全 registry 失效=lineage-folder-reconcile。
+  - 撤销/重做（B4-B）：编辑单元 recorder=lineage-session-ops（十入口接线=lineage-edit-commands、
+    悬浮笔记三操作=lineage-note-ops；历史项=受影响实体的可逆命令对，构造与历史栈纯函数
+    =lineage-history-commands）；undo/redo=先 drain 再经 `lineage/history-unit` 在 main 单事务
+    内执行反向写（lineage-history-unit）；过期历史项的标记与丢弃出口=lineage-history-stale
+    +LineageStaleHistoryDrop；保存/撤销/重做命令状态=lineage-command-state-model（经
+    use-lineage-command-state 供 LineageSaveButton 与 LineageHistoryButtons 消费）；快捷键
+    =use-lineage-history-shortcuts；拖拽落位写的两态桥接=lineage-session-drag（注册表侧）
+    +card-drag-registry（useCardDrag 的非 React 部分）。
 - main 域 `services/lineage/`（边守卫单口 upsertEdge 七校验：自环/悬空端点/
   跨图/重复边/成环/via/端点锚校验拒——INV-27；多父放行、kind 恒 'manual'；
-  floating-notes.service）+`repos/lineage.repo(.rows)`+
-  `lineage.write-guards.ts`（month/slot 归一+lineTypeNames 校验）。
+  floating-notes.service；撤销/重做的反向写=lineage-history-unit.service——一个 repo 事务
+  内写前核对语义指纹、校验归属图并过最终图守卫，纯图守卫=lineage-history-guards）+
+  `repos/lineage.repo(.rows)`+`lineage.write-guards.ts`（month/slot 归一+lineTypeNames
+  校验）；精确恢复原语=`repos/lineage-history.repo`。
 - 排序契约=lineageOrder 唯一纯函数（shared/models/lineage.ts，三消费面禁双实现）。
 - AI 可读导出=corpus 会话第六件套 lineage.json（递归 alphabetical 键序，golden 锁定）。
 
@@ -303,6 +324,15 @@ flowchart TB
   持久性=进程崩溃级（不承诺掉电）。关闭握手=main 状态机（close 一律
   preventDefault+flush-first；超时降级 confirm；取消经 quit-flush-abort
   解冻帧+bridge 有界复位——ADR-0026/INV-22）。
+- renderer 调度器（`src/renderer/features/lineage/recovery*`）：recoveryScheduler 只留
+  token/gen 与组合装配；单槽写面派发（300ms trailing 节流、单飞、最新快照合流）
+  =recovery-dispatch；触发面、订阅/状态读面与装配入参契约 RecoverySchedulerInit
+  =recovery-scheduler-triggers；recoveryEntry 的呈现态与两端端口契约类型（RecoveryUiState/
+  SchedulerPorts/RecoveryEntryHost）=recovery-entry-model（纯类型件，entry 原名再导出）。
+  同批拆件：owner 状态机=recovery-owner（裁决回执准入=recovery-owner-decision）；clean/
+  drain/release/workspace reset=recovery-clean-lifecycle；降级与探针编排
+  =recovery-probe-controller；恢复决策流=recovery-restore-flow；宿主装配
+  =recovery-host-ports；确认框文案=recovery-decision-view。
 
 **snapshot 域（快照导出/导入）**
 

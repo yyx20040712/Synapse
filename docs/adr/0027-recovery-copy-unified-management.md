@@ -51,3 +51,11 @@
   为配套语义。
 - 设计单源=仓外档案区 scripts-audits/20261019-fvisfb65-impl/
   65-design-final.md。
+- 限制（B4-B 回写；用户裁决 D-1＝甲、适用面＝乙、R4）：撤销/重做被
+  history-unit 以 CONFLICT 拒绝的历史项，由用户在保存错误行点击「丢弃这条
+  过期历史」并确认后移除。适用面=四种 CONFLICT 拒因（`HISTORY_STALE`、
+  `HISTORY_PAPER_MISSING`、`HISTORY_FOLDER_MISSING`、`HISTORY_GRAPH_INVALID`
+  ——值域单源=`src/shared/ipc/lineage-history.schemas` 的
+  `HISTORY_UNIT_CONFLICT_REASONS`）；系统失败不给该出口。出口只在 edit 模式
+  工具组的保存错误行可见，browse/focus 模式下撤销被拒只有 toast——是否
+  在这两个模式给入口留 B5 评估。
