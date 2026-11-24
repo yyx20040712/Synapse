@@ -307,10 +307,10 @@
       "cause": "启动挂起型同日 4 次（超「同用例两次即立案」线）：签名同 S5b-2；当前树 200 遍挂 1、HEAD 300 遍挂 2；缓解＝e2e-env.ts launch() 有界等待＋一次重试（用户裁决①，随 B4-B 落地，只认挂起签名超时，LAUNCH-HANG-RETRY 标记计数）；立案＝F-E2EHANG-01"
     },
     {
-      "date": "2026-11-23",
-      "spec": "recovery 链 3（E7）",
-      "count": 1,
-      "cause": "已修闭环（快照 closeSteps ⑥）：首现→立案→根因＝R-B9（恢复条在确认后未复位 busy）→W-B3 修复→复跑绿。留档完整闭环样例"
+      "date": "2026-11-24",
+      "spec": "recovery.spec.ts E7（B0 恢复批既有 e2e 合约「重启恢复旧副本真文本」）",
+      "count": 5,
+      "cause": "已修闭环（快照 closeSteps ⑥；第二任主控日志与 DISPOSITION R-B9 行为凭）：两次非确定失败→立案排查→根因＝R-B9（W-B2 的 R-W2 迁移引入回归：恢复载入的会话 needsReload=1、Q=0，在脉络页挂载时经 setFolder→reconcileNow 被 keyed 读用库态覆盖——此前仅靠相位置 dirty 的非法态巧合挡住；W-B2b 构建 7 次败 2、W-B2 终版 5 次败 3）→修复＝W-B2c 会话级标记 restoredAwaitingCommand（恢复待令：挂载零 graph IPC、和解时点＝首次命令入链；#41 事件同受约束）→修复后 recovery.spec 整文件连续 10 次 8/8＋主控复跑 3 次 8/8。留档完整闭环样例；证据=b4b-accept2/controller-log.md 与 b4b-review/DISPOSITION.md R-B9 行"
     }
   ]
 }

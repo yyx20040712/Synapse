@@ -420,7 +420,7 @@ interface LineageHistoryUnitRes {
 
 ### 7.4 repo 原语与安全
 
-新 `lineage-history.repo.ts` 只提供 history 所需的 `putNodeExact/putEdgeExact/putFloatingNoteExact/remove*` 与读行原语，不暴露 SQL 字符串模板给 service。列名是源码固定常量，值全用命名/位置参数绑定；folderId、id、时间戳均作为参数。另提供只读原语 `readMaxDeletedAt(entity,id)`，供 §7.5 恢复点守卫在同一事务内取该 id 既有 tombstone 的最大 `deleted_at`。putExact 更新既有行的语句沿用三 repo upsert 的同一 SQL 标量 max 公式（§7.5 普通写点守卫；落地面含 COALESCE 包装——追认说明见 §7.5）：UPDATE 分支 `updated_at = max(@updatedAt, COALESCE(strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'), @updatedAt))`；INSERT 分支写调用方传入值（恢复插入=恢复点守卫计算值，普通反向更新=事务时间）——单一公式三处落位（三 repo upsert + putExact），不写第二份 TS 实现。主图/普通 folder 都经 folder 存在性检查。新 IPC 不接收路径、不新增出网 host、不改 CSP。
+新 `lineage-history.repo.ts` 只提供 history 所需的 `putNodeExact/putEdgeExact/putFloatingNoteExact/remove*` 与读行原语，不暴露 SQL 字符串模板给 service。列名是源码固定常量，值全用命名/位置参数绑定；folderId、id、时间戳均作为参数。另提供只读原语 `readMaxDeletedAt(entity,id)`，供 §7.5 恢复点守卫在同一事务内取该 id 既有 tombstone 的最大 `deleted_at`。putExact 更新既有行的语句沿用三 repo upsert 的同一 SQL 标量 max 公式（§7.5 普通写点守卫；落地面含 COALESCE 包装——追认说明见 §7.5）：UPDATE 分支 `updated_at = max(excluded.updated_at, COALESCE(strftime('%Y-%m-%dT%H:%M:%fZ', <表名>.updated_at, '+0.001 seconds'), excluded.updated_at))`（`lineage-history.repo.ts` 的 putExact 复用 `updated-at-guard.ts` 单源生成同一 SQL——别名与 §7.5 逐字一致）；INSERT 分支写调用方传入值（恢复插入=恢复点守卫计算值，普通反向更新=事务时间）——单一公式三处落位（三 repo upsert + putExact），不写第二份 TS 实现。主图/普通 folder 都经 folder 存在性检查。新 IPC 不接收路径、不新增出网 host、不改 CSP。
 
 ### 7.5 INV-132 冲突的解法：快照三段闭环与写点单调守卫（D1 已终裁，§17）
 
@@ -794,7 +794,7 @@ interface LineageHistoryCommands {
 | 新 `src/main/db/migrations/028_deletion_log_write_guard.sql` | — | ≤120 | 重建 7 个含 `updated_at` 表的 deletion_log 触发器为写点单调守卫形态（§7.5）；`NO_UPDATED_AT` 三表触发器不改；migrations 变更申报 |
 | `docs/architecture.md` / `docs/invariants.md` | 448 / 245 | 相关章节重写 | 同批回写保存、历史、防复活和会话归属 |
 
-表外件登记与收尾实测（2026-11-24 `wc -l`）：标「表外件」的行在 2026-11-22 稿内没有预算——它们是实现与回炉各波新建的件，或稿内漏列的既有件；这些行的「实测」列是收尾时的实测行数。既有件的收尾实测写在原「实测」值后的括号里。预算列不带标注的取值是已采纳的建议（W-D2 拆件的八行）；标的取值由收尾批按收尾实测加余量提出，未经裁决，主控或用户确认后去掉标注。表内其余各件收尾实测均在预算内；例外=`scripts/check-quality.mjs` 540 行（B4-A R2 白名单新增的已申报偏差，见 §11.1 实施注记第 2 条①）。
+表外件登记与收尾实测（2026-11-24 `wc -l`）：标「表外件」的行在 2026-11-22 稿内没有预算——它们是实现与回炉各波新建的件，或稿内漏列的既有件；这些行的「实测」列是收尾时的实测行数。既有件的收尾实测写在原「实测」值后的括号里。29 行表外件预算均已采纳：8 行为 W-D2 拆件波自提（≤160/≤100/≤160/≤160/≤120/≤320/≤240/≤120），其余 21 行为收尾批按收尾实测加余量提出并经第四任主控裁定采纳（2026-11-24）。表内其余各件收尾实测均在预算内；例外=`scripts/check-quality.mjs` 540 行（B4-A R2 白名单新增的已申报偏差，见 §11.1 实施注记第 2 条①）。
 
 ## 12. 受锁测试迁移映射
 

@@ -87,13 +87,13 @@ INV-69 页码通道存续）。
 - **统一撤销历史（文献库/阅读器/脉络图）定案**（用户 2026-11-23 提出，
   2026-11-24 立票 F-UNDOHIST-01）：B5 工具栏改版前定案——届时规划岗先出
   方案比较与裁决清单（迁移路径/代际模型/灰度）；数据面一体，交互面独立
-  三栈重新开放。B5 备注另两条随 B4 收尾登记：①无错误行时 drag-hint 在
+  三栈重新开放。B5 备注另三条随 B4 收尾登记：①无错误行时 drag-hint 在
   1024×768 被挤成竖排、工具组高 172.75px（1280×800 为 51px），出错态下
   drag-hint 省略成「编辑⋯」、错误行排三行——由 B5「单排工具栏」「删除
   说明性视觉文案」承接；②其他写触发的 saving 窗仍卸载笔记编辑器（R3）、
   过期历史出口只在 edit 模式可见（R4）、keepOpen 真机重挂失焦
-  （F-KEEPOPN-01）——B5 再评估。③B5 前文档债清理（B4 收尾批登记，
-  清单＝b4b-rework/close-docs 报告「未改」节）：正式 B4 ADR 建档；
+  （F-KEEPOPN-01）——B5 再评估。③B5 前文档债清理（B4 收尾批登记，清单＝
+  仓外 synapse-archive 20261122-b4/b4b-rework/close-docs/UNRESOLVED-STALE-DOCS.md）：正式 B4 ADR 建档；
   invariants 旧语义行（INV-94/161/162/22/150/146/84/91/177）、INV-187/188
   登记、INV-90/27 锚定清单补 history-unit、INV-80/176 未转义竖线；
   architecture §3.3 user_version 28、lineage_graph_meta folder 键、
