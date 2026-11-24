@@ -195,7 +195,7 @@ describe('[F-LGCLN-01] normalizeMonthSlot 组键=(year,month) 两面（folderId 
 
 describe('T3-P5 graph 读面（INV-75：nodes=lineageOrder 序——读面唯一保证）', () => {
   it('nodes 按 lineageOrder 序返回（乱序插入归位）+lineTypeNames 恰 6（U8 色行名）', () => {
-    svc.upsertLineTypeNames(['主线', '', '对比', '支撑', '', '否证'])
+    svc.upsertLineTypeNames('__main__', ['主线', '', '对比', '支撑', '', '否证']) // [B4 L1 D2] 按 folder 键
     seedNode({ id: 'late', year: 2021, month: 1, slot: 1 })
     seedNode({ id: 'early', year: 2020, month: 5, slot: 2 })
     seedNode({ id: 'mid', year: 2020, month: 5, slot: 1 })

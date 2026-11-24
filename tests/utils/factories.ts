@@ -19,6 +19,8 @@
  * ——node 环境 db 域测试禁 import 本件（用 fixtures.ts）；盒几何桩看
  * tests/utils/geometry.ts。
  * 命名规范句见 geometry.ts 头注。红线：R1 零 src 变更。
+ * [B4 L1 §12.2] +makeHistoryEntry（最小合法 HistoryEntry——旧快照夹具迁移）；
+ * seedLineage 补 IO/U 轴默认值（纯夹具默认值类）。
  * 契约面文件（变更须提交说明申报）。
  */
 import { act } from 'react'
@@ -26,6 +28,8 @@ import type { TabState } from '../../src/renderer/features/reader/state/reader.s
 import type { Annotation } from '../../src/shared/models/annotation'
 import type { PaperDetail } from '../../src/shared/models/paper'
 import type { LineageEdge, LineageNode } from '../../src/shared/models/lineage'
+import type { LineageEditCommandKind, LineageEntityDelta } from '../../src/shared/ipc/lineage-history.schemas'
+import type { LineageHistoryEntry } from '../../src/renderer/features/lineage/lineage-session-model'
 import type { PdfTextContent, PdfTextItem } from '../../src/renderer/features/reader/anchors/geometry-types'
 import { useLineageStore } from '../../src/renderer/features/lineage/lineage.store'
 import { usePageItemsStore } from '../../src/renderer/features/reader/anchors/page-items.store'
@@ -122,9 +126,22 @@ export function seedLineage(nodes: LineageNode[], edges: LineageEdge[] = []): vo
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null,
     undoStack: [],
-    redoStack: []
+    redoStack: [],
+    unfinalized: false,
+    editRevision: 0
   })
+}
+
+/** [B4 L1 §6.1/§12.2] 最小合法 HistoryEntry 工厂（旧 SessionSnapshot 夹具的机械迁移目标；
+ *  缺省=一条节点移动 delta——before/after 全实体，id/createdAt 在场；供夹具使用，
+ *  不为通过测试伪造历史） */
+export function makeHistoryEntry(patch: Partial<LineageHistoryEntry> = {}): LineageHistoryEntry {
+  const before: LineageNode = { id: 'n-1', paperId: 'paper-n-1', title: '节点n-1', year: 2020, x: 0, y: 0, month: null, slot: null, folderId: '__main__', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+  const after: LineageNode = { ...before, x: 10, y: 10 }
+  const changes: LineageEntityDelta[] = [{ kind: 'node', id: before.id, before, after }]
+  return { id: 'unit-1', folderId: '__main__', command: 'moveNode' as LineageEditCommandKind, changes, ...patch }
 }
 
 /** 造项：transform=[10,0,0,10,x,y]（PDF 基线 (x,y)、字号 10、宽 100 高 10） */

@@ -36,6 +36,7 @@ function makeRepos(opts: {
     repos: {
       folders: ops,
       papers: paperOps,
+      lineage: { removeMeta: vi.fn(() => 1) }, // [B4 L1 D2 §5.4] keyed 色行名清理面（面外桩）
       withTransaction: vi.fn(<T>(fn: () => T): T => fn())
     } as unknown as Repos,
     ops: { ...ops, ...paperOps } as unknown as Record<string, ReturnType<typeof vi.fn>>

@@ -400,11 +400,14 @@ export const lineageUpsertEdgeReqSchema = lineageEdgeUpsertSchema
   .strict()
 export type LineageUpsertEdgeReq = z.infer<typeof lineageUpsertEdgeReqSchema>
 
-/** [F-LGRAPH-01②U8] lineage/upsert-line-types 请求（图级色行名整批替换——
- *  通道名沿承、载荷重整为 names 数组）：恰 6 行强校验 schema 单源=
- *  models/lineage lineTypeNamesSchema（ipc/schemas 仅 re-export 派生，模型
- *  字段定义禁二次定义）；Res=同 schema（空名归一后回显——service 写边界） */
-export const lineageUpsertLineTypesReqSchema = lineTypeNamesSchema
+/** [B4 L1 D2 §5.4] lineage/upsert-line-types 请求：{folderId, names}——色行名
+ *  按 folder 存储（键 `lineTypeNames:<folderId>`；原纯 names 数组载荷退役）。
+ *  names 恰 6 行强校验 schema 单源=models/lineage lineTypeNamesSchema（ipc/
+ *  schemas 仅派生，模型字段定义禁二次定义）；Res=names 数组（models
+ *  lineTypeNamesSchema——空名归一后回显，service 写边界） */
+export const lineageUpsertLineTypesReqSchema = z
+  .object({ folderId: z.string().min(1), names: lineTypeNamesSchema })
+  .strict()
 export type LineageUpsertLineTypesReq = z.infer<typeof lineageUpsertLineTypesReqSchema>
 
 // ── export_ corpus（C-02：md 语料导出——ADR-0011 v1.1 口径）──────────
@@ -606,6 +609,9 @@ export const snapshotImportStatsSchema = z
     skippedRevive: z.number().int().min(0),
     deleted: z.number().int().min(0),
     a7Conflicts: z.number().int().min(0),
+    /** [B4 L1 §7.5] 段三「删事件代际被活行超越」计数——可选键=仅命中时在场
+     *  （零值不占 Res 形状；a7First* 同型） */
+    skippedSuperseded: z.number().int().min(0).optional(),
     a7FirstEntity: z.string().min(1).optional(),
     a7FirstId: z.string().min(1).optional()
   })

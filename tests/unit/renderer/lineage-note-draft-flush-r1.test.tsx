@@ -39,6 +39,7 @@ import type { FloatingNote } from '../../../src/shared/models/lineage'
 import { runQuitFlush } from '../../../src/renderer/app/quit-flush'
 import { switchViewWithFlush } from '../../../src/renderer/app/view-flush'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { lineageRegistry } from '../../../src/renderer/features/lineage/lineage-session-registry'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import {
   noteDraftPending,
@@ -215,45 +216,42 @@ afterEach(async () => {
   setNoteDraftPending(false)
 })
 
-describe('切图打断（nav-graph-picker folder onClick fire 前置——62 号 R2③ 族）', () => {
-  it('folder 点击：草稿入队+dirty 确认分支挂起+图未切；取消=草稿保留', async () => {
+describe('切图打断（[B4 L2 §2.5 #32] 切换=flush-first 挂起——弃改确认框退役）', () => {
+  it('folder 点击：草稿提交入队（fire-first）+activeFolder 即切；原会话暂存 flush-first 落库（草稿不弃）', async () => {
     useLineageStore.setState({ floatingNotes: [makeNote({ id: 'fn-p', content: '基线' })] })
     mountPickerWithNotes()
     await settle()
     editDraft('fn-p', '打断草稿')
     openPickerMenu()
     pickFolder('f-2')
-    // fire 先行：草稿已入队（确认分支的「取消=保留」语义载体）
-    expect(upsQueue()).toHaveLength(1)
-    expect(upsQueue()[0]).toMatchObject({ input: { id: 'fn-p', content: '打断草稿' } })
-    // dirty 确认分支挂起（fire 后最新态——非闭包旧值）+图未切
-    expect(host!.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(host!.querySelector('[role="dialog"]')!.textContent).toContain('未保存的修改')
-    expect(state().folderId).toBe('__main__')
-    // 取消=留守：草稿已入队保留
-    const cancel = Array.from(host!.querySelectorAll('button')).find((b) => b.textContent === '取消')
-    act(() => {
-      cancel!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(host!.querySelector('[role="dialog"]')).toBeNull()
+    // fire 先行：草稿已入队（setFolder 步 ①——入离场会话 A，非新活动投影 B）
+    const sessionA = lineageRegistry.entry('__main__')!
+    expect(sessionA.data.queue.filter((a) => a.kind === 'upsert-floating-note')).toHaveLength(1)
+    expect(sessionA.data.queue[0]).toMatchObject({ input: { id: 'fn-p', content: '打断草稿' } })
+    expect(host!.querySelector('[role="dialog"]')).toBeNull() // 弃改框退役
+    expect(state().folderId).toBe('f-2') // activeFolder 即切（不等回执）
+    await settle()
+    expect(stubApi.lineage.upsertFloatingNote).toHaveBeenCalledTimes(1) // flush-first 落库原会话
+    expect(state().queue).toHaveLength(0) // 新会话自身队列空
+    expect(state().saveStatus).toBe('clean')
+    // 返回 __main__：草稿内容已落库（未被弃置）
+    useLineageStore.getState().setFolder('__main__')
+    await settle()
     expect(state().floatingNotes[0]!.content).toBe('打断草稿')
-    expect(upsQueue()).toHaveLength(1)
   })
 
-  it('[R6②] picker「放弃修改」确认分支：草稿随队列全弃（queue 空+clean+图切换生效）', async () => {
+  it('[R6②→B4 L2] 原「放弃修改」确认分支退役：dirty 切图=保留暂存并 flush-first 落库（弃改钮负锚）', async () => {
     useLineageStore.setState({ floatingNotes: [makeNote({ id: 'fn-d', content: '基线' })] })
     mountPickerWithNotes()
     await settle()
-    editDraft('fn-d', '待弃草稿')
+    editDraft('fn-d', '待落草稿')
     openPickerMenu()
     pickFolder('f-2')
-    expect(host!.querySelector('[role="dialog"]')).not.toBeNull()
-    act(() => {
-      host!.querySelector('[data-testid="nav-graph-discard-confirm"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(state().queue).toHaveLength(0)
-    expect(state().saveStatus).toBe('clean')
+    expect(host!.querySelector('[data-testid="nav-graph-discard-confirm"]')).toBeNull() // 弃改钮退役负锚
+    expect(host!.querySelector('[role="dialog"]')).toBeNull()
+    await settle()
     expect(state().folderId).toBe('f-2')
+    expect(stubApi.lineage.upsertFloatingNote).toHaveBeenCalledTimes(1) // 落库（非弃置）
   })
 })
 
@@ -277,15 +275,15 @@ describe('回炉轮 1 —— folders.changed×草稿（R1：重载前收口+dirt
       foldersChangedCb!()
     })
     await settle()
-    expect(upsQueue()).toHaveLength(1)
-    expect(upsQueue()[0]).toMatchObject({ input: { id: 'fn-c1', content: 'changed 草稿' } })
+    // [B4 L2 §2.6 #41] 结构事件不再触发 load/卸载（失效经 App 级接线→单飞和解）
     expect(state().status).toBe('ready')
     expect(stubApi.lineage.graph).not.toHaveBeenCalled()
-    // [S5c] effect 收口后 pending 已清（fire 成功路径）
-    expect(noteDraftPending()).toBe(false)
+    // 无卸载风险→草稿保持打开（原「重载前收口」面退役；收口=blur/切换/保存/退出）
+    expect(noteDraftPending()).toBe(true)
+    expect(upsQueue()).toHaveLength(0)
   })
 
-  it('[R1②] S4 回退分支同序：fire 后 dirty 跳过 setFolder(MAIN) 回退——folderId 保持+status 不翻 loading', async () => {
+  it('[R1②→B4 L2 §2.6 #42/#40] S4 后台删夹：未决写（草稿/Q）=kept 不回退不静默清；落库 clean 后→清会话+回退主图', async () => {
     seedFoldersTwoPulls(
       [
         { id: 'f-gone', name: '将删图' },
@@ -304,13 +302,26 @@ describe('回炉轮 1 —— folders.changed×草稿（R1：重载前收口+dirt
       foldersChangedCb!()
     })
     await settle()
-    expect(upsQueue()).toHaveLength(1)
-    expect(upsQueue()[0]).toMatchObject({ input: { id: 'fn-c2', content: 'S4 草稿' } })
+    // 草稿在（未收口）=未决写：不回退不静默清（#40）
     expect(state().folderId).toBe('f-gone')
     expect(state().status).toBe('ready')
     expect(stubApi.lineage.graph).not.toHaveBeenCalled()
-    // [S5c] effect 收口后 pending 已清（fire 成功路径）
-    expect(noteDraftPending()).toBe(false)
+    expect(noteDraftPending()).toBe(true)
+    // 收口入队（Q=1）仍=未决写→kept
+    act(() => {
+      ;(noteElOf('fn-c2')!.querySelector('textarea') as HTMLTextAreaElement).blur()
+    })
+    await settle()
+    expect(upsQueue()).toHaveLength(1)
+    expect(state().folderId).toBe('f-gone')
+    // 落库 clean 后再刷新清单→清会话+回退主图
+    await state().save()
+    expect(state().saveStatus).toBe('clean')
+    act(() => {
+      foldersChangedCb!()
+    })
+    await settle()
+    expect(state().folderId).toBe('__main__')
   })
 
   it('[S5a] 纯 dirty 无会话（fire no-op）：folders.changed 后 load 仍跳过——暂存图保留', async () => {

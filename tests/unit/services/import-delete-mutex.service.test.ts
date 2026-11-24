@@ -91,6 +91,7 @@ function makeFoldersRepos(opts: {
     repos: {
       folders: foldersOps,
       papers: paperOps,
+      lineage: { removeMeta: vi.fn(() => 1) }, // [B4 L1 D2 §5.4] 删夹事务同事务清理 keyed 色行名（面外桩）
       withTransaction: vi.fn(<T>(fn: () => T): T => fn())
     } as unknown as Repos,
     ops: { ...foldersOps, ...paperOps } as unknown as Record<string, ReturnType<typeof vi.fn>>

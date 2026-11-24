@@ -17,20 +17,28 @@
  * - 跨格序列：拾取中拖禁/弹层开拖禁/拖中弹层不可触发（pointer 在飞）/
  *   settle 接新拖忽略/applyObstacleReroute 与同道写错峰=store 队列 FIFO 既有
  *
+ * ── [B4 L2 §9.3] 拖拽两态桥接 registry ──
+ * 桥接的非 React 部分（[回炉 W-D2a·T-B05]：拖拽身份捕获、registry.dragStart/Flight/
+ * Layout/End 与 settle 桥）外移=card-drag-registry——行为注释随代码迁驻该件头注；
+ * 本件只留 React／pointer 编排（ref 持有身份与 FlightJob、phase effect 调用镜像、
+ * settledRef 的布局终局回调）。
+ *
  * ── 写路径（无乐观写——P7B R5 同族）──
- * settle flight finish 清场后才排队：拖拽→onReorderMonthSlots(月组全序——
- * Board 接 store.applyObstacleReroute 复合单元)；routeEpoch bump 时点=
- * 布局终局 layoutFinishOnce（[B3 §3.5.4] 子波 2——flight finish 只置
- * flightDone，padding 在途会话等回落终局后由 barrier 回调统一 bump 两 epoch）。
- * 写失败=error 保存态+toast+重试沿 store 既有，UI 位置不回滚。
+ * settle flight finish 清场后写 onReorderMonthSlots(月组全序, 身份)→
+ * store.reorderMonthSlots→原会话 lane.applyObstacleReroute 复合单元；routeEpoch
+ * bump 时点=布局终局 layoutFinishOnce（B3 §3.5.4）。写失败=error 保存态+toast+重试
+ * 沿 store 既有，UI 位置不回滚。
  */
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { LineageNode } from '@shared/models/lineage'
 import { startFlight } from './card-drag-flight'
 import { createLayoutBarrier, type LayoutBarrier } from './drag-layout-barrier'
 import { useDragSession } from './card-drag-session'
 import type { DragPhase, DragSlotPreview } from './card-drag-session'
+import { lineageRegistry } from './lineage-session-registry'
+import type { LineageDragTarget } from './lineage-session-model'
+import { bridgeDragFlight, captureDragTarget, clearDragOnUnmount, mirrorDragPhase } from './card-drag-registry'
 
 export type { DragPhase, DragSlotPreview } from './card-drag-session'
 
@@ -40,7 +48,10 @@ export function useCardDrag(args: {
   isPicking: boolean
   popOpen: boolean
   contentRef: RefObject<HTMLDivElement | null>
-  onReorderMonthSlots?: (nodeIds: string[]) => void
+  /** [B4 L2 §9.3] 拖拽写归属身份捕获面（活动会话） */
+  folderId: string
+  generation: number
+  onReorderMonthSlots?: (nodeIds: string[], target: LineageDragTarget) => void
   /** [B3 §3.5.4] 布局终局 routeEpoch bump（layoutFinishOnce 触发——flight finish 不再直 bump） */
   onRouteRecalc(): void
   /** [B3 §3.5.4] 布局终局回调（layoutFinishOnce 恰一次——宿主 bump layoutEpoch 入 recomputeKey） */
@@ -54,16 +65,23 @@ export function useCardDrag(args: {
   isSuspended(): boolean
 } {
   const { nodes, contentRef } = args
+  // [B3 §8] 回调稳定性（memo 配套——渲染间 props diff 恒 false）：args 经 ref-latest
+  const argsRef = useRef(args)
+  argsRef.current = args
   // [B3 §2/§3.5] 布局终局屏障实例（ref 持有——跨 phase 重挂/渲染存活；
   // pointerdown 锁与挂起窗读其内部位，dispose 归组件卸载=迁移 15）
   const barrierRef = useRef<LayoutBarrier | null>(null)
   if (barrierRef.current === null) barrierRef.current = createLayoutBarrier()
   const barrier = barrierRef.current
+  // [B4 L2 §9.3] 拖拽身份（激活时捕获——含态清理判定）
+  const targetRef = useRef<LineageDragTarget | null>(null)
   // [B3 §3.5.5] layoutFinishOnce 动作=两 epoch bump（ref-latest——终局时读最新闭包）
   const settledRef = useRef<() => void>(() => undefined)
   settledRef.current = () => {
-    args.onRouteRecalc()
-    args.onLayoutSettled?.()
+    const target = targetRef.current
+    if (target !== null) lineageRegistry.dragLayout(target.folderId, target.generation, target.dragId, false) // 布局终局：layoutActive 归 false
+    argsRef.current.onRouteRecalc()
+    argsRef.current.onLayoutSettled?.()
   }
   const { phase, slot, flightRef, handleCardPointerDown, consumeClickSuppress } = useDragSession({
     nodes,
@@ -74,8 +92,13 @@ export function useCardDrag(args: {
     barrier,
     onFlightReady: (job) => {
       flightRef.current = job
+      const target = targetRef.current
+      if (target !== null) bridgeDragFlight(target, job)
     },
-    onReorderMonthSlots: args.onReorderMonthSlots
+    onReorderMonthSlots: (nodeIds) => {
+      const target = targetRef.current
+      if (target !== null) argsRef.current.onReorderMonthSlots?.(nodeIds, target)
+    }
   })
   // [B3 §3.5] 屏障订阅+卸载清理（挂载一次——barrier 引用稳定）
   useEffect(() => {
@@ -83,8 +106,29 @@ export function useCardDrag(args: {
     return () => barrier.dispose()
   }, [barrier])
 
-  const findCard = (nodeId: string): HTMLElement | null =>
-    contentRef.current?.querySelector(`.tl-card[data-node-id="${nodeId}"]`) ?? null
+  // [B4 L2 §9.3] 两态生命周期镜像（桥接=card-drag-registry mirrorDragPhase——行为说明见其头注）
+  useEffect(() => {
+    targetRef.current = mirrorDragPhase(phase, targetRef.current)
+  }, [phase])
+
+  // [B4 L2 §9.3] 卸载清场：未起飞的 FlightJob 直接 finish（数据写携身份落原会话）
+  useEffect(() => {
+    return () => {
+      const job = flightRef.current
+      flightRef.current = null
+      clearDragOnUnmount(job, targetRef.current)
+    }
+  }, [])
+
+  const findCard = (nodeId: string): HTMLElement | null => contentRef.current?.querySelector(`.tl-card[data-node-id="${nodeId}"]`) ?? null
+
+  /** 激活入口（包装，稳定引用）：捕获拖拽身份（pointerdown 时点——会话闸拒绝的
+   *  pointerdown 只留身份不留态：注册发生在激活沿，见 phase effect） */
+  const onCardPointerDown = useCallback((nodeId: string, ev: ReactPointerEvent<HTMLElement>): void => {
+    const a = argsRef.current
+    targetRef.current = captureDragTarget(a.folderId, a.generation)
+    handleCardPointerDown(nodeId, ev)
+  }, [handleCardPointerDown])
 
   // ── settle FLIP（机制本体=card-drag-flight startFlight——commit 后同帧执行）──
   useLayoutEffect(() => {
@@ -104,7 +148,7 @@ export function useCardDrag(args: {
   return {
     phase,
     slot,
-    handleCardPointerDown,
+    handleCardPointerDown: onCardPointerDown,
     consumeClickSuppress,
     isSuspended: barrier.isSuspended
   }

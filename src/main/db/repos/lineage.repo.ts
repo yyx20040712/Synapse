@@ -33,7 +33,9 @@
  * - export interface LineageRepo { upsertNode(input): LineageNode;
  *     removeNode(id): number; upsertEdge(input): LineageEdge;
  *     removeEdge(id): number; listGraph(): { nodes: LineageNode[];
- *     edges: LineageEdge[] } }（清面原语已随 [F-BAKRET-01] 导入链退役删）
+ *     edges: LineageEdge[] }; getLineTypeNames(folderId): LineTypeNames;
+ *     setLineTypeNames(folderId, names): void; removeMeta(key): number }
+ *     （清面原语已随 [F-BAKRET-01] 导入链退役删）
  * - export function createLineageService(deps)（repo+papers 存在性查询
  *   注入）：四写方法（含 upsertEdge 树守卫）+graph()
  * - IPC 面：**新立 lineage 域**（契约测试 10→11 域穷举 [locked-change]——
@@ -65,8 +67,13 @@
  * - 错误：写失败原样上抛（消费方 toast INV-02）；
  *   禁静默吞错；库空=graph 空数组（合法态非错误）
  * - upsert 语义：ON CONFLICT(id) DO UPDATE（created_at 首插保留，
- *   updated_at 刷新）；UNIQUE(from_node,to_node) 冲突 DDL 抛错——
- *   应用层中文守卫在 service（repo 保持薄，异常原样上抛）
+ *   updated_at=写点单调守卫值——[B4 L1 §7.5] max(调用方 now, 旧行+1ms)，
+ *   公式单源=updated-at-guard.ts；INSERT 分支原样写调用方值）；
+ *   UNIQUE(from_node,to_node) 冲突 DDL 抛错——应用层中文守卫在 service
+ *   （repo 保持薄，异常原样上抛）
+ * - [B4 L1 D2] 色行名按 folder 存储：meta 键 `lineTypeNames:<folderId>`
+ *   （lineTypeNamesKey 单源——迁移 027 把旧共享键值复制到各现存 folder 后删旧键）；
+ *   removeMeta=删夹事务同事务清理 keyed 行（folders.service 消费）。
  * - listGraph 基础序=created_at,rowid 确定性兜底（插入序决胜——id=随机 uuid
  *   不作平局决胜键，uuid 彩票防雷；AI-01 同哲学；业务布局序归 LG-02）
  * - 测试：tests/unit/services/（repo 守卫基线件）[受锁新增]——
@@ -88,6 +95,7 @@ import {
   type LineageNodeUpsert
 } from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
+import { monotonicUpdatedAt } from './updated-at-guard'
 import {
   LINEAGE_EDGE_COLS,
   LINEAGE_NODE_COLS,
@@ -121,12 +129,21 @@ export interface LineageRepo {
   nodeByPaperId(paperId: string): LineageNode | null
   /** [T3-P3] 节点度数只读查（双端计数——from/to 任一端命中均计一条） */
   edgeCountByNode(nodeId: string): number
-  /** [F-LGRAPH-01②U8] 图级色行名配置读（meta KV 'lineTypeNames' JSON+恰 6
-   *  校验+读面容错缺省 6×「待命名」——旧 'lineTypes' 四组键残留不读） */
-  getLineTypeNames(): LineTypeNames
-  /** [F-LGRAPH-01②U8] 图级色行名配置整批替换（恰 6 校验在 service；updated_at
+  /** [F-LGRAPH-01②U8] 色行名配置读（[B4 L1 D2] 按 folder：meta 键
+   *  lineTypeNames:<folderId> 的 JSON+恰 6 校验+读面容错缺省 6×「待命名」——
+   *  旧 'lineTypes'/'lineTypeNames' 共享键残留不读） */
+  getLineTypeNames(folderId: string): LineTypeNames
+  /** 色行名配置整批替换（按 folder 同键；恰 6 校验在 service；updated_at
    *  应用层刷新 ISO 值，弃 DDL DEFAULT） */
-  setLineTypeNames(names: LineTypeNames): void
+  setLineTypeNames(folderId: string, names: LineTypeNames): void
+  /** meta 行删除（[B4 L1 §5.4] 删夹事务同事务清理 keyed 色行名行；返回删行数） */
+  removeMeta(key: string): number
+}
+
+/** [B4 L1 D2 §5.4] 色行名 meta 键（单源——repo 读写/删夹清理/导入派生清理共用；
+ *  迁移 027 SQL 内同字面量，两处须同步） */
+export function lineTypeNamesKey(folderId: string): string {
+  return `lineTypeNames:${folderId}`
 }
 
 export function createLineageRepo(db: SqliteDb): LineageRepo {
@@ -137,7 +154,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        paper_id = excluded.paper_id, title = excluded.title,
        year = excluded.year, x = excluded.x, y = excluded.y,
        month = excluded.month, slot = excluded.slot, folder_id = excluded.folder_id,
-       updated_at = excluded.updated_at`
+       updated_at = ${monotonicUpdatedAt('lineage_nodes')}`
   )
   const upsertEdgeStmt = db.prepare(
     `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, sub, via, from_anchor, to_anchor, dashed, color, created_at, updated_at)
@@ -147,7 +164,7 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
        label = excluded.label, kind = excluded.kind, sub = excluded.sub,
        via = excluded.via, from_anchor = excluded.from_anchor, to_anchor = excluded.to_anchor,
        dashed = excluded.dashed, color = excluded.color,
-       updated_at = excluded.updated_at`
+       updated_at = ${monotonicUpdatedAt('lineage_edges')}`
   )
   // 读面显式列（[db-C3] SELECT * 收口——列常量单源=lineage.repo.rows）
   const nodeByIdStmt = db.prepare(`SELECT ${LINEAGE_NODE_COLS} FROM lineage_nodes WHERE id = ?`)
@@ -167,14 +184,15 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
   const edgeCountByNodeStmt = db.prepare(
     `SELECT COUNT(*) AS n FROM lineage_edges WHERE from_node = ? OR to_node = ?`
   )
-  // [F-LGRAPH-01②U8] 图级色行名配置 KV（010 迁移表——键 'lineTypeNames'；
-  // 旧 'lineTypes' 四组键残留不读写）
+  // [B4 L1 D2] 色行名配置 KV（010 迁移表——键=lineTypeNamesKey(folderId)；
+  // 旧 'lineTypes' 四组键与共享键 'lineTypeNames' 残留不读写）
   const getMetaStmt = db.prepare(`SELECT value FROM lineage_graph_meta WHERE key = ?`)
   const setLineTypesStmt = db.prepare(
     `INSERT INTO lineage_graph_meta (key, value, updated_at)
-     VALUES ('lineTypeNames', @value, @now)
+     VALUES (@key, @value, @now)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
   )
+  const removeMetaStmt = db.prepare(`DELETE FROM lineage_graph_meta WHERE key = ?`)
 
   return {
     upsertNode(input: LineageNodeUpsert): LineageNode {
@@ -250,14 +268,18 @@ export function createLineageRepo(db: SqliteDb): LineageRepo {
       return r.n
     },
 
-    getLineTypeNames(): LineTypeNames {
-      const row = getMetaStmt.get('lineTypeNames') as { value: string } | undefined
+    getLineTypeNames(folderId: string): LineTypeNames {
+      const row = getMetaStmt.get(lineTypeNamesKey(folderId)) as { value: string } | undefined
       // 恰 6 校验+容错降级在 parseLineTypeNames（rows 件单源——缺省 6×「待命名」）
       return parseLineTypeNames(row === undefined ? null : row.value)
     },
 
-    setLineTypeNames(names: LineTypeNames): void {
-      setLineTypesStmt.run({ value: JSON.stringify(names), now: new Date().toISOString() })
+    setLineTypeNames(folderId: string, names: LineTypeNames): void {
+      setLineTypesStmt.run({ key: lineTypeNamesKey(folderId), value: JSON.stringify(names), now: new Date().toISOString() })
+    },
+
+    removeMeta(key: string): number {
+      return removeMetaStmt.run(key).changes
     }
   }
 }

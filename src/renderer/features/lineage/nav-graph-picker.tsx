@@ -2,33 +2,41 @@
 /**
  * [F-LGRAPH-01①U4] NavGraphPicker —— 导航窗格图/文件夹下拉（mockup §3.2-1；
  * 自 LineageGraphSwitcher 迁移：S2 导入 busy 禁切/S3 folders.changed 联动/
- * S4 当前图删除回退主图——三语义行为面零变，**并集首项退役**：每图只显示
- * 自身，folderId 恒有值主图兜底）。
+ * S4 当前图删除回退主图——语义行为面沿承，**并集首项退役**：每图只显示自身）。
  *
  * - 下拉形态=当前图名+▾；点开=文件夹平铺列表（图名=文件夹名单一真相源
  *   ——本件不自持名）；T5 点一下开/再点收起/点外部收起。
- * - 切换=setFolder(值)（store 置态+重取子图——数据单源经 lineage.store，
- *   本件零直连 lineage.graph）。
+ * - 切换=setFolder(值)（[B4 L2 §8.1] flush-first 挂起切换——数据单源经
+ *   lineage.store→registry，本件零直连 lineage.graph）。
  * - folders 上抛 onFoldersChange（宿主链路：NavPane→LineagePage→ModeBar
  *   图名消费——图名单源不破）。
- * - [RR 补批 RR14] saving×切图互锁：flushing/saving 态禁切图（入口禁用+
- *   禁用态样式=.nav-graph-btn:disabled 沿承+浮层/挂起确认框收起=确认框
- *   不可达）——「禁」径消解在飞写 IPC 竞态半程；flush 收尾无条件 set clean
- *   与确认框「不落库」承诺冲突半程同径消解。
- * - [F-VISFB-63 S7] dirty 跳过=ghost folder 退化态维持（S4 回退被跳过）：
- *   图名回退「主图」显示与 folderId 实值不一致属该退化态已申报现象；恢复沿
- *   =下次视图返回（LineagePage 挂载 clean 同步 setFolder）/手动切图/save-
+ * - [B4 L2 断言翻转·RR14 退役] 原 saving×切图互锁（flushing/saving 态禁切图+
+ *   禁用态样式 .nav-graph-btn:disabled 沿承+确认框不可达——「禁」径消解在飞写
+ *   IPC 竞态半程）随 per-folder 写链独立而退役：A 的在飞写只回写 A（挂起会话），
+ *   saving 不阻切；同值重选=既有会话不双取（§8.3）。
+ * - [B4 L2 断言翻转·②U1 退役] 原 dirty 切图两分支（暂存在场先挂起「未保存的
+ *   修改」确认框——取消留守/「放弃修改」弃暂存）随 §2.5 #32 flush-first 语义
+ *   替换：切换=提交草稿+A 未落定写即发落库（不弹弃改框）；原 [F-VISFB-63 S1]
+ *   未收口草稿维（dirty∨pending 挂起）同并入 flush-first（草稿先 commit 入队）。
+ * - [B4 L2] folders.changed 后的活动图重拉+dirty 跳过（S7 退化态：图名回退
+ *   「主图」显示与 folderId 实值不一致、恢复沿=下次视图返回/手动切图/save-
  *   discard 后交互——不实现 dirty→clean 自动恢复（主控裁决：folder 已删的
- *   暂存图自动迁移会制造数据面惊喜，恢复沿已存在且可达）。
+ *   暂存图自动迁移会制造数据面惊喜，恢复沿已存在且可达））由 §2.6 #41
+ *   和解链替代（结构事件→全 registry 失效+活动会话单飞和解）；当前图已删的
+ *   会话处置（#42/#40）经 lineage-folder-reconcile（IO clean 清会话+回退主图；
+ *   有未决写保留走既有冲突径）。
+ * - [B4 L2 回炉 E4] 打开下拉即重拉活夹清单：清单的重拉点原本只有挂载效应与
+ *   folders.changed 订阅；切到缓存会话零 graph IPC、导航窗格不再经 loading
+ *   重挂载，无结构事件的后台变更（页面外直写库等）之后清单停在旧值。打开时
+ *   重拉，清单落定后由下方既有 effect 判定并交 lineage-folder-reconcile 处置
+ *   （#42/#40 同径——本件不另起清理）。
  */
 import { useEffect, useRef, useState } from 'react'
-import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { api, unwrap, apiEvents } from '../../api/client'
 import { useAsync } from '../../shared/hooks/useAsync'
 import { useImportBusyStore } from '../../shared/import-busy.store'
 import { useLineageStore } from './lineage.store'
-import { fireLineageNoteCommit, noteDraftPending } from './lineage-note-draft'
-import { Dialog } from '../../shared/ui/Dialog'
+import { lineageFolderReconcile } from './lineage-folder-reconcile'
 
 export interface NavFolder {
   id: string
@@ -40,12 +48,6 @@ export function NavGraphPicker(props: {
 }): JSX.Element {
   const folderId = useLineageStore((s) => s.folderId)
   const setFolder = useLineageStore((s) => s.setFolder)
-  const load = useLineageStore((s) => s.load)
-  const dirty = useLineageStore((s) => s.saveStatus !== 'clean') // [②U1] 暂存在场
-  // [RR 补批 RR14] saving 态订阅（互锁闸——flush 窗口期禁切图）
-  const saving = useLineageStore((s) => s.saveStatus === 'saving')
-  // 待切换图（dirty 确认挂起态——null=无挂起）
-  const [pendingFolder, setPendingFolder] = useState<string | null>(null)
   const importBusy = useImportBusyStore((s) => s.busy)
   const { data: folders, run: loadFolders } = useAsync(() => unwrap(api.folders.list({})), [])
   const [open, setOpen] = useState(false)
@@ -60,55 +62,29 @@ export function NavGraphPicker(props: {
     props.onFoldersChange?.(folders)
   }, [folders]) // 注：上抛回调经 props 每渲染新引用，仅随 folders 变化触发
 
-  // S3/S4 双失效通知消费：folders.changed → 重拉列表；消费标记（changedRef）
-  // 区分「事件后刷新」与「首拉」——首拉不触发图重取（宿主页挂载已 load，
-  // 防双取）；事件后刷新落定才走回退/重取判定
-  const changedRef = useRef(false)
+  // folders.changed→重拉列表（S3 改名联动）。[B4 L2 §2.6 #41] 活动图重拉职责移交
+  // 和解链：结构事件→全 registry 失效+活动会话单飞和解（App 级事件接线——
+  // lineage-folder-reconcile bindLineageFolderEvents，脉络页不在场时挂起会话同样
+  // 失效）；本件不再在事件后 load()，dirty 跳过（S7 退化态）随之退役。
   useEffect(
     () =>
       apiEvents.onFoldersChanged(() => {
-        changedRef.current = true
         void loadFolders()
       }),
     [loadFolders]
   )
 
-  // 刷新落定判定（S4 回退/S3·移动·删除后的图重取）——getState 取当前 folderId
-  // 防闭包滞后（切换动作本身不重跑本 effect：deps=[folders]）。S4 两路径均
-  // 覆盖：a) 挂载在线订阅（folders.changed 后重拉落定）；b) **挂载时 store 残留
-  // stale folderId**（他页已删该文件夹——首拉落定即回退；删除 UI 在库页，
-  // 脉络页不在场是常态路径）
-  // [F-VISFB-63 R1] 两分支发起重载前先收口+dirty 跳过：load→status loading→
-  // LineagePage 卸载时间线子树→编辑草稿（组件态）静默消亡（互锁只护 store
-  // 数据不护组件态——loading 帧先卸载）。dirty 跳过=load 互锁语义前移（暂存
-  // 图保留，重载由下次交互承接）。边界申报：S4 跳过后暂存图挂已删 folder 域，
-  // save 时笔记 upsert 可撞 CONFLICT（d1-N6 族）——登记不修。
-  // [F-VISFB-63 S1] 跳过条件扩 pending 维：fire throw 后 pending 保真也会被
-  // 卸载型重载抹掉——「dirty ∨ 未收口草稿」均不发起（k1-W2≡d1-N2 硬化）。
+  // 活夹清单落定（首拉/事件后重拉——deps=[folders]，动作本身不重跑）：当前图不在
+  // 清单=后台删夹（S4 路径 registry 化，§2.6 #42/#40）——两路径均覆盖：a) 挂载在线
+  // 订阅后重拉落定；b) 挂载时会话残留已删 folder（他页已删——首拉落定即处置）。
+  // 处置=lineage-folder-reconcile：会话 IO clean→清会话（历史清、owner 按 §8.4）+
+  // 回退主图；有未决写（Q/F/草稿）→不得静默清，会话保留走既有冲突径（边界沿承：
+  // 暂存图挂已删 folder 域，save 时笔记 upsert 可撞 CONFLICT——d1-N6 族）。
   useEffect(() => {
     if (folders === null) return
-    const current = useLineageStore.getState().folderId
-    if (!folders.some((f) => f.id === current)) {
-      changedRef.current = false
-      fireLineageNoteCommit()
-      if (useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) return
-      setFolder(MAIN_GRAPH_ID) // S4：当前图失效——回退主图（setFolder 内含重取）
-      return
-    }
-    if (!changedRef.current) return
-    changedRef.current = false
-    fireLineageNoteCommit()
-    if (useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) return
-    void load()
+    if (folders.some((f) => f.id === useLineageStore.getState().folderId)) return
+    lineageFolderReconcile.onFoldersRefreshed(folders.map((f) => f.id))
   }, [folders])
-
-  // [RR 补批 RR14] saving 上升沿：已开浮层/挂起确认框收起（确认框不可达
-  // 绝对化——跨格过渡防御：dirty 挂起中 flush 起态的窄窗）
-  useEffect(() => {
-    if (!saving) return
-    setOpen(false)
-    setPendingFolder(null)
-  }, [saving])
 
   // T5 外点收起（通用浮层规则）
   useEffect(() => {
@@ -130,11 +106,15 @@ export function NavGraphPicker(props: {
         type="button"
         className="nav-graph-btn"
         data-testid="lineage-nav-graph"
-        disabled={importBusy || saving}
+        disabled={importBusy}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => {
-          if (saving) return // [RR14] jsdom dispatchEvent 不拦 disabled——处理器层同闸
+          // [B4 L2 回炉 E4·S4 恢复沿] 打开即重拉活夹清单：切到缓存会话零 graph IPC、
+          // 不经 loading 重挂载，HEAD 时代「切图恒重挂载本件→挂载效应重拉」的偶然
+          // 刷新面已不存在——无结构事件的后台变更（页面外直写库等）之后，清单经此
+          // 落定，由下方 [folders] effect 交 lineage-folder-reconcile 处置已删会话
+          void loadFolders()
           setOpen((o) => !o)
         }}
       >
@@ -152,18 +132,10 @@ export function NavGraphPicker(props: {
               data-folder-id={f.id}
               className={f.id === folderId ? 'nav-graph-item on' : 'nav-graph-item'}
               onClick={() => {
-                // [F-VISFB-63] 打断收口先（62 号 R2③ 族先例）：fire commit 草稿
-                // 入队——确认分支按 fire 后最新 saveStatus 判定（getState 读现值：
-                // 闭包 dirty 是 fire 前旧值；取消=草稿已入队保留/确认弃=含草稿全弃）
-                fireLineageNoteCommit()
+                // [B4 L2 §2.5 #32/§8.1] 切换=flush-first：提交草稿+A 未落定写即发落库
+                // （不等回执、不弹弃改框）→activeFolder 同步切；草稿提交在 setFolder 内。
+                // 同值重选=既有会话不双取（§8.3）
                 setOpen(false)
-                // [②U1] dirty 切图两分支：暂存在场先挂起确认（A2 同值重选=切图）；
-                // [F-VISFB-63 S1] pending 维扩入（未收口草稿=「未保存的修改」
-                // 同语义——取消=留页继续编辑）
-                if (dirty || useLineageStore.getState().saveStatus !== 'clean' || noteDraftPending()) {
-                  setPendingFolder(f.id)
-                  return
-                }
                 setFolder(f.id)
               }}
             >
@@ -172,36 +144,6 @@ export function NavGraphPicker(props: {
           ))}
         </div>
       )}
-      {/* [②U1] dirty 切图未保存提示（两分支——取消留守/确认弃暂存并切换） */}
-      <Dialog
-        open={pendingFolder !== null}
-        title="未保存的修改"
-        onClose={() => setPendingFolder(null)}
-        actions={
-          <>
-            <button type="button" className="pbtn sec" onClick={() => setPendingFolder(null)}>
-              取消
-            </button>
-            <button
-              type="button"
-              className="pbtn dgr"
-              data-testid="nav-graph-discard-confirm"
-              onClick={() => {
-                const target = pendingFolder
-                setPendingFolder(null)
-                if (target === null) return
-                // 确认=弃暂存（不落库+队列栈清）+执行切换（load 库态覆盖）
-                useLineageStore.getState().discardSession()
-                setFolder(target)
-              }}
-            >
-              放弃修改
-            </button>
-          </>
-        }
-      >
-        当前脉络图有未保存的修改，切换后将放弃这些修改（不落库）。
-      </Dialog>
     </div>
   )
 }

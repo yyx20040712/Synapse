@@ -1,116 +1,83 @@
 // b3: P7-H
 /**
- * [F-LGRAPH-01②U1] lineage-write-queue —— 脉络编辑会话暂存机制（自
- * lineage.store 拆出；[②U1] 语义翻转：enqueue 即 flush 自动保存→编辑会话
- * 暂存+点保存批量落库——mockup §2.2/A7 仲裁）。
+ * [F-LGRAPH-01②U1] lineage-write-queue —— 脉络编辑会话暂存机制（暂存+批量落库；
+ * [B4 L1 / 设计稿 §2.2/§2.4/§2.5/§6.2] 重整：历史与 unfinalized 移出本件——
+ * SessionSnapshot 退役，本件只持图态、queue、IO 与串行写链）。
+ * （[②U1] 语义翻转：enqueue 即 flush 自动保存→编辑会话暂存——自 lineage.store 拆出；
+ * 落库触发面自 [B4 L1] 起=1.5s idle-flush 与显式保存——mockup §2.2/A7 仲裁）。
  *
- * ── 会话态状态机（宪法前置；测试=lineage-session-store.test/lineage-store-write/lineage-store-reorder/write-queue.test）──
- * - 态空间：saveStatus ∈ {clean, dirty, saving, error} × queue（暂存动作序列）
- *   × undoStack/redoStack（会话快照栈——每编辑单元前图态全量浅快照）。
+ * ── 会话态状态机（IO 轴——U 轴与历史驻 lineage.store/lineage-session-ops）──
+ * （宪法前置；测试=lineage-session-store.test/lineage-store-write/lineage-store-reorder/write-queue.test）
+ * - 态空间：saveStatus ∈ {clean, dirty, saving, error} × queue × inflight。
  * - 迁移：
- *   - clean+任一编辑单元→dirty（乐观应用+入队，**不发 IPC**——A7 单一写路径）
- *   - dirty+点保存→saving（save()=flush 串行派发；lazy 载荷读最新行——A8
- *     全载荷合成含 via/dashed/color，repo ON CONFLICT 清 via 接缝随全载荷消解）
- *   - saving+全部成功且队列清空→clean（服务器行回填+**两栈清空**——Word 式
- *     基线重置：保存后不可再撤回保存前）
- *   - saving+系统型失败（非 CONFLICT）→error（**队首保留**+toast+重试——
- *     INV-04 同型：失败不推进保存态）
- *   - saving+CONFLICT 拒绝型→**丢弃动作继续队列**（toast reason 透传；丢弃
- *     后队列空→clean+**库态重拉**（乐观值不残留——服务器权威，INV-84 修订：
- *     乐观写在场的代价由 load 回填消解）
- *   - undo：dirty 态弹栈恢复快照（redo 栈入当前态）；恢复到基线快照
- *     （queue 空）→clean（§2.2「undo 回到基线」）；saving 态锁定 no-op
- *   - 新编辑单元→redo 栈清（§2.2）
- *   - discardSession（dirty 切图确认分支）：队列+两栈清+回 clean——乐观残值
- *     由随后 setFolder→load 库态覆盖（不落库=弃暂存）
- * - 编辑单元=单次拖放/加点/删点/重置走线/端点重连/画线/删线/命名提交（含
- *   线型行内改名）/线形变更——与撤销栈单元同构（一单元=一撤销步；拖放类
- *   单元由轮 2 调线/拖拽接入，store.beginUnit 为统一入口）。
- *   [F-VISFB-61] 悬浮笔记三操作（创建/编辑/删除）入编辑单元族——快照/
- *   队列/乐观应用/undo 栈全链同构（快照含 floatingNotes）。
- * - [T3-P8 R3] lazy 载荷：enqueue 只存 id+差异（patch=字段覆盖/override=槽位
- *   语义轴），applyAction 执行时点 fullRowInput(最新行) 合成——暂存窗内
- *   先行落地的乐观变更自然并入。[F-UIRES-03 C3] 改月语义轴（override
- *   year/month 形）随改月动作退役删除（INV-107——override 生产者收窄=slot 透写）。
+ *   - clean/error+编辑单元→dirty（乐观应用+入队，**不发 IPC**——A7 单一写路径）
+ *   - 链任务起步→saving/F≠0；drain 全部成功→clean（服务器行回填；**不清 undo/
+ *     redo、不动 U**——idle-flush≠定稿，§2.5 #8）；出队即存恢复副本。
+ *   - saving+系统型失败（非 CONFLICT）→error（**队首保留**+toast+重试——INV-04
+ *     同型：失败不推进保存态；U/H/R 全不变，#9）
+ *   - saving+CONFLICT 拒绝型→**丢弃动作继续队列**（toast reason 透传+needsReload
+ *     置位——#10：U 与 redo 不因丢弃自动清，历史保留）；丢弃后队列空→clean+链尾
+ *     权威和解任务（§2.6 10a——原 `void load()` fire-and-forget 收口退役）；和解被丢
+ *     （读到达时应用判据不成立、位保留）→链在 drain 新 Q 后按当前 epoch 有界续拉
+ *     （[回炉 W-B3·R-B7] lineage-reconcile-tail——孤儿会话/续拉前新写失败/达上界停止）
+ * - 串行写链（§2.2）：每会话一条——flush/history-unit/finalize 任务按入队序执行，
+ *   链内序=普通写→（needsReload=1 时）和解→history/定稿清账；同会话 saving 期
+ *   间编辑锁由宿主 beginUnit 读 flushing 拒绝（INV-94）。
+ * - lazy 载荷（[T3-P8 R3]）：enqueue 只存 id+差异，执行时点 fullRowInput（最新行）
+ *   合成——暂存窗内先行落地的乐观变更自然并入。
+ *   [F-UIRES-03 C3] 改月语义轴（override year/month 形）随改月动作退役删除（INV-107——override 生产者收窄=slot 透写）。
+ * - [回炉 W-D2a·T-B05] 单条动作的落库执行与实体回显（applyAction 七 kind）外移=
+ *   lineage-write-executor（本件行数超预算上限；动作体与注释逐字迁驻该件）；本件只留
+ *   融合、drain、chain/flush。
  */
-import { api, unwrap, ApiClientError } from '../../api/client'
+import { ApiClientError } from '../../api/client'
 import { showToast } from '../../shared/ui/toast-store'
-import { LINE_TYPE_COLORS, lineageOrder } from '@shared/models/lineage'
-import type {
-  FloatingNote,
-  LineageEdge,
-  LineageEdgeUpsert,
-  LineageNode
-} from '@shared/models/lineage'
-// [F-VISFB-65] writeAction 类型单源迁 shared/recovery/schemas（WriteAction
-// 判别联合=恢复副本载荷 schema 元素型）；本件 re-export 兼容既有消费面
-import type { WriteAction } from '@shared/recovery/schemas'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
-import {
-  markRecoveryClean,
-  notifyRecoveryEditUnit,
-  notifyRecoverySaveNow
-} from './recoveryScheduler'
+import type { FloatingNote, LineageEdge, LineageNode } from '@shared/models/lineage'
+// [F-VISFB-65] writeAction 类型单源迁 shared/recovery/schemas；本件 re-export（WriteAction
+// 判别联合=恢复副本载荷 schema 元素型）；兼容既有消费面
+import type { WriteAction } from '@shared/recovery/schemas'
+import { markRecoveryClean, notifyRecoveryEditUnit, notifyRecoverySaveNow } from './recoveryScheduler'
 import { useLineageViewStore } from './lineage-view.store'
 // [F-VISFB-65 单元二] GHOST_FOLDER 降级询问（§7）：三联判据命中→flush 挂起
 // 待决（conflictResolution 模块单例——ConflictDialog 决出）
 import { requestGhostFolderDecision } from './conflictResolution'
-
-/**
- * [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：
- * 'saved'→'clean' 概念=本地与库一致基线；'dirty'=暂存未落库（编辑会话内
- * 正常态）；'saving'=批量落库中（工具组锁定）；'error'=保存失败（行内错误
- * +重试——dirty 语义保持，error 档承载失败指示）。
- */
-export type LineageSaveStatus = 'clean' | 'dirty' | 'saving' | 'error'
-
-/** [F-ALIGN-01] patch-node 白名单载荷面（=IPC lineagePatchNodeReqSchema 去 id
- *  ——id=定位键；paperId/folderId/时间戳不可 patch；核心想法字段已随 [A3
- *  F-CONTRACTA-01 2026-10-04] 核心想法域全退役删除（全文笔记承接语义）；
- *  tags 已随 [A1b F-CONTRACTA-01] 标签域退役删除） */
-export type LineageNodePatchBody = Partial<
-  Pick<LineageNode, 'title' | 'year' | 'month' | 'slot' | 'x' | 'y'>
->
-
-/** [F-VISFB-65] patch 懒载荷形（WriteAction 判别联合 patch-node 臂——shared
- *  单源迁移后本地别名保持消费面零 churn；语义轴整替〔后到胜出〕注释随迁
- *  shared/recovery/schemas.ts） */
-export type LazyNodePatch = Extract<WriteAction, { kind: 'patch-node' }>
+import type { LineageInflight, LineageSaveStatus } from './lineage-session-model'
+import {
+  applyOptimistic,
+  normalizeEdgeInput,
+  withLocalId,
+  type LazyNodePatch,
+  type LineageNodePatchBody
+} from './lineage-write-actions'
+import { conflictPolicyOf, ghostFolderPatch, type ReconcileOutcome } from './lineage-write-conflicts'
+import { reconcileAtTail } from './lineage-reconcile-tail'
+import type { EntityEcho } from './lineage-history-commands'
+import { createWriteExecutor } from './lineage-write-executor'
 
 /** [F-VISFB-65] 写动作（排队单元）=shared 单源 re-export（判别联合迁移锚——
  *  恢复副本载荷与暂存队列同型；[F-VISFB-66 裁定 3] 旧换父标记随三入口退役
  *  删除；[回炉 R9] silentSave=画线动作面；[F-ALIGN-01] 新建节点形态随旧节点
  *  写通道退役删除——INV-NEW-1） */
-export type { WriteAction } from '@shared/recovery/schemas'
+export type { LineageSaveStatus, LazyNodePatch, LineageNodePatchBody, WriteAction }
 
-/** [F-LGRAPH-01②U1] 会话快照（每编辑单元前图态全量浅快照——undo/redo 载荷；
- *  [F-VISFB-61] +floatingNotes——笔记三操作入撤销维度） */
-export interface SessionSnapshot {
-  nodes: LineageNode[]
-  edges: LineageEdge[]
-  lineTypeNames: string[]
-  queue: WriteAction[]
-  floatingNotes: FloatingNote[]
-}
-
-/** 写队列宿主最小面（zustand store 结构性满足——数据态回填+队列驻留） */
+/** 写队列宿主状态面（图态+queue+IO；历史与 U 驻宿主但不经本件读写） */
 export interface WriteQueueHost {
   nodes: LineageNode[]
   edges: LineageEdge[]
+  floatingNotes: FloatingNote[]
+  folderId: string
   lineTypeNames: string[]
   saveStatus: LineageSaveStatus
   lastWriteError: string | null
   queue: WriteAction[]
+  /** 在途写在场（F≠0 ⇔ inflight≠null）——同会话 saving 编辑锁判据 */
   flushing: boolean
   /** [F-VISFB-65 回炉 W7] CONFLICT 面收尾重拉持久标志（Host 面可选——受锁
    *  测试夹具零改；lineage.store 状态面必填） */
+  /** [INV-175] 「图态与库态偏离待和解」位（和解任务成功应用=唯一清位点） */
   needsReload?: boolean
-  undoStack: SessionSnapshot[]
-  redoStack: SessionSnapshot[]
-  /** [F-VISFB-61] 悬浮笔记数据态（乐观应用/快照轴共享面） */
-  floatingNotes: FloatingNote[]
-  /** 库态重取（CONFLICT 丢弃后服务器权威回填——store.load 注入） */
-  load(): Promise<void>
+  inflight: LineageInflight | null
 }
 
 export interface WriteQueueDeps {
@@ -120,12 +87,38 @@ export interface WriteQueueDeps {
       | ((s: WriteQueueHost) => Partial<WriteQueueHost>)
   ): void
   get(): WriteQueueHost
+  /** 写回显锚定（历史项时间戳/色行名再锚——宿主=lineage.store；缺省=无历史面） */
+  onEcho?(echo: EntityEcho): void
+  /** 权威和解链任务（宿主=lineage-write-conflicts；缺省=位保留不和解） */
+  reconcile?(): Promise<ReconcileOutcome>
+  /** [回炉 W-B3·R-B7] 会话仍注册（孤儿=false——链尾续拉停止、不再发 keyed 读）；缺省=恒存活，单会话夹具 */
+  alive?(): boolean
+  /** [B4 L2] 会话键读取（registry Map 键——recovery 触发归属 owner 判定；缺省=单会话夹具无参） */
+  key?: () => string | undefined
+  /** [B4 L2] ghost 降级 remap 主图后的会话面收口（清该会话 focusSet；缺省=清活动聚焦集） */
+  onRemapMain?(): void
+  /** [回炉 W-B1·R-remap] ghost remap 落库（drain 成功收尾：队列空、写 IPC 全部落地）→宿主执行终态
+   *  迁移（被矫正会话离场、主图会话换代并失效）；to=remap 目标键 */
+  onRemapLanded?(to: string): void
+}
+
+export interface DrainOutcome {
+  /** false=系统型失败停队头（error 态） */
+  ok: boolean
+  /** 本次 drain 有拒绝型丢弃（needsReload 已置位） */
+  conflictTouched: boolean
+  /** 末次拒绝型丢弃的服务器 reason（#10：显式保存据此记失败并可见待重试） */
+  conflictMessage: string | null
 }
 
 export interface WriteQueue {
   /** 编辑动作入暂存（乐观应用+入队——不发 IPC；saveStatus=dirty） */
   enqueue(action: WriteAction): void
-  /** 批量落库（save 钮/retry 触发——串行派发；成功=clean+栈基线重置） */
+  /** 每会话串行写链入队（history-unit/finalize 共链；任务体自管 IO 终态） */
+  chain<T>(task: () => Promise<T>): Promise<T>
+  /** 普通写 drain（链任务体内调用——不自入链）：成功→clean；系统型失败→error 停队头 */
+  drain(): Promise<DrainOutcome>
+  /** drain→（conflictTouched∨needsReload）链尾和解任务；和解被丢→drain 新 Q 后按当前 epoch 有界续拉（[回炉 W-B3·R-B7]） */
   flush(): Promise<void>
 }
 
@@ -139,19 +132,13 @@ export interface WriteQueue {
  *  整替——终态一致（物化全载荷下两形态同落后值）；异 id=不合并（两态同） */
 function sameTarget(a: WriteAction, b: WriteAction): boolean {
   if (a.kind !== b.kind) return false
-  if (a.kind === 'patch-node' && b.kind === 'patch-node') {
-    return a.id === b.id
-  }
-  if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') {
-    return a.input.id === b.input.id
-  }
-  // [F-LGRAPH-01②U8] 色行名整批=单实体（图级配置）——同类恒合并
+  if (a.kind === 'patch-node' && b.kind === 'patch-node') return a.id === b.id
+  if (a.kind === 'upsert-edge' && b.kind === 'upsert-edge') return a.input.id === b.input.id
+  // [F-LGRAPH-01②U8] 色行名整批=单实体（当前 folder 配置）——同类恒合并
   if (a.kind === 'upsert-line-type-names' && b.kind === 'upsert-line-type-names') return true
   // [F-VISFB-61] 悬浮笔记 upsert=id 型判等（remove 走下方 id 兜底分支；
   // upsert×remove 异 kind 不合并——remove-edge 同族）
-  if (a.kind === 'upsert-floating-note' && b.kind === 'upsert-floating-note') {
-    return a.input.id === b.input.id
-  }
+  if (a.kind === 'upsert-floating-note' && b.kind === 'upsert-floating-note') return a.input.id === b.input.id
   return (a as { id: string }).id === (b as { id: string }).id
 }
 
@@ -160,10 +147,24 @@ function writeFailToast(message: string): void {
   showToast(message, 'error')
 }
 
+  /** [F-VISFB-65 单元二] 死文件夹级作用域判定：该 folderId 的 upsert 笔记动作 */
+const isGhostUpsertOf = (x: WriteAction, folderId: string): boolean =>
+  x.kind === 'upsert-floating-note' && x.input.folderId === folderId
+
 export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
   const { set, get } = deps
-  /** flush 派发中动作引用：enqueue 融合面排除（flight 项已发不融合） */
-  let inflight: WriteAction | null = null
+  const key = (): string | undefined => deps.key?.() // [B4 L2] recovery 触发的会话归属（缺省=单会话夹具）
+  /** 派发中动作引用：enqueue 融合面排除（flight 项已发不融合） */
+  let flight: WriteAction | null = null
+  /** [回炉 W-B1·R-remap] 本次链内已决出的 ghost remap 目标（降级询问决出时置位）。会话键=data.folderId
+   *  恒等——remap 不直置 data.folderId（改键=换新身份，发生在落库后）；色行名请求的 folderId 按它注入 */
+  let remappedTo: string | null = null
+  /** 串行写链：链空闲时首任务**同步起步**（saving/编辑锁即刻可见——同 tick 的
+   *  undo/编辑判定读到 flushing=true，INV-94 同步闸面）；其后任务排在前任务后 */
+  let tail: Promise<void> = Promise.resolve()
+  let queued = 0
+  /** 在途任务类别（flush=IO 收口；command=history/finalize——须严格串行） */
+  let running: 'flush' | 'command' | null = null
 
   /** [R3] lazy 同实体融合：patch 字段级合并（不同字段共存；同字段后值胜）；
    *  override 整替（语义轴互斥） */
@@ -173,134 +174,19 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     patch: { ...a.patch, ...b.patch },
     override: b.override ?? a.override
   })
-
   const isLazyPatch = (x: WriteAction): x is LazyNodePatch => x.kind === 'patch-node'
 
-  /** [F-LGRAPH-01②U1] 乐观应用：编辑动作即时投影到本地数据态（A7——本地
-   *  即时更新+暂存；节点变更后 lineageOrder 重排=渲染序单源沿承） */
-  const applyOptimistic = (action: WriteAction): void => {
-    if (action.kind === 'patch-node') {
-      // lazy 更新：patch 应用+override 语义轴（slot 透写）
-      set((s) => ({
-        nodes: lineageOrder(
-          s.nodes.map((n): LineageNode => {
-            if (n.id !== action.id) return n
-            const patched: LineageNode = { ...n, ...action.patch }
-            if (action.override === undefined) return { ...patched, updatedAt: new Date().toISOString() }
-            return { ...patched, slot: action.override.slot, updatedAt: new Date().toISOString() }
-          })
-        )
-      }))
-      return
-    }
-    if (action.kind === 'remove-node') {
-      set((s) => ({
-        nodes: s.nodes.filter((n) => n.id !== action.id),
-        // 级联镜像：两端点任一为该节点的边全清（DDL CASCADE 的会话面）
-        edges: s.edges.filter((e) => e.fromNode !== action.id && e.toNode !== action.id)
-      }))
-      return
-    }
-    if (action.kind === 'upsert-edge') {
-      const now = new Date().toISOString()
-      const id = action.input.id ?? crypto.randomUUID()
-      const next: LineageEdge = {
-        id,
-        fromNode: action.input.fromNode,
-        toNode: action.input.toNode,
-        label: action.input.label,
-        dashed: action.input.dashed === true,
-        color: action.input.color ?? LINE_TYPE_COLORS[0], // [R21] 常量单源（色板首色）
-        // [F-VISFB-66] via 三态：值=入乐观行；null/缺席=未携（自动路由——读
-        // 模型 undefined 语义，与 repo NULL 归一同终态）
-        ...(action.input.via != null && action.input.via.length > 0 ? { via: action.input.via } : {}),
-        // [F-VISFB-66] 锚乐观面：值=钉定入乐观行；null/缺席=未钉定（读模型
-        // undefined 语义——repo 全行替换下 null 落 NULL 幂等）
-        ...(action.input.fromAnchor != null ? { fromAnchor: action.input.fromAnchor } : {}),
-        ...(action.input.toAnchor != null ? { toAnchor: action.input.toAnchor } : {}),
-        createdAt: now,
-        updatedAt: now
-      }
-      set((s) => ({
-        edges: s.edges.some((e) => e.id === id)
-          ? s.edges.map((e) => (e.id === id ? { ...next, createdAt: e.createdAt } : e))
-          : [...s.edges, next]
-      }))
-      return
-    }
-    if (action.kind === 'remove-edge') {
-      set((s) => ({ edges: s.edges.filter((e) => e.id !== action.id) }))
-      return
-    }
-    if (action.kind === 'upsert-floating-note') {
-      const now = new Date().toISOString()
-      const id = action.input.id ?? crypto.randomUUID()
-      const next: FloatingNote = {
-        id,
-        folderId: action.input.folderId,
-        x: action.input.x,
-        y: action.input.y,
-        content: action.input.content,
-        createdAt: now,
-        updatedAt: now
-      }
-      set((s) => ({
-        floatingNotes: s.floatingNotes.some((n) => n.id === id)
-          ? s.floatingNotes.map((n) => (n.id === id ? { ...next, createdAt: n.createdAt } : n))
-          : [...s.floatingNotes, next]
-      }))
-      return
-    }
-    if (action.kind === 'remove-floating-note') {
-      set((s) => ({ floatingNotes: s.floatingNotes.filter((n) => n.id !== action.id) }))
-      return
-    }
-    set({ lineTypeNames: [...action.input] })
-  }
-
-  /** 新建类动作本地 uuid 回写（A7 乐观一致性）：本地乐观边 id=落库 id
-   *  （repo 采纳 provided id）——无临时 id 漂移、服务器回显按同 id 覆盖；
-   *  isNew 标记=新建 toast 判据（id 补齐后 undefined 判据失效）。
-   *  [F-ALIGN-01] 节点新建形态随旧节点写通道退役删除——本面仅边新建 */
-  const withLocalId = (a: WriteAction): WriteAction => {
-    // [回炉 R20] upsert-edge 补 id 分支已不可达删除（enqueue id 必填 throw
-    // 前置——store 边动作构造层恒携本地 uuid；防御纵深二道位消失，throw=唯一闸）
-    // [F-VISFB-61] 笔记新建：本地乐观 id=落库 id（无临时 id 漂移）；isNew 仅
-    // 标记（无 toast 面——62 号 UI 承载反馈）
-    if (a.kind === 'upsert-floating-note' && a.input.id === undefined) {
-      return { ...a, input: { ...a.input, id: crypto.randomUUID() }, isNew: true }
-    }
-    return a
-  }
-
-  /** [F-VISFB-66] upsert-edge 载荷归一化（undefined≡缺席——设计书 §D.4-3）：
-   *  via/fromAnchor/toAnchor/dashed/color 的 undefined 键一律剥除（缺省与
-   *  undefined 在队列载荷内等价——合并整替与 flush 载荷拼装面零 undefined
-   *  残留；null=显式清除意图保留透传） */
-  const normalizeEdgeInput = (input: LineageEdgeUpsert): LineageEdgeUpsert => ({
-    id: input.id,
-    fromNode: input.fromNode,
-    toNode: input.toNode,
-    label: input.label,
-    ...(input.dashed !== undefined ? { dashed: input.dashed } : {}),
-    ...(input.color !== undefined ? { color: input.color } : {}),
-    ...(input.via !== undefined ? { via: input.via } : {}),
-    ...(input.fromAnchor !== undefined ? { fromAnchor: input.fromAnchor } : {}),
-    ...(input.toAnchor !== undefined ? { toAnchor: input.toAnchor } : {})
-  })
+  const { applyAction } = createWriteExecutor({ set, get, onEcho: deps.onEcho, remappedTo: () => remappedTo }) // 单条落库执行=lineage-write-executor（见其头注）
 
   const enqueue = (rawAction: WriteAction): void => {
     // [F-VISFB-66] id 必填防御（§D.4-1）：upsert-edge 缺 id=throw。不可达
     // 推演：store 边动作构造层恒全载荷物化（一切边动作构造即携本地 uuid）
-    // +withLocalId 兜底补 id——
-    // enqueue 正常路径恒有 id；本格仅拦管线外合成动作（防御纵深）
+    // ——enqueue 正常路径恒有 id；本格仅拦管线外合成动作（防御纵深；原「+withLocalId
+    // 兜底补 id」一支随 [回炉 R20] 不可达分支删除）
     if (rawAction.kind === 'upsert-edge' && rawAction.input.id === undefined) {
       throw new Error('upsert-edge 动作缺 id（enqueue 契约：边动作构造层须物化本地 uuid）')
     }
-    const action =
-      rawAction.kind === 'upsert-edge'
-        ? { ...rawAction, input: normalizeEdgeInput(rawAction.input) }
-        : rawAction
+    const action = rawAction.kind === 'upsert-edge' ? { ...rawAction, input: normalizeEdgeInput(rawAction.input) } : rawAction
     const withId = withLocalId(action)
     set((s) => {
       let queue: WriteAction[]
@@ -308,224 +194,124 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         // [R3] 融合仅限**未派发**队列项（saving 派发窗内 flight 项保留原位）
         let hit = false
         queue = s.queue.map((x) => {
-          if (x === inflight || !isLazyPatch(x) || !sameTarget(x, withId)) return x
+          if (x === flight || !isLazyPatch(x) || !sameTarget(x, withId)) return x
           hit = true
           return fuseLazy(x, withId)
         })
         if (!hit) queue = [...s.queue, withId]
       } else {
-        queue = [...s.queue.filter((x) => x !== inflight && !sameTarget(x, withId)), withId]
+        queue = [...s.queue.filter((x) => x !== flight && !sameTarget(x, withId)), withId]
       }
       return { queue, saveStatus: 'dirty' }
     })
-    applyOptimistic(withId)
+    applyOptimistic(set, withId)
     // [F-VISFB-65] 编辑单元触发面（enqueue 后——§4 调度器 300ms trailing）
-    notifyRecoveryEditUnit()
+    notifyRecoveryEditUnit(key())
   }
 
-  /** [F-VISFB-65 回炉轮2 Z4] 重放面节点缺席=CONFLICT 丢弃语义（恢复载荷
-   *  [patch A, remove A] 重放：patch 遇 A 缺席——§8 表「节点亡=CONFLICT 丢弃」
-   *  同族收口：队首移除+toast+needsReload——旧 plain Error 抛=系统型失败
-   *  永续重试（重放死循环）封死。用户动作面守卫（lineage.store mustNode）
-   *  保持 throw 语义不变（写前防御——非重放面） */
-  const nodeOf = (id: string): LineageNode => {
-    const n = get().nodes.find((x) => x.id === id)
-    if (n === undefined) throw new ApiClientError('CONFLICT', `节点不在图中：${id}`)
-    return n
-  }
-
-  /** 既有节点→patch-node 全字段载荷（白名单六字段防半更新清字段——A8 全载荷
-   *  合成语义等价迁移：服务端 {...existing, ...patch} 合并，本地行全字段随发
-   *  =整行面等价；身份/图归属/时间戳不在白名单——沿用库行。
-   *  [A1b] tags 恒发行随标签域退役删除（原「恒发 tags:null 防清空失效」面
-   *  随字段消亡——k1-W1 先例注记留档）；[A3 F-CONTRACTA-01] 核心想法恒发行
-   *  随核心想法域全退役删除（同型先例） */
-  const fullPatchBody = (n: LineageNode): LineageNodePatchBody => ({
-    title: n.title,
-    year: n.year,
-    month: n.month,
-    slot: n.slot,
-    x: n.x,
-    y: n.y
-  })
-
-  /** [R3] lazy 载荷执行时点合成：fullPatchBody 读当前 store 行+patch 覆盖
-   *  +override 语义轴（slot 透写） */
-  const lazyInput = (a: LazyNodePatch): LineageNodePatchBody => {
-    const patched: LineageNodePatchBody = { ...fullPatchBody(nodeOf(a.id)), ...a.patch }
-    if (a.override === undefined) return patched
-    return { ...patched, slot: a.override.slot }
-  }
-
-  const applyAction = async (action: WriteAction): Promise<void> => {
-    if (action.kind === 'patch-node') {
-      const saved = await unwrap(api.lineage.patchNode({ id: action.id, ...lazyInput(action) }))
-      // 回填后按 lineageOrder 重排（INV-75 消费面扩——store 数组序=渲染序单源）
-      set((s) => ({
-        nodes: lineageOrder(
-          s.nodes.some((n) => n.id === saved.id)
-            ? s.nodes.map((n) => (n.id === saved.id ? saved : n))
-            : [...s.nodes, saved]
-        )
-      }))
-      return
-    }
-    if (action.kind === 'remove-node') {
-      await unwrap(api.lineage.removeNode({ id: action.id }))
-      set((s) => ({
-        nodes: s.nodes.filter((n) => n.id !== action.id),
-        // 级联镜像：两端点任一为该节点的边全清（DDL CASCADE 的 store 面）
-        edges: s.edges.filter((e) => e.fromNode !== action.id && e.toNode !== action.id)
-      }))
-      return
-    }
-    if (action.kind === 'upsert-edge') {
-      const saved = await unwrap(
-        api.lineage.upsertEdge({
-          from: action.input.fromNode,
-          to: action.input.toNode,
-          label: action.input.label,
-          // [F-LGRAPH-01②U8] 视觉线型内联透传（缺省键不进载荷——repo 归一）
-          ...(action.input.dashed !== undefined ? { dashed: action.input.dashed } : {}),
-          ...(action.input.color !== undefined ? { color: action.input.color } : {}),
-          // via 透传（手动调线编辑动作置——缺省键不进载荷；[F-VISFB-66] null=
-          // 显式清除透传〔setEdgeVia 约定迁移〕）
-          ...(action.input.via !== undefined ? { via: action.input.via } : {}),
-          // [F-VISFB-66] 端点锚透传（值=钉定/null=清除——A8 物化恒显式）
-          ...(action.input.fromAnchor !== undefined ? { fromAnchor: action.input.fromAnchor } : {}),
-          ...(action.input.toAnchor !== undefined ? { toAnchor: action.input.toAnchor } : {}),
-          // label 后编辑：id 提供经 IPC 更新（缺省键不进载荷）
-          ...(action.input.id !== undefined ? { id: action.input.id } : {})
-        })
-      )
-      set((s) => ({
-        edges: s.edges.some((e) => e.id === saved.id)
-          ? s.edges.map((e) => (e.id === saved.id ? saved : e))
-          : [...s.edges, saved]
-      }))
-      // 新建边成功 toast=唯一可见反馈；label 后编辑（id 显式提供）不 toast 防噪；
-      // [回炉 R9] 画线动作面（silentSave）抑制——「已画线，保存后生效」暂存
-      // 提示已承载，双 toast 合一
-      if (action.isNew === true && action.silentSave !== true) {
-        showToast('连线已保存', 'success')
-      }
-      return
-    }
-    if (action.kind === 'upsert-line-type-names') {
-      // 整批替换（Res=归一后回显恰 6 行）——成功 set lineTypeNames
-      const saved = await unwrap(api.lineage.upsertLineTypes(action.input))
-      set({ lineTypeNames: saved })
-      return
-    }
-    if (action.kind === 'upsert-floating-note') {
-      const saved = await unwrap(api.lineage.upsertFloatingNote(action.input))
-      set((s) => ({
-        floatingNotes: s.floatingNotes.some((n) => n.id === saved.id)
-          ? s.floatingNotes.map((n) => (n.id === saved.id ? saved : n))
-          : [...s.floatingNotes, saved]
-      }))
-      return
-    }
-    if (action.kind === 'remove-floating-note') {
-      await unwrap(api.lineage.removeFloatingNote({ id: action.id }))
-      set((s) => ({ floatingNotes: s.floatingNotes.filter((n) => n.id !== action.id) }))
-      return
-    }
-    await unwrap(api.lineage.removeEdge({ id: action.id }))
-    set((s) => ({ edges: s.edges.filter((e) => e.id !== action.id) }))
-  }
-
-  /** [F-VISFB-65 单元二] 死文件夹级作用域判定：该 folderId 的 upsert 笔记动作 */
-  const isGhostUpsertOf = (x: WriteAction, folderId: string): boolean =>
-    x.kind === 'upsert-floating-note' && x.input.folderId === folderId
-
-  /** [F-VISFB-65 单元二] remap：upsert 动作 folderId→主图（remove 不入作用域） */
-  const remapGhostUpsert = (x: WriteAction, folderId: string): WriteAction =>
-    x.kind === 'upsert-floating-note' && x.input.folderId === folderId
-      ? { ...x, input: { ...x.input, folderId: MAIN_GRAPH_ID } }
-      : x
-
-  async function flush(): Promise<void> {
-    if (get().flushing) return
-    // error→retry 恢复路径立即翻 saving（派发可见）；save 钮触发同态
-    set({ flushing: true, saveStatus: 'saving' })
-    // [F-VISFB-65 单元二] conflictTouched=CONFLICT 面收尾重拉判定（丢弃或
-    // remap 均置——终态以库态重拉收口：remap 行落主图后乐观/服务器一致面
-    // 由 load 权威回填，INV-84 修订同族）
+  const drain = async (): Promise<DrainOutcome> => {
     let conflictTouched = false
+    let conflictMessage: string | null = null
     while (get().queue.length > 0) {
       const action = get().queue[0]!
-      inflight = action // [R3] 派发中标记：enqueue 融合面排除
+      flight = action // [R3] 派发中标记：enqueue 融合面排除
       try {
         await applyAction(action)
         // 按动作身份出队（非 slice(1)：flight 期间同实体动作可能被合并替换，
         // 盲切首位会误删未发送的后值——「最后写胜出」与出队的组合缺陷，测试拦出）
         set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
-        // [F-VISFB-65] 出队即存（fire-and-forget 不等回执——flush 不等恢复面）
-        notifyRecoverySaveNow()
+        notifyRecoverySaveNow(key()) // 出队即存（fire-and-forget 不等回执）
       } catch (e) {
         if (e instanceof ApiClientError && e.code === 'CONFLICT') {
-          // [F-VISFB-65 单元二] 三联判据（B-07）：kind+code+reason 全中→死文件夹
-          // 降级询问；任一缺→现行丢弃+toast 语义零变
-          if (action.kind === 'upsert-floating-note' && e.reason === 'GHOST_FOLDER') {
-            const deadFolderId = action.input.folderId
-            const choice = await requestGhostFolderDecision(deadFolderId)
-            if (choice === 'remap-main-graph') {
-              // 保存到主图：队列中该 folderId 的全部 upsert remap 主图+乐观图态
-              // 同行 remap；当前动作未出队——续发即 remapped 版本（一询全覆盖）。
-              // [回炉 W8] 当前图矫正主图（setFolder 的 flushing 守卫使其 flush 内
-              // 不可用——语义等价直置+视图域隔离随切）：收尾 load 不拉死图空面
-              conflictTouched = true
-              set({ needsReload: true }) // [回炉 W7] 持久化
+          // 拒绝型：永不成功——丢弃继续（不卡队头不误报脏）
+          conflictTouched = true
+          conflictMessage = e.message
+          set({ needsReload: true }) // [回炉 W7] 持久化（系统型失败提前退出不丢）
+          let deadFolderId: string | null = null
+          if (conflictPolicyOf(action, e) === 'ghost-folder' && action.kind === 'upsert-floating-note') {
+            deadFolderId = action.input.folderId
+            const patch = ghostFolderPatch(await requestGhostFolderDecision(deadFolderId), deadFolderId)
+            if (patch.remapToMain) {
+              // 保存到主图：队列中该 folderId 的全部 upsert remap 主图+乐观图态同行
+              // remap；当前动作未出队——续发即 remapped 版本（一询全覆盖）
+              // [回炉 W8] 当前图矫正主图；[回炉 W-B1·R-remap] 不直置 data.folderId（键=数据键恒等）：落库后换新身份
+              remappedTo = MAIN_GRAPH_ID
               set((s) => ({
-                queue: s.queue.map((x) => remapGhostUpsert(x, deadFolderId)),
-                folderId: MAIN_GRAPH_ID,
-                floatingNotes: s.floatingNotes.map((n) =>
-                  n.folderId === deadFolderId ? { ...n, folderId: MAIN_GRAPH_ID } : n
-                )
+                queue: patch.queue(s.queue),
+                floatingNotes: patch.floatingNotes(s.floatingNotes)
               }))
-              useLineageViewStore.getState().clearFocus()
+              ;(deps.onRemapMain ?? (() => useLineageViewStore.getState().clearFocus()))()
+              flight = null
               continue
             }
-            // 放弃这条修改：该 folderId 全部 upsert 一次性走既有 CONFLICT 丢弃路径
-            conflictTouched = true
-            set({ needsReload: true }) // [回炉 W7] 持久化（系统型失败提前退出不丢）
-            writeFailToast(e.message)
-            set((s) => ({ queue: s.queue.filter((x) => !isGhostUpsertOf(x, deadFolderId)) }))
-            continue
           }
-          // 拒绝型：永不成功——丢弃继续（不卡队头不误报脏），reason 透传 toast
-          conflictTouched = true
-          set({ needsReload: true }) // [回炉 W7] 持久化
           writeFailToast(e.message)
-          set((s) => ({ queue: s.queue.filter((x) => x !== action) }))
+           // 放弃这条修改：该 folderId 全部 upsert 一次性走既有 CONFLICT 丢弃路径
+          const dead = deadFolderId
+          set((s) => ({ queue: dead === null ? s.queue.filter((x) => x !== action) : s.queue.filter((x) => !isGhostUpsertOf(x, dead)) }))
+          flight = null
           continue
         }
         // 系统型：动作保留（不丢），error 态+重试（INV-04：失败不推进保存态）
         const message = e instanceof Error ? e.message : String(e)
-        inflight = null
-        set({ saveStatus: 'error', lastWriteError: message, flushing: false })
+        flight = null
+        set({ saveStatus: 'error', lastWriteError: message })
         writeFailToast(message)
-        return
+        return { ok: false, conflictTouched, conflictMessage }
       }
-      inflight = null
+      flight = null
     }
-    // 成功收尾：clean+**两栈清空**（Word 式基线重置——保存后不可撤回保存前）
-    set({ saveStatus: 'clean', lastWriteError: null, flushing: false, undoStack: [], redoStack: [] })
-    // [F-VISFB-65] clean 四源之一：flush 全成功→release(clean)（gen 先行+drain）
-    markRecoveryClean('clean')
-    // [F-LGRAPH-01②U1] CONFLICT 收尾：库态重拉（乐观残值消解——服务器权威；
-    // INV-84 修订申报：乐观写在场，被拒意图经 load 回填不在本地残留；
-    // [F-VISFB-65 单元二] remap 分支同携——主图新行的权威回填；
+    // 成功收尾：clean（U/H/R 全不变——idle-flush≠定稿）
+    set({ saveStatus: 'clean', lastWriteError: null })
+    markRecoveryClean('clean', key()) // clean 四源之一：flush 全成功→release(clean)〔L2：按会话归属裁决〕
+    if (remappedTo !== null) deps.onRemapLanded?.(remappedTo) // [回炉 W-B1·R-remap] remap 落库：队列空、写全部落地→终态迁移
+    return { ok: true, conflictTouched, conflictMessage }
+  }
+
+  const chain = <T>(task: () => Promise<T>, kind: 'flush' | 'command' = 'command'): Promise<T> => {
+    const run = async (): Promise<T> => {
+      running = kind
+      set({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
+      try {
+        return await task()
+      } finally {
+        set({ flushing: false, inflight: null }) // F=0；相位由任务体落定（clean/error）
+        running = null
+      }
+    }
+    queued += 1
+    const settle = (): void => {
+      queued -= 1
+    }
+    const result = queued === 1 ? run() : tail.then(run, run)
+    tail = result.then(settle, settle)
+    return result
+  }
+
+  const flush = (): Promise<void> => {
+    // 让位早退（[F-VISFB-14] 沿承）：在途任务本身是一次 flush 且链上无其他任务→
+    // 其 drain 已覆盖此前入队动作（saving 期不收新编辑），不排第二次；退出握手
+    // 不被挂起的降级询问堵住（⑥ quit×conflict-wait）。其余情况严格排队。
+    if (queued > 0 && running === 'flush' && queued === 1) return Promise.resolve()
+    return chain(async () => {
+      const r = await drain()
+      // 链尾和解（§2.6 10a）：[回炉 W-B3·R-B7] 和解被丢后 drain 新 Q、按当前 epoch 有界续拉（lineage-reconcile-tail）
+      // ——位清归权威应用；续拉仍未应用／续拉前新写失败／孤儿会话＝位保留
+      // [回炉 W-D2a·T-B04] 以下理由句恢复自 HEAD 注释（原宿主=fire-and-forget load 收尾，机制已由
+      // 链尾和解任务替换——理由不变）：
+      // [F-LGRAPH-01②U1] CONFLICT 收尾：乐观残值消解——服务器权威；
+      // INV-84 修订申报：乐观写在场，被拒意图经权威回填不在本地残留；
+      // [F-VISFB-65 单元二] remap 分支同携——主图新行的权威回填；
     // [回炉 W7] needsReload 持久标志并入判定（上轮 CONFLICT 后系统型失败
     // 提前退出→重试成功的新 flush 收口补拉——幽灵乐观行不残留）；
     // [INV-175 F-RECOV-02 只触发不清位]：flush 成功收尾=干净化点之一——
     // 此处禁清位（fire→落地前竞窗内新编辑会互锁丢弃 load，早清=残值复活面）；
-    // 清位唯二=load() 应用分支（权威落地即清）+discardSession（放弃例外）
-    if (conflictTouched || get().needsReload === true) {
-      void get().load()
-    }
+      // 清位唯二=权威应用分支（和解读应用）+discardSession（放弃例外）
+      if (r.ok && (r.conflictTouched || get().needsReload === true)) {
+        await reconcileAtTail({ reconcile: deps.reconcile, drain, alive: () => deps.alive?.() ?? true })
+      }
+    }, 'flush')
   }
 
-  return { enqueue, flush }
+  return { enqueue, chain, drain, flush }
 }

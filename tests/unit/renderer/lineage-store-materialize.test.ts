@@ -8,6 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
@@ -15,7 +16,8 @@ const stubApi = makeApiStub({
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
-    upsertLineTypes: vi.fn()
+    upsertLineTypes: vi.fn(),
+    historyUnit: vi.fn()
   }
 })
 
@@ -50,6 +52,7 @@ const state = () => useLineageStore.getState()
 
 beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=async history-unit
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.lineage.upsertEdge.mockImplementation(async (req: { id?: string; from: string; to: string }) => ({
     ok: true,
@@ -99,7 +102,7 @@ describe('F-VISFB-66·setEdgeVia 约定迁移（undefined=清除→显式 via:nu
 })
 
 describe('F-VISFB-66·style 类动作物化（editManualEdgeLabel/applyEdgeLineStyle）', () => {
-  it('applyEdgeLineStyle 全载荷：via 与双锚随现值物化（值保留/null 归一）', async () => {
+  it('applyEdgeLineStyle 全载荷：via 与双锚随现值物化（值保留/null 归一）', () => {
     useLineageStore.setState({
       edges: [
         edge('e1', 'A', 'B', {
@@ -266,7 +269,7 @@ describe('F-VISFB-66·drawEdge 单径必携双锚（单元二签名重写——�
 })
 
 describe('F-VISFB-66·[定点修 W-01-r4] undo 快照五元组原值直断言（store 级——非渲染投影）', () => {
-  it('undo 后 edges[0] 全字段=编辑前原值（from/to/双锚钉定与 NULL 之别/via 内容）+redo 重放', () => {
+  it('undo 后 edges[0] 全字段=编辑前原值（from/to/双锚钉定与 NULL 之别/via 内容）+redo 重放', async () => {
     const state = useLineageStore.getState()
     const via0 = [{ x: 10, y: 20 }, { x: 10, y: 30 }]
     const e0 = edge('e5', 'A', 'B', {
@@ -286,10 +289,10 @@ describe('F-VISFB-66·[定点修 W-01-r4] undo 快照五元组原值直断言（
     const r = useLineageStore.getState().reconnectEdge('e5', { end: 'from', from: 'C', to: 'B', anchor: { side: 'top', slot: 1 } })
     expect(r.ok).toBe(true)
     expect(useLineageStore.getState().edges[0]!.via).toBeUndefined()
-    useLineageStore.getState().undo()
+    await useLineageStore.getState().undo()
     expect(useLineageStore.getState().edges[0]).toEqual(e0)
     // redo=restore 共用快照语义——重放同组恒等（换端态）
-    useLineageStore.getState().redo()
+    await useLineageStore.getState().redo()
     const eRc = useLineageStore.getState().edges[0]!
     expect(eRc.fromNode).toBe('C')
     expect(eRc.fromAnchor).toEqual({ side: 'top', slot: 1 })

@@ -29,7 +29,8 @@ import {
 import { createRepos, type Repos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
 import type { ExtractRequestEvent, ExportCorpusEvent } from '../../../src/shared/ipc/schemas'
-import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
+import { MAIN_GRAPH_ID, type LineageEdge, type LineageNode } from '../../../src/shared/models/lineage'
+import { corpusLineageSource } from '../../../src/main/services/index'
 
 const ISO_A = '2026-01-01T00:00:00.000Z'
 const ISO_B = '2026-01-02T00:00:00.000Z'
@@ -297,7 +298,9 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
             lineage: () => ({
               nodes: repos.lineage.listGraph().nodes,
               edges: repos.lineage.listGraph().edges,
-              lineTypeNames: repos.lineage.getLineTypeNames(),
+              // [B4 L1 D2 §17 裁决] corpus 装配色行名取主图键（生产接线同源=
+              // services/index corpusLineageSource——契约迁移：原全局键读退役）
+              lineTypeNames: repos.lineage.getLineTypeNames(MAIN_GRAPH_ID),
               // [F-FOLDER-01] pubNos 装配（services/index 生产接线同源——pub_no 字段）
               pubNos: new Map(repos.papers.pubNoByIds(
                 repos.lineage.listGraph().nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
@@ -359,7 +362,7 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       const expectText = assembleLineageJson({
         nodes: g.nodes,
         edges: g.edges,
-        lineTypeNames: h.repos.lineage.getLineTypeNames(),
+        lineTypeNames: h.repos.lineage.getLineTypeNames(MAIN_GRAPH_ID),
         pubNos: new Map(
           h.repos.papers
             .pubNoByIds(g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : [])))
@@ -370,6 +373,25 @@ describe('T3-P5 会话接线：finalizing 写 lineage.json（deps.lineage 读通
       expect((JSON.parse(text) as { nodes: Array<{ pub_no: number; paper_id: string }> }).nodes).toEqual([
         { month: 3, node_id: expect.any(String), paper_id: 'p-1', pub_no: 1, title: '文献甲', year: 2021 }
       ])
+    } finally {
+      await h.dispose()
+    }
+  })
+
+  it('[B4 L1 D2 §17 裁决] corpus 装配色行名=主图键：分夹色行名互不串扰，lineage.json 的 line_types 取主图值（生产接线 corpusLineageSource 同源）', async () => {
+    const h = await makeHarness(true)
+    try {
+      await seed(h)
+      h.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 1)`).run()
+      const mainNames = ['主图甲', '主图乙', '主图丙', '主图丁', '主图戊', '主图己']
+      h.repos.lineage.setLineTypeNames(MAIN_GRAPH_ID, mainNames)
+      h.repos.lineage.setLineTypeNames('f-a', ['夹甲线', '待命名', '待命名', '待命名', '待命名', '待命名'])
+      expect(h.repos.lineage.getLineTypeNames('f-a')[0]).toBe('夹甲线') // 分夹独立
+      expect(corpusLineageSource(h.repos)().lineTypeNames).toEqual(mainNames) // 生产装配面取主图键
+      await runSession(h)
+      const text = (await readFile(join(h.dir, 'lineage.json'))).toString('utf8')
+      const lineTypes = (JSON.parse(text) as { line_types: Array<{ name: string }> }).line_types
+      expect(lineTypes.map((l) => l.name)).toEqual(mainNames)
     } finally {
       await h.dispose()
     }

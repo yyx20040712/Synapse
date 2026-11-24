@@ -27,7 +27,7 @@ function noteCount(db: Db, where = '', ...params: unknown[]): number {
 }
 
 describe('F-VISFB-61 floating-notes.repo —— 悬浮笔记数据面（迁移 024）', () => {
-  it('DDL 负锚：PRAGMA table_info 列集恰七列且无 paper_id（§0-5 裁决——纯画布节点不关联文献）；迁移链尾 user_version=26（[F-SNAPCLEAN-01] 基线压缩后）', () => {
+  it('DDL 负锚：PRAGMA table_info 列集恰七列且无 paper_id（§0-5 裁决——纯画布节点不关联文献）；迁移链尾 user_version=28（[F-SNAPCLEAN-01] 基线压缩后 26；[B4 L1] 027/028 落链后 28）', () => {
     const db = createTestDb()
     const info = db.prepare('PRAGMA table_info(floating_notes)').all() as Array<{ name: string }>
     expect(info.map((c) => c.name).sort()).toEqual([
@@ -40,7 +40,7 @@ describe('F-VISFB-61 floating-notes.repo —— 悬浮笔记数据面（迁移 0
       'y'
     ])
     expect(info.some((c) => c.name === 'paper_id')).toBe(false)
-    expect(readUserVersion(db)).toBe(26)
+    expect(readUserVersion(db)).toBe(28)
     db.close()
   })
 

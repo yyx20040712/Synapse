@@ -255,10 +255,15 @@ describe('F-RECOV-04 回炉 W2：RecoveryBarHost 真装配（B-2 四条件/落�
 
   it('W2③ flushing 守卫：四条件不过=停条可重试（不弹确认不误判成功不误清队列）', async () => {
     await clickBar('recovery-defer')
+    // [B4 L1 最小迁移] 真实在途 flush（patch 回包 deferred）替代 saveStatus/flushing
+    // 字面夹具——串行写链下 `save()` 的「在途 flush 让位早退」须由真实在途任务承载
+    let release!: (v: { ok: false; error: { code: string; message: string } }) => void
+    stubApi.lineage.patchNode.mockImplementationOnce(() => new Promise((r) => { release = r }))
     act(() => {
       useLineageStore.getState().moveNode('A', 3, 4)
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' }) // 模拟在途 flush
+      void useLineageStore.getState().save()
     })
+    expect(useLineageStore.getState().flushing).toBe(true) // 在途 flush 窗
     await clickBar('recovery-reopen')
     await clickBar('recovery-restore')
     // save() 在 flushing 窗早退≠落定成功：四条件核验不过→停条 busy=f 可重试
@@ -267,10 +272,14 @@ describe('F-RECOV-04 回炉 W2：RecoveryBarHost 真装配（B-2 四条件/落�
     expect(getRecoveryState().phase).toBe('await-decision')
     expect(stubApi.recovery.read).not.toHaveBeenCalled()
     expect(useLineageStore.getState().queue).toHaveLength(1) // 未误清未误载
-    // flush 收口后重试→落定过→确认框再现（可重试语义）
-    act(() => {
-      useLineageStore.setState({ flushing: false })
+    // 在途 flush 以系统失败收场（队首保留）→重试：落定步真 flush 该 1 项→落定过
+    // →确认框再现（可重试语义——「已保存当前 1 项修改」=重试窗口的真实落库计数）
+    await act(async () => {
+      release({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
+      for (let i = 0; i < 10; i++) await Promise.resolve()
     })
+    expect(useLineageStore.getState().flushing).toBe(false)
+    expect(useLineageStore.getState().queue).toHaveLength(1) // 失败写保留
     await clickBar('recovery-restore')
     expect(useLineageStore.getState().saveStatus).toBe('clean')
     expect(dialog()).not.toBeNull()

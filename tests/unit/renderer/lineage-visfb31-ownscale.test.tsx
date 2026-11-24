@@ -541,7 +541,7 @@ describe('[F-VISFB-31·R1] 自查面补强锚（W-1——四处独立红锚）',
     pUp(300, 290)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' })) // [B4 L2 §9.3] 落位写携身份
     vi.unstubAllGlobals()
   })
 

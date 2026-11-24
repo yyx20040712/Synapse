@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
@@ -21,6 +22,7 @@ const stubApi = makeApiStub({
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn(),
+    historyUnit: vi.fn(),
     upsertFloatingNote: vi.fn(),
     removeFloatingNote: vi.fn()
   }
@@ -50,6 +52,7 @@ const state = () => useLineageStore.getState()
 
 beforeEach(() => {
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=async history-unit
   stubApi.lineage.graph.mockResolvedValue({
     ok: true,
     data: { nodes: [], edges: [], floatingNotes: [] }
@@ -122,7 +125,7 @@ describe('F-VISFB-61 悬浮笔记 store 会话面 —— 创建/编辑/删除', 
     expect(stubApi.lineage.upsertFloatingNote).not.toHaveBeenCalled()
   })
 
-  it('save 批量落库：upsert 全载荷（folderId/x/y/content/id）+服务器行回填+clean+两栈清', async () => {
+  it('save 批量落库：upsert 全载荷（folderId/x/y/content/id）+服务器行回填+clean+历史保留（[B4 L1 翻转] save=IO 收口不清栈；显式保存只清 redo）', async () => {
     state().addFloatingNote(120, 240, '待存笔记')
     const id = state().floatingNotes[0]!.id
     await state().save()
@@ -137,53 +140,54 @@ describe('F-VISFB-61 悬浮笔记 store 会话面 —— 创建/编辑/删除', 
     })
     expect(state().saveStatus).toBe('clean')
     expect(state().floatingNotes[0]).toMatchObject({ id, updatedAt: 'server' })
-    expect(state().undoStack).toEqual([])
+    expect(state().undoStack).toHaveLength(1) // [B4 L1] idle-flush≠定稿——undo 栈跨 flush 存活
     expect(state().redoStack).toEqual([])
   })
 
-  it('undo/redo/save 往返（三操作快照轴）：创建→undo 消失（回 clean 基线）→redo 复活→save 单发；编辑→undo 内容回退；删除→undo 恢复', async () => {
+  it('undo/redo/save 往返（[B4 L1] history-unit 轴）：创建→undo 消失（反向写经 history-unit）→redo 复活；编辑→undo 内容回退；删除→undo 恢复', async () => {
     // 创建轴
     state().addFloatingNote(1, 2, '撤销轴')
     const id = state().floatingNotes[0]!.id
-    state().undo()
+    await state().undo()
     expect(state().floatingNotes).toEqual([])
     expect(state().queue).toEqual([])
     expect(state().saveStatus).toBe('clean')
-    state().redo()
+    await state().redo()
     expect(state().floatingNotes).toHaveLength(1)
     expect(state().floatingNotes[0]!.content).toBe('撤销轴')
-    expect(state().saveStatus).toBe('dirty')
+    expect(state().saveStatus).toBe('clean') // [B4 L1 翻转] 反向写=对 DB 的 history-unit（不入普通 queue）
     await state().save()
     await settle()
     expect(stubApi.lineage.upsertFloatingNote).toHaveBeenCalledTimes(1)
     // 编辑轴
     state().updateFloatingNote(id, { content: '编辑后' })
-    state().undo()
+    await state().undo()
     expect(state().floatingNotes[0]!.content).toBe('撤销轴')
-    state().redo()
+    await state().redo()
     expect(state().floatingNotes[0]!.content).toBe('编辑后')
     await state().save()
     await settle()
     // 删除轴
     state().removeFloatingNote(id)
     expect(state().floatingNotes).toEqual([])
-    state().undo()
+    await state().undo() // flush-then-unit：先 drain（删除落库）再经 history-unit 原 id 恢复
     expect(state().floatingNotes).toHaveLength(1)
     expect(state().floatingNotes[0]!.content).toBe('编辑后')
-    expect(stubApi.lineage.removeFloatingNote).not.toHaveBeenCalled()
+    expect(stubApi.lineage.removeFloatingNote).toHaveBeenCalledTimes(1) // [B4 L1 翻转] 预 drain 先落库
+    expect(state().floatingNotes[0]!.id).toBe(id) // 原 id 恢复（§5.3）
     await state().save()
     await settle()
     expect(state().saveStatus).toBe('clean')
   })
 
-  it('saving 锁定：flushing 期创建/编辑拒绝（INV-94 同族）+undo no-op', () => {
+  it('saving 锁定：flushing 期创建/编辑拒绝（INV-94 同族）+undo no-op', async () => {
     useLineageStore.setState({ floatingNotes: [note('fn-1')], flushing: true, saveStatus: 'saving' })
     state().addFloatingNote(5, 5, '在途写')
     expect(state().queue).toHaveLength(0)
     expect(state().floatingNotes).toHaveLength(1)
     state().removeFloatingNote('fn-1')
     expect(state().floatingNotes).toHaveLength(1)
-    state().undo()
+    await state().undo()
     expect(state().undoStack).toHaveLength(0)
   })
 
@@ -197,7 +201,7 @@ describe('F-VISFB-61 悬浮笔记 store 会话面 —— 创建/编辑/删除', 
     await state().save()
     await settle()
     state().removeFloatingNote(idA)
-    state().undo() // 撤销删除=保留（最终态=编辑后的甲在场）
+    await state().undo() // 撤销删除=保留（最终态=编辑后的甲在场）
     await state().save()
     await settle()
     // reload：graph 返回服务端态（编辑后行）

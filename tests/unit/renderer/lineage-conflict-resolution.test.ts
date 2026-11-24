@@ -5,7 +5,9 @@
  * ① 三联判据逐维（缺 kind/缺 reason/仅 code=走旧丢弃）；
  * ② 死文件夹级作用域（同 folder 多 upsert 一询全 remap/混合 upsert+remove
  *    只 remap upsert/不同 folder 两询/乐观图态同行 remap）；
- * ③ 两分支队列续走+收尾重拉（remap/discard 均 conflictTouched→load）；
+ * ③ 两分支队列续走+链尾权威和解（[B4 L1 §2.6 10a] remap/discard 均 conflictTouched
+ *    →和解链任务：keyed graph 读+身份匹配应用——原 fire-and-forget `void load()`
+ *    收口退役，断言由 loadSpy 改 stubApi.lineage.graph）；
  * ④ modal 期编辑锁（conflictWaitBlocked 挂 beginUnitGated 面）；
  * ⑥ quit×conflict-wait（save 让位早退+runQuitFlush stillDirty=true+强退尽力
  *    saveNow 留副本+modal 不自动选）。
@@ -73,7 +75,6 @@ const settle = async (turns = 10): Promise<void> => {
 }
 
 const state = () => useLineageStore.getState()
-const loadSpy = vi.fn(async () => undefined)
 
 beforeEach(async () => {
   vi.clearAllMocks()
@@ -85,6 +86,8 @@ beforeEach(async () => {
   stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: { ...node(String(req.id ?? 'X')), ...req } as LineageNode })
   )
+  // [B4 L1] 和解链任务的 keyed graph 读（权威图=夹具现图）
+  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [node('A')], edges: [] } })
   useLineageStore.setState({
     nodes: [node('A')],
     edges: [],
@@ -94,12 +97,12 @@ beforeEach(async () => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null,
     needsReload: false,
     undoStack: [],
     redoStack: [],
     folderId: '__main__',
-    floatingNotes: [],
-    load: loadSpy
+    floatingNotes: []
   })
   useLineageViewStore.setState({ mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208 })
   initRecoveryScheduler({
@@ -131,13 +134,14 @@ describe('① 三联判据（B-07）：kind+code+reason 全中才询问', () => 
     expect(getConflictState().pending).toBeNull() // 零询问
     expect(state().queue).toEqual([]) // 旧丢弃出队
     expect(state().saveStatus).toBe('clean')
-    expect(loadSpy).toHaveBeenCalled() // conflictTouched 重拉
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1) // conflictTouched→链尾和解（await 落定）
+    expect(state().needsReload).toBe(false) // 权威应用=清位
   })
 
   it('upsert-floating-note × CONFLICT 无 reason→旧丢弃；reason≠GHOST_FOLDER→旧丢弃', async () => {
     for (const reason of [undefined, 'SOMETHING_ELSE']) {
-      loadSpy.mockClear()
-      useLineageStore.setState({ saveStatus: 'clean', queue: [], floatingNotes: [], folderId: 'f-live' })
+      stubApi.lineage.graph.mockClear()
+      useLineageStore.setState({ saveStatus: 'clean', queue: [], floatingNotes: [], folderId: 'f-live', inflight: null })
       state().addFloatingNote(0, 0, '文')
       stubApi.lineage.upsertFloatingNote.mockResolvedValue(conflict(reason))
       await state().save()
@@ -190,7 +194,8 @@ describe('② 死文件夹级作用域（仅 upsert remap）', () => {
     expect(state().queue).toEqual([])
     expect(state().saveStatus).toBe('clean')
     // 乐观图态 remap：会话内笔记行归主图（floatingNotes 不因 flush 回填剩死 folder 行）
-    expect(loadSpy).toHaveBeenCalled()
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1) // 链尾和解（替代旧 void load()）
+    expect(state().needsReload).toBe(false)
   })
 
   it('discard 分支：该 folder 全部 upsert 一次性走既有丢弃路径（一询）+其余动作续走', async () => {
@@ -208,7 +213,8 @@ describe('② 死文件夹级作用域（仅 upsert remap）', () => {
     expect(state().queue).toEqual([]) // 两 upsert 一次全弃
     expect(state().saveStatus).toBe('clean')
     expect(stubApi.lineage.patchNode).toHaveBeenCalled()
-    expect(loadSpy).toHaveBeenCalled()
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1) // 链尾和解
+    expect(state().needsReload).toBe(false)
   })
 
   it('remove-floating-note 不入作用域：死 folder 的 remove 照常派发（幂等成功路径零询问）', async () => {

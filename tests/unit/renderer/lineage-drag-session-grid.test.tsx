@@ -158,7 +158,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     pUp(277, 40)
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('S2 双占末行（D3 含源 rowCounts）：四卡 rows [3,1]——拖末行 D 落 row0 cell1 前=插 B 后（含源数学非实时腾位）', async () => {
@@ -175,7 +175,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     expect(ph.nextElementSibling?.isEqualNode(cardOf('B'))).toBe(true)
     pUp(275, 40)
     fireEnd(cardOf('D'))
-    expect(reorder).toHaveBeenCalledWith(['A', 'D', 'B', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['A', 'D', 'B', 'C'], expect.objectContaining({ folderId: '__main__' }))
     // 源自身槽稳定（含源残行）：指针回 D 原位中心前（175,192）→ insertIdx=3=srcIdx → 序不变零写
     pDown(cardOf('D'), 176, 198)
     pMove(182, 202)
@@ -210,7 +210,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     fireEnd(cardOf('A'))
     fireEnd(cardOf('A')) // 二次 transitionend=幂等面（事件/兜底不双写）
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('S4 滞回幂等（D6）：同坐标重复 pointermove 插入位恒稳（占位槽腾位不反噬判定面）', async () => {
@@ -232,7 +232,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     expect(ph.nextElementSibling?.isEqualNode(first.next ?? null)).toBe(true)
     pUp(350, 40)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('S5 padding-box 换算（D2）：非零框原点+1.6px 边框——指针=B 中心−0.4+1.6 边差→仍前侧（插 B 前=原位零写）', async () => {
@@ -284,7 +284,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     expect(host!.querySelectorAll('.drag-slot.cand').length).toBe(0)
     pUp(277, 40)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('S7 拖中 W 变化候选随容量公式实时重排（D8→B3 §6 mask，[B3 §9 断言迁移授权]+判别力保持：有→无）：W 752→570.4（归一化 728→546.4）候选 [cell3 带坐标]→∅', async () => {
@@ -313,7 +313,7 @@ describe('[F-SLOTGRID-01 U3] 算术落点接线（INV-111 消费面——含源�
     expect(cands.length, '拖中行满→候选=∅（有→无——不重排即红）').toBe(0)
     pUp(277, 40)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 })
 
@@ -377,6 +377,6 @@ describe('F-VISFB-66·[回炉 S10/S11] 滚动帧：tick 先于基准重测+滚�
     pUp(150, 40) // 静止光标松手——settle 取滚动帧更新后的 s.insertIdx
     fireEnd(cardOf('B'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder, '落槽=滚动后插位 [A,C,B,D]（陈旧位 [A,B,C,D]=红）').toHaveBeenCalledWith(['A', 'C', 'B', 'D'])
+    expect(reorder, '落槽=滚动后插位 [A,C,B,D]（陈旧位 [A,B,C,D]=红）').toHaveBeenCalledWith(['A', 'C', 'B', 'D'], expect.objectContaining({ folderId: '__main__' }))
   })
 })

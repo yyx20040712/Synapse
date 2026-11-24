@@ -11,10 +11,21 @@
 import { describe, expect, it } from 'vitest'
 import { createExportSnapshotService } from '../../../src/main/services/snapshot/export-snapshot.service'
 import { createImportSnapshotService } from '../../../src/main/services/snapshot/import-snapshot.service'
+import { decodeEnvelope, type ExportPayload } from '../../../src/main/services/snapshot/envelope.codec'
 import { createRepos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
 import { APP_META_KEYS } from '../../../src/shared/models/app-meta'
 import type { SnapshotImportRes } from '../../../src/shared/ipc/schemas'
+import type { FloatingNote } from '../../../src/shared/models/lineage'
+import type { LineageEntityDelta } from '../../../src/shared/ipc/lineage-history.schemas'
+import { ms, presetTombstone, rowOf, setUpdatedAt, tombstonesOf } from '../../utils/lineage-history-db'
+import {
+  exportVol as exportSide,
+  importVol as importSide,
+  makeSnapshotSide,
+  pair as pairSides,
+  type SnapshotSide
+} from '../../utils/snapshot-lineage-sides'
 
 type Db = ReturnType<typeof createTestDb>
 type Repos = ReturnType<typeof createRepos>
@@ -172,3 +183,196 @@ function syncKeyOf(side: Side): string {
   return (side.db.prepare('SELECT value FROM app_meta WHERE key = ?').get(APP_META_KEYS.syncKey) as { value: string })
     .value
 }
+
+/**
+ * [B4 L1 / 设计稿 §7.5] 快照三段闭环真库序列（悬浮笔记侧）：段二「先读本地行」
+ * （活行在场走 LWW/缺席+有 tombstone=skippedRevive/缺席无 tombstone=插入）+
+ * 段三删事件按 deleted_at 代际判定（恢复/改写胜出=skippedSuperseded）。进入
+ * 未来毫秒区=预置远未来 tombstone（同技术——守卫恒取「旧行+1ms」项）。
+ */
+describe('F-B4-L1 §7.5 快照三段闭环（floating_notes 侧——真库序列 1/4/5/6/8）', () => {
+  const OWNER_Z = '5e4d0c26-7f8a-4b3c-9d4e-1a2b3c4d5e6f'
+  const T = '2999-01-01T00:00:00.000Z'
+  const U1 = '2026-02-01T00:00:00.000Z'
+
+  function seedFn(side: SnapshotSide, id: string, content: string, updatedAt: string): FloatingNote {
+    const n = side.repos.floatingNotes.upsert({ id, folderId: 'f-a', x: 10, y: 20, content })
+    setUpdatedAt(side.db, 'floating_notes', id, updatedAt)
+    return { ...n, updatedAt }
+  }
+  const noteRow = (side: SnapshotSide, id: string) =>
+    side.db.prepare('SELECT x, y, content, updated_at FROM floating_notes WHERE id = ?').get(id) as
+      | { x: number; y: number; content: string; updated_at: string }
+      | undefined
+  const restoreDelta = (note: FloatingNote): LineageEntityDelta => ({ kind: 'floating-note', id: note.id, before: note, after: null })
+  const restore = (side: SnapshotSide, note: FloatingNote): void => {
+    side.history.unit({ folderId: note.folderId, unitId: `u-${note.id}`, direction: 'undo', changes: [restoreDelta(note)] })
+  }
+
+  /** 解码导出卷明文（§13.6 envelope：文件字节 canonical JSON→decodeEnvelope 验签解密→payload
+   *  JSON；syncKey=本文件既有 syncKeyOf 读侧库 app_meta）——[M-W02 回炉] 序列 8
+   *  「卷内=全部 tombstone」直接断言卷内容，不再只重查源库 */
+  const decodeVol = (side: SnapshotSide, bytes: Buffer): ExportPayload => {
+    const decoded = decodeEnvelope(JSON.parse(bytes.toString('utf8')), syncKeyOf(side))
+    if (!decoded.ok) throw new Error(`导出卷解码失败：${decoded.reason}`)
+    return JSON.parse(decoded.plaintext.toString('utf8')) as ExportPayload
+  }
+
+  it('序列 1 本地三序列：删除未恢复→旧卷 skippedRevive；删除→原 id 恢复→携带更旧 tombstone 的卷不吞活行（skippedSuperseded）；恢复后再删→旧卷再次 skippedRevive', () => {
+    const x = makeSnapshotSide(OWNER_X)
+    const y = makeSnapshotSide(OWNER_Y)
+    pairSides(y, x)
+    x.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    const note = seedFn(x, 'fn-1', '三序列', U1)
+    expect(importSide(y, exportSide(x)).outcome).toBe('applied')
+    // (a) 删除未恢复→含活行的卷 skippedRevive
+    y.repos.floatingNotes.remove('fn-1')
+    const a = importSide(y, exportSide(x))
+    expect(a.stats?.skippedRevive).toBe(1)
+    expect(noteRow(y, 'fn-1')).toBeUndefined()
+    // x 侧先行删除（其 tombstone 早于 y 的恢复）→携带该 tombstone 的卷
+    x.repos.floatingNotes.remove('fn-1')
+    const volTomb = exportSide(x)
+    // (b) 删除→history-unit 原 id 恢复→旧卷（更旧 tombstone）不吞活行
+    restore(y, note)
+    const restored = noteRow(y, 'fn-1')!
+    expect(restored.content).toBe('三序列')
+    expect(tombstonesOf(y.db, 'floating_notes', 'fn-1')).toHaveLength(1)
+    const b = importSide(y, volTomb)
+    expect(b.outcome).toBe('applied')
+    expect(b.stats?.skippedSuperseded).toBe(1)
+    expect(b.stats?.deleted).toBe(0)
+    expect(noteRow(y, 'fn-1')).toEqual(restored) // 活行原样
+    // (c) 恢复后再次删除→含活行的卷再次 skippedRevive
+    y.repos.floatingNotes.remove('fn-1')
+    restore(x, note) // x 侧恢复→卷再携活行
+    const c = importSide(y, exportSide(x))
+    expect(c.stats?.skippedRevive).toBe(1)
+    expect(noteRow(y, 'fn-1')).toBeUndefined()
+    x.db.close()
+    y.db.close()
+  })
+
+  it('序列 4 同毫秒恢复：预置远未来 tombstone T→守卫恢复行 updated_at 严格大于 T；导出→持更旧活行的对端导入后活行存活并更新为恢复值', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    const z = makeSnapshotSide(OWNER_Z)
+    y.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    z.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    presetTombstone(y.db, 'floating_notes', 'fn-4', T)
+    restore(y, { id: 'fn-4', folderId: 'f-a', x: 1, y: 2, content: '恢复值', createdAt: U1, updatedAt: T })
+    const restored = noteRow(y, 'fn-4')!
+    expect(ms(restored.updated_at)).toBeGreaterThan(ms(T))
+    expect(restored.content).toBe('恢复值')
+    // 对端持更旧活行
+    seedFn(z, 'fn-4', '对端旧活行', U1)
+    pairSides(z, y)
+    const res = importSide(z, exportSide(y))
+    expect(res.outcome).toBe('applied')
+    expect(res.stats?.updated).toBe(1)
+    expect(noteRow(z, 'fn-4')).toEqual(restored) // 存活且=恢复值
+    y.db.close()
+    z.db.close()
+  })
+
+  it('序列 5 同毫秒再删除：恢复行 updated_at=U 后紧接真库 DELETE→新 tombstone 在场（UNIQUE 未吞，行数+1）且 deleted_at 严格大于 U；导出→持恢复行的对端被删（新删事件胜）', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    const z = makeSnapshotSide(OWNER_Z)
+    y.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    z.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    presetTombstone(y.db, 'floating_notes', 'fn-5', T)
+    restore(y, { id: 'fn-5', folderId: 'f-a', x: 1, y: 2, content: '恢复值', createdAt: U1, updatedAt: T })
+    const u = noteRow(y, 'fn-5')!.updated_at
+    y.repos.floatingNotes.remove('fn-5')
+    const tombs = tombstonesOf(y.db, 'floating_notes', 'fn-5')
+    expect(tombs).toHaveLength(2)
+    expect(ms(tombs[1]!)).toBeGreaterThan(ms(u))
+    // 对端持恢复行（updated_at=U）
+    seedFn(z, 'fn-5', '恢复值', u)
+    pairSides(z, y)
+    const res = importSide(z, exportSide(y))
+    expect(noteRow(z, 'fn-5')).toBeUndefined()
+    expect(res.stats?.deleted).toBe(1)
+    expect(res.stats?.skippedSuperseded).toBe(1) // 预置的更旧 tombstone T<U 被跳过
+    y.db.close()
+    z.db.close()
+  })
+
+  it('序列 8 交错链：删除→恢复→普通写→再删除→导出→对端导入（新删未吞/对端持恢复行或普通写行均被删/普通写值不复活）', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    const zHoldRestored = makeSnapshotSide(OWNER_Z)
+    const zHoldNormal = makeSnapshotSide('6f7e1d37-2a8b-4c5d-9e6f-2b3a4c5d6e7f')
+    for (const side of [y, zHoldRestored, zHoldNormal]) {
+      side.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    }
+    presetTombstone(y.db, 'floating_notes', 'fn-8', T)
+    restore(y, { id: 'fn-8', folderId: 'f-a', x: 1, y: 2, content: '恢复值', createdAt: U1, updatedAt: T })
+    const restoredAt = rowOf(y.db, 'floating_notes', 'fn-8')!.updated_at
+    y.repos.floatingNotes.upsert({ id: 'fn-8', folderId: 'f-a', x: 30, y: 40, content: '普通写值' }) // 普通 repo 写（裸 now 回拨域）
+    const normal = noteRow(y, 'fn-8')!
+    expect(ms(normal.updated_at)).toBeGreaterThan(ms(restoredAt)) // 本地普通写不倒退
+    expect(normal).toMatchObject({ x: 30, y: 40, content: '普通写值' }) // 内容=普通写值
+    const before = tombstonesOf(y.db, 'floating_notes', 'fn-8').length
+    y.repos.floatingNotes.remove('fn-8')
+    const tombs = tombstonesOf(y.db, 'floating_notes', 'fn-8')
+    expect(tombs).toHaveLength(before + 1) // 再删事件未被 UNIQUE 吞
+    expect(ms(tombs[tombs.length - 1]!)).toBeGreaterThan(ms(normal.updated_at))
+    const vol = exportSide(y)
+    expect(tombstonesOf(y.db, 'floating_notes', 'fn-8')).toHaveLength(before + 1) // 卷内=全部 tombstone；本地无该 id 活行
+    expect(noteRow(y, 'fn-8')).toBeUndefined()
+    // [M-W02 回炉] 解码导出卷直接断言（上方「卷内=全部 tombstone」不再只重查源库）：卷内该 id
+    // 的 deletion_events 全集=源库（条数与 deleted_at 值，seq 序）；卷内无该 id 活行
+    const exported = decodeVol(y, vol)
+    const volTombs = exported.deletions.filter((d) => d.entity === 'floating_notes' && d.id === 'fn-8').map((d) => d.deleted_at)
+    expect(volTombs).toHaveLength(before + 1)
+    expect(volTombs).toEqual(tombstonesOf(y.db, 'floating_notes', 'fn-8'))
+    expect(exported.data.floating_notes?.filter((r) => r.id === 'fn-8')).toEqual([]) // 卷缺该表=undefined≠[]，不恒真
+    seedFn(zHoldRestored, 'fn-8', '恢复值', restoredAt)
+    pairSides(zHoldRestored, y)
+    expect(importSide(zHoldRestored, vol).outcome).toBe('applied')
+    expect(noteRow(zHoldRestored, 'fn-8')).toBeUndefined() // 持恢复行→被删
+    seedFn(zHoldNormal, 'fn-8', '普通写值', normal.updated_at)
+    pairSides(zHoldNormal, y)
+    const resN = importSide(zHoldNormal, vol)
+    expect(resN.outcome).toBe('applied')
+    expect(noteRow(zHoldNormal, 'fn-8')).toBeUndefined() // 持普通写行→被删（普通写值不复活）
+    expect(resN.stats?.deleted).toBe(1)
+    y.db.close()
+    zHoldRestored.db.close()
+    zHoldNormal.db.close()
+  })
+
+  it('序列 6 写点守卫不变式：每条 tombstone 的 deleted_at 严格大于被删行删除前 updated_at；活行 updated_at 严格大于该 id 全部 tombstone（段三相等分支不可达）', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    y.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 0)`).run()
+    // 行史采样：每次删除前记录行 updated_at
+    const preDelete: Array<{ id: string; updated_at: string }> = []
+    const pairedTombs: string[] = [] // [M-W02 回炉] 逐轮配对：每轮删除后立刻取该轮新产生的 tombstone
+    presetTombstone(y.db, 'floating_notes', 'fn-k', T)
+    restore(y, { id: 'fn-k', folderId: 'f-a', x: 1, y: 2, content: 'k', createdAt: U1, updatedAt: T })
+    for (let round = 0; round < 3; round++) {
+      y.repos.floatingNotes.upsert({ id: 'fn-k', folderId: 'f-a', x: round, y: round, content: `第${round}轮` })
+      preDelete.push({ id: 'fn-k', updated_at: rowOf(y.db, 'floating_notes', 'fn-k')!.updated_at })
+      const countBefore = tombstonesOf(y.db, 'floating_notes', 'fn-k').length
+      y.repos.floatingNotes.remove('fn-k')
+      // [M-W02 回炉] 该轮删除后立刻取新产生的 tombstone（seq 序尾部）：恰一枚、严格大于该轮删除前 updated_at
+      const added = tombstonesOf(y.db, 'floating_notes', 'fn-k').slice(countBefore)
+      expect(added, `第 ${round} 轮删除恰新增一枚 tombstone`).toHaveLength(1)
+      pairedTombs.push(added[0]!)
+      expect(ms(added[0]!), `第 ${round} 轮 tombstone 严格大于该轮删除前 updated_at`).toBeGreaterThan(ms(preDelete[round]!.updated_at))
+      restore(y, { id: 'fn-k', folderId: 'f-a', x: 1, y: 2, content: 'k', createdAt: U1, updatedAt: T })
+    }
+    const tombs = tombstonesOf(y.db, 'floating_notes', 'fn-k').map(ms)
+    // 每条真实删除产生的 tombstone（排除预置的 T）严格大于其删除前 updated_at
+    const realTombs = tombs.filter((t) => t !== ms(T))
+    expect(realTombs).toHaveLength(preDelete.length)
+    for (const pre of preDelete) expect(realTombs.some((t) => t > ms(pre.updated_at))).toBe(true)
+    const live = ms(rowOf(y.db, 'floating_notes', 'fn-k')!.updated_at)
+    for (const t of tombs) expect(live).toBeGreaterThan(t) // 活行晚于全部 tombstone → row.updated_at===deleted_at 不可达
+    // [M-W02 回炉] 逐对（按 seq 序）：各轮 tombstone=日志尾部同序、严格大于同轮删除前 updated_at、逐轮严格递增
+    const tombTexts = tombstonesOf(y.db, 'floating_notes', 'fn-k')
+    expect(tombTexts.slice(tombTexts.length - pairedTombs.length)).toEqual(pairedTombs)
+    for (const [round, pre] of preDelete.entries()) expect(ms(pairedTombs[round]!)).toBeGreaterThan(ms(pre.updated_at))
+    for (let i = 1; i < pairedTombs.length; i++) expect(ms(pairedTombs[i]!)).toBeGreaterThan(ms(pairedTombs[i - 1]!))
+    y.db.close()
+  })
+})

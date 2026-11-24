@@ -159,7 +159,8 @@ export function toEdge(row: LineageEdgeRow): LineageEdge {
 }
 
 /**
- * [F-LGRAPH-01②U8] meta 'lineTypeNames' 原文 → 恰 6 色行名。读面容错
+ * [F-LGRAPH-01②U8] meta `lineTypeNames:<folderId>` 原文 → 恰 6 色行名（[B4 L1
+ * D2] 按 folder 键——lineage.repo lineTypeNamesKey）。读面容错
  * （损坏 JSON/非法形状/长度≠6→缺省 6×「待命名」）：色行名属图级样式配置
  * 非用户内容，损坏降级优于整图读失败（via 列容错同精神——「用户内容
  * 禁静默吞错」的区分申报）。旧 'lineTypes' 四组键残留不读本键（键分离）。

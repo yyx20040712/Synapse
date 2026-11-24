@@ -42,6 +42,7 @@ import { prepareWorkspaceSwitch } from '../../../src/renderer/app/workspace-swit
 import { useReaderStore } from '../../../src/renderer/features/reader/state/reader.store'
 import { useNotesStore } from '../../../src/renderer/features/notes/notes.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { lineageRegistry } from '../../../src/renderer/features/lineage/lineage-session-registry'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { clearStack, pushUndo, stackDepth } from '../../../src/renderer/features/reader/state/annotation-undo'
 import { undoTabOperations } from '../../../src/renderer/features/reader/state/reader-history-commands'
@@ -140,9 +141,10 @@ describe('prepareWorkspaceSwitch —— 全量 flush→清史→release/switch �
     await useNotesStore.getState().load('p-3')
     useNotesStore.getState().edit('p-3', { contentMd: '切换前最新值' })
     mocks.notesSave.mockResolvedValueOnce(noteResult('p-3', '切换前最新值'))
-    // lineage IO 脏：saveStatus=dirty→编排 await save()（写队列正道）
+    // lineage IO 脏：saveStatus=dirty→编排 await 会话链 save()（写队列正道——
+    // [B4 L2] 编排面=registry 全会话收口，spy 落活动会话 lane）
     useLineageStore.setState({ saveStatus: 'dirty' })
-    const saveSpy = vi.spyOn(useLineageStore.getState(), 'save')
+    const saveSpy = vi.spyOn(lineageRegistry.lane('__main__'), 'save')
     await expect(prepareWorkspaceSwitch()).resolves.toBe(true)
     expect(mocks.notesSave).toHaveBeenCalledWith({ paperId: 'p-3', contentMd: '切换前最新值' })
     expect(saveSpy).toHaveBeenCalledTimes(1)

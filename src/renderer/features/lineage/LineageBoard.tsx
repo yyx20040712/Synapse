@@ -117,9 +117,11 @@ export function LineageBoard(props: {
     },
     [nodes]
   )
-  const handleReorderMonthSlots = useCallback((ids: string[]): void => {
+  const handleReorderMonthSlots = useCallback((ids: string[], target: { folderId: string; generation: number; dragId: string }): void => {
+    // [B4 L2 §9.3] 落位写只到拖拽激活时捕获的会话（不读切换后的 activeFolder）；
+    // 会话已失效=丢弃并提示（store.reorderMonthSlots 承载）
     // getState 静态单源（store 面稳定——deps 空）
-    useLineageStore.getState().applyObstacleReroute(ids)
+    useLineageStore.getState().reorderMonthSlots(target, ids)
   }, [])
 
   return (

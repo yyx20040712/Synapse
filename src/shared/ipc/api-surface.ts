@@ -19,7 +19,8 @@ import {
   lineageNodeSchema,
   lineageEdgeSchema,
   floatingNoteSchema,
-  floatingNoteUpsertSchema
+  floatingNoteUpsertSchema,
+  lineTypeNamesSchema
 } from '../models/lineage'
 import { folderSchema } from '../models/folder'
 import {
@@ -34,6 +35,7 @@ import {
 } from '../recovery/schemas'
 import * as S from './schemas'
 import * as AI from './ai-schemas'
+import { lineageHistoryUnitReqSchema, lineageHistoryUnitResSchema } from './lineage-history.schemas'
 
 export interface Endpoint {
   /** 通道名，全局唯一 */
@@ -115,6 +117,9 @@ export const API_SURFACE = {
   // [F-ALIGN-01 D1] 旧节点写通道退役→patch-node（脉络手动建点路径
   // 全退役——节点唯一来源=入库/移动两路 INV-NEW-1；载荷=既有节点编辑 patch，
   // 新建形态契约面结构性不可表达——设计稿 docs/design/2026-10-04_f-align01-design.md §1 D1）
+  // [B4 L1 2026-11-23] 8→9 通道：+history-unit（一次 undo/redo 的反向实体变化集
+  // ——main 单事务；契约=ipc/lineage-history.schemas）；upsert-line-types 载荷
+  // 由 names 数组改 {folderId, names}（D2 色行名 folder 键化——Req/Res 分型）
   lineage: {
     graph: { channel: 'lineage/graph', Req: S.lineageGraphReqSchema, Res: S.lineageGraphResSchema },
     patchNode: { channel: 'lineage/patch-node', Req: S.lineagePatchNodeReqSchema, Res: lineageNodeSchema },
@@ -124,7 +129,15 @@ export const API_SURFACE = {
     upsertLineTypes: {
       channel: 'lineage/upsert-line-types',
       Req: S.lineageUpsertLineTypesReqSchema,
-      Res: S.lineageUpsertLineTypesReqSchema
+      Res: lineTypeNamesSchema // 归一后的恰 6 行名（当前 folder）
+    },
+    // [B4 L1 §7.2] history-unit：undo/redo 的 before/after 变化集（strict；folder
+    // 归属一致）；Res=本次 touched 行服务器版本+当前 folder 色行名。原 id 恢复
+    // 只经本通道到达（不开放通用的节点整行新建 IPC——INV-NEW-1 负锚面不变）
+    historyUnit: {
+      channel: 'lineage/history-unit',
+      Req: lineageHistoryUnitReqSchema,
+      Res: lineageHistoryUnitResSchema
     },
     // [F-VISFB-61] 悬浮笔记数据与会话面（B6-61）：upsert=新建（id 缺省）/
     // 编辑（id 提供全载荷——content/x/y；未知 id=插入〔repo upsert 语义，

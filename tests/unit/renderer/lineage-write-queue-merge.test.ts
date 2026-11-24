@@ -31,10 +31,10 @@ function makeHost(edges: WriteQueueHost['edges'] = []): { host: WriteQueueHost; 
     saveStatus: 'clean',
     lastWriteError: null,
     queue: [],
+    // [B4 L1] WriteQueueHost 只持图态+queue+IO（SessionSnapshot 退役——undo/redo/load 夹具删除）
+    folderId: '__main__',
     flushing: false,
-    undoStack: [],
-    redoStack: [],
-    load: async () => undefined
+    inflight: null
   }
   return { host, setSpy }
 }

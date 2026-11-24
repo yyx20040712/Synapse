@@ -57,6 +57,10 @@ export const writeActionSchema = z.discriminatedUnion('kind', [
     })
     .strict(),
   z.object({ kind: z.literal('remove-edge'), id: z.string().min(1) }).strict(),
+  // [B4 L1 D2 §5.4 第 2 段] input 保持 names 数组（不扩 folderId 字段——queue 仍
+  // 7 kind）：IPC 请求 {folderId, names} 的 folderId 由单一适配函数注入——renderer
+  // 发起时取会话 folderId，崩溃重放时即 RecoveryPayload.folderId（载入会话时
+  // 已写入会话 folderId，同一适配函数同一读点）
   z.object({ kind: z.literal('upsert-line-type-names'), input: z.array(z.string()) }).strict(),
   z
     .object({

@@ -74,6 +74,7 @@ function makeRepos(row: PaperRow | null, over: Partial<Repos['papers']> = {}): R
     aiNotes: {} as Repos['aiNotes'],
     lineage: {} as Repos['lineage'],
     floatingNotes: {} as Repos['floatingNotes'], // [F-VISFB-61] 悬浮笔记域（面外桩）
+    lineageHistory: {} as Repos['lineageHistory'], // [B4 L1] history-unit 仓储（面外桩——Repos 增键随补）
     notes: {} as Repos['notes'],
     tags: {} as Repos['tags'],
     collections: {} as Repos['collections'],

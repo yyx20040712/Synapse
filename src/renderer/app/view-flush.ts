@@ -15,12 +15,16 @@
  * 误覆盖到该面）。
  * [F-VISFB-63] lineage 面：未 blur 草稿驻 LineageFloatingNotes 组件态——
  * 切走随组件卸载丢值（textarea 卸载无 blur 同链，62 号 d1）；fire commit
- * 入队后由 lineageDirty 聚合承接（保存/退出握手正道）；flushing 窗 fire
+ * 入队后的承接=[B4 L2 §2.5 #30/§9.3] 拖拽两态有界收口（态一有界 settle/态二 await
+ * 句柄——落位数据写落原会话，组件卸载不丢布局意向）；随后有未落定写的会话 fire
+ * flush（不等回执不阻路由——§2.5 #30「离场先提交并 fire flush」）；历史/U/focusSet
+ * 保留（返回既有会话不重建）；flushing 窗 fire
  * no-op=登记边界（T10——视图切换本身无提示面）；不阻路由（同 reader 形）。
  */
 import type { ViewId } from './Rail'
 import { fireAllDraftFlushes } from '../features/reader/interact/annotation-draft-registry'
 import { fireLineageNoteCommit } from '../features/lineage/lineage-note-draft'
+import { lineageRegistry } from '../features/lineage/lineage-session-registry'
 
 /** 视图切换包装：离场 'reader'/'lineage' 先立存再落 view 状态（App 组合根单点消费） */
 export function switchViewWithFlush(from: ViewId, to: ViewId, setView: (v: ViewId) => void): void {
@@ -30,6 +34,16 @@ export function switchViewWithFlush(from: ViewId, to: ViewId, setView: (v: ViewI
   // [F-VISFB-63] 离场 'lineage'：悬浮笔记编辑草稿收口（独立 if——同形并列）
   if (from === 'lineage' && to !== 'lineage') {
     fireLineageNoteCommit()
+    // [B4 L2 §9.3] 拖拽两态有界收口→落位写落原会话→fire flush（不等回执不阻路由）
+    void (async () => {
+      await Promise.all(lineageRegistry.sessions().map((entry) => lineageRegistry.awaitDragSettle(entry.key)))
+      await Promise.all(
+        lineageRegistry
+          .sessions()
+          .filter((entry) => entry.data.queue.length > 0 || entry.data.inflight !== null)
+          .map((entry) => entry.lane.save())
+      )
+    })()
   }
   setView(to)
 }

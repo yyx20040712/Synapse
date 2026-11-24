@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * [F-LGRAPH-01② RR 补批·RR14] saving×切图互锁（裁决部 RR14/v107 §4——
- * 本批首项）：flushing/saving 态禁切图（NavGraphPicker 入口禁用+禁用态样式
- * 沿承 .nav-graph-btn:disabled+确认框不可达）——「禁」径消解在飞写 IPC 竞态
- * 半程；flush 收尾无条件 set clean 与确认框「不落库」承诺冲突半程同径消解。
- * 跨格：①saving 禁②flush 收尾恢复③dirty（非 saving）确认分支不受影响。
+ * [F-LGRAPH-01② RR 补批·RR14 → B4 L2 断言翻转] saving×切图互锁退役（设计稿
+ * docs/design/2026-11-22_b4-save-undo-core-design.md §2.5 #32/§8.1、§12.2）：
+ * per-folder 会话写链独立——A 的在飞写只回写 A，saving 不再阻切图；dirty 切图=
+ * flush-first 挂起（不弹弃改框）。跨格：①saving 中入口可选+点击可达+即切
+ * ②A 的迟到收尾只写挂起会话 ③flush 收尾后正常挂起切换 ④dirty 切图=落库原会话。
  * always-active 裸 describe（K3）。
  */
 import { act } from 'react'
@@ -17,16 +17,16 @@ const folder = (id: string, name: string): Folder => ({ id, name, position: 0, p
 
 const stubApi = makeApiStub({
   folders: { list: vi.fn() },
-  lineage: { graph: vi.fn() }
+  lineage: { graph: vi.fn(), removeEdge: vi.fn() }
 })
 
-/** folders.changed 订阅捕获（S3/S4 驱动面——NavGraphPicker 挂载即订阅） */
 stubApiEvents({
   onFoldersChanged: () => () => undefined
 })
 
 import { NavGraphPicker } from '../../../src/renderer/features/lineage/nav-graph-picker'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { lineageRegistry } from '../../../src/renderer/features/lineage/lineage-session-registry'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -75,6 +75,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   stubApi.folders.list.mockReset()
   stubApi.lineage.graph.mockReset()
+  stubApi.lineage.removeEdge.mockReset()
   stubApi.folders.list.mockResolvedValue({
     ok: true,
     data: [folder('__main__', '主图'), folder('f-1', '调研计划')]
@@ -83,6 +84,7 @@ beforeEach(() => {
     ok: true,
     data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] }
   })
+  stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
   useLineageStore.setState({
     nodes: [],
     edges: [],
@@ -110,80 +112,67 @@ afterEach(() => {
   host = null
 })
 
-describe('RR14 saving×切图互锁（flushing 态禁切图——跨格①②③）', () => {
-  it('①saving 中切图入口 disabled+点击不可达：菜单不展开（确认框不可达半程同消）', async () => {
+describe('[B4 L2] saving×切图：RR14 窗口禁切退役——切换不等 flush（§2.5 #32/§8.1）', () => {
+  it('①saving 中入口可选+点击可达：activeFolder 即切 B；新会话 IO 不受 A 在飞写污染', async () => {
     await renderPicker()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'saving' })
+      useLineageStore.setState({ saveStatus: 'saving', flushing: true, inflight: { kind: 'write' } }) // A 在飞写（夹具面）
     })
     await settle()
     const btn = req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement
-    expect(btn.disabled).toBe(true) // 入口禁用（disabled 态样式=CSS :disabled 沿承）
-    // 点击不可达：dispatchEvent 不拦 disabled（jsdom）——处理器层同闸后菜单不开
+    expect(btn.disabled).toBe(false) // [断言翻转] 禁切退役（import busy 仍是唯一禁用源）
     act(() => {
       btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(q('[data-testid="lineage-nav-graph-menu"]')).toBeNull() // 菜单不可达
-    expect(q('[role="dialog"]')).toBeNull() // 确认框不可达（在飞写×「不落库」承诺冲突半程消解）
-    expect(useLineageStore.getState().folderId).toBe('__main__') // 未切图
+    expect(q('[data-testid="lineage-nav-graph-menu"]')).not.toBeNull() // 菜单可开（确认框不可达半程随之消亡）
+    pickFolder('f-1')
+    expect(useLineageStore.getState().folderId).toBe('f-1') // 即切（不等 A 的 flush 回执）
+    await settle()
+    expect(useLineageStore.getState().saveStatus).toBe('clean') // B 自身 IO 基线（A 的在飞写不外溢）
   })
 
-  it('①b saving 上升沿收起已开浮层：dirty 挂起确认框 →saving 起态=菜单+确认框均收', async () => {
+  it('①b A 的在飞写收尾只回写挂起会话：迟到的 clean 化不改 B 投影', async () => {
     await renderPicker()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'dirty' })
+      useLineageStore.setState({ saveStatus: 'saving', flushing: true, inflight: { kind: 'write' } })
     })
+    await settle()
     openMenu()
-    expect(q('[data-testid="lineage-nav-graph-menu"]')).not.toBeNull()
-    pickFolder('f-1') // dirty=挂起确认
-    expect(q('[role="dialog"]')).not.toBeNull()
+    pickFolder('f-1')
+    expect(useLineageStore.getState().folderId).toBe('f-1')
     act(() => {
-      useLineageStore.setState({ saveStatus: 'saving' }) // flush 起态（跨格过渡）
+      lineageRegistry.update('__main__', { saveStatus: 'clean', flushing: false, inflight: null }) // A 的 flush 收尾（挂起会话）
     })
     await settle()
-    expect(q('[data-testid="lineage-nav-graph-menu"]')).toBeNull() // 浮层收
-    expect(q('[role="dialog"]')).toBeNull() // 挂起确认框收（不可达绝对化）
-    expect(useLineageStore.getState().folderId).toBe('__main__')
+    expect(useLineageStore.getState().folderId).toBe('f-1')
+    expect(useLineageStore.getState().saveStatus).toBe('clean') // B 投影未被 A 的收尾改写
   })
 
-  it('②flush 收尾后恢复可选：saving→clean=按钮复可点+切图直达（互锁为窗口期闸）', async () => {
+  it('②flush 收尾后切图=正常挂起切换（互锁窗口退役的对称面）', async () => {
     await renderPicker()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'saving' })
+      useLineageStore.setState({ saveStatus: 'clean', flushing: false, inflight: null }) // flush 成功收尾
     })
     await settle()
-    expect((req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement).disabled).toBe(true)
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'clean', flushing: false }) // flush 成功收尾
-    })
-    await settle()
-    const btn = req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement
-    expect(btn.disabled).toBe(false) // 恢复可选
+    expect((req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement).disabled).toBe(false)
     openMenu()
     pickFolder('f-1')
     await settle()
-    expect(useLineageStore.getState().folderId).toBe('f-1') // 正常切图恢复
+    expect(useLineageStore.getState().folderId).toBe('f-1')
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: 'f-1' })
   })
 
-  it('③dirty（非 saving）切图确认分支不受影响（既有行为回归锚）：挂起确认+取消留守', async () => {
+  it('③[断言翻转] dirty 切图=flush-first（原确认两分支退役）：不弹框+原会话暂存落库+切换即达', async () => {
     await renderPicker()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'dirty' })
+      useLineageStore.setState({ saveStatus: 'dirty', queue: [{ kind: 'remove-edge', id: 'e-x' }] }) // A 待写（夹具面）
     })
     openMenu()
     expect(q('[data-testid="lineage-nav-graph-menu"]')).not.toBeNull() // dirty=入口可选
     pickFolder('f-1')
-    const dialog = q('[role="dialog"]')
-    expect(dialog).not.toBeNull() // 确认分支在场（互锁不外溢）
-    expect(dialog?.textContent).toContain('未保存')
-    const cancel = [...(dialog?.querySelectorAll('button') ?? [])].find((b) => b.textContent === '取消')
-    expect(cancel).toBeDefined()
-    act(() => {
-      cancel!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    expect(q('[role="dialog"]')).toBeNull() // 「未保存的修改」确认框退役（§6.1 删除面）
+    expect(useLineageStore.getState().folderId).toBe('f-1')
     await settle()
-    expect(useLineageStore.getState().folderId).toBe('__main__') // 取消=留守
-    expect(q('[role="dialog"]')).toBeNull()
+    expect(stubApi.lineage.removeEdge).toHaveBeenCalledTimes(1) // flush-first：A 的暂存落库（非弃置）
   })
 })

@@ -1,115 +1,125 @@
 // b3: P7-H
 /**
- * [F-VISFB-61 拆件] lineage-session-ops —— 编辑会话撤销/重做域件（自
- * lineage.store 拆出 2026-10-17——store 493 行险位〔v210 §5 挂账「下次触及
- * 先拆件」〕；先例=AnnotationPopups 拆 annotation-popups-actions）。
- * 拆件=纯移动零语义改：beginUnit/restore/UNDO_STACK_MAX 语义随迁单源驻本件，
- * store 留数据态+动作接线（调用面经解构注入，名字零 churn）。
+ * [B4 L1 / 设计稿 §5.2/§2.5 #3/#4] lineage-session-ops —— 同步编辑单元 recorder
+ * （自「快照撤销/重做域件」改写：SessionSnapshot 整体退役——历史项=受影响实体
+ * 的可逆命令对，changes=lineage-history-commands 单源构造）。
+ * [F-VISFB-61 拆件] 自 lineage.store 拆出 2026-10-17——store 493 行险位〔v210 §5 挂账「下次触及
+ * 先拆件」〕；先例=AnnotationPopups 拆 annotation-popups-actions。
  *
- * ── 行为层（语义随迁——注释原文自 lineage.store）──
- * - beginUnit＝编辑单元入口：单元前图态快照入 undo 栈+redo 栈清（一单元=一
- *   撤销步——与 mockup §2.2 编辑单元定义同构）；栈深截断 50（INV-23 先例
- *   ——超深丢最旧快照）；saving（flushing）域拒绝（与 undo/redo 闸同型
- *   ——INV-94「saving 态锁定 undo/redo/编辑」）：返回 false=调用方放弃写。
- *   [F-VISFB-61] 快照含 floatingNotes（笔记三操作=编辑单元——撤销维度）。
- * - restore＝快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生：空=
- *   clean）。星标=非撤销维度恒保现值：restore 前捕获现网节点 isStarred
- *   （按 id；paperId null 不捕获），快照落地后 overlay 回贴——「编辑移动入栈
- *   →点星标→Ctrl+Z」星标显示不回退（不与 DB 脱钩）；快照缺 id=该快照后
- *   新增节点的撤销面，保持快照值不贴。边界：redo 复活节点（add→star→undo
- *   →redo）的 isStarred 取快照录制值——录制点早于星标切换的理论窗=该键
- *   缺席，下次 graph 载入自愈（DB 单源重灌——与 undo 泄漏同族自愈类边界，
- *   登记非修复）。
+ * ── 行为层（同步单元边界 beginUnit→登记→enqueue…→commitUnit）──
+ * - runUnit(command, body)：进入即捕获回滚基线（图态四面+queue 引用）；body 内
+ *   经 EditUnit 登记受影响实体（登记时点读 before——须先于该实体的乐观应用）
+ *   并 enqueue 动作；body 返回=提交：
+ *   · changes 由登记项+现值构造（语义 no-op/退化项剔除）；零变化=不入栈、
+ *     不清 redo（no-op 不是编辑单元——RR13「误走 beginUnit 必清 redo」对称锚）；
+ *   · 有变化=历史项入 undo 栈（一单元=一撤销步——与 mockup §2.2 编辑单元定义同构；
+ *     深度 LINEAGE_HISTORY_DEPTH_MAX=10，超深丢最旧）
+ *     +redo 栈清+unfinalized 置真+editRevision+1（U 轴单写点之一——§2.5 #3）
+ *     +过期历史标记清（[用户裁决 R11；回炉 W-D2a]：新单元必然让标记项离开其方向栈
+ *     顶——undo 方向被新单元压住、redo 方向随 redo 清空——标记失效，入栈时显式置空；
+ *     语义 no-op 不入栈，标记不动）。
+ * - body 抛错=回滚本单元：图态四面与 queue 还原到进入前引用后上抛——不留半项、
+ *   零半成品历史（§2.5 #4）。
+ * - gate（quit/recovery/conflict 冻结、同会话 saving 编辑锁）不在本件：由宿主
+ *   在调用前判定（本件只管单元边界）。
  *
  * ── 接口层 ──
- * - export function createSessionOps(deps: WriteQueueDeps): SessionOps
- *   （set/get 结构注入——宿主=满足 WriteQueueHost 的 zustand store）
+ * - export function createSessionRecorder(deps): { runUnit(command, body) }
+ * - export interface EditUnit（watchNode/watchEdge/watchNote/watchLineTypeNames）
+ *
+ * ── 架构层 ──
+ * - set/get 结构注入（宿主=满足 RecorderHost 的 zustand store 状态面）。
  */
-import type { LineageNode } from '@shared/models/lineage'
-import type { SessionSnapshot, WriteQueueDeps } from './lineage-write-queue'
+import type { LineageEditCommandKind } from '@shared/ipc/lineage-history.schemas'
+import type { FloatingNote, LineageEdge, LineageNode } from '@shared/models/lineage'
+import type { WriteAction } from '@shared/recovery/schemas'
+import {
+  buildChanges,
+  historyEntryOf,
+  pushHistory,
+  type HistoryEntity,
+  type WatchSpec,
+  type WatchedEntity
+} from './lineage-history-commands'
+import type { LineageHistoryEntry } from './lineage-session-model'
+import type { LineageStaleHistory } from './lineage-history-stale'
 
-export interface SessionOps {
-  /** 编辑单元入口（单元前快照入 undo 栈+redo 清；flushing 拒绝返回 false） */
-  beginUnit(): boolean
-  /** 快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生） */
-  restore(snap: SessionSnapshot, pushTo: 'undo' | 'redo'): void
+/** 编辑单元内的登记面（须在该实体的乐观应用前调用） */
+export interface EditUnit {
+  watchNode(id: string): void
+  watchEdge(id: string): void
+  watchNote(id: string): void
+  watchLineTypeNames(): void
 }
 
-/** [回炉 R20] 撤销栈深度上限（INV-23 先例=50——超深丢最旧快照） */
-const UNDO_STACK_MAX = 50
+export interface RecorderHost {
+  nodes: LineageNode[]
+  edges: LineageEdge[]
+  floatingNotes: FloatingNote[]
+  lineTypeNames: string[]
+  queue: WriteAction[]
+  folderId: string
+  undoStack: LineageHistoryEntry[]
+  redoStack: LineageHistoryEntry[]
+  unfinalized: boolean
+  editRevision: number
+  /** 过期历史标记（会话面有该字段；不含历史出口的宿主夹具可缺省） */
+  staleHistory?: LineageStaleHistory | null
+}
 
-export function createSessionOps(deps: WriteQueueDeps): SessionOps {
-  const { set, get } = deps
+export interface SessionRecorderDeps {
+  get(): RecorderHost
+  set(patch: Partial<RecorderHost>): void
+}
 
-  /** [F-LGRAPH-01②U1] 编辑单元入口：单元前图态快照入 undo 栈+redo 栈清
-   *  （一单元=一撤销步——与 mockup §2.2 编辑单元定义同构）；
-   *  [回炉 R20] 栈深截断 50（INV-23 先例——超深丢最旧快照）；
-   *  [回炉 R5] saving（flushing）域拒绝（与 undo/redo 闸同型——INV-94
-   *  「saving 态锁定 undo/redo/编辑」实现对齐）：返回 false=调用方放弃写 */
-  const beginUnit = (): boolean => {
-    const s = get()
-    if (s.flushing) return false
-    const undoStack = [
-      ...s.undoStack,
-      {
-        nodes: s.nodes,
-        edges: s.edges,
-        lineTypeNames: s.lineTypeNames,
-        queue: s.queue,
-        // [F-VISFB-61] 悬浮笔记入快照轴（三操作=编辑单元——undo/redo 载荷）
-        floatingNotes: s.floatingNotes
-      }
-    ]
-    if (undoStack.length > UNDO_STACK_MAX) undoStack.splice(0, undoStack.length - UNDO_STACK_MAX)
-    set({ undoStack, redoStack: [] })
-    return true
-  }
+export interface SessionRecorder {
+  /** 同步编辑单元边界（见头注行为层）；gate 由调用方先行判定 */
+  runUnit(command: LineageEditCommandKind, body: (unit: EditUnit) => void): void
+}
 
-  /** 快照恢复（undo/redo 共用——saveStatus 按恢复后队列派生：空=clean）。
-   *  [回炉 r1-R2] 星标=非撤销维度恒保现值：restore 前捕获现网节点 isStarred
-   *  （按 id；paperId null 不捕获），快照落地后 overlay 回贴——「编辑移动入栈
-   *  →点星标→Ctrl+Z」星标显示不回退（不与 DB 脱钩）；快照缺 id=该快照后
-   *  新增节点的撤销面，保持快照值不贴。
-   *  [回炉 r2-R16] 边界声明：redo 复活节点（add→star→undo→redo）的
-   *  isStarred 取快照录制值——录制点早于星标切换的理论窗=该键缺席，
-   *  下次 graph 载入自愈（DB 单源重灌——与 undo 泄漏同族自愈类边界，
-   *  登记非修复） */
-  const restore = (snap: SessionSnapshot, pushTo: 'undo' | 'redo'): void => {
-    const s = get()
-    const cur: SessionSnapshot = {
+function readOf(s: RecorderHost, spec: WatchSpec): HistoryEntity | string[] | undefined {
+  if (spec.kind === 'line-type-names') return s.lineTypeNames
+  if (spec.kind === 'node') return s.nodes.find((n) => n.id === spec.id)
+  if (spec.kind === 'edge') return s.edges.find((e) => e.id === spec.id)
+  return s.floatingNotes.find((n) => n.id === spec.id)
+}
+
+export function createSessionRecorder(deps: SessionRecorderDeps): SessionRecorder {
+  const runUnit = (command: LineageEditCommandKind, body: (unit: EditUnit) => void): void => {
+    const s = deps.get()
+    const baseline = {
       nodes: s.nodes,
       edges: s.edges,
+      floatingNotes: s.floatingNotes,
       lineTypeNames: s.lineTypeNames,
-      queue: s.queue,
-      floatingNotes: s.floatingNotes
+      queue: s.queue
     }
-    const starNow = new Map(
-      s.nodes
-        .filter((n) => n.paperId !== null && n.isStarred !== undefined)
-        .map((n) => [n.id, n.isStarred!] as const)
-    )
-    const overlayStar = (nodes: LineageNode[]): LineageNode[] =>
-      nodes.map((n) =>
-        n.paperId !== null && starNow.has(n.id) ? { ...n, isStarred: starNow.get(n.id)! } : n
-      )
-    if (pushTo === 'redo') {
-      set({
-        ...snap,
-        nodes: overlayStar(snap.nodes),
-        undoStack: s.undoStack.slice(0, -1),
-        redoStack: [...s.redoStack, cur],
-        saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
-      })
-      return
+    const watched: WatchedEntity[] = []
+    const watch = (spec: WatchSpec): void => {
+      watched.push({ spec, before: readOf(deps.get(), spec) ?? null })
     }
-    set({
-      ...snap,
-      nodes: overlayStar(snap.nodes),
-      undoStack: [...s.undoStack, cur],
-      redoStack: s.redoStack.slice(0, -1),
-      saveStatus: snap.queue.length > 0 ? 'dirty' : 'clean'
+    const unit: EditUnit = {
+      watchNode: (id) => watch({ kind: 'node', id }),
+      watchEdge: (id) => watch({ kind: 'edge', id }),
+      watchNote: (id) => watch({ kind: 'floating-note', id }),
+      watchLineTypeNames: () => watch({ kind: 'line-type-names' })
+    }
+    try {
+      body(unit)
+    } catch (e) {
+      deps.set(baseline) // 回滚本单元：图态+queue 还原（不留半项）
+      throw e
+    }
+    const changes = buildChanges(watched, (spec) => readOf(deps.get(), spec))
+    if (changes.length === 0) return // 语义 no-op：不入栈不清 redo
+    const after = deps.get()
+    deps.set({
+      undoStack: pushHistory(after.undoStack, historyEntryOf(after.folderId, command, changes)),
+      redoStack: [],
+      unfinalized: true,
+      editRevision: after.editRevision + 1,
+      staleHistory: null // [用户裁决 R11；回炉 W-D2a] 新单元入栈清过期历史标记（见头注）
     })
   }
-
-  return { beginUnit, restore }
+  return { runUnit }
 }

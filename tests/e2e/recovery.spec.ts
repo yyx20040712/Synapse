@@ -19,7 +19,14 @@ import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
+import {
+  bootstrapMigrations,
+  launch,
+  liveDbScript,
+  seedLineageGraph,
+  seedPaperRow,
+  switchLineageGraph
+} from './e2e-env'
 
 const PAPER = { id: 'e2e-rec-root', title: '恢复锚文献', year: 2020 } as const
 /** 槽文件（e2e 种子配方=legacy 布局首启迁移 → 工作区 id=default） */
@@ -388,6 +395,327 @@ test.describe('恢复副本 e2e（F-VISFB-65 单元一）', () => {
       await new Promise((r) => setTimeout(r, 200))
     }
     expect(existsSync(join(userData, SLOT))).toBe(false)
+    await app.close()
+  })
+})
+
+// ── [B4 L2 / 设计稿 §6.3、§8.1/§8.4、§2.5 #39、§12.3] 恢复与多图会话：A2 新增三链 ──
+
+/** 链 1：崩溃前已落库的历史项（删节点）与仍在队列的待写笔记 */
+const REPLAY_NOTE = '恢复只重放队列的笔记正文'
+const REPLAY_GONE = { id: 'e2e-rec-gone', title: '已落库删除文献', year: 2021 } as const
+/** 链 2：甲图=owner（笔记写失败）、乙图=非 owner（删节点照常落库） */
+const OWN_A = { id: 'f-own-a', name: '甲图', paperId: 'e2e-own-a', title: '甲图锚文献', year: 2021 } as const
+const OWN_B = { id: 'f-own-b', name: '乙图', paperId: 'e2e-own-b', title: '乙图锚文献', year: 2022 } as const
+const OWN_B_GONE = { paperId: 'e2e-own-b-gone', title: '乙图被删文献', year: 2022 } as const
+const OWN_NOTE_A = '甲图未落库的笔记正文'
+/** 链 3：替换确认前经落定步入库的新笔记（不在副本内——已落库修改保留在数据库） */
+const SETTLE_NOTE = '落定步入库的新笔记正文'
+/** 链 3 补：落不了库的笔记（写通道抛错——恢复停在落定步） */
+const BLOCK_NOTE = '落不了库的笔记正文'
+
+interface SlotEnvelope {
+  token: string
+  payload: { folderId: string; graph: unknown; queue: unknown[]; draft: unknown }
+}
+
+async function readSlot(userData: string): Promise<SlotEnvelope> {
+  return JSON.parse(await readFile(join(userData, SLOT), 'utf-8')) as SlotEnvelope
+}
+
+/** 幽灵文献行（脉络卡用——不开阅读器；seedPaperRow 同型） */
+async function seedGhost(userData: string, id: string, title: string, year: number): Promise<void> {
+  const sha = createHash('sha256').update(`rec-l2-${id}`).digest('hex')
+  const fileRef = `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`
+  await seedPaperRow(userData, fileRef, sha, title, id, { year })
+}
+
+/** 节点菜单删除（卡消失）——返回被删节点 id */
+async function deleteCard(win: Page, title: string): Promise<string> {
+  const card = win.locator('.tl-card[data-node-id]').filter({ hasText: title })
+  await expect(card).toBeVisible({ timeout: 10_000 })
+  const id = await card.getAttribute('data-node-id')
+  expect(id, '基线节点 id 非空').toBeTruthy()
+  await card.click({ button: 'right' })
+  await expect(win.getByTestId('lineage-node-menu')).toBeVisible()
+  await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '删除节点' }).click()
+  await expect(card).toHaveCount(0, { timeout: 5_000 })
+  return id!
+}
+
+/**
+ * 写失败注入（确定性驱动）：main 侧把悬浮笔记写通道 lineage/upsert-floating-note 重注册为抛错
+ * （lineage.spec T3「写通道 patch 抛错」同型）——该通道的写落不了库、保留在队列可重试；其余
+ * 写通道（如删节点）照常。
+ */
+async function failFloatingNoteWrites(app: ElectronApplication): Promise<void> {
+  await app.evaluate((electronMod) => {
+    const ipcMain = (
+      electronMod as unknown as {
+        ipcMain: { removeHandler(channel: string): void; handle(channel: string, handler: () => Promise<never>): void }
+      }
+    ).ipcMain
+    ipcMain.removeHandler('lineage/upsert-floating-note')
+    ipcMain.handle('lineage/upsert-floating-note', async () => {
+      throw new Error('模拟写库失败（e2e 桩）')
+    })
+  })
+}
+
+test.describe('恢复副本 e2e（B4 L2 回炉 A2 新增三链）', () => {
+  /**
+   * 链 1 [§6.3]：恢复只重放 RecoveryPayload.queue——崩溃前已落库的历史项（删节点后显式保存）不回滚、
+   * 不再执行；内存史不随副本走（恢复后撤销/重做均空）；队列里的待写笔记恰落一次。
+   */
+  test('A2 链1：恢复只重放 RecoveryPayload.queue——已落库的删除不回滚、撤销/重做清空、待写笔记恰落一次', async () => {
+    const userData = await freshDir()
+    await seedGhost(userData, REPLAY_GONE.id, REPLAY_GONE.title, REPLAY_GONE.year)
+    await seedLineageGraph(userData, { nodes: [{ paperId: REPLAY_GONE.id, title: REPLAY_GONE.title, year: REPLAY_GONE.year }] })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await openLineageEdit(win)
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    // ① 已落库历史：删节点→显式保存（撤销栈一项；库内节点已删）
+    const goneId = await deleteCard(win, REPLAY_GONE.title)
+    await expect(saveBtn).toBeEnabled({ timeout: 10_000 })
+    await saveBtn.click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    await expect(win.getByTestId('lineage-undo')).toBeEnabled()
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM lineage_nodes WHERE id = ?', [goneId])).toEqual({
+      c: 0
+    })
+    // ② 待写：新建悬浮笔记入队（1.5s 空闲窗内硬杀——副本携 queue）
+    const tokenBefore = existsSync(join(userData, SLOT)) ? (await readSlot(userData)).token : undefined
+    await createNoteTyping(win, REPLAY_NOTE)
+    await clickBlank(win)
+    await expect(win.locator('.tl-note-text')).toHaveText(REPLAY_NOTE)
+    await waitSlotStable(userData, tokenBefore)
+    const slot = await readSlot(userData)
+    expect(slot.payload.folderId).toBe('__main__')
+    expect(slot.payload.queue.length).toBeGreaterThanOrEqual(1)
+    // 副本不携内存史（§6.3）：载荷键集恰为 folderId/graph/queue/draft
+    expect(Object.keys(slot.payload).sort()).toEqual(['draft', 'folderId', 'graph', 'queue'])
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual(
+      { c: 0 }
+    )
+    await hardKill(userData, app)
+    // ③ 二次启动：确认条携待保存动作→恢复
+    const app2 = await launch(userData)
+    const win2 = await app2.firstWindow()
+    const saveBtn2 = win2.getByTestId('lineage-save-btn')
+    const goneCard2 = win2.locator('.tl-card[data-node-id]').filter({ hasText: REPLAY_GONE.title })
+    await expect(win2.getByTestId('recovery-bar')).toContainText('待保存动作', { timeout: 20_000 })
+    await win2.getByTestId('recovery-restore').click()
+    await expect(win2.locator('.tl-note-text')).toHaveText(REPLAY_NOTE, { timeout: 10_000 })
+    await expect(goneCard2).toHaveCount(0) // 已落库的删除不被副本回滚
+    await win2.getByTestId('lineage-mode-edit').click()
+    await expect(saveBtn2).toBeEnabled({ timeout: 10_000 }) // 队列里的待写笔记仍在
+    await expect(win2.getByTestId('lineage-undo')).toBeDisabled() // 内存史不随副本走
+    await expect(win2.getByTestId('lineage-redo')).toBeDisabled()
+    await saveBtn2.click()
+    await expect(saveBtn2).toBeDisabled({ timeout: 10_000 })
+    await expect(win2.locator('.tl-note-text')).toHaveText(REPLAY_NOTE)
+    await expect(goneCard2).toHaveCount(0)
+    for (let i = 0; i < 50 && existsSync(join(userData, SLOT)); i += 1) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+    expect(existsSync(join(userData, SLOT))).toBe(false)
+    await app2.close()
+    // ④ DB 回读：节点仍已删且只删过一次（历史项未再执行）；笔记恰一行
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM lineage_nodes WHERE id = ?', [goneId])).toEqual({
+      c: 0
+    })
+    expect(
+      await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM deletion_events WHERE entity = ? AND id = ?', [
+        'lineage_nodes',
+        goneId
+      ])
+    ).toEqual({ c: 1 })
+    expect(await liveDbScript(userData, 'all', 'SELECT content FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual([
+      { content: REPLAY_NOTE }
+    ])
+  })
+
+  /**
+   * 链 2 [§8.1/§8.2「B｜A error｜…｜owner=A」行/§8.4「folder 离场失败」]：A（owner）的写落不了库→
+   * owner 留 A；B 的编辑不覆盖唯一副本槽（槽内仍是 A 的载荷）；A 的错误与 B 的编辑分开呈现。
+   * 写失败=main 侧把悬浮笔记写通道重注册为抛错（lineage.spec T3 同型——真实应用内确定性驱动）；
+   * B 的编辑走未打桩的删节点通道，照常落库。
+   */
+  test('A2 链2：A owner 未 flush 成功时 B 不覆槽——副本仍是 A 的载荷；A 错误与 B 编辑分开呈现', async () => {
+    const userData = await freshDir()
+    for (const p of [OWN_A, OWN_B, OWN_B_GONE]) await seedGhost(userData, p.paperId, p.title, p.year)
+    await seedLineageGraph(userData, {
+      folders: [
+        { id: OWN_A.id, name: OWN_A.name },
+        { id: OWN_B.id, name: OWN_B.name }
+      ],
+      nodes: [
+        { paperId: OWN_A.paperId, title: OWN_A.title, year: OWN_A.year, folderId: OWN_A.id },
+        { paperId: OWN_B.paperId, title: OWN_B.title, year: OWN_B.year, folderId: OWN_B.id },
+        { paperId: OWN_B_GONE.paperId, title: OWN_B_GONE.title, year: OWN_B_GONE.year, folderId: OWN_B.id }
+      ]
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await failFloatingNoteWrites(app)
+    await openLineageEdit(win)
+    const errorRow = win.getByTestId('lineage-save-error')
+    const chip = win.getByTestId('recovery-unprotected-chip')
+    // 甲图（A）：新建笔记→认领并写副本（owner=A）→idle flush 撞桩→错误可见（写保留）
+    await switchLineageGraph(win, OWN_A.id, OWN_A.name)
+    await createNoteTyping(win, OWN_NOTE_A)
+    await clickBlank(win)
+    await expect(win.locator('.tl-note-text')).toHaveText(OWN_NOTE_A)
+    await waitSlotStable(userData)
+    const slotA = await readSlot(userData)
+    expect(slotA.payload.folderId).toBe(OWN_A.id)
+    await expect(errorRow).toBeVisible({ timeout: 10_000 })
+    await expect(errorRow).toContainText('模拟写库失败（e2e 桩）')
+    // 切到乙图（A 离场 flush-first 再次失败——owner 留 A）；乙图删节点（未打桩通道）
+    await switchLineageGraph(win, OWN_B.id, OWN_B.name)
+    await expect(errorRow).toHaveCount(0)
+    const bGoneId = await deleteCard(win, OWN_B_GONE.title)
+    // 乙图此刻有未落库写且不是 owner：未受保护 chip（§8.4 末行——单槽只保护一张图）
+    await expect(chip).toBeVisible()
+    await expect(chip).toHaveText('多图有未落库修改：崩溃副本仅保护其中一张图，其余依赖自动落库')
+    // 留出错误覆槽的窗口后回读槽文件：仍是 A 的载荷（B 不覆槽）
+    await win.waitForTimeout(1_500)
+    const slotAfter = await readSlot(userData)
+    expect(slotAfter.payload.folderId).toBe(OWN_A.id)
+    expect(JSON.stringify(slotAfter.payload)).not.toContain(bGoneId)
+    expect(JSON.stringify(slotAfter.payload)).toContain(OWN_NOTE_A)
+    // A 的错误与 B 的编辑分开呈现：回甲图——A 的未落库笔记与错误行都在；乙图无错误行
+    await switchLineageGraph(win, OWN_A.id, OWN_A.name)
+    await expect(win.locator('.tl-note-text')).toHaveText(OWN_NOTE_A)
+    await expect(errorRow).toBeVisible()
+    await switchLineageGraph(win, OWN_B.id, OWN_B.name)
+    await expect(errorRow).toHaveCount(0)
+    await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: OWN_B_GONE.title })).toHaveCount(0)
+    await app.close()
+    // DB 回读：A 的笔记没落库（失败写保留在内存）；B 的删节点已落库
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM floating_notes WHERE folder_id = ?', [OWN_A.id])).toEqual(
+      { c: 0 }
+    )
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM lineage_nodes WHERE id = ?', [bGoneId])).toEqual({
+      c: 0
+    })
+  })
+
+  /**
+   * 链 3 [§6.3 替换守卫/§2.5 #39；目标会话=活动会话]：副本稍后处理后在同一张图上继续编辑——
+   * 有未落定写（打开的笔记草稿）时恢复须**先落定**再单次替换确认（「已保存当前 N 项修改」）；
+   * 仅剩历史（IO clean）时恢复须替换确认，未确认不替换；确认后载入副本、该会话的撤销/重做历史清空；
+   * 落定步已入库的修改保留在数据库。
+   */
+  test('A2 链3：带未落定写/历史的会话先落定并替换确认——未确认不替换；确认后载入副本且历史清空', async () => {
+    const userData = await freshDir()
+    await presetAvailableSlot(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByTestId('recovery-bar')).toBeVisible({ timeout: 20_000 })
+    await win.getByTestId('recovery-defer').click() // 稍后处理→开门可编辑
+    await expect(win.getByTestId('recovery-chips')).toContainText('当前编辑未受保护')
+    await openLineageEdit(win)
+    const noteText = win.locator('.tl-note-text')
+    const dialog = win.getByRole('dialog')
+    // 未落定写：新建笔记且不收口（打开的草稿）
+    await createNoteTyping(win, SETTLE_NOTE)
+    const input = win.locator('.tl-note-input')
+    await expect(input).toHaveValue(SETTLE_NOTE)
+    // 重开确认条：编辑器随冻结收起并把草稿提交入队（W-C 探针实证：重开即见 .tl-note-text、库内尚无行）
+    // ——该写在 1.5s 空闲节拍内仍是队列里的未落定写。紧接着点恢复（同一节拍窗内）：恢复须先落定
+    // （把队列落库）再单次替换确认。节拍窗=设计常量（1.5s idle-flush），不为测试放宽；两下点击
+    // 之间零多余等待。
+    await win.getByTestId('recovery-reopen').click()
+    await expect(win.getByTestId('recovery-bar')).toBeVisible()
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual(
+      { c: 0 }
+    )
+    await win.getByTestId('recovery-restore').click()
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('恢复副本并替换当前图？')
+    await expect(dialog).toContainText('已保存当前')
+    await expect(dialog).toContainText('当前图的撤销/重做历史与未保存标记将被清除，这次替换无法撤销。')
+    // 落定步已入库（确认之前）——库内恰一行
+    expect(await liveDbScript(userData, 'all', 'SELECT content FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual([
+      { content: SETTLE_NOTE }
+    ])
+    await dialog.getByRole('button', { name: '取消', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(win.getByTestId('recovery-bar')).toBeVisible() // 取消=不载入，条保留可重试
+    await expect(noteText).toHaveText(SETTLE_NOTE) // 当前图未被替换
+    // 此时无未落定写、只剩历史：恢复须替换确认（不预先落定——无「已保存」行）
+    await win.getByTestId('recovery-restore').click()
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('用副本替换当前图？')
+    await expect(dialog).not.toContainText('已保存当前')
+    await dialog.getByRole('button', { name: '取消', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(noteText).toHaveText(SETTLE_NOTE)
+    await expect(win.getByTestId('recovery-bar')).toBeVisible()
+    // 确认替换：载入副本（旧副本正文在）；确认条与 chip 收口
+    await win.getByTestId('recovery-restore').click()
+    await expect(dialog).toContainText('用副本替换当前图？')
+    await dialog.getByRole('button', { name: '替换并恢复', exact: true }).click()
+    await expect(noteText).toHaveText(OLD_NOTE, { timeout: 10_000 })
+    await expect(win.getByTestId('recovery-bar')).toHaveCount(0)
+    await expect(win.getByTestId('recovery-chips')).toHaveCount(0)
+    // 该会话的撤销/重做历史随替换清除（#39）
+    await win.getByTestId('lineage-mode-edit').click()
+    await expect(win.getByTestId('lineage-undo')).toBeDisabled()
+    await expect(win.getByTestId('lineage-redo')).toBeDisabled()
+    // 显式保存（首次命令：先和解）：落定步已入库的修改保留在数据库——新笔记随权威图回来，卡片在
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    await expect(saveBtn).toBeEnabled({ timeout: 10_000 })
+    await saveBtn.click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: PAPER.title })).toBeVisible({ timeout: 10_000 })
+    await expect(noteText).toHaveText(SETTLE_NOTE)
+    await app.close()
+    expect(await liveDbScript(userData, 'all', 'SELECT content FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual([
+      { content: SETTLE_NOTE }
+    ])
+  })
+
+  /**
+   * 链 3 补充（落定步的失败分支）：有未落定写且落不了库时，恢复停在落定步——不弹确认、不替换，
+   * 确认条保留可重试；当前图与库态不变。写失败=悬浮笔记写通道抛错（确定性驱动，见
+   * failFloatingNoteWrites）。
+   */
+  test('A2 链3补：落定不了的会话——恢复停在落定步，不弹确认、不替换', async () => {
+    const userData = await freshDir()
+    await presetAvailableSlot(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByTestId('recovery-bar')).toBeVisible({ timeout: 20_000 })
+    await win.getByTestId('recovery-defer').click()
+    await expect(win.getByTestId('recovery-chips')).toContainText('当前编辑未受保护')
+    await failFloatingNoteWrites(app)
+    await openLineageEdit(win)
+    const noteText = win.locator('.tl-note-text')
+    const dialog = win.getByRole('dialog')
+    const restoreBtn = win.getByTestId('recovery-restore')
+    const bar = win.getByTestId('recovery-bar')
+    // 未落定写：笔记入队后 idle flush 撞桩——写保留在队列（落不了库）
+    await createNoteTyping(win, BLOCK_NOTE)
+    await clickBlank(win)
+    await expect(noteText).toHaveText(BLOCK_NOTE)
+    const errorRow = win.getByTestId('lineage-save-error')
+    await expect(errorRow).toBeVisible({ timeout: 10_000 })
+    await expect(errorRow).toContainText('模拟写库失败（e2e 桩）')
+    await win.getByTestId('recovery-reopen').click()
+    await expect(bar).toBeVisible()
+    await restoreBtn.click()
+    // 落定步失败：留出窗口后——无确认框、确认条仍在且可重试、当前图未被替换、库内无该笔记
+    await win.waitForTimeout(1_000)
+    await expect(dialog).toHaveCount(0)
+    await expect(bar).toBeVisible()
+    await expect(restoreBtn).toBeEnabled()
+    await expect(noteText).toHaveText(BLOCK_NOTE)
+    expect(await liveDbScript(userData, 'get', 'SELECT COUNT(*) AS c FROM floating_notes WHERE folder_id = ?', ['__main__'])).toEqual(
+      { c: 0 }
+    )
     await app.close()
   })
 })

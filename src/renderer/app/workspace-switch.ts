@@ -5,17 +5,21 @@
  * ── 行为层（§2.5 #38）──
  * - 全量 flush：notes 全量立存（flushAllNow）→ 批注/总评挂载句柄全量 flush
  *   （并行 await；终态查态——fulfilled≠落库）→ 悬浮笔记草稿 fire-first commit
- *   → lineage 写队列正道收口（saveStatus≠clean 才 await save()——不旁路队列）。
+ *   → [B4 L2] lineage=全 registry：拖拽两态有界收口→取消 idle timer→有未落定写
+ *   的会话各自 await save()（写队列正道——不旁路队列；等待名单=Q∨在途 F∨error——
+ *   [回炉 W-B2·R-B3] history-unit/和解读在途的会话必在其中，#38「全量 flush 成功」
+ *   含在途链任务落定）。
  * - reader 各打开 tab 的写链 drain（tab-write-lane）：在途 history-unit 与普通写
  *   属 IO（§2.5 #38「全量 flush 成功」含在途链任务）——清史前落定，在途 undo/redo
  *   的回显先写回原 tab；
  * - 查态（IO 单源——U 不参与）：任一面仍 IO 脏 → false（留旧课题：不 switch、
- *   不清任何历史/草稿——失败零副作用，可重试）。
- * - 全 IO clean → 清全部内存历史（reader 两层历史+操作栈+U、lineage 快照栈）
- *   与 focusSet（§2.5 #38「清全部 H/R/U/focusSet」——reload 前归零），返回
- *   true；随后调用方（workspace.store.switchTo）release→switch→reload。
- * - lineage 侧本阶段只有单图旧机制（L2 再扩 per-folder registry——编排按
- *   单图版接：saveStatus/快照栈/focusSet 单槽）。
+ *   不清任何历史/草稿——失败零副作用，可重试）。[回炉 W-B2b] 编辑器已卸载的草稿残留
+ *   （无收口句柄）在 ③ 之后经内部 settle 写路径落库（lineage-note-draft-settle）——
+ *   否则残留会让本段恒返回 false 而用户在课题页看不到任何提示。
+ * - 全 IO clean → 清全部内存历史（reader 两层历史+操作栈+U、lineage 全 registry
+ *   会话——历史/U/queue/focusSet 随 resetWorkspace 全清，§2.5 #38「清全部
+ *   H/R/U/focusSet」——reload 前归零），返回 true；随后调用方
+ *   （workspace.store.switchTo）release→switch→reload。
  *
  * ── 接口层 ──
  * - export async function prepareWorkspaceSwitch(): Promise<boolean>
@@ -25,13 +29,15 @@
  */
 import { useNotesStore } from '../features/notes/notes.store'
 import { useReaderStore } from '../features/reader/state/reader.store'
-import { useLineageStore } from '../features/lineage/lineage.store'
-import { useLineageViewStore } from '../features/lineage/lineage-view.store'
+import { lineageRegistry } from '../features/lineage/lineage-session-registry'
+import { ioUnsettled } from '../features/lineage/lineage-io-phase'
+import { useWorkspaceStore } from '../features/workspaces/workspace.store'
 import {
   allDraftFlushHandles,
   hasPendingAnnotationDrafts
 } from '../features/reader/interact/annotation-draft-registry'
-import { fireLineageNoteCommit, noteDraftPending } from '../features/lineage/lineage-note-draft'
+import { fireLineageNoteCommit, hasNoteDraftFlushHandle, noteDraftPending } from '../features/lineage/lineage-note-draft'
+import { settleNoteDraftResidual } from '../features/lineage/lineage-note-draft-settle'
 import { laneDrain } from '../shared/tab-write-lane'
 
 /** 挂载句柄全量 flush（异常归 'failed'——查态面统一） */
@@ -54,7 +60,7 @@ function allIoClean(): boolean {
   const reader = useReaderStore.getState()
   if (reader.order.some((id) => reader.tabs[id]?.dirty === true)) return false
   if (hasPendingAnnotationDrafts()) return false
-  if (useLineageStore.getState().saveStatus !== 'clean') return false
+  if (lineageRegistry.ioDirty()) return false
   if (noteDraftPending()) return false
   return true
 }
@@ -72,19 +78,27 @@ export async function prepareWorkspaceSwitch(): Promise<boolean> {
   if (!handlesClean) return false
   // ③ 悬浮笔记编辑草稿 fire-first commit（入队后由 ④ 正道落库）
   fireLineageNoteCommit()
-  // ④ lineage 写队列正道收口（≠clean 才发起；不旁路队列）
-  const lineageBefore = useLineageStore.getState()
-  if (lineageBefore.saveStatus !== 'clean') {
-    await lineageBefore.save()
-  }
+  // [回炉 W-B2b] 编辑器已卸载的草稿残留（无收口句柄——③ no-op）：经内部 settle 写路径落库后再查态
+  if (!hasNoteDraftFlushHandle()) await settleNoteDraftResidual()
+  // ④ [B4 L2] lineage 全 registry 收口：两态有界先行→取消 idle timer→各会话正道 flush
+  await Promise.all(lineageRegistry.sessions().map((entry) => lineageRegistry.awaitDragSettle(entry.key)))
+  lineageRegistry.cancelAllIdle()
+  // 等待名单=IO 未落定的会话（Q∨F∨error）——[回炉 W-B2·R-B3] 含 history-unit/和解读在途（F）
+  await Promise.all(
+    lineageRegistry
+      .sessions()
+      .filter((entry) => ioUnsettled(entry.data))
+      .map((entry) => entry.lane.save())
+  )
   // ⑤ reader 各打开 tab 的写链 drain：在途 history/普通写属 IO——清史前落定
   //    （§2.5 #38；各 tab 链互不阻塞，并行等待）
   await Promise.all(useReaderStore.getState().order.map((id) => laneDrain(id)))
   // ⑥ 查态：任一面仍 IO 脏 → 留旧课题（失败零副作用）
   if (!allIoClean()) return false
-  // ⑦ 清全部内存历史/U/focusSet（§2.5 #38；reload 前归零——成功路径独占）
+  // ⑦ 清全部内存历史/U/focusSet（§2.5 #38；reload 前归零——成功路径独占）：
+  //    [B4 L2] lineage=全 registry reset（全部会话历史/U/queue/focusSet 清+owner
+  //    发布面由 prepareRecoveryWorkspaceSwitch 归 null——§8.4 行 10）
   useReaderStore.getState().close()
-  useLineageStore.setState({ undoStack: [], redoStack: [] })
-  useLineageViewStore.getState().clearFocus()
+  lineageRegistry.resetWorkspace(useWorkspaceStore.getState().currentId)
   return true
 }

@@ -23,6 +23,7 @@
 import { randomUUID } from 'node:crypto'
 import type { FloatingNote, FloatingNoteUpsert } from '../../../shared/models/lineage'
 import type { SqliteDb } from '../connection'
+import { monotonicUpdatedAt } from './updated-at-guard'
 
 /** 行形状（列名蛇形——DB 原样） */
 interface FloatingNoteRow {
@@ -37,7 +38,9 @@ interface FloatingNoteRow {
 
 /** 读面显式列清单（与 FloatingNoteRow 字段集一一对应——[db-C3] SELECT *
  *  收口：防后续迁移加列致行形状漂移；papers.repo SELECT_COLS 先例同型） */
-const FLOATING_NOTE_COLS = 'id, folder_id, x, y, content, created_at, updated_at'
+/** 读面显式列清单——导出供 lineage-history.repo（history-unit 精确恢复读行）复用：
+ *  同值双常量禁分文件各写一份（quality 第 7 段） */
+export const FLOATING_NOTE_COLS = 'id, folder_id, x, y, content, created_at, updated_at'
 
 const toNote = (r: FloatingNoteRow): FloatingNote => ({
   id: r.id,
@@ -62,12 +65,14 @@ export interface FloatingNotesRepo {
 }
 
 export function createFloatingNotesRepo(db: SqliteDb): FloatingNotesRepo {
+  // [B4 L1 §7.5 普通写点守卫] UPDATE 分支 updated_at=写点单调守卫值（公式单源=
+  // updated-at-guard.ts；INSERT 分支原样写调用方 now）
   const upsertStmt = db.prepare(
     `INSERT INTO floating_notes (id, folder_id, x, y, content, created_at, updated_at)
      VALUES (@id, @folderId, @x, @y, @content, @now, @now)
      ON CONFLICT(id) DO UPDATE SET
        folder_id = excluded.folder_id, x = excluded.x, y = excluded.y,
-       content = excluded.content, updated_at = excluded.updated_at`
+       content = excluded.content, updated_at = ${monotonicUpdatedAt('floating_notes')}`
   )
   const byIdStmt = db.prepare(`SELECT ${FLOATING_NOTE_COLS} FROM floating_notes WHERE id = ?`)
   const removeStmt = db.prepare(`DELETE FROM floating_notes WHERE id = ?`)

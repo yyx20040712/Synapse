@@ -31,7 +31,7 @@ export interface TimelineCallbacks {
    *  =申报）。[F-UIRES-03 C3] 改月回调 prop 随改链退役删除（INV-107）；
    *  卡双击链（onNodeDblClick）随 v1.7 双击退役删除（全应用唯一保留双击=
    *  详情面板片段条目——B2 终态） */
-  onReorderMonthSlots?: (nodeIds: string[]) => void
+  onReorderMonthSlots?: (nodeIds: string[], target: { folderId: string; generation: number; dragId: string }) => void
 }
 
 /** [F-VISFB-22 P2 闸②] 聚焦三派生（自 LineageTimeline 迁驻——行为零变）：

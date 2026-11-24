@@ -128,23 +128,33 @@ describe('F-LGRAPH-01②U8 repo：恒 manual 落库+视觉列往返+色行名 KV
     expect(edge!.color).toBe(LINE_TYPE_COLORS[0])
   })
 
-  it('色行名 KV：缺省=6×待命名；整批替换往返；旧 lineTypes 四组键残留不炸（键分离）', () => {
+  it('色行名 KV（[B4 L1 D2] 按 folder 键）：缺省=6×待命名；整批替换往返；旧 lineTypes 四组键残留不炸（键分离）；分夹互不串扰', () => {
     boot()
-    expect(repo.getLineTypeNames()).toEqual(defaultLineTypeNames())
-    repo.setLineTypeNames(['主线', '', '对比', '支撑', '', '否证'])
-    expect(repo.getLineTypeNames()).toEqual(['主线', '', '对比', '支撑', '', '否证'])
+    expect(repo.getLineTypeNames('__main__')).toEqual(defaultLineTypeNames())
+    repo.setLineTypeNames('__main__', ['主线', '', '对比', '支撑', '', '否证'])
+    expect(repo.getLineTypeNames('__main__')).toEqual(['主线', '', '对比', '支撑', '', '否证'])
+    // D2：另一 folder 同键族独立（A/B 图色行名历史不互相冲突）
+    db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-b', '夹乙', 1)`).run()
+    repo.setLineTypeNames('f-b', ['乙线', '待命名', '待命名', '待命名', '待命名', '待命名'])
+    expect(repo.getLineTypeNames('f-b')[0]).toBe('乙线')
+    expect(repo.getLineTypeNames('__main__')[0]).toBe('主线')
     // 旧键残留（存量库 010 迁移 seed 行）=死数据不读
     db.prepare(`INSERT OR REPLACE INTO lineage_graph_meta (key, value, updated_at) VALUES ('lineTypes', '[{"base":"tree","subs":[]}]', 't')`)
       .run()
-    expect(repo.getLineTypeNames()).toEqual(['主线', '', '对比', '支撑', '', '否证'])
+    expect(repo.getLineTypeNames('__main__')).toEqual(['主线', '', '对比', '支撑', '', '否证'])
   })
 
-  it('色行名读面容错：损坏 JSON/非法形状→缺省 6 行（样式配置降级不炸图读——via 容错同精神）', () => {
+  it('色行名读面容错：损坏 JSON/非法形状→缺省 6 行（样式配置降级不炸图读——via 容错同精神）；旧共享键残留不读', () => {
     boot()
-    db.prepare(`INSERT INTO lineage_graph_meta (key, value, updated_at) VALUES ('lineTypeNames', '{bad', 't')`).run()
-    expect(repo.getLineTypeNames()).toEqual(defaultLineTypeNames())
-    db.prepare(`UPDATE lineage_graph_meta SET value = '["a"]' WHERE key = 'lineTypeNames'`).run()
-    expect(repo.getLineTypeNames()).toEqual(defaultLineTypeNames())
+    db.prepare(`INSERT INTO lineage_graph_meta (key, value, updated_at) VALUES ('lineTypeNames:__main__', '{bad', 't')`).run()
+    expect(repo.getLineTypeNames('__main__')).toEqual(defaultLineTypeNames())
+    db.prepare(`UPDATE lineage_graph_meta SET value = '["a"]' WHERE key = 'lineTypeNames:__main__'`).run()
+    expect(repo.getLineTypeNames('__main__')).toEqual(defaultLineTypeNames())
+    // [B4 L1 D2] 旧共享键（迁移 027 前形态）残留=死数据不读；removeMeta 删行
+    db.prepare(`INSERT INTO lineage_graph_meta (key, value, updated_at) VALUES ('lineTypeNames', '["旧"]', 't')`).run()
+    expect(repo.getLineTypeNames('__main__')).toEqual(defaultLineTypeNames())
+    expect(repo.removeMeta('lineTypeNames')).toBe(1)
+    expect(repo.removeMeta('lineTypeNames')).toBe(0)
   })
 })
 
@@ -176,13 +186,16 @@ describe('F-LGRAPH-01②U8 service：守卫重整（环/重边/悬空保留·ref
 
   it('upsertLineTypeNames：恰 6+空名归一「待命名」+graph 读面同源', () => {
     boot()
-    const saved = svc.upsertLineTypeNames(['主线', '  ', '对比', '支撑', '', '否证'])
+    const saved = svc.upsertLineTypeNames('__main__', ['主线', '  ', '对比', '支撑', '', '否证'])
     expect(saved[1]).toBe(LINE_TYPE_DEFAULT_NAME)
     expect(saved).toEqual(['主线', '待命名', '对比', '支撑', '待命名', '否证'])
     expect(svc.graph().lineTypeNames).toEqual(saved)
+    // [B4 L1 D2] 按 folder 分键：主图键不污染他夹；并集读缺省取主图键
+    expect(svc.upsertLineTypeNames('f-b', ['乙', '待命名', '待命名', '待命名', '待命名', '待命名'])[0]).toBe('乙')
+    expect(svc.graph().lineTypeNames).toEqual(saved)
     let code = ''
     try {
-      svc.upsertLineTypeNames(['a', 'b', 'c'])
+      svc.upsertLineTypeNames('__main__', ['a', 'b', 'c'])
     } catch (e) {
       code = (e as { code: string }).code
     }
@@ -191,9 +204,9 @@ describe('F-LGRAPH-01②U8 service：守卫重整（环/重边/悬空保留·ref
 })
 
 describe('F-LGRAPH-01②U8 迁移 014（edges 视觉列 NOT NULL DEFAULT——存量零迁移归一）', () => {
-  it('新库 user_version=26（[F-SNAPCLEAN-01] 基线压缩后链尾）；直插无视觉列旧行读面归一（不炸）', () => {
+  it('新库 user_version=28（[F-SNAPCLEAN-01] 基线压缩后链尾 26；[B4 L1] 027/028 落链后 28）；直插无视觉列旧行读面归一（不炸）', () => {
     boot()
-    expect(readUserVersion(db)).toBe(26)
+    expect(readUserVersion(db)).toBe(28)
     db.prepare(
       `INSERT INTO lineage_edges (id, from_node, to_node, label, kind, created_at, updated_at)
        VALUES ('e-old', ?, ?, '', 'tree', 't', 't')`

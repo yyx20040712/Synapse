@@ -40,6 +40,25 @@ export const MENU_ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-
  * 手写字面量非结构性单源——schema 枚举变更时 tsc 兜底切断]）。[B1 暗色退役]
  * 两主题；文案=v2 设计稿设置卡片标题原文（正常模式/护眼模式）。
  */
+/**
+ * [B4 L2 §8.4 末行] 多图未落库诚实 chip 文案（recovery 呈现件与决策文案件共用——
+ * 单槽一次只保护一张图的限制外显；其余会话依靠 1.5s/切换/退出 flush）
+ */
+export const RECOVERY_UNPROTECTED_CHIP_TEXT = '多图有未落库修改：崩溃副本仅保护其中一张图，其余依赖自动落库'
+/**
+ * [回炉 W-B3·R-D1 / 用户裁决 D-1＝甲、适用面补充裁决＝乙] 过期历史出口文案（LineageStaleHistoryDrop——
+ * 保存错误行内的动作钮与确认框）：撤销/重做被 history-unit 以 CONFLICT 拒绝后，栈顶这条历史项永久
+ * 不可达（后进先出，其下更旧的历史都撤不到）。丢弃只从内存的撤销/重做历史里移除栈顶这一条，须
+ * 用户点击并确认（不静默自动跳过），不写数据库
+ */
+export const LINEAGE_STALE_DROP_ACTION = '丢弃这条过期历史'
+/** 确认框标题 */
+export const LINEAGE_STALE_DROP_TITLE = '丢弃这条过期历史？'
+/** 确认钮文案（确认才移除；取消／关闭／Escape＝不丢弃） */
+export const LINEAGE_STALE_DROP_CONFIRM = '丢弃'
+/** 确认框说明行（首行＝main 返回的具体拒因消息，原文显示） */
+export const LINEAGE_STALE_DROP_NOTE = '只从内存的撤销/重做历史里移除栈顶这一条，不写数据库；移除后更早的历史可以继续撤销/重做。'
+
 export const THEME_LABEL: Record<AppSettings['theme'], string> = {
   light: '正常模式',
   sepia: '护眼模式'

@@ -65,8 +65,8 @@ beforeEach(() => {
 // ── 迁移 007：tags 列死置锚（[A1b] 应用面退役、DDL 待 D 批清列） ──
 
 describe('F-LG14 迁移 007（lineage_nodes.tags——[A1b] 死置列）', () => {
-  it('版本接续：新库全量 user_version=26（[F-SNAPCLEAN-01] 基线压缩后链尾——旧链 version 7 断言随压缩退役）', () => {
-    expect(readUserVersion(db)).toBe(26)
+  it('版本接续：新库全量 user_version=28（[F-SNAPCLEAN-01] 基线压缩后链尾 26；[B4 L1] 027/028 落链后 28——旧链 version 7 断言随压缩退役）', () => {
+    expect(readUserVersion(db)).toBe(28)
   })
 
   it('tags 列在场（TEXT 可空——死置保留清列归 D 批）；存量行零迁移可读且 DTO 无 tags 键（[A1b] 读面不映射）', () => {

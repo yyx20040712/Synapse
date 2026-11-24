@@ -266,7 +266,9 @@ const VALID: Record<string, unknown[]> = {
     { from: 'a', to: 'c', label: 'L', dashed: true, color: '#c07a2a' } // [F-LGRAPH-01②U8] 视觉内联
   ],
   lineageUpsertLineTypesReqSchema: [
-    ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'] // [②U8] 色行名恰 6
+    // [B4 L1 D2] {folderId, names}——色行名按 folder 键存储（names 恰 6=②U8）
+    { folderId: '__main__', names: ['主线', '待命名', '待命名', '待命名', '待命名', '待命名'] },
+    { folderId: 'f-a', names: ['主线', '副线', '对比', '支撑', '衍生', '否证'] }
   ],
   corpusReqSchema: [{ paperId: 'p1' }],
   tagWithCountSchema: [

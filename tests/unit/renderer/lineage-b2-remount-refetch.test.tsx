@@ -20,6 +20,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageEdge, LineageNode } from '../../../src/shared/models/lineage'
 import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
+import { resetLineageSessionsForTests } from './lineage-test-session-reset'
 
 const stubApi = makeApiStub({
   lineage: { graph: vi.fn() },
@@ -108,6 +109,7 @@ beforeEach(() => {
     ]
   })
   // 模块级 store 跨用例存留：显式复位（lineage-timeline-page.test.tsx 配方同族）
+  resetLineageSessionsForTests() // [回炉 W-B1·R-B4] 跨用例不复用旧会话（f-x 缓存会话——原由植入隐式清空承担）
   useLineageStore.setState({
     nodes: [],
     edges: [],
@@ -192,7 +194,7 @@ describe('[B2] 同图跳过判据的互斥守卫（全程保持绿——实现�
     expect(useLineageStore.getState().folderId).toBe('f-x')
   })
 
-  it('手工同值重选当前图仍重取（setFolder 无同值守卫——本批语义不改，B4/B5 再统一）', async () => {
+  it('[B4 L2 断言翻转] 手工同值重选=既有会话不双取（§8.3 返回不双取——原「setFolder 恒重取」随 registry 化退役）', async () => {
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
     mount(<LineagePage />)
     await flush()
@@ -202,11 +204,8 @@ describe('[B2] 同图跳过判据的互斥守卫（全程保持绿——实现�
       useLineageStore.getState().setFolder('__main__')
     })
     await flush()
-    expect(
-      stubApi.lineage.graph,
-      'setFolder 同值直调=仍重取（挂载编排层跳过≠store 动作守卫——两向互斥）'
-    ).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.graph).toHaveBeenCalledWith({ folderId: '__main__' })
+    expect(stubApi.lineage.graph, '同值重选=零 graph IPC（needsReload=0 的既有会话）').not.toHaveBeenCalled()
+    expect(host?.textContent).toContain('扩散模型起点') // 会话驻留数据照常渲染
   })
 
   it('needsReload=true（INV-175 和解位未清）同图挂载仍重取', async () => {

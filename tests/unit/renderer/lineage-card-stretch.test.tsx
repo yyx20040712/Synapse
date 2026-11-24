@@ -201,7 +201,7 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     expect(reorder).not.toHaveBeenCalled()
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   // [B3 §9/§13 commit B 门] 松手终态=更新后分布（现状守卫绿，非新红例——随批申报新增）：
@@ -224,6 +224,6 @@ describe('[lnfix2] 月框下拉扩展（冻结基准贯通——stretch 稳定�
     expect(card.style.left, 'left=target−frameOrigin12（INV-96 补偿域）').toBe('296px')
     expect(card.style.top).toBe('0px')
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 })

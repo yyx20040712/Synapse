@@ -1,10 +1,16 @@
 /**
+ * [F-VISFB-65 U5 → F-RECOV-01 → B4 L2 拆件] recoveryScheduler —— 单槽副本调度器薄核心：
+ * 只留 token/gen 与组合装配（[B4 L2 §11.2] owner 逻辑外移=recovery-owner；降级/探针/退避/
+ * 看门狗=recovery-probe-controller；clean·drain·release·workspace reset=recovery-clean-
+ * lifecycle；确认条决策族=recoveryEntry+recovery-restore-flow；宿主装配=recovery-host-ports；
+ * [回炉 W-D2b 拆件] 单槽写面 pump=recovery-dispatch；触发面/订阅/状态读面/clean·ws-entry 门面与
+ * 装配入参契约=recovery-scheduler-triggers）。
  * [F-VISFB-65 U5 → F-RECOV-01] recoveryScheduler —— 脉络暂存会话恢复副本调度器
  * （写面+门面；ws-entry 屏障/确认条族委托 recoveryEntry——W6 拆件；store-free
  * 模块单例：workspaceId/快照/载入/水化/路由全部注入，与 lineage.store 双向零环）。
  *
  * ── 行为面（状态机=轴1 scheduler{idle,armed,writing,coalescing,clean-released,
- *    degraded}×轴2 gate{open,frozen}×轴3 health{ok,slow,stuck}——跨格不变量逐条）──
+ *    degraded}×轴2 gate{open,frozen}×轴3 health{ok,slow,stuck}——跨格不变量见各拆件头注）──
  * - 触发面：编辑单元（enqueue 后）/草稿内容变更/出队 saveNow/恢复 takeOver。
  *   写频=300ms trailing 节流+单飞行+最新快照合流；出队 saveNow 不节流即时发。
  * - [F-RECOV-01] 常态写无硬超时（红线①慢盘不误判丢稿——永不取消 op、永不因
@@ -33,22 +39,21 @@
  *   冻结直到决策；peek 失败=fail-open 开门+degraded（详见 recoveryEntry 头注）。
  * - 退出窗（§4）：强退=最后 saveNow 尽力不 release；clean 收口链
  *   awaitRecoveryQuitSettled（release 自带 1500ms 界 fail-open）。
+ * - [B4 L2 §8] owner 接线：dispatch 目标=owner 状态机（认领/owner 键快照——多 folder
+ *   单槽归属）；owner 装配（init.owner）后 markRecoveryClean 按会话归属裁决（非 owner
+ *   会话的 clean 不动槽）；切换离场（notifyRecoveryDepart）置 ownershipTransferPending；
+ *   takeOver 成功（entry onTakeOver）→owner adopt。
+ * - ws-entry 屏障/退出窗/确认条族=recoveryEntry 门面；恢复流程体=recovery-restore-flow。
  * - 未装配（inited=假）：一切入口 no-op、blocked() 恒假（存量单测兼容）。
  */
 import { api, unwrap } from '../../api/client'
-import {
-  createRecoveryEntry,
-  RECOVERY_TYPE,
-  type PreflightOutcome,
-  type RecoveryUiState,
-  type RestoreDecision,
-  type SchedulerPorts,
-  type SettleUnsettledResult
-} from './recoveryEntry'
-import { cleanReleaseBlocked } from './recovery-clean-gate'
-import { backoffDelayMs, backoffExhausted, probeDelayMs, probeRestartHint, withTimeout } from './recoveryBackoff'
-import { createRecoveryWatchdog, type WatchdogOutcome } from './recoveryWatchdog'
-import type { LineageRecoveryPayload } from '@shared/recovery/schemas'
+import { withTimeout } from './recoveryBackoff'
+import { createRecoveryEntry, RECOVERY_TYPE, type RecoveryUiState, type SchedulerPorts } from './recoveryEntry'
+import { createRecoveryOwner, type RecoveryOwner } from './recovery-owner'
+import { createProbeController, type ProbeController } from './recovery-probe-controller'
+import { createCleanLifecycle, type CleanLifecycle } from './recovery-clean-lifecycle'
+import { createRecoveryDispatch, type RecoveryDispatch } from './recovery-dispatch'
+import { createSchedulerTriggers, type RecoverySchedulerInit } from './recovery-scheduler-triggers'
 
 export type {
   RecoveryPhase,
@@ -59,37 +64,8 @@ export type {
   SettleUnsettledResult
 } from './recoveryEntry'
 export type { PreflightConflict, PreflightView } from './recovery-restore-preflight'
-
-const TRAILING_MS = 300
-const QUIT_TIMEOUT_MS = 1500
-
-export interface RecoverySchedulerInit {
-  workspaceId(): string
-  /** 当前可保存快照（clean 会话返 null——未编辑会话零恢复面写） */
-  snapshot(): LineageRecoveryPayload | null
-  /** 恢复载入 store（置 dirty+两栈清——宿主=lineage.store.applyRecoverySession） */
-  loadPayload(payload: LineageRecoveryPayload): void
-  /** 载入+接管完成后回调（草稿再水化计划驻宿主） */
-  onRestored(payload: LineageRecoveryPayload): void
-  openLineageView(): void
-  /** [回炉 W5] 放弃分支清恢复态 store（宿主=lineage.store.discardSession——
-   *  再保存不复活已弃会话；仅恢复流程内调用，defer 后不再清） */
-  discardLoadedSession(): void
-  /** [F-RECOV-04] 未落定写谓词（覆盖守卫判定源——queue 非空∨草稿在∨flushing；
-   *  缺省=fail-open 无未落定写，旧测试夹具兼容） */
-  hasUnsettledWrites?(): boolean
-  /** [F-RECOV-04] 恢复决策询问（确认框承载；缺省行为见 recoveryEntry 头注缺省表） */
-  askRestoreDecision?(decision: RestoreDecision): Promise<boolean>
-  /** [回炉 B-2] 落定当前会话写（草稿经既有 commit 入口转队列+flush+落定四条件
-   *  核验 clean∧!flushing∧queue 空∧草稿无；false=落定失败停条可重试不自动续；
-   *  对象形=核验结果+已收口计数——确认文案「已保存当前 N 项修改」数据面） */
-  settleUnsettledWrites?(): Promise<SettleUnsettledResult>
-  /** [F-RECOV-04] 恢复预检（graph/folders 读面装配→纯数据清单；缺省=跳过预检） */
-  runRestorePreflight?(payload: LineageRecoveryPayload): Promise<PreflightOutcome>
-}
-
-type RecoveryHealth = 'ok' | 'slow' | 'stuck'
-type Timer = ReturnType<typeof setTimeout>
+/** [回炉 W-D2b 拆件] 调度器装配入参契约随对外门面迁驻 recovery-scheduler-triggers——此处原名再导出，import 路径不变 */
+export type { RecoverySchedulerInit } from './recovery-scheduler-triggers'
 
 // ── 模块单例态 ──────────────────────────────────────────────
 let inited = false
@@ -101,16 +77,7 @@ let epoch = 0
 let ownToken: string | null = null
 let lastWrittenToken: string | null = null
 let generation = 0
-let trailingTimer: Timer | null = null
-let backoffTimer: Timer | null = null
-let inFlight: Promise<WatchdogOutcome> | null = null
-let needsResend = false
-let immediateResend = false
-let failStreak = 0
 let quitChain: Promise<void> = Promise.resolve()
-// [F-RECOV-01] 轴3 health+探针分账（N7：streak 状态驻本件，纯决策在 backoff 件）
-let health: RecoveryHealth = 'ok'
-let probeFailStreak = 0
 
 let uiState: RecoveryUiState = {
   phase: 'idle',
@@ -121,430 +88,124 @@ let uiState: RecoveryUiState = {
   pendingChip: false,
   degraded: false,
   kind: null,
-  restartHint: false
+  restartHint: false,
+  unprotectedChip: false
 }
 const listeners = new Set<() => void>()
+
+let ownerCtl: RecoveryOwner | null = null
 
 function emit(patch?: Partial<RecoveryUiState>): void {
   if (patch !== undefined) uiState = { ...uiState, ...patch }
   for (const cb of listeners) cb()
 }
 
-function clearTimers(): void {
-  if (trailingTimer !== null) {
-    clearTimeout(trailingTimer)
-    trailingTimer = null
-  }
-  if (backoffTimer !== null) {
-    clearTimeout(backoffTimer)
-    backoffTimer = null
-  }
-}
-
-// ── 呈现/复位 helper（W4 复位表单源）───────────────────────
-
-/** degraded/health/双 streak 全清（成功①②③／gen++／W6① 共用复位面） */
-function clearDegradedAll(): void {
-  health = 'ok'
-  failStreak = 0
-  probeFailStreak = 0
-  watchdog.stopProbe()
-  emit({ degraded: false, kind: null, restartHint: false })
-}
-
-/** slow 仅在途期（W1 轴3）：settle 即归 ok——slow chip 随清（unavailable 锁存/stuck 持久不在此列） */
-function settleResetsSlow(): void {
-  if (health !== 'slow') return
-  health = 'ok'
-  if (uiState.kind === 'slow') emit({ degraded: false, kind: null, restartHint: false })
-}
-
-/** ghost 成功③清后补发检查：滞留快照经 pump 补发；snapshot null=自然空转仅清不补（S8） */
-function resendAfterRecovery(): void {
-  if (inFlight !== null || !snapshotPresentSafe()) return // [C4] 异常=no-op
-  dispatchImmediateSave()
-}
-
-/** [C4] 宿主快照源安全取值：异常=无待保护数据面（禁假告警/零补发——三消费点共用） */
-function snapshotPresentSafe(): boolean {
-  const fns = initFns
-  if (fns === null) return false
-  try {
-    return fns.snapshot() !== null
-  } catch {
-    return false
-  }
-}
-
-/** [F1/onStuck 共用] 探针失败观测记账面（W8：≥3→unavailable+重启缀；否则维持重试确认档） */
-function countProbeFailure(): void {
-  probeFailStreak += 1
-  if (probeRestartHint(probeFailStreak)) {
-    emit({ degraded: true, kind: 'unavailable', restartHint: true })
-  } else if (uiState.kind !== 'unavailable') {
-    emit({ degraded: true, kind: 'stuck-pending', restartHint: false })
-  }
-}
-
-// ── 看门狗 ports（双阈值/ghost/探针调度——计时与调度判定驻 watchdog 件；回炉轮2
-//    探针调度段外移入 watchdog，本面只余裁决/记账/实发回调——streak 驻本件 N7 单源）──
-
-const watchdog = createRecoveryWatchdog({
-  onSlow() {
-    if (inFlight === null) return
-    health = 'slow'
-    // 呈现优先级（§4.4）：unavailable 锁存>stuck-pending>slow——高档在不降级
-    if (uiState.kind === 'unavailable' || uiState.kind === 'stuck-pending') return
-    emit({ degraded: true, kind: 'slow', restartHint: false })
+// ── 单槽写面（recovery-dispatch——单飞/trailing/合流；状态驻该件）──────────
+const dispatch: RecoveryDispatch = createRecoveryDispatch({
+  inited: () => inited,
+  host: () => initFns,
+  ownerCtl: () => ownerCtl,
+  epoch: () => epoch,
+  sessionId: () => sessionId,
+  adoptEpoch: (e) => {
+    epoch = e
   },
-  onStuck(gen, isProbe) {
-    if (gen !== generation) return // R2 同型 gen 守卫（定时器路径防御——gen++ 必杀定时器）
-    // 逻辑弃置（红线①永不取消）：占位解除（新 dispatch 立即可行）；ghost 物理留驻
-    inFlight = null
-    health = 'stuck'
-    if (isProbe) {
-      // W8：hung 探针=失败观测（「重试确认」未达成）；×3→unavailable+重启缀。
-      // [F4] 同一探针「hung 弃置计数+迟到 reject/overflow 计数」=两次独立失败
-      // 观测（保守升级方向——迟到失败在弃置后仍是新观测，不因已计而豁免）
-      countProbeFailure()
-    } else if (uiState.kind !== 'unavailable') {
-      emit({ degraded: true, kind: 'stuck-pending', restartHint: false })
-    }
-    watchdog.armIfEligible()
+  generation: () => generation,
+  setOwnToken: (token) => {
+    ownToken = token
   },
-  onLateSettle(gen, settle) {
-    if (settle.ok) {
-      lastWrittenToken = settle.token // 物理账本无条件记账（含 gen 不符——token 双账本）
-      if (gen !== generation) return // ⑤ gen 不符仅记账
-      ownToken = settle.token
-      if (inFlight !== null) return // ④ 有新在途仅记账（S2b——新在途 settle 后裁决）
-      health = 'ok' // ③ 记账+清+补发检查
-      failStreak = 0
-      probeFailStreak = 0
-      watchdog.stopProbe()
-      emit({ degraded: false, kind: null, restartHint: false })
-      resendAfterRecovery()
-      return
-    }
-    if (gen !== generation) return // R2：失败分支同 gen 判废（探针 ghost reject 不复活已切代表面 streak）
-    if (settle.isProbe && (settle.kind === 'reject' || settle.kind === 'overflow')) {
-      // R3 收窄：仅 reject|overflow 属失败例外族（W2 reject 例外字面——stale/pending 不计；F8 负锚）
-      probeFailStreak += 1 // [F4] 双计语义见 onStuck 注——迟到失败=独立观测
-      if (uiState.degraded && uiState.kind === 'unavailable') {
-        emit({ restartHint: probeRestartHint(probeFailStreak) })
-      }
-    }
-    // 其余 ghost 失败：零簿记（弃置时 degraded 已承载失败语义——重复计费即风暴）
+  setLastWrittenToken: (token) => {
+    lastWrittenToken = token
   },
-  degradedActive: () => uiState.degraded,
-  gateOpen: () => gateOpen,
-  inFlight: () => inFlight !== null,
-  snapshotPresent: snapshotPresentSafe, // [C4] 异常归 false
-  countProbeFailure, // F1：到点核查 ghost 安息计数（streak/呈现驻本件——N7 单源）
-  dispatchProbe() {
-    needsResend = true // immediateResend 语义经 pump 实发（pump 消费 probePending=isProbe 记账）
-    immediateResend = true
-    void pump()
-  },
-  clearDegraded: clearDegradedAll, // W6①
-  nextProbeDelay: () => probeDelayMs(probeFailStreak)
+  probe: () => probe
 })
 
-// ── 写面（节流/单飞/合流/退避+看门狗接线）──────────────────
+// ── 降级/探针/退避/看门狗（recovery-probe-controller）──────────────────────
+const probe: ProbeController = createProbeController({
+  emit,
+  gateOpen: () => gateOpen,
+  degradedActive: () => uiState.degraded,
+  inFlight: dispatch.inFlight,
+  snapshotPresent: dispatch.snapshotPresentSafe, // [C4] 异常归 false
+  currentKind: () => uiState.kind ?? null,
+  clearInFlight: dispatch.clearInFlight, // 单飞不再永占（S13a/S13b）
+  armTrailing: dispatch.armTrailing,
+  dispatchRetry: () => void dispatch.pump(),
+  onLateSavedToken: (token) => {
+    lastWrittenToken = token // 物理账本无条件记账（含 gen 不符——token 双账本）
+  },
+  onLateSavedOwn: (gen, token) => {
+    if (gen !== generation) return // ⑤ gen 不符仅记账
+    ownToken = token
+    if (dispatch.inFlight()) return // ④ 有新在途仅记账（S2b——新在途 settle 后裁决）
+    probe.clearDegradedAll() // ③ 记账+清+补发检查
+    dispatch.resendAfterRecovery()
+  },
+  adoptEpoch: (e) => {
+    epoch = e
+  },
+  isCurrentGen: (gen) => gen === generation
+})
 
-async function dispatchSave(): Promise<WatchdogOutcome> {
-  const fns = initFns
-  if (fns === null) return { kind: 'skipped' }
-  try {
-    // [F3①] snapshot 取值入 try——宿主快照源异常走 reject 收束（p 恒不 reject，不永占不外溢）
-    const payload = fns.snapshot()
-    if (payload === null) return { kind: 'skipped' }
-    // [回炉 W3/F-RECOV-01] 常态写无硬超时（1500ms 界只属确认条动作与退出窗——慢盘不作败）
-    const res = await unwrap(
-      api.recovery.save({
-        workspaceId: fns.workspaceId(),
-        type: RECOVERY_TYPE,
-        epoch,
-        session: sessionId,
-        payload
-      })
-    )
-    if (res.status === 'saved') return { kind: 'saved', token: res.token }
-    if (res.status === 'stale') return { kind: 'stale', epoch: res.epoch }
-    if (res.status === 'queue-overflow') return { kind: 'overflow' } // [F-RECOV-01 N8] 链深满拒
-    return { kind: 'pending' }
-  } catch {
-    return { kind: 'reject' }
-  }
-}
+// ── clean·drain·release·workspace reset（recovery-clean-lifecycle）──────────
+const lifecycle: CleanLifecycle = createCleanLifecycle({
+  inited: () => inited,
+  host: () => initFns,
+  owner: () => ownerCtl,
+  uiState: () => uiState,
+  activeFolder: () => initFns?.owner?.activeFolder() ?? '',
+  currentFlight: dispatch.currentFlight,
+  bumpGenFullReset,
+  tokensForRelease: () => lastWrittenToken ?? ownToken,
+  clearTokens: () => {
+    ownToken = null
+    lastWrittenToken = null
+  },
+  setQuitChain: (p) => {
+    quitChain = p
+  },
+  quitChain: () => quitChain,
+  dispatchImmediateSave: dispatch.dispatchImmediateSave
+})
 
-/** 非 ghost settle 裁决（五行表①②+既有 stale/pending/退避；gen 判废=仅物理账本记账） */
-function applyLiveSettle(outcome: WatchdogOutcome, gen: number, isProbe: boolean): void {
-  if (outcome.kind === 'saved') lastWrittenToken = outcome.token // token 簿记不受 gen 判废（clean 收口取最新）
-  if (gen !== generation) return
-  switch (outcome.kind) {
-    case 'saved':
-      ownToken = outcome.token
-      health = 'ok' // ①②：清 chip+health ok+双 streak 清零（W4 行1）
-      failStreak = 0
-      probeFailStreak = 0
-      watchdog.stopProbe()
-      emit({ degraded: false, kind: null, restartHint: false })
-      return
-    case 'stale':
-      settleResetsSlow()
-      epoch = outcome.epoch
-      armTrailing() // 采纳新 epoch 后按节流重发（自愈单环）
-      return
-    case 'pending':
-      settleResetsSlow()
-      emit({ pendingChip: true }) // 不入任一 streak（既有语义保持）
-      return
-    case 'overflow':
-    case 'reject':
-      if (isProbe) {
-        // 探针失败（W4 行3）：probeFailStreak++、kind=unavailable、health/failStreak 维持
-        probeFailStreak += 1
-        emit({ degraded: true, kind: 'unavailable', restartHint: probeRestartHint(probeFailStreak) })
-        watchdog.armIfEligible()
-        return
-      }
-      settleResetsSlow()
-      scheduleBackoff() // 溢出同 reject 退避路径（§4.5）
-      return
-    case 'skipped':
-      return
-  }
-}
-
-function scheduleBackoff(): void {
-  failStreak += 1
-  if (backoffExhausted(failStreak)) {
-    // 退避终点（N1：第 4 败）→unavailable 锁存+探针臂起（S4 自愈环）
-    emit({ degraded: true, kind: 'unavailable', restartHint: probeRestartHint(probeFailStreak) })
-    watchdog.armIfEligible()
-    return
-  }
-  backoffTimer = setTimeout(() => {
-    backoffTimer = null
-    void pump()
-  }, backoffDelayMs(failStreak))
-}
-
-function armTrailing(): void {
-  if (!inited) return
-  if (inFlight !== null || trailingTimer !== null) {
-    needsResend = true
-    return
-  }
-  trailingTimer = setTimeout(() => {
-    trailingTimer = null
-    void pump()
-  }, TRAILING_MS)
-}
-
-async function pump(): Promise<void> {
-  if (inFlight !== null || !inited) return
-  const gen = generation
-  const isProbe = watchdog.consumeProbePending() // S12b：任何 dispatch 启动清待发探针标（探针驱动置位）
-  // 本次发送即取最新快照——先消费挂起标记（防自触发循环）
-  needsResend = false
-  immediateResend = false
-  const p = dispatchSave()
-  inFlight = p
-  watchdog.watch(p, gen, isProbe)
-  const outcome = await p
-  if (inFlight !== p) {
-    // R4：ghost 续体（T_stuck/gen++ 已弃置）——簿记由 watchdog.onLateSettle 承载，
-    // 尾段不消费新在途的 needsResend/immediateResend 标记（S2c——新在途 settle 后自裁决）
-    return
-  }
-  inFlight = null
-  applyLiveSettle(outcome, gen, isProbe)
-  // 飞行窗内新触发：即时类立即补发（单飞合流），节流类重臂 300ms
-  if (needsResend) {
-    needsResend = false
-    if (immediateResend) {
-      immediateResend = false
-      void pump()
-    } else {
-      armTrailing()
-    }
-  }
-}
-
-/** 即时发（saveNow/强退/ghost③ 补发共用——不节流即时发） */
-function dispatchImmediateSave(): void {
-  if (!inited) return
-  needsResend = true
-  immediateResend = true
-  if (inFlight !== null) return
-  if (trailingTimer !== null) {
-    clearTimeout(trailingTimer)
-    trailingTimer = null
-  }
-  void pump()
-}
-
-/** 编辑单元触发（enqueue 后）——300ms trailing */
-export function notifyRecoveryEditUnit(): void {
-  armTrailing()
-}
-
-/** 草稿内容变更触发（B-02——与编辑单元同节流面） */
-export function notifyRecoveryDraftChange(): void {
-  armTrailing()
-}
-
-/** 出队 saveNow（flush 每动作成功出队后——fire-and-forget 不节流即时发） */
-export function notifyRecoverySaveNow(): void {
-  dispatchImmediateSave()
-}
-
-// ── clean 族（generation 同步先行——INV-161+W4 gen++ 行全量复位）────────────────
-
-/** [R1] gen++ 同步逻辑弃置在途未弃置 flight（转 ghost——迟到 settle 按 gen 判废仅记账；
- *  处置三项=标记 abandoned（watchdog）+清 inFlight+isProbe 计 probeFailStreak（onStuck 同型语义） */
-function abandonInFlightAtGenBump(): void {
-  const r = watchdog.abandonCurrent()
-  if (!r.abandoned) return
-  inFlight = null // 单飞不再永占（S13a/S13b）；drain 捕获 null 不永等
-  if (r.isProbe) probeFailStreak += 1 // hung 探针=失败观测（W8 同判）
-}
+// ── gen++ 族（clean 收口同步先行——INV-161）────────────────────────
 
 function bumpGenFullReset(): number {
   generation += 1 // 同步先行：本 tick 内 pending/trailing 全作废
-  abandonInFlightAtGenBump() // R1：gen++ 语义=同 tick 清一切定时器+弃置在途（INV-161）
-  needsResend = false
-  immediateResend = false
-  clearTimers()
-  health = 'ok'
-  failStreak = 0
-  probeFailStreak = 0 // 残留会假触发重启缀（W4 注；R1 探针弃置计数随全量复位归零）
-  watchdog.reset()
+  dispatch.abandonInFlightAtGenBump()
+  dispatch.clearResendFlags()
+  dispatch.clearTrailing()
+  probe.reset() // 双 streak/health/退避/看门狗全量复位
   emit({ degraded: false, kind: null, restartHint: false })
   return generation
 }
-
-function markCleanAwaitable(reason: 'clean' | 'discard', releaseAllowed: boolean): Promise<void> {
-  const flight = inFlight // 先捕获（bumpGen R1 弃置将清位——bounded drain 沿用该 promise）
-  bumpGenFullReset()
-  const ws = initFns?.workspaceId() ?? ''
-  const chain = (async () => {
-    if (flight !== null) {
-      // [R1/S13b] drain 有界封顶 1500ms（QUIT_TIMEOUT_MS 同族）：被弃置 flight 迟到
-      // settle 经物理账本供给 release token（token 簿记保留）；永挂 flight 不再永等。
-      // [F5] flight 先胜（或先败）时 clearTimeout 界定时器（不留空触发残 timer）
-      await new Promise<void>((resolve) => {
-        const cap = setTimeout(resolve, QUIT_TIMEOUT_MS)
-        void flight.then(
-          () => {
-            clearTimeout(cap)
-            resolve()
-          },
-          () => {
-            clearTimeout(cap)
-            resolve() // reject 同收束——drain 不因 reject 永挂
-          }
-        )
-      })
-    }
-    // [F-RECOV-04 clean-gate] pendingChip 在场=旧槽未决策：release 不发+账本保留
-    // （主控终裁③——本会话新写 token 留驻，后续工作区切换/放弃确认仍可收口 own 槽）；
-    // gen++/写面复位已照旧（INV-161 复位语义不受 gate 影响）
-    if (!releaseAllowed) return
-    const token = lastWrittenToken ?? ownToken
-    ownToken = null
-    lastWrittenToken = null
-    if (token === null || ws === '' || !inited) return
-    try {
-      await withTimeout(
-        unwrap(
-          api.recovery.release({
-            workspaceId: ws,
-            type: RECOVERY_TYPE,
-            token,
-            reason
-          })
-        ),
-        QUIT_TIMEOUT_MS
-      )
-    } catch {
-      // 失败吞接：副本留驻=下次启动屏障兜底（无害恢复族——INV-167）
-    }
-  })()
-  quitChain = chain
-  return chain
-}
-
-/** clean 四源挂点（flush 全成功/undo 回基线/discardSession/退出 clean）——fire-and-forget。
- *  [F-RECOV-04] pendingChip 在场时 gate 拦截 release（recovery-clean-gate 单源判定；
- *  工作区切换域级 release 走 prepareRecoveryWorkspaceSwitch 直连 markCleanAwaitable——豁免） */
-export function markRecoveryClean(reason: 'clean' | 'discard'): void {
-  if (!inited) return
-  void markCleanAwaitable(reason, !cleanReleaseBlocked(uiState))
-}
-
-/** 退出窗收口等待（quit-flush ③ 后消费；release 自带 1500ms 界） */
-export async function awaitRecoveryQuitSettled(): Promise<void> {
-  await quitChain
-}
-
-/** 强退尽力：最后 saveNow（不 release——副本承载未落库状态） */
-export function strongQuitRecoveryBestEffort(): void {
-  dispatchImmediateSave()
-}
-
-/** 工作区切换（确认弃置后）：代际先行+弃置 release（reload 竞窗留驻=无害）。
- *  [F-RECOV-04] 域级 release 直连 markCleanAwaitable——clean-gate 豁免面（B7） */
-export function prepareRecoveryWorkspaceSwitch(): Promise<void> {
-  if (!inited) return Promise.resolve()
-  // [d1-N2 主控亲笔] drain 等待 1500ms 封顶：在途 save 永不 settle 时切换不
-  // 永久 busy；迟到 release=INV-167 无害族（副本留驻下次屏障承接）
-  return Promise.race([
-    markCleanAwaitable('discard', true),
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, 1500)
-    })
-  ])
-}
-
-// ── ws-entry 门面（族驻 recoveryEntry——W6 拆件；公共 API 不变）──
 
 /** ws-entry 形态 gen++（W5①/W4 frozen 行：chip/health/双 streak 保留——仅作废在途+清定时器） */
 function bumpGenPreserve(): number {
   generation += 1
-  abandonInFlightAtGenBump() // R1：同型弃置在途（ghost 跟踪留驻——settle 按 gen 判废仅记账）
-  needsResend = false
-  immediateResend = false
-  clearTimers()
-  watchdog.reset() // 探针停臂（ghost 跟踪留驻——settle 按 gen 判废仅记账）
+  dispatch.abandonInFlightAtGenBump()
+  dispatch.clearResendFlags()
+  dispatch.clearTrailing()
+  probe.resetForGenBump() // 停臂+清退避（ghost 跟踪留驻——settle 按 gen 判废仅记账）
   return generation
 }
 
-/** 开门补存（W9：peek 收束沿脏快照 armed——视同编辑事件 trailing） */
-function restorePendingResend(): void {
-  if (snapshotPresentSafe()) armTrailing() // [C4] 异常=no-op
-}
+// ── ws-entry 门面（族驻 recoveryEntry——W6 拆件；公共 API 不变）──
+// 恢复流程体=recovery-restore-flow
 
 const entryPorts: SchedulerPorts = {
-  peek: () =>
-    withTimeout(unwrap(api.recovery.peek({ workspaceId: initFns?.workspaceId() ?? '' })), QUIT_TIMEOUT_MS),
-  read: (token) =>
-    withTimeout(unwrap(api.recovery.read({ workspaceId: initFns?.workspaceId() ?? '', type: RECOVERY_TYPE, token })), QUIT_TIMEOUT_MS),
+  peek: () => withTimeout(unwrap(api.recovery.peek({ workspaceId: initFns?.workspaceId() ?? '' })), 1500),
+  read: (token) => withTimeout(unwrap(api.recovery.read({ workspaceId: initFns?.workspaceId() ?? '', type: RECOVERY_TYPE, token })), 1500),
   save: async (payload, takeOverToken) => {
-    const res = await withTimeout(
-      unwrap(
-        api.recovery.save({
-          workspaceId: initFns?.workspaceId() ?? '',
-          type: RECOVERY_TYPE,
-          epoch,
-          session: sessionId,
-          payload,
-          ...(takeOverToken !== undefined ? { takeOverToken } : {})
-        })
-      ),
-      QUIT_TIMEOUT_MS
+    const res = await unwrap(
+      api.recovery.save({
+        workspaceId: initFns?.workspaceId() ?? '',
+        type: RECOVERY_TYPE,
+        epoch,
+        session: sessionId,
+        payload,
+        ...(takeOverToken !== undefined ? { takeOverToken } : {})
+      })
     )
     if (res.status === 'saved') {
       // [k1-N2 随批登记] 此处簿记无 gen 守卫=基线同形（takeOver=确认条动作窗内 gen
@@ -554,70 +215,84 @@ const entryPorts: SchedulerPorts = {
     }
     return res
   },
-  resetTokens: () => { ownToken = null; lastWrittenToken = null }, // [R7] 单行形
-  release: (token, reason) =>
-    withTimeout(
-      unwrap(api.recovery.release({ workspaceId: initFns?.workspaceId() ?? '', type: RECOVERY_TYPE, token, reason })),
-      QUIT_TIMEOUT_MS
-    ),  bumpGen: bumpGenPreserve,
+  resetTokens: () => {
+    ownToken = null
+    lastWrittenToken = null
+  }, // [R7] peek 成功后清 token 双账本（会话凭据重置）
+  release: (token, reason) => withTimeout(unwrap(api.recovery.release({ workspaceId: initFns?.workspaceId() ?? '', type: RECOVERY_TYPE, token, reason })), 1500),
+  bumpGen: bumpGenPreserve,
   getGen: () => generation,
-  adoptEpoch: (e) => { epoch = e },
+  adoptEpoch: (e) => {
+    epoch = e
+  },
   emit,
-  setGateOpen: (open) => { gateOpen = open },
+  setGateOpen: (open) => {
+    gateOpen = open
+  },
   getState: () => uiState,
-  requestPendingResend: restorePendingResend,
-  onGateReopened: () => watchdog.armIfEligible() // W6②：决策开门条件重臂／W6① 即刻清
+  requestPendingResend: dispatch.restorePendingResend,
+  onGateReopened: () => probe.armIfEligible(), // W6②：决策开门条件重臂／W6① 即刻清
+  onForeignSlotReleased: () => {
+    ownerCtl?.onForeignSlotReleased()
+  }, // [B4 L2 §8.4 行 9]
+  /** [B4 L2 §8.4 行 7] takeOver 成功→owner adopt（F 的当前代际） */
+  onTakeOver: (payload) => {
+    const gen = initFns?.owner?.generationOf(payload.folderId)
+    if (gen !== null && gen !== undefined) ownerCtl?.adopt(payload.folderId, gen)
+  }
 }
 
 const entry = createRecoveryEntry(entryPorts)
 
-export async function enterWorkspaceRecovery(): Promise<void> {
-  if (!inited) return
-  await entry.enterWorkspaceRecovery()
-}
+// ── 触发面/订阅/状态门面与 clean·ws-entry 门面（recovery-scheduler-triggers）──────
+export const {
+  notifyRecoveryEditUnit,
+  notifyRecoveryDraftChange,
+  notifyRecoverySaveNow,
+  notifyRecoveryDepart,
+  notifyForeignSlotReleased,
+  notifyRecoveryFolderRemoved,
+  getRecoveryOwner,
+  patchRecoveryUi,
+  recoveryBlocked,
+  getRecoveryState,
+  subscribeRecoveryState,
+  markRecoveryClean,
+  awaitRecoveryQuitSettled,
+  strongQuitRecoveryBestEffort,
+  prepareRecoveryWorkspaceSwitch,
+  enterWorkspaceRecovery,
+  restoreRecoverySlot,
+  discardRecoverySlot,
+  deferRecoverySlot,
+  reopenRecoveryBar
+} = createSchedulerTriggers({
+  inited: () => inited,
+  gateOpen: () => gateOpen,
+  ownerCtl: () => ownerCtl,
+  uiState: () => uiState,
+  listeners,
+  emit,
+  lifecycle,
+  entry,
+  armTrailing: dispatch.armTrailing,
+  dispatchImmediateSave: dispatch.dispatchImmediateSave
+})
 
-export async function restoreRecoverySlot(): Promise<void> {
-  if (!inited) return
-  await entry.restoreRecoverySlot()
-}
-
-export async function discardRecoverySlot(): Promise<void> {
-  if (!inited) return
-  await entry.discardRecoverySlot()
-}
-
-export function deferRecoverySlot(): void {
-  if (!inited) return
-  entry.deferRecoverySlot()
-}
-
-/** chip 重开确认条（再冻结直到决策）。[回炉轮2 Z7] slotKind=null 时=重新 peek（死按钮修复） */
-export function reopenRecoveryBar(): void {
-  if (!inited) return
-  entry.reopenRecoveryBar()
-}
-
-// ── 门/状态/生命周期 ────────────────────────────────────────
-
-/** 写面门（beginUnitGated 消费——quitWriteBlocked 同型；未装配恒假） */
-export function recoveryBlocked(): boolean {
-  return inited && !gateOpen
-}
-
-export function getRecoveryState(): RecoveryUiState {
-  return uiState
-}
-
-export function subscribeRecoveryState(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
+// ── 门/状态/生命周期 ───────────────────────────────────────
 
 export function initRecoveryScheduler(init: RecoverySchedulerInit): void {
   initFns = init
   inited = true
+  ownerCtl =
+    init.owner !== undefined
+      ? createRecoveryOwner({
+          ...init.owner,
+          slotClaimable: () => gateOpen && uiState.phase === 'open' && !uiState.pendingChip,
+          writeSnapshot: dispatch.ownerWriteSnapshot,
+          releaseOwn: (reason) => lifecycle.markCleanAwaitable(reason, true)
+        })
+      : null
   // [回炉 W9/d1-W04] 装配即冻结：清单加载窗（workspaceId 空）编辑不可达——
   // 开门权唯一归 enterWorkspaceRecovery 决策（peek 空/fail-open/确认条决策）
   gateOpen = false
@@ -626,21 +301,18 @@ export function initRecoveryScheduler(init: RecoverySchedulerInit): void {
 
 /** 复位（测试/重装配；幂等） */
 export function resetRecoveryScheduler(): void {
-  clearTimers()
-  watchdog.reset()
+  dispatch.clearTrailing()
+  probe.reset()
   entry.reset()
   inited = false
   initFns = null
+  ownerCtl = null
   gateOpen = true
   epoch = 0
   ownToken = null
   lastWrittenToken = null
-  inFlight = null
-  needsResend = false
-  immediateResend = false
-  failStreak = 0
-  health = 'ok'
-  probeFailStreak = 0
+  dispatch.clearInFlight()
+  dispatch.clearResendFlags()
   quitChain = Promise.resolve()
   uiState = {
     phase: 'idle',
@@ -651,6 +323,7 @@ export function resetRecoveryScheduler(): void {
     pendingChip: false,
     degraded: false,
     kind: null,
-    restartHint: false
+    restartHint: false,
+    unprotectedChip: false
   }
 }

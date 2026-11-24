@@ -26,18 +26,35 @@
  *   sorted 列集）→struct_invalid；table_counts vs 实载行数→counts_mismatch；
  *   deletions 身份形态校验（[回炉 R7] paper_tags id 恰一竖线+两分量非空、他表
  *   id 非空——畸形→struct_invalid 整卷拒收）。
- * - 闸⑤⑥（单事务 repos.withTransaction）：首语句 setGuardStop(1)→先 upsert
- *   后删除（§13.1 批内执行序）——九表按 IMPORT_TABLE_ORDER 逐行三分支：有
- *   updated_at 六表：入站>本地→写（updated+1）；<→跳过（skippedStale+1）；=
- *   →内容全等（整行全列）=no-op/异=A7 行级拒收（a7Conflicts+首例登记，同卷
- *   他行继续）。无 updated_at 三表（collections/tags/paper_tags——R-C：纯键等
- *   三分支）：键缺席→INSERT；键等且内容全等→no-op；异→A7。防复活过滤先于
- *   三分支（INV-132）：入站 (entity,id) 命中本库 deletion_events→跳过
- *   （skippedRevive+1，不计 A7）。deletions 直执（缺席=no-op；guard 置位中
- *   本地不落账）；FTS×3 rebuild→水位→import_log 落（sha）→事务尾
- *   resetGuardStop（同事务=崩溃自回滚）。LWW 键=updated_at 码元序（A3 单机）。
+ * - 闸⑤⑥（单事务 repos.withTransaction）：setGuardStop(1)→先 upsert 后删除（§13.1
+ *   批内执行序）。段二（十表按 IMPORT_TABLE_ORDER）——[B4 L1 §7.5] D1 三段闭环：
+ *   无 updated_at 三表（R-C 纯键等三分支，防复活过滤先行）：键缺席→INSERT/键等
+ *   且内容全等→no-op/异→A7；有 updated_at 表「先读本地行」：①活行在场→LWW
+ *   （>→写/<→skippedStale/＝→内容全等 no-op，异=A7 行级拒收）——不再因历史
+ *   tombstone 无条件跳过（本库活行即显式恢复，INV-132 受控例外）；②缺席+有
+ *   tombstone→skippedRevive（防复活合同逐字保留）；③缺席无 tombstone→插入。
+ * - 段三删事件代际判定（段二后同事务逐项；键=deleted_at）：row==null→no-op；
+ *   String(row.updated_at)>deleted_at→skippedSuperseded+1（恢复/改写胜出）；==→
+ *   同跳过（写点单调守卫下单库不可达——防御默认）；否则 deleteDirect。
+ *   NO_UPDATED_AT 三表维持无条件删除；entity='collections' 项同做 graph_meta 派生
+ *   清理（§5.4：删该夹 keyed 色行名行）。guard 置位中本地不落账；FTS×3 rebuild→
+ *   水位→import_log→事务尾 resetGuardStop（崩溃自回滚）。LWW 键=updated_at 码元序。
  * - rejected：拒收统计键更新（count+1+最近指纹——W1）→Res（ownerId/seq=自称
  *   值，不可解析缺省）。测试=tests/unit/services/import-snapshot.service.test.ts。
+ * - [B4 L2 回炉 X-IMP·设计稿 §2.6 #41] 结构事件双播：importFromBuffer 的结果为
+ *   applied 且非 noop（库态确有变化）→ applyInTx 的事务返回之后、回执之前双播
+ *   folders.changed＋lineage.changed（先 folders 后 lineage——folders.service delete
+ *   同序；空载荷，通道与载荷零变化）。拒收（零库副作用）与幂等 noop（零库变）不播。
+ *   消费侧=renderer lineage-folder-reconcile 的 #41 全 registry 失效：导入前驻留的
+ *   缓存会话返回时按 #34 单飞和解，不再显示导入前的图态；卷内 collections 删事件
+ *   亦经此使已删夹的缓存会话被处置。两出口=可选依赖（缺省=空操作——既有 { repos }
+ *   构造的受锁测试零适配）；生产装配恒真值（services/index 注入 bootstrap 出口）。
+ *   落点在 service 而非 ipc：与 folders/library/import 三 service 的双播同层，ipc
+ *   域模块保持纯薄分发。测试=tests/unit/services/import-snapshot-events.test.ts
+ *   （服务级）与 import-snapshot-wiring.test.ts（生产装配）。
+ * - 纯校验助手（sameKeySet 表集/行键集同集判定、contentEqual 闸④b 整行内容全等、
+ *   envelopeShapeOk 闸①a 明文预检）位于同目录 import-snapshot.guards——本件补结构
+ *   事件双播后超出 §11.2 行数预算，按预算纪律拆件迁出（闸位对应见该件头注）。
  */
 import { createHash } from 'node:crypto'
 import type { SnapshotImportRejectReason, SnapshotImportRes, SnapshotImportStats } from '../../../shared/ipc/schemas'
@@ -45,6 +62,8 @@ import type { Repos } from '../../db/repos'
 import { TABLE_SPECS } from '../../db/repos/snapshot.repo'
 import { IMPORT_TABLE_ORDER, identityOf, type ImportTable } from '../../db/repos/import-snapshot.repo'
 import { canonicalJson, decodeEnvelope } from './envelope.codec'
+import { contentEqual, envelopeShapeOk, sameKeySet } from './import-snapshot.guards'
+import { lineTypeNamesKey } from '../../db/repos/lineage.repo'
 
 /** 无 updated_at 三表（001 实照——R-C 纯键等三分支） */
 const NO_UPDATED_AT: ReadonlySet<string> = new Set(['collections', 'tags', 'paper_tags'])
@@ -66,10 +85,22 @@ export interface SnapshotImportService {
   importFromBuffer(bytes: Buffer): SnapshotImportRes
 }
 
-interface ValidPayload { data: Record<string, Array<Record<string, unknown>>>; deletions: Array<{ entity: string; id: string }> }
+/** deletions[].deleted_at=删事件代际标记（有 updated_at 表必携——段三判定键） */
+interface ValidPayload {
+  data: Record<string, Array<Record<string, unknown>>>
+  deletions: Array<{ entity: string; id: string; deleted_at?: string }>
+}
 
-export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImportService {
+export function createImportSnapshotService(deps: {
+  repos: Repos
+  /** [B4 L2 回炉 X-IMP] 结构事件出口（可选缺省=空操作——受锁单测装配兼容；生产装配
+   *  恒真值——services/index 注入 bootstrap 的 foldersChanged/lineageChanged 发送闭包） */
+  sendFoldersChanged?: () => void
+  sendLineageChanged?: () => void
+}): SnapshotImportService {
   const { repos } = deps
+  const sendFoldersChanged = deps.sendFoldersChanged ?? (() => undefined)
+  const sendLineageChanged = deps.sendLineageChanged ?? (() => undefined)
   const imp = repos.importSnapshot
 
   function localOwner(): string {
@@ -138,12 +169,15 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       const { entity, id } = d as Record<string, unknown>
       if (typeof entity !== 'string' || !SNAPSHOT_TABLES.includes(entity)) return 'struct_invalid'
       if (typeof id !== 'string' || id.length === 0) return 'struct_invalid'
+      // [B4 L1 §7.5] 有 updated_at 表的删事件必携 deleted_at（段三判定键——缺席不可判）
+      const { deleted_at } = d as Record<string, unknown>
+      if (!NO_UPDATED_AT.has(entity) && typeof deleted_at !== 'string') return 'struct_invalid'
       if (entity === 'paper_tags') {
         const parts = id.split('|')
         if (parts.length !== 2 || parts[0] === '' || parts[1] === '') return 'struct_invalid'
       }
     }
-    return { data: out, deletions: p.deletions as Array<{ entity: string; id: string }> }
+    return { data: out, deletions: p.deletions as ValidPayload['deletions'] }
   }
 
   /** 闸⑤⑥：单事务应用（guard 开→先 upsert 后删除→FTS/水位/日志→guard 复位） */
@@ -157,13 +191,12 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
         const cols = COLUMNS_OF.get(table)!
         for (const row of payload.data[table] ?? []) {
           const id = identityOf(table, row)
-          if (imp.isDeleted(table, id)) {
-            stats.skippedRevive += 1
-            continue
-          }
           const local = imp.readRow(table, row)
           if (NO_UPDATED_AT.has(table)) {
-            if (local === null) {
+            // 纯键等三表：防复活过滤先于三分支（现行合同）
+            if (imp.isDeleted(table, id)) {
+              stats.skippedRevive += 1
+            } else if (local === null) {
               imp.upsertRow(table, row)
               stats.inserted += 1
             } else if (!contentEqual(cols, row, local)) {
@@ -173,23 +206,48 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
             continue
           }
           const inAt = String(row.updated_at)
-          if (local === null) {
-            imp.upsertRow(table, row)
+          if (local !== null) {
+            // [B4 L1 §7.5 段二①] 本地活行在场→updated_at LWW（历史 tombstone 不再无条件跳过）
+            if (inAt > String(local.updated_at)) {
+              imp.upsertRow(table, row)
+              stats.updated += 1
+            } else if (inAt < String(local.updated_at)) {
+              stats.skippedStale += 1
+            } else if (!contentEqual(cols, row, local)) {
+              stats.a7Conflicts += 1
+              a7First.v ??= { entity: table, id }
+            }
+          } else if (imp.isDeleted(table, id)) {
+            stats.skippedRevive += 1 // 段二②：缺席+有本地 tombstone=skippedRevive
+          } else {
+            imp.upsertRow(table, row) // 段二③：缺席且无 tombstone=插入
             stats.inserted += 1
-          } else if (inAt > String(local.updated_at)) {
-            imp.upsertRow(table, row)
-            stats.updated += 1
-          } else if (inAt < String(local.updated_at)) {
-            stats.skippedStale += 1
-          } else if (!contentEqual(cols, row, local)) {
-            stats.a7Conflicts += 1
-            a7First.v ??= { entity: table, id }
           }
         }
       }
+      // [B4 L1 §7.5 段三] 删事件代际判定（段二后同事务逐项）；superseded=代际被活行
+      // 超越的删事件数（skippedSuperseded 可选键=仅命中时在场）
+      let superseded = 0
       for (const d of payload.deletions) {
+        // §5.4 派生清理：删夹（collections 属 NO_UPDATED_AT 表——须先于其无条件删除
+        // 分支）→同事务清该夹 keyed 色行名行（派生面不计 deleted）
+        if (d.entity === 'collections') {
+          imp.deleteDirect('lineage_graph_meta', lineTypeNamesKey(d.id))
+        }
+        if (NO_UPDATED_AT.has(d.entity)) {
+          stats.deleted += imp.deleteDirect(d.entity as ImportTable, d.id)
+          continue
+        }
+        const row = imp.readRowById(d.entity as ImportTable, d.id)
+        if (row === null) continue // no-op（幂等，无行可删）
+        const localAt = String(row.updated_at)
+        if (localAt >= d.deleted_at!) {
+          superseded += 1 // 活行代际≥删事件：恢复/改写胜出（相等=守卫下不可达的防御默认）
+          continue
+        }
         stats.deleted += imp.deleteDirect(d.entity as ImportTable, d.id)
       }
+      if (superseded > 0) stats.skippedSuperseded = superseded
       // [F-VISFB-42] 派生图表资产恢复重提：快照不携带派生面（TABLE_SPECS 零增
       // ——figure_jobs/paper_figures 不入快照），payload papers 全集 jobs 重置
       // pending+figure 行清空=恢复后重提取（无「ready 但资产缺失」态）；防复活
@@ -284,37 +342,12 @@ export function createImportSnapshotService(deps: { repos: Repos }): SnapshotImp
       }
       // 闸⑤⑥
       const stats = applyInTx(validated, body.owner_id, body.snapshot_seq, body.payload_sha256)
+      // [B4 L2 回炉 X-IMP·§2.6 #41] 走到此处=applied 且非 noop（幂等 noop 出口在闸③
+      // 已先行返回）；applyInTx 已返回=事务提交完成——回执前双播（先 folders 后
+      // lineage），库态变化对 renderer 可见的时点不晚于导入回执
+      sendFoldersChanged()
+      sendLineageChanged()
       return { outcome: 'applied', ownerId: body.owner_id, snapshotSeq: body.snapshot_seq, stats }
     }
   }
-}
-
-/** 键集同集判定（两键列各自排序后序列化比较——表集校验×2+行键集校验×1 三处单源） */
-function sameKeySet(a: readonly string[], b: readonly string[]): boolean {
-  return JSON.stringify([...a].sort()) === JSON.stringify([...b].sort())
-}
-
-/** 内容全等：整行所有列（[R1] kind/tags 全列入写面后全列同集比较——§13.2⑤ 字面） */
-function contentEqual(cols: readonly string[], inbound: Record<string, unknown>, local: Record<string, unknown>): boolean {
-  for (const c of cols) {
-    if (inbound[c] !== local[c]) return false
-  }
-  return true
-}
-
-/** [回炉 R2] 明文预检：必填九键在位+类型（不依赖密钥——parse 后最先执行） */
-function envelopeShapeOk(obj: Record<string, unknown>): boolean {
-  return (
-    typeof obj.format_version === 'number' &&
-    typeof obj.schema_version === 'number' &&
-    typeof obj.snapshot_seq === 'number' &&
-    typeof obj.owner_id === 'string' &&
-    obj.table_counts !== null &&
-    typeof obj.table_counts === 'object' &&
-    !Array.isArray(obj.table_counts) &&
-    typeof obj.payload_sha256 === 'string' &&
-    typeof obj.payload_nonce === 'string' &&
-    typeof obj.payload === 'string' &&
-    typeof obj.hmac_sha256 === 'string'
-  )
 }

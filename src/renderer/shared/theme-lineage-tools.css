@@ -13,12 +13,35 @@
   animation: lg-spin 0.7s linear infinite;
 }
 @keyframes lg-spin { to { transform: rotate(360deg); } }
+/* [回炉 W-C·R-D1 呈现修复] 保存错误行独占工具组下一行。
+   缘由：错误行原与工具钮、drag-hint 同处一个不换行的 flex 行；消息含整段 UUID 很长，各子项被
+   挤压——[B4 L1 回炉 R-D1] 的出口钮「丢弃这条过期历史」一字一行竖排（高 122px），1024×768 下
+   整行溢出工具组右缘、落到 lineage-side-panel 之下不可点（仓外档案区
+   scripts-audits/20261122-b4/b4b-rework/w-c/logs/probe-rd1-narrow-run1.log）。
+   修法限于错误行在场的状态：开关=工具组根的修饰类 has-save-error（LineageToolbar——仅
+   saveState==='failed' 出现，与错误行同条件）；可换行与 drag-hint 单行省略只挂在该类下，无
+   错误行时工具组布局逐项不变（修复前后两档视口无错态 boundingBox 对照=同目录
+   probe-toolbar-geometry-before.log / probe-toolbar-geometry-after.log）。
+   几何验收=tests/e2e/lineage-conflict.spec 的 R-D1 两例；样式合约=
+   tests/unit/renderer/lineage-toolbar-save-error-class.test.tsx。 */
+.lg-toolbar.tools.has-save-error { flex-wrap: wrap; row-gap: 6px; }
+/* 修饰类下 drag-hint 单行省略：基准 0、可伸缩至自身文本宽（max-width: max-content）——空间够时
+   与无错态同宽，不够时省略号截断，不把工具钮挤到换行 */
+.lg-toolbar.tools.has-save-error .drag-hint {
+  flex: 1 1 0; max-width: max-content; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 错误行本体：占满整行（flex-basis 100%+border-box=右缘不超工具组内容盒右缘）、允许内部换行、
+   长串（UUID）可断——完整消息换行显示，不截断 */
 .lg-save-error {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; flex: 1 0 100%; flex-wrap: wrap; box-sizing: border-box;
+  align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere;
   padding: 2px 8px; font-size: var(--fs-micro);
   border: 1px solid var(--danger); border-radius: 6px;
 }
+/* 行内按钮（重试钮与出口钮）：不伸缩、不折行——不得再出现一字一行竖排 */
 .lg-save-error button {
+  flex: 0 0 auto; white-space: nowrap;
   padding: 1px 8px; border-radius: 5px; font-size: var(--fs-micro);
   background: var(--accent-soft); color: var(--accent);
 }

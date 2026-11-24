@@ -45,9 +45,12 @@ export function createLineageIpc(deps: IpcDeps): ApiHandlers['lineage'] {
       deps.services.lineage.removeEdge(req.id)
       return { ok: true }
     },
-    // [F-LGRAPH-01②U8] 图级色行名整批替换（恰 6 校验 schema 面单源——
-    // 通道名沿承 upsert-line-types，载荷重整为 names 数组；Res=归一后回显）
-    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypeNames(req),
+    // [B4 L1 D2 §5.4 签名链第 4 段] 图级色行名整批替换：载荷 {folderId, names}
+    // 解构传 folderId+names（恰 6 校验 schema 面单源；Res=归一后 names 回显）
+    upsertLineTypes: async (req) => deps.services.lineage.upsertLineTypeNames(req.folderId, req.names),
+    // [B4 L1 §7.3] history-unit 薄分发：事务/指纹/守卫全在
+    // lineage-history-unit.service（IPC 零守卫；拒绝经域错误 CONFLICT+reason 透传）
+    historyUnit: async (req) => deps.services.lineageHistory.unit(req),
     // [F-VISFB-61] 悬浮笔记数据与会话面：upsert（id 缺省新建/提供更新或插入
     // ——repo upsert 语义〔回炉 R3〕）+
     // remove（幂等）；IPC 层零守卫（幽灵 folder 拒/有限数守卫在 service），

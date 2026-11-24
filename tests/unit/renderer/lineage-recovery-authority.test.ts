@@ -8,6 +8,11 @@
  * 重取域外自然对齐）。T8/T9/T10 用 deferred promise 控制响应时序。调度器不装配
  * （未装配一切入口 no-op+门恒开——存量单测兼容面）。always-active（无
  * guardedDescribe）。
+ * [B4 L1 最小迁移——为保持绿所必需（L1 语义迫使，非 L2 per-folder 面）]：flush
+ * 尾 `void load()`→链尾和解任务（await 落定；读失败=IO error 位保留）；undo/redo
+ * =flush-then-unit（先和解后 history-unit——#13a/#13b）；在途 flush 重复触发=让位
+ * 早退/单飞复用（#34a）；飞行期新编辑由同会话 saving 锁前置承担（INV-94），gate
+ * 旁路的 Q>0 由和解应用判据丢弃（#10d）。翻转点逐条标注于用例题。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
@@ -22,9 +27,14 @@ const stubApi = makeApiStub({
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn(),
     upsertFloatingNote: vi.fn(),
-    removeFloatingNote: vi.fn()
+    removeFloatingNote: vi.fn(),
+    historyUnit: vi.fn()
   }
 })
+
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
+import { makeHistoryEntry } from '../../utils/factories'
+import type { LineageEntityDelta } from '../../../src/shared/ipc/lineage-history.schemas'
 
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { defaultLineTypeNames } from '@shared/models/lineage'
@@ -118,6 +128,7 @@ beforeEach(() => {
     async (req: Partial<LineageNode> & { id: string }) =>
       ({ ok: true, data: { ...node(req.id), ...req } as LineageNode })
   )
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=history-unit
   useLineageStore.setState({
     nodes: [],
     edges: [],
@@ -128,6 +139,7 @@ beforeEach(() => {
     floatingNotes: [],
     status: 'ready',
     error: null,
+    inflight: null,
     folderId: '__main__',
     saveStatus: 'clean',
     lastWriteError: null,
@@ -275,41 +287,52 @@ describe('F-RECOV-02 needsReload 恢复权威收口（INV-175）', () => {
     expect(store().needsReload).toBe(false)
   })
 
-  it('T8 格11/S6（B1a）：收尾 fire 飞行期新编辑→互锁丢弃（四面未变+标志留）→二次 save 第二窗 fire=1→落地清', async () => {
+  it('T8 格11/S6（B1a）→[B4 L1 迁移；回炉 W-B3·R-B7 翻转（用户裁决 D-2＝甲）] 和解飞行期新编辑被同会话 saving 锁拒绝（INV-94）；gate 旁路注入的待写（Q>0）使在途和解读被丢（不写图态+标志留）→链尾 drain 旁路项→按当前 epoch 续拉恰一次→落地清（#10d/#34d——无需二次 save）', async () => {
     const dbFinal = [node('A', { x: 7, y: 7 })]
     dbGraph = () => graphOk(dbFinal)
     const d1 = defer()
-    script.push(d1.promise)
+    const d2 = defer() // 第二道闸：把链尾续拉读挂住（断言时点）
+    script.push(d1.promise, d2.promise)
     store().applyRecoverySession(
       payloadOf([node('A', { x: 100, y: 100 })], [{ kind: 'patch-node', id: 'A', patch: { x: 3, y: 3 } }])
     )
     loadSpy.mockClear()
-    await store().save() // 收尾 fire#1（deferred 飞行中）
+    const first = store().save() // drain→链尾和解（deferred 飞行中——flush await 落定）
+    await settle()
     expect(loadSpy).toHaveBeenCalledTimes(1)
-    store().moveNode('A', 7, 7) // 飞行期新编辑（queue>0 互锁）
+    store().moveNode('A', 7, 7) // 飞行期新编辑：saving 锁拒绝（原「互锁丢弃」面由锁前置承担）
+    expect(store().queue).toHaveLength(0)
+    expect(store().nodes[0]?.x).toBe(3) // 编辑无效（乐观应用同拒）
+    // gate 旁路（恢复载入/后台事件路径）直注待写：和解应用判据 Q0 不成立→丢弃不写图态
+    useLineageStore.setState({ queue: [{ kind: 'patch-node', id: 'A', patch: { x: 9, y: 9 } }] })
     const before = faces()
-    d1.resolve(graphOk([node('A')])) // 旧响应落地
-    await settle()
-    expect(faces()).toEqual(before) // 互锁丢弃：图四面未变
-    expect(store().needsReload).toBe(true) // 标志留驻（无清点——先红）
-    loadSpy.mockClear()
-    await store().save() // 第二触发定死=二次 save（解耦 undo 语义依赖）
-    await settle()
-    expect(loadSpy).toHaveBeenCalledTimes(1) // 第二窗 fire=1
+    d1.resolve(graphOk([node('A')])) // 在途响应到达
+    await settle() // 被丢→链尾：drain 旁路项→续拉读（d2 飞行中）
+    // [回炉 W-B3·R-B7 翻转] 原「二次手工 save 第二窗 fire=1」→ 链在 drain 新 Q 后自动续拉恰一次
+    expect(loadSpy).toHaveBeenCalledTimes(2) // 首读 1＋链尾续拉恰 1（第二读在途——d2 挂住）
+    expect(store().queue).toHaveLength(0) // 旁路项已 drain
+    // 被丢不写图态：第一读载荷（node('A')——x/y 为 null）未落图；图四面＝旁路项的写回显（x=9,y=9）
+    expect(faces()).toEqual({ nodes: [{ ...before.nodes[0]!, x: 9, y: 9 }], edges: before.edges, lineTypeNames: before.lineTypeNames, floatingNotes: before.floatingNotes })
+    expect(store().needsReload).toBe(true) // 标志留驻（续读在途——无清点）
+    d2.resolve(graphOk(dbFinal)) // 放行链尾续拉读
+    await first
     expect(store().needsReload).toBe(false)
-    expectGraphEquals(dbFinal)
+    expectGraphEquals(dbFinal) // 权威落地覆盖
+    expect(loadSpy).toHaveBeenCalledTimes(2) // 无第二次 save——首 save 的链尾完成续拉
   })
 
-  it('T9 格12（B1b）：graph 读失败不清位→复绿后二次 save fire=1→落地清', async () => {
+  it('T9 格12（B1b）→[B4 L1 迁移] 和解读失败=IO error+标志留驻（图读面 status 不变）→复绿后二次 save fire=1→落地清', async () => {
     const db = [node('A')]
     dbGraph = () => graphOk(db)
     store().applyRecoverySession(payloadOf([node('A', { x: 5, y: 5 })], []))
     script.push(Promise.resolve({ ok: false, error: { code: 'DB_ERROR', message: '图读失败' } }))
     loadSpy.mockClear()
-    await store().save() // 收尾 fire#1→load 失败
+    await store().save() // 收尾和解 fire#1→读失败
     await settle()
-    expect(store().status).toBe('error')
-    expect(store().needsReload).toBe(true) // 失败不清位（先红）
+    expect(store().saveStatus).toBe('error') // [B4 L1 翻转] 和解失败=IO error（原断言 status='error'）
+    expect(store().lastWriteError).toBe('图读失败')
+    expect(store().status).toBe('ready')
+    expect(store().needsReload).toBe(true) // 失败不清位
     loadSpy.mockClear()
     await store().save() // 队空直通→第二窗
     await settle()
@@ -318,76 +341,76 @@ describe('F-RECOV-02 needsReload 恢复权威收口（INV-175）', () => {
     expectGraphEquals(db)
   })
 
-  it('T10 格13（B1c）：两发 load 合流→旧 seq 响应丢弃（四面未变+标志留）→最新落地清', async () => {
+  it('T10 格13（B1c）→[B4 L1 翻转] 和解读在途重复触发=让位/单飞（#34a：不并发第二读——原「两发 load 合流+旧 seq 丢弃」退役）', async () => {
     const db2 = [node('A', { x: 8, y: 8 })]
     dbGraph = () => graphOk(db2)
     const d1 = defer()
-    const d2 = defer()
-    script.push(d1.promise, d2.promise)
+    script.push(d1.promise)
     store().applyRecoverySession(payloadOf([node('A', { x: 100, y: 100 })], []))
     loadSpy.mockClear()
-    await store().save() // fire#1（d1 飞行）
-    await store().save() // fire#2（d2 飞行——seq 更新）
-    expect(loadSpy).toHaveBeenCalledTimes(2)
-    const before = faces()
-    d1.resolve(graphOk([node('A')])) // 旧响应：非最新发出者
+    const first = store().save() // fire#1（d1 飞行）
     await settle()
-    expect(faces()).toEqual(before) // seq 旧弃：图四面未变
+    await store().save() // 在途 flush 让位早退——零新增 keyed 读
+    expect(loadSpy).toHaveBeenCalledTimes(1)
     expect(store().needsReload).toBe(true) // 未落地不清
-    d2.resolve(graphOk(db2)) // 最新响应：落地
-    await settle()
+    d1.resolve(graphOk(db2))
+    await first
     expectGraphEquals(db2)
     expect(store().needsReload).toBe(false)
   })
 
-  it('T11a 格14（undo 面）：恢复空队列会话编辑→undo 回基线 clean→触发 fire=1→落地清', async () => {
+  it('T11a 格14（undo 面）→[B4 L1 迁移] 恢复会话编辑→undo：先 drain→needsReload 先和解（#13a，fire=1）→history-unit 反向写回编辑前', async () => {
     const db = [node('A')]
     dbGraph = () => graphOk(db)
     store().applyRecoverySession(payloadOf([node('A', { x: 100, y: 100 })], []))
-    store().moveNode('A', 1, 1) // E1：基线快照 queue=[]（§5 可达形——Q0 空会话）
+    store().moveNode('A', 1, 1) // E1：恢复会话上的新编辑
     expect(store().saveStatus).toBe('dirty')
     loadSpy.mockClear()
-    store().undo() // 回基线：queue 空→clean→干净化点触发
-    expect(loadSpy).toHaveBeenCalledTimes(1)
+    const undone = store().undo() // flush-then-unit：drain→和解→history-unit
     await settle()
+    expect(loadSpy).toHaveBeenCalledTimes(1) // history 前先和解
     expect(store().needsReload).toBe(false)
-    expectGraphEquals(db)
+    expect(await undone).toBe(true)
+    expectGraphEquals([node('A', { x: 100, y: 100 })]) // undo=回到编辑前（恢复基线——对 DB 的新反向写）
   })
 
-  it('T11b 格14（redo 对称面）：redo 回基线 clean→触发 fire=1（快照对称态注入）', async () => {
+  it('T11b 格14（redo 对称面）→[B4 L1 迁移] redo 同走先和解（fire=1）→history-unit；IO 回 clean', async () => {
     const db = [node('A')]
     dbGraph = () => graphOk(db)
     store().applyRecoverySession(payloadOf([node('A', { x: 100, y: 100 })], []))
-    // redo 栈尾=基线态（queue=[]——UI 流结构性不可达、挂点对称放置：注入对称态锁挂点）
-    useLineageStore.setState({
-      redoStack: [{ nodes: store().nodes, edges: [], lineTypeNames: store().lineTypeNames, queue: [], floatingNotes: [] }]
-    })
+    // redo 栈尾注入（最小 HistoryEntry——UI 流结构性不可达的对称态：锁挂点）
+    const delta: LineageEntityDelta = { kind: 'node', id: 'A', before: node('A', { x: 5, y: 5 }), after: node('A', { x: 6, y: 6 }) }
+    useLineageStore.setState({ redoStack: [makeHistoryEntry({ changes: [delta] })] })
     loadSpy.mockClear()
-    store().redo()
+    const redone = store().redo()
+    await settle()
     expect(store().saveStatus).toBe('clean')
     expect(loadSpy).toHaveBeenCalledTimes(1)
-    await settle()
     expect(store().needsReload).toBe(false)
-    expectGraphEquals(db)
+    expect(await redone).toBe(true)
+    expectGraphEquals([node('A', { x: 6, y: 6 })]) // history-unit 回显 after
   })
 
-  it('T11c 格14（undo 触发面失败窗，d1-W4/W5）：触发后 load 失败标志留驻→复绿再编辑再回基线第二窗 fire=1→落地清', async () => {
+  it('T11c 格14（undo 触发面失败窗，d1-W4/W5）→[B4 L1 迁移] 和解失败=history 不执行不弹栈（#13b）、标志留驻→复绿再编辑再 undo 第二窗 fire=1→落地清', async () => {
     const db = [node('A')]
     dbGraph = () => graphOk(db)
     store().applyRecoverySession(payloadOf([node('A', { x: 100, y: 100 })], []))
     store().moveNode('A', 1, 1)
     script.push(Promise.resolve({ ok: false, error: { code: 'DB_ERROR', message: '图读失败' } }))
     loadSpy.mockClear()
-    store().undo() // 回基线 clean→触发 fire#1→落地失败
+    const first = store().undo() // 先和解：fire#1→读失败
     await settle()
     expect(loadSpy).toHaveBeenCalledTimes(1)
-    expect(store().needsReload).toBe(true) // undo 触发面只触发不清位（防早清位变异⑦）
-    store().moveNode('A', 2, 2) // 再编辑离开基线
+    expect(store().needsReload).toBe(true) // 失败位保留（防早清位）
+    expect(await first).toBe(false) // history 不执行、不弹栈
+    expect(store().undoStack).toHaveLength(1)
+    store().moveNode('A', 2, 2) // 再编辑
     loadSpy.mockClear()
-    store().undo() // 再回基线→第二窗（graph 复绿 fallback）
-    expect(loadSpy).toHaveBeenCalledTimes(1)
+    const second = store().undo() // 再 undo→第二窗（graph 复绿）→和解成功→history-unit
     await settle()
+    expect(loadSpy).toHaveBeenCalledTimes(1)
     expect(store().needsReload).toBe(false)
-    expectGraphEquals(db)
+    expect(await second).toBe(true)
+    expectGraphEquals([node('A', { x: 1, y: 1 })]) // 撤销「再编辑」=回到 x1
   })
 })

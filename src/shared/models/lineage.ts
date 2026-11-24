@@ -105,9 +105,13 @@ export function defaultLineTypeNames(): string[] {
 }
 
 /**
- * [F-LGRAPH-01②U8] 色行名配置 schema（图级 lineage_graph_meta KV
- * 'lineTypeNames' JSON 承载——恰 6 行；空名归一「待命名」在 service 写面）。
- * 替代退役的 lineTypeGroupsSchema 恒四组校验（四组体系随 kind 四值退役）。
+ * [F-LGRAPH-01②U8] 色行名配置 schema（lineage_graph_meta KV JSON 承载——恰 6 行；
+ * 空名归一「待命名」在 service 写面）。替代退役的 lineTypeGroupsSchema 恒四组
+ * 校验（四组体系随 kind 四值退役）。
+ * [B4 L1 D2] 存储按 folder：每图一行，键 `lineTypeNames:<folderId>`（主图
+ * `__main__` 同型同法——lineage.repo lineTypeNamesKey 单源；迁移 027 自旧共享键
+ * 复制）。graph 响应的 lineTypeNames=所请求 folder 的六行名；历史项
+ * line-type-names delta 绑定该 folderId（设计稿 §5.4 签名链第 1 段）。
  */
 export const lineTypeNamesSchema = z.array(z.string()).length(LINE_TYPE_ROWS)
 export type LineTypeNames = z.infer<typeof lineTypeNamesSchema>

@@ -16,6 +16,9 @@
  * - N3 draft 视图切换收口链（编辑不 blur→rail 切走再切回→.tl-note-text=
  *   草稿内容→保存→reload 持久）→笔记右键「删除笔记」→消失→保存→reload
  *   后无。
+ * - [回炉 W-B4·R1] N4 输入法合成期不落库：CDP Input.imeSetComposition 驱动真实
+ *   合成（与 IME 同一 Chromium 输入路径）——合成中停留 >1.5s 后库内正文未变，
+ *   提交合成后再等 1.5s 落终值（活库回读=e2e-env.liveDbScript）。
  * 种子=e2e-env.seedLineageGraph（单节点锚）+seedPaperRow 幽灵行；
  * mode=lineage-mode-edit+tool=lineage-tool-select（lineage.spec.ts:207 先例）。
  */
@@ -24,7 +27,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e2e-env'
+import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow, liveDbScript } from './e2e-env'
 
 const PAPER = { id: 'e2e-nt-root', title: '笔记锚文献', year: 2020 } as const
 
@@ -193,6 +196,33 @@ test.describe('悬浮笔记冒烟 e2e（F-VISFB-63——创建/拖动/删除全�
     await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
     await reloadToLineage(win)
     await expect(win.locator('.tl-note')).toHaveCount(0)
+    await app.close()
+  })
+
+  test('N4 输入法合成期不落库：合成中停留 >1.5s 库内正文未变；提交合成后 1.5s 落终值', async () => {
+    const userData = await freshDir()
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    await enterEditSelect(win)
+    await createNoteTyping(win, 'base') // 创建即编辑态（不 blur）
+    const noteContent = (): Promise<unknown> => liveDbScript(userData, 'get', 'SELECT content FROM floating_notes')
+    await expect.poll(noteContent, { timeout: 10_000 }).toEqual({ content: 'base' }) // 前提：普通输入经 idle 提交落库
+    // 回焦编辑器、光标移到末尾（真实点击——textarea 的 pointerdown 止于自身，mousedown 默认聚焦）
+    const ta = win.locator('.tl-note-input')
+    await ta.click()
+    await win.keyboard.press('End')
+    // 合成由 CDP 驱动（事件序 compositionstart→compositionupdate→input[isComposing=true]→…→compositionend）
+    const cdp = await app.context().newCDPSession(win)
+    await cdp.send('Input.imeSetComposition', { text: 'ni', selectionStart: 2, selectionEnd: 2 })
+    await expect(ta).toHaveValue('baseni') // 片段显示在编辑器
+    await win.waitForTimeout(2_600) // 合成中停留——跨过 idle 到期点
+    expect(await noteContent(), '合成中不落库：片段不写库').toEqual({ content: 'base' })
+    await expect(ta).toHaveValue('baseni') // 合成未被提交动作打断
+    await cdp.send('Input.insertText', { text: '你好' }) // 提交合成
+    await expect(ta).toHaveValue('base你好')
+    await expect.poll(noteContent, { timeout: 10_000 }).toEqual({ content: 'base你好' }) // 提交后重新计时 1.5s 落终值
     await app.close()
   })
 })

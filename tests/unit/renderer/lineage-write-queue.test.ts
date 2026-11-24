@@ -83,10 +83,10 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
       saveStatus: 'clean',
       lastWriteError: null,
       queue: [],
+      // [B4 L1] WriteQueueHost 只持图态+queue+IO（SessionSnapshot 退役——undo/redo/load 夹具删除）
+      folderId: '__main__',
       flushing: false,
-      undoStack: [],
-      redoStack: [],
-      load: async () => undefined
+      inflight: null
     }
     const wq = createWriteQueue({
       set: (patch) => {
@@ -127,6 +127,50 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
     // [A3 F-CONTRACTA-01 2026-10-04] core_idea 全退役——patch 轴无 coreIdea 键负锚
     expect(Object.prototype.hasOwnProperty.call(aCall![0], 'coreIdea')).toBe(false)
     expect(state().saveStatus).toBe('clean')
+  })
+
+  it('[B4 L1 §2.6 10a] flush 尾和解任务替代 void load()：CONFLICT 丢弃后 await reconcile 端口恰一次（drain 后、flush 落定前）；无端口=位保留 no-op', async () => {
+    const makeHost = (): WriteQueueHost => ({
+      nodes: [],
+      edges: [{ id: 'e1', fromNode: 'a', toNode: 'b', label: '', dashed: false, color: '#1e3a8a', createdAt: 't', updatedAt: 't' }],
+      floatingNotes: [],
+      lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
+      folderId: '__main__',
+      saveStatus: 'dirty',
+      lastWriteError: null,
+      queue: [{ kind: 'remove-edge', id: 'e1' }],
+      flushing: false,
+      inflight: null
+    })
+    stubApi.lineage.removeEdge.mockResolvedValue({ ok: false, error: { code: 'CONFLICT', message: '该逻辑线已存在' } })
+    const reconcile = vi.fn(async () => 'applied' as const)
+    let host = makeHost()
+    const wq = createWriteQueue({
+      set: (patch) => {
+        host = { ...host, ...(typeof patch === 'function' ? patch(host) : patch) }
+      },
+      get: () => host,
+      reconcile
+    })
+    const p = wq.flush()
+    expect(reconcile).not.toHaveBeenCalled() // drain 未完成——和解在其后
+    await p
+    expect(reconcile).toHaveBeenCalledTimes(1) // await 落定（非 fire-and-forget）
+    expect(host.queue).toEqual([])
+    expect(host.saveStatus).toBe('clean')
+    expect(host.needsReload).toBe(true) // 清位归 store 的权威应用（端口不负责）
+    // 无和解端口：丢弃后不重拉、位保留（fire-and-forget load 收口已退役）
+    let bare = makeHost()
+    stubApi.lineage.graph.mockClear()
+    const wqBare = createWriteQueue({
+      set: (patch) => {
+        bare = { ...bare, ...(typeof patch === 'function' ? patch(bare) : patch) }
+      },
+      get: () => bare
+    })
+    await wqBare.flush()
+    expect(stubApi.lineage.graph).not.toHaveBeenCalled()
+    expect(bare.needsReload).toBe(true)
   })
 
   it('P-2 模式切换不丢编辑会话暂存：dirty+queue 非空态 setMode(browse)→setMode(edit) 后原样保留', async () => {

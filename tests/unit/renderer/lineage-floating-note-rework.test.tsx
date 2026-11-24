@@ -125,6 +125,7 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null, // [B4 L1 INV-149] 在途写=交互门判据（夹具复位）
     undoStack: [],
     redoStack: [],
     folderId: '__main__'
@@ -291,7 +292,7 @@ describe('R3 幽灵写防御（异步落点写前核在场）', () => {
 
 describe('R4/R5 交互门补充（saving 让位/textarea 右键原生放行）', () => {
   it('R4 saving 态让位：笔记 pointer-events none+空白右键无菜单（防静默 no-op 丢稿）', () => {
-    useLineageStore.setState({ floatingNotes: [makeNote()], saveStatus: 'saving' })
+    useLineageStore.setState({ floatingNotes: [makeNote()], saveStatus: 'saving', flushing: true, inflight: { kind: 'write' } })
     mountNotes()
     const savingNote = document.querySelector('.tl-note') as HTMLElement | null
     expect(savingNote!.style.pointerEvents).toBe('none')
@@ -377,7 +378,7 @@ describe('S1/S2/S6 回炉轮 2（saving 在飞中止/钳制数学/会话硬化�
     })
     expect(menuEl()).not.toBeNull()
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(menuEl()).toBeNull()
     act(() => {
@@ -386,14 +387,14 @@ describe('S1/S2/S6 回炉轮 2（saving 在飞中止/钳制数学/会话硬化�
     expect(state().floatingNotes).toHaveLength(1)
     // delete 态同法（saving 关闭后再开再中断）
     act(() => {
-      useLineageStore.setState({ flushing: false, saveStatus: 'clean' })
+      useLineageStore.setState({ flushing: false, saveStatus: 'clean', inflight: null })
     })
     act(() => {
       ctxOn(noteElOf('fn-s1')!, 300, 260)
     })
     expect(menuEl()).not.toBeNull()
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(menuEl()).toBeNull()
     act(() => {
@@ -414,7 +415,7 @@ describe('S1/S2/S6 回炉轮 2（saving 在飞中止/钳制数学/会话硬化�
     })
     expect(noteElOf('fn-s1d')!.style.left).toBe('150px')
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(noteElOf('fn-s1d')!.style.left).toBe('100px')
     act(() => {

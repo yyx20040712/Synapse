@@ -21,17 +21,25 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
-import { makeAnnotation, makeTab } from '../../utils/factories'
+import { makeAnnotation, makeHistoryEntry, makeTab } from '../../utils/factories'
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 
 const mocks = vi.hoisted(() => ({
   annoWrite: vi.fn(),
   annoDelete: vi.fn(),
   annoCreate: vi.fn(),
-  lineageUpsertNote: vi.fn()
+  lineageUpsertNote: vi.fn(),
+  // [B4 L1] lineage undo/redo=flush-then-unit：预 drain 回显+history-unit（用户入口同闸）
+  lineagePatchNode: vi.fn(),
+  lineageHistoryUnit: vi.fn()
 }))
 makeApiStub({
   reader: { updateAnnotation: mocks.annoWrite, deleteAnnotation: mocks.annoDelete, saveAnnotation: mocks.annoCreate },
-  lineage: { upsertFloatingNote: mocks.lineageUpsertNote }
+  lineage: {
+    upsertFloatingNote: mocks.lineageUpsertNote,
+    patchNode: mocks.lineagePatchNode,
+    historyUnit: mocks.lineageHistoryUnit
+  }
 })
 
 import { setQuitClosing } from '../../../src/renderer/app/quit-closing-gate'
@@ -261,7 +269,7 @@ describe('quit-gate-sources —— 逐写源判别（F-VISFB-64 回炉 W1/W2/W7�
     expect(stackDepth('paper-undo')).toBe(0)
   })
 
-  it('lineage undo：冻结期 no-op（栈不变）；closing 外弹栈', () => {
+  it('lineage undo：冻结期 no-op（栈不变零 history-unit——用户入口同闸）；closing 外弹栈', async () => {
     // 造一格可撤快照：moveNode 编辑单元（closing 外）
     useLineageStore.setState({
       nodes: [
@@ -283,28 +291,31 @@ describe('quit-gate-sources —— 逐写源判别（F-VISFB-64 回炉 W1/W2/W7�
     })
     useLineageStore.getState().moveNode('n-g1', 10, 20)
     expect(useLineageStore.getState().undoStack.length).toBe(1)
+    mocks.lineagePatchNode.mockImplementation(async (req: { id: string; x?: number; y?: number }) =>
+      ({ ok: true, data: { ...useLineageStore.getState().nodes.find((n) => n.id === req.id)!, ...req } })
+    )
+    mocks.lineageHistoryUnit.mockImplementation(echoHistoryUnit)
     setQuitClosing(true)
-    useLineageStore.getState().undo()
+    await expect(useLineageStore.getState().undo()).resolves.toBe(false)
     expect(useLineageStore.getState().undoStack.length).toBe(1)
+    expect(mocks.lineageHistoryUnit).not.toHaveBeenCalled() // history-unit 用户入口同闸
     setQuitClosing(false)
-    useLineageStore.getState().undo()
+    await expect(useLineageStore.getState().undo()).resolves.toBe(true)
     expect(useLineageStore.getState().undoStack.length).toBe(0)
     expect(useLineageStore.getState().redoStack.length).toBe(1)
+    expect(mocks.lineageHistoryUnit).toHaveBeenCalledTimes(1)
   })
 
-  it('lineage redo：冻结期 no-op（redo 栈不变）；closing 外重做', () => {
-    useLineageStore.setState({ undoStack: [], redoStack: [{
-      nodes: [],
-      edges: [],
-      lineTypeNames: [],
-      queue: [],
-      floatingNotes: [NOTE]
-    }] })
+  it('lineage redo：冻结期 no-op（redo 栈不变）；closing 外重做', async () => {
+    // [B4 L1] 旧 SessionSnapshot 夹具→最小 HistoryEntry（受锁面机械迁移）
+    useLineageStore.setState({ undoStack: [], redoStack: [makeHistoryEntry()], status: 'ready', inflight: null, flushing: false })
+    mocks.lineageHistoryUnit.mockImplementation(echoHistoryUnit)
     setQuitClosing(true)
-    useLineageStore.getState().redo()
+    await expect(useLineageStore.getState().redo()).resolves.toBe(false)
     expect(useLineageStore.getState().redoStack.length).toBe(1)
+    expect(mocks.lineageHistoryUnit).not.toHaveBeenCalled()
     setQuitClosing(false)
-    useLineageStore.getState().redo()
+    await expect(useLineageStore.getState().redo()).resolves.toBe(true)
     expect(useLineageStore.getState().redoStack.length).toBe(0)
   })
 
@@ -365,4 +376,105 @@ describe('quit-gate-sources —— 逐写源判别（F-VISFB-64 回炉 W1/W2/W7�
     }
   })
 
+})
+
+// ── [回炉 W-D1·T-B02] 设计稿 §12.2 行 805 增补：lineage 显式保存的 closing gate 拒绝与内部 flush 放行。
+//    既有例覆盖 lineage undo/redo 闸；本段补显式保存（saveActiveFolder／retrySave——用户命令面，同闸）
+//    与退出握手消费面的内部 flush（save——收口核心路径，放行）的判别对（本文件头注「每源至少一红一绿判别对」）。
+describe('quit-gate-sources —— lineage 显式保存闸与内部 flush 放行（[回炉 W-D1] 设计稿 §12.2 行 805、quit-gate 行「内部 flush 放行」）', () => {
+  const GATE_NODE = { id: 'n-g2', paperId: 'qp-g2', title: '节点', year: 2024, month: null, slot: 0, x: 0, y: 0, folderId: '__main__', createdAt: 't0', updatedAt: 't0' }
+  const patchOk = vi.fn(async (_req: { id: string }) => ({ ok: true as const, data: { ...GATE_NODE, x: 10, y: 20, updatedAt: 't1' } }))
+  /** 活动会话一条待写（Q=1、undo 1、U=1）——写链空闲 */
+  const seedPendingWrite = (): void => {
+    useLineageStore.setState({
+      nodes: [{ ...GATE_NODE }],
+      status: 'ready',
+      floatingNotes: [],
+      saveStatus: 'clean',
+      lastWriteError: null,
+      queue: [],
+      flushing: false,
+      inflight: null,
+      needsReload: false,
+      undoStack: [],
+      redoStack: [],
+      unfinalized: false,
+      editRevision: 0
+    })
+    useLineageStore.getState().moveNode('n-g2', 10, 20)
+    expect(useLineageStore.getState().queue).toHaveLength(1)
+  }
+  /** IO 轴与 U/历史轴快照（判别「拒绝零副作用」的对照面——按内容比较，不按引用） */
+  type GateState = ReturnType<typeof useLineageStore.getState>
+  interface IoSnapshot extends Pick<GateState, 'unfinalized' | 'saveStatus' | 'lastWriteError' | 'inflight'> {
+    queue: number
+    undo: string[]
+    redo: string[]
+  }
+  const snapshot = (): IoSnapshot => {
+    const s = useLineageStore.getState()
+    return {
+      queue: s.queue.length,
+      undo: s.undoStack.map((e) => e.id),
+      redo: s.redoStack.map((e) => e.id),
+      unfinalized: s.unfinalized,
+      saveStatus: s.saveStatus,
+      lastWriteError: s.lastWriteError,
+      inflight: s.inflight
+    }
+  }
+
+  it('显式保存（saveActiveFolder）：冻结期拒绝——false、零写 IPC、不定稿（Q/两栈/U/相位/在途原样）；解冻后同一命令定稿', async () => {
+    mocks.lineagePatchNode.mockImplementation(patchOk)
+    seedPendingWrite()
+    const undoIds = useLineageStore.getState().undoStack.map((e) => e.id)
+    expect(undoIds).toHaveLength(1)
+    const before = snapshot()
+    expect(before).toEqual({ queue: 1, undo: undoIds, redo: [], unfinalized: true, saveStatus: 'dirty', lastWriteError: null, inflight: null })
+    setQuitClosing(true)
+    await expect(useLineageStore.getState().saveActiveFolder()).resolves.toBe(false)
+    expect(mocks.lineagePatchNode).not.toHaveBeenCalled()
+    expect(snapshot(), '拒绝零副作用').toEqual(before)
+    setQuitClosing(false)
+    await expect(useLineageStore.getState().saveActiveFolder()).resolves.toBe(true)
+    expect(mocks.lineagePatchNode).toHaveBeenCalledTimes(1)
+    expect(mocks.lineagePatchNode).toHaveBeenLastCalledWith({ id: 'n-g2', title: '节点', year: 2024, month: null, slot: 0, x: 10, y: 20 })
+    expect(snapshot(), '解冻后定稿：Q0、undo 保留、redo 清、U 清').toEqual({ queue: 0, undo: undoIds, redo: [], unfinalized: false, saveStatus: 'clean', lastWriteError: null, inflight: null })
+  })
+
+  it('error 相位的重试入口（retrySave）：冻结期同闸——零写 IPC、失败写与错误行原样；解冻后重试落库并定稿', async () => {
+    mocks.lineagePatchNode.mockResolvedValueOnce({ ok: false, error: { code: 'E', message: '写失败' } }).mockImplementation(patchOk)
+    seedPendingWrite()
+    setQuitClosing(true)
+    await useLineageStore.getState().save() // 内部 flush 放行：写以系统失败收场→error 态（重试入口的前置）
+    expect(mocks.lineagePatchNode).toHaveBeenCalledTimes(1)
+    const before = snapshot()
+    expect(before).toEqual({ queue: 1, undo: [useLineageStore.getState().undoStack[0]!.id], redo: [], unfinalized: true, saveStatus: 'error', lastWriteError: '写失败', inflight: null })
+    useLineageStore.getState().retrySave() // 保存错误行的重试=显式保存（用户命令面）
+    await drain()
+    expect(mocks.lineagePatchNode, '重试被闸拒：不发第二次写').toHaveBeenCalledTimes(1)
+    expect(snapshot()).toEqual(before)
+    setQuitClosing(false)
+    useLineageStore.getState().retrySave()
+    await drain()
+    expect(mocks.lineagePatchNode).toHaveBeenCalledTimes(2)
+    const after = snapshot()
+    expect(after).toEqual({ ...before, queue: 0, unfinalized: false, saveStatus: 'clean', lastWriteError: null })
+  })
+
+  it('内部 flush 放行：closing 中退出握手消费面 save() 照常 drain 落库→clean；IO 收口不定稿（U/undo 不动、零 history-unit）；同期用户写仍被拒', async () => {
+    mocks.lineagePatchNode.mockImplementation(patchOk)
+    seedPendingWrite()
+    setQuitClosing(true)
+    await useLineageStore.getState().save()
+    expect(mocks.lineagePatchNode).toHaveBeenCalledTimes(1)
+    expect(mocks.lineagePatchNode).toHaveBeenLastCalledWith({ id: 'n-g2', title: '节点', year: 2024, month: null, slot: 0, x: 10, y: 20 })
+    expect(snapshot(), 'IO 收口不定稿：U 与 undo 保持').toEqual({
+      queue: 0, undo: [useLineageStore.getState().undoStack[0]!.id], redo: [], unfinalized: true, saveStatus: 'clean', lastWriteError: null, inflight: null
+    })
+    expect(mocks.lineageHistoryUnit).not.toHaveBeenCalled()
+    useLineageStore.getState().moveNode('n-g2', 30, 40) // 同一 closing 态下的用户写
+    expect(useLineageStore.getState().queue).toHaveLength(0)
+    expect(useLineageStore.getState().undoStack).toHaveLength(1)
+  })
 })

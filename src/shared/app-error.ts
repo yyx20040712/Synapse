@@ -34,7 +34,13 @@ export interface AppError {
   /** [F-VISFB-65 单元二] 结构化拒因（同 code 下的细分通道——W-12：Result 信封
    *  =结构化数据序列化，reason 随 error 对象走不丢）。值域=受控串（新增值须
    *  在发射点登记）：'GHOST_FOLDER'=悬浮笔记目标文件夹已删（floating-notes
-   *  ghost-folder 拒点唯一发射）。在场=串；缺席=键不存在（err() 两形同纪律） */
+   *  ghost-folder 拒点唯一发射）；[B4 L1] CONFLICT 下四个 history-unit 拒因
+   *  （'HISTORY_STALE'=当前实体与预期端态语义指纹不符、'HISTORY_FOLDER_MISSING'/
+   *  'HISTORY_PAPER_MISSING'=恢复目标的文件夹/文献已删、'HISTORY_GRAPH_INVALID'=
+   *  最终图结构守卫拒绝——语义注释见发射点 lineage-history-unit.service；值域单源
+   *  ＝[用户裁决 R12 / 回炉 W-D2c] HISTORY_UNIT_CONFLICT_REASONS，
+   *  src/shared/ipc/lineage-history.schemas）。
+   *  在场=串；缺席=键不存在（err() 两形同纪律） */
   reason?: string
 }
 

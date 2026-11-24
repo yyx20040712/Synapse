@@ -23,6 +23,7 @@ function stubRepos(
   repos: Repos
   folderOps: Record<string, ReturnType<typeof vi.fn>>
   paperOps: Record<string, ReturnType<typeof vi.fn>>
+  lineageOps: Record<string, ReturnType<typeof vi.fn>>
 } {
   const f = (id: string, name: string): Folder => ({ id, name, position: 0, paperCount: 0 })
   const folderOps = {
@@ -44,14 +45,18 @@ function stubRepos(
     countBySha256: vi.fn(() => 0)
   }
   const merged = { ...folderOps, ...over } as Record<string, unknown>
+  // [B4 L1 D2 §5.4] keyed 色行名清理桩面（删夹事务同事务 removeMeta）
+  const lineageOps = { removeMeta: vi.fn(() => 1) }
   return {
     repos: {
       folders: merged,
       papers: paperOps,
+      lineage: lineageOps,
       withTransaction: vi.fn(<T>(fn: () => T): T => fn())
     } as unknown as Repos,
     folderOps: folderOps as unknown as Record<string, ReturnType<typeof vi.fn>>,
-    paperOps: paperOps as unknown as Record<string, ReturnType<typeof vi.fn>>
+    paperOps: paperOps as unknown as Record<string, ReturnType<typeof vi.fn>>,
+    lineageOps
   }
 }
 
@@ -127,6 +132,17 @@ describe('F-FOLDER-01 folders.service —— CRUD 编排（校验序沿 tags 先
     expect(paperRemoveOrder!).toBeLessThan(folderRemoveOrder!)
     expect(sendFoldersChanged).toHaveBeenCalledTimes(1)
     expect(sendLineageChanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('[B4 L1 D2 §5.4] delete：同事务删该夹 keyed 色行名 meta 行（removeMeta 键=lineTypeNames:<id>，序在 folders.remove 之后）；NOT_FOUND/主图拒路径零调用', async () => {
+    const { repos, folderOps, lineageOps } = stubRepos({}, ['p-1'])
+    const { svc } = makeService(repos)
+    await expect(svc.delete({ id: 'f-ghost' })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    expect(lineageOps.removeMeta).not.toHaveBeenCalled()
+    await expect(svc.delete({ id: 'f-1' })).resolves.toEqual({ ok: true })
+    expect(lineageOps.removeMeta).toHaveBeenCalledTimes(1)
+    expect(lineageOps.removeMeta).toHaveBeenCalledWith('lineTypeNames:f-1')
+    expect(folderOps.remove!.mock.invocationCallOrder[0]!).toBeLessThan(lineageOps.removeMeta!.mock.invocationCallOrder[0]!)
   })
 })
 

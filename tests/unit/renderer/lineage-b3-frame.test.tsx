@@ -393,7 +393,7 @@ describe('[B3 红测试] 帧协议（rAF 合帧+读写批次+translate 化——
     // 双 rAF 后目标：target=(12,18)（stub 定值）→translate=(0,0)
     expect(translateOf(card)).toBe('0px 0px')
     fireEndTranslate(card)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
     expect(card.getAttribute('style') === null || card.getAttribute('style') === '').toBe(true)
   })
   it('F6 pullPx 帧批：越缘 move 不 flush 不写 --lg-pull 不挂 stretch（红因=现行逐事件写+React 提交）；一次 flush=单帧跟随值', () => {
@@ -441,7 +441,7 @@ describe('[B3 红测试] 帧协议（rAF 合帧+读写批次+translate 化——
     // 绿（实现批）：lastClient=(500,140) 框内→落当前候选槽 insertIdx=1
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
   it('F8 exceeded latch 置位后未 flush 直接 cancel（0/0）=按 lastClient 激活并 settle 到组末（红因=现行 cancel 事件坐标误回弹）', () => {
     mount([node('A'), node('B'), node('C')])
@@ -456,7 +456,7 @@ describe('[B3 红测试] 帧协议（rAF 合帧+读写批次+translate 化——
     })
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
   it('L1 布局终局屏障：非零位移 flight 先完成时数据写保持原时点，routeEpoch 等 padding-bottom 终局恰一次 bump', () => {
     mount([node('A'), node('B'), node('C')])
@@ -472,7 +472,7 @@ describe('[B3 红测试] 帧协议（rAF 合帧+读写批次+translate 化——
     routeBump.mockClear()
     pUp(240, 250)
     fireEndBoth(cardOf('A')) // .32s flight finish；.38s padding 回落尚未终局
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
     expect(routeBump, '布局回落中不得提前 bump').not.toHaveBeenCalled()
     act(() => {
       frame.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'padding-bottom' }))
@@ -500,7 +500,7 @@ describe('[B3 红测试] 帧协议（rAF 合帧+读写批次+translate 化——
     routeBump.mockClear()
     released = true
     pUp(240, 250)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A']) // 零位移 flight finish 仍即时数据写
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' })) // 零位移 flight finish 仍即时数据写
     expect(routeBump).not.toHaveBeenCalled()
     act(() => {
       frame.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'padding-bottom' }))

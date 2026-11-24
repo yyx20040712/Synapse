@@ -18,12 +18,21 @@
  * 旧库在新代码下启动=响亮迁移失败（22<26 跑 026→CREATE TABLE 已存在→事务
  * 回滚抛错）——有意行为非静默错配。
  *
+ * 第四/五件（B4 L1，2026-11-23）：[D2 用户终裁 A] 027_lineage_meta_folder——色行名
+ * 共享键→folder 键（零新表零新列，INSERT...SELECT 复制后删旧键）；[D1 用户终裁 A
+ * §7.5] 028_deletion_log_write_guard——七个含 updated_at 表的删事件触发器重建为
+ * deleted_at=max(now, OLD.updated_at+1ms)。两件均非 fkOff（DROP TRIGGER+CREATE
+ * TRIGGER 不触 FK 面触发器族重算）。schema_version（=user_version）随链 26→28：
+ * 快照卷 schema_newer 闸对新卷只升不降（旧库 27/28 库导入 26 卷=放行）。
+ *
  * SQL 通过 Vite ?raw 内联进产物，打包后无需携带 .sql 文件。
  * 测试：tests/unit/db/migrate.test.ts（新库全量〔基线漂移守卫〕/已迁移跳过
  * +开库断言仍执行/失败回滚）。
  */
 import type { SqliteDb } from './connection'
 import baselineSql from './migrations/026_baseline.sql?raw'
+import lineageMetaFolderSql from './migrations/027_lineage_meta_folder.sql?raw'
+import deletionLogWriteGuardSql from './migrations/028_deletion_log_write_guard.sql?raw'
 
 export interface Migration {
   version: number
@@ -42,10 +51,13 @@ export interface Migration {
 }
 
 /** 迁移清单：新增迁移在此追加（文件放 migrations/ 并 import ?raw）。
- * [F-SNAPCLEAN-01] 基线压缩后现役单件=026（B″ 续号——新库直达 26）；后续演进
- * 从 027_*.sql 起新增，026 与其内容不可再修改。 */
+ * [F-SNAPCLEAN-01] 基线压缩后首件=026（B″ 续号——新库直达 26）；后续演进
+ * 从 027_*.sql 起新增，已合入件与其内容不可再修改。
+ * [B4 L1] 027=色行名 folder 键化（D2）；028=删事件写点单调守卫触发器重建（D1）。 */
 export const MIGRATIONS: readonly Migration[] = [
-  { version: 26, name: 'baseline', sql: baselineSql }
+  { version: 26, name: 'baseline', sql: baselineSql },
+  { version: 27, name: 'lineage_meta_folder', sql: lineageMetaFolderSql },
+  { version: 28, name: 'deletion_log_write_guard', sql: deletionLogWriteGuardSql }
 ]
 
 export interface MigrateResult {

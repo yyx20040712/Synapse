@@ -195,7 +195,7 @@ describe('[B3 守卫] 拖拽会话接缝锁（G11 为三轮新增红例，其余
     expect(q('.drag-slot')).toBeNull()
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('G3 跨月=物理域回弹 no-op（INV-98 缝隙）：源框外松手零写零 toast（overSourceFrame 迁 geometry 件后单源不回退）', () => {
@@ -236,7 +236,7 @@ describe('[B3 守卫] 拖拽会话接缝锁（G11 为三轮新增红例，其余
     fireEndBoth(cardOf('A'))
     fireEndBoth(cardOf('A')) // 二次 transitionend=幂等面
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('G5 激活帧节点保育（INV-140 缝隙）：跨行布防下源卡拖起=同父 keyed 调和（节点同一性）+B3 不动键存续（position/marginLeft/transition）+驻原行', async () => {
@@ -281,7 +281,7 @@ describe('[B3 守卫] 拖拽会话接缝锁（G11 为三轮新增红例，其余
     pUp(480, 40)
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('G7 G2 终态清理缝隙：下拉带 settle 后 .stretch 摘除+--lg-pull 变量清零+行结构恒定（store 提交不引发第二轮布局）', () => {
@@ -303,7 +303,7 @@ describe('[B3 守卫] 拖拽会话接缝锁（G11 为三轮新增红例，其余
     expect(frame.style.getPropertyValue('--lg-pull')).toBe('')
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
     const rowsBefore = host!.querySelectorAll('.tl-row').length
     expect(rowsBefore).toBe(1) // unmeasured 单行——settle 前后行结构恒定
   })
@@ -347,7 +347,7 @@ describe('[B3 守卫] 拖拽会话接缝锁（G11 为三轮新增红例，其余
     pUp(500, 40)
     fireEndBoth(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('G11 布局屏障期 pointerdown 忽略：flight finish 后 padding end 前第二会话不得激活（方案 A——红因=现行 phase 已回 idle）', () => {

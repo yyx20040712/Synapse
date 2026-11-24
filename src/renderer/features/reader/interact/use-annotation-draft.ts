@@ -19,7 +19,7 @@
  * - syncExternal：宿主草稿被 load/合并改写时采用外部值（零历史项跟随）。
  */
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useTextDraftRegistryBinding } from './annotation-draft-registry'
+import { annotationDraftSaved, useTextDraftRegistryBinding } from './annotation-draft-registry'
 import {
   TextController,
   type TextSaveState,
@@ -107,8 +107,22 @@ export function useAnnotationDraft(target: TextTargetKey | null, initial: string
   // 控制器按 target 键创建（同键复用——实例驻 ref；换键随注册表绑定 effect 清理旧控制器）
   if (target !== null && (holderRef.current === null || holderRef.current.key !== key)) {
     const ctl: TextController = new TextController(target, initial, {
-      persist: (v) => optsRef.current.onAutosave(v, ctl.target),
-      persistRaw: (v) => optsRef.current.onAutosaveRaw(v, ctl.target),
+      // [回炉 W-C·笔记草稿残留清除] 写通道出口：宿主回报 true=该值已在库（上方宿主适配契约）→清掉本目标
+      // 在草稿注册表里的卸载残留条目（等值才清）。入表面是共享绑定 useTextDraftRegistryBinding（写在途时
+      // 卸载即入表），离场后的写全部经这两个端口发出——在此清除对批注、总评两宿主一并成立（批注宿主在
+      // 自己的写任务里已清一次，此处为幂等重复）。原缺陷：清除调用只在批注 comment 写路径，总评（笔记
+      // 正文）写在途时离开阅读器→条目在写落库后仍留在表里→课题切换 prepare 判脏静默取消、退出被判有
+      // 未保存修改（B4-A 遗留；B4-B 的 A2 e2e 发现）
+      persist: async (v) => {
+        const saved = await optsRef.current.onAutosave(v, ctl.target)
+        if (saved) annotationDraftSaved(textDraftRegistryKey(ctl.target), v)
+        return saved
+      },
+      persistRaw: async (v) => {
+        const saved = await optsRef.current.onAutosaveRaw(v, ctl.target)
+        if (saved) annotationDraftSaved(textDraftRegistryKey(ctl.target), v)
+        return saved
+      },
       historyWriteRaw: (v) => {
         const o = optsRef.current
         return (o.onHistoryWriteRaw ?? o.onAutosaveRaw)(v, ctl.target)

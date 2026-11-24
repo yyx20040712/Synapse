@@ -11,6 +11,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 const stubApi = makeApiStub({
   lineage: {
     graph: vi.fn(),
@@ -18,7 +19,8 @@ const stubApi = makeApiStub({
     removeNode: vi.fn(),
     upsertEdge: vi.fn(),
     removeEdge: vi.fn(),
-    upsertLineTypes: vi.fn()
+    upsertLineTypes: vi.fn(),
+    historyUnit: vi.fn()
   }
 })
 
@@ -77,6 +79,7 @@ const slotsOf = (): Array<[string, number | null | undefined]> =>
 beforeEach(() => {
   vi.clearAllMocks()
   for (const fn of Object.values(stubApi.lineage)) fn.mockReset()
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=async history-unit
   stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
   stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) => {
     const cur = useLineageStore.getState().nodes.find((n) => n.id === (req.id ?? '')) ?? node('X')
@@ -149,16 +152,16 @@ describe('[F-LANEGRID-01 B3] applyObstacleReroute —— 拖放 settle 复合单
     ])
   })
 
-  it('undo=历史恢复不清 via：槽位与 via 一并回前态；redo=清态恢复', () => {
+  it('undo=历史恢复不清 via：槽位与 via 一并回前态；redo=清态恢复', async () => {
     mount()
     const before = slotsOf()
     state().applyObstacleReroute(['C', 'A', 'B'])
-    state().undo()
+    await state().undo()
     expect(slotsOf()).toEqual(before) // 布局恢复
     expect(viaOf('eAB'), '恢复的前布局=via 有效布局（undo 不触发清除）').toEqual(VIA)
     expect(viaOf('eDA')).toEqual(VIA)
     expect(state().redoStack).toHaveLength(1)
-    state().redo()
+    await state().redo()
     expect(viaOf('eAB'), 'redo=清态恢复').toBeUndefined()
     expect(slotsOf()).toEqual([
       ['C', 0],
@@ -194,7 +197,7 @@ describe('[F-LANEGRID-01 B3] applyObstacleReroute —— 拖放 settle 复合单
 })
 
 describe('[F-LANEGRID-01 B3] removeNode —— 删卡障碍突变（同帧存留边 via 清除并入同一单元）', () => {
-  it('删 A：级联边 eAD 随亡不载荷；同帧存留 manual 边 eBC 清除；异帧 eDE 保留；单撤销单元', () => {
+  it('删 A：级联边 eAD 随亡不载荷；同帧存留 manual 边 eBC 清除；异帧 eDE 保留；单撤销单元', async () => {
     useLineageStore.setState({
       nodes: [
         node('A', { month: 9, slot: 0 }),
@@ -216,14 +219,14 @@ describe('[F-LANEGRID-01 B3] removeNode —— 删卡障碍突变（同帧存留
     expect(viaOf('eBC'), '同帧存留 manual 边清除').toBeUndefined()
     expect(viaOf('eDE'), '异帧保留').toEqual(VIA)
     expect(state().queue.map((a) => a.kind)).toEqual(['remove-node', 'upsert-edge'])
-    state().undo()
+    await state().undo()
     expect(viaOf('eBC')).toEqual(VIA) // undo 恢复清前态（含级联边复活）
     expect(state().nodes).toHaveLength(5)
   })
 })
 
 describe('[F-LANEGRID-01 B3] setEdgeVia 编辑口沿承（单独调用行为不变）', () => {
-  it('单独调用=一单元一动作：via 写入乐观+撤销恢复；与复合动作互不干扰', () => {
+  it('单独调用=一单元一动作：via 写入乐观+撤销恢复；与复合动作互不干扰', async () => {
     useLineageStore.setState({
       nodes: [node('A'), node('B')],
       edges: [edge('e1', 'A', 'B')]
@@ -232,7 +235,7 @@ describe('[F-LANEGRID-01 B3] setEdgeVia 编辑口沿承（单独调用行为不�
     expect(state().undoStack).toHaveLength(1)
     expect(viaOf('e1')).toEqual(VIA)
     expect(state().queue).toHaveLength(1)
-    state().undo()
+    await state().undo()
     expect(viaOf('e1')).toBeUndefined()
   })
 })

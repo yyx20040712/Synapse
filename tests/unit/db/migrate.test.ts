@@ -5,6 +5,10 @@ import { MIGRATIONS, migrate, readUserVersion } from '../../../src/main/db/migra
 /**
  * [F-SNAPCLEAN-01] 迁移执行器测试——基线压缩（B″，ADR-0030）后重写：
  * 旧链 001–025 压缩为单件 026_baseline.sql，新库 user_version 直达 26。
+ * [B4 L1 2026-11-23] 链续 027_lineage_meta_folder+028_deletion_log_write_guard
+ * （链尾 28——RR1 d1-N6 tripwire 按其注释随首个 027 合入更新；两件自身的行为
+ * 测试=migrate-027-028.test.ts）。对象集/种子不变（027 零新表零新列；028 重建
+ * 7 触发器名称集不变）。
  * 三用例族：①新库全量（全对象集+种子=floating_notes 七列负锚等——基线漂移
  * 永驻守卫，兼等价证明的运行期锚）；②已迁移库重开零应用+开库断言仍执行；
  * ③失败整体回滚（migrations 参数注入坏迁移）。旧 12 件迁移路径测试随压缩
@@ -89,16 +93,19 @@ function namesOf(db: ReturnType<typeof openDatabase>, kind: 'table' | 'index' | 
 }
 
 describe('db/migrate —— 迁移执行器（026 基线单件）', () => {
-  it('新库全量：appliedVersions=[26]、全对象集+种子在位（基线漂移守卫——等价证明的永驻锚）', () => {
+  it('新库全量：appliedVersions=[26,27,28]、全对象集+种子在位（基线漂移守卫——等价证明的永驻锚）', () => {
     const db = openDatabase(':memory:')
     const result = migrate(db)
-    expect(result.appliedVersions).toEqual([26])
-    expect(result.currentVersion).toBe(26)
-    expect(readUserVersion(db)).toBe(26)
-    // [RR1 d1-N6] tripwire：首个 027 迁移合入时本断言随批更新（有意钉死单件防静默增链）
-    expect(MIGRATIONS).toHaveLength(1)
-    expect(MIGRATIONS[0]!.version).toBe(26)
-    expect(MIGRATIONS[0]!.name).toBe('baseline')
+    expect(result.appliedVersions).toEqual([26, 27, 28])
+    expect(result.currentVersion).toBe(28)
+    expect(readUserVersion(db)).toBe(28)
+    // [RR1 d1-N6] tripwire（随 [B4 L1] 首个 027 合入更新——增链须意识化改本 pin）
+    expect(MIGRATIONS).toHaveLength(3)
+    expect(MIGRATIONS.map((m) => [m.version, m.name])).toEqual([
+      [26, 'baseline'],
+      [27, 'lineage_meta_folder'],
+      [28, 'deletion_log_write_guard']
+    ])
     expect(namesOf(db, 'table', false)).toEqual(ALL_TABLES)
     expect(namesOf(db, 'index', true)).toEqual(ALL_INDEXES)
     const triggers = namesOf(db, 'trigger', false)
@@ -225,10 +232,10 @@ describe('db/migrate —— 迁移执行器（026 基线单件）', () => {
   it('已迁移库重开：零应用幂等+开库断言仍执行（守卫悬挂态在零应用路径显性告警）', () => {
     const db = openDatabase(':memory:')
     const first = migrate(db)
-    expect(first.currentVersion).toBe(26)
+    expect(first.currentVersion).toBe(28)
     const again = migrate(db)
     expect(again.appliedVersions).toEqual([])
-    expect(again.currentVersion).toBe(26)
+    expect(again.currentVersion).toBe(28)
     db.prepare('UPDATE deletion_log_guard SET stop = 1').run()
     expect(() => migrate(db)).toThrow(/开库断言失败/)
     db.close()

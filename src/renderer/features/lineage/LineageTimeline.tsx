@@ -23,6 +23,7 @@ import { useCardDrag } from './useCardDrag'
 import { useDrawLine } from './useDrawLine'
 import { DrawLayers } from './DrawLayers'
 import { useLineageViewStore } from './lineage-view.store'
+import { useLineageStore } from './lineage.store'
 import { useSettingsStore } from '../settings/settings.store'
 import { useTimelineNavSync } from './timeline-nav-sync'
 import { useCapacityLayout } from './use-capacity-layout'
@@ -100,8 +101,13 @@ export function LineageTimeline(props: {
   const drawing = tool !== 'select'
   // [T3-P8] 槽位拖拽状态机（编排本体驻 hook——Timeline 增量红线）；
   // [F-UIRES-03 C3] 改月域（弹层/预演）随改月链退役——groups 直用
+  // [B4 L2 §9.3] 拖拽写归属身份捕获面（活动会话 folder+generation——卸载后兜底写仍到原会话）
+  const dragFolderId = useLineageStore((s) => s.folderId)
+  const dragGeneration = useLineageStore((s) => s.sessionGeneration)
   const drag = useCardDrag({
     nodes,
+    folderId: dragFolderId,
+    generation: dragGeneration,
     isEditing: viewMode === 'edit',
     isPicking: drawing, // [②U3] 画线 armed=拖拽闸（拾取优先沿承——重命名申报）
     popOpen: false,

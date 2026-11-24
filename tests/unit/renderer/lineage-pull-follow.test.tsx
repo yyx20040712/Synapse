@@ -254,7 +254,7 @@ describe('[F-VISFB-22 C6] 框底连续跟随（未拉伸底缘起 pullPx 跟随+
     expect(reorder).not.toHaveBeenCalled()
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('[INV-98 锚] x 带外越缘不触发（触发带语义保留——带外 stretch 恒无）', () => {

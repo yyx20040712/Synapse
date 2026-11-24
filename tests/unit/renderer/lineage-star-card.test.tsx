@@ -17,6 +17,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultLineTypeNames, type LineageNode } from '../../../src/shared/models/lineage'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
+import { makeHistoryEntry } from '../../utils/factories'
+import type { LineageEntityDelta } from '../../../src/shared/ipc/lineage-history.schemas'
 
 // 侧板子节挂载链桩（notes/reader/ai_sensor——api-client-mock 展开型共享桩）
 // +store 星标切换桩（papers.setStarred——A3 toggleNodeStar 面）
@@ -31,6 +34,7 @@ const stubApi = makeApiStub({
     listByPaper: vi.fn(async () => ({ ok: true as const, data: [] }))
   },
   papers: { setStarred: vi.fn() },
+  lineage: { historyUnit: vi.fn() }, // [B4 L1] undo/redo=history-unit（回显桩）
   // [F-UIRES-04 批 3b 回炉 r1] SidePaperInfo M1 接缝面（主控裁 reject：error 态最小 DOM 增量，M2/pdfjs 链不进单测）
   library: { detail: vi.fn(() => Promise.reject(new Error('library.detail: b3b 接缝面未桩接'))) }
 })
@@ -69,6 +73,7 @@ async function render(node: JSX.Element): Promise<void> {
 
 beforeEach(() => {
   Element.prototype.scrollIntoView = () => undefined
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit)
   stubApi.papers.setStarred.mockClear()
   stubApi.papers.setStarred.mockImplementation(async () => ({ ok: true as const, data: { ok: true } }))
 })
@@ -179,102 +184,73 @@ describe('F-STAR-01 A3 lineage.store toggleNodeStar', () => {
     expect(stubApi.papers.setStarred).toHaveBeenCalledWith({ paperId: 'p-x', starred: true })
   })
 
-  it('undo 快照不捕获星标（回炉 r1-R2/k3-W-1）：入栈→toggleNodeStar(true)→undo→isStarred 仍 true（星标=非撤销维度恒保现值——不与 DB 脱钩）', async () => {
+  // [B4 L1 §12.2 迁移] 旧 SessionSnapshot 整图夹具→最小 HistoryEntry（受影响实体的
+  // before/after）；undo/redo 改 await 真实链结果。星标=非撤销维度的语义原样保留：
+  // delta 指纹排除派生 isStarred，应用回显时按现网星标现值 overlay。
+  const starReady = (nodes: LineageNode[], entry: ReturnType<typeof makeHistoryEntry>): void => {
     const store = useLineageStore
-    const before = makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false })
     store.setState({
-      nodes: [before],
+      nodes,
       edges: [],
       lineTypeNames: defaultLineTypeNames(),
       queue: [],
-      undoStack: [],
+      undoStack: [entry],
       redoStack: [],
       saveStatus: 'clean',
-      flushing: false
+      flushing: false,
+      inflight: null,
+      status: 'ready'
     })
-    // 编辑单元入栈（beginUnit 前快照——isStarred=false 时点）
-    store.setState({
-      undoStack: [
-        { nodes: [before], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [], floatingNotes: [] }
-      ]
-    })
+  }
+  const nodeDelta = (before: LineageNode | null, after: LineageNode | null): LineageEntityDelta =>
+    ({ kind: 'node', id: (before ?? after)!.id, before, after })
+
+  it('undo 不捕获星标（回炉 r1-R2/k3-W-1）：入栈→toggleNodeStar(true)→undo→isStarred 仍 true（星标=非撤销维度恒保现值——不与 DB 脱钩）', async () => {
+    const store = useLineageStore
+    const before = makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false, x: 0 })
+    const after = { ...before, x: 10 }
+    starReady([after], makeHistoryEntry({ changes: [nodeDelta(before, after)] }))
     await store.getState().toggleNodeStar({ id: 'n-1', paperId: 'p-1', isStarred: false })
     expect(store.getState().nodes[0]?.isStarred).toBe(true)
-    store.getState().undo()
-    expect(store.getState().nodes[0]?.isStarred, 'undo 后星标保持现值（快照不回退）').toBe(true)
+    await store.getState().undo()
+    expect(store.getState().nodes[0]?.x, '反向写生效（before 态回写）').toBe(0)
+    expect(store.getState().nodes[0]?.isStarred, 'undo 后星标保持现值（delta 不回退星标）').toBe(true)
   })
 
   it('redo 向跨格序列（回炉 r2-R15）：入栈→toggle(true)→undo→redo→isStarred 仍 true；undo 后 toggle 再 redo 同保现值（判别序列 B——变异摘 overlay 须红）', async () => {
     const store = useLineageStore
-    const reset = (): void => {
-      store.setState({
-        nodes: [makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false })],
-        edges: [],
-        lineTypeNames: defaultLineTypeNames(),
-        queue: [],
-        undoStack: [],
-        redoStack: [],
-        saveStatus: 'clean',
-        flushing: false
-      })
-    }
-    const pushSnap = (): void => {
-      store.setState({
-        undoStack: [
-          {
-            nodes: [makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false })],
-            edges: [],
-            lineTypeNames: defaultLineTypeNames(),
-            queue: [],
-            floatingNotes: []
-          }
-        ]
-      })
-    }
-    // 序列 A（主控指定）：入栈→toggle→undo→redo——undo/redo 共用 restore
-    // 单点=同语义机械覆盖（redo 恢复的 cur 录制点已含星标现值，首跑即绿）
-    reset()
-    pushSnap()
+    const before = makeNode({ id: 'n-1', paperId: 'p-1', isStarred: false, x: 0 })
+    const after = { ...before, x: 10 }
+    const entry = makeHistoryEntry({ changes: [nodeDelta(before, after)] })
+    // 序列 A（主控指定）：入栈→toggle→undo→redo——undo/redo 共用回显应用单点
+    starReady([after], entry)
     await store.getState().toggleNodeStar({ id: 'n-1', paperId: 'p-1', isStarred: false })
-    store.getState().undo()
-    store.getState().redo()
+    await store.getState().undo()
+    await store.getState().redo()
     expect(store.getState().nodes[0]?.isStarred, '序列 A：redo 后星标仍 true').toBe(true)
-    // 序列 B（判别面）：undo→toggle→redo——cur 录制点早于星标切换，
-    // redo 恢复快照 false 时 overlay 回贴现值 true（摘 overlay 即红）
-    reset()
-    pushSnap()
-    store.getState().undo()
+    // 序列 B（判别面）：undo→toggle→redo——delta 录制点早于星标切换，redo 应用
+    // 时按现网星标现值 overlay（摘 overlay 即红）
+    starReady([after], entry)
+    await store.getState().undo()
     await store.getState().toggleNodeStar({ id: 'n-1', paperId: 'p-1', isStarred: false })
     expect(store.getState().nodes[0]?.isStarred).toBe(true)
-    store.getState().redo()
+    await store.getState().redo()
     expect(store.getState().nodes[0]?.isStarred, '序列 B：undo 后星标不被 redo 回滚').toBe(true)
   })
 
-  it('add→star→undo→redo 边界（回炉 r2-R16/k3 角案）：回归节点 isStarred 取快照录制值（快照缺维度=缺席键，下次 graph 载入自愈——登记非修复）', async () => {
+  it('add→star→undo→redo 边界（回炉 r2-R16/k3 角案）：回归节点 isStarred 取 undo 时刻现值（星标现值记忆——派生键不入 delta）', async () => {
     const store = useLineageStore
     const n1 = makeNode({ id: 'n-1', paperId: 'p-1' })
     const n2 = makeNode({ id: 'n-2', paperId: 'p-2' })
-    store.setState({
-      nodes: [n1],
-      edges: [],
-      lineTypeNames: defaultLineTypeNames(),
-      queue: [],
-      undoStack: [{ nodes: [n1], edges: [], lineTypeNames: defaultLineTypeNames(), queue: [], floatingNotes: [] }],
-      redoStack: [],
-      saveStatus: 'clean',
-      flushing: false
-    })
-    // 编辑动作=新节点加入（入栈后现网 [n1,n2]）
-    store.setState({ nodes: [n1, n2] })
+    // 历史项=节点 n-2 的建立（before=null→after=n2；现网 [n1,n2]）
+    starReady([n1, n2], makeHistoryEntry({ changes: [nodeDelta(null, n2)] }))
     await store.getState().toggleNodeStar({ id: 'n-2', paperId: 'p-2', isStarred: undefined })
     expect(store.getState().nodes.find((n) => n.id === 'n-2')?.isStarred).toBe(true)
-    // undo：恢复 S0=[n1]——n2 消失（快照缺 id=新增后撤销，不贴保持快照值）
-    store.getState().undo()
+    await store.getState().undo() // 撤销建立——n2 消失
     expect(store.getState().nodes.map((n) => n.id)).toEqual(['n-1'])
-    // redo：n2 回归——isStarred 取 cur 录制值（undo 时刻现网已含 true）
-    store.getState().redo()
+    await store.getState().redo() // n2 回归——isStarred 取离场前现值（true）
     expect(store.getState().nodes.map((n) => n.id).sort()).toEqual(['n-1', 'n-2'])
-    expect(store.getState().nodes.find((n) => n.id === 'n-2')?.isStarred, '回归节点星标=快照录制值').toBe(true)
+    expect(store.getState().nodes.find((n) => n.id === 'n-2')?.isStarred, '回归节点星标=undo 时刻现值').toBe(true)
   })
 })
 

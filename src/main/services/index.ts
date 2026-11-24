@@ -42,6 +42,12 @@ import {
   createFloatingNotesService,
   type FloatingNotesService
 } from './lineage/floating-notes.service'
+import {
+  createLineageHistoryUnitService,
+  type LineageHistoryUnitService
+} from './lineage/lineage-history-unit.service'
+import type { CorpusExportDeps } from './export_/corpus.export.service'
+import { MAIN_GRAPH_ID } from '../../shared/models/lineage'
 import { createEnrichService } from './enrich/enrich.service'
 import { createCrossrefProvider, type CrossrefProvider } from './enrich/providers/crossref'
 import { createOpenalexProvider, type OpenalexProvider } from './enrich/providers/openalex'
@@ -140,6 +146,9 @@ export interface ServiceBundle {
   lineage: LineageService
   /** [F-VISFB-61] 悬浮笔记用例面（lineage 域两通道+graph 装配源消费） */
   floatingNotes: FloatingNotesService
+  /** [B4 L1 §7] history-unit 用例面（lineage/history-unit 通道——一次 undo/redo
+   *  的反向实体变化集单事务执行；原 id 恢复唯一到达路径） */
+  lineageHistory: LineageHistoryUnitService
   /** [F-FOLDER-01] folders 域（CRUD 编排+事件广播+S1 闸） */
   folders: ApiHandlers['folders']
   /** [F-FOLDER-01] papers 域（move-folder 移动/移出事务序——§3.4+W2） */
@@ -207,19 +216,8 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     repos: deps.repos,
     fileStore: deps.fileStore,
     sendEvent: deps.sendExportEvent ?? (() => undefined),
-    // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）；
-    // [F-FOLDER-01] +pubNos map（INV-92 库级派生编号——pub_no 字段数据源）；
-    // [F-LGRAPH-01②U8] lineTypes 四组→lineTypeNames 色行名（恰 6）
-    lineage: () => {
-      const g = deps.repos.lineage.listGraph()
-      const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
-      return {
-        nodes: g.nodes,
-        edges: g.edges,
-        lineTypeNames: deps.repos.lineage.getLineTypeNames(),
-        pubNos: new Map(deps.repos.papers.pubNoByIds(paperIds).map((r) => [r.paperId, r.pubNo]))
-      }
-    }
+    // T3-P5 lineage.json 读通道（第六件套装配数据面——lineage.assemble 单源装配）
+    lineage: corpusLineageSource(deps.repos)
   })
   return {
     library: createLibraryService(folderDeps),
@@ -278,6 +276,16 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     }),
     // [F-VISFB-61] 悬浮笔记用例面（单实例——graph 装配与 lineage 域 IPC 同源）
     floatingNotes: floatingNotesSvc,
+    // [B4 L1 §7] history-unit：精确恢复仓储+folder/paper 存在性查证+repo 事务边界
+    lineageHistory: createLineageHistoryUnitService({
+      historyRepo: deps.repos.lineageHistory,
+      meta: deps.repos.lineage,
+      listGraph: () => deps.repos.lineage.listGraph(),
+      folderExists: (id) => deps.repos.folders.findById(id) !== null,
+      paperExists: (id) => deps.repos.papers.findById(id) !== null,
+      paperFolderIdOf: (id) => deps.repos.papers.folderIdOf(id), // [INV-88] 恢复节点的归属图查证（papers.folder_id 单源）
+      withTransaction: deps.repos.withTransaction
+    }),
     aiSessions: createAiSessionsService({ repos: deps.repos }),
     aiMemorySearch: createAiMemorySearchService({ repos: deps.repos }),
     aiTasks: createAiTasksService({ repos: deps.repos }),
@@ -286,8 +294,35 @@ export function createServices(deps: ServiceDeps): ServiceBundle {
     aiMemoryManual: createAiMemoryManualService({ repos: deps.repos }),
     aiCascade: createAiCascadeService({ repos: deps.repos }),
     snapshot: createExportSnapshotService({ repos: deps.repos }),
-    snapshotImport: createImportSnapshotService({ repos: deps.repos }),
+    // [B4 L2 回炉 X-IMP·§2.6 #41] 导入成功后双播 folders.changed+lineage.changed——
+    // 出口沿 folderDeps 同源注入（缺省=空操作；生产=bootstrap 事件闭包恒真值）
+    snapshotImport: createImportSnapshotService({
+      repos: deps.repos,
+      sendFoldersChanged: deps.sendFoldersChanged ?? (() => undefined),
+      sendLineageChanged: deps.sendLineageChanged ?? (() => undefined)
+    }),
     figures: figureTasks
+  }
+}
+
+/**
+ * [B4 L1 D2 §17 裁决] corpus export 的 lineage.json 装配数据面（第六件套——
+ * lineage.assemble 单源装配）。色行名取主图键 `lineTypeNames:<主图 folderId>`：
+ * corpus export 的 lineage.json 是全库派生资产（ADR-0011 口径），per-folder 后
+ * 全局读失去唯一值，主图键是现行全局语义的直接后继（不按夹拼接、不任意夹取值；
+ * 分夹色行名经各自 graph 读获得）。+pubNos map（INV-92 库级派生编号）。
+ * 导出供装配契约测试（lineage-assemble.test——生产接线同源）。
+ */
+export function corpusLineageSource(repos: Repos): NonNullable<CorpusExportDeps['lineage']> {
+  return () => {
+    const g = repos.lineage.listGraph()
+    const paperIds = g.nodes.flatMap((n) => (n.paperId !== null ? [n.paperId] : []))
+    return {
+      nodes: g.nodes,
+      edges: g.edges,
+      lineTypeNames: repos.lineage.getLineTypeNames(MAIN_GRAPH_ID),
+      pubNos: new Map(repos.papers.pubNoByIds(paperIds).map((r) => [r.paperId, r.pubNo]))
+    }
   }
 }
 

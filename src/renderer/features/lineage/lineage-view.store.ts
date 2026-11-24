@@ -5,7 +5,10 @@
  *
  * ── 态空间（宪法状态纪律）──
  * mode ∈ {edit, browse, focus}（互斥单选，页面级）× focusSet: string[]
- * （focus 模式内 toggle 多卡集——T2 再点同卡取消）× navCollapsed × navWidth
+ * （focus 模式内 toggle 多卡集——T2 再点同卡取消；[B4 L2 §2.3/§14 终裁 2]
+ * **按 folder 挂起**：本件的 focusSet=活动会话聚焦集的存储/适配面，切图时由
+ * lineage-session-registry 挂起到离场会话、返回时恢复——切图不清其他图；课题
+ * 切换全清；页面切换保留）× navCollapsed × navWidth
  * （导航窗格 P-17：缺省 208 可调 160–320——U4 消费）× [F-UIRES-03 C1] 编辑
  * 工具态三维正交：tool ∈ {select, draw-solid, draw-dashed} × paletteFor ∈
  * {null, solid, dashed}（kind 归属维——色板挂载面）× currentLineColor:
@@ -29,8 +32,8 @@
  * - P-1 进页缺省=browse（resetForMount：色值不重置——per-kind 色跨挂载驻留）。
  * - P-3 聚焦退出**单出口**=点浏览/编辑按钮（再点聚焦=no-op——T1 三轮裁决）
  *   →focusSet 清空；再进 focus=空集。
- * - focus 中切图=clearFocus（集清空+模式保持 focus——图域隔离，空集合法）；
- *   消费面=切图编排（setFolder 联动处）。
+ * - focus 中切图=显示目标图自身的聚焦集（模式保持 focus——图域隔离，空集
+ *   合法）；clearFocus=显式清空，只清当前图（恢复载入/ghost 降级消费面）。
  * - 模式切换不丢编辑会话暂存（P-2：queue/saveStatus 驻 lineage.store 不清
  *   ——写队列天然满足，跨 store 零耦合）。
  *
@@ -122,14 +125,15 @@ export interface LineageViewStore {
   escapeStep(): void
   /** [②U2] 工具态中止（切模式/切图/进入 select——画线中止无残留） */
   resetTool(): void
-  /** [F-LGRAPH-01②A1] 挂载 reset（P-1「进页缺省」直读：mode='browse'+focusSet
-   *  清空+工具态归位——二次进页=再进页缺省；与编辑会话数据暂存[P-2]正交；
+  /** [F-LGRAPH-01②A1] 挂载 reset（P-1「进页缺省」直读：mode='browse'+工具态归位
+   *  ——二次进页=再进页缺省；与编辑会话数据暂存[P-2]正交；[B4 L2 §2.5 #30] focusSet **不随挂载清**（活动图与
+   *  注册表挂起图的聚焦集均保留——页面切换保留 focusSet；mode 记忆归 B5 不在本批）；
    *  [C1] per-kind 色不随挂载重置——跨挂载驻留同 P-17 语义） */
   resetForMount(): void
   setMode(mode: LineageViewMode): void
   /** focus 模式内 toggle：加入/移出（非 focus 态 no-op） */
   toggleFocus(nodeId: string): void
-  /** 图域隔离（切图消费方调用）：集清空+模式保持 */
+  /** 显式清空当前图的聚焦集（模式保持；只清活动图——其他图驻留） */
   clearFocus(): void
   setNavCollapsed(collapsed: boolean): void
   /** 钳 160–320（P-17 边界——越界回落边界值） */
@@ -218,7 +222,8 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
     // [②A1] 挂载恒走（不与数据暂存互斥——P-2 脏态跳过面仅数据同步，view 态
     // reset 恒定；navWidth/navCollapsed 个性化记忆不随挂载重置——P-17 语义；
     // [C1] currentLineColor 同驻留——localStorage 单源）
-    set({ mode: 'browse', focusSet: [], tool: 'select', paletteFor: null })
+    // [B4 L2 §2.5 #30/§12.2] focusSet 不随挂载清：页面切换保留（注册表挂起图同）
+    set({ mode: 'browse', tool: 'select', paletteFor: null })
   },
 
   toggleFocus(nodeId) {

@@ -80,6 +80,7 @@ import {
   seedAnnotation,
   seedLineageGraph,
   seedPaperRow,
+  switchLineageGraph,
   type LineageSeedEdge,
   type LineageSeedNode
 } from './e2e-env'
@@ -948,6 +949,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .poll(async () => await frameTitles(1), { timeout: 10_000 })
       .toEqual(['脉络乙文献'])
 
+    // [B4 L2 §9.3 测试适配] 回弹 flight（态二）阻塞保存命令起步——先等拖卡
+    // inline 样式清空（=settle 收口，≤600ms 兜底域）再点保存钮
+    await expect
+      .poll(async () => await nodeG(win, '脉络乙文献').evaluate((el) => el.getAttribute('style') === null || el.getAttribute('style') === ''), { timeout: 10_000 })
+      .toBe(true)
     // [②U1] 会话语义：调序入暂存→点工具组保存钮批量落库（edit 态在场）
     await win.getByTestId('lineage-save-btn').click()
     await expect(win.getByTestId('lineage-save-error')).toHaveCount(0, { timeout: 10_000 })
@@ -2895,6 +2901,264 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       .first()
       .getAttribute('stroke')
     expect(stroke).toBe('#0f8a6d')
+    await app.close()
+  })
+
+  /**
+   * [B4 L1 / 设计稿 §12.3] 保存→undo→redo 代表链：删节点→显式保存（finalize：
+   * 保存钮回禁用、undo 栈保留）→undo 断言原卡片标题+原节点 id+相关边真实恢复
+   * （history-unit 原 id 恢复——相关边=锚记串两端卡 id 恒等；锚槽 b1/b2 是按边序
+   * 派生分配的路由细节，恢复边排在同卡另一边之后时槽位互换，不入断言）
+   * →redo→undo→显式保存→reload 真库回读（原卡与相关边在）。断言一律真实渲染
+   * 文本+DOM 属性，不看几何。
+   */
+  test('B4-L1 删节点显式保存后 undo：原卡片标题+原 id+相关边真实恢复→redo→undo→reload 真库回读', async () => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-b4l1-undo-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, chainSeed())
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const cardA = nodeG(win, '脉络甲文献')
+    await expect(cardA).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-select').click()
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    // 基线：原节点 id+相关边（根→甲）锚记串；undo 后须逐字符恒等（原 id 恢复）
+    const nodeAId = await cardA.getAttribute('data-node-id')
+    const rootId = await nodeG(win, '脉络根文献').getAttribute('data-node-id')
+    expect(nodeAId && rootId, '基线节点 id 非空').toBeTruthy()
+    const edgeA = win.locator(`svg.tl-edges path.tl-edge[data-anchors*="${nodeAId}"]`)
+    await expect(edgeA).toHaveCount(1, { timeout: 10_000 })
+    /** 锚记串两端卡 id 集（形如 `<cardId>:<side><slot>,…`——卡 id=数据面，槽位=路由派生） */
+    const endpointIds = async (): Promise<string[]> => {
+      const marks = await edgeA.getAttribute('data-anchors')
+      return (marks ?? '').split(',').map((m) => m.split(':')[0] ?? '').sort()
+    }
+    expect(await endpointIds(), '基线相关边=根→甲').toEqual([rootId, nodeAId].sort())
+    const allEdges = win.locator('svg.tl-edges path.tl-edge')
+    await expect(allEdges).toHaveCount(2)
+    // ① 删节点（节点菜单）——乐观级联：卡与相关边消失
+    await cardA.click({ button: 'right' })
+    await expect(win.getByTestId('lineage-node-menu')).toBeVisible()
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '删除节点' }).click()
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0, { timeout: 5_000 })
+    await expect(allEdges).toHaveCount(1, { timeout: 5_000 })
+    await expect(saveBtn).toBeEnabled()
+    // ② 显式保存（finalize）：落库+定稿——保存钮禁用；undo 栈保留（undo 可点）
+    await saveBtn.click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    await expect(win.getByTestId('lineage-undo')).toBeEnabled({ timeout: 5_000 })
+    await expect(win.getByTestId('lineage-redo')).toBeDisabled() // 定稿清 redo
+    // ③ undo：原卡片标题+原节点 id+相关边（锚记串恒等）真实恢复；U 置真→保存可点
+    await win.getByTestId('lineage-undo').click()
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 10_000 })
+    expect(await nodeG(win, '脉络甲文献').getAttribute('data-node-id'), '撤销恢复原节点 id').toBe(nodeAId)
+    await expect(edgeA).toHaveCount(1, { timeout: 10_000 })
+    expect(await endpointIds(), '相关边真实恢复：两端卡 id=根+原节点 id').toEqual([rootId, nodeAId].sort())
+    await expect(allEdges).toHaveCount(2)
+    await expect(saveBtn).toBeEnabled()
+    await expect(win.getByTestId('lineage-redo')).toBeEnabled()
+    // ④ redo：再删除（卡与相关边消失）
+    await win.getByTestId('lineage-redo').click()
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0, { timeout: 10_000 })
+    await expect(allEdges).toHaveCount(1, { timeout: 10_000 })
+    // ⑤ undo 后显式保存→reload 真库回读（history-unit 原 id 恢复已落库）
+    await win.getByTestId('lineage-undo').click()
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 10_000 })
+    await expect(allEdges).toHaveCount(2, { timeout: 10_000 })
+    await expect(saveBtn).toBeEnabled()
+    await saveBtn.click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    await reloadToLineage(win)
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 10_000 })
+    expect(await nodeG(win, '脉络甲文献').getAttribute('data-node-id'), 'reload 后仍为原节点 id').toBe(nodeAId)
+    await expect(edgeA).toHaveCount(1, { timeout: 10_000 })
+    expect(await endpointIds(), '真库回读：相关边两端=根+原节点 id').toEqual([rootId, nodeAId].sort())
+    await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(2)
+    await app.close()
+  })
+
+  /**
+   * [B4 L1 / 设计稿 §10.3 主控终裁 5] 三模式快捷键：Ctrl+Z/Y 在 edit/browse/focus
+   * 都生效（真实卡片文本翻转）；Ctrl+S=显式保存定稿（保存钮回禁用）。A/B 切图
+   * 返回部分属 L2（本 spec 不做）。
+   */
+  test('B4-L1 三模式快捷键：browse/focus 下 Ctrl+Z/Ctrl+Y 生效（真实卡片文本）+Ctrl+S 定稿', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-b4l1-keys-'))
+    await firstHop(userData)
+    await seedLineagePapers(userData)
+    await seedLineageGraph(userData, chainSeed())
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const cardA = nodeG(win, '脉络甲文献')
+    await expect(cardA).toBeVisible({ timeout: 10_000 })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-select').click()
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    await cardA.click({ button: 'right' })
+    await expect(win.getByTestId('lineage-node-menu')).toBeVisible()
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '删除节点' }).click()
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0, { timeout: 5_000 })
+    // browse 模式 Ctrl+Z=undo（原「非 edit 模式不接」退役）
+    await win.getByTestId('lineage-mode-browse').click()
+    await win.keyboard.press('Control+z')
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 5_000 })
+    await win.getByTestId('lineage-mode-focus').click()
+    // focus 模式 Ctrl+Y=redo（卡再消失）+Ctrl+Z=undo（卡回来）
+    await win.keyboard.press('Control+y')
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0, { timeout: 5_000 })
+    await win.keyboard.press('Control+Shift+Z') // redo 栈已空=no-op（真无效输入）
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0)
+    await win.keyboard.press('Control+z')
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 5_000 })
+    await win.keyboard.press('Control+y') // 卡再消失：undo=[删节点]、redo 空
+    await expect(nodeG(win, '脉络甲文献')).toHaveCount(0, { timeout: 5_000 })
+    // Ctrl+S（focus 模式）=显式保存定稿：回 edit 看保存钮禁用（已保存）、
+    // undo 栈跨显式保存存活（undo 可点）、redo 清（灰）
+    await win.keyboard.press('Control+s')
+    await win.getByTestId('lineage-mode-edit').click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    await expect(win.getByTestId('lineage-undo')).toBeEnabled()
+    await expect(win.getByTestId('lineage-redo')).toBeDisabled()
+    await app.close()
+  })
+
+  /**
+   * [B4 L2 / 设计稿 §12.3、§2.5 #32/#33、§2.3 focusSet] A 编辑→切 B→编辑→返回 A，分别 undo：
+   * 卡片文本与 focusSet 正确。每 folder 一个会话——A（主图）与 B（文件夹图）各有独立的撤销栈
+   * 与 focusSet：切图不清不串；返回有内存的图直接投影（零 graph IPC——不重取、不覆盖未落定值）。
+   * 断言一律真实卡片文本与聚焦类名，不看几何。
+   */
+  test('B4-L2 A/B 切图：A 编辑→切 B→编辑→返回 A 分别 undo——撤销栈与 focusSet 各归各图（真实卡片文本）', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-b4l2-ab-'))
+    await firstHop(userData)
+    const L2 = {
+      root: { id: 'e2e-l2-root', title: 'L2主图根文献', year: 2020 },
+      jia: { id: 'e2e-l2-jia', title: 'L2主图甲文献', year: 2020 },
+      yi: { id: 'e2e-l2-yi', title: 'L2图乙乙文献', year: 2021 },
+      bing: { id: 'e2e-l2-bing', title: 'L2图乙丙文献', year: 2021 }
+    } as const
+    for (const p of Object.values(L2)) {
+      const ghostSha = createHash('sha256').update(`lg-ghost-${p.id}`).digest('hex')
+      const ghostRef = `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`
+      await seedPaperRow(userData, ghostRef, ghostSha, p.title, p.id, { year: p.year })
+    }
+    await seedLineageGraph(userData, {
+      folders: [{ id: 'f-l2-b', name: '图乙' }],
+      nodes: [
+        { paperId: L2.root.id, title: L2.root.title, year: L2.root.year },
+        { paperId: L2.jia.id, title: L2.jia.title, year: L2.jia.year },
+        { paperId: L2.yi.id, title: L2.yi.title, year: L2.yi.year, folderId: 'f-l2-b' },
+        { paperId: L2.bing.id, title: L2.bing.title, year: L2.bing.year, folderId: 'f-l2-b' }
+      ],
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    const root = nodeG(win, L2.root.title)
+    const jia = nodeG(win, L2.jia.title)
+    const yi = nodeG(win, L2.yi.title)
+    const bing = nodeG(win, L2.bing.title)
+    const focusCount = win.getByTestId('lineage-focus-count')
+    const undoBtn = win.getByTestId('lineage-undo')
+    const redoBtn = win.getByTestId('lineage-redo')
+    /** 节点菜单删除（卡消失） */
+    const deleteCard = async (card: Locator): Promise<void> => {
+      await card.click({ button: 'right' })
+      await expect(win.getByTestId('lineage-node-menu')).toBeVisible()
+      await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '删除节点' }).click()
+      await expect(card).toHaveCount(0, { timeout: 5_000 })
+    }
+    /** 进编辑模式（工具组与撤销钮驻编辑模式——进页/切图后模式态可能已复位） */
+    const toEdit = async (): Promise<void> => {
+      if ((await win.getByTestId('lineage-undo').count()) === 0) await win.getByTestId('lineage-mode-edit').click()
+      await expect(undoBtn).toBeVisible()
+    }
+    /** 聚焦模式内：点卡=聚焦标记（toggle） */
+    const focusCard = async (card: Locator): Promise<void> => {
+      await card.click()
+      await expect(card).toHaveClass(/focused/)
+    }
+    await expect(root).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toBeVisible()
+    // A（主图）编辑：删甲——A 的撤销栈一项
+    await toEdit()
+    await deleteCard(jia)
+    await expect(undoBtn).toBeEnabled()
+    // 切 B（编辑）：B 图里没有 A 的卡；B 编辑：删丙——B 的撤销栈一项
+    await switchLineageGraph(win, 'f-l2-b', '图乙')
+    await expect(yi).toBeVisible({ timeout: 10_000 })
+    await expect(bing).toBeVisible()
+    await expect(jia).toHaveCount(0)
+    await toEdit()
+    await deleteCard(bing)
+    await expect(undoBtn).toBeEnabled()
+    // B 设聚焦（乙）。focusSet 按图挂起（§2.3）：以下切图全程保持在聚焦模式内——切图显示目标图
+    // 自身的聚焦集，不清其他图
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(focusCount).toHaveCount(0)
+    await focusCard(yi)
+    await expect(focusCount).toHaveText('聚焦 1')
+    // 聚焦中切回 A：A 的编辑驻留（甲仍被删——直接投影，不重取）；A 的聚焦集为空（不带 B 的）
+    await switchLineageGraph(win, '__main__', '主图')
+    await expect(root).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toHaveCount(0)
+    await expect(yi).toHaveCount(0)
+    await expect(win.locator('.tl-card.focused')).toHaveCount(0)
+    await expect(focusCount).toHaveCount(0)
+    await focusCard(root)
+    await expect(focusCount).toHaveText('聚焦 1')
+    // 聚焦中切到 B：B 自身的聚焦集恢复（乙）；A 的卡不在 B
+    await switchLineageGraph(win, 'f-l2-b', '图乙')
+    await expect(yi).toHaveClass(/focused/)
+    await expect(focusCount).toHaveText('聚焦 1')
+    await expect(root).toHaveCount(0)
+    // 聚焦中回 A：根聚焦恢复；甲仍被删
+    await switchLineageGraph(win, '__main__', '主图')
+    await expect(root).toHaveClass(/focused/)
+    await expect(focusCount).toHaveText('聚焦 1')
+    await expect(jia).toHaveCount(0)
+    // A 撤销（退出聚焦清的是 A 自己的聚焦集——P-3）：甲恢复（真实卡片文本）——只动 A 的栈
+    await toEdit()
+    await expect(undoBtn).toBeEnabled()
+    await undoBtn.click()
+    await expect(jia).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toContainText(L2.jia.title)
+    await expect(redoBtn).toBeEnabled()
+    // B：丙仍被删（A 的撤销不动 B）；B 的聚焦集未被 A 退出聚焦清掉——乙仍聚焦
+    await switchLineageGraph(win, 'f-l2-b', '图乙')
+    await expect(yi).toBeVisible({ timeout: 10_000 })
+    await expect(bing).toHaveCount(0)
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(yi).toHaveClass(/focused/)
+    await expect(focusCount).toHaveText('聚焦 1')
+    await expect(win.locator('.tl-card.focused')).toHaveCount(1)
+    // B 撤销：丙恢复——只动 B 的栈
+    await toEdit()
+    await expect(undoBtn).toBeEnabled()
+    await undoBtn.click()
+    await expect(bing).toBeVisible({ timeout: 10_000 })
+    await expect(bing).toContainText(L2.bing.title)
+    // 回 A：甲在、A 的重做栈仍可点（未被 B 的撤销消费）→重做→甲再消失
+    await switchLineageGraph(win, '__main__', '主图')
+    await expect(jia).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toContainText(L2.jia.title)
+    await toEdit()
+    await expect(redoBtn).toBeEnabled()
+    await redoBtn.click()
+    await expect(jia).toHaveCount(0, { timeout: 10_000 })
+    // B：丙仍在（A 的重做不动 B）
+    await switchLineageGraph(win, 'f-l2-b', '图乙')
+    await expect(bing).toBeVisible({ timeout: 10_000 })
+    await expect(bing).toContainText(L2.bing.title)
     await app.close()
   })
 })

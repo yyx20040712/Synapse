@@ -19,6 +19,8 @@ import { useComposingCommit } from '../../shared/inline-keys'
  *  paletteFor；aria-label「展开色板」；saving 锁定同组禁用；[RR1-W1]
  *  .syn-icon-btn=svg 规格类唯一供应者（icons.tsx D7——stroke currentColor/
  *  fill none/线宽 1.6 走 theme-buttons.css；同排 hand/undo/redo 先例对齐） */
+/** testid lineage-tool-{kind}-expand；paletteFor
+ *  归属维渲染锚槽——列表渲染在该 kind 展开钮的锚槽内 */
 export function ExpandButton(props: {
   kind: LineTypeKind
   open: boolean

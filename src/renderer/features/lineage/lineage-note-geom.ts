@@ -8,9 +8,11 @@
  *   于笔记顶缘上方，贴顶 y=0 会被内容域上缘裁剪不可命中〕；单源=本常量
  *   经组件 grip inline top/height 直注，皮肤不落高度字面量〔theme-lineage-
  *   notes .tl-note-grip 注双向锚定——S3 声明统一：CSS 变量法已弃〕）；
- * - notesInteractive：交互门单读（edit 模式+select 工具且非 saving
+ * - notesInteractive：交互门单读（edit 模式+select 工具且非在途写
  *   〔R4：saving 窗口让位防静默 no-op 丢稿〕——view.store+lineage.store
- *   单源，判定时点取值，native 监听/订阅两径共用）；
+ *   单源，判定时点取值，native 监听/订阅两径共用；[B4 L1 INV-149/W2] saving
+ *   判据=活动会话 IO 在途（lineageIoInFlight——inflight 在场=F≠0），不再读
+ *   saveStatus 兼容壳）；
  * - toOwnPt：视口点→own 域（clientToOwnPt 单源——timeline-zoom 三域律；
  *   content 缺席防御回落原值）；
  * - clampToContent：钳内容域不丢失（[0, contentW−w]×[NOTE_GRIP_H,
@@ -23,6 +25,7 @@ import type { RefObject } from 'react'
 import type { Pt } from './routing/anchors'
 import { clientToOwnPt } from './timeline-zoom'
 import { useLineageStore } from './lineage.store'
+import { lineageIoInFlight } from './lineage-session-model'
 import { recoveryBlocked } from './recoveryScheduler'
 import { useLineageViewStore } from './lineage-view.store'
 
@@ -34,7 +37,7 @@ export const NOTE_H = 96
  *  双向锚定：theme-lineage-notes.css .tl-note-grip 注） */
 export const NOTE_GRIP_H = 14
 
-/** 交互门单读（edit+select 且非 saving 才有创建菜单/拖动/编辑/删除交互面；
+/** 交互门单读（edit+select 且非在途写才有创建菜单/拖动/编辑/删除交互面；
  *  [F-VISFB-65 回炉轮2 Z8] recovery 冻结门同挂——冻结期右键创建菜单不 Opening
  *  （native 监听面与 React interactive 面同门） */
 export const notesInteractive = (): boolean => {
@@ -42,7 +45,7 @@ export const notesInteractive = (): boolean => {
   return (
     v.mode === 'edit' &&
     v.tool === 'select' &&
-    useLineageStore.getState().saveStatus !== 'saving' &&
+    !lineageIoInFlight(useLineageStore.getState()) &&
     !recoveryBlocked()
   )
 }

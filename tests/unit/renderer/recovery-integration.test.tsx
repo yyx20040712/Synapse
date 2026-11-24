@@ -8,6 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 
 const stubApi = makeApiStub({
   recovery: { peek: vi.fn(), save: vi.fn(), read: vi.fn(), release: vi.fn() },
@@ -19,7 +20,8 @@ const stubApi = makeApiStub({
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn(),
     upsertFloatingNote: vi.fn(),
-    removeFloatingNote: vi.fn()
+    removeFloatingNote: vi.fn(),
+    historyUnit: vi.fn()
   }
 })
 
@@ -39,6 +41,7 @@ import {
   enterWorkspaceRecovery,
   getRecoveryState,
   initRecoveryScheduler,
+  notifyRecoveryEditUnit,
   resetRecoveryScheduler
 } from '../../../src/renderer/features/lineage/recoveryScheduler'
 import type { LineageNode, FloatingNote } from '@shared/models/lineage'
@@ -88,6 +91,7 @@ beforeEach(async () => {
   vi.clearAllMocks()
   stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'saved', token: 't1', epoch: 0 } })
   stubApi.recovery.release.mockResolvedValue({ ok: true, data: { status: 'released', epoch: 1 } })
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=async history-unit
   stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
     ({ ok: true, data: { ...node(String(req.id ?? 'X')), ...req } as LineageNode })
   )
@@ -174,11 +178,11 @@ describe('F-VISFB-65 集成：编辑→副本（INV-162/163/164）', () => {
     expect(useLineageStore.getState().saveStatus).toBe('clean')
   })
 
-  it('undo 回基线→release(clean)；undo 未回基线不 release', async () => {
+  it('undo 回基线→release(clean)（[B4 L1] flush-then-unit：history 成功且 IO clean 后按 owner 判定）', async () => {
     useLineageStore.getState().moveNode('A', 3, 4)
     await vi.waitFor(() => expect(stubApi.recovery.save).toHaveBeenCalled())
     stubApi.recovery.release.mockClear()
-    useLineageStore.getState().undo() // 弹栈恢复基线（queue 空→clean）
+    await useLineageStore.getState().undo() // 弹栈恢复基线（queue 空→clean）
     await settle(20)
     expect(useLineageStore.getState().saveStatus).toBe('clean')
     expect(stubApi.recovery.release).toHaveBeenCalledWith(expect.objectContaining({ reason: 'clean' }))
@@ -355,7 +359,7 @@ describe('F-RECOV-04 defer 后 clean 化与放弃（真实 store+scheduler 序�
     useLineageStore.getState().moveNode('A', 3, 4)
     await settle()
     stubApi.recovery.release.mockClear()
-    useLineageStore.getState().undo()
+    await useLineageStore.getState().undo()
     await settle(20)
     expect(useLineageStore.getState().saveStatus).toBe('clean')
     expect(stubApi.recovery.release).not.toHaveBeenCalled()
@@ -414,7 +418,10 @@ describe('F-RECOV-01 溢出契约贯通（N4：queue-overflow→退避→unavail
     vi.useFakeTimers()
     try {
       stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'queue-overflow', epoch: 0 } })
-      useLineageStore.getState().moveNode('A', 3, 4) // 编辑单元→enqueue→notify
+      // [B4 L2 夹具适配] 造脏改直植队列+手动触发（moveNode 会排 1.5s idle-flush timer，
+      // 落库成功触发 markRecoveryClean→gen++ 清退避定时器——与本用例的退避链主题相扰）
+      useLineageStore.setState({ queue: [{ kind: 'remove-edge', id: 'e-ov' }], saveStatus: 'dirty' })
+      notifyRecoveryEditUnit()
       await vi.advanceTimersByTimeAsync(300) // 首发=溢出拒
       await vi.advanceTimersByTimeAsync(1000) // 退避 1
       await vi.advanceTimersByTimeAsync(2000) // 退避 2
@@ -423,7 +430,8 @@ describe('F-RECOV-01 溢出契约贯通（N4：queue-overflow→退避→unavail
       expect(getRecoveryState().degraded).toBe(true)
       expect(getRecoveryState().kind).toBe('unavailable')
       stubApi.recovery.save.mockResolvedValue({ ok: true, data: { status: 'saved', token: 't9', epoch: 0 } })
-      useLineageStore.getState().moveNode('A', 5, 6)
+      useLineageStore.setState({ queue: [{ kind: 'remove-edge', id: 'e-ov2' }], saveStatus: 'dirty' })
+      notifyRecoveryEditUnit()
       await vi.advanceTimersByTimeAsync(300)
       expect(stubApi.recovery.save).toHaveBeenCalledTimes(5)
       expect(getRecoveryState().degraded).toBe(false) // 成功清除

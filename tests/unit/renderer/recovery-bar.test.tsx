@@ -8,6 +8,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RecoveryBar, type RecoveryBarState } from '../../../src/renderer/features/recovery/RecoveryBar'
+import { RECOVERY_UNPROTECTED_CHIP_TEXT } from '../../../src/renderer/shared/ui-constants'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -176,5 +177,36 @@ describe('F-RECOV-01 RecoveryBar —— degraded 三档+重启缀+pending 单 ch
     const chips = testid('recovery-chips')?.textContent ?? ''
     expect(chips).toContain('恢复副本待处理，当前编辑未受保护')
     expect(chips).toContain('恢复副本不可用，当前编辑未受保护')
+  })
+})
+
+describe('[B4 L2 §8.4 末行] 多图未受保护 chip——真实文案与在场条件', () => {
+  const open = (over: Partial<RecoveryBarState> = {}): RecoveryBarState => state({ phase: 'open', file: null, slotKind: null, ...over })
+
+  it('unprotectedChip 真：渲染 data-testid=recovery-unprotected-chip 且文本===RECOVERY_UNPROTECTED_CHIP_TEXT', () => {
+    mountBar(open({ unprotectedChip: true }))
+    const chip = testid('recovery-unprotected-chip')
+    expect(chip).not.toBeNull()
+    expect(chip?.textContent).toBe(RECOVERY_UNPROTECTED_CHIP_TEXT)
+    expect(testid('recovery-chips')).not.toBeNull() // chip 族容器在场（文档流内恢复条）
+  })
+
+  it('unprotectedChip 假（或缺省）：不渲染该 chip；无其他 chip 位=整个恢复条零渲染', () => {
+    mountBar(open())
+    expect(testid('recovery-unprotected-chip')).toBeNull()
+    expect(testid('recovery-chips')).toBeNull()
+    act(() => {
+      root?.render(
+        <RecoveryBar state={open({ unprotectedChip: false })} onRestore={vi.fn()} onDiscard={vi.fn()} onDefer={vi.fn()} onReopen={vi.fn()} />
+      )
+    })
+    expect(testid('recovery-unprotected-chip')).toBeNull()
+    expect(testid('recovery-chips')).toBeNull()
+  })
+
+  it('与 pending chip 并列呈现（单槽限制外显——两 chip 同现）', () => {
+    mountBar(open({ unprotectedChip: true, pendingChip: true }))
+    expect(testid('recovery-unprotected-chip')?.textContent).toBe(RECOVERY_UNPROTECTED_CHIP_TEXT)
+    expect(testid('recovery-chips')?.textContent).toContain('恢复副本待处理，当前编辑未受保护')
   })
 })

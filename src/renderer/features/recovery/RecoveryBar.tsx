@@ -35,6 +35,8 @@ export interface RecoveryBarState {
   kind?: 'slow' | 'stuck-pending' | 'unavailable' | null
   /** kind=unavailable 且探针连败≥3：加缀「重启应用可恢复」 */
   restartHint?: boolean
+  /** [B4 L2 §8.4 末行] 多图未落库诚实 chip（单槽一次只保护一张图） */
+  unprotectedChip?: boolean
 }
 
 export interface RecoveryBarProps {
@@ -51,6 +53,8 @@ function localTime(iso: string): string {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? '' : `·${d.toLocaleString()}`
 }
+
+import { RECOVERY_UNPROTECTED_CHIP_TEXT as UNPROTECTED_CHIP_TEXT } from '../../shared/ui-constants'
 
 export function RecoveryBar(props: RecoveryBarProps): JSX.Element | null {
   const { state } = props
@@ -98,9 +102,10 @@ export function RecoveryBar(props: RecoveryBarProps): JSX.Element | null {
       </div>
     )
   }
-  // 收起态：chip 族（单 chip 位 pending 优先——slow/stuck-pending 让位；unavailable 并列）
+  // 收起态：chip 族（单 chip 位 pending 优先——slow/stuck-pending 让位；unavailable 并列；
+  // [B4 L2] 多图未落库诚实 chip 与 pending 并列——单槽限制外显）
   if (state.phase !== 'open') return null
-  if (!state.pendingChip && !state.degraded) return null
+  if (!state.pendingChip && !state.degraded && !state.unprotectedChip) return null
   const kind = state.kind ?? 'unavailable' // 缺省=unavailable（结构兼容旧状态形）
   const degradedVisible = state.degraded && (!state.pendingChip || kind === 'unavailable')
   return (
@@ -111,6 +116,11 @@ export function RecoveryBar(props: RecoveryBarProps): JSX.Element | null {
           <button type="button" onClick={props.onReopen} data-testid="recovery-reopen">
             查看
           </button>
+        </span>
+      )}
+      {state.unprotectedChip === true && (
+        <span className="recovery-chip" data-testid="recovery-unprotected-chip">
+          {UNPROTECTED_CHIP_TEXT}
         </span>
       )}
       {degradedVisible && (

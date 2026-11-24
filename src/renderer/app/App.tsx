@@ -22,6 +22,7 @@ import { Rail, type ViewId } from './Rail'
 import { TitleBarControls } from './TitleBarControls'
 import { useViewBridges } from './useViewBridges'
 import { switchViewWithFlush } from './view-flush'
+import { bindLineageFolderEvents } from '../features/lineage/lineage-folder-reconcile'
 import { RecoveryBarHost } from './RecoveryBarHost'
 import { useWsGuideImportBridge } from './useWsGuideImportBridge'
 import { ViewHost } from './ViewHost'
@@ -96,6 +97,9 @@ export function App(): JSX.Element {
   // 跨页事件桥订阅（拆件=useViewBridges——组件行数红线）：打开文献切阅读器/
   // 在脉络图中打开切脉络/去文献库切文献库（三桥明细见该 hook 头注）
   useViewBridges(changeView)
+  // [B4 L2 §2.6 #41] 后台结构事件→全 registry 失效（脉络页不在场时挂起会话同样
+  // 失效；App 级挂载一次——解绑成对）
+  useEffect(() => bindLineageFolderEvents(), [])
   // [F-WS-02] 导入升格桥（D2——[F-VISFB-65] 拆件 useWsGuideImportBridge：
   // 纯移动零语义改，App 行数红线；语义面见该件头注）
   useWsGuideImportBridge(wsGuide)

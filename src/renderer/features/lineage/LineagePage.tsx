@@ -34,6 +34,7 @@ import { LineageBoard } from './LineageBoard'
 import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
 import { useLineageEscapeKey } from './use-lineage-esc'
+import { useLineageHistoryShortcuts } from './use-lineage-history-shortcuts'
 import type { NavFolder } from './nav-graph-picker'
 
 export function LineagePage(): JSX.Element {
@@ -63,54 +64,28 @@ export function LineagePage(): JSX.Element {
     // 暂存保留[P-2]正交——view 态 reset≠数据 discard，两者不互斥）
     useLineageViewStore.getState().resetForMount()
     // 缺省图=库页文件夹上下文同步（进哪个文件夹开哪张图；未选=主图）——
-    // setFolder 内含重取（挂载取数单点）；图名兜底=主图（folders 未落定期）。
-    // [F-LGRAPH-01②U1] 会话 dirty 时跳过同步=暂存图保留（跨页返回不丢编辑
-    // ——mockup §2.6-6；load 互锁同族兜底）
-    if (useLineageStore.getState().saveStatus !== 'clean') return
+    // [B4 L2] setFolder=flush-first 挂起切换（每图 U/历史/focusSet 驻留，§2.5
+    // #32）；图名兜底=主图（folders 未落定期）。
     const scope = useLibraryStore.getState().query.folderScope
     const target = scope?.kind === 'folder' ? scope.folderId : MAIN_GRAPH_ID
-    // [B2 D5] 同图跳过（仅挂载编排层）：store 已 ready+同 folderId+needsReload
-    // 未清（INV-175 和解位）且已驻留非空图时零新增 graph IPC——渲染走 store
-    // 驻留数据（P-2）。空图无驻留价值，保持既「挂载取数」契约（App 级组合根
-    // 用例锁：ready 空载夹具仍须经 graph 取数建立图态）；真机路径 store 初态
-    // =loading，不落入本分支。
-    // 互斥红线：setFolder 本体不做同值守卫（切图恒重取=store 明文语义，本批
-    // 零改）——手工同值重选仍重取；B4/B5 再统一。
     const current = useLineageStore.getState()
-    const resident = current.nodes.length > 0 || current.edges.length > 0
-    if (
-      resident &&
-      current.status === 'ready' &&
-      current.folderId === target &&
-      !current.needsReload
-    ) {
-      return
-    }
+    // [B2 D5→B4 L2 §8.3] 同图=既有会话不双取：ready+needsReload=0 时零 graph IPC——渲染走
+    // 会话驻留数据（P-2），不论图是否为空（[回炉 W-B2·R-W2] 「ready 空图挂载重取」例外退役：
+    // 只有悬浮笔记的图也是 ready 会话；后台失效由 #41 置 needsReload 承接）。其余（loading/
+    // error/needsReload）=经 setFolder（registry 裁决：复用在途读/单飞和解/重载）。
+    // [回炉 W-B2c] 恢复待令会话（restoredAwaitingCommand——恢复载入后本会话写链尚无任务起步）虽
+    // needsReload=1 同样零 graph IPC：恢复图的和解时点=首次命令入链（§2.5 #10a/#39），页面挂载/返回
+    // 不做自动和解。R-W2 删除「非 clean 早退」后，挂载效应对它调 setFolder→单飞和解，库态覆盖恢复图
+    // （e2e recovery.spec E7 非确定失败的根因）。显式同图重选（setFolder 同值）不经本效应，仍和解。
+    if (current.folderId === target && current.status === 'ready' && (!current.needsReload || current.restoredAwaitingCommand)) return
+    // 目标≠当前：[F-LGRAPH-01②U1] 原按「会话 dirty 跳过同步=暂存图保留」处理——[回炉 W-B2·R-W2]
+    // 按 flush-first 语义迁移（§2.5 #32、§8.1、§8.3「离场 flush-first」）：离场会话的未落定写由
+    // setFolder 取消 timer→快照请求→flush-first 承接，跨页返回的暂存图不丢，不以 IO 状态阻切。
     useLineageStore.getState().setFolder(target)
   }, [])
 
-  // [F-LGRAPH-01②U1] Ctrl+Z/Ctrl+Y 键盘撤销/重做（edit 模式；输入焦点内不
-  // 拦截——文本框原生撤销优先；saving 态锁定=no-op，store.undo/redo 内守）。
-  // [ln-W3b-2] Ctrl+Shift+Z=redo（Windows/Linux 惯例——阅读器 AnnotationEditor
-  // 同语义先例；Ctrl+Shift+Y 同归 redo=无害超集）
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (!e.ctrlKey || e.isComposing) return
-      if (e.key !== 'z' && e.key !== 'Z' && e.key !== 'y' && e.key !== 'Y') return
-      const mode = useLineageViewStore.getState().mode
-      if (mode !== 'edit') return
-      const t = e.target
-      if (t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
-        return // 输入焦点内=原生文本撤销（mockup §2.2 撤销域=图态）
-      }
-      e.preventDefault()
-      const store = useLineageStore.getState()
-      if (e.key === 'y' || e.key === 'Y' || e.shiftKey) store.redo()
-      else store.undo()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
+  // [B4 L1 §10.3] Ctrl+Z/Y/Shift+Z（撤销/重做）+Ctrl+S（显式保存）三模式统一生效（拆件内含 editable 分层）
+  useLineageHistoryShortcuts()
 
   // [F-UIRES-03 C1] Esc 分层退出键盘接线（delta-W3a——拆件 use-lineage-esc）
   useLineageEscapeKey()

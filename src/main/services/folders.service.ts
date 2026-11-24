@@ -11,6 +11,8 @@
  *   删夹=删除域内全部文献及其脉络/笔记/标注/标签关联）——应用层事务先文献后
  *   夹行（papers.remove×N 的 DDL 级联链：paper_tags/annotations/notes/ai_notes/
  *   lineage_nodes CASCADE→edges 二跳+FTS 触发器自清，再 folders.remove）；
+ *   [B4 L1 D2 §5.4] 同事务删该夹 keyed 色行名 meta 行（lineage.repo.removeMeta，
+ *   键=lineTypeNamesKey(folderId)）；
  *   成功→folders.changed+lineage.changed（图结构级联变=S4 脉络页回退依据）
  * - 写三入口（create/rename/delete）S1 队列闸（INV-91）：lineagePending()=true
  *   →CONFLICT 拒绝（沿 workspace.service importInFlight 先例——拒时零库副作用）
@@ -27,6 +29,7 @@
 import type { ApiHandlers } from '../../shared/ipc/api-surface'
 import { MAIN_GRAPH_ID } from '../../shared/models/lineage'
 import type { Repos } from '../db/repos'
+import { lineTypeNamesKey } from '../db/repos/lineage.repo'
 import type { ImportGate } from '../import-gate'
 import { DomainError } from './shared/domain-error'
 import type { FigureAssetsCleanup, PaperFileTrash } from './library.service'
@@ -144,6 +147,9 @@ export function createFoldersService(deps: FoldersServiceDeps): ApiHandlers['fol
             deps.repos.papers.remove(id)
           }
           folders.remove(req.id)
+          // [B4 L1 D2 §5.4] 同事务清理该夹 keyed 色行名 meta 行（无孤儿残留；
+          // 删事件随卷携带——对端经 graph_meta 删事件与 collections 派生清理双路闭合）
+          deps.repos.lineage.removeMeta(lineTypeNamesKey(req.id))
         })
         if (deps.fileStore !== undefined) {
           const seen = new Set<string>()

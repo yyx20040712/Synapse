@@ -167,7 +167,7 @@ describe('U6 候选占位与月框下拉', () => {
     const end = host!.querySelector('.tl-card[data-node-id="A"]') as HTMLElement
     // [B3 §9 断言迁移] propertyName 'left'→'translate'（飞行承载键 translate 化）
     act(() => { end.dispatchEvent(Object.assign(new Event('transitionend'), { propertyName: 'translate' })) })
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
     // 松手清场=stretch 摘（框高回落）
     expect(frame.classList.contains('stretch')).toBe(false)
   })

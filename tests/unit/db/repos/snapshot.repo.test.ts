@@ -268,10 +268,10 @@ describe('F-DBCAMP-01 DB-3 U2 snapshot.repo —— envelope 面专用仓储', ()
     db.close()
   })
 
-  it('readSchemaVersion=迁移链尾 user_version 26（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正；[F-VISFB-42] 023 随链；[F-VISFB-61] 024 随链；[F-SNAPCLEAN-01] 基线压缩后链尾=26——迁移面单件 026_baseline.sql）', () => {
+  it('readSchemaVersion=迁移链尾 user_version 28（schema_version 字段源——[回炉 r1-R9] 随 022 链升标题勘正；[F-VISFB-42] 023 随链；[F-VISFB-61] 024 随链；[F-SNAPCLEAN-01] 基线压缩后链尾=26；[B4 L1] 027/028 落链后链尾=28）', () => {
     const db = createTestDb()
     const repo = createSnapshotRepo(db)
-    expect(repo.readSchemaVersion()).toBe(26)
+    expect(repo.readSchemaVersion()).toBe(28)
     db.close()
   })
 })

@@ -6,6 +6,10 @@
  * 行内改名=编辑单元/撤销重做钮接会话栈（mockup §3.3+A11/A12 仲裁）。
  * [F-ALIGN-01 2026-10-04] 添加节点钮随手动添加节点路径退役删除——控件清单
  * 收窄+零残留负锚（在场即红）。
+ * [B4 L1 迁移——设计稿 §12.2] 保存钮/撤销重做钮=纯受控件（LineageSaveButton/
+ * LineageHistoryButtons），状态单源=use-lineage-command-state：clean/dirty 钮态改
+ * 读 IO+U（Q0 且 U1 仍可点——idle-flush 后保存仍可点）；finalize 后 undo 可点
+ * redo 灰；saving 期仍锁同会话编辑工具（INV-94），撤销/重做不禁用（#13d 排队）。
  * always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
@@ -16,8 +20,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
-  lineage: { graph: vi.fn(), patchNode: vi.fn(), removeNode: vi.fn(), upsertEdge: vi.fn(), removeEdge: vi.fn(), upsertLineTypes: vi.fn() }
+  lineage: { graph: vi.fn(), patchNode: vi.fn(), removeNode: vi.fn(), upsertEdge: vi.fn(), removeEdge: vi.fn(), upsertLineTypes: vi.fn(), historyUnit: vi.fn() }
 })
+
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
+import { makeHistoryEntry } from '../../utils/factories'
 
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LINE_TYPE_COLORS, LINE_TYPE_DEFAULT_NAME } from '../../../src/shared/models/lineage'
@@ -89,11 +96,16 @@ beforeEach(() => {
   stubApi.lineage.graph.mockResolvedValue({
     ok: true, data: { nodes: [], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'] }
   })
-  stubApi.lineage.upsertLineTypes.mockImplementation(async (req: string[]) => ({ ok: true, data: [...req] }))
+  stubApi.lineage.upsertLineTypes.mockImplementation(async (req: { names: string[] }) => ({ ok: true, data: [...req.names] }))
+  stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
+    ({ ok: true, data: { ...node(String(req.id)), ...req, updatedAt: 'server' } })
+  )
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit) // [B4 L1] undo/redo=history-unit
   useLineageStore.setState({
     nodes: [node('A')], edges: [], lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
     status: 'ready', error: null, saveStatus: 'clean', lastWriteError: null,
-    queue: [], flushing: false, undoStack: [], redoStack: [], folderId: '__main__'
+    queue: [], flushing: false, inflight: null, needsReload: false, undoStack: [], redoStack: [],
+    unfinalized: false, editRevision: 0, folderId: '__main__'
   })
   useLineageViewStore.setState({
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
@@ -131,25 +143,34 @@ describe('F-LGRAPH-01②U2 工具组形态（仅 edit 可见——A11）', () =>
 })
 
 describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零残留）', () => {
-  it('clean=灰暗禁用；dirty=亮可点；chip testid 退役负锚', () => {
+  it('clean（Q0/U0）=灰暗禁用；dirty（Q≥1 且 U）=亮可点；chip testid 退役负锚', () => {
     mountToolbar()
-    expect(btn('lineage-save-btn').disabled).toBe(true) // clean 禁
+    expect(btn('lineage-save-btn').disabled).toBe(true) // saved（Q0/U0）禁
     expect(q('[data-testid="lineage-save-status"]')).toBeNull() // 退役行 4
     expect(q('[data-testid="lineage-retry-save"]')).toBeNull()
-    setState({ saveStatus: 'dirty' })
+    // [B4 L1] 钮态读 IO+U：待写+未定稿=dirty（夹具拨真实 IO/U 轴——非 saveStatus 单字段）
+    setState({ saveStatus: 'dirty', unfinalized: true, queue: [{ kind: 'patch-node', id: 'A', patch: { x: 1 } }] })
     expect(btn('lineage-save-btn').disabled).toBe(false) // dirty 亮
   })
 
-  it('saving=spinner+工具组锁定（选择/画线/撤销重做禁用）；点击保存=store.save()', () => {
-    const saveSpy = vi.fn()
-    // 直驱 store.save 断言（组件→store 单点）
+  it('[B4 L1] idle-flush 后保存仍可点（Q0 且 U1=dirty——即使无待写）；finalize 后回 saved 禁用', () => {
     mountToolbar()
-    setState({ saveStatus: 'dirty' })
+    setState({ saveStatus: 'clean', unfinalized: true }) // 已落库未定稿
+    expect(btn('lineage-save-btn').disabled).toBe(false)
+    setState({ unfinalized: false }) // 显式保存成功=定稿
+    expect(btn('lineage-save-btn').disabled).toBe(true)
+  })
+
+  it('saving=spinner+工具组锁定（选择/画线禁用）；点击保存=显式保存 saveActiveFolder（空队列即定稿：clean+U 清）', async () => {
+    mountToolbar()
+    setState({ saveStatus: 'dirty', unfinalized: true })
     click(btn('lineage-save-btn'))
-    // [RR11] 具体态断言（原 toContain ['saving','clean'] 弱断言收紧）：
-    // 空队列 flush 全程同步（while 不入+收尾 set 无 await）→点击即回 clean
-    void saveSpy
-    expect(useLineageStore.getState().saveStatus).toBe('clean')
+    expect(useLineageStore.getState().saveStatus).toBe('clean') // [RR11] 具体态：空队列 drain 同步不入循环→clean
+    // [B4 L1] 定稿清账=drain 之后的链步（微任务级）——await 链落定后 U 清
+    await act(async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve()
+    })
+    expect(useLineageStore.getState().unfinalized).toBe(false)
   })
 
   it('error=行内错误+重试钮（新 testid lineage-save-error/lineage-save-retry）；重试=retrySave', () => {
@@ -160,14 +181,15 @@ describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零�
     expect(['saving', 'clean']).toContain(useLineageStore.getState().saveStatus)
   })
 
-  it('[回炉 R7] saving 断言补强：spinner 在场+交互钮全禁用（含栈非空撤销/重做=锁非栈空所致）', () => {
+  it('[回炉 R7→B4 L1] saving 断言补强：spinner 在场+编辑工具全禁用（同会话编辑锁 INV-94）；栈非空时撤销/重做**不禁用**（#13d 排队不并发——原「锁非栈空所致」翻转）', () => {
     mountToolbar()
-    const snap = { nodes: [node('A')], edges: [], lineTypeNames: [], queue: [] }
-    setState({ saveStatus: 'saving', flushing: true, undoStack: [snap], redoStack: [snap] })
+    setState({ saveStatus: 'saving', flushing: true, inflight: { kind: 'write' }, undoStack: [makeHistoryEntry()], redoStack: [makeHistoryEntry()] })
     expect(q('.spinner')).not.toBeNull() // spinner 在场
-    for (const id of ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
+    for (const id of ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed']) {
       expect(btn(id).disabled, `${String(id)} 应禁用`).toBe(true)
     }
+    expect(btn('lineage-undo').disabled).toBe(false) // 栈非空=可点（排队）
+    expect(btn('lineage-redo').disabled).toBe(false)
     expect(btn('lineage-save-btn').disabled).toBe(true) // saving 保存钮禁用
   })
 
@@ -358,8 +380,14 @@ describe('F-LGRAPH-01②U2 线型图标+[F-UIRES-03 C1] 交互+线型列表', ()
   })
 })
 
-describe('F-LGRAPH-01②U2 撤销/重做钮（接 U1 会话栈）', () => {
-  it('栈空=灰暗禁用；有栈=可点=undo/redo', () => {
+describe('F-LGRAPH-01②U2 撤销/重做钮（接历史栈——[B4 L1] async history-unit）', () => {
+  const settle = async (): Promise<void> => {
+    await act(async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve()
+    })
+  }
+
+  it('栈空=灰暗禁用；有栈=可点=undo/redo（await 真实链结果）', async () => {
     mountToolbar()
     expect(btn('lineage-undo').disabled).toBe(true)
     expect(btn('lineage-redo').disabled).toBe(true)
@@ -368,9 +396,29 @@ describe('F-LGRAPH-01②U2 撤销/重做钮（接 U1 会话栈）', () => {
     })
     expect(btn('lineage-undo').disabled).toBe(false)
     click(btn('lineage-undo'))
+    await settle()
     expect(useLineageStore.getState().nodes[0]?.x).toBe(null)
     expect(btn('lineage-redo').disabled).toBe(false)
     click(btn('lineage-redo'))
+    await settle()
     expect(useLineageStore.getState().nodes[0]?.x).toBe(10)
+  })
+
+  it('[B4 L1] finalize 后 undo 可点、redo 灰（显式保存只清 redo——原「保存后 undo 灰」翻转）', async () => {
+    mountToolbar()
+    act(() => {
+      useLineageStore.getState().moveNode('A', 10, 10)
+    })
+    await act(async () => {
+      await useLineageStore.getState().saveActiveFolder()
+    })
+    expect(useLineageStore.getState().unfinalized).toBe(false)
+    expect(btn('lineage-save-btn').disabled).toBe(true) // saved
+    expect(btn('lineage-undo').disabled).toBe(false) // undo 保留
+    expect(btn('lineage-redo').disabled).toBe(true) // redo 清
+    click(btn('lineage-undo'))
+    await settle()
+    expect(btn('lineage-redo').disabled).toBe(false) // undo 后 redo 可点
+    expect(btn('lineage-save-btn').disabled).toBe(false) // undo 置 U→保存可点
   })
 })

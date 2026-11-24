@@ -133,6 +133,7 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null, // [B4 L1 INV-149] 在途写=交互门判据（夹具复位）
     undoStack: [],
     redoStack: [],
     folderId: '__main__'
@@ -193,7 +194,7 @@ describe('注册族单元（模块级单例——set/clear/订阅/等值 no-op/f
     expect(handle).toHaveBeenCalledTimes(1)
     expect(noteDraftPending()).toBe(true)
     act(() => {
-      useLineageStore.setState({ flushing: false })
+      useLineageStore.setState({ flushing: false, inflight: null })
     })
     unregisterNoteDraftFlush()
     act(() => {
@@ -300,7 +301,7 @@ describe('T7 quit 握手主轴（runQuitFlush ②.5 fire→③ save→④ 查态
     mountNotes()
     editDraft('fn-q4', '保存窗草稿')
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving', queue: [{ kind: 'remove-edge', id: 'e-x' }] })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' }, queue: [{ kind: 'remove-edge', id: 'e-x' }] })
     })
     let stillDirty = false
     await act(async () => {
@@ -338,12 +339,12 @@ describe('T4/T5 saving 两序（靶心——clean+驻组件=静默丢稿面）',
     editDraft('fn-w', '跨保存草稿')
     expect(noteDraftPending()).toBe(true)
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(noteElOf('fn-w')!.querySelector('textarea')).toBeNull()
     expect(noteDraftPending()).toBe(true)
     act(() => {
-      useLineageStore.setState({ flushing: false, saveStatus: 'clean' })
+      useLineageStore.setState({ flushing: false, saveStatus: 'clean', inflight: null })
     })
     const ta = noteElOf('fn-w')!.querySelector('textarea')! as HTMLTextAreaElement
     expect(ta.value).toBe('跨保存草稿')

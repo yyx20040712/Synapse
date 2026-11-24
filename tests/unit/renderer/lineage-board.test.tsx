@@ -234,11 +234,10 @@ describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内
 
 describe('组合根 —— 退出拦截聚合扩面（INV-22：tab dirty ∪ lineage dirty）', () => {
   it('lineage 保存失败→dirty=true 沿 system/set-quit-dirty 上报（App 组合根单点）', async () => {
-    seedLineage([])
-    stubApi.lineage.graph.mockResolvedValue({
-      ok: true,
-      data: { nodes: [node('A', OVL)], edges: [] }
-    })
+    // [回炉 W-B2b·夹具迁移（主控裁定，零断言改动）] 原夹具=seedLineage([])＋本用例的 graph 桩，依赖
+    // 「ready 空图挂载重取」把节点 A 取回；R-W2 退役该例外（ready 会话返回不双取）后直接植入含节点 A
+    // 的图。用例意图不变：App 组合根沿 system/set-quit-dirty 上报 quit dirty
+    seedLineage([node('A', OVL)])
     stubApi.lineage.patchNode.mockResolvedValue({
       ok: false,
       error: { code: 'DB_ERROR', message: '写入失败' }

@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import type { FloatingNote } from '@shared/models/lineage'
 import type { Pt } from './routing/anchors'
 import { useLineageStore } from './lineage.store'
+import { lineageIoInFlight } from './lineage-session-model'
 import { clampToContent, NOTE_H, NOTE_W, toOwnPt } from './lineage-note-geom'
 import { startAutoScroll, type AutoScrollHandle } from './drag-autoscroll'
 
@@ -58,7 +59,8 @@ export function useNoteDrag(contentRef: RefObject<HTMLDivElement | null>): {
   /** [回炉 R1] 最近指针采样（null=未采样——模块 hasClient 闸） */
   const lastClientRef = useRef<{ x: number; y: number } | null>(null)
   // [S1②] saving 进入=中止在飞会话（丢弃 live 回弹 store 现值——不提交）
-  const saving = useLineageStore((s) => s.saveStatus === 'saving')
+  // [B4 L1 INV-149/W2] saving 判据=活动会话 IO 在途（单图期=本图 IO）
+  const saving = useLineageStore(lineageIoInFlight)
   useEffect(() => {
     if (!saving) return
     stateRef.current = null

@@ -113,6 +113,7 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null, // [B4 L1 INV-149] 在途写=交互门判据（夹具复位）
     undoStack: [],
     redoStack: [],
     folderId: '__main__'
@@ -207,7 +208,7 @@ describe('F-VISFB-62 悬浮笔记 UI —— 创建面（右键空白+锚定菜�
     mountNotes()
     // 前置闸（R4）：真实组合 flushing+saving——菜单不开+既有笔记让位
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(noteElOf('fn-fl')!.style.pointerEvents).toBe('none')
     act(() => {
@@ -216,14 +217,14 @@ describe('F-VISFB-62 悬浮笔记 UI —— 创建面（右键空白+锚定菜�
     expect(menuEl()).toBeNull()
     // 在飞闸（S1①）：先开菜单再进 saving——菜单随 saving 消失+点击不可达
     act(() => {
-      useLineageStore.setState({ flushing: false, saveStatus: 'clean' })
+      useLineageStore.setState({ flushing: false, saveStatus: 'clean', inflight: null })
     })
     act(() => {
       openBlankMenu(240, 220)
     })
     expect(menuEl()).not.toBeNull()
     act(() => {
-      useLineageStore.setState({ flushing: true, saveStatus: 'saving' })
+      useLineageStore.setState({ flushing: true, saveStatus: 'saving', inflight: { kind: 'write' } })
     })
     expect(menuEl()).toBeNull()
     act(() => {

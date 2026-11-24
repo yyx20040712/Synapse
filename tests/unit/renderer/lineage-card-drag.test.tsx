@@ -224,7 +224,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     pMove(350, 40)
     pUp(350, 40)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('跨行判上半：第二行卡上半指针→插其前（mockup L955-964 同式）', () => {
@@ -243,7 +243,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(ph.nextElementSibling?.isEqualNode(cardOf('C'))).toBe(true)
     pUp(300, 100)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('松手 settle：占位槽撤+DOM 序=新序+.32s left/top 过渡在场；transitionend→清场+重排写+dimmed 摘', () => {
@@ -265,7 +265,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(req('.tl-edges').classList.contains('dimmed')).toBe(false) // 拖起摘除（settle 期无 dimmed）
     expect(reorder).not.toHaveBeenCalled() // settle 落定（transitionend）后才排队
     fireEnd(card)
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
     expect(card.style.position).toBe('') // 清场（inline 全清）
     expect(card.classList.contains('dragging')).toBe(false)
   })
@@ -286,7 +286,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     expect(q('.drag-slot')).toBeNull()
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('序未变松手=零写（拖回原位不产生空写批）', () => {
@@ -351,7 +351,7 @@ describe('[T3-P8] 拖拽状态机（[F-LGRAPH-01①U5] 拖卡=edit 专属——�
     })
     expect(q('.drag-slot')).toBeNull() // settle 已启动（Esc 不中断飞行）
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 })
 
@@ -392,7 +392,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     pMove(500, 40) // 组末（> C（cell2）中心 476）
     pUp(500, 40)
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'C', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('R4 transitionend 兜底：定时器 ~600ms 同径 finish（无事件也落定清场+写）', () => {
@@ -411,7 +411,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
         vi.advanceTimersByTime(650)
       })
       expect(reorder).toHaveBeenCalledTimes(1)
-      expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+      expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
       expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)
     } finally {
       vi.useRealTimers()
@@ -432,7 +432,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(q('.drag-slot')).toBeNull()
     expect(reorder).not.toHaveBeenCalled()
     fireEnd(cardOf('A'))
-    expect(reorder).toHaveBeenCalledWith(['B', 'A'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A'], expect.objectContaining({ folderId: '__main__' }))
   })
 
   it('R6 click 抑制无残留：拖后未消费的抑制随新会话清零（下一真单击恢复转发）', () => {
@@ -492,7 +492,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     fireEnd(cardOf('D'))
     // 幂等无双计：reorder 恰一次+参数序=D 插 idx1（others=[A,B,C]）
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['A', 'D', 'B', 'C'])
+    expect(reorder).toHaveBeenCalledWith(['A', 'D', 'B', 'C'], expect.objectContaining({ folderId: '__main__' }))
     fireEnd(cardOf('D')) // 二次 transitionend=幂等面（事件/兜底不双写）
     expect(reorder).toHaveBeenCalledTimes(1)
     // settle 清场：inline 四键零残留（无双计残留——R1 零位移/R4 断言面同款）
@@ -561,7 +561,7 @@ describe('[T3-P8 回炉] R1/R2/R4/R5/R6——FLIP 清场序/冻结互斥/兜底/
     expect(reorder).not.toHaveBeenCalled() // settle 落定后才写
     fireEnd(cardOf('A'))
     expect(reorder).toHaveBeenCalledTimes(1)
-    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C', 'D'])
+    expect(reorder).toHaveBeenCalledWith(['B', 'A', 'C', 'D'], expect.objectContaining({ folderId: '__main__' }))
     expect(cardOf('A').getAttribute('style') === null || cardOf('A').getAttribute('style') === '').toBe(true)
   })
 

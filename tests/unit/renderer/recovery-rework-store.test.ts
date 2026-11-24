@@ -22,9 +22,12 @@ const stubApi = makeApiStub({
     removeEdge: vi.fn(),
     upsertLineTypes: vi.fn(),
     upsertFloatingNote: vi.fn(),
-    removeFloatingNote: vi.fn()
+    removeFloatingNote: vi.fn(),
+    historyUnit: vi.fn()
   }
 })
+
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -53,7 +56,6 @@ function node(id: string): LineageNode {
 }
 
 const state = () => useLineageStore.getState()
-const loadSpy = vi.fn(async () => undefined)
 
 beforeEach(async () => {
   vi.clearAllMocks()
@@ -69,6 +71,9 @@ beforeEach(async () => {
     ok: true,
     data: { id: 'n1', folderId: '__main__', x: 0, y: 0, content: '', createdAt: 't', updatedAt: 't' }
   })
+  // [B4 L1] undo/redo=async history-unit（回显桩）；flush 尾和解=链尾 keyed graph 读
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit)
+  stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [node('A'), node('B')], edges: [] } })
   stubApi.recovery.peek.mockResolvedValue({
     ok: true,
     data: { slots: { 'lineage-session': { status: 'empty', epoch: 0 } } }
@@ -94,12 +99,12 @@ beforeEach(async () => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null,
     undoStack: [],
     redoStack: [],
     folderId: '__main__',
     floatingNotes: [],
     needsReload: false,
-    load: loadSpy
   })
   useLineageViewStore.setState({ mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208 })
 })
@@ -140,39 +145,44 @@ describe('R1 草稿内容变更=调度器触发面', () => {
 })
 
 describe('R4 undo/redo 通知调度器（丢稿序列）', () => {
-  it('①编辑 A→undo 回基线（release 删副本）→redo→副本重建（save 复来）', async () => {
+  it('①编辑 A→undo 回基线（release 删副本）→redo（[B4 L1 翻转] history-unit 已落库——不重建副本）', async () => {
     state().moveNode('A', 1, 2)
     await vi.advanceTimersByTimeAsync(300)
     expect(stubApi.recovery.save).toHaveBeenCalledTimes(1)
-    state().undo() // 回基线→clean→release
+    await state().undo() // flush-then-unit：drain→history-unit 回基线→IO clean→release
     await vi.advanceTimersByTimeAsync(0)
     expect(stubApi.recovery.release).toHaveBeenCalledWith(expect.objectContaining({ reason: 'clean' }))
     expect(state().saveStatus).toBe('clean')
-    // redo：dirty 复来且无副本——调度器须被通知重建
+    // [B4 L1 翻转] redo=对 DB 的 history-unit（已落库写——非 RecoveryPayload.queue 的
+    // 待写动作，§6.2「已落库动作不会仅因历史项存在重新入队」）：IO clean、无未落定写
+    // →不重建副本（原「dirty 复来→副本重建」随快照 undo 退役）
     stubApi.recovery.save.mockClear()
-    state().redo()
-    expect(state().saveStatus).toBe('dirty')
+    stubApi.lineage.historyUnit.mockClear()
+    await state().redo()
+    expect(stubApi.lineage.historyUnit).toHaveBeenCalledTimes(1)
+    expect(state().saveStatus).toBe('clean')
+    expect(state().queue).toEqual([])
     await vi.advanceTimersByTimeAsync(300)
-    expect(stubApi.recovery.save).toHaveBeenCalledTimes(1)
-    expect(stubApi.recovery.save.mock.calls[0]![0].payload.queue).toHaveLength(1)
+    expect(stubApi.recovery.save).not.toHaveBeenCalled()
   })
 
-  it('②编辑 A,B→undo B→副本收敛为 [A]（不含已撤销 B）', async () => {
+  it('②编辑 A,B→undo B（[B4 L1 翻转] 预 drain 全部落库→反向写 B→IO clean→副本 release；原「收敛为 [A]」退役）', async () => {
     state().moveNode('A', 1, 2)
     state().moveNode('B', 3, 4)
     await vi.advanceTimersByTimeAsync(300)
     expect(stubApi.recovery.save.mock.calls[0]![0].payload.queue).toHaveLength(2)
-    state().undo() // 撤销 B（仍 dirty）
-    expect(state().saveStatus).toBe('dirty')
+    stubApi.recovery.release.mockClear()
+    await state().undo() // 撤销 B：drain（A、B 落库）→history-unit 反向写 B
+    expect(state().saveStatus).toBe('clean')
+    expect(state().queue).toEqual([])
+    expect(state().nodes.find((n) => n.id === 'B')).toMatchObject({ x: null }) // B 回编辑前
     await vi.advanceTimersByTimeAsync(300)
-    const last = stubApi.recovery.save.mock.calls[stubApi.recovery.save.mock.calls.length - 1]![0]
-    expect(last.payload.queue).toHaveLength(1)
-    expect(last.payload.queue[0]).toMatchObject({ kind: 'patch-node', id: 'A' })
+    expect(stubApi.recovery.release).toHaveBeenCalledWith(expect.objectContaining({ reason: 'clean' })) // 无未落定写
   })
 })
 
 describe('W7 conflictTouched 持久化（needsReload）', () => {
-  it('CONFLICT 丢弃后下一动作系统失败→重试成功→load 仍被调', async () => {
+  it('CONFLICT 丢弃后下一动作系统失败→重试成功→链尾和解读仍被调（[B4 L1] void load()→和解任务）', async () => {
     useLineageStore.setState({ folderId: 'f-doom' })
     state().addFloatingNote(0, 0, '弃')
     state().moveNode('A', 5, 6)
@@ -184,14 +194,15 @@ describe('W7 conflictTouched 持久化（needsReload）', () => {
     await state().save()
     // 首轮：upsert 丢弃（touched）+patch 系统失败→error 态（未重拉）
     expect(state().saveStatus).toBe('error')
-    expect(loadSpy).not.toHaveBeenCalled()
-    // 重试：patch 复绿→成功收尾——needsReload（上轮 touched 持久化）触发 load
+    expect(stubApi.lineage.graph).not.toHaveBeenCalled()
+    // 重试：patch 复绿→成功收尾——needsReload（上轮 touched 持久化）触发和解读
     stubApi.lineage.patchNode.mockImplementation(async (req: Partial<LineageNode>) =>
       ({ ok: true, data: { ...node(String(req.id ?? 'X')), ...req } as LineageNode })
     )
     await state().save() // retrySave=fire-and-forget——经可等待 save() 同路径收口
     expect(state().saveStatus).toBe('clean')
-    expect(loadSpy).toHaveBeenCalled()
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
+    expect(state().needsReload).toBe(false)
   })
 })
 
@@ -257,7 +268,7 @@ describe('F-RECOV-04 defer 后 discardSession 不 release（clean-gate——B5 s
 })
 
 describe('Z4 重放幽灵 patch：节点缺席按 CONFLICT 丢弃收口（不死循环）', () => {
-  it('恢复载荷 [patch A, remove A]（A 不在图）重放→patch 丢弃+remove 正常→clean+重拉', async () => {
+  it('恢复载荷 [patch A, remove A]（A 不在图）重放→patch 丢弃+remove 正常→clean+链尾和解', async () => {
     // 手工构造恢复态队列（applyRecoverySession 等价面——A 缺席图）
     useLineageStore.setState({
       nodes: [],
@@ -273,6 +284,6 @@ describe('Z4 重放幽灵 patch：节点缺席按 CONFLICT 丢弃收口（不死
     expect(stubApi.lineage.removeNode).toHaveBeenCalledWith({ id: 'A' })
     expect(state().queue).toEqual([])
     expect(state().saveStatus).toBe('clean')
-    expect(loadSpy).toHaveBeenCalled() // needsReload 收尾重拉（乐观残值消解）
+    expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1) // needsReload 收尾和解（替代 void load()）
   })
 })

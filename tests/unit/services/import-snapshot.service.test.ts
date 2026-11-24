@@ -14,13 +14,27 @@ import { createExportSnapshotService } from '../../../src/main/services/snapshot
 import {
   buildEnvelope,
   canonicalJson,
+  decodeEnvelope,
   deriveKeys,
   envelopeToBytes,
+  type ExportPayload,
   type SnapshotEnvelope
 } from '../../../src/main/services/snapshot/envelope.codec'
 import { createRepos } from '../../../src/main/db/repos'
 import { createTestDb } from '../../utils/fixtures'
 import { APP_META_KEYS, RECV_SEQ_PREFIX } from '../../../src/shared/models/app-meta'
+import type { LineageEntityDelta } from '../../../src/shared/ipc/lineage-history.schemas'
+import type { LineageNode } from '../../../src/shared/models/lineage'
+import { createFoldersService } from '../../../src/main/services/folders.service'
+import { addMs, ms, presetTombstone, rowOf, seedFolder, seedPaper as seedPaperRow, setUpdatedAt, tombstonesOf } from '../../utils/lineage-history-db'
+import {
+  exportVol as exportSide,
+  importVol as importSide,
+  makeSnapshotSide,
+  pair as pairSides,
+  syncKeyOf as syncKeyOfSide,
+  type SnapshotSide
+} from '../../utils/snapshot-lineage-sides'
 
 type Db = ReturnType<typeof createTestDb>
 type Repos = ReturnType<typeof createRepos>
@@ -422,13 +436,13 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
     x.db.close()
   })
 
-  it('schema_newer：伪造 schema_version=27 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24；[F-VISFB-61] 024 落链后随升 25；[F-VISFB-66] 025 落链后随升 26；[F-SNAPCLEAN-01] 基线压缩链尾 26 后随升 27）', () => {
+  it('schema_newer：伪造 schema_version=29 卷（buildEnvelope 直调）→拒收（[F-VISFB-42] 023 落链后伪卷随升 24；[F-VISFB-61] 024 落链后随升 25；[F-VISFB-66] 025 落链后随升 26；[F-SNAPCLEAN-01] 基线压缩链尾 26 后随升 27；[B4 L1] 027/028 落链后链尾 28——随升 29）', () => {
     const x = makeSide(OWNER_X)
     const y = makeSide(OWNER_Y)
     pair(y, x)
     const forged = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 27,
+      schemaVersion: 29,
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),
@@ -586,7 +600,7 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
     // ② 双错卷：schema_version=27+密文损坏→明文预检先报 schema_newer（伪卷随升）
     const newer = buildEnvelope({
       syncKey: syncKeyOf(x),
-      schemaVersion: 27,
+      schemaVersion: 29, // [B4 L1] 链尾 28 后「超前」伪卷随升
       snapshotSeq: 1,
       ownerId: OWNER_X,
       payload: emptyPayload(),
@@ -697,6 +711,229 @@ describe('F-DBCAMP-01 DB-3 U3 import-snapshot.service —— 六闸导入合并�
       payloadText: nonCanonical
     })
     expect(y.importer.importFromBuffer(vol)).toMatchObject({ outcome: 'rejected', reason: 'struct_invalid' })
+    x.db.close()
+    y.db.close()
+  })
+})
+
+
+/**
+ * [B4 L1 / 设计稿 §7.5] 快照三段闭环真库序列（lineage_nodes 侧）：段二「先读
+ * 本地行」（活行在场走 LWW——不再因历史 tombstone 无条件跳过）+段三删事件按
+ * deleted_at 代际判定（row.updated_at>deleted_at=skippedSuperseded；相等=防御
+ * 默认同跳过，守卫下单库不可达）+`entity='collections'` 删事件的 graph_meta
+ * 派生清理（§5.4）。进入未来毫秒区=预置远未来 tombstone（同技术）。
+ */
+describe('F-B4-L1 §7.5 快照三段闭环（lineage_nodes 侧——真库序列 2/3/6/8+keyed meta）', () => {
+  const OWNER_Z = '5e4d0c26-7f8a-4b3c-9d4e-1a2b3c4d5e6f'
+  const OWNER_P = '6f7e1d37-2a8b-4c5d-9e6f-2b3a4c5d6e7f'
+  const T = '2999-01-01T00:00:00.000Z'
+  const U1 = '2026-02-01T00:00:00.000Z'
+
+  function seedNode(side: SnapshotSide, id: string, x: number, updatedAt: string): LineageNode {
+    seedPaperRow(side.db, 'p-a')
+    const n = side.repos.lineage.upsertNode({ id, paperId: 'p-a', title: '甲', year: 2020, x, y: 1, month: 1, slot: 0 })
+    setUpdatedAt(side.db, 'lineage_nodes', id, updatedAt)
+    return { ...n, updatedAt }
+  }
+  const nodeRow = (side: SnapshotSide, id: string) =>
+    side.db.prepare('SELECT x, created_at, updated_at FROM lineage_nodes WHERE id = ?').get(id) as
+      | { x: number; created_at: string; updated_at: string }
+      | undefined
+  const restore = (side: SnapshotSide, before: LineageNode): void => {
+    const changes: LineageEntityDelta[] = [{ kind: 'node', id: before.id, before, after: null }]
+    side.history.unit({ folderId: before.folderId, unitId: `u-${before.id}`, direction: 'undo', changes })
+  }
+  /** 解码导出卷明文（§13.6 envelope：文件字节 canonical JSON→decodeEnvelope 验签解密→payload
+   *  JSON）——[M-W02 回炉] 序列 8「卷含全部 tombstone」直接断言卷内容，不再只重查源库 */
+  const decodeVol = (side: SnapshotSide, bytes: Buffer): ExportPayload => {
+    const decoded = decodeEnvelope(JSON.parse(bytes.toString('utf8')), syncKeyOfSide(side))
+    if (!decoded.ok) throw new Error(`导出卷解码失败：${decoded.reason}`)
+    return JSON.parse(decoded.plaintext.toString('utf8')) as ExportPayload
+  }
+
+  it('闭环序列 A：删除→原 id 恢复→导出→全新库导入活行存在且=恢复值（不被卷内旧 tombstone 删除）；持旧活行的对端被恢复值 LWW 更新且不被删除', () => {
+    const x = makeSnapshotSide(OWNER_X)
+    const n = seedNode(x, 'n-a', 1, U1)
+    x.repos.lineage.removeNode(n.id) // 删除（tombstone）
+    const restoreValue = { ...n, x: 42 }
+    restore(x, restoreValue) // 原 id 恢复（恢复值 x=42）
+    const restored = nodeRow(x, n.id)!
+    expect(restored.x).toBe(42)
+    const vol = exportSide(x)
+    // 全新库
+    const fresh = makeSnapshotSide(OWNER_Z)
+    pairSides(fresh, x)
+    const resF = importSide(fresh, vol)
+    expect(resF.outcome).toBe('applied')
+    expect(nodeRow(fresh, n.id)).toEqual(restored) // 活行存在且内容=恢复值（不被卷内旧 tombstone 删除）
+    expect(resF.stats?.skippedSuperseded).toBe(1) // 卷内旧 tombstone 代际早于恢复行
+    expect(resF.stats?.deleted).toBe(0)
+    // 持旧活行（updated_at 更早）的对端
+    const peer = makeSnapshotSide(OWNER_P)
+    seedNode(peer, 'n-a', 1, U1)
+    pairSides(peer, x)
+    const resP = importSide(peer, vol)
+    expect(nodeRow(peer, n.id)).toEqual(restored) // 被恢复值 LWW 更新且不被删除
+    expect(resP.stats?.updated).toBe(1) // 恢复值 LWW 胜出
+    expect(resP.stats?.skippedSuperseded).toBe(1)
+    expect(resP.stats?.deleted).toBe(0)
+    x.db.close()
+    fresh.db.close()
+    peer.db.close()
+  })
+
+  it('闭环序列 B：恢复→再次删除→导出→全新库导入不复活；对端持恢复行（updated_at=恢复值）被新删事件删除（新删事件胜）', () => {
+    const x = makeSnapshotSide(OWNER_X)
+    const n = seedNode(x, 'n-b', 1, U1)
+    x.repos.lineage.removeNode(n.id)
+    restore(x, n)
+    const restoredAt = nodeRow(x, n.id)!.updated_at
+    const volMid = exportSide(x) // 恢复后导出（携活行）
+    x.repos.lineage.removeNode(n.id) // 再次删除
+    expect(tombstonesOf(x.db, 'lineage_nodes', n.id)).toHaveLength(2)
+    const vol = exportSide(x)
+    const fresh = makeSnapshotSide(OWNER_Z)
+    pairSides(fresh, x)
+    const resF = importSide(fresh, vol)
+    expect(resF.outcome).toBe('applied')
+    expect(nodeRow(fresh, n.id)).toBeUndefined() // 全新库不复活
+    const peer = makeSnapshotSide(OWNER_P)
+    pairSides(peer, x)
+    importSide(peer, volMid) // 对端持恢复行
+    expect(nodeRow(peer, n.id)!.updated_at).toBe(restoredAt)
+    const resP = importSide(peer, vol)
+    expect(resP.stats?.deleted).toBe(1)
+    expect(resP.stats?.skippedSuperseded).toBe(1) // 首删 tombstone 早于恢复行
+    expect(nodeRow(peer, n.id)).toBeUndefined()
+    x.db.close()
+    fresh.db.close()
+    peer.db.close()
+  })
+
+  it('序列 8 交错链：删除→恢复→普通 repo 写（upsertNode）→再删除→导出→对端导入（四层断言）', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    const n0 = seedNode(y, 'n-8', 1, U1)
+    y.repos.lineage.removeNode(n0.id) // 删除（真实 tombstone）
+    presetTombstone(y.db, 'lineage_nodes', 'n-8', T) // 进入未来毫秒区
+    const restoreValue = { ...n0, x: 1, updatedAt: T }
+    restore(y, restoreValue) // 恢复
+    const restoredAt = rowOf(y.db, 'lineage_nodes', 'n-8')!.updated_at
+    expect(restoredAt).toBe(addMs(T, 1))
+    y.repos.lineage.upsertNode({ id: 'n-8', paperId: 'p-a', title: '甲', year: 2020, x: 7, y: 8, month: 1, slot: 0 }) // 普通写（裸 now 回拨域）
+    const normal = nodeRow(y, 'n-8')!
+    expect(ms(normal.updated_at)).toBeGreaterThan(ms(restoredAt)) // ① 本地普通写不倒退
+    expect(normal.x).toBe(7) // ① 内容=普通写值
+    const countBefore = tombstonesOf(y.db, 'lineage_nodes', 'n-8').length
+    y.repos.lineage.removeNode('n-8') // 再删除
+    const tombs = tombstonesOf(y.db, 'lineage_nodes', 'n-8')
+    expect(tombs).toHaveLength(countBefore + 1) // ② 新删事件未被 UNIQUE 吞
+    expect(ms(tombs[tombs.length - 1]!)).toBeGreaterThan(ms(normal.updated_at))
+    const vol = exportSide(y)
+    expect(nodeRow(y, 'n-8')).toBeUndefined() // ③ 本地无该 id 活行（卷含全部 tombstone——导出面不剪枝）
+    // [M-W02 回炉] 解码导出卷直接断言（上一行括注的「卷含全部 tombstone」不再只重查源库）：卷内
+    // 该 id 的 deletion_events 全集=源库（条数与 deleted_at 值，seq 序）；卷内无该 id 活行
+    const exported = decodeVol(y, vol)
+    const volTombs = exported.deletions.filter((d) => d.entity === 'lineage_nodes' && d.id === 'n-8').map((d) => d.deleted_at)
+    expect(volTombs).toHaveLength(countBefore + 1)
+    expect(volTombs).toEqual(tombstonesOf(y.db, 'lineage_nodes', 'n-8'))
+    expect(exported.data.lineage_nodes?.filter((r) => r.id === 'n-8')).toEqual([]) // 卷缺该表=undefined≠[]，不恒真
+    const holdRestored = makeSnapshotSide(OWNER_Z)
+    seedNode(holdRestored, 'n-8', 1, restoredAt)
+    pairSides(holdRestored, y)
+    expect(importSide(holdRestored, vol).stats?.deleted).toBe(1) // ④ 持恢复行→被删
+    expect(nodeRow(holdRestored, 'n-8')).toBeUndefined()
+    const holdNormal = makeSnapshotSide(OWNER_P)
+    seedNode(holdNormal, 'n-8', 7, normal.updated_at)
+    pairSides(holdNormal, y)
+    const resN = importSide(holdNormal, vol)
+    expect(resN.outcome).toBe('applied')
+    expect(nodeRow(holdNormal, 'n-8')).toBeUndefined() // ④ 持普通写行→被删（普通写值不复活）
+    y.db.close()
+    holdRestored.db.close()
+    holdNormal.db.close()
+  })
+
+  it('序列 6 写点守卫不变式：tombstone.deleted_at 严格大于被删行删除前 updated_at；活行 updated_at 严格大于该 id 全部 tombstone（段三相等分支不可达）', () => {
+    const y = makeSnapshotSide(OWNER_Y)
+    const n0 = seedNode(y, 'n-k', 1, U1)
+    y.repos.lineage.removeNode(n0.id)
+    // [M-W02 回炉] 逐对配对·首次真实删除：删除前 updated_at 与其 tombstone 一一对应
+    expect(tombstonesOf(y.db, 'lineage_nodes', 'n-k')).toHaveLength(1)
+    expect(ms(tombstonesOf(y.db, 'lineage_nodes', 'n-k')[0]!)).toBeGreaterThan(ms(n0.updatedAt))
+    presetTombstone(y.db, 'lineage_nodes', 'n-k', T)
+    const preDelete: string[] = []
+    const pairedTombs: string[] = [] // [M-W02 回炉] 逐轮配对：每轮删除后立刻取该轮新产生的 tombstone
+    for (let round = 0; round < 3; round++) {
+      restore(y, { ...n0, x: 1, updatedAt: T })
+      y.repos.lineage.upsertNode({ id: 'n-k', paperId: 'p-a', title: '甲', year: 2020, x: round, y: 2, month: 1, slot: 0 })
+      preDelete.push(rowOf(y.db, 'lineage_nodes', 'n-k')!.updated_at)
+      const countBefore = tombstonesOf(y.db, 'lineage_nodes', 'n-k').length
+      y.repos.lineage.removeNode('n-k')
+      // [M-W02 回炉] 该轮删除后立刻取新产生的 tombstone（seq 序尾部）：恰一枚、严格大于该轮删除前 updated_at
+      const added = tombstonesOf(y.db, 'lineage_nodes', 'n-k').slice(countBefore)
+      expect(added, `第 ${round} 轮删除恰新增一枚 tombstone`).toHaveLength(1)
+      pairedTombs.push(added[0]!)
+      expect(ms(added[0]!), `第 ${round} 轮 tombstone 严格大于该轮删除前 updated_at`).toBeGreaterThan(ms(preDelete[round]!))
+    }
+    restore(y, { ...n0, x: 1, updatedAt: T })
+    const tombs = tombstonesOf(y.db, 'lineage_nodes', 'n-k').map(ms)
+    const realTombs = tombs.filter((t) => t !== ms(T))
+    expect(realTombs).toHaveLength(preDelete.length + 1) // 含首次真实删除
+    for (const pre of preDelete) expect(realTombs.some((t) => t > ms(pre))).toBe(true)
+    const live = ms(rowOf(y.db, 'lineage_nodes', 'n-k')!.updated_at)
+    for (const t of tombs) expect(live).toBeGreaterThan(t)
+    // [M-W02 回炉] 逐对（按 seq 序）：各轮 tombstone=日志尾部同序、严格大于同轮删除前 updated_at、逐轮严格递增
+    const tombTexts = tombstonesOf(y.db, 'lineage_nodes', 'n-k')
+    expect(tombTexts.slice(tombTexts.length - pairedTombs.length)).toEqual(pairedTombs)
+    for (const [round, pre] of preDelete.entries()) expect(ms(pairedTombs[round]!)).toBeGreaterThan(ms(pre))
+    for (let i = 1; i < pairedTombs.length; i++) expect(ms(pairedTombs[i]!)).toBeGreaterThan(ms(pairedTombs[i - 1]!))
+    y.db.close()
+  })
+
+  it('§5.4 删夹派生清理：真实删夹→导出→对端已有 keyed meta→导入后该 meta 缺席（无孤儿残留）', async () => {
+    const x = makeSnapshotSide(OWNER_X)
+    const y = makeSnapshotSide(OWNER_Y)
+    pairSides(y, x)
+    seedFolder(x.db, 'f-a', '夹甲')
+    x.repos.lineage.setLineTypeNames('f-a', ['主线', '乙', '丙', '丁', '戊', '己'])
+    seedPaperRow(x.db, 'p-fa', 'f-a')
+    expect(importSide(y, exportSide(x)).outcome).toBe('applied')
+    expect(y.repos.lineage.getLineTypeNames('f-a')).toEqual(['主线', '乙', '丙', '丁', '戊', '己'])
+    const metaBefore = (y.db.prepare(`SELECT COUNT(*) AS c FROM lineage_graph_meta WHERE key = 'lineTypeNames:f-a'`).get() as { c: number }).c
+    expect(metaBefore).toBe(1)
+    // 真实删夹（folders.service 正道：先删夹内 papers 再删夹行，同事务删 keyed meta）
+    await createFoldersService({
+      repos: x.repos,
+      lineagePending: () => false,
+      sendFoldersChanged: () => undefined,
+      sendLineageChanged: () => undefined
+    }).delete({ id: 'f-a' })
+    expect((x.db.prepare(`SELECT COUNT(*) AS c FROM lineage_graph_meta WHERE key = 'lineTypeNames:f-a'`).get() as { c: number }).c).toBe(0)
+    const res = importSide(y, exportSide(x))
+    expect(res.outcome).toBe('applied')
+    expect((y.db.prepare(`SELECT COUNT(*) AS c FROM collections WHERE id = 'f-a'`).get() as { c: number }).c).toBe(0)
+    expect((y.db.prepare(`SELECT COUNT(*) AS c FROM lineage_graph_meta WHERE key = 'lineTypeNames:f-a'`).get() as { c: number }).c).toBe(0)
+    x.db.close()
+    y.db.close()
+  })
+
+  it('§5.4 派生清理单源：卷仅携 entity=collections 删事件（无 graph_meta 删事件）→对端 keyed meta 行同样清理', async () => {
+    const x = makeSide(OWNER_X)
+    const y = makeSide(OWNER_Y)
+    pair(y, x)
+    y.db.prepare(`INSERT INTO collections (id, name, position) VALUES ('f-a', '夹甲', 1)`).run()
+    y.repos.lineage.setLineTypeNames('f-a', ['甲', '乙', '丙', '丁', '戊', '己'])
+    const payload = emptyPayload()
+    payload.deletions = [{ seq: 1, entity: 'collections', id: 'f-a', deleted_at: new Date().toISOString() }]
+    const forged = buildEnvelope({
+      syncKey: syncKeyOf(x), schemaVersion: 21, snapshotSeq: 1, ownerId: OWNER_X, payload,
+      makeNonce: () => Buffer.from('aaaaaaaaaaaa', 'utf8')
+    })
+    const res = y.importer.importFromBuffer(envelopeToBytes(forged))
+    expect(res.outcome).toBe('applied')
+    expect((y.db.prepare(`SELECT COUNT(*) AS c FROM collections WHERE id = 'f-a'`).get() as { c: number }).c).toBe(0)
+    expect((y.db.prepare(`SELECT COUNT(*) AS c FROM lineage_graph_meta WHERE key = 'lineTypeNames:f-a'`).get() as { c: number }).c).toBe(0)
     x.db.close()
     y.db.close()
   })

@@ -7,14 +7,17 @@
  * [RRB2] ④段拖回原位直测（三短路中段拖面唯一无直测——误删 if 套件仍绿的
  * 逃逸口）+no-op 后 redo 栈保留断言（误 beginUnit 必清 redo 的对称锚）。
  * 装配面与 lineage-edge-edit-r2 同构（jsdom 零布局——gBCR spy 定值几何）。
+ * [B4 L1 async 迁移] ④预置 redo 栈的 undo 改 await 真实链结果（flush-then-unit
+ * ——history-unit 桩=echoHistoryUnit）；no-op 与「误走 beginUnit 必清 redo」锚保留。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
+import { echoHistoryUnit } from '../../utils/lineage-history-stub'
 
 const stubApi = makeApiStub({
-  lineage: { graph: vi.fn() }
+  lineage: { graph: vi.fn(), upsertEdge: vi.fn(), historyUnit: vi.fn() }
 })
 void stubApi
 
@@ -75,7 +78,13 @@ const click = (el: Element): void => {
 }
 
 beforeEach(() => {
-  useLineageStore.setState({ saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
+  // [B4 L1] undo=flush-then-unit：预 drain 的 upsert-edge 回显现行+history-unit 回显
+  stubApi.lineage.upsertEdge.mockImplementation(async (req: { id?: string }) => {
+    const cur = useLineageStore.getState().edges.find((e) => e.id === req.id)
+    return { ok: true, data: cur ?? edge('x', 'A', 'B', []) }
+  })
+  stubApi.lineage.historyUnit.mockImplementation(echoHistoryUnit)
+  useLineageStore.setState({ saveStatus: 'clean', queue: [], flushing: false, inflight: null, undoStack: [], redoStack: [] })
 })
 afterEach(() => {
   act(() => {
@@ -95,7 +104,8 @@ afterEach(() => {
 function layout(edgeVia: Array<{ x: number; y: number }>): void {
   const nodes = [node('A'), node('B')]
   const edges = [edge('e1', 'A', 'B', edgeVia)]
-  useLineageStore.setState({ nodes, edges, saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
+  // [B4 L1] 图 ready 夹具默认值（undo/redo 命令入口的 #12 no-op 判据含「图未 ready」）
+  useLineageStore.setState({ nodes, edges, status: 'ready', saveStatus: 'clean', queue: [], undoStack: [], redoStack: [] })
   stubRaf()
   host = document.createElement('div')
   document.body.appendChild(host)
@@ -184,7 +194,7 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
     expect(s.edges[0]?.via).toEqual([{ x: 200, y: 66 }])
   })
 
-  it('④[RRB2] 段拖回原位直测=via 等值短路：拖开再拖回松手——零单元零 dirty+redo 栈保留', () => {
+  it('④[RRB2] 段拖回原位直测=via 等值短路：拖开再拖回松手——零单元零 dirty+redo 栈保留', async () => {
     // via 两点成水平段（y=66：v0(200,66)→v1(300,66)——段=via 内点对 0）；
     // 全链 (140,66)→(200,66)→(300,66)→(412,66)（A 右中/B 左中锚）
     layout([
@@ -198,8 +208,8 @@ describe('RR13 no-op 短路（R19 对称——同锚/等值松手零编辑单元
         { x: 300, y: 96 }
       ])
     })
-    act(() => {
-      useLineageStore.getState().undo()
+    await act(async () => {
+      await useLineageStore.getState().undo()
     })
     expect(useLineageStore.getState().redoStack).toHaveLength(1) // redo 在场锚
     click(hitOf('e1')) // selected（段拖入口：命中层 pointerdown）

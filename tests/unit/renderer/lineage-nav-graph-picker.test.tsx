@@ -4,6 +4,8 @@
  * LineageGraphSwitcher 迁移改写：S2 导入 busy 禁切/S3 folders.changed 联动/
  * S4 当前图删除回退主图——三语义行为面零变；**并集首项退役**：每图只显示
  * 自身，主图恒在列，切换恒 folderId 载荷）。always-active（不经 guardedDescribe）。
+ * [B4 L2 回炉 E4] 追加「无结构事件的后台删夹」一例：打开下拉即重拉活夹清单，
+ * 清单落定后经既有 effect 交 lineage-folder-reconcile 处置已删会话（S4 恢复沿）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -46,6 +48,8 @@ stubApiEvents({
 import { NavGraphPicker } from '../../../src/renderer/features/lineage/nav-graph-picker'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useImportBusyStore } from '../../../src/renderer/shared/import-busy.store'
+import { lineageFolderReconcile } from '../../../src/renderer/features/lineage/lineage-folder-reconcile'
+import { lineageRegistry as registry } from '../../../src/renderer/features/lineage/lineage-session-registry'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -171,19 +175,23 @@ describe('F-LGRAPH-01①U4 NavGraphPicker（图/文件夹下拉——并集退�
     expect(optionLabels()).toContain('改名后的图')
   })
 
-  it('S4：当前图文件夹消失（删除级联）→回退主图+graph 重取（__main__ 恒在场不可删）', async () => {
+  it('S4：当前图文件夹消失（删除级联）→清会话+回退主图（内存会话直投影；结构事件经 #41 单飞和解补权威读——__main__ 恒在场不可删）', async () => {
     await renderPicker()
     openMenu()
     pickFolder('f-1')
     await settle()
     stubApi.lineage.graph.mockClear()
     foldersNow = [folder('__main__', '主图', 3)] // f-1 被删除
+    // [B4 L2 §2.6 #41] 生产面=App 级事件接线（bindLineageFolderEvents）；本件直调单例
+    lineageFolderReconcile.onStructureChanged()
     await act(async () => {
       fireFoldersChanged()
     })
     await settle()
     expect(useLineageStore.getState().folderId).toBe('__main__')
     expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('主图')
+    // 返回主图=内存会话（needsReload 已由事件置位）→单飞和解恰读主图权威图；
+    // f-1 的在读和解随会话清出归属孤儿（响应不写任何会话）
     expect(stubApi.lineage.graph).toHaveBeenLastCalledWith({ folderId: '__main__' })
   })
 
@@ -206,5 +214,36 @@ describe('F-LGRAPH-01①U4 NavGraphPicker（图/文件夹下拉——并集退�
     expect(
       (req('[data-testid="lineage-nav-graph"]') as HTMLButtonElement).disabled
     ).toBe(true)
+  })
+
+  it('[B4 L2 回炉 E4] 无结构事件的后台删夹：打开下拉→重拉活夹清单→死夹条目消失+清会话+回退主图', async () => {
+    // 点击会发起一次异步清单重拉——用异步 act 包裹点击，重拉落定在 act 作用域内
+    // （既有 openMenu 助手是同步 act，本例不动它）
+    const clickNavBtn = async (): Promise<void> => {
+      await act(async () => {
+        req('[data-testid="lineage-nav-graph"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
+    }
+    await renderPicker()
+    await clickNavBtn()
+    pickFolder('f-1')
+    await settle()
+    expect(useLineageStore.getState().folderId).toBe('f-1')
+    expect(registry.entry('f-1')).toBeDefined() // f-1 缓存会话驻留（IO clean）
+    // 页面外删夹：库态已无 f-1。全程不触发 folders.changed（fireFoldersChanged 零调用）
+    // ——清单只能由本件自己的重拉更新（= e2e C2 的会话面）
+    foldersNow = [folder('__main__', '主图', 2)]
+    const listCallsBefore = stubApi.folders.list.mock.calls.length
+    await clickNavBtn()
+    // ① 打开这一下即重拉活夹清单（点击处理内发起——不等事件、不等重挂载；恰一次）
+    expect(stubApi.folders.list.mock.calls.length).toBe(listCallsBefore + 1)
+    await settle()
+    // ② 菜单不再列出死夹
+    expect(optionLabels()).toEqual(['主图'])
+    // ③ #42/#40：IO clean 的活动死夹会话经既有 effect 交 lineage-folder-reconcile 清出
+    //    →S4 回退主图（按钮图名跟随）
+    expect(registry.entry('f-1')).toBeUndefined()
+    expect(useLineageStore.getState().folderId).toBe('__main__')
+    expect(req('[data-testid="lineage-nav-graph"]').textContent).toContain('主图')
   })
 })

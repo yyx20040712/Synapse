@@ -7,12 +7,14 @@
  *
  * 会话态状态机（宪法前置，票面行为层——单源注释=lineage-write-queue 头注）：
  * - 态空间：saveStatus ∈ {clean, dirty, saving, error} × queue（暂存序列）
- * - 迁移：clean+edit→dirty（乐观+入队不发 IPC）/点保存→saving（flush 串行
- *   派发）/全部成功→clean（回填+栈基线重置）/系统型失败→error（队首保留
- *   +toast+重试）/CONFLICT 拒绝型→丢弃继续（toast reason；队列空→clean+
- *   库态重拉——乐观残值消解）
+ * - 迁移：clean+edit→dirty（乐观+入队不发 IPC）/save→saving（flush 串行派发）/
+ *   全部成功→clean（回填；[B4 L1] 历史与 U 不动）/系统型失败→error（队首保留
+ *   +toast+重试）/CONFLICT 拒绝型→丢弃继续（toast reason；队列空→clean+链尾
+ *   权威和解任务——乐观残值消解；[B4 L1] 原 `void load()` 改和解链任务）
  * - 跨格序列：连续编辑合并（lazy 载荷读最新行）；改父删成功+加失败=合法
  *   中间态（森林语义）+toast 指明+重试只重发加边
+ * - [B4 L1 D2 §5.4] upsert-line-types 请求={folderId, names}——folderId 由
+ *   单一适配函数注入（lineage-write-actions lineTypeTypesRequest）
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeApiStub } from '../../utils/api-client-mock'
@@ -94,8 +96,12 @@ beforeEach(() => {
     lastWriteError: null,
     queue: [],
     flushing: false,
+    inflight: null,
+    needsReload: false,
     undoStack: [],
     redoStack: [],
+    unfinalized: false,
+    editRevision: 0,
     // [F-LGRAPH-01①U4] 图作用域跨用例复位（folderId 恒有值——主图兜底）
     folderId: '__main__'
   })
@@ -478,7 +484,8 @@ state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnc
     state().saveLineTypeNames(NAMES_B)
     state().save()
     await settle()
-    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith(NAMES_B)
+    // [B4 L1 D2] 请求={folderId, names}（会话 folderId 由单一适配函数注入）
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith({ folderId: '__main__', names: NAMES_B })
     expect(state().lineTypeNames).toEqual(NAMES_B)
     expect(state().saveStatus).toBe('clean')
   })
@@ -486,7 +493,7 @@ state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnc
   it('saveLineTypeNames sameTarget 同类合并（整批=单实体——暂存期合并最后写胜出）', async () => {
     const n1 = [...NAMES_A]
     const n2 = [...NAMES_B]
-    stubApi.lineage.upsertLineTypes.mockImplementation(async (req: string[]) => ({ ok: true, data: [...req] }))
+    stubApi.lineage.upsertLineTypes.mockImplementation(async (req: { names: string[] }) => ({ ok: true, data: [...req.names] }))
     state().saveLineTypeNames(n1)
     state().saveLineTypeNames(n2)
     state().saveLineTypeNames(n1)
@@ -494,8 +501,24 @@ state().drawEdge('C', 'B', { dashed: false, color: '#1e3a8a', label: '', fromAnc
     state().save()
     await settle()
     expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledTimes(1)
-    expect(stubApi.lineage.upsertLineTypes).toHaveBeenLastCalledWith(n1)
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenLastCalledWith({ folderId: '__main__', names: n1 })
     expect(state().lineTypeNames).toEqual(n1)
+  })
+
+  it('[B4 L1 D2 §5.4] 适配层单一注入：崩溃重放的 queue 动作（input=names 数组）落库时 folderId=RecoveryPayload.folderId（同一适配函数同一读点）', async () => {
+    const names = [...NAMES_B]
+    stubApi.lineage.upsertLineTypes.mockImplementation(async (req: { names: string[] }) => ({ ok: true, data: [...req.names] }))
+    useLineageStore.setState({ folderId: 'f-ghost-session' })
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
+    state().applyRecoverySession({
+      folderId: 'f-recovered',
+      graph: { nodes: [], edges: [], lineTypeNames: [...NAMES_A], floatingNotes: [] },
+      queue: [{ kind: 'upsert-line-type-names', input: names }],
+      draft: null
+    } as never)
+    expect(state().folderId).toBe('f-recovered')
+    await state().save()
+    expect(stubApi.lineage.upsertLineTypes).toHaveBeenCalledWith({ folderId: 'f-recovered', names })
   })
 
   it('队列序 FIFO：saveLineTypeNames 先于随后入队的 edge（串行派发序）', async () => {

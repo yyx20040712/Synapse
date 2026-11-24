@@ -101,6 +101,9 @@ export interface ImportSnapshotRepo {
   upsertRow(table: ImportTable, row: Record<string, unknown>): void
   /** 本地行全列读（键查——三分支比较用）；缺席=null */
   readRow(table: ImportTable, key: Record<string, unknown>): Record<string, unknown> | null
+  /** [B4 L1 §7.5 段三] 本地行全列读（身份串查——删事件代际判定用；id 按身份
+   *  矩阵序列化，畸形复合键同 deleteDirect 响亮抛）；缺席=null */
+  readRowById(table: ImportTable, id: string): Record<string, unknown> | null
   /** 防复活查询：入站 (entity,id) 命中本库 deletion_events（INV-132 兑现面） */
   isDeleted(entity: ImportTable, id: string): boolean
   /** 直执删除（缺席=no-op 幂等）；id 按身份矩阵序列化；返回实际删除行数 */
@@ -213,6 +216,11 @@ export function createImportSnapshotRepo(db: SqliteDb): ImportSnapshotRepo {
         args[c] = key[c]
       }
       const row = selectStmts.get(table)!.get(args) as Record<string, unknown> | undefined
+      return row === undefined ? null : row
+    },
+
+    readRowById(table, id): Record<string, unknown> | null {
+      const row = selectStmts.get(table)!.get(keyArgs(table, id)) as Record<string, unknown> | undefined
       return row === undefined ? null : row
     },
 
