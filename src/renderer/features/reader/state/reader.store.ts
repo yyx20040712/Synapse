@@ -1,17 +1,17 @@
 // b3: P7-B
 /**
  * [SR2-TABS-01] reader.store —— per-tab 多文献状态（[B4-A R1] store 薄壳；装载机
- * 驻 reader-store-load、操作层执行驻 reader-history-commands）。tab 生命周期
+ * 驻 reader-store-load、操作层执行驻 reader-history-commands、undo/redo 的 store
+ * 同步收口驻 reader-store-history）。tab 生命周期
  * 状态机与竞态守卫（INV-03 三规则在 load 件）；closeOne 接缝清理=进度账+操作
- * 双栈+文本历史+写链+装载账（§3 关闭 tab 行）；undo/redo=await 协调链→本件增量
+ * 双栈+文本历史+写链+装载账（§3 关闭 tab 行）；undo/redo=await 协调链→增量
  * apply（await 后重读现态——并发编辑不覆盖）→失败 toast；PDF 未 ready 为 no-op
  * （§2.5 #12）。测试=reader.store.test（受锁）+undo-race 回归锁。
  */
 import { create } from 'zustand'
 import type { Annotation, AnnotationColor } from '@shared/models/annotation'
-import { clearStack, type OpApply } from './annotation-undo'
-import { redoTabOperations, undoTabOperations, type OpHistoryOutcome } from './reader-history-commands'
-import { showToast } from '../../../shared/ui/toast-store'
+import { clearStack } from './annotation-undo'
+import { createReaderOpHistory } from './reader-store-history'
 import type { TabState } from './tab-state'
 import { createReaderLoad } from './reader-store-load'
 import { clearAllTextHistory, clearTabTextHistory } from './reader-text-history'
@@ -90,6 +90,8 @@ export function createReaderStoreInitialState() {
 export const useReaderStore = create<ReaderStore>()((set, get) => {
   // [B4-A R1 §11.1 拆件] 加载机迁驻 reader-store-load.ts（行为零变）
   const loader = createReaderLoad(set, get)
+  // [F-SLIMB4A-01 拆件] 操作层 undo/redo 的 store 同步收口迁驻 reader-store-history.ts（行为零变）
+  const opHistory = createReaderOpHistory(set, get)
 
   // tab 寻址写：updateActiveTab=作用于 active tab（activeId=null no-op）；
   // updateTabById=显式 paperId 寻址（tab 缺席 no-op——F-SL/TABS-03 写方向同族）
@@ -285,56 +287,11 @@ export const useReaderStore = create<ReaderStore>()((set, get) => {
     },
 
     undo() {
-      return applyOpHistory('undo')
+      return opHistory.applyOpHistory('undo')
     },
 
     redo() {
-      return applyOpHistory('redo')
+      return opHistory.applyOpHistory('redo')
     }
-  }
-
-  // 操作层 undo/redo 共用收口（paperId await 前捕获——期间切 tab 不误落）：
-  // 执行（起步入链复合任务〔裸预 flush→反向写〕+settle+代际失效在 commands）→ store 同步 →
-  // 失败 toast；返回完整动作成功
-  async function applyOpHistory(direction: 'undo' | 'redo'): Promise<boolean> {
-    const before = get()
-    const paperId = before.activeId
-    // §2.5 #12 no-op 判据：PDF 未 ready（tab 缺席/loading/error）不触历史命令
-    if (paperId === null || before.tabs[paperId]?.status !== 'ready') return false
-    let outcome: OpHistoryOutcome
-    try {
-      outcome = direction === 'undo' ? await undoTabOperations(paperId) : await redoTabOperations(paperId)
-    } catch (e) {
-      // 模块层已捕获 api 面；此处兜底模块自身的意外编程错误
-      console.error('[reader.store] 操作历史异常', e)
-      showToast('撤销失败，请重试', 'error')
-      return false
-    }
-    if (!outcome.done) {
-      // 预 flush 失败（write-failed）的真实写失败已由写路径 toast——不叠发
-      if (outcome.reason === 'api-failed') {
-        showToast(direction === 'undo' ? '撤销失败，请重试' : '重做失败，请重试', 'error')
-      }
-      return false
-    }
-    const { tabs } = get()
-    const tab = tabs[paperId]
-    // 期间 tab 被关：DB 已撤销/重做，列表随重开对齐，不追写已删 TabState
-    if (tab === undefined) return true
-    const act: OpApply = outcome.apply
-    const next =
-      act.type === 'remove'
-        ? tab.annotations.filter((x) => x.id !== act.id)
-        : tab.annotations.some((x) => x.id === act.annotation.id)
-          ? tab.annotations.map((x) => x.id === act.annotation.id ? act.annotation : x)
-          : [...tab.annotations, act.annotation]
-    // [B4-A R2 §2.5 #16/#17] undo/redo 成功=新编辑事件：U=1、revision++
-    set({
-      tabs: {
-        ...tabs,
-        [paperId]: { ...tab, annotations: next, unfinalized: true, editRevision: (tab.editRevision ?? 0) + 1 }
-      }
-    })
-    return true
   }
 })

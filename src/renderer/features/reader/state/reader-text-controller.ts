@@ -23,8 +23,8 @@
  * - [B4-A 回炉 R5] 命令在途期间的等值普通写不叠发：命令起步的待写值已由任务体内
  *   的预 flush 承载落库；同值普通写（blur/计时）若入链会排在反向写之后落库并
  *   覆盖反向值——改挂空闲计时，结果随命令任务兑现后按 lastSaved 判零写。
- * - [B4-A 回炉三 A] 操作层 history 命令的预 flush 同构（capturePreflush 共用：值捕获
- *   时点=命令起步；命令在途期间同款等值普通写抑制）——见 flushPendingRaw。
+ * - [B4-A 回炉三 A] 操作层 history 命令的预 flush 同构（captureTextPreflush 共用：值
+ *   捕获时点=命令起步；命令在途期间同款等值普通写抑制）——见 flushPendingRaw。
  * - [B4-A R2 审查 5] history 步在途窗内的单元提交延后入栈（§4.3 链序=history
  *   写 → 后续单元提交）：成功回执先按条目身份移栈，再把延后单元按序入栈——首个
  *   延后单元的 before 重基为反向写已落库值，入栈即清 future（§2.5 #16b/#17b）。
@@ -62,77 +62,33 @@
  *   关闭在途门（tab-closing-gate，按 target.paperId 寻址——他 tab 关闭不冻结本
  *   target）。闸点=用户命令入口（edit/undo/redo）；收口面（flush/closeout/blur/
  *   单元提交）不设闸——关闭流程自身的内部 flush 经收口面通行。
+ * - [F-SLIMB4A-01 拆件] 契约类型驻 reader-text-controller-model（原名再导出）；复合
+ *   链任务组成件（条目 peek/预 flush 捕获/入链任务体）驻 reader-text-history-task
+ *   ——本件保留命令步状态机、在途抑制账与回执结算。
  */
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import { tabWriteBlocked } from './tab-closing-gate'
-import { enqueueTabTask } from '../../../shared/tab-write-lane'
 import {
   canRedoText,
   canUndoText,
-  peekTextRedo,
-  peekTextUndo,
   pushTextCommit,
   pushTextCommits,
-  settleTextRedo,
-  settleTextUndo,
   subscribeTextTarget,
   textGeneration,
   type TextTargetEvent,
   type TextTargetKey
 } from './reader-text-history'
 import { TextUnitMachine } from './reader-text-unit'
+import {
+  captureTextPreflush,
+  enqueueTextHistoryTask,
+  peekTextCommand,
+  type TextPreflushInput
+} from './reader-text-history-task'
+import type { RawPreflush, TextControllerPorts, TextSaveState, TextView } from './reader-text-controller-model'
 
-export type TextSaveState = 'clean' | 'dirty' | 'saving' | 'saved' | 'failed'
-
-export interface TextControllerPorts {
-  /** 落库写（单元/blur/flush 的普通写路径）：true=该值已在库。写体由宿主适配器
-   *  经 per-tab lane 自行入链（控制器在链外调用） */
-  persist(value: string): Promise<boolean>
-  /** [B4-A 回炉 R5] 裸预 flush 写：true=该值已在库。仅供链任务体内直调——单层入链
-   *  契约：不自行入链、直调 API 写（任务体内再入链=循环等待，命令永久挂起且该 tab
-   *  写链堵死）；调用方=本控制器的 history 链任务或操作层 history 命令的复合链任务 */
-  persistRaw(value: string): Promise<boolean>
-  /** [B4-A 回炉 R5] 裸反向写（文本 undo/redo）：契约同 persistRaw——仅供控制器
-   *  链任务体内直调，不自行入链 */
-  historyWriteRaw(value: string): Promise<boolean>
-  /** 显示值采用镜像（宿主另持草稿态时同步写回——notes 总评；key=本控制器的
-   *  target：宿主回调按 key 寻址，不读渲染帧闭包——离场篇的收口写不落新篇）。
-   *  persisted=false：用户新输入——宿主按未落库草稿保留（打未保存标记），不应用
-   *  为已保存基线；persisted=true：控制器采纳已落库的反向值（undo/redo 成功
-   *  回执）——宿主按已落库值采纳（不打未保存标记）。卸载后采纳照常通知 */
-  mirror?(value: string, key: TextTargetKey, persisted: boolean): void
-  /** 编辑会话终止通知（blur 与卸载两处——宿主结束操作层合并会话：批注）。
-   *  卸载必通知：焦点元素随 DOM 移除不保证派发 blur，切目标/路由离场不得
-   *  让会话跨挂载存活 */
-  onSessionEnd?(): void
-  /** [B4-A R2 §2.5 #1/#16-#17] 用户新编辑/文本 undo-redo 成功通知（宿主置该
-   *  tab unfinalized——U 轴写点经 ports 注入，本件不引域 store） */
-  onUserEdit?(): void
-  /** 视图变更通知（宿主据此重渲染） */
-  onChange(): void
-}
-
-export interface TextView {
-  comment: string
-  saveState: TextSaveState
-  canUndo: boolean
-  canRedo: boolean
-}
-
-/** 一次文本 history 命令：expected=反向写目标值；settle=成功回执结算（按条目身份，
- *  pending=在途窗内闭合单元的 before 值） */
-interface HistoryCommand {
-  expected: string
-  settle(base: string, pending: string[]): void
-}
-
-/** [B4-A 回炉三 A] 操作层 history 命令的预 flush（命令起步时经 flushPendingRaw 取得） */
-export interface RawPreflush {
-  /** 裸预 flush 体——调用方链任务体内直调（不自行入链）；true=预 flush 成功 */
-  run(): Promise<boolean>
-  /** 命令终结时调用（成功/失败/中止同）：解除等值普通写抑制 */
-  release(): void
-}
+// [F-SLIMB4A-01 拆件] 契约类型迁驻 reader-text-controller-model——原名再导出，既有导入面零改动
+export type { RawPreflush, TextControllerPorts, TextSaveState, TextView } from './reader-text-controller-model'
 
 export class TextController {
   private value: string
@@ -293,7 +249,7 @@ export class TextController {
   flushPendingRaw(): RawPreflush {
     this.machine.close()
     this.emit()
-    const { pending, run } = this.capturePreflush()
+    const { pending, run } = captureTextPreflush(this.preflushInput())
     let settle: () => void = () => undefined
     this.rawPending = pending
     this.rawStartEdit = this.editSeq
@@ -431,27 +387,16 @@ export class TextController {
     return this.rawFlight !== null && this.rawPending === value ? this.rawFlight : null
   }
 
-  /** history 命令起步时的预 flush 捕获（[回炉 R5] 文本层 step 与 [回炉三 A] 操作层
-   *  flushPendingRaw 共用）：pending=预 flush 对象=起步时的待写值且无在途写（null=无待
-   *  写，或起步时在途写已承载落库——不叠发同值写；在途且有待写值=重挂空闲计时，在途
-   *  写失败时未落库值由该计时自动重试）；run=链任务体内直调的裸预 flush 体（true=成功）。
-   *  - 起步时在途的普通写先于本命令任务落库（§2.5 #13「drain 当前对象写链」——lane
-   *    适配器下在链上排在本任务之前）。run 只等起步时的那一笔——起步后入链的写排在
-   *    本任务之后，等它即循环等待；该写失败且值未变=预 flush 失败（#14）。
-   *  - 待写值经裸写体先落库；写失败即止——不反向写、两栈不动（#14）。 */
-  private capturePreflush(): { pending: string | null; run: () => Promise<boolean> } {
-    const inflightAtStart = this.inflight
-    const pending = this.value !== this.lastSaved && inflightAtStart === null ? this.value : null
-    if (this.value !== this.lastSaved && inflightAtStart !== null) this.machine.schedule()
+  /** 预 flush 捕获的起步快照（控制器状态→reader-text-history-task 显式入参；同步
+   *  读取——与原内联实现同刻） */
+  private preflushInput(): TextPreflushInput {
     return {
-      pending,
-      run: async () => {
-        if (inflightAtStart !== null && (await inflightAtStart.catch(() => 'failed')) === 'failed') return false
-        if (pending === null) return true
-        const flushed = await this.ports.persistRaw(pending).catch(() => false)
-        this.settleWrite(pending, flushed)
-        return flushed
-      }
+      inflight: this.inflight,
+      value: this.value,
+      lastSaved: this.lastSaved,
+      reschedule: () => this.machine.schedule(),
+      persistRaw: (value) => this.ports.persistRaw(value),
+      settle: (value, ok) => this.settleWrite(value, ok)
     }
   }
 
@@ -464,32 +409,13 @@ export class TextController {
     return next
   }
 
-  /** history 命令的目标项（按方向 peek；空栈 null）：反向写目标值与回执结算
-   *  闭包成对携带（条目身份随命令持有到回执） */
-  private peekCommand(direction: 'undo' | 'redo'): HistoryCommand | null {
-    if (direction === 'undo') {
-      const entry = peekTextUndo(this.target)
-      if (entry === null) return null
-      return {
-        expected: entry.before,
-        settle: (base, pending) => settleTextUndo(this.target, entry, base, pending)
-      }
-    }
-    const entry = peekTextRedo(this.target)
-    if (entry === null) return null
-    return {
-      expected: entry.after,
-      settle: (base, pending) => settleTextRedo(this.target, entry, base, pending)
-    }
-  }
-
   private async step(direction: 'undo' | 'redo'): Promise<boolean> {
     // 冻结期拒绝（栈与值不变）：全局 quit 门 + 目标 tab 关闭在途（入口与排队项
     // 起步各查一次——§2.5 #12）
     if (quitWriteBlocked() || tabWriteBlocked(this.target.paperId)) return false
     // §3：先关闭当前单元（提交——恰 push 一个 past 项、清一次 future）
     this.machine.close()
-    const command = this.peekCommand(direction)
+    const command = peekTextCommand(this.target, direction)
     if (command === null) {
       this.emit()
       return false
@@ -499,23 +425,18 @@ export class TextController {
     // await 窗内的新输入不得改写它
     const base = this.value
     const generationAtStart = this.generation
-    // [回炉 R5] 起步时的预 flush 捕获（capturePreflush——操作层 history 命令同口径）
-    const { pending, run } = this.capturePreflush()
+    // [回炉 R5] 起步时的预 flush 捕获（captureTextPreflush——操作层 history 命令同口径）
+    const { pending, run } = captureTextPreflush(this.preflushInput())
     this.historyPending = pending
     // history 步在途：其间的单元提交延后入栈（§4.3——history 写 → 后续单元提交）
     this.historyBusy = true
     try {
-      // [回炉 R5] 复合链任务——命令起步即入链占位：起步时已在链的任务先落库（「history
-      // 请求前的 drain」由链位承载），起步后入链的写一律排在反向写之后。任务体内只调
-      // 裸写体（单层入链契约——tab-write-lane 头注）：预 flush 失败即止（#14），否则
-      // 反向写
-      const flight = enqueueTabTask(this.target.paperId, async (): Promise<boolean> => {
-        // [回炉三 A] 排队期间操作层 history 命令已推进本 target 代际（恢复了该标注旧文
-        // ——旧文本 past/future 已失效，§3）：不预 flush、不反向写（否则把旧分支值写回）
-        if (this.generation !== generationAtStart) return false
-        if (!(await run())) return false
-        return this.ports.historyWriteRaw(expected).catch(() => false)
-      }).catch(() => false)
+      const flight = enqueueTextHistoryTask({
+        paperId: this.target.paperId,
+        isGenerationCurrent: () => this.generation === generationAtStart,
+        run,
+        reverseWrite: () => this.ports.historyWriteRaw(expected)
+      })
       this.historyFlight = flight
       if (!(await flight)) return false // 失败两栈不动
       // 成功才移栈（按条目身份）；在途窗内闭合的延后单元在移栈后重基入栈

@@ -19,7 +19,8 @@
  * - syncExternal：宿主草稿被 load/合并改写时采用外部值（零历史项跟随）。
  */
 import { useLayoutEffect, useRef, useState } from 'react'
-import { annotationDraftSaved, useTextDraftRegistryBinding } from './annotation-draft-registry'
+import { annotationDraftSaved } from './annotation-draft-registry'
+import { useTextDraftRegistryBinding } from './use-text-draft-registry-binding'
 import {
   TextController,
   type TextSaveState,
@@ -144,7 +145,7 @@ export function useAnnotationDraft(target: TextTargetKey | null, initial: string
   const ctl = holderRef.current !== null && target !== null ? holderRef.current.ctl : null
   const registryKey = target !== null && ctl !== null ? textDraftRegistryKey(target) : null
 
-  // [F-VISFB-12] 挂载期注册表交互（恢复 H1/句柄 H5/卸载注册 R1——绑定居注册表件）
+  // [F-VISFB-12] 挂载期注册表交互（恢复 H1/句柄 H5/卸载注册 R1——绑定居 use-text-draft-registry-binding）
   useTextDraftRegistryBinding({
     id: registryKey,
     initial,

@@ -43,7 +43,9 @@
  * - 防抖句柄按 paperId 分键（闭包，不进 state）；编辑元数据为模块级 Map/Set
  *   （不进 state 亦不入 NoteDraft 契约——五模块分布式状态机=ADR-0008 裁决
  *   不坍缩）；条目随会话内触碰过的文献线性增长（KB 量级，接受不驱逐）；
- *   写派发与收口面驻 notes.persistence.ts（写体经 per-tab lane 串行）
+ *   写派发与收口面驻 notes.persistence.ts（写体经 per-tab lane 串行）；写派发的
+ *   宿主侧装配（ports/立存核心）与文本控制器立存/裸写端口驻 notes.write-host.ts
+ *   （[F-SLIMB4A-01 拆件]——经 deps 注入本草稿态与元数据，本件仍为其唯一持有方）
  *
  * ── 生命周期层 ── / ── 文化层 ──
  * - 测试：tests/unit/renderer/notes.store.test.ts（已锁定，api 桩 + fake timers）
@@ -53,13 +55,8 @@ import { api, unwrap } from '../../api/client'
 import type { Note } from '@shared/models/note'
 import { IDLE_FLUSH_MS } from '@shared/constants'
 import { quitWriteBlocked } from '../../app/quit-closing-gate'
-import {
-  createNotesCloseout,
-  createNotesPersistence,
-  type NotesCloseout,
-  type NotesDispatchCtx,
-  type NotesDispatchResult
-} from './notes.persistence'
+import { createNotesCloseout, type NotesCloseout } from './notes.persistence'
+import { createNotesWriteHost } from './notes.write-host'
 
 export interface NoteDraft {
   contentMd: string
@@ -146,73 +143,32 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
     setDraft(paperId, { saving: false, savedAt, pending: false })
   }
 
-  // [B4-A R1 §11.1] 保存派发单口驻 notes.persistence.ts——本闭包即 ports 装配点
-  const persistence = createNotesPersistence({
-    readPayload: (paperId) => {
-      const draft = get().noteByPaper[paperId]
-      return draft === undefined ? undefined : { contentMd: draft.contentMd }
-    },
-    captureCtx: (paperId) => ({
-      // 派发快照：本次保存对应的编辑序号（派发后若又有 edit，序号前进）
-      seqAtDispatch: editSeq.get(paperId) ?? 0
-    }),
-    onDispatch: (paperId) => {
-      setDraft(paperId, { saving: true, saveFailed: false })
-    },
-    onSettled: (paperId, saved, ctx: NotesDispatchCtx) => {
-      // 编辑已落库：清"未保存编辑"标记与触碰记录——仅当派发后无新编辑（编辑
-      // 序号未前进）；有新编辑则不清（仍受合并保护，由重排的防抖收尾）
-      if ((editSeq.get(paperId) ?? 0) === ctx.seqAtDispatch) {
-        // 与 pendingEdit 同点同条件清镜像：草稿自此等于服务器基线
-        markSaved(paperId, saved.updatedAt)
-      } else {
-        // 派发后又有新编辑：pendingEdit 保留，镜像显式置 true（与同步点对偶，
-        // 不靠"上一帧必为 true"的隐式假设）
-        setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
-        // [B3 消费时点一] pending 合并态转 dirty：启新防抖 T（复刻 load 补存
-        // 语义——新输入无论组件在否都由新周期收尾；flush 在途等待后可提前兑现）
-        get().saveSoon(paperId)
-      }
-    },
-    onFailed: (paperId, _ctx) => {
-      // 失败不推进 savedAt、pending 保留（未保存态延续）；[B3] saveFailed 置位
-      setDraft(paperId, { saving: false, saveFailed: true })
-    },
-    // [B4-A 回炉 R5] 反向写成功（库值=content）：草稿仍=content→已落库；草稿≠content
-    // （history 在途窗内的新输入，或控制器尚未采纳的旧值）→草稿未落库，置未保存标记
-    // （不启防抖——由控制器的落库调度承接；采纳经 adoptPersisted 落定）
-    onSettledContent: (paperId, saved, content) => {
-      if (get().noteByPaper[paperId]?.contentMd === content) {
-        markSaved(paperId, saved.updatedAt)
-        return
-      }
-      pendingEdit.add(paperId)
-      const touched = touchedFields.get(paperId) ?? {}
-      touched.contentMd = true
-      touchedFields.set(paperId, touched)
-      setDraft(paperId, { saving: false, savedAt: saved.updatedAt, pending: true })
-    }
+  // [F-SLIMB4A-01 拆件] 保存派发单口的 ports 装配、立存核心与文本控制器立存/裸写端口
+  // 迁驻 notes.write-host.ts（行为零变）——草稿闭包与编辑元数据经 deps 注入（按引用，
+  // 本闭包仍为唯一持有方，新件不持第二份）
+  const writeHost = createNotesWriteHost({
+    get,
+    setDraft,
+    markSaved,
+    clearTimer,
+    editSeq,
+    pendingEdit,
+    touchedFields,
+    loadedOnce,
+    lastEditedAt
   })
-
-  // [F-VISFB-64·回炉 B1] 立存核心（无闸）：saveNow/persistNow 与 flushNow 收口链
-  // 共用（首载门控+清防抖+同步派发）；闸只挂用户入口。门控命中=null
-  const dispatchSaveNow = (paperId: string): Promise<NotesDispatchResult | null> => {
-    if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return Promise.resolve(null)
-    clearTimer(paperId)
-    return persistence.dispatch(paperId)
-  }
 
   // 收口面（flush/flushAll/flushNow/flushAllNow）实现驻 notes.persistence——
   // 本闭包装配依赖（在途句柄/草稿失败标记/pending 快照/立存核心）
   const closeout = createNotesCloseout({
-    inflightOf: (paperId) => persistence.inflightOf(paperId),
-    inflightIds: () => persistence.inflightIds(),
+    inflightOf: (paperId) => writeHost.persistence.inflightOf(paperId),
+    inflightIds: () => writeHost.persistence.inflightIds(),
     pendingIds: () => [...pendingEdit],
     hasPending: (paperId) => pendingEdit.has(paperId),
     readFailed: (paperId) => get().noteByPaper[paperId]?.saveFailed,
     clearTimer,
-    dispatch: (paperId) => persistence.dispatch(paperId),
-    dispatchNow: dispatchSaveNow
+    dispatch: (paperId) => writeHost.persistence.dispatch(paperId),
+    dispatchNow: writeHost.dispatchSaveNow
   })
 
   return {
@@ -285,7 +241,7 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       clearTimer(paperId)
       timers[paperId] = setTimeout(() => {
         delete timers[paperId]
-        void persistence.dispatch(paperId)
+        void writeHost.persistence.dispatch(paperId)
       }, IDLE_FLUSH_MS)
     },
 
@@ -293,50 +249,13 @@ export const useNotesStore = create<NotesStore>()((set, get) => {
       // [F-VISFB-64·回炉 B1] closing gate：saveNow=用户命令入口；收口链走
       // dispatchSaveNow 核心（闸点收窄到命令入口——异步链深处禁依赖豁免域）
       if (quitWriteBlocked()) return Promise.resolve()
-      return dispatchSaveNow(paperId).then(() => undefined)
+      return writeHost.dispatchSaveNow(paperId).then(() => undefined)
     },
 
-    async persistNow(paperId) {
-      let flight = persistence.inflightOf(paperId)
-      while (flight !== undefined) {
-        await flight
-        flight = persistence.inflightOf(paperId)
-      }
-      const draft = get().noteByPaper[paperId]
-      // 无草稿条目/无未保存编辑=当前草稿已在库，零写
-      if (draft === undefined || !pendingEdit.has(paperId)) return true
-      const result = await dispatchSaveNow(paperId)
-      // true 的充要条件：本次写成功 且 写入内容=当前草稿（派发后又有新编辑则 false）
-      return result !== null && result.ok && get().noteByPaper[paperId]?.contentMd === result.content
-    },
-
-    async persistNowRaw(paperId) {
-      // 首载门控同 persistNow（服务器基线未知不抢存）；在途等待不需要——调用方
-      // （控制器链任务）在链上已排在本篇全部已入链写之后
-      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return false
-      const draft = get().noteByPaper[paperId]
-      if (draft === undefined || !pendingEdit.has(paperId)) return true
-      clearTimer(paperId)
-      const result = await persistence.writeDraftRaw(paperId)
-      return result.ok && get().noteByPaper[paperId]?.contentMd === result.content
-    },
-
-    async historyWriteNow(paperId, value) {
-      if (!loadedOnce.has(paperId) && lastEditedAt.has(paperId)) return false
-      clearTimer(paperId)
-      const result = await persistence.writeValueRaw(paperId, value)
-      // 失败：草稿与未保存标记不动（反向值不本地应用）。有待写草稿（在途窗内新输入）
-      // 才置错误态——错误态的重试（定稿/关闭预 flush）须有物可写；无待写时置位=重试
-      // 恒 no-op，失败改由宿主 toast 呈现
-      if (!result.ok) setDraft(paperId, { saving: false, saveFailed: pendingEdit.has(paperId) })
-      return result.ok
-    },
-
-    adoptPersisted(paperId, contentMd) {
-      pendingEdit.delete(paperId)
-      touchedFields.delete(paperId)
-      setDraft(paperId, { contentMd, saving: false, pending: false, saveFailed: false })
-    },
+    persistNow: writeHost.persistNow,
+    persistNowRaw: writeHost.persistNowRaw,
+    historyWriteNow: writeHost.historyWriteNow,
+    adoptPersisted: writeHost.adoptPersisted,
 
     flush: closeout.flush,
     flushAll: closeout.flushAll,
