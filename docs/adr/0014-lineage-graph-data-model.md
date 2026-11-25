@@ -73,7 +73,7 @@ CREATE TABLE lineage_edges (
 
 行为约束在 service 层不在 DDL CHECK（本 ADR 原则，历次演进维持——现行守卫面见「形态」节）；行为终态与跨格序列的单一真相源=invariants.md（INV-27 已随 2026-11-18 登记册修正对齐本现行形态：七校验+多父放行）。
 
-保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态投影；退出拦截聚合面扩图视图脏态。
+保存语义对齐标注/笔记：autosave-first+失败不推进 savedAt（INV-04 同型）+脏态投影；退出拦截聚合面扩图视图脏态。〔B4-B 注记（ADR-0032，2026-11-25 文档债补写）：autosave-first 已由 idle-flush（1.5s）+显式定稿取代——显式保存只清 redo、undo 跨保存存活（INV-187/153）；「图级 KV」第 8 条的 lineage_graph_meta 已随 D2 用户终裁迁移（migrations/027）为 per-folder 键；history-unit 不重新开放手动建点。〕
 
 ## 后果
 

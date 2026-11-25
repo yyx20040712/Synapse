@@ -133,15 +133,17 @@ flowchart TB
 
 ### 3.3 数据模型（单迁移基线）
 
-迁移链已压缩为单件 `026_baseline.sql`（ADR-0030）：新库 user_version 直达 26；
-旧链升级舞步唯一消费者已随批清除；「迁移不可修改」例外与授权链见 migrate.ts
-头注与 ADR-0030。实测基线：**22 表 + 4 个 FTS5 虚表 + 16 索引 + 59 触发器**。
+迁移链=基线单件 `026_baseline.sql`（ADR-0030）＋追加 `027`（lineTypeNames
+共享键→folder 键数据迁移——B4 D2）与 `028`（deletion_log 七触发器守卫同名
+重建）：新库 user_version 直达 28；旧链升级舞步唯一消费者已随批清除；
+「迁移不可修改」例外与授权链见 migrate.ts 头注与 ADR-0030。实测基线：
+**22 表 + 4 个 FTS5 虚表 + 16 索引 + 59 触发器**（028 为同名重建，计数不变）。
 
 | 域 | 表 |
 | --- | --- |
 | 文献库 | papers（21 列：folder_id NOT NULL 归属、is_starred 星标、cited_by 缓存三列、impact_factor）、collections（=文件夹，主图 `__main__` 禁删）、tags/paper_tags（域化标签：UNIQUE(folder_id,name)+挂接域守卫触发器+限额 20/6） |
 | 阅读与笔记 | annotations（kind 三值 highlight/underline/note；定位器=W3C Web Annotation 思路 quote/prefix/suffix+startOffset/endOffset+rects/sortKey）、notes（paperId 1:1 全文笔记；title 死置空串）、ai_notes（AI 评估笔记，独立表） |
-| 发展脉络 | lineage_nodes（paper_id 可空全局部分唯一——可空仅为遗留 DDL 兼容，应用层节点唯一来源=文献入库与移动两路（INV-NEW-1）；x/y/year/month/slot；core_idea/tags=留库死置列不入 DTO）、lineage_edges（UNIQUE(from_node,to_node)；dashed/color/via 视觉线型；from_anchor/to_anchor 钉定锚；kind/sub=留库死置列）、lineage_graph_meta（图级 KV：lineTypeNames）、floating_notes（画布悬浮笔记，无 paper_id） |
+| 发展脉络 | lineage_nodes（paper_id 可空全局部分唯一——可空仅为遗留 DDL 兼容，应用层节点唯一来源=文献入库与移动两路（INV-NEW-1）；x/y/year/month/slot；core_idea/tags=留库死置列不入 DTO）、lineage_edges（UNIQUE(from_node,to_node)；dashed/color/via 视觉线型；from_anchor/to_anchor 钉定锚；kind/sub=留库死置列）、lineage_graph_meta（folder 级 KV：lineTypeNames per-folder 键 `lineTypeNames:<folderId>`——027 迁移，B4 D2）、floating_notes（画布悬浮笔记，无 paper_id） |
 | AI 域 | ai_sessions/ai_messages/ai_tasks/ai_task_audit（任务系统）、ai_memory（跨会话记忆）、change_epochs（前缀缓存失效 epoch） |
 | 治理与派生 | app_meta（库级身份 KV：owner uuid+设备 token）、deletion_events/deletion_log_guard（删除落账+防复活）、figure_jobs/paper_figures（图表提取派生资产，PNG-only） |
 
@@ -336,8 +338,13 @@ flowchart TB
 
 **snapshot 域（快照导出/导入）**
 
-- `services/snapshot`：TABLE_SPECS 十表导出；导入按 id upsert+deletion_events
-  防复活过滤（跨卷序列一致）；id 不复用（INV-132）。
+- `services/snapshot`：TABLE_SPECS 十表导出（B4 起恒携带活行与删事件全集）；
+  导入三段闭环=先活行按 id upsert（LWW）再按 deletion_events 的 deleted_at
+  代际判定删事件（三类写点单调守卫——删事件/恢复点/普通写 updated_at SQL
+  标量；INV-132 修订），本地缺席行防复活过滤（跨卷序列一致）；id 不复用；
+  history-unit 原 id 恢复为受控例外（ADR-0032）。导入落地后（applied 且
+  非 noop，事务提交后、回执前）service 层双播 folders.changed→
+  lineage.changed（W-C X-IMP——渲染侧缓存失效）。
 
 **enrich 域**：CrossRef 被引数缓存（单调增长语义，INV-28）；含金量供给
 （venue-tier 档位）。
@@ -448,6 +455,7 @@ flowchart TB
 | 0029 | 恢复副本常态写 never-settle 治理 | 仓外档案区 scripts-audits/20261020-nightb/recoV01/（design-v2.md+design-final-r3.md） |
 | 0030 | 迁移链基线压缩（001–025 并单件 026） | 仓外档案区 scripts-audits/20261020-snapclean01/design-v2-final.md |
 | 0031 | zod 3→4 安全升级 | docs/adr/ |
+| 0032 | 两域保存/撤销核心（定稿≠落库·可逆历史·per-folder 会话——B4） | docs/adr/ |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）。
 

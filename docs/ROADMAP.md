@@ -84,21 +84,24 @@ INV-69 页码通道存续）。
 - 备份/恢复姿态：ADR-0013（不做自动机制+手动指引）。
 - PDF 下载管线（CARSI/CDP/Sci-Hub）：2026-10-19 用户裁决定为
   测试版后的开发方向（新增出网 host 仍须 ADR）。
-- **统一撤销历史（文献库/阅读器/脉络图）定案**（用户 2026-11-23 提出，
-  2026-11-24 立票 F-UNDOHIST-01）：B5 工具栏改版前定案——届时规划岗先出
-  方案比较与裁决清单（迁移路径/代际模型/灰度）；数据面一体，交互面独立
-  三栈重新开放。B5 备注另三条随 B4 收尾登记：①无错误行时 drag-hint 在
+- **统一撤销历史（文献库/阅读器/脉络图）**：已定案（2026-11-25，
+  F-UNDOHIST-01 闭票）——共享撤销引擎+三域适配器（R1=B，不为历史新增
+  SQL 表）；会话内历史重启清空（R2=A）；增量迁移 reader→lineage→library
+  （R3=B/R4=A）；**B5 后实施**（R5=A，票 F-UNDOHIST-02——开工门槛=ds
+  审核 8 条必须条件，B5 前仅允许 off 状态公共契约）；三域独立栈允许
+  依次撤（R7=B）、Ctrl+Z=聚焦域（R8=A）；灰度=环境变量有序开关
+  （R12=A）。方案/裁决清单/ds 审核笔记=仓外 synapse-archive
+  20261125-undohist/。B5 备注随批登记：①无错误行时 drag-hint 在
   1024×768 被挤成竖排、工具组高 172.75px（1280×800 为 51px），出错态下
   drag-hint 省略成「编辑⋯」、错误行排三行——由 B5「单排工具栏」「删除
   说明性视觉文案」承接；②其他写触发的 saving 窗仍卸载笔记编辑器（R3）、
-  过期历史出口只在 edit 模式可见（R4）、keepOpen 真机重挂失焦
-  （F-KEEPOPN-01）——B5 再评估。③B5 前文档债清理（B4 收尾批登记，清单＝
-  仓外 synapse-archive 20261122-b4/b4b-rework/close-docs/UNRESOLVED-STALE-DOCS.md）：正式 B4 ADR 建档；
-  invariants 旧语义行（INV-94/161/162/22/150/146/84/91/177）、INV-187/188
-  登记、INV-90/27 锚定清单补 history-unit、INV-80/176 未转义竖线；
-  architecture §3.3 user_version 28、lineage_graph_meta folder 键、
-  snapshot 域三段闭环、§5 ADR 索引；设计稿 §5.3 第 4 条 CONFLICT 清单、
-  §15 L1/L2 实施注记；ADR-0027/0014 过时表述。
+  过期历史出口只在 edit 模式可见（R4）——B5 再评估；keepOpen 真机重挂
+  失焦（F-KEEPOPN-01）并入 B5 修复（2026-11-25 票处置裁决）；③挂账票
+  去向（2026-11-25 triage，票面详情=registry）：F-SNAPHINT-01/
+  F-FLIGHTGHOST-01=B5/B8 视觉域，F-SETTLECASCADE-01=B8 前评估，
+  F-CLOSERETRY-01/F-NOTESRAW-01=B6 前定案设计，F-EDGEDBL-01/
+  F-NOTECLICK-01/F-XIMPE2E-01/F-RECOV-03/F-EVCTX-02/F-E2EHANG-01/
+  F-E2EFLK-01/F-WINGUARD-01=挂账（触发=相关域触及或失败频次升级）。
 
 ### B3 用户裁决（已裁决——本节即裁决指针，v2 工单头注引用此处）
 

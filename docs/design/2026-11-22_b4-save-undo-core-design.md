@@ -314,7 +314,7 @@ type LineageEntityDelta =
 1. history-unit 请求携带完整 before/after，不调用公开 `patchNode`；`put-node` 内部原语可插入指定 id，但仍只能由 `lineage/history-unit` 到达，不开放通用 upsert-node IPC。
 2. 插入恢复时恢复原 id、paperId、folderId、title、year/month/slot、x/y、createdAt；updatedAt 由恢复点守卫计算：取恢复事务时间，同事务先读该 id 在 `deletion_events` 的 `MAX(deleted_at)`，若不大于它则进 1ms（§7.5），并随响应回显。更新既有行时 createdAt 不得被改写。恢复行「严格晚于该 id 全部既有 tombstone」的性质由普通写点守卫在后续一切写点保持（§7.5 三类写点统一不变量：可恢复实体每行 updated_at 在一切写点严格单调不减且新值>旧值）。
 3. 相关边严格按历史数组序恢复；边 id、from/to、label、dashed/color、via、双锚、createdAt 全恢复。悬浮笔记同规则。
-4. 事务前检查 folder 与 paper 仍存在；paper 已删、folder 已删、端点缺失、重复边/成环、语义指纹不符均返回 CONFLICT。整个 unit 不写任何行、两栈不弹、U 不假装已定稿。
+4. 事务前检查 folder 与 paper 仍存在；paper 已删、folder 已删、端点缺失、重复边/成环、语义指纹不符均返回 CONFLICT。整个 unit 不写任何行、两栈不弹、U 不假装已定稿。〔实施回写（W-A/W-A2，2026-11-25 文档债补注）：归属图校验并入本条拒因族——请求内 node/floating-note 取 before/after 非空侧 folderId、边由当前侧与目标侧端点派生 folder，任一≠req.folderId 即 CONFLICT（HISTORY_GRAPH_INVALID，跨图 unit 整体零写）；恢复节点的 folderId 还须等于其文献当前归属图（papers.folder_id，folderIdOf 单源读口），不等时同码拒绝，消息以「文献已不在该文件夹，无法在该图恢复其节点」开头。〕
 5. 删除再恢复的 deletion_events 处置见 §7.5 三段闭环；该方案已获用户终裁（2026-11-22，A=采纳），L1 开工前提已满足。
 
 ### 5.4 lineTypeNames 的 folder 归属与全链签名
@@ -703,6 +703,8 @@ interface LineageHistoryCommands {
 1. R1 偏差（主控已核可，随 R1 报告）：① lane 下沉 `src/renderer/shared/tab-write-lane.ts`（设计路径 reader/state/reader-write-lane——notes.persistence 不得跨域 import reader 件故下沉）；② 表外件 `reader/state/reader-text-controller.ts` 324 行（§11.1 未列——use-annotation-draft 的非 React 内核）；③ notes.store persistNow 端口；④ canUndo 投影含未提交输入；⑤ PDF 未 ready 拒绝在 reader.store.applyOpHistory。
 2. R2 偏差（本波）：① `reader-close-tab.ts` 自 tab-dirty.ts 拆出承载 closing 状态机（§11.1 表内件；任务简报枚举未点名，按「§11.1 的 R2 面文件」口径纳入）——check-quality 白名单随之新增该文件→notes.store 一行（tab-dirty 同型先例，非「零新增」：closing 收口组合点迁移的必要落位）；② `LINEAGE_UNFINALIZED_R2` 占位常量驻 use-save-aggregates.ts（命名避开检查器 placeholder 负锚字面量）；③ HistoryCommandState 的 canUndo/canRedo 投影=操作层栈深度非订阅读（B5 工具栏接线时随 L1 补全订阅面——R2 消费方〔ReaderNotesPanel 保存钮〕只读 saveState）；④ saveState 的 saving 判据含在途普通写（notes saving 镜像），HistoryCommandState.busy 仍只含 finalize/history（§10.4「普通写 saving 不置 busy」两口径分列）；⑤ AnnotationEditor 局部保存钮暂未改 tab 级 finalize（§10.4 该句的落点随 B5 工具栏接线，本波只迁 ReaderNotesPanel——受锁面 save-state 族仅列 notes panel 测试）；⑥ 课题切换清史在 prepare 成功段执行（reader.close()+lineage 快照栈 setState+clearFocus——单图旧机制，L2 扩 registry）；⑦ reader.store.ts 实测 334 行（R1 后 301、预算 ≤300 已超 1 行——R2 增 U/closing 三 action 后 334；超标面=接口注释+action 实现，未拆新件——拆件候选随 B5 前的 store 再瘦身立项，此处如实申报）。
 
+**F-SLIMB4A-01 瘦身（2026-11-25 pre-B5 批，行为不变拆件）：** §11.1 有预算三行全部归位——annotation-draft-registry 239→180（≤220）、notes.store 358→277（≤320）、reader.store 340→297（≤300，只迁 applyOpHistory 一块，余量 3 行）；reader-text-controller（表外件）560→481 wc／350→309 ESLint 口径（切面=契约类型+复合链任务+预 flush 捕获外抽；`onRegistry`/`rebaseOntoRestored` 留驻——读写约 9 个私有状态成员，再外抽须放宽可见性）。新件登记（预算=主控裁定，wc）：`reader/state/reader-text-controller-model.ts` 63（≤80，纯类型件——istanbul empty-report 使合计覆盖率 −0.19，仓内既有 4 个纯类型件同表现）、`reader/state/reader-text-history-task.ts` 126（≤160）、`reader/state/reader-store-history.ts` 80（≤100）、`reader/interact/use-text-draft-registry-binding.ts` 82（≤100，注册表件唯一的 React 导出——注册表回归纯函数）、`notes/notes.write-host.ts` 161（≤200，§11.1「派发与收口迁出」的宿主侧装配面）。消费方改指一处：use-annotation-draft.ts import 拆两行（197→198，≤200；避免 hook 迁出后的运行时循环 import）。拆件非净减行（10 件合计 1694→1945，注释 +133——86 行逐字迁移、9 行指针句改写）。更大幅度瘦身（保存状态机/命令层分层）不立项：类结构变更超出纯迁移，且 F-UNDOHIST-02 将在 B5 后重接 reader 历史。验证：定向闭包 106 文件/976 例改动前后同数全绿、verify 三次 503/5065 EXIT=0、变异 8/8 转红（证据=仓外 20261125-slimb4a/）；主控复跑定向 8 文件/91 例+verify+reader-text e2e 22/22 全绿。
+
 ### 11.2 lineage、recovery 与 main
 
 | 文件 | 实测 | 拆件后预算 | 职责/动作 |
@@ -921,7 +923,7 @@ e2e 必须断言渲染出的真实文本和必要 DB 回读，不接受只看按
 
 ### Status
 
-Proposed。决策记录＝本稿 §17 裁决单与 §14 Decision 段、ADR-0027 限制段；正式 B4 ADR 未随批建档，列入 B5 前文档债清理（D1 原 id 防复活例外与 D2 色行名 folder 存储已获用户终裁，§17）；不修改历史 ADR 让其看似从未包含旧语义。
+Accepted（已落地）。决策记录＝本稿 §17 裁决单与 §14 Decision 段、ADR-0027 限制段；正式 B4 ADR＝docs/adr/0032-save-undo-two-domain-core.md（2026-11-25 建档，B5 前文档债清理）；不修改历史 ADR 让其看似从未包含旧语义（ADR-0027/0014 以注记承载演进）。
 
 ### Context
 
@@ -972,7 +974,7 @@ Proposed。决策记录＝本稿 §17 裁决单与 §14 Decision 段、ADR-0027 
 
 **实施注记（2026-11-23 R2 收尾）：** U 置位写点=reader.store.markTabUnfinalized 单写点（TextController.onUserEdit 端口经 use-annotation-draft 装配覆盖批注/总评两 target；操作层=SelectionLayer create/annotation-popups-actions delete 与 comment-edit 提交、reader.store.applyOpHistory undo/redo 成功）；finalize 的 revision 判据=TabState.editRevision（§2.2 字段的 TabState 落位，非独立注册表）。关闭失败原因派生=查态单源（标注写失败/笔记保存失败/笔记尚未落库三档——`<reason>` 的具体值来自 IO 查态，非透传 api 原文；真实 api 错误文本仍由写路径 toast 呈现）。quit-flush/view-flush/AppStatusBarHost 三件 R2 为语义确认+注释回写（行为已满足 #37/IO 单源——未扩全 folder registry 面，L2 接）。
 
-**实施注记（2026-11-23 B4-A 收尾——审查回炉三轮终态）：** ①表外新件三枚：reader/state/reader-text-controller.ts（文本控制器内核——§11.1 原拆件方案在实现期收敛为此形态）、reader/state/tab-closing-gate.ts（按篇关闭冻结闸）、renderer/shared/tab-write-lane.ts（per-tab 串行写链——自 reader/state 下沉，notes 域不得跨域 import reader 件）。②裸写体端口：TextControllerPorts 增必选 persistRaw/historyWriteRaw、mirror 增 persisted 参——文本/操作层 history 命令均起步即入链复合任务（预 flush+反向写同体，laneDrain 退役）；预 drain 窗内新值排后落库（DB=最新值）为 R5 家族四站点（文本层/操作层/总评宿主/跨层代际）终态修法。③行数欠账（B5 前瘦身，票 F-SLIMB4A-01）：reader-text-controller 560 wc（ESLint 口径约 350；拆件切面=复合任务/代际校验胶水外抽）、annotation-draft-registry 239（预算 220）、notes.store 358（预算 320）、reader.store 340（预算 300）。④已知限制两笔（票 F-CLOSERETRY-01/F-NOTESRAW-01）：已卸载编辑器的保留失败写关闭重试恒 no-op（workaround=重开该标注编辑器保存；候选=句柄表 tab 归属+墓碑过滤或注册表 retry 闭包）；总评宿主 persistNowRaw 三怪癖（预 flush 写当前草稿非起步捕获值=冗余无害/回执前继续输入命令静默中止 write-failed/首载门控同形——修法方向=persistNowRaw 接受起步捕获值+回执按捕获值结算，属 notes.store 回执契约改动）。⑤touch 反向写失败不置 IO 错误旗标（无未落库修改——toast「标注保存失败，撤销/重做未生效」可见）。⑥审查弧：8 阻断→回炉一（12 项）→定点复审 R5 残留→回炉二（R5+总评宿主）→终验 FAIL 1→回炉三（操作层同族+B 旗标来源）→终验 PASS；verify 终态 454 文件/4611 例。
+**实施注记（2026-11-23 B4-A 收尾——审查回炉三轮终态）：** ①表外新件三枚：reader/state/reader-text-controller.ts（文本控制器内核——§11.1 原拆件方案在实现期收敛为此形态）、reader/state/tab-closing-gate.ts（按篇关闭冻结闸）、renderer/shared/tab-write-lane.ts（per-tab 串行写链——自 reader/state 下沉，notes 域不得跨域 import reader 件）。②裸写体端口：TextControllerPorts 增必选 persistRaw/historyWriteRaw、mirror 增 persisted 参——文本/操作层 history 命令均起步即入链复合任务（预 flush+反向写同体，laneDrain 退役）；预 drain 窗内新值排后落库（DB=最新值）为 R5 家族四站点（文本层/操作层/总评宿主/跨层代际）终态修法。③行数欠账（B5 前瘦身，票 F-SLIMB4A-01——**已清 2026-11-25**，拆件与新件登记见 §11.1 F-SLIMB4A-01 块）：reader-text-controller 560 wc（ESLint 口径约 350；拆件切面=复合任务/代际校验胶水外抽）、annotation-draft-registry 239（预算 220）、notes.store 358（预算 320）、reader.store 340（预算 300）。④已知限制两笔（票 F-CLOSERETRY-01/F-NOTESRAW-01）：已卸载编辑器的保留失败写关闭重试恒 no-op（workaround=重开该标注编辑器保存；候选=句柄表 tab 归属+墓碑过滤或注册表 retry 闭包）；总评宿主 persistNowRaw 三怪癖（预 flush 写当前草稿非起步捕获值=冗余无害/回执前继续输入命令静默中止 write-failed/首载门控同形——修法方向=persistNowRaw 接受起步捕获值+回执按捕获值结算，属 notes.store 回执契约改动）。⑤touch 反向写失败不置 IO 错误旗标（无未落库修改——toast「标注保存失败，撤销/重做未生效」可见）。⑥审查弧：8 阻断→回炉一（12 项）→定点复审 R5 残留→回炉二（R5+总评宿主）→终验 FAIL 1→回炉三（操作层同族+B 旗标来源）→终验 PASS；verify 终态 454 文件/4611 例。
 
 ### L1——lineage 可逆命令、内部 restore 与事务
 
@@ -981,12 +983,16 @@ Proposed。决策记录＝本稿 §17 裁决单与 §14 Decision 段、ADR-0027 
 - **验证门：** 13 命令在 idle-flush 后与显式保存后各 undo/redo；删节点原 id/完整字段/相关边按序恢复；第二语句失败零半写；HISTORY_STALE/paper 缺失不弹栈；snapshot 防复活与三段闭环序列 1–8（§7.5，含序列 8 交错链）；CONFLICT 和解等待/失败/迟到/新编辑四类（§2.6）；lineage e2e 代表链。
 - **回滚边界：** shared schema、IPC、service、repo、renderer recorder、migration/DB 备份与文档属同一逻辑点。若采用 D2 迁移且已触及真实库，只回滚代码不合格，必须恢复备份或前向迁移；禁止只回滚 UI 留半套历史语义。
 
+**实施注记（2026-11-23 L1 收尾，2026-11-25 文档债补写）：** ①#41「活动会话立即和解」落地多一守卫 status==='ready'（loading 会话由 loader 续拉承载——L2 表 B7 申报追认）；②§9.3 的 T9 测试适配保留（适配还原后 2/2 失败——设计依据成立）；③写点守卫公式的 COALESCE 多参追认见 §7.5；④归属图校验落位=§7.3 执行序的归属图校验循环（文献存在性检查之后、最终图守卫与写循环之前——W-A2）。
+
 ### L2——per-folder registry、flush-first、recoveryOwner 与课题 reset
 
 - **入口：** L1 单图保存后 undo/redo 全绿；registry 宿主、owner 状态表和 B3 桥接确认。
 - **实施：** 先纯拆活动投影/loader，再引入 Map 会话；一次性迁移 setFolder、NavGraphPicker、focusSet、recovery scheduler/entry、quit/workspace 全集、后台失效接线（§2.6 #41-43）；删除 dirty 弃改框和 saving 禁切旧路。
 - **验证门：** A/B/A 全延迟矩阵、owner 成功/失败/迟到、foreign/deferred slot、单槽文件数不变、focusSet 恢复、全量 quit/workspace flush、B3 flight 两态交错（§9.3）、folders.changed/lineage.changed 全 registry 失效（含 `invalidationEpoch` 推进与事件前旧读拒绝）与 A/B 缓存往返（§2.6）；lineage/recovery/workspaces e2e；最后 `npm run verify` 与全部相关 e2e。
 - **回滚边界：** registry、folder 切换、owner、recoveryEntry、Rail 聚合、workspace reset 同点回滚至 L1；不得只恢复旧确认框而留下后台写仍按 registry 分发。
+
+**实施注记（2026-11-24 L2+回炉收尾，2026-11-25 文档债补写）：** 原 registry.patchActive「清空他会话」在生产 remap 路径不可达（写队列更新经 lane.write→registry.apply，仅测试夹具可达）；remap 真实终态迁移按回炉 R-remap 五点终态规则重写（lineage-session-remap：主图会话就地换代并失效、被矫正会话离场——键与 data.folderId 不再偏离）。
 
 ## 16. 整批完成定义
 

@@ -51,6 +51,12 @@
   为配套语义。
 - 设计单源=仓外档案区 scripts-audits/20261019-fvisfb65-impl/
   65-design-final.md。
+- 注记（B4-B/ADR-0032，2026-11-25 文档债补写）：上文裁决中「clean 四源：
+  flush 全成功/undo 回基线/切图弃置/干净退出」的 undo 回基线与切图弃置
+  两源已随 B4-B 取代——undo/redo 经 history-unit 落库后队列空才构成
+  clean 化挂点（非快照回基线；INV-161 修订行），dirty 切图弃置确认框已
+  退役（切换 flush-first；课题切换弃置仍为 release 面）；per-folder
+  recoveryOwner 是调度归属不是多槽（单槽恒一不变）。
 - 限制（B4-B 回写；用户裁决 D-1＝甲、适用面＝乙、R4）：撤销/重做被
   history-unit 以 CONFLICT 拒绝的历史项，由用户在保存错误行点击「丢弃这条
   过期历史」并确认后移除。适用面=四种 CONFLICT 拒因（`HISTORY_STALE`、
