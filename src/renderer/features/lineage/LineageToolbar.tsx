@@ -21,37 +21,24 @@
  * 行内改名=一编辑单元——saveLineTypeNames）。
  * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar
  *   直连 view.store 同型；props 面=mode 容器注入沿承）。
+ *
+ * [B5 设计稿 §3/§10.2——wave A 纯拆件 2026-11-25，行为零变] 本件=编辑工具组宿主
+ * （只排槽：保存│编辑工具│撤销重做+drag-hint+保存错误行；工具组仍驻
+ * LineageTimeline、仍仅 edit 挂载——迁页面顶部单排工具栏与三模式常驻属后续波，
+ * §15.1 步骤 4）：
+ * - 选择/线型/色板三钮=LineageEditTools 拆件（线型组与编辑工具锁定面的注释随
+ *   代码迁驻该件头注；view 工具态订阅随之迁出——browse/focus 态本件不再订阅
+ *   工具态，渲染输出不变）；
+ * - 保存/撤销重做/保存错误行=既有分件（LineageSaveButton/LineageHistoryButtons/
+ *   LineageStaleHistoryDrop）原位原序零改。
  */
 import { useLineageStore } from './lineage.store'
-import { useLineageViewStore } from './lineage-view.store'
-import { LINE_TYPE_COLORS } from '@shared/models/lineage'
-import { ICON_HAND } from '../../shared/icons'
 import { RetryButton } from '../../shared/ui/RetryButton'
-import { ExpandButton, LineTypeMenu } from './LineTypeMenu'
+import { LineageEditTools } from './LineageEditTools'
 import { LineageSaveButton } from './LineageSaveButton'
 import { LineageHistoryButtons } from './LineageHistoryButtons'
 import { LineageStaleHistoryDrop } from './LineageStaleHistoryDrop'
 import { useLineageCommandState } from './use-lineage-command-state'
-
-/** 线型图标（13×9 线样——实/虚两态；描边载体=SVG **表现属性** stroke={color}
- *  非 inline style（[RR1 d1-N2] 口径勘正——全仓无 CSS stroke 竞争者；边界声明：
- *  表现属性可被未来 CSS `line { stroke }` 类选择器静默压制，新增 stroke 相关
- *  CSS 须排查本钮）；色=该 kind 当前色 [F-UIRES-03 C1 per-kind]） */
-function LineToolIcon({ kind, color }: { kind: 'solid' | 'dashed'; color: string }): JSX.Element {
-  return (
-    <svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true">
-      <line
-        x1="2"
-        y1="6"
-        x2="24"
-        y2="6"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeDasharray={kind === 'dashed' ? '5 3' : undefined}
-      />
-    </svg>
-  )
-}
 
 export function LineageToolbar(props: {
   mode: 'edit' | 'browse' | 'focus'
@@ -59,11 +46,6 @@ export function LineageToolbar(props: {
   const mode = props.mode
   const command = useLineageCommandState()
   const lastWriteError = useLineageStore((s) => s.lastWriteError)
-  const lineTypeNames = useLineageStore((s) => s.lineTypeNames)
-  const flushing = useLineageStore((s) => s.flushing)
-  const tool = useLineageViewStore((s) => s.tool)
-  const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
-  const paletteFor = useLineageViewStore((s) => s.paletteFor)
 
   if (mode !== 'edit') {
     // 非 edit：工具组隐藏——仅 drag-hint（三态文案）；历史快捷键仍三模式生效
@@ -79,28 +61,6 @@ export function LineageToolbar(props: {
   }
 
   const store = useLineageStore.getState
-  const view = useLineageViewStore.getState
-  // 工具组锁定面：同会话 saving=选择/线型交互钮禁用（§2.2）
-  const lock = flushing
-  const listOpen = paletteFor !== null
-  const dashed = paletteFor === 'dashed'
-  // [回炉 R6] 列表单例（渲染进当前展开钮的锚槽内——[F-UIRES-03 C1] paletteFor
-  // 归属维；per-kind 选色行写）
-  const linetypeMenu = listOpen ? (
-    <LineTypeMenu
-      names={lineTypeNames}
-      currentColor={currentLineColor[dashed ? 'dashed' : 'solid']}
-      anchorKind={dashed ? 'dashed' : 'solid'}
-      onPick={(color) => view().pickLineColor(dashed ? 'dashed' : 'solid', color)}
-      onRename={(index, name) => {
-        // 行内改名=一编辑单元：整批写（恰 6——index 定位色行；属当前 folder 会话）
-        const next = LINE_TYPE_COLORS.map((_, i) => lineTypeNames[i] ?? '')
-        next[index] = name
-        store().saveLineTypeNames(next)
-      }}
-      onOutside={() => view().closePalette()}
-    />
-  ) : null
 
   return (
     // [回炉 W-C·R-D1 呈现修复] 保存错误行在场时挂修饰类 has-save-error（与下方错误行同条件）——
@@ -112,50 +72,9 @@ export function LineageToolbar(props: {
       <span className="lg-sep" />
       {/* [F-ALIGN-01] 建点钮随手动建点路径退役删除（组=保存│选择/线型│撤销重做）
           ——e2e 断言锚零残留（工单三.5 词表） */}
-      {/* [F-UIRES-02 批 B R6] ✋ 字符→手掌 SVG（title 保活+sr-only 保 accessible
-          name「选择」） */}
-      <button
-        type="button"
-        className={tool === 'select' ? 'lg-btn ghost on syn-icon-btn' : 'lg-btn ghost syn-icon-btn'}
-        data-testid="lineage-tool-select"
-        disabled={lock}
-        title="小手选择（点选卡/线）"
-        onClick={() => view().resetTool()}
-      >
-        {ICON_HAND}
-        <span className="sr-only">选择</span>
-      </button>
-      {/* [F-UIRES-03 C1] 线型组锚槽（relative）：图标钮（描边=该 kind 当前色
-          per-kind）+右独立「展开」chevron 钮——列表挂 paletteFor 指向 kind 的锚槽
-          （[回炉 R6] 槽位方案沿承；delta-W5 错位态根除） */}
-      <span className="lg-tool-anchor" data-testid="lineage-tool-anchor-solid">
-        <button
-          type="button"
-          className={tool === 'draw-solid' ? 'lg-btn ghost on' : 'lg-btn ghost'}
-          data-testid="lineage-tool-solid"
-          disabled={lock}
-          title="画实线（从卡边锚点拖至目标卡）"
-          onClick={() => view().toggleLineTool('solid')}
-        >
-          <LineToolIcon kind="solid" color={currentLineColor.solid} />
-        </button>
-        <ExpandButton kind="solid" open={paletteFor === 'solid'} lock={lock} onToggle={view().togglePalette} />
-        {listOpen && paletteFor === 'solid' && linetypeMenu}
-      </span>
-      <span className="lg-tool-anchor" data-testid="lineage-tool-anchor-dashed">
-        <button
-          type="button"
-          className={tool === 'draw-dashed' ? 'lg-btn ghost on' : 'lg-btn ghost'}
-          data-testid="lineage-tool-dashed"
-          disabled={lock}
-          title="画虚线（从卡边锚点拖至目标卡）"
-          onClick={() => view().toggleLineTool('dashed')}
-        >
-          <LineToolIcon kind="dashed" color={currentLineColor.dashed} />
-        </button>
-        <ExpandButton kind="dashed" open={paletteFor === 'dashed'} lock={lock} onToggle={view().togglePalette} />
-        {listOpen && paletteFor === 'dashed' && linetypeMenu}
-      </span>
+      {/* [B5 wave A 纯拆件] 选择/线型/色板=LineageEditTools（片段返回——本容器直接
+          子序不变；选择钮/锚槽/列表的注释随代码迁驻该件） */}
+      <LineageEditTools />
       <span className="lg-sep" />
       {/* [F-UIRES-02 批 B R5] ↶↷ 字符→ICON_UNDO/ICON_REDO（两域复用）；
           补 aria-label（原仅 title）；sr-only 保 textContent/accessible name */}
@@ -186,7 +105,6 @@ export function LineageToolbar(props: {
           <LineageStaleHistoryDrop />
         </span>
       )}
-      {/* [F-UIRES-03 C1] 线型列表：挂 paletteFor 指向 kind 的展开钮锚槽内 */}
     </div>
   )
 }

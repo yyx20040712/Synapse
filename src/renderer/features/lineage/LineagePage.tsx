@@ -4,60 +4,34 @@
  *
  * 行为：挂载经 lineage.store.load() 取数（lineage/graph 单点——接缝
  * 双向锚定：本行+lineage.store 头注；03 编辑层/04 侧板同经 store 消费
- * **禁双取**）；三态呈现（门一 N6）：loading/error/ready（空图空态在画布内）。
- * 编排（LG-03 接入）：selectedNodeId 驻本页 state——Board 的 onSelectNode
- * 上抛落此（04 侧板 LineageSidePanel 消费）。
+ * **禁双取**）。
+ * [B5 设计稿 §3/§10.2——wave A 纯拆件 2026-11-25，行为零变] 本件=挂载编排+
+ * 快捷键+组合根（侧板跳转三回调的编排体）；三态呈现（门一 N6：
+ * loading/error/ready——空图空态在画布内）、选中详情、folders 图名与 pane
+ * 组合迁驻 LineagePageBody（注释随代码迁驻该件头注；该件由本件无条件渲染
+ * =恒挂载，取数仍只经本件挂载效应——禁双取不变）。
  *
  * ── F-LGRAPH-01①U4 编排重构（顶栏并集切换器退役行 1）──
- * - 顶栏=LineageModeBar（三模式分段+图名 mono 小字——图名=folders 单源经
- *   NavGraphPicker 上抛 folders 派生）；左侧=LineageNavPane（Word 导航窗格
- *   兼任图/文件夹切换——S2/S3/S4 语义迁驻）。
  * - 缺省图=库页文件夹上下文同步（mockup §3.2：进哪个文件夹开哪张图；
  *   未选=主图——挂载时读 library.store query.folderScope，接缝双向锚定
  *   两 store 头注：lineage.store+library.store）。
- * - 「该文件夹无脉络图」空态提示保留（顶栏紧邻模式栏——executor 定位申报）。
  * - 跳转接缝三方头注锚定（回炉 R10 回锚）：本页+LineageSidePanel+open-paper-
  *   bus（阅读器消费侧=open-paper-anchor.ts）——SidePanel/bus 两头注仍指本页，
  *   本页头注随 U4 重写曾失锚，本行恢复三方互指闭环。
  */
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { requestOpenPaper, requestOpenPaperAnchored } from '../../shared/open-paper-bus'
 import { requestOpenLibrary } from '../../shared/open-library-bus'
-import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLibraryStore } from '../library/library.store'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore } from './lineage-view.store'
 import { gotoLibraryPlan } from './goto-library-plan'
-import { LineageAsideHost } from './LineageAsideHost'
-import { LineageBoard } from './LineageBoard'
-import { LineageModeBar } from './LineageModeBar'
-import { LineageNavPane } from './LineageNavPane'
+import { LineagePageBody } from './LineagePageBody'
 import { useLineageEscapeKey } from './use-lineage-esc'
 import { useLineageHistoryShortcuts } from './use-lineage-history-shortcuts'
-import type { NavFolder } from './nav-graph-picker'
 
 export function LineagePage(): JSX.Element {
-  const status = useLineageStore((s) => s.status)
-  const error = useLineageStore((s) => s.error)
-  const load = useLineageStore((s) => s.load)
-  // [F-LGRAPH-01①U4] 图作用域+节点计数（空态提示消费面）+folders 图名链
-  const folderId = useLineageStore((s) => s.folderId)
-  const nodeCount = useLineageStore((s) => s.nodes.length)
-  const [folders, setFolders] = useState<NavFolder[] | null>(null)
-  // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const selectedNode = useLineageStore((s) => s.nodes.find((n) => n.id === selectedNodeId) ?? null)
-  // [T3-P8→②U4] 侧板徽章分发单源：骑缝编号（INV-76 全图一次）+含金量摘要
-  // （core 徽章消费面随行 9 退役——isCore 渲染链拆除，数据面留 lineage-classify）
-  const paperMetrics = useLineageStore((s) => s.paperMetrics)
-  // [F-FOLDER-01] 侧板徽章=该文献 pubNo（库级同源 INV-92——catalogNo 退役）
-  const pubNos = useLineageStore((s) => s.pubNos)
-  const selMetrics =
-    selectedNode !== null && selectedNode.paperId !== null
-      ? (paperMetrics[selectedNode.paperId] ?? null)
-      : null
-
   useEffect(() => {
     // [F-LGRAPH-01②A1 兑现] 挂载恒走模式态 reset（P-1「进页缺省」直读——二次
     // 进页=再进页缺省：mode='browse'+focusSet 清空+工具态归位；与下行数据
@@ -126,69 +100,15 @@ export function LineagePage(): JSX.Element {
     requestOpenPaper(paperId)
   }
 
-  if (status === 'loading') {
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-sm" style={{ color: 'var(--text-dim)' }}>
-        正在加载脉络图…
-      </div>
-    )
-  }
-  if (status === 'error') {
-    return (
-      <div className="flex h-full items-center justify-center p-8">
-        <div
-          className="flex items-center gap-3 rounded border px-4 py-3 text-xs"
-          role="alert"
-          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
-        >
-          <span>脉络图加载失败：{error}</span>
-          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（textContent 恰=
-              「重试」——受锁 lineage-timeline-page:256 精确匹配兼容面） */}
-          <RetryButton onClick={() => void load()} />
-        </div>
-      </div>
-    )
-  }
-  const graphName = folders?.find((f) => f.id === folderId)?.name ?? '主图'
+  // [B5 wave A 纯拆件] 三态主体/选中详情/folders 图名/pane 组合=LineagePageBody
+  // （恒挂载——本地态生命周期同页面）；侧板回调经 props 透传，编排体留本页
+  // （跳转接缝三方头注锚定不随迁）。星标=非撤销维度直写（乐观翻转+失败回滚——lineage.store）
   return (
-    <div className="flex h-full flex-col">
-      {/* [F-LGRAPH-01①U4] 顶栏=模式栏（图名随 folders 单源）+空图提示：folder
-          选中且子图空=「该文件夹无脉络图」（区别于时间线通用空态——含
-          「未选中文件夹」语境；主图空图不提示——D6 裁决=不引导〔新建文件夹/
-          导入 PDF 入口在库页在场〕；文献入库经导入链自动入图，无手动建点路径
-          ——F-ALIGN-01 建点入口退役） */}
-      <div className="flex items-center gap-3 px-2 pt-2">
-        <LineageModeBar graphName={graphName} />
-        {folderId !== MAIN_GRAPH_ID && nodeCount === 0 && (
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            该文件夹无脉络图
-          </span>
-        )}
-      </div>
-      <div className="flex min-h-0 flex-1 gap-1 p-1">
-        <LineageNavPane onFoldersChange={setFolders} />
-        <div className="min-w-0 flex-1">
-          {/* [F-UIRES-03 B5①] 两钮编排改道：现有回调零改动复用——消费面自 Board→Timeline 卡链转 SidePanel 操作行 */}
-          <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
-        </div>
-        {/* [F-UIRES-03 B4③+F-DBCAMP-01 U3] aside 宿主拆件=LineageAsideHost：
-            宽/收起机制原语义原样迁驻（拖右缘 4px 手柄 clamp 200–480+localStorage
-            持久；收起=48px 窄条）+页签行「详情｜AI 会话」（详情缺省）——testid
-            锚全保持；编排态经 props 透传（Page 行数预算） */}
-        <LineageAsideHost
-          node={selectedNode}
-          onJumpToPaper={handleJumpToPaper}
-          pubNo={
-            selectedNode !== null && selectedNode.paperId !== null
-              ? (pubNos[selectedNode.paperId] ?? null)
-              : null
-          }
-          metrics={selMetrics}
-          onGotoLibrary={handleCardGotoLibrary}
-          onGotoReader={handleCardGotoReader}
-          onToggleStar={(node) => void useLineageStore.getState().toggleNodeStar(node)}
-        />
-      </div>
-    </div>
+    <LineagePageBody
+      onJumpToPaper={handleJumpToPaper}
+      onGotoLibrary={handleCardGotoLibrary}
+      onGotoReader={handleCardGotoReader}
+      onToggleStar={(node) => void useLineageStore.getState().toggleNodeStar(node)}
+    />
   )
 }
