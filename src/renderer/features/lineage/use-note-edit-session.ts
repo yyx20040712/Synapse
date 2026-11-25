@@ -26,6 +26,12 @@
  *   编辑会话的 textarea 不让位（组件按 keepOpen 判在场）。由其他写触发的 saving 窗保持 R4
  *   「saving 让位」（textarea 卸载、草稿驻组件态、saving 结束回挂——既有合约 T4/T5）——
  *   输入法合成期除外（[回炉 W-B4·R1]，见下条）。
+ *   [B5 设计稿 §8.1／F-KEEPOPN-01／INV-190] 提交与置位进**同一 flushSync**：原实现先
+ *   submitDraft 再 setKeepOpen(true)，两者落在不同 React 提交（真机先提交「saving=true 且
+ *   keepOpen=false」的一帧——textarea 卸载后重挂、失焦；jsdom 的 act 合批掩盖了该缺陷）。
+ *   现于 commitDraftKeepOpen 内同步 flush：store 的 editRevision/queue 变化与 keepOpen=true
+ *   同一次提交落地。全应用只此一处用同步 flush——它是 idle scheduler 的非 render 回调，不在
+ *   render/effect 内调用，也不把全局 store 写改成 flushSync。submitDraft 未产生编辑单元则不置位。
  *   keepOpen 窗内 textarea 在场＝可失焦：closeEdit 在本会话 IO 在途（flushing）时不收口——
  *   此刻提交会被同会话 saving 锁静默拒，先清会话态会丢掉窗内续写的正文；保会话+pending，由
  *   idle 到期（重排）或链落定后的下一次 blur/打断收口承接。
@@ -57,6 +63,8 @@
  * ——合成期收口帧的快照对齐（setNoteDraftSnapshot）；该件不静态 import 本件，无环。
  */
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type RefObject } from 'react'
+// [B5 §8.1] flushSync 自 react-dom 导出（React 18 API——LineageStaleHistoryDrop 的 createPortal 同源先例）
+import { flushSync } from 'react-dom'
 import type { FloatingNote } from '@shared/models/lineage'
 import { useLineageStore } from './lineage.store'
 import { lineageIoInFlight } from './lineage-session-model'
@@ -240,8 +248,14 @@ export function useNoteEditSession(contentRef: RefObject<HTMLDivElement | null>)
     if (composingRef.current) return false
     const value = draftRef.current
     if (value === '') return false
-    const applied = submitDraft(id, value)
-    if (applied) setKeepOpen(true) // 随之而来的 saving 窗不卸载 textarea
+    // [B5 设计稿 §8.1／F-KEEPOPN-01] 提交与 keepOpen 置位进同一 flushSync（见头注 keepOpen）：
+    // 同一次 React 同步提交落地——不先提交「saving=true 且 keepOpen=false」的一帧而卸载 textarea。
+    // 本回调由 idle 计时器到期触发（非 render/effect）；applied=false（未产生编辑单元）不置位
+    let applied = false
+    flushSync(() => {
+      applied = submitDraft(id, value)
+      if (applied) setKeepOpen(true) // 随之而来的 saving 窗不卸载 textarea
+    })
     return applied
   }
   const idleCommitRef = useRef<() => boolean>(() => false)
