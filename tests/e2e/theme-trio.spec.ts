@@ -13,7 +13,8 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * [前端四期 B2] 主题控件=外观分类预览卡两张〔2026-11-20 用户裁决，非下拉〕）：
  * 设置页两卡 → 保存后 data-theme 挂 documentElement + body computed
  * backgroundColor 两主题终值实测（真实渲染断言——INV-06 口径，禁只断言
- * attr 不见色）+状态条主题名单源跟随。值源=v2 设计稿
+ * attr 不见色）+外观预览卡选中态主标跟随（[B5 wave C 2026-11-25] 状态条整删——原「状态条主题名」
+ * 锚改预览卡 aria-pressed 选中卡主标，同为 THEME_LABEL 单源）。值源=v2 设计稿
  * （synapse-redesign-v2.html，2026-11-19 定案）：light #f2f4f1 / sepia
  * #eee6d6。收尾恢复正常模式（终态=light，防污染其他 spec 的视觉断言面）。
  */
@@ -32,7 +33,7 @@ async function switchTheme(win: Page, label: string): Promise<void> {
   await win.getByRole('button', { name: '阅读器' }).click()
 }
 
-test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light；切换保存后 data-theme+body 真实渲色+状态条主题名；收尾恢复正常模式', async () => {
+test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light；切换保存后 data-theme+body 真实渲色+预览卡选中态主标跟随；收尾恢复正常模式', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-theme-trio-'))
   // [F-WS-02] 种子破引导态（设置钮在引导态禁用——smoke.spec 同配方；
   // 主题初态断言不受种子影响：settings.json 仍全新=DEFAULTS light）
@@ -60,7 +61,9 @@ test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light�
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgb(242, 244, 241)')
-  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
+  // [B5 wave C] 原状态条「主题：正常模式」→外观预览卡选中态主标（THEME_LABEL 单源；cards.nth(0) 主标已在上方锁定）
+  await expect(win.locator('.settings-theme-card[aria-pressed="true"]')).toHaveCount(1)
+  await expect(win.locator('.settings-theme-card[aria-pressed="true"]')).toContainText('正常模式')
 
   // 护眼模式：点卡+保存落地 → data-theme=sepia + body 真实渲染色 #eee6d6
   await cards.nth(1).click()
@@ -77,7 +80,8 @@ test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light�
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).color))
     .toBe('rgb(63, 57, 46)')
-  await expect(win.locator('.app-statusbar')).toContainText('主题：护眼模式')
+  // [B5 wave C] 原状态条「主题：护眼模式」→外观预览卡选中态主标（THEME_LABEL 单源跟随）
+  await expect(win.locator('.settings-theme-card[aria-pressed="true"]')).toContainText('护眼模式')
 
   // 收尾恢复正常模式（终态=light——防污染其他 spec）
   await cards.nth(0).click()
@@ -86,7 +90,8 @@ test('主题两档：预览卡恰两张（正常/护眼）；启动初态 light�
   await expect
     .poll(() => win.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgb(242, 244, 241)')
-  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
+  // [B5 wave C] 原状态条「主题：正常模式」→外观预览卡选中态主标（THEME_LABEL 单源）
+  await expect(win.locator('.settings-theme-card[aria-pressed="true"]')).toContainText('正常模式')
 
   await app.close()
 })

@@ -4,12 +4,17 @@
  * lineage-edge-edit-ui 行数红线（≤500）拆件：focus 态线 hover 回升（P-12/
  * P-18——document pointermove 数学命中扫描）+effect deps 收敛/edges 响应式
  * 订阅+hover 回升 inline 单源。主控裁决 RR5/RR8/RR10 测试锚驻此。
+ * [B5 设计稿 §4.1/§4.2 第 4 条/§11.4「去 focusDim 参数和 .dimmed-focus」——wave C 2026-11-25 断言翻转]
+ * focus 态边 hover 扫描改由独立 focusMode 信号驱动（空集也可 hover）；无 dim——线不挂 .dim、根不挂
+ * .dimmed-focus；edgeVisualOpacity 删 focusDim 入参（保留 fade/hovered）。
  * always-active 裸 describe（K3）。装配面与 ui 件同构（jsdom 零布局——
  * gBCR spy 定值几何）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { makeApiStub } from '../../utils/api-client-mock'
 
 const stubApi = makeApiStub({
@@ -132,7 +137,7 @@ const hitOf = (edgeId: string): SVGElement => {
   return el
 }
 
-describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermove 数学命中扫描）', () => {
+describe('U5 [RR5→B5 §4.1] focus 态线 hover 扫描（独立 focusMode 信号——document pointermove 数学命中）', () => {
   /** d 属性最长段中点（jsdom 零布局——几何由 d 值单源推导） */
   const longestSegMid = (d: string): { x: number; y: number } => {
     const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
@@ -153,38 +158,41 @@ describe('U5 [RR5] focus 态线 hover 回升（P-12/P-18——document pointermo
     act(() => { document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: x, clientY: y })) })
   }
 
-  it('focus dim：线挂 .dim；hover 命中线挂 .hovered（回升类）+移开即撤', () => {
-    // [F-VISFB-21 C4] 夹具换源：focus={C}（非边端——e1=A→B 两端均非 bright
-    // 才 dim；原 focus={A} 邻接边常亮=判定集换源后的新语义，非本用例锁面）
+  it('[B5 §4.1 断言翻转] focus 集非空：线不挂 .dim、根不挂 .dimmed-focus；hover 命中线挂 .hovered+移开即撤', () => {
     layout([{ x: 200, y: 66 }], true)
     act(() => {
       useLineageViewStore.setState({ mode: 'focus', focusSet: ['C'] })
     })
     const vis = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
-    expect(vis.classList.contains('dim')).toBe(true) // 两端均非 bright=dim（C4）
-    expect(host!.querySelector('.tl-edges')?.classList.contains('dimmed-focus')).toBe(true) // 态标记沿承
+    expect(vis.classList.contains('dim'), '无 dim（原「两端均非 bright=dim」翻转）').toBe(false)
+    expect(host!.querySelector('.tl-edges')?.classList.contains('dimmed-focus'), '根态标记退役').toBe(false)
+    expect(vis.style.opacity, '基态零 inline opacity').toBe('')
     const mid = longestSegMid(hitOf('e1').getAttribute('d') ?? '')
     docMove(mid.x, mid.y) // 指针落线身（数学命中——pointer-events 零变更不抢卡点击）
     const hovered = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
-    expect(hovered.classList.contains('hovered')).toBe(true) // 命中线挂回升类
-    expect(hovered.classList.contains('dim')).toBe(true) // dim+hovered 并挂（CSS 0.6 回升承载）
+    expect(hovered.classList.contains('hovered')).toBe(true) // focus 模式 hover 扫描挂类
+    expect(hovered.classList.contains('dim')).toBe(false)
+    expect(hovered.style.opacity, 'hover 回升=inline 0.65 单源（RR10 沿承）').toBe('0.65')
     docMove(700, 500) // 移开
     const cleared = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
     expect(cleared.classList.contains('hovered')).toBe(false)
-    expect(cleared.classList.contains('dim')).toBe(true)
+    expect(cleared.classList.contains('dim')).toBe(false)
   })
 
-  it('focus 空集=无 dim 无 hover 挂类（dim 激活闸——hover 扫描不激活）', () => {
+  it('[B5 §4.1 断言翻转] focus 空集=无 dim，且 hover 扫描激活（空集也可 hover——原「空集=零 hover 面」翻转）', () => {
     layout([{ x: 200, y: 66 }])
     act(() => {
       useLineageViewStore.setState({ mode: 'focus', focusSet: [] })
     })
     const vis = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
     expect(vis.classList.contains('dim')).toBe(false)
+    expect(host!.querySelector('.tl-edges')?.classList.contains('dimmed-focus')).toBe(false)
     const mid = longestSegMid(hitOf('e1').getAttribute('d') ?? '')
     docMove(mid.x, mid.y)
     const after = host!.querySelector('path.tl-edge[data-edge-id="e1"]') as SVGPathElement
-    expect(after.classList.contains('hovered')).toBe(false) // 空集=非 dim 态零 hover 面
+    expect(after.classList.contains('hovered'), 'focusMode 与聚焦集是否为空无关').toBe(true)
+    docMove(700, 500)
+    expect(host!.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('hovered')).toBe(false)
   })
 })
 
@@ -225,14 +233,15 @@ describe('U5 [RR8/RR10] effect deps 收敛+edges 响应式订阅+hover 回升 in
     expect(restored.style.opacity).toBe('') // 撤 hover 回 CSS 基线
   })
 
-  it('[RR10] 错峰×hover 组合单源（纯函数——fade 边 hover 回升不被 inline fade 压制）', () => {
+  it('[RR10→B5 §4.2 第 4 条] 错峰×hover 组合单源（纯函数——fade 边 hover 回升不被 inline fade 压制；focusDim 入参删除）', () => {
     // inline fade 压 CSS .hovered opacity（原死样式缺陷本体）——组合经纯函数锚定
-    expect(edgeVisualOpacity({ fade: 0.85, hovered: true, focusDim: false })).toBe(0.65)
-    expect(edgeVisualOpacity({ fade: 0.85, hovered: false, focusDim: false })).toBe(0.85)
-    expect(edgeVisualOpacity({ hovered: false, focusDim: false })).toBeUndefined()
-    expect(edgeVisualOpacity({ hovered: true, focusDim: false })).toBe(0.65)
-    // focus dim 态=undefined（dim/hover 回升由 .dim/.dim.hovered 类承载——RR5）
-    expect(edgeVisualOpacity({ fade: 0.85, hovered: true, focusDim: true })).toBeUndefined()
+    expect(edgeVisualOpacity({ fade: 0.85, hovered: true })).toBe(0.65)
+    expect(edgeVisualOpacity({ fade: 0.85, hovered: false })).toBe(0.85)
+    expect(edgeVisualOpacity({ hovered: false })).toBeUndefined()
+    expect(edgeVisualOpacity({ hovered: true })).toBe(0.65)
+    // [B5 §4.2 第 4 条] focusDim 入参退役：签名只剩 fade/hovered（多传入参=类型层编译红，不在运行时断言面）
+    // 源码级负锚：edge-overlay-geom 的 opacity 单源入参面零 focusDim（多传入参另由类型层编译红拦截）
+    expect(readFileSync(join(process.cwd(), 'src/renderer/features/lineage/edge-overlay-geom.ts'), 'utf8')).not.toContain('focusDim')
   })
 
   it('拖拽会话期零 rect 重采集：vertex 拖动三次 move 期间卡 gBCR 零调用（原无 deps 逐渲染采集）', () => {

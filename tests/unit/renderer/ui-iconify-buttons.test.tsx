@@ -15,8 +15,10 @@
  * - 标签域：TagEditor chip ×与「添加」（aria-label 保活+title 同源）。
  * - 脉络域：EdgeMenu 确定钮（textContent '确定' 保活——受锁
  *   lineage-edge-edit-menu:245 面）/LineageToolbar 保存·选择·撤销·重做（随态
- *   title+aria-label 同源+textContent 保活）/LineageNavPane 收起展开（title/
- *   aria-label 保活）。[A1b F-CONTRACTA-01 2026-10-04] LineageSideTags ＋钮/
+ *   title+aria-label 同源+textContent 保活）/工具栏左右栏开关 LineagePaneToggles
+ *   收起展开（title/aria-label 保活——[B5 设计稿 §3.4 wave C 2026-11-25] 原 LineageNavPane
+ *   窗格内收起/展开钮迁工具栏动态开关；「删除窗格内重复按钮的存在性前提」断言翻转）。
+ *   [A1b F-CONTRACTA-01 2026-10-04] LineageSideTags ＋钮/
  *   chip × 两用例随脉络私有标签域退役删除（标签唯一源=文献库域）。
  * - 课题域：WorkspaceRenameRow 确定/取消（textContent 保活——受锁
  *   workspaces e2e accessible name 面）。
@@ -48,7 +50,7 @@ import { TagEditor } from '../../../src/renderer/features/tags/TagEditor'
 import { useTagsStore } from '../../../src/renderer/features/tags/tags.store'
 import { EdgeMenu } from '../../../src/renderer/features/lineage/EdgeMenu'
 import { LineageToolbar } from '../../../src/renderer/features/lineage/LineageToolbar'
-import { LineageNavPane } from '../../../src/renderer/features/lineage/LineageNavPane'
+import { useLineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { LINE_TYPE_COLORS } from '../../../src/shared/models/lineage'
@@ -67,6 +69,12 @@ function mount(node: JSX.Element): void {
   act(() => {
     root?.render(node)
   })
+}
+
+/** [B5 §3.4] 页面组合层同构 harness：左右栏控制经 useLineagePaneControls 注入工具栏 */
+function ToolbarHarness(): JSX.Element {
+  const panes = useLineagePaneControls()
+  return <LineageToolbar graphName="主图" panes={panes} />
 }
 
 /** 同源断言单点：title 属性在场且与 aria-label 同值（票面明文同源条款） */
@@ -239,7 +247,7 @@ describe('F-UIRES-02 批 B 脉络域', () => {
 
   // [A1b F-CONTRACTA-01] LineageSideTags ＋钮/chip × 用例随脉络私有标签域退役删除。
 
-  it('LineageToolbar：保存钮 svg+随态 title/aria-label 同源+textContent 恰=保存；撤销/重做补 aria-label', () => {
+  it('LineageToolbar：保存钮 svg+title/aria-label 同源（[B5 §6.2] 恒为显式保存名称）+textContent 恰=保存；撤销/重做补 aria-label', () => {
     useLineageStore.setState({
       nodes: [], edges: [], lineTypeNames: ['', '', '', '', '', ''],
       status: 'ready', error: null, saveStatus: 'dirty', lastWriteError: null,
@@ -251,11 +259,12 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
     paletteFor: null
     })
-    mount(<LineageToolbar mode="edit" />)
+    mount(<ToolbarHarness />)
     const save = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-save-btn"]')!
     expect(save.textContent).toBe('保存')
     expectSvg(save, '保存钮')
     expectSameLabel(save)
+    expect(save.title, '[B5 §6.2] dirty 态名称=显式保存（不变通用重试）').toBe('保存全部修改（Ctrl+S——落库并标记为已保存）')
     const hand = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-tool-select"]')!
     expect(hand.textContent).toBe('选择')
     expectSvg(hand, '小手选择钮')
@@ -267,7 +276,7 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     }
   })
 
-  it('LineageNavPane：收起/展开钮 svg+title/aria-label 保活', () => {
+  it('工具栏左右栏开关 LineagePaneToggles（[B5 §3.4 断言翻转] 原 LineageNavPane 收起/展开钮迁工具栏）：svg+title/aria-label 保活；原窗格内按钮零在场', () => {
     stubApiEvents({ onFoldersChanged: () => () => undefined })
     stubApi.folders.list.mockResolvedValue({ ok: true, data: [] })
     useLineageStore.setState({
@@ -281,7 +290,8 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
     paletteFor: null
     })
-    mount(<LineageNavPane />)
+    mount(<ToolbarHarness />)
+    // 左栏：收起→展开（动态开关）
     const collapse = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-nav-collapse"]')!
     expect(collapse, '收起钮在场').not.toBeNull()
     expectSvg(collapse, '收起钮')
@@ -290,11 +300,27 @@ describe('F-UIRES-02 批 B 脉络域', () => {
     act(() => {
       collapse.click()
     })
+    expect(useLineageViewStore.getState().navCollapsed, '点击=左栏收起').toBe(true)
     const expand = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-nav-expand"]')!
     expect(expand, '展开钮在场').not.toBeNull()
     expectSvg(expand, '展开钮')
     expectSameLabel(expand)
     expect(expand.textContent).toBe('展开导航窗格')
+    // 右栏：收起→展开
+    const sideCollapse = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-sidebar-collapse"]')!
+    expectSvg(sideCollapse, '右详情收起钮')
+    expectSameLabel(sideCollapse)
+    expect(sideCollapse.textContent).toBe('收起详情面板')
+    act(() => {
+      sideCollapse.click()
+    })
+    const sideExpand = host!.querySelector<HTMLButtonElement>('[data-testid="lineage-sidebar-expand"]')!
+    expectSvg(sideExpand, '右详情展开钮')
+    expectSameLabel(sideExpand)
+    expect(sideExpand.textContent).toBe('展开详情面板')
+    expect(host!.querySelector('[data-testid="lineage-sidebar-collapse"]'), '收起态收起钮退场').toBeNull()
+    // 原窗格内重复按钮退役：语义类零在场（nav-collapse-btn/nav-expand-btn/side-collapse-btn）
+    expect(host!.querySelector('.nav-collapse-btn, .nav-expand-btn, .side-collapse-btn')).toBeNull()
   })
 })
 

@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 /**
- * [F-LGRAPH-01②U2] 工具组+线型列表锁定合约面——仅 edit 可见（browse/focus
- * 隐藏）/保存钮四态（dirty 亮·clean 灰禁·saving spinner·
- * error 行内错误+重试——退役行 4 chip）/A12 线型图标交互/线型列表 6 色行+
- * 行内改名=编辑单元/撤销重做钮接会话栈（mockup §3.3+A11/A12 仲裁）。
+ * [F-LGRAPH-01②U2] 工具栏+线型列表锁定合约面——[B5 设计稿 §2.3/§3.1/§11.2 断言翻转] 单排工具栏
+ * 三模式常驻（原「仅 edit 可见、browse/focus 隐藏+drag-hint」退役：保存/撤销重做/编辑工具/缩放/
+ * 清空聚焦/图名/左右栏开关全部三模式在场，编辑工具在 browse/focus 只禁用不消失）/保存钮四态
+ * （dirty 亮·clean 灰禁·saving spinner·error 按失败源分流告警——退役行 4 chip）/A12 线型图标交互/
+ * 线型列表 6 色行+行内改名=编辑单元/撤销重做钮接会话栈（mockup §3.3+A11/A12 仲裁）。
+ * [B5 设计稿 §3.1/§3.2/§6.2——wave C 2026-11-25] 工具栏=页面顶部稳定外壳：DOM 顺序锁（编辑/浏览/
+ * 聚焦｜保存/撤销/重做｜选择/实线/虚线｜缩放 −/百分比复位/+｜清空聚焦｜图名｜左右栏开关）+三层壳
+ * （shell/scroll/toolbar）。三模式命令面／保存钮 title 恒定／history 来源告警／缩放控件=
+ * lineage-toolbar-controls.test.tsx（[B5] 自本件拆出——.tsx 受 ESLint max-lines 500 约束）；history 来源告警无保存
+ * 重试；缩放控件（纯 N%、边界禁用、非 ready 禁用）。告警几何/三模式可达=lineage-toolbar-save-
+ * error-class；侧栏开关=use-lineage-pane-controls；清空聚焦=lineage-mode-bar。
  * [F-ALIGN-01 2026-10-04] 添加节点钮随手动添加节点路径退役删除——控件清单
  * 收窄+零残留负锚（在场即红）。
  * [B4 L1 迁移——设计稿 §12.2] 保存钮/撤销重做钮=纯受控件（LineageSaveButton/
@@ -31,6 +38,7 @@ import { LINE_TYPE_COLORS, LINE_TYPE_DEFAULT_NAME } from '../../../src/shared/mo
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { LineageToolbar } from '../../../src/renderer/features/lineage/LineageToolbar'
+import type { LineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 
 ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -69,12 +77,28 @@ const setViewState = (patch: StorePatch<typeof useLineageViewStore.getState>): v
   })
 }
 
-function mountToolbar(): void {
+/** [B5 §3.1] 工具栏注入面=页面组合层的左右栏控制（本件不测开关行为——lineage-pane-controls 承载） */
+const PANES: LineagePaneControls = {
+  navCollapsed: false,
+  toggleNav: () => undefined,
+  sidebar: {
+    width: 252,
+    collapsed: false,
+    onResizeStart: () => undefined,
+    onResizeKey: () => undefined,
+    collapse: () => undefined,
+    expand: () => undefined
+  }
+}
+
+/** [B5 §3.1] 工具栏挂载——模式取 view.store（工具栏不再收 mode prop：三模式同一 DOM），挂载前置模式 */
+function mountToolbar(mode: 'edit' | 'browse' | 'focus' = 'edit'): void {
+  useLineageViewStore.setState({ mode })
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
-    root?.render(<LineageToolbar mode="edit" />)
+    root?.render(<LineageToolbar graphName="主图" panes={PANES} />)
   })
 }
 
@@ -111,7 +135,8 @@ beforeEach(() => {
     mode: 'edit', focusSet: [], navCollapsed: false, navWidth: 208,
     tool: 'select',
     currentLineColor: { solid: LINE_TYPE_COLORS[0], dashed: LINE_TYPE_COLORS[0] },
-    paletteFor: null
+    paletteFor: null,
+    zoom: 1
   })
 })
 
@@ -122,23 +147,84 @@ afterEach(() => {
   host = null
 })
 
-describe('F-LGRAPH-01②U2 工具组形态（仅 edit 可见——A11）', () => {
-  it('edit 模式：全控件在场（保存/选择/实线/虚线/撤销/重做）+添加节点钮零残留负锚（[F-ALIGN-01]）', () => {
+describe('F-LGRAPH-01②U2 工具栏形态（[B5 §2.3/§3.1] 三模式常驻）', () => {
+  it('edit 模式：全控件在场（保存/选择/实线/虚线/撤销/重做/缩放三钮/清空聚焦/图名/左右栏开关）+添加节点钮零残留负锚（[F-ALIGN-01]）', () => {
     mountToolbar()
-    for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
+    for (const id of [
+      'lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo',
+      'lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in', 'lineage-focus-clear', 'lineage-graph-title',
+      'lineage-nav-collapse', 'lineage-sidebar-collapse'
+    ]) {
       expect(q(`[data-testid="${id}"]`)).not.toBeNull()
     }
     expect(q('[data-testid="lineage-add-node"]')).toBeNull()
   })
 
-  it('browse/focus 模式：工具组隐藏+drag-hint 在场', () => {
+  it('[B5 §11.2 断言翻转] browse/focus：保存/撤销重做/编辑工具/缩放/清空聚焦常驻不消失；编辑工具只禁用（点击无效）；drag-hint 零残留负锚', () => {
     for (const mode of ['browse', 'focus'] as const) {
-      mountEl(<LineageToolbar mode={mode} />)
-      for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-undo']) {
-        expect(q(`[data-testid="${id}"]`)).toBeNull()
+      useLineageViewStore.setState({ mode })
+      mountEl(<LineageToolbar graphName="主图" panes={PANES} />)
+      for (const id of [
+        'lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo',
+        'lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in', 'lineage-focus-clear'
+      ]) {
+        expect(q(`[data-testid="${id}"]`), `${mode}：${id} 应常驻在场`).not.toBeNull()
       }
-      expect(q('[data-testid="drag-hint"]')).not.toBeNull()
+      for (const id of ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-tool-solid-expand', 'lineage-tool-dashed-expand']) {
+        expect(btn(id).disabled, `${mode}：编辑工具 ${id} 应禁用（不消失）`).toBe(true)
+      }
+      // 禁用=点击无效：工具态/色板不因 browse/focus 的点击而变
+      click(btn('lineage-tool-solid'))
+      expect(useLineageViewStore.getState().tool).toBe('select')
+      expect(useLineageViewStore.getState().paletteFor).toBeNull()
+      // 缩放三钮在 browse/focus 可用（§2.3：缩放三模式同一判据——只看图 ready）
+      for (const id of ['lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in']) {
+        expect(btn(id).disabled, `${mode}：${id} 不随模式禁用`).toBe(false)
+      }
+      // [B5 §3.5 文案删除 1] drag-hint 三态退役——零残留负锚（在场即红）
+      expect(q('[data-testid="drag-hint"]')).toBeNull()
+      expect(host?.querySelector('.drag-hint')).toBeNull()
+      act(() => {
+        root?.unmount()
+      })
+      root = null
+      host?.remove()
     }
+  })
+
+  it('[B5 §3.1] 单排工具栏 DOM 顺序锁：编辑/浏览/聚焦｜保存/撤销/重做｜选择/实线/虚线｜缩放 −/百分比复位/+｜清空聚焦｜图名｜左导航开关/右详情开关', () => {
+    mountToolbar()
+    const order = [
+      'lineage-mode-bar', 'lineage-save-btn', 'lineage-undo', 'lineage-redo',
+      'lineage-tool-select', 'lineage-tool-anchor-solid', 'lineage-tool-anchor-dashed',
+      'lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in',
+      'lineage-focus-clear', 'lineage-graph-title', 'lineage-nav-collapse', 'lineage-sidebar-collapse'
+    ].map((id) => req(`[data-testid="${id}"]`))
+    for (let i = 0; i + 1 < order.length; i++) {
+      const follows = (order[i]!.compareDocumentPosition(order[i + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      expect(follows, `槽位序：第 ${i} 项应先于第 ${i + 1} 项`).toBe(true)
+    }
+    // 全部控件同驻一条轨道（.lg-toolbar 直接子树）；模式栏不再承载图名（图名=父工具栏槽位）
+    const track = req('.lg-toolbar')
+    for (const el of order) expect(track.contains(el)).toBe(true)
+    expect(req('[data-testid="lineage-mode-bar"]').contains(req('[data-testid="lineage-graph-title"]'))).toBe(false)
+    expect(req('[data-testid="lineage-graph-title"]').textContent).toBe('主图') // 图名=folders 单源经编排注入
+  })
+
+  it('[B5 §3.2] 三层壳：shell（flex 列 shrink-0）> scroll（role=toolbar、可键盘聚焦、aria-label「脉络工具栏」）> toolbar；写失败告警=滚动容器的兄弟节点', () => {
+    mountToolbar()
+    const scroll = req('.lg-toolbar-scroll')
+    expect(scroll.getAttribute('role')).toBe('toolbar')
+    expect(scroll.getAttribute('aria-label')).toBe('脉络工具栏')
+    expect(scroll.getAttribute('tabindex')).toBe('0')
+    expect(scroll.parentElement?.classList.contains('lg-toolbar-shell')).toBe(true)
+    expect(req('.lg-toolbar').parentElement).toBe(scroll)
+    expect(q('[data-testid="lineage-save-error"]')).toBeNull() // 无错=无告警
+    setState({ saveStatus: 'error', lastWriteError: '写入失败', lastWriteErrorSource: 'save', queue: [{ kind: 'remove-edge', id: 'e1' }] })
+    const alert = req('[data-testid="lineage-save-error"]')
+    expect(alert.getAttribute('role')).toBe('alert')
+    expect(scroll.contains(alert), '告警不得落在横滚容器内（不占工具控件轨道）').toBe(false)
+    expect(req('.lg-toolbar-shell').contains(alert)).toBe(true)
   })
 })
 

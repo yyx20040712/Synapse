@@ -76,7 +76,12 @@ test('folders-crud：新建/重名 toast/行内改名（S3 联动）/删除弹�
   // （静默判据下空图不弹窗）
   await win.getByTestId('lineage-nav-graph').click()
   await win.getByTestId('lineage-nav-graph-menu').getByRole('option', { name: '改名后的图' }).click()
-  await expect(win.getByText('该文件夹无脉络图')).toBeVisible()
+  // [B5 设计稿 §3.3/§3.5/§11.3「folders-crud：旧空态文字替换，CRUD 数据断言不动」——wave C 2026-11-25]
+  // 切图完成锚=图名真文本跟随（folders 单源）+空子图画布在场零卡（原「该文件夹无脉络图」空态文案退役）
+  await expect(win.getByTestId('lineage-graph-title')).toHaveText('改名后的图', { timeout: 10_000 })
+  await expect(win.locator('.tl-content')).toBeVisible()
+  await expect(win.getByTestId('lineage-timeline')).not.toHaveAttribute('aria-busy', 'true')
+  await expect(win.locator('.tl-card')).toHaveCount(0) // 前置：移入前零卡（下文 0→1 判别）
   await win.evaluate(async () => {
     const r = await window.api.folders.list({})
     const fid = r.ok ? (r.data.find((f) => f.name === '改名后的图')?.id ?? '') : ''

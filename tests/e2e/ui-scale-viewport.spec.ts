@@ -40,15 +40,17 @@ const WIDE_TITLE = '视口完整性宽标题种子' + '超长题名填充'.repea
  * 四面断言组：(a) header 宽 ≤ 视口+1（grid 列钉死后恒=容器宽）；
  * (b) caption 三键全在视口（右缘≤视口+1 且左/顶缘≥0）；
  * (c) .app-content-row 宽 ≤ 视口+1（撑破源本体——RR1-W2 改锁面）；
- * (d) .app-statusbar 右缘≤视口+1 且顶缘≥0 且底缘≤视口高+1（状态条被
- * 推出窗/被盖症状锁——垂直面为防御面）。
+ * (d) [B5 wave C 2026-11-25——状态条整删后改面] .app-content-zone 右缘≤视口+1 且顶缘≥0 且
+ * 底缘≤视口高+1（内容区=壳层末行、直抵窗口底缘——垂直面出窗/被盖症状锁；原锁对象
+ * 为 .app-statusbar 三缘，随状态条删除由内容区承接垂直防御面）+.app-statusbar DOM 零残留。
  */
 async function assertShellWithinViewport(win: Page, label: string): Promise<void> {
   const m = await win.evaluate(() => {
     const rect = (sel: string): DOMRect => document.querySelector(sel)!.getBoundingClientRect()
     const header = rect('.app-header')
     const row = rect('.app-content-row')
-    const bar = rect('.app-statusbar')
+    // [B5 wave C] 状态条整删——(d) 面锁对象改内容区（壳层末行：右缘/顶缘/底缘）
+    const zone = rect('.app-content-zone')
     const btns = Array.from(document.querySelectorAll('.titlebar-btn')).map((b) => {
       const r = b.getBoundingClientRect()
       return { name: b.getAttribute('aria-label'), right: r.right, x: r.x, y: r.y }
@@ -58,9 +60,10 @@ async function assertShellWithinViewport(win: Page, label: string): Promise<void
       innerH: window.innerHeight,
       headerW: header.width,
       rowW: row.width,
-      barRight: bar.right,
-      barY: bar.y,
-      barBottom: bar.bottom,
+      statusbars: document.querySelectorAll('.app-statusbar').length,
+      zoneRight: zone.right,
+      zoneY: zone.y,
+      zoneBottom: zone.bottom,
       btns
     }
   })
@@ -73,9 +76,10 @@ async function assertShellWithinViewport(win: Page, label: string): Promise<void
     expect.soft(b.y, `${cap} (b) 「${b.name}」顶缘 ${b.y} 应 ≥ 0`).toBeGreaterThanOrEqual(0)
   }
   expect.soft(m.rowW, `${cap} (c) 内容行宽 ${m.rowW} 应 ≤ 视口+1`).toBeLessThanOrEqual(m.innerW + 1)
-  expect.soft(m.barRight, `${cap} (d) 状态条右缘 ${m.barRight} 应 ≤ 视口+1`).toBeLessThanOrEqual(m.innerW + 1)
-  expect.soft(m.barY, `${cap} (d) 状态条顶缘 ${m.barY} 应 ≥ 0`).toBeGreaterThanOrEqual(0)
-  expect.soft(m.barBottom, `${cap} (d) 状态条底缘 ${m.barBottom} 应 ≤ 视口高+1`).toBeLessThanOrEqual(m.innerH + 1)
+  expect.soft(m.statusbars, `${cap} (d) 状态条整删——DOM 零残留`).toBe(0)
+  expect.soft(m.zoneRight, `${cap} (d) 内容区右缘 ${m.zoneRight} 应 ≤ 视口+1`).toBeLessThanOrEqual(m.innerW + 1)
+  expect.soft(m.zoneY, `${cap} (d) 内容区顶缘 ${m.zoneY} 应 ≥ 0`).toBeGreaterThanOrEqual(0)
+  expect.soft(m.zoneBottom, `${cap} (d) 内容区底缘 ${m.zoneBottom} 应 ≤ 视口高+1`).toBeLessThanOrEqual(m.innerH + 1)
 }
 
 /** 公共前置：种子破引导态+宽标题文献→launch→进文献库→表行在场 */
@@ -89,7 +93,7 @@ async function prepareLibrary(win: Page): Promise<void> {
   ).toBeVisible({ timeout: 10_000 })
 }
 
-test('ui-scale 1.1 档：壳层撑破修复——header 恒视口宽+caption 三键在窗+内容行不溢出+状态条在窗', async () => {
+test('ui-scale 1.1 档：壳层撑破修复——header 恒视口宽+caption 三键在窗+内容行不溢出+内容区抵窗底不出窗（状态条整删）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uivfix-110-'))
   await bootstrapMigrations(userData)
   const sha = '1'.repeat(64)

@@ -7,7 +7,14 @@
  * ——ModeBar 组件面=lineage-mode-bar.test 独立锁）。
  * [F-LGRAPH-01②U8] useEdgeComposer 拾取连线流+EdgeTypePopover 线型弹层
  * 随「新建连线」按钮/kind 四值体系退役删除（mockup §3.8 行 3/6——画线工具
- * U3 落地替代）；本件保留工具条换装+保存态 chips 面。
+ * U3 落地替代）；旧「工具条换装+保存态 chips 面」两条断言随下条 B5 迁出。
+ * [B5 设计稿 §3.1/§3.3/§3.5/§11.2「lineage-timeline-edit：工具栏存在性迁 Page/Toolbar 测试；
+ * Timeline 只锁 editing 类和画布；告警测试迁稳定外壳；删 .lg-toolbar 挂 .timeline 与
+ * drag-hint/通用重试锁」——wave C 2026-11-25 断言翻转] 工具栏自 LineageTimeline 渲染树迁驻
+ * 页面顶部稳定外壳（LineageToolbar，经 LineagePageBody 挂载）：Timeline 渲染树内零工具栏、
+ * 零 drag-hint、零缩放角标、零空态文案；本件只锁 .timeline 的模式类与画布结构。
+ * 工具栏形态=lineage-toolbar-session；告警=lineage-toolbar-save-error-class 与
+ * lineage/lineage-write-failure-source；缩放控件=lineage-toolbar-session。
  * always-active 裸 describe（K3）。
  */
 import { act } from 'react'
@@ -76,7 +83,6 @@ const setMode = (m: LineageViewMode): void => {
   })
 }
 
-
 beforeEach(() => {
   useLineageViewStore.setState({ mode: 'browse', focusSet: [], navCollapsed: false, navWidth: 208 })
 })
@@ -90,8 +96,8 @@ afterEach(() => {
   host = null
 })
 
-describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化/U8 弹层退役）', () => {
-  it('工具组换装 [②U2]：.lg-toolbar 挂 .timeline 内；browse=组隐藏（drag-hint）；edit=全控件在场；「新建连线」退役负锚（行 3）', () => {
+describe('T3-P7B Timeline 画布结构（[B5 §3.1] 工具栏迁页面顶部稳定外壳——Timeline 渲染树只余画布）', () => {
+  it('[B5 §11.2 断言翻转] .timeline 模式类随 mode（browse 无 editing／edit 挂 editing）；渲染树内零工具栏、零 drag-hint', () => {
     mount(
       <LineageTimeline
         nodes={[node('A', { year: 2022, month: 9 })]}
@@ -100,45 +106,67 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
     )
     const timeline = req('.timeline')
     expect(timeline.classList.contains('editing')).toBe(false)
-    expect(req('.lg-toolbar .drag-hint').textContent).toBe('✋ 拖动空白＝平移画布 · 滚轮浏览时间线') // browse 态文案（三模式）
-    // [②U2/A11] 工具组仅 edit 可见——browse 态控件零
-    expect(q('[data-testid="lineage-add-node"]')).toBeNull()
+    // 原「.lg-toolbar 挂 .timeline 内；browse=组隐藏（drag-hint）；edit=全控件在场」翻转：
+    // 三模式下 Timeline 渲染树内均零工具栏与 drag-hint（工具栏=页面外壳，三模式同一 DOM）
+    expect(q('.timeline .lg-toolbar')).toBeNull()
+    expect(q('.lg-toolbar')).toBeNull()
     expect(q('[data-testid="lineage-save-btn"]')).toBeNull()
-    // [F-LGRAPH-01②U8] 「新建连线」按钮退役（画线工具替代）——负锚（在场即红）
-    expect(q('[data-testid="lineage-link-btn"]')).toBeNull()
-    // [F-BAKRET-01] 导入按钮随导入链退役——零残留负锚（在场即红）
-    expect(q('[data-testid="lineage-import"]')).toBeNull()
-    // [F-LGRAPH-01①U3] 「编辑脉络/完成编辑」toggle 退役——负锚（在场即红）
-    expect(q('[data-testid="lineage-edit-toggle"]')).toBeNull()
+    expect(q('[data-testid="lineage-undo"]')).toBeNull()
+    expect(q('[data-testid="drag-hint"]'), 'drag-hint 三态退役零残留').toBeNull()
+    expect(q('.drag-hint')).toBeNull()
+    // 画布结构在场（Timeline 只锁画布）
+    expect(req('.tl-content')).not.toBeNull()
+    expect(req('[data-testid="lineage-timeline"]')).toBe(timeline)
     setMode('edit')
     expect(timeline.classList.contains('editing')).toBe(true)
-    // edit=工具组全控件在场+新文案；[F-ALIGN-01] 添加节点钮随手动添加路径退役
-    // ——edit 态零残留负锚（在场即红）
-    expect(q('[data-testid="lineage-add-node"]')).toBeNull()
-    for (const id of ['lineage-save-btn', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-undo', 'lineage-redo']) {
-      expect(q(`[data-testid="${id}"]`)).not.toBeNull()
-    }
-    // [F-UIRES-03 C3] 首段「点卡片月标改月」随改月链退役删（INV-107）；
-    // [C1 裁决 h]→[C2·P6] 终态文案=CAD 式锚点拖拽正名（v1.11①）
-    expect(req('.lg-toolbar .drag-hint').textContent).toBe('编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡')
+    expect(q('.timeline .lg-toolbar'), 'edit 态渲染树内同样零工具栏').toBeNull()
+    expect(q('[data-testid="drag-hint"]')).toBeNull()
+    expect(req('.tl-card[data-node-id="A"]')).not.toBeNull() // 真实卡在场
+    expect(host?.textContent).toContain('节点A')
   })
 
-  it('保存态行内错误 [②U2]（退役行 4：chip 零残留）：error 态=保存钮行内错误+重试钮', async () => {
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
+  it('[B5 §4.2/§3.5] 右下角缩放角标退役（百分比复位迁工具栏 LineageZoomControls）；教学提示零残留', () => {
     mount(
       <LineageTimeline
         nodes={[node('A', { year: 2022, month: 9 })]}
         edges={[]}
       />
     )
-    setMode('edit')
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'error', lastWriteError: '写入失败', lastWriteErrorSource: 'save' }) // [B5 §6.1] 夹具机械补来源（save 场景——保存重试只随 save 来源）
-    })
-    // 退役行 4 负锚：旧 chip testid 零残留
-    expect(q('[data-testid="lineage-save-status"]')).toBeNull()
-    expect(q('[data-testid="lineage-retry-save"]')).toBeNull()
-    expect(req('[data-testid="lineage-save-error"]').textContent).toContain('写入失败')
-    expect(q('[data-testid="lineage-save-retry"]')).not.toBeNull()
+    expect(q('[data-testid="zoom-badge"]'), 'Timeline 渲染树内零缩放角标').toBeNull()
+    expect(q('.zoom-badge')).toBeNull()
+    expect(host?.textContent).not.toContain('复位缩放到 100%')
+    // 右下角角标相关提示不把「滚动补偿」等机制词带入 UI
+    expect(host?.textContent).not.toContain('滚动补偿')
+    expect(host?.textContent).not.toContain('平移画布')
+    expect(req('[data-testid="tl-zoom-spacer"]'), '缩放滚动域 spacer（机制本体）保留').not.toBeNull()
+  })
+
+  it('[B5 §3.3] 空图：保留 .tl-content 与悬浮笔记层，不渲染「暂无脉络图」', () => {
+    mount(<LineageTimeline nodes={[]} edges={[]} />)
+    expect(req('.tl-content')).not.toBeNull()
+    expect(q('.tl-empty'), '空态文案容器退役').toBeNull()
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.textContent).not.toContain('该文件夹无脉络图')
+    expect(host?.querySelector('[data-testid="lineage-timeline"]')).not.toBeNull()
+  })
+
+  it('退役入口负锚沿承：添加节点钮／新建连线／导入／编辑脉络 toggle／旧保存态 chip 零残留（在场即红）', () => {
+    mount(
+      <LineageTimeline
+        nodes={[node('A', { year: 2022, month: 9 })]}
+        edges={[]}
+      />
+    )
+    for (const sel of [
+      '[data-testid="lineage-add-node"]', // [F-ALIGN-01] 添加节点钮随手动添加路径退役
+      '[data-testid="lineage-link-btn"]', // [F-LGRAPH-01②U8] 「新建连线」按钮退役（画线工具替代）
+      '[data-testid="lineage-import"]', // [F-BAKRET-01] 导入按钮随导入链退役
+      '[data-testid="lineage-edit-toggle"]', // [F-LGRAPH-01①U3] 「编辑脉络/完成编辑」toggle 退役
+      '[data-testid="edge-pop"]', // [F-LGRAPH-01②U8] 线型弹层退役
+      '[data-testid="lineage-save-status"]', // 退役行 4 chip
+      '[data-testid="lineage-retry-save"]' // 退役行 4 chip
+    ]) {
+      expect(q(sel), `${sel} 应零残留`).toBeNull()
+    }
   })
 })

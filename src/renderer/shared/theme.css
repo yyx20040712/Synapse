@@ -114,12 +114,11 @@
      〔F-ANCHFIX-01 批 1c 裁决 C——通道覆写驻彼件〕C-4c 语义锚：基值定义单源本表） */
   /* [T3-P7B] 脉络工具条/弹层族（值源=mockups/2026-09-26_v2_theme-{light,sepia}
      .html 两稿同值实证——主题恒定硬编码注记；shadow 命名独立沿
-     --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；--signal-a08=mockup 直值
-     （两稿同值）不随族 --signal 漂移；零新 fs token=最近值映射见
-     theme-lineage.css [T3-P7B] 段注） */
+     --shadow-cta/--shadow-tl-sel 先例[主控裁决 e]；零新 fs token=最近值映射见
+     theme-lineage.css [T3-P7B] 段注。--signal-a08 已随 drag-hint 删除
+     [B5 C 2026-11-25——设计稿 §3.5-1：唯一消费方=drag-hint 编辑态底]） */
   --shadow-lg-btn: 0 2px 6px rgba(47, 111, 100, 0.28); /* .lg-btn 主钮投影（基色随 accent） */
   --shadow-lg-edit: 0 2px 6px rgba(166, 75, 67, 0.3); /* .lg-btn.editing 编辑态投影（基色随 signal） */
-  --signal-a08: var(--danger-a08); /* drag-hint 编辑态底（signal 桥 danger 后同基色——F-LINT-04 ② 同值合并引用载体） */
   --pop-danger: var(--signal); /* 线型弹层「移除连线」钮字色（v2 后与 signal 同基色——同值合并引用载体） */
   --pop-danger-a50: rgba(166, 75, 67, 0.5); /* 同钮描边（基色随 signal） */
   --font-display: Georgia, 'Times New Roman', 'Songti SC', SimSun, serif;

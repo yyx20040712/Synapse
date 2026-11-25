@@ -8,8 +8,14 @@
  * lineage-canvas.test.tsx→本件——内容零改动，旧键走 FILE 级豁免通道。
  *
  * 覆盖：时间线真实文本渲染（年份头纯数字/月标签/卡题名——「渲染出真实
- * 文本」红线）/data-node-id 结构锚（e2e/Board 测试同名接缝）/空图空态
- * 文案/Page 三态（loading/ready/error+重试）/store 数据缓存（卸载后驻留）。
+ * 文本」红线）/data-node-id 结构锚（e2e/Board 测试同名接缝）/空图画布（[B5] 原「空图空态
+ * 文案」翻转——不渲染空态文案）/Page 三态（loading/ready/error+重试）/store 数据缓存（卸载后驻留）。
+ * [B5 设计稿 §3.3/§3.5/§11.2「lineage-timeline-page：loading 改 aria-busy+工具栏；空图改画布存在；
+ * 子图空态无文字；load error 仍断言真实原因和 lineage-load-retry；重挂记忆 mode；删三类可见
+ * 空/loading 文案与 P-1 二次进页 browse 锁」——wave C 2026-11-25 断言翻转] Page=稳定外壳：
+ * loading/error/ready 三态共用同一工具栏；loading=画布占位 aria-busy+sr-only；graph load error=
+ * role=alert＋独立 lineage-load-retry（只调 load()，不复用保存/history 重试）；空图=画布在场。
+ * 工具栏形态/缩放/告警分流=lineage-toolbar-session、lineage-toolbar-save-error-class。
  * always-active（ADR-0017 裁决 3——不经 guardedDescribe）。
  * 分组/砖砌/CSS 逐值锁=tests/unit/renderer/lineage-timeline.test.tsx（单源）。
  */
@@ -151,42 +157,104 @@ describe('LineageTimeline —— 时间线宿主渲染', () => {
     expect(host?.querySelector('[data-node-id="B"]')).not.toBeNull()
   })
 
-  it('空图空态文案（[②U2/A11] 工具组仅 edit 可见；[F-ALIGN-01] 文案沿承 D6 不引导+添加节点钮零残留负锚）', () => {
+  it('[B5 §3.5 断言翻转] 空图：不渲染「暂无脉络图」，画布 .tl-content 在场；添加节点/导入/线型弹层入口零残留负锚', () => {
     useLineageViewStore.setState({ mode: 'edit' })
     mount(<LineageTimeline nodes={[]} edges={[]} />)
-    expect(host?.textContent).toContain('暂无脉络图')
-    // [T3-P7B 修订] P6 期「零按钮」断言随工具条移入（D-P7B-1）失效；编辑面
-    // 死按钮（弹层交互钮）仍零；[F-ALIGN-01] 添加节点钮随手动添加路径退役
-    // ——零残留负锚（在场即红）；[F-BAKRET-01] 导入按钮随草稿导入链退役
-    // ——零残留负锚（在场即红）
-    expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content'), '空图画布在场').not.toBeNull()
+    expect(host?.querySelector('.tl-empty')).toBeNull()
+    // [F-ALIGN-01] 添加节点钮随手动添加路径退役——零残留负锚（在场即红）；[F-BAKRET-01] 导入按钮随
+    // 草稿导入链退役——零残留负锚（在场即红）
+    expect(host?.querySelector('.timeline .lg-toolbar'), '工具栏不在 Timeline 渲染树').toBeNull()
     expect(host?.querySelector('[data-testid="lineage-add-node"]')).toBeNull()
     expect(host?.querySelector('[data-testid="lineage-import"]')).toBeNull()
     expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()
   })
 
-  it('空→非空转场：节点入图即渲染（时间线容器常驻无监听重绑面）', () => {
+  it('[B5 §11.2] 空→非空转场：真实卡标题从 0 到有（时间线容器常驻无监听重绑面）；空图无空态文案', () => {
     mount(<LineageTimeline nodes={[]} edges={[]} />)
-    expect(host?.textContent).toContain('暂无脉络图')
+    expect(host?.querySelectorAll('.c-title'), '空图：零卡标题').toHaveLength(0)
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content')).not.toBeNull()
     const g = chain()
     act(() => {
       root?.render(<LineageTimeline nodes={g.nodes} edges={g.edges} />)
     })
-    expect(host?.textContent).toContain('扩散模型起点')
+    expect(host?.textContent).toContain('扩散模型起点') // 真实卡标题从 0 到有
+    expect(host?.querySelectorAll('.c-title')).toHaveLength(3)
     expect(host?.querySelectorAll('[data-node-id]').length).toBe(3)
   })
 })
 
 describe('LineagePage —— 取数三态（lineage.store 数据单源）', () => {
-  it('loading：挂载期呈加载文案，graph 取数一次（folderId 恒显式——主图兜底）', async () => {
+  it('[B5 §3.3 断言翻转] loading 共壳：工具栏在场（三模式钮可达）、画布占位 aria-busy=true＋sr-only「正在加载脉络图」、数据控件禁用、无可见 loading 文案；graph 取数一次', async () => {
     stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))
     mount(<LineagePage />)
-    expect(host?.textContent).toContain('正在加载脉络图')
+    await flush()
+    expect(useLineageStore.getState().status).toBe('loading')
     expect(stubApi.lineage.graph).toHaveBeenCalledTimes(1)
     expect(stubApi.lineage.graph).toHaveBeenCalledWith({ folderId: '__main__' })
+    // 稳定外壳：同一工具栏在 loading 态在场
+    expect(host?.querySelector('[data-testid="lineage-mode-bar"]')).not.toBeNull()
+    for (const id of ['lineage-mode-edit', 'lineage-mode-browse', 'lineage-mode-focus']) {
+      const b = host?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)
+      expect(b, `${id} 在 loading 态可达`).not.toBeNull()
+      expect(b?.disabled).toBe(false)
+    }
+    // 画布占位宿主：lineage-timeline 在场、aria-busy=true、sr-only 文案
+    const timeline = host?.querySelector('[data-testid="lineage-timeline"]')
+    expect(timeline).not.toBeNull()
+    expect(timeline?.getAttribute('aria-busy')).toBe('true')
+    expect(timeline?.textContent).toBe('正在加载脉络图')
+    expect(timeline?.querySelector('.sr-only')?.textContent).toBe('正在加载脉络图')
+    // 删除可见教学式 loading 文案（占位宿主内只有 sr-only 文本节点）
+    expect(host?.querySelector('.tl-content'), 'loading 态不渲染画布内容层').toBeNull()
+    // 数据控件按 §2.3 禁用：保存/撤销/重做/编辑工具/缩放/清空聚焦
+    for (const id of ['lineage-save-btn', 'lineage-undo', 'lineage-redo', 'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in', 'lineage-focus-clear']) {
+      expect(host?.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)?.disabled, `loading：${id} 禁用`).toBe(true)
+    }
   })
 
-  it('[F-LGRAPH-01①U4] 编排重构：顶栏=模式栏（browse 缺省）+左侧导航窗格在场；顶栏并集切换器退役负锚（在场即红）；缺省图=库页上下文同步（未选=主图）', async () => {
+  it('[B5 §2.2 #23/§3.3] graph loading/error 只收 palette：不覆写 mode/focusSet（状态切换不清内存会话）', async () => {
+    useLineageViewStore.setState({ mode: 'focus', focusSet: ['A'] })
+    stubApi.lineage.graph.mockReturnValue(new Promise(() => undefined))
+    mount(<LineagePage />)
+    await flush()
+    expect(useLineageViewStore.getState().mode).toBe('focus')
+    expect(useLineageViewStore.getState().focusSet).toEqual(['A'])
+    expect(host?.querySelector('[data-testid="lineage-mode-focus"]')?.classList.contains('on')).toBe(true)
+  })
+
+  it('[B5 §3.3] 图名在工具栏槽位（folders 单源——主图兜底「主图」），不在模式栏内', async () => {
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
+    mount(<LineagePage />)
+    await flush()
+    const title = host?.querySelector('[data-testid="lineage-graph-title"]')
+    expect(title?.textContent).toBe('主图')
+    expect(title?.classList.contains('lg-graph-name')).toBe(true)
+    expect(host?.querySelector('[data-testid="lineage-mode-bar"]')?.contains(title as Node)).toBe(false)
+    expect(title?.closest('.lg-toolbar')).not.toBeNull() // 父工具栏槽位
+  })
+
+  it('[B5 §11.2 重挂记忆 mode] 页面卸载再挂载：mode 保持（原 P-1「二次进页 browse」锁翻转）', async () => {
+    stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
+    useLineageViewStore.setState({ mode: 'edit' })
+    mount(<LineagePage />)
+    await flush()
+    expect(host?.querySelector('[data-testid="lineage-mode-edit"]')?.classList.contains('on')).toBe(true)
+    act(() => {
+      root?.unmount()
+    })
+    root = null
+    host?.remove()
+    mount(<LineagePage />)
+    await flush()
+    expect(useLineageViewStore.getState().mode, '重挂后 mode 保持').toBe('edit')
+    expect(host?.querySelector('[data-testid="lineage-mode-edit"]')?.classList.contains('on')).toBe(true)
+    expect(host?.querySelector('[data-testid="lineage-mode-browse"]')?.classList.contains('on')).toBe(false)
+  })
+
+  it('[F-LGRAPH-01①U4] 编排重构：顶部=单排工具栏（内含模式栏，browse 缺省）+左侧导航窗格在场；顶栏并集切换器退役负锚（在场即红）；缺省图=库页上下文同步（未选=主图）', async () => {
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
     mount(<LineagePage />)
     await flush()
@@ -197,7 +265,7 @@ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () =
     // 退役行 1：顶部并集切换器（LineageGraphSwitcher）删除——负锚
     expect(host?.querySelector('[data-testid="lineage-graph-switcher"]')).toBeNull()
     expect(host?.querySelector('select[aria-label="脉络图切换"]')).toBeNull()
-    // 图名=模式栏右侧（folders 单源——主图兜底「主图」）
+    // 图名=工具栏槽位（folders 单源——主图兜底「主图」）
     expect(host?.querySelector('[data-testid="lineage-graph-title"]')?.textContent).toBe('主图')
     expect(useLineageStore.getState().folderId).toBe('__main__') // 库页未选文件夹=主图
   })
@@ -215,20 +283,23 @@ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () =
     // 负对照：未选态→主图（mount 前 state 复位由 beforeEach 承载——此处仅锁正路径分支；[F-ALIGN-01 D5] unfiled 筛选态已退役）
   })
 
-  it('[R6] 空态两分支：子图空图=「该文件夹无脉络图」提示在场；主图空图=不显示（通用空态承载）', async () => {
+  it('[B5 §3.3/§3.5 断言翻转] 空图两分支：主图空/子图空均不渲染「暂无脉络图」「该文件夹无脉络图」——画布在场（列表型空非错误）', async () => {
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
-    // 主图空：不显示该提示（「暂无脉络图」通用空态承载）
     mount(<LineagePage />)
     await flush()
     expect(useLineageStore.getState().folderId).toBe('__main__')
     expect(host?.textContent).not.toContain('该文件夹无脉络图')
-    expect(host?.textContent).toContain('暂无脉络图')
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content'), '主图空：画布在场').not.toBeNull()
     // 子图空：挂载后经导航窗格切图（挂载同步不覆盖用户/切图选择）
     act(() => {
       useLineageStore.getState().setFolder('f-x')
     })
     await flush()
-    expect(host?.textContent).toContain('该文件夹无脉络图') // 子图空=提示在场
+    expect(useLineageStore.getState().folderId).toBe('f-x')
+    expect(host?.textContent).not.toContain('该文件夹无脉络图') // 子图空=无文字
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content'), '子图空：画布在场').not.toBeNull()
   })
 
   it('ready：取数成功渲染节点真实文本（经 store 分发，时间线消费）', async () => {
@@ -240,26 +311,41 @@ describe('LineagePage —— 取数三态（lineage.store 数据单源）', () =
     expect(useLineageStore.getState().status).toBe('ready')
   })
 
-  it('ready 空图：空态文案（列表型空非错误）', async () => {
+  it('[B5 §3.3 断言翻转] ready 空图：画布在场、无空态文案（列表型空非错误）', async () => {
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
     mount(<LineagePage />)
     await flush()
-    expect(host?.textContent).toContain('暂无脉络图')
+    expect(host?.textContent).not.toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-timeline"]')).not.toBeNull()
   })
 
-  it('error：取数失败呈错误条+重试按钮；重试再取数成功恢复', async () => {
+  it('[B5 §3.3] graph load error：同一工具栏仍在；role=alert 含真实原因＋独立 lineage-load-retry（只调 load()，不复用保存/history 重试）；重试再取数成功恢复', async () => {
     stubApi.lineage.graph.mockRejectedValueOnce(new Error('db locked'))
     mount(<LineagePage />)
     await flush()
-    expect(host?.querySelector('[role="alert"]')?.textContent).toContain('脉络图加载失败')
-    const retry = host?.querySelector('button') as HTMLButtonElement
-    expect(retry.textContent).toBe('重试')
+    expect(useLineageStore.getState().status).toBe('error')
+    // 稳定外壳：同一工具栏在 error 态在场（模式/侧栏开关可用）
+    expect(host?.querySelector('[data-testid="lineage-mode-bar"]')).not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-nav-collapse"]')).not.toBeNull()
+    const alert = host?.querySelector('[role="alert"]')
+    expect(alert?.textContent).toContain('脉络图加载失败')
+    expect(alert?.textContent).toContain('db locked') // 真实原因
+    // 独立重试入口：lineage-load-retry；不是保存重试/history 重试
+    const retry = host?.querySelector<HTMLButtonElement>('[data-testid="lineage-load-retry"]')
+    expect(retry).not.toBeNull()
+    expect(retry?.textContent).toBe('重试')
+    expect(alert?.contains(retry as Node)).toBe(true)
+    expect(host?.querySelector('[data-testid="lineage-save-retry"]'), '不复用保存重试').toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-save-error"]'), 'graph load error 不与 write error 告警合并').toBeNull()
+    expect(host?.querySelector('.tl-content'), 'error 态不渲染画布内容层').toBeNull()
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: chain() })
     await act(async () => {
-      retry.click()
+      retry?.click()
     })
     await flush()
     expect(host?.textContent).toContain('扩散模型起点')
+    expect(host?.querySelector('[role="alert"]'), '恢复后告警消失').toBeNull()
     expect(stubApi.lineage.graph).toHaveBeenCalledTimes(2)
   })
 

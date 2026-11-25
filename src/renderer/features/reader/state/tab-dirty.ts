@@ -7,11 +7,11 @@
  * - 灰点（TabBar 灰点/rail 阅读器角标）= tab.unfinalized（U 轴单源——§10.1
  *   「TabBar 灰点直接读 tab.unfinalized」）；旧「annoDirty||notesPending 双净
  *   即无灰点」语义退役。IO 两信号（annotations 失败残留/notes pending）只作
- *   quitDirty 与状态条输入（IO 轴——U 不入，INV-22/INV-187）。
+ *   quitDirty 输入（IO 轴——U 不入，INV-22/INV-187；[B5 wave C] 状态条输入随整删退役）。
  * - useTabUnfinalizedAggregate：任一已打开 tab U=1 → true（rail 阅读器角标
  *   输入——App 组合根经 use-save-aggregates 消费）。
- * - useTabAutosaveSignals/useTabOpenCount：状态条自动保存槽的 IO 输入（只显示
- *   IO，不把灰点改成永久「待保存」——§10.1）。
+ * - useTabAutosaveSignals：quitDirty 的 IO 输入（use-save-aggregates 消费——只算
+ *   IO，不把灰点改成永久「待保存」——§10.1）；useTabOpenCount：现无消费方（驻留导出）。
  * - switchTabFlushFirst：切 tab 离场篇 fire-first 立存（§2.5 #31——两 tab 栈
  *   均不动；R1 语义原样）。
  *
@@ -47,16 +47,17 @@ export function useTabUnfinalizedAggregate(): boolean {
   return useReaderStore((s) => s.order.some((id) => s.tabs[id]?.unfinalized === true))
 }
 
-/** [T3-U1] 已打开 tab 数（响应式）——状态条自动保存槽的「可写面在场」判定
- *  源（App 组合根聚合注入 StatusBar；与 useTabUnfinalizedAggregate 同源订阅
- *  order，App 经本 reader 域 facade 取 tab 面，不直引 reader.store） */
+/** [T3-U1] 已打开 tab 数（响应式）——[B5 wave C 2026-11-25] 原消费方=状态条自动保存槽的
+ *  「可写面在场」判定（App 组合根聚合注入 StatusBar），随 App 底部状态条整删（用户裁决）
+ *  退役；导出按用户裁决驻留不改（useTabUnfinalizedAggregate 同源订阅 order——App 经本
+ *  reader 域 facade 取 tab 面，不直引 reader.store），现无消费方。 */
 export function useTabOpenCount(): number {
   return useReaderStore((s) => s.order.length)
 }
 
 /**
- * [T3-U1 回炉 R2/W3 终裁→B4-A R2] tab IO 双源分档（响应式）——状态条自动
- * 保存槽/quitDirty 的 IO 输入（§10.1：只显示 IO；U 不入）：
+ * [T3-U1 回炉 R2/W3 终裁→B4-A R2] tab IO 双源分档（响应式）——quitDirty 的
+ * IO 输入（§10.1：U 不入；[B5 wave C] 原状态条自动保存槽消费方随状态条整删）：
  * - annoDirty：annotations 面 api 失败残留（TabState.dirty——真失败）→failed 档
  * - notePending：notes 面 pendingEdit 镜像（edit 置 true/save 成功清/失败不动
  *   =在途+失败混合，防抖窗常 true）→saving 档

@@ -1,9 +1,10 @@
 /* [F-LGRAPH-01①] 模式栏+导航窗格样式域（自 theme-lineage.css 拆出
    2026-10-01：CSS 文件 450 行上限——脉络域样式分域拆件；本件=U3 模式栏
-   +U4 导航窗格+U5 三模式行为闸三段）*/
+   +U4 导航窗格+U5 三模式行为闸三段）
+   [B5 设计稿 §3.1/§3.4/§4.1——wave C 2026-11-25] 增工具栏左右栏开关组；图名皮肤保留
+   （图名节点由父工具栏承载——mono 小字）；删空 rail 与窗格头部。 */
 /* [F-LGRAPH-01①U3] 模式栏（mockup §3.1）：三键 segmented——当前态 accent
-   底白字（.on）；聚焦计数角标=accent-soft chip；图名=mono 小字右挂 */
-
+   底白字（.on）；聚焦计数角标=accent-soft chip；图名=mono 小字（工具栏槽位） */
 .lg-modebar {
   display: flex;
   align-items: center;
@@ -45,7 +46,10 @@
 }
 
 /* [F-LGRAPH-01①U4] 左侧导航窗格（Word 导航窗格式——mockup §3.2）：宽 208
-   缺省/右缘手柄拖动调宽 160–320（hover accent+ew-resize）/收起态 40px 窄条 */
+   缺省/右缘手柄拖动调宽 160–320（hover accent+ew-resize）。
+   [B5 设计稿 §3.4——wave C 2026-11-25 侧栏单态] 原窗格头部（.nav-head/.nav-title）、收起态 40px
+   窄条（.lineage-nav.collapsed）与窗格内收起/展开双钮皮肤随方案切换删除：收起态=窗格
+   display:none 零占位（内联承载），开关=工具栏 LineagePaneToggles（公共钮款 .collapse-btn）。 */
 .lineage-nav {
   position: relative;
   display: flex;
@@ -55,16 +59,6 @@
   background: var(--panel);
   overflow: hidden;
 }
-.lineage-nav.collapsed { align-items: center; padding-top: 8px; }
-/* [F-UIRES-04 批 3d D8] nav 双钮视觉款已迁出→theme-buttons.css .collapse-btn
-   （公共钮系——侧板收起钮同款；语义类挂点不动） */
-.nav-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-}
-.nav-title { font-size: var(--fs-tl-hint); color: var(--dim); letter-spacing: 0.06em; }
 /* 图/文件夹下拉（窗格顶）：当前图名+▾；展开=文件夹平铺列表 */
 .nav-graph { position: relative; padding: 0 10px 6px; }
 .nav-graph-btn {
@@ -163,9 +157,16 @@
 .nav-resize-handle:hover { background: var(--accent); }
 
 /* [F-LGRAPH-01①U5] 三模式画布行为闸：browse/focus 平移小手（grab/grabbing
-   ——.mode-browse/.mode-focus 基态 grab+.panning 中 grabbing；edit 不平移）
-   +P-8 聚焦视觉=仅被点卡 accent 边框（多卡独立标记） */
+   ——.mode-browse/.mode-focus 基态 grab+.panning 中 grabbing；edit 不平移）。
+   [B5 设计稿 §4.1——wave C 2026-11-25] 聚焦视觉无 dim：仅 focus 模式对 focusSet 本集卡用 2px
+   accent outline、offset 1px（.focused 由调用方按模式门控——edit/browse 保留 focusSet 数据
+   但不挂本类）；非聚焦卡不加透明度；全亮验收须在无拖拽、无错峰 fade、无 hover 的基态读
+   computed opacity。 */
 .timeline.mode-browse, .timeline.mode-focus { cursor: grab; }
 .timeline.panning { cursor: grabbing; } /* [R13] 同特异性(0,2,0)靠源序胜 mode-*（无 !important） */
 .timeline.panning .tl-card { cursor: grabbing; }
 .tl-card.focused { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* ══ [B5 设计稿 §3.1/§3.4——wave C 2026-11-25] 工具栏侧栏开关（模式栏末段之后的左右栏开关组）══
+   margin-left:auto：宽视口下开关靠轨道右缘（1280 下轨道右缘=页面内容右缘）；轨道横滚时无富余
+   空间，自动失效——开关紧随图名，仍可编程滚到最右后真实点击（§3.2）。 */
+.lg-pane-toggles { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }

@@ -22,7 +22,7 @@
  * ── 接口层 ──
  * - export const useWorkspaceStore / selectCurrentName（当前课题名推导 helper）
  * - [F-WS-02] isGuideState / selectDisplayWsName / WS_GUIDE_LABEL（默认课题
- *   引导态判定与显示名推导——INV-87；rail 标签/状态条消费）
+ *   引导态判定与显示名推导——INV-87；rail 标签消费[B5 C 2026-11-25 状态条消费面整删退役]）
  *
  * ── 架构层 ──
  * - 只 import api/client 与 shared 模型；禁止 import 组件
@@ -80,7 +80,7 @@ export function selectCurrentName(s: Pick<WorkspaceStore, 'items' | 'currentId'>
 
 // ── [F-WS-02] 默认课题引导态（INV-87——D2 批语「默认课题显示为待选择」）──
 /** 引导态显示名（三条件成立时的课题名显示位取值；管理页卡片显示实名不受
- *  此影响——本页外显示位=rail 标签/状态条） */
+ *  此影响——本页外显示位=rail 标签） */
 export const WS_GUIDE_LABEL = '待选择'
 
 /** 引导态三条件判定（纯推导无独立存储）：当前课题=default ∧ paperCount=0
@@ -97,7 +97,7 @@ export function isGuideState(s: Pick<WorkspaceStore, 'items' | 'currentId'>): bo
   )
 }
 
-/** 课题名显示位推导（rail 标签/状态条消费）：引导态=待选择，否则当前实名；
+/** 课题名显示位推导（rail 标签消费）：引导态=待选择，否则当前实名；
  *  无当前课题=空串（调用方各自兜底） */
 export function selectDisplayWsName(s: Pick<WorkspaceStore, 'items' | 'currentId'>): string {
   return isGuideState(s) ? WS_GUIDE_LABEL : selectCurrentName(s)

@@ -11,6 +11,8 @@
  *   content 会拉伸填满包裹盒→尺寸互撑反馈=React #185 无限重渲染（e2e 探针
  *   实证）。RO 跟随内容布局变化；jsdom 无 RO=逐渲染量测兜底。
  * - 100%=零变换（style.transform 空——基线无扰动）。
+ * - [B5 设计稿 §4.2/§10.2——wave C 2026-11-25] 返回面的 percent（原供右下角缩放角标件）
+ *   随角标退役删除——百分比复位钮=工具栏 LineageZoomControls 自读 view.store zoom；ctrl+滚轮保留。
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { useLineageViewStore } from './lineage-view.store'
@@ -29,8 +31,6 @@ export function useTimelineZoom(args: {
   contentStyle: CSSProperties
   /** .tl-zoom-spacer 内联样式（绝对定位宽高=自然尺寸×z——撑滚动域） */
   spacerStyle: CSSProperties
-  /** 当前百分比文本（角标——Math.round(z*100)） */
-  percent: number
 } {
   const z = useLineageViewStore((s) => s.zoom)
   const naturalRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
@@ -78,7 +78,6 @@ export function useTimelineZoom(args: {
     spacerStyle:
       z !== 1 && n.w > 0
         ? { position: 'absolute', left: 0, top: 0, width: n.w * z, height: n.h * z, pointerEvents: 'none' }
-        : {},
-    percent: Math.round(z * 100)
+        : {}
   }
 }

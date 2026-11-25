@@ -24,7 +24,6 @@ import type { TimelineYearGroup } from './lineage-timeline'
 import type { EdgeGeomInput, RoutedPath } from './lineage-routing'
 import { commitEdgeVia } from './edge-via-commit'
 import { edgeVisualOpacity, edgeVisualStyle, pinOf } from './edge-overlay-geom'
-import { isEdgeDimmed } from './focus-bright'
 import { useLineageRoutes } from './use-lineage-routes'
 import { useEdgeEdit } from './use-edge-edit'
 import { EdgeHitLayer, type BrowseEdgeHover } from './EdgeHitLayer'
@@ -42,13 +41,9 @@ export function EdgeOverlay(props: {
   /** [T3-P8] 拖起态连线层淡化（mockup .dimmed opacity .18——飞行脱节已知
    *  限制的掩盖面：拖起期挂起路由重算，布局终局单次重算，不帧随动） */
   dimmed?: boolean
-  /** [②U7/P-18] 聚焦 dim 激活（根类 .dimmed-focus 态标记；集空由容器不挂）；
-   *  [F-VISFB-21 C4] 逐径 dim 判定集=brightIds——两端均非 bright 才 dim（至
-   *  少一端 bright 常亮）；缺省（独立渲染无判定集）回落全 dim 沿承 */
-  focusDim?: boolean
-  /** [F-VISFB-21 C4] bright 集（focus∪双向一度邻接——宿主 LineageTimeline
-   *  自 focus-bright 单源传入；focusDim 激活时随附） */
-  brightIds?: ReadonlySet<string> | null
+  /** [B5 §4.1] focus 模式交互信号：驱动命中层 hoverScan（document pointermove 数学命中）。
+   *  与聚焦集是否为空无关；不承载任何视觉 dim（原聚焦 dim 开关与 bright 判定集入参随无 dim 退役） */
+  focusMode?: boolean
   /** [T3-P7B] 命中层点击（Timeline 接 composer——handler 闸与 CSS
    *  pointer-events 双闸；React MouseEvent 结构兼容 ClickEventLike） */
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
@@ -79,7 +74,9 @@ export function EdgeOverlay(props: {
   // 门在 JSX：空线名零展示面）
   const [browseHover, setBrowseHover] = useState<BrowseEdgeHover | null>(null)
   const handleBrowseHover = useCallback((h: BrowseEdgeHover | null): void => setBrowseHover(h), [])
-  const focused = props.focusDim === true
+  // [B5 设计稿 §4.1/§4.2 第 3 条——wave C 2026-11-25 断言翻转] 无 dim：原「聚焦 dim 激活」开关（兼任
+  // hoverScan 开关）退役；focusMode=focus 模式交互信号（只驱动 hover 扫描——空集也可 hover）
+  const focusMode = props.focusMode === true
   // 端点在场的边才路由（写过渡态悬空边不渲染——nodes=防御消费面）
   const live = useMemo(() => {
     const ids = new Set(props.nodes.map((n) => n.id))
@@ -155,13 +152,7 @@ export function EdgeOverlay(props: {
   return (
     <>
     <svg
-      className={
-        props.dimmed === true
-          ? 'tl-edges dimmed'
-          : props.focusDim === true
-            ? 'tl-edges dimmed-focus'
-            : 'tl-edges'
-      }
+      className={props.dimmed === true ? 'tl-edges dimmed' : 'tl-edges'}
       ref={svgRef}
       data-testid="tl-edges"
     >
@@ -175,24 +166,15 @@ export function EdgeOverlay(props: {
         const e = edgeById.get(p.edgeId)
         if (e === undefined) return null
         const selected = edit.state.phase !== 'idle' && edit.state.edgeId === p.edgeId
-        // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）
-        const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focused)
-        // [F-VISFB-21 C4] 逐径 dim 判定：两端均非 bright 才 dim（至少一端
-        // bright 常亮——判定集=brightIds；缺省回落全 dim=独立渲染防御面）
-        const dimmed = focused && (props.brightIds == null || isEdgeDimmed(e, props.brightIds))
-        // [RR10] hovered 回升 0.65 并入 inline（单源 edge-overlay-geom
-        //  edgeVisualOpacity；dim 态恒类承载）
-        const opacity = edgeVisualOpacity({ hovered, focusDim: dimmed })
+        // [RR5] hovered 联动扩 focus 态（P-12/P-18 定案含线——scan 驱动）；[B5 设计稿 §4.1——wave C
+        // 2026-11-25] focus 态边 hoverScan 改由独立 focusMode 信号驱动（与聚焦集是否为空无关——
+        // 原「聚焦 dim 激活兼任开关」随无 dim 退役）
+        const hovered = hoveredEdgeId === p.edgeId && !selected && (props.editEnabled === true || focusMode)
+        // [RR10] hovered 回升 0.65 并入 inline（单源 edge-overlay-geom edgeVisualOpacity——
+        // [B5 §4.2 第 4 条] 聚焦 dim 入参删除：保留 fade/hovered 两支）
+        const opacity = edgeVisualOpacity({ hovered })
         const visual = opacity === undefined ? edgeVisualStyle(e) : { ...edgeVisualStyle(e), opacity }
-        const cls = selected
-          ? 'tl-edge selected'
-          : hovered
-            ? dimmed
-              ? 'tl-edge dim hovered'
-              : 'tl-edge hovered'
-            : dimmed
-              ? 'tl-edge dim'
-              : 'tl-edge'
+        const cls = selected ? 'tl-edge selected' : hovered ? 'tl-edge hovered' : 'tl-edge'
         return (
           <g key={p.edgeId}>
             <path
@@ -222,7 +204,7 @@ export function EdgeOverlay(props: {
       hostRef={svgRef}
       onEdgeHitClick={props.onEdgeHitClick}
       onHoverChange={handleHoverChange}
-      hoverScan={focused}
+      hoverScan={focusMode}
       browseScan={props.browseScan === true}
       onBrowseHover={handleBrowseHover}
     />

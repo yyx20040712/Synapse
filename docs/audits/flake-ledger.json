@@ -167,12 +167,12 @@
     {
       "spec": "tests/e2e/smoke.spec.ts",
       "case": "frameless 标题栏：自绘三键可见可交互 + drag/no-drag 区域正确（R2-SH3）（:116）",
-      "count": 14,
+      "count": 18,
       "fingerprint": "同值型稳定（:148 expect.poll BrowserWindow.isMaximized 5s 轮询恒收 false——Expected true/Received false，X11 WM 最大化面）；五数据点同指纹=U6 批 executor 全量红+定向复跑红+基线 worktree 红（自述未留档）+probe 主树全量红+基线树 worktree@57b442ea 无 U6 diff 复现红（档内四数据点——U6 diff 致病排除，21 件 diff 零窗口/标题栏/main 接触面）",
       "status": "filed",
       "first_seen": "2026-10-14",
       "resolution": "2026-10-14 排查场定谳（runId=20261014-flk3，票 F-E2EFLK-03 环境登记翻 done）：深夜 automation 窗环境级稳定红、白天窗绿——白天定向+全量双跑两票用例绿+CI windows-latest 4 run 本用例绿；guest 环境假设全排除（同 FLK-02 条）；翻转窗实测 03:21 绿→06:00 红；判读口径同 FLK-02 条",
-      "note": "；[F-VISFB-67 批追记 2026-10-19] 本地 xvfb 再 8 现同指纹（isMaximized poll Expected true/Received false@:148——时间戳批档 20261019-fvisfb67-impl §6-R4），改前对照同红+CI 历绿=本地环境面（xvfb maximize 语义）；历史 5+本批 8=13 已过立案线，并入 F-E2EFLK-01 待根治承接（勘误：本批 gate2 probe 曾误跑 :13 侧栏例，「标题栏本跑未复现」作废——批档勘误在录）；〔B5-B 批追记 2026-11-25〕主控本地全量 e2e（xvfb-run -a 私有 XDG_CONFIG_HOME）1 现同指纹（:148 同值 Expected true/Received false），余 189 例全绿；本批 diff（35 改＋7 新）零窗口/标题栏/main 接触面（App.tsx 纯注释已核）——沿 F-E2EFLK-01 环境面口径，不另立案"
+      "note": "；[F-VISFB-67 批追记 2026-10-19] 本地 xvfb 再 8 现同指纹（isMaximized poll Expected true/Received false@:148——时间戳批档 20261019-fvisfb67-impl §6-R4），改前对照同红+CI 历绿=本地环境面（xvfb maximize 语义）；历史 5+本批 8=13 已过立案线，并入 F-E2EFLK-01 待根治承接（勘误：本批 gate2 probe 曾误跑 :13 侧栏例，「标题栏本跑未复现」作废——批档勘误在录）；〔B5-B 批追记 2026-11-25〕主控本地全量 e2e（xvfb-run -a 私有 XDG_CONFIG_HOME）1 现同指纹（:148 同值 Expected true/Received false），余 189 例全绿；本批 diff（35 改＋7 新）零窗口/标题栏/main 接触面（App.tsx 纯注释已核）——沿 F-E2EFLK-01 环境面口径，不另立案；〔B5-C 批追记 2026-11-25〕executor 全量 run 2 现＋单例复跑 1 现同指纹（:148 同值 isMaximized Expected true/Received false），共 3 现（14→17）；主控收尾全量复跑再 1 现同指纹（→18，余 203 例全绿）；本批 diff＝渲染层 UI（零窗口/标题栏/main 接触面）——沿 F-E2EFLK-01 环境面口径，不另立案；档＝synapse-archive 20261125-b5/wave-c/"
     },
     {
       "spec": "tests/e2e/lineage.spec.ts",
@@ -297,8 +297,8 @@
     {
       "date": "2026-11-24",
       "spec": "library-explorer.spec.ts:196 S5b-2",
-      "count": 1,
-      "cause": "启动挂起型首现（全量 run1）：用例跑满 90s＋worker teardown 90s，非断言红；单例重跑 3 次全过。定性＝既有应用启动挂起，HEAD 可复现（300 遍挂 2 次）；根因未定，立案＝F-E2EHANG-01；明细＝b4b-accept3/controller-log.md §8"
+      "count": 2,
+      "cause": "启动挂起型首现（全量 run1）：用例跑满 90s＋worker teardown 90s，非断言红；单例重跑 3 次全过。定性＝既有应用启动挂起，HEAD 可复现（300 遍挂 2 次）；根因未定，立案＝F-E2EHANG-01；明细＝b4b-accept3/controller-log.md §8；〔B5-C 批追记 2026-11-25〕executor 其余 32 spec 单进程 run 再 1 现同签名（90s 超时，非断言红），单例复跑 6/6 绿（1→2）；本批 diff＝渲染层 UI，与启动链零接触——归 F-E2EHANG-01 既有立案，档＝synapse-archive 20261125-b5/wave-c/"
     },
     {
       "date": "2026-11-24",

@@ -1,11 +1,13 @@
 /* [F-LGRAPH-01②U4] 脉络详情面板族（自 theme-lineage.css 分域拆件——check-quality
    450 行红线；A5/P-16 常驻栏位宽 252+详情域收编——星标禁用呈现/期刊 IF 被引
-   徽章/底部注记双击跳阅读器） */
+   徽章/底部注记双击跳阅读器）。
+   [B5 设计稿 §3.4/§3.5——wave C 2026-11-25] 删侧栏 rail 死样式与教学脚注行皮肤；其余卡/侧板皮肤不动。 */
 /* 检查面板（mockup .lg-inspector 族 L264-281——重皮肤结构性改造：既有
    testid/数据面/行为面全保活，容器仍驻 LineageSidePanel 玻璃底）；
    [F-LGRAPH-01②U4/A5] 常驻栏位宽 252（P-16——面板常驻不收）；
-   [F-UIRES-03 B4③] 252 保留为无 JS 回退——JS 态宽=LineagePage aside 行内
-   style 承载（useSidebarPane 拖拽 200–480+持久），面板根行内 width:100% 直通 */
+   [F-UIRES-03 B4③] 252 保留为无 JS 回退——JS 态宽=LineageAsideHost aside 行内
+   style 承载（useSidebarPane 拖拽 200–480+持久；[B5 设计稿 §3.4 wave C] 收起态=宿主零 DOM，
+   原 48px 窄条 rail 皮肤与面板底部教学脚注行皮肤随方案切换删除），面板根行内 width:100% 直通 */
 .lg-inspector { width: 252px; }
 /* [F-UIRES-03 B4③] aside 右缘 4px 调宽手柄（cursor col-resize——票面钉死；
    hover accent 提示=nav-resize-handle 先例同族） */
@@ -22,26 +24,6 @@
 /* [F-UIRES-03 B5②] 键盘焦点可见（APG separator tabIndex=0 补位——原仅 hover
    提示无 :focus 面；焦点态=hover 同款 accent 提示） */
 .lg-side-resizer:focus-visible { background: var(--accent); outline: none; }
-/* [F-UIRES-03 B4③] 收起态 48px 窄条（点击任意处展开——钮承载全条点击面）：
-   竖排「详情」+展开 chevron，底/左描边对齐面板玻璃语汇 */
-.lg-side-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 100%;
-  padding-top: 10px;
-  font-family: inherit;
-  font-size: var(--fs-tl-hint);
-  color: var(--dim);
-  background: var(--panel);
-  border: 0;
-  border-left: 1px solid var(--line);
-  cursor: pointer;
-}
-.lg-side-rail:hover { color: var(--accent); }
-.lg-side-rail-label { writing-mode: vertical-rl; letter-spacing: 4px; }
 .panel-star {
   display: inline-flex;
   align-items: center;
@@ -106,7 +88,6 @@
 .sec-cap::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
 /* 后置章虚线徽标（mockup L311——--fs-nano 值源；原 library.css .lib-postpone 同族——该侧已随 F-LIBUI-01 ⑤ 退役，本侧脉络检查面板自用） */
 .postpone { font-size: var(--fs-nano); color: var(--faint); border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; letter-spacing: 1px; }
-.insp-foot { margin-top: auto; padding-top: 9px; border-top: 1px solid var(--line-soft); font-size: var(--fs-tl-hint); color: var(--faint); }
 /* ══ [F-LGRAPH-01②U4] 卡三层族（mockup §3.4 二轮定案——L1 高 18 星标+标签+
    骑缝号/L2 题名两行 9.3px/L3 高 12 期刊+IF+被引；旧 .c-head/.c-idea/.c-meta/
    .mb core 样式族随三层重整退役——退役行 8/9，方案切换=删旧）══

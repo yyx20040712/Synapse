@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 /**
  * [T3-P2] App 壳渲染锁——38px 顶栏（wordmark 签名+gsearch 居中+caption 三键）
- * +72px 窄轨（课题/下载+四视图）+课题弹层联动+26px 状态条。
+ * +72px 窄轨（课题/下载+四视图）+课题弹层联动。
+ * [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原「26px 状态条
+ * 真文本」describe（课题名/篇数/脉络计数/已选/主题名两例）随状态条删除；壳层网格
+ * 同步由三行翻两行（形态锁=theme.test.ts）。
  *
  * 设计真相源=docs/design/2026-09-26_theme-trio-final-design.md §1（应用壳全规格）
  * +视觉基准=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段。
@@ -240,7 +243,7 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
     })
     await flush()
     expect(stubApi.workspaces.switch).toHaveBeenCalledWith({ id: 'w2' })
-    expect(reloadSpy, '切换成功即 reload（侧栏短名/状态条课题名 reload 后自新）').toHaveBeenCalledTimes(1)
+    expect(reloadSpy, '切换成功即 reload（侧栏短名 reload 后自新）').toHaveBeenCalledTimes(1)
   })
 
   it('页内点选当前课题卡：幂等零 IPC 零 reload（确认语义不空切）', async () => {
@@ -337,44 +340,6 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
     // Array.from 码点切：前 4 码点=💧+水+质+孪（UTF-16 slice 会截出孤立代理 U+D83D）
     expect(label).toBe('💧水质孪')
     expect(label, '无孤立代理对（渲染替换符防线）').not.toContain('\uFFFD')
-  })
-})
-
-describe('T3-P2 状态条——26px 真文本（课题名/篇数/脉络计数/已选/主题名）', () => {
-  it('默认态：课题 默认课题 · 3 篇｜脉络 0 节点 / 0 连线｜已选 0｜主题：正常模式', async () => {
-    mount(<App />)
-    await flush()
-    const bar = document.querySelector('footer.app-statusbar')
-    expect(bar, 'footer.app-statusbar 在场').not.toBeNull()
-    expect(bar!.textContent).toContain('课题 默认课题 · 3 篇')
-    expect(bar!.textContent).toContain('脉络 0 节点 / 0 连线')
-    expect(bar!.textContent).toContain('已选 0')
-    expect(bar!.textContent).toContain('主题：正常模式')
-    expect(bar!.querySelector('.sep'), '弹性分隔 .sep 在场').not.toBeNull()
-  })
-
-  it('计数随 store 变化沿：脉络 nodes/edges 与已选 1 反映到真文本', async () => {
-    mount(<App />)
-    await flush()
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useLineageStore.setState({
-        nodes: [{ id: 'n1' }, { id: 'n2' }] as never,
-        edges: [{ id: 'e1' }] as never
-      })
-    })
-    const { useLibraryStore } = await import('../../../src/renderer/features/library/library.store')
-    act(() => {
-      useLibraryStore.setState({ selectedId: 'p1' })
-    })
-    await flush()
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '脉络计数=store nodes/edges 长度').toContain('脉络 2 节点 / 1 连线')
-    expect(bar.textContent, '已选=selectedId 0/1').toContain('已选 1')
-    act(() => {
-      useLineageStore.setState({ nodes: [], edges: [] })
-      useLibraryStore.setState({ selectedId: null })
-    })
   })
 })
 

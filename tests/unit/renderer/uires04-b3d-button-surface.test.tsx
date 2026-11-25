@@ -4,12 +4,18 @@
  * 收起钮）+W2 btn-std 设置页统一（jsdom 习语=ai-manage-tabs.test.tsx：
  * createRoot+act+makeApiStub 工厂，always-active 裸 describe——K3）。
  *
- * 锁三面（语义类/testid/aria 全零动——纯视觉类追加的防回退锁）：
- * ①侧板收起钮 className 含 collapse-btn+side-collapse-btn+syn-icon-btn
- *   三类并挂+testid 不变+onCollapse 行为链在席；
- * ②nav 展开钮/收起钮均 collapse-btn 双挂+各自语义类在席+收起→展开往返；
+ * [B5 设计稿 §3.4/§11.4「uires04-b3d-button-surface:206-230 断言翻转」——wave C 2026-11-25]
+ * ①②两例随侧栏单态迁移：原窗格内收起钮/展开钮（SideCapRow 收起钮、NavPane 头部收起钮与窄条
+ * 展开钮）退役，开关迁驻工具栏 LineagePaneToggles（页面组合层 use-lineage-pane-controls 驱动）；
+ * 公共钮类 collapse-btn/syn-icon-btn、SVG、sr-only/可访问名与真实往返保留为锁面，语义类
+ * side-collapse-btn/nav-collapse-btn/nav-expand-btn 随窗格内双钮退役（零消费类名同删）。
+ *
+ * 锁三面：
+ * ①侧栏开关迁工具栏：SideCapRow 内收起钮零在场；工具栏右栏开关 collapse-btn+syn-icon-btn
+ *   并挂+testid lineage-sidebar-collapse+点击使受控 sidebar.collapse 生效；
+ * ②左栏工具栏动态开关 collapse-btn+syn-icon-btn 并挂+收起→展开真实往返；
  * ③设置页 11 处异形钮改挂 btn-std（tab 三钮/一键装技能/记忆面六钮/取消任务/
- *   取消置顶），tab 钮 role/aria-selected 语义零动。
+ *   取消置顶），tab 钮 role/aria-selected 语义零动（原样保留）。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -35,6 +41,8 @@ stubApiEvents({
 
 import { SideCapRow } from '../../../src/renderer/features/lineage/SideCapRow'
 import { LineageNavPane } from '../../../src/renderer/features/lineage/LineageNavPane'
+import { LineagePaneToggles } from '../../../src/renderer/features/lineage/LineagePaneToggles'
+import { useLineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { ZcodeLinkSection } from '../../../src/renderer/features/settings/ZcodeLinkSection'
 import { AiManageSection } from '../../../src/renderer/features/ai/manage/AiManageSection'
 import { useAiMemoryStore } from '../../../src/renderer/features/ai/aiMemoryStore'
@@ -131,6 +139,17 @@ function mount(node: JSX.Element): void {
   })
 }
 
+/** [B5 §3.4] 页面组合层同构 harness：一个钩子实例喂工具栏开关与窗格 */
+function PaneHarness(): JSX.Element {
+  const panes = useLineagePaneControls()
+  return (
+    <>
+      <LineagePaneToggles navCollapsed={panes.navCollapsed} onToggleNav={panes.toggleNav} sidebar={panes.sidebar} />
+      <LineageNavPane />
+    </>
+  )
+}
+
 async function settle(): Promise<void> {
   await act(async () => {
     await Promise.resolve()
@@ -203,30 +222,57 @@ afterEach(() => {
 })
 
 describe('[F-UIRES-04 批 3d] 公共钮系挂载面——collapse-btn 双挂+btn-std 设置页统一', () => {
-  it('①侧板收起钮：collapse-btn+side-collapse-btn+syn-icon-btn 三类并挂+testid 不变+onCollapse 链在席', () => {
-    const onCollapse = vi.fn()
-    mount(<SideCapRow node={capNode} pubNo={1} onCollapse={onCollapse} />)
+  it('①[B5 §3.4 断言翻转] 侧栏开关迁工具栏：SideCapRow 内收起钮零在场；工具栏右栏开关 collapse-btn+syn-icon-btn 并挂+testid 不变+点击走受控 sidebar.collapse', () => {
+    mount(<SideCapRow node={capNode} pubNo={1} />)
+    expect(host?.querySelector('[data-testid="lineage-sidebar-collapse"]'), 'SideCapRow 内旧收起钮退役').toBeNull()
+    expect(host?.querySelector('.side-collapse-btn'), '语义类 side-collapse-btn 随窗格内收起钮退役').toBeNull()
+    const sidebar = {
+      width: 252,
+      collapsed: false,
+      onResizeStart: () => undefined,
+      onResizeKey: () => undefined,
+      collapse: vi.fn(),
+      expand: vi.fn()
+    }
+    act(() => { root?.unmount() })
+    root = null
+    host?.remove()
+    mount(<LineagePaneToggles navCollapsed={false} onToggleNav={() => undefined} sidebar={sidebar} />)
     const btn = host?.querySelector('[data-testid="lineage-sidebar-collapse"]')
-    expectClasses(btn, 'collapse-btn', 'side-collapse-btn', 'syn-icon-btn')
+    expectClasses(btn, 'collapse-btn', 'syn-icon-btn')
+    expect(btn?.querySelector('svg'), '开关含 svg').not.toBeNull()
     ;(btn as HTMLButtonElement).click()
-    expect(onCollapse).toHaveBeenCalledTimes(1)
+    expect(sidebar.collapse, '点击=受控收起').toHaveBeenCalledTimes(1)
+    expect(sidebar.expand).not.toHaveBeenCalled()
+    // 收起态：同一位置翻为展开开关（同一可访问名族）
+    act(() => { root?.unmount() })
+    root = null
+    host?.remove()
+    mount(<LineagePaneToggles navCollapsed={false} onToggleNav={() => undefined} sidebar={{ ...sidebar, collapsed: true }} />)
+    const expandBtn = host?.querySelector('[data-testid="lineage-sidebar-expand"]')
+    expectClasses(expandBtn, 'collapse-btn', 'syn-icon-btn')
+    ;(expandBtn as HTMLButtonElement).click()
+    expect(sidebar.expand, '点击=受控展开').toHaveBeenCalledTimes(1)
   })
 
-  it('②nav 双钮：收起/展开两钮均 collapse-btn 双挂+语义类在席；收起→展开往返', async () => {
-    mount(<LineageNavPane />)
+  it('②[B5 §3.4 断言翻转] 左栏工具栏动态开关：collapse-btn+syn-icon-btn 并挂；收起→展开往返（原窗格内 nav 双钮退役）', async () => {
+    mount(<PaneHarness />)
     await settle()
     const collapseBtn = host?.querySelector('[data-testid="lineage-nav-collapse"]')
-    expectClasses(collapseBtn, 'collapse-btn', 'nav-collapse-btn', 'syn-icon-btn')
-    // 收起→窄条展开钮在席（同款双挂）
+    expectClasses(collapseBtn, 'collapse-btn', 'syn-icon-btn')
+    expect(host?.querySelector('[data-testid="lineage-nav-pane"] button[data-testid="lineage-nav-collapse"]'), '窗格内收起钮退役').toBeNull()
+    // 收起→工具栏展开开关在席（同款双挂）
     ;(collapseBtn as HTMLButtonElement).click()
     await settle()
     const expandBtn = host?.querySelector('[data-testid="lineage-nav-expand"]')
-    expectClasses(expandBtn, 'collapse-btn', 'nav-expand-btn', 'syn-icon-btn')
+    expectClasses(expandBtn, 'collapse-btn', 'syn-icon-btn')
     expect(host?.querySelector('[data-testid="lineage-nav-collapse"]'), '收起态收起钮退场').toBeNull()
+    expect(useLineageViewStore.getState().navCollapsed).toBe(true)
     // 展开往返→收起钮回归
     ;(expandBtn as HTMLButtonElement).click()
     await settle()
-    expectClasses(host?.querySelector('[data-testid="lineage-nav-collapse"]'), 'collapse-btn', 'nav-collapse-btn', 'syn-icon-btn')
+    expectClasses(host?.querySelector('[data-testid="lineage-nav-collapse"]'), 'collapse-btn', 'syn-icon-btn')
+    expect(useLineageViewStore.getState().navCollapsed).toBe(false)
   })
 
   it('③a 设置页 Tab 三钮：btn-std 挂载+role/aria-selected 语义零动（点击切换）', async () => {

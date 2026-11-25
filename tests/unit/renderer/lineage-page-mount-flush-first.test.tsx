@@ -131,7 +131,7 @@ afterEach(() => {
 })
 
 describe('目标=当前 ∧ ready ∧ needsReload=0：零 graph IPC（不论图是否为空）', () => {
-  it('ready 空图（无节点无边无笔记）同图返回：零 graph IPC，空态文案照常渲染', async () => {
+  it('ready 空图（无节点无边无笔记）同图返回：零 graph IPC，画布照常渲染（[B5 §3.5] 空态文案已删——任务书 §11 漏列件，最小翻转）', async () => {
     stubApi.lineage.graph.mockResolvedValue({ ok: true, data: { nodes: [], edges: [] } })
     mount()
     await flush()
@@ -142,7 +142,8 @@ describe('目标=当前 ∧ ready ∧ needsReload=0：零 graph IPC（不论图�
     mount()
     await flush()
     expect(graphCalls(), 'ready 空图=既有会话，返回不双取（§8.3）').toEqual([])
-    expect(host?.textContent).toContain('暂无脉络图')
+    expect(host?.querySelector('.tl-content'), '空图画布在场（「暂无脉络图」随 B5 §3.5 删除）').not.toBeNull()
+    expect(host?.textContent).not.toContain('暂无脉络图')
   })
 
   it('只有悬浮笔记的 ready 图同图返回：零 graph IPC，笔记真实文本仍渲染', async () => {

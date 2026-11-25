@@ -9,7 +9,8 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 
 /**
  * [F-FOLDER-02·F/S4/G④] lineage-topic-node e2e —— 图绑定三面（历史名沿承）：
- * ②S4 删除当前图→脉络页回退主图+「该文件夹无脉络图」空态；③G④ 存量幽灵边
+ * ②S4 删除当前图→脉络页回退主图+主图空图=画布在场（[B5 §3.3/§3.5 wave C] 原「该文件夹无脉络图」
+ * 空态文案锚退役——以画布与卡片真实状态为准）；③G④ 存量幽灵边
  * （跨图边）→graph 子图过滤+导出 lineage.json 零跨图边（C2 主控终裁
  * 2026-09-30——[F-BAKRET-01] 导入链退役后：幽灵边改由 seedLineageGraph 直写
  * 库模拟存量数据（产品路径 INV-90 已不可产生），导出面 INV-77 过滤兜底锚
@@ -24,7 +25,7 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 const nodeCard = (win: Page, title: string) =>
   win.locator('.tl-card[data-node-id]').filter({ hasText: title })
 
-test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主图+空态文案', async () => {
+test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主图+空图画布在场无旧空态文案', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-ff02-s4-'))
   await bootstrapMigrations(userData)
   await seedPaperRow(userData, 'a.pdf', 'sha-s4-guide', 'S4 种子文献', 'e2e-s4-guide', { year: 2024 })
@@ -50,14 +51,17 @@ test('S4：删除当前图（正在查看的文件夹图）→脉络页回退主
   await win.getByTestId('folder-menu').getByRole('menuitem', { name: '删除文件夹' }).click()
   await win.getByRole('dialog').getByRole('button', { name: '删除文件夹' }).click()
 
-  // 脉络页：当前图失效→回退主图（__main__ 恒在场）+主图空态文案
-  // [F-LGRAPH-01①] 主图空图走画布内通用空态（「该文件夹无脉络图」仅子图）
+  // 脉络页：当前图失效→回退主图（__main__ 恒在场）；主图空图=画布在场、零卡
+  // [B5 设计稿 §3.3/§3.5/§11.3「lineage-topic-node：删『暂无/该文件夹无脉络图』锚；删除当前图后改
+  // 主图画布存在且无旧空态文字，真实笔记/卡片文本为准」——wave C 2026-11-25 断言翻转]
   await win.getByRole('button', { name: '脉络', exact: true }).click()
   await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图', { timeout: 10_000 })
+  // 画布 ready（非 loading 占位）：内容层在场、零卡、旧空态文案零残留
+  await expect(win.locator('.tl-content')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByTestId('lineage-timeline')).not.toHaveAttribute('aria-busy', 'true')
+  await expect(win.getByText('暂无脉络图', { exact: true })).toHaveCount(0)
   await expect(win.getByText('该文件夹无脉络图')).toHaveCount(0)
-  // [RR3/d1-ΔW1] exact 匹配：子串形态对旧文案「——添加节点」后缀同样命中
-  // （文案修复无回归锁）——精确锁当前文案
-  await expect(win.getByText('暂无脉络图', { exact: true })).toBeVisible({ timeout: 10_000 })
+  await expect(win.locator('.tl-card')).toHaveCount(0)
   await expect(nodeCard(win, 'S4 种子文献')).toHaveCount(0)
 
   await app.close()

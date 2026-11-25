@@ -1,16 +1,18 @@
 // b3: P7-H
 /**
- * [F-LGRAPH-01①U3] LineageModeBar —— 顶部三模式分段控件（mockup §3.1）。
+ * [F-LGRAPH-01①U3] LineageModeBar —— 三模式分段控件（mockup §3.1）——单排工具栏首段子件
+ * （[B5 设计稿 §3.1——wave C 2026-11-25] 工具栏迁页面顶部稳定外壳，三态常驻）。
  *
  * - 三键 segmented：编辑（笔）/浏览（手掌）/聚焦（焦点框）——图标+文字；
- *   当前态 accent 底白字（.lg-mode.on——色值归 theme-lineage.css）。
+ *   当前态 accent 底白字（.lg-mode.on——色值归 theme-lineage-nav.css）。
  * - setMode 单源=lineage-view.store（[B5 设计稿 §2.2 #6-#8、§14] 冷启动缺省 browse；
  *   不同模式切换保 focusSet、同模式点击完全 no-op——原 P-1 进页重置／P-3 退出聚焦
  *   清集退役；迁移语义全驻 store，本件纯受控渲染）。
  * - 聚焦计数角标：focus 模式且集非空→「聚焦 N」（集大小实时——mockup §3.7；集成员
  *   有效性由 registry 图态写点剪枝保证——[B5 §5]）。
- * - 右侧=当前图名 mono 小字（graphName 由编排注入——图名单源=文件夹名，
- *   取数链=LineageNavPane[U4]；缺省不渲染）。
+ * - [B5 §3.1 断言翻转] 图名移出模式栏：原「右侧=当前图名 mono 小字（graphName 由编排注入）」
+ *   退役——图名=文件夹名单源（取数链=LineageNavPane[U4]→LineagePageBody→LineageToolbar graphName prop），
+ *   由父工具栏 LineageToolbar 在规定槽位（清空聚焦之后、左右栏开关之前）承载；本件零图名 prop。
  * - LineageFocusClearButton（[B5 §3.1/§2.3] 同文件导出的清空聚焦子件——父工具栏在规定槽位
  *   渲染，避免为了顺序复制 focus 状态）：唯一用户显式清空当前图的入口。
  */
@@ -59,7 +61,7 @@ const MODES: Array<{ kind: LineageViewMode; label: string }> = [
   { kind: 'focus', label: '聚焦' }
 ]
 
-export function LineageModeBar(props: { graphName?: string }): JSX.Element {
+export function LineageModeBar(): JSX.Element {
   const mode = useLineageViewStore((s) => s.mode)
   const focusCount = useLineageViewStore((s) => s.focusSet.length)
   const setMode = useLineageViewStore((s) => s.setMode)
@@ -84,11 +86,6 @@ export function LineageModeBar(props: { graphName?: string }): JSX.Element {
       {mode === 'focus' && focusCount > 0 && (
         <span className="lg-focus-count" data-testid="lineage-focus-count">{`聚焦 ${focusCount}`}</span>
       )}
-      {props.graphName !== undefined && (
-        <span className="lg-graph-name mono" data-testid="lineage-graph-title">
-          {props.graphName}
-        </span>
-      )}
     </div>
   )
 }
@@ -98,7 +95,8 @@ export function LineageModeBar(props: { graphName?: string }): JSX.Element {
  * - 可用=focus 模式 ∧ 集非空 ∧ 图 ready（其余一律禁用；不把它变成模式切换钮）。
  * - 点击=store.clearFocus：只清当前图、**停留 focus**（空聚焦合法——计数随之消失、本钮转禁用）；
  *   其他图的集合驻留不动。
- * - 可复位：再次聚焦卡片后恢复可用。零本地态——三读点全取 store（受控锚：可访问名「清空聚焦」）。
+ * - 可复位：再次聚焦卡片后恢复可用。零本地态——三读点全取 store（受控锚：testid
+ *   lineage-focus-clear〔A 波裁决补位〕、可访问名「清空聚焦」）。
  */
 export function LineageFocusClearButton(): JSX.Element {
   const mode = useLineageViewStore((s) => s.mode)
@@ -108,7 +106,8 @@ export function LineageFocusClearButton(): JSX.Element {
   return (
     <button
       type="button"
-      className="lg-btn ghost"
+      className="lg-btn ghost lg-focus-clear"
+      data-testid="lineage-focus-clear"
       disabled={!(mode === 'focus' && focusCount > 0 && graphReady)}
       title="清空当前图的聚焦（保持在聚焦模式）"
       onClick={clearFocus}

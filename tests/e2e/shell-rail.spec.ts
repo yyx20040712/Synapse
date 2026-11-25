@@ -8,13 +8,13 @@ import { bootstrapMigrations, launch, seedPaperRow } from './e2e-env'
  * [T3-P2] 壳层改版 e2e（always-active）：真 Chromium 断言——
  * ①rail 七项渲染（真实文本可见）；②顶栏 wordmark/38px 高+gsearch（提示语
  * +Ctrl K 全局聚焦）；③下载 toast 文案（A8 占位）；④状态条真实文本（课题名/
- * 主题名）。[F-WS-02] 弹层开合断言随 WsRailPopover 退役改写——课题钮=路由
+ * 主题名——[B5 wave C 2026-11-25] 状态条整删后改课题卡/脉络真实状态/主题卡三锚）。[F-WS-02] 弹层开合断言随 WsRailPopover 退役改写——课题钮=路由
  * workspaces 管理页；测 2 重写为引导态（INV-87）e2e：待选择+全钮禁用→
- * 管理页新建课题→解禁升格（状态条课题名自新）。
+ * 管理页新建课题→解禁升格（课题卡实名+篇数自新——原状态条课题名锚）。
  * 视觉基准=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段；
  * 真相源=docs/design/2026-09-26_theme-trio-final-design.md §1。
  */
-test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K+下载 toast+状态条真文本', async () => {
+test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K+下载 toast+课题卡/脉络真实状态/主题卡（状态条整删）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-shell-rail-'))
   // [F-WS-02] 种子破引导态：fresh 启动=default+0 篇+默认名→rail 下方全禁用
   // （下载 toast 等常态断言需 paperCount>0——workspaces.spec 同配方）
@@ -73,15 +73,36 @@ test('T3-P2 壳层：rail 七项真实文本+wordmark 38px 顶栏+gsearch Ctrl K
   await win.getByRole('button', { name: '下载', exact: true }).click()
   await expect(win.getByText('下载文献 PDF 到相应文件夹 · 规划中（未实现）')).toBeVisible()
 
-  // 状态条真实文本（课题名+主题名——THEME_LABEL 单源；种子后 paperCount=1）
-  await expect(win.locator('.app-statusbar')).toContainText('课题 默认课题 · 1 篇')
-  await expect(win.locator('.app-statusbar')).toContainText('脉络 0 节点 / 0 连线')
-  await expect(win.locator('.app-statusbar')).toContainText('主题：正常模式')
+  // [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原「状态条真实文本」三断言
+  // （课题名+篇数／脉络节点/连线计数／主题名）随状态条删除式处置——语义去向=其余真实 UI 锚：
+  // ① 课题名+篇数=课题管理页当前卡（.ws-card.on：实名+.ct「N 篇」——同 workspace.store 单源）；
+  // ② 脉络节点/连线计数无其他文本承载面→以脉络页真实状态承接（本例零节点=画布在场零卡）；
+  // ③ 主题名=设置页外观预览卡选中态主标（THEME_LABEL 单源）+data-theme 数据通道。
+  await expect(win.locator('.app-statusbar')).toHaveCount(0) // 状态条整删（DOM 零残留）
+  // ③ 主题名：设置页外观预览卡（选中卡主标=THEME_LABEL[theme]）
+  await win.getByRole('button', { name: '设置', exact: true }).click()
+  await win.getByRole('button', { name: '外观' }).click()
+  const pressedThemeCard = win.locator('.settings-theme-card[aria-pressed="true"]')
+  await expect(pressedThemeCard).toHaveCount(1)
+  await expect(pressedThemeCard).toContainText('正常模式')
+  await expect(win.locator('html')).toHaveAttribute('data-theme', 'light')
+  // ① 课题名+篇数：课题管理页当前卡实名+「N 篇」
+  await win.getByRole('button', { name: '课题', exact: true }).click()
+  const wsPage = win.locator('.ws-page')
+  await expect(wsPage).toBeVisible({ timeout: 10_000 })
+  await expect(wsPage.locator('.ws-card.on')).toContainText('默认课题')
+  await expect(wsPage.locator('.ws-card.on .ct')).toHaveText('1 篇')
+  // ② 脉络计数：脉络页真实状态（种子文献为幽灵行不入图——节点 0/连线 0=画布在场零卡）
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(win.locator('.tl-content')).toBeVisible({ timeout: 10_000 })
+  await expect(win.getByTestId('lineage-timeline')).not.toHaveAttribute('aria-busy', 'true')
+  await expect(win.locator('.tl-card')).toHaveCount(0)
+  await expect(win.locator('svg.tl-edges path.tl-edge')).toHaveCount(0)
 
   await app.close()
 })
 
-test('F-WS-02 引导态：fresh 启动待选择+全钮禁用→管理页新建课题后解禁（状态条课题名自新）', async () => {
+test('F-WS-02 引导态：fresh 启动待选择+全钮禁用→管理页新建课题后解禁（课题卡实名+篇数自新）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-shell-ws-'))
   // 不种子：fresh 启动=L0 合成 default（0 篇+默认名）→引导态三条件全成立
   const app = await launch(userData)
@@ -89,7 +110,9 @@ test('F-WS-02 引导态：fresh 启动待选择+全钮禁用→管理页新建�
 
   // 引导态锚①：课题名显示位=「待选择」（D2 批语——不显示默认课题字样）
   await expect(win.locator('.rail-ws .lb')).toHaveText('待选择', { timeout: 20_000 })
-  await expect(win.locator('.app-statusbar')).toContainText('课题 待选择 · 0 篇')
+  // [B5 wave C] 原状态条「课题 待选择 · 0 篇」删除式处置：「待选择」=上一行 rail label（同一显示位单源），
+  // 「0 篇」=锚③管理页当前卡 .ct；此处锁状态条 DOM 零残留
+  await expect(win.locator('.app-statusbar')).toHaveCount(0)
   // 锚②：课题钮以下五钮全禁用（真 Chromium disabled 态），课题钮恒可用
   for (const label of ['下载', '文献库', '阅读器', '脉络', '设置']) {
     await expect(
@@ -110,14 +133,16 @@ test('F-WS-02 引导态：fresh 启动待选择+全钮禁用→管理页新建�
   await expect(page).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('.ws-guide')).toBeVisible()
   await expect(page.locator('.ws-card', { hasText: '默认课题' })).toContainText('0 篇')
+  await expect(page.locator('.ws-card.on .ct')).toHaveText('0 篇') // [B5 wave C] 状态条「· 0 篇」语义承接
 
   // 锚④：页内新建课题 B（升格三路之切换路——创建即切→reload）→解禁+实名
   await page.getByLabel('新课题名称').fill('水质模型课题')
   await page.getByRole('button', { name: '创建并切换' }).click()
-  await expect(win.locator('.app-statusbar')).toContainText('课题 水质模型课题 · 0 篇', {
-    timeout: 20_000
-  })
   await expect(win.locator('.rail-ws .lb')).toHaveText('水质模型', { timeout: 20_000 })
+  // [B5 wave C] 原状态条「课题 水质模型课题 · 0 篇」→课题管理页当前卡实名+篇数（reload 后回文献库——重进管理页）
+  await win.getByRole('button', { name: '课题', exact: true }).click()
+  await expect(win.locator('.ws-page .ws-card.on')).toContainText('水质模型课题', { timeout: 20_000 })
+  await expect(win.locator('.ws-page .ws-card.on .ct')).toHaveText('0 篇', { timeout: 20_000 })
   for (const label of ['下载', '文献库', '阅读器', '脉络', '设置']) {
     await expect(
       win.getByRole('button', { name: label, exact: true }),

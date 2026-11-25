@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 /**
- * [F-LGRAPH-01①U4] LineageNavPane —— 左侧导航窗格容器（Word 导航窗格式：
- * 宽 208 缺省/右缘手柄拖动调宽 160–320/收起钮在窗格头/收起态 40px 窄条仅
- * 展开图标 T4）+P-17 宽度记忆（renderer localStorage 单键 JSON map——随图
- * 保存）+时间线索引（年>月两级，点击=画布滚动定位信号；当前视口所在月=
- * accent 指示条）。always-active（不经 guardedDescribe）。
+ * [F-LGRAPH-01①U4] LineageNavPane —— 左侧可收起导航窗格（Word 导航窗格式，
+ * mockup §3.2；自顶栏并集切换器退役行 1 承接图/文件夹切换）。
+ *
+ * - 宽 208 缺省/右缘手柄拖动调宽 160–320（hover accent+ew-resize）。
+ * - [B5 设计稿 §3.4/§11.4「lineage-nav-pane：断言翻转内部重复按钮；prefs/调宽原样保留」——wave C
+ *   2026-11-25] 收起/展开开关迁驻工具栏（LineagePaneToggles，经页面组合层 use-lineage-pane-controls
+ *   驱动）；窗格头部与收起态 40px 窄条退役——收起态窗格 display:none 零占位。per-folder 读取效应与
+ *   调宽写点原样保留（窗格常挂载只隐藏，图/文件夹清单等数据面不随收起销毁）。本件以组合层同构
+ *   harness 驱动开关（原窗格内收起钮/窄条展开钮断言翻转）。
+ * - P-17 宽度+收起随图记忆=nav-pane-prefs（localStorage 单键 JSON map）。
+ * - 内容自上而下：①NavGraphPicker 图/文件夹下拉 ②NavTimelineIndex 时间线索引。
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -29,6 +35,8 @@ stubApiEvents({
 })
 
 import { LineageNavPane } from '../../../src/renderer/features/lineage/LineageNavPane'
+import { LineagePaneToggles } from '../../../src/renderer/features/lineage/LineagePaneToggles'
+import { useLineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { readNavPrefs } from '../../../src/renderer/features/lineage/nav-pane-prefs'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
@@ -54,12 +62,25 @@ function node(id: string, year: number | null, month: number | null): LineageNod
 let root: Root | null = null
 let host: HTMLDivElement | null = null
 
+/** [B5 §3.4] 页面组合层同构 harness：一个钩子实例喂工具栏开关与窗格（与 LineagePageBody 装配同构） */
+function Pane(): JSX.Element {
+  const panes = useLineagePaneControls()
+  return (
+    <>
+      <LineagePaneToggles navCollapsed={panes.navCollapsed} onToggleNav={panes.toggleNav} sidebar={panes.sidebar} />
+      <LineageNavPane />
+    </>
+  )
+}
+/** 工具栏左栏开关（动态 testid：展开态 lineage-nav-collapse／收起态 lineage-nav-expand） */
+const navToggle = (): HTMLButtonElement =>
+  req(`[data-testid="${useLineageViewStore.getState().navCollapsed ? 'lineage-nav-expand' : 'lineage-nav-collapse'}"]`) as HTMLButtonElement
 function mount(): void {
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
-    root?.render(<LineageNavPane />)
+    root?.render(<Pane />)
   })
 }
 
@@ -136,28 +157,30 @@ afterEach(() => {
 })
 
 describe('F-LGRAPH-01①U4 LineageNavPane —— 容器（宽度/收起/P-17 记忆）', () => {
-  it('缺省形态：宽 208（内联 width）+窗格头收起钮+图/文件夹下拉+时间线索引在场', () => {
+  it('[B5 §3.4 断言翻转] 缺省形态：宽 208（内联 width）+图/文件夹下拉+时间线索引在场；窗格头部与窗格内收起钮退役（开关在工具栏）', () => {
     mount()
     expect(req('[data-testid="lineage-nav-pane"]')).not.toBeNull()
     expect(paneStyle().width).toBe('208px') // P-17 缺省 208
-    expect(q('[data-testid="lineage-nav-collapse"]')).not.toBeNull() // 收起钮在窗格头
+    expect(q('[data-testid="lineage-nav-pane"] .nav-head'), '窗格头部退役').toBeNull()
+    expect(q('[data-testid="lineage-nav-pane"] [data-testid="lineage-nav-collapse"]'), '窗格内收起钮退役').toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-nav-collapse"]'), '开关在工具栏（窗格外）在场').not.toBeNull()
     expect(q('[data-testid="lineage-nav-graph"]')).not.toBeNull()
     expect(q('[data-testid="lineage-nav-index"]')).not.toBeNull()
   })
 
-  it('T4 收起钮：点一下收起（40px 窄条仅展开图标）再点展开（记忆宽恢复）', () => {
+  it('[B5 §3.4 断言翻转] 工具栏开关：点一下收起（窗格零占位——不占 40px 窄条、无窄条展开钮）再点展开（记忆宽恢复）', () => {
     mount()
     act(() => {
-      req('[data-testid="lineage-nav-collapse"]').dispatchEvent(
+      navToggle().dispatchEvent(
         new MouseEvent('click', { bubbles: true })
       )
     })
     expect(useLineageViewStore.getState().navCollapsed).toBe(true)
-    expect(paneStyle().width).toBe('40px')
-    expect(q('[data-testid="lineage-nav-graph"]')).toBeNull() // 窄条仅展开图标——下拉/索引不渲染
-    expect(q('[data-testid="lineage-nav-expand"]')).not.toBeNull()
+    expect(paneStyle().display, '收起态窗格 display:none 零占位').toBe('none')
+    expect(q('[data-testid="lineage-nav-expand"]'), '开关翻为展开态 testid（在工具栏）').not.toBeNull()
+    expect(q('[data-testid="lineage-nav-pane"] [data-testid="lineage-nav-expand"]'), '窄条展开钮退役').toBeNull()
     act(() => {
-      req('[data-testid="lineage-nav-expand"]').dispatchEvent(
+      navToggle().dispatchEvent(
         new MouseEvent('click', { bubbles: true })
       )
     })
@@ -216,7 +239,7 @@ describe('F-LGRAPH-01①U4 LineageNavPane —— 容器（宽度/收起/P-17 记
     pMove(300, 100)
     pUp(300, 100)
     act(() => {
-      req('[data-testid="lineage-nav-collapse"]').dispatchEvent(
+      navToggle().dispatchEvent(
         new MouseEvent('click', { bubbles: true })
       )
     })

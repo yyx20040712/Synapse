@@ -147,11 +147,12 @@ afterEach(async () => {
 })
 
 describe('R1 空图挂载（LineageTimeline 装配——笔记是图内容一部分）', () => {
-  it('nodes 空时 .tl-content 结构在：空态文案+已有笔记真实文本可见可编辑+空白右键创建可用', () => {
+  it('[B5 §3.3/§11.2 断言翻转] nodes 空时 .tl-content 结构在：无「暂无脉络图」空态文案+已有笔记真实文本可见可编辑+空白右键创建可用', () => {
     useLineageStore.setState({ floatingNotes: [makeNote({ id: 'fn-only', content: '空图幸存笔记' })] })
     const content = mountTimelineEmpty()
     expect(content).not.toBeNull()
-    expect(host!.textContent).toContain('暂无脉络图')
+    expect(host!.textContent).not.toContain('暂无脉络图') // 原空态文案随 B5 §3.5 删除
+    expect(host!.querySelector('.tl-empty')).toBeNull()
     const noteText = content!.querySelector('.tl-note[data-note-id="fn-only"] .tl-note-text')
     expect(noteText?.textContent).toBe('空图幸存笔记')
     act(() => {
@@ -159,7 +160,8 @@ describe('R1 空图挂载（LineageTimeline 装配——笔记是图内容一部
     })
     expect(noteElOf('fn-only')!.querySelector('textarea')).not.toBeNull()
     act(() => {
-      ctxOn(content!.querySelector('.tl-empty')!, 300, 200)
+      // [B5] 原以 .tl-empty（空态文案容器）为空白右键目标——容器随文案删除；空白目标改画布内容层本体
+      ctxOn(content!, 300, 200)
     })
     act(() => {
       clickMenuItem('新建悬浮笔记')

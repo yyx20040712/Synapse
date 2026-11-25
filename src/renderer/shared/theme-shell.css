@@ -1,22 +1,25 @@
 /* [F-CSS-01] 自 theme.css 拆出 2026-09-05——App 壳域皮肤。[T3-P2] 壳层改版
    重写：38px 顶栏（wordmark 签名/居中 gsearch/caption 三键）+72px 窄轨
-   （.rail）+26px 状态条；F-UI-03 墨青 nav 全族退役（方案切换=删除旧方案，
+   （.rail）+26px 状态条（[B5 wave C 2026-11-25] 状态条整删——用户裁决，设计稿外；
+   网格同批翻两行、状态条皮肤族零残留）；F-UI-03 墨青 nav 全族退役（方案切换=删除旧方案，
    含金线/渐变/foot/窄态/collapse 钮与随域 reduced-motion 守卫段）。
    import 序=theme.css 之后（壳→按钮→阅读器→脉络保原相对序）。
    值单源=docs/design/mockups/2026-09-26_v2_theme-light.html 壳层段
    （L39-77）逐值誊录；真相源=docs/design/2026-09-26_theme-trio-final-design.md §1。 */
 
-/* ══ App 壳三行网格：38px 顶栏｜1fr 内容行（rail+main）｜26px 状态条 ══
+/* ══ App 壳两行网格：38px 顶栏｜1fr 内容行（rail+main）══
+   [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原第三行 26px 的
+   唯一子项=状态条——状态条整删后该行同删（留空行=页面底部 26px 空白带=半删）。
    [F-UIRES-VFIX-01] 列模板钉死 minmax(0,1fr)：无显式列模板时 grid 隐式
    auto 列被子项 max-content 贡献撑超视口（.app-content-row 的 zoom 参与
    布局计算——贡献×档位放大，1.1 档实测轨道 1382>视口 1294）→header/
-   statusbar 被 stretch 到轨道宽→caption 三键出窗+文档横向溢出。minmax
+   statusbar（当时三行）被 stretch 到轨道宽→caption 三键出窗+文档横向溢出。minmax
    (0,·) 弃内容敏感（min=0 不看贡献），列宽恒=容器宽；内容溢出改由
    .app-main（overflow-auto+min-w-0）容器内消化——「文档永不滚」不变量
    在放大档的补全。 */
 .app-shell {
   display: grid;
-  grid-template-rows: 38px 1fr 26px;
+  grid-template-rows: 38px 1fr;
   grid-template-columns: minmax(0, 1fr);
   height: 100%;
 }
@@ -118,8 +121,9 @@
 
 /* ══ R2-SET1 界面缩放三档：--ui-scale 挂 documentElement（App effect 单点写，
    数值映射单源=shared/ipc/schemas UI_SCALE 1/1.1/1.25）。
-   内容行整行缩放（rail+main 文本面）；topbar/statusbar 在行外结构性豁免
-   （E5 裁决——caption 三键/顶栏保持系统观感，恒定不随档位变）。
+   内容行整行缩放（rail+main 文本面）；topbar 在行外结构性豁免
+   （E5 裁决——caption 三键/顶栏保持系统观感，恒定不随档位变；[B5 wave C]
+   statusbar 行随状态条整删）。
    [F-UIRES-VFIX-01] 豁免勘误：原表述只考虑 zoom 继承面——zoom 同时参与
    布局计算，内容行 max-content 贡献×档位经 grid 隐式列传染顶栏/状态条
    （放大档三键被推出窗，随文件夹文献集宽分化）；布局传染由 .app-shell
@@ -305,36 +309,12 @@
   margin-top: auto;
 }
 
-/* ══ T3-P2 状态条 26px（mockup L74-77）：--panel-2 底+上边 1px --line+等宽字；
-   .sig=保存失败槽消费（[T3-U1] 自动保存槽 error 档——--signal 色）；
-   .ok 色类仍预留（enrich 待办槽信号通道探明后启用）；
-   仪表透明度跨主题不变（不额外加透明度）══ */
-.app-statusbar {
-  flex: none;
-  background: var(--panel-2);
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  gap: 18px;
-  font-family: var(--mono);
-  font-size: var(--fs-micro);
-  color: var(--faint);
-  overflow: hidden;
-  white-space: nowrap;
-}
-.app-statusbar .sep {
-  flex: 1;
-}
-.app-statusbar .ok {
-  color: var(--ok);
-}
-.app-statusbar .sig {
-  color: var(--signal);
-}
+/* [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] T3-P2 状态条皮肤族
+   （状态条根规则体与 .sep/.ok/.sig 子槽）随 StatusBar/AppStatusBarHost 整删——零残留
+   （负锚=tests/unit/renderer/theme.test.ts 壳层形态锁）。 */
 
 /** [F-VISFB-65 回炉 R2] 内容区列容器（.app-shell 第 2 网格子项=本容器——
-   三行模板不动：恢复条与本内容行纵向排布，条空窗 0 高不占位） */
+   两行模板不动：恢复条与本内容行纵向排布，条空窗 0 高不占位） */
 .app-content-zone {
   display: flex;
   flex-direction: column;

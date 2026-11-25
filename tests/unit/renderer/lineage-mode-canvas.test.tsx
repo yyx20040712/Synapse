@@ -3,6 +3,10 @@
  * [F-LGRAPH-01①U5] 三模式画布行为闸（mockup §2.1 定案——现行「view/edit
  * 双态无 mode 门槛」退役）：browse/focus 禁卡拖拽（拖卡=edit 专属）/平移
  * 小手（browse/focus 拖空白=滚动跟随+grab/grabbing；edit 不平移）/focus
+ * [B5 设计稿 §4.1/§3.1/§3.5/§2.2 #16/§11.2——wave C 2026-11-25 断言翻转] 原「drag-hint 文案
+ *   随三模式」「切图 focusSet 清空（全局）」两表述退役：drag-hint 删除（零残留负锚）；切图=按图
+ *   挂起恢复（A 的集合驻 A 会话、返回 A 恢复）；三模式控件常驻、编辑工具非 edit 禁用（工具栏级）。
+ *   （以下三行为 B5 前形态记录）
  * 点卡=toggle focusSet（再点取消+点空白 no-op）+P-8 聚焦视觉=仅被点卡
  * accent 边框（多卡独立）/切图 focusSet 清空（图域隔离）/drag-hint 文案
  * 随三模式/P-13 三模式点卡均联动详情面板（选中并行不冲突）。
@@ -13,6 +17,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import { LineageTimeline } from '../../../src/renderer/features/lineage/LineageTimeline'
+import { LineageToolbar } from '../../../src/renderer/features/lineage/LineageToolbar'
+import type { LineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 
@@ -220,7 +226,7 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     expect(cardOf('A').classList.contains('focused')).toBe(false)
   })
 
-  it('focus 点空白=no-op（不取消聚焦——退出单出口=浏览/编辑按钮）', () => {
+  it('focus 点空白=no-op（不取消聚焦——显式清空唯一入口=清空聚焦钮，见 lineage-mode-bar；模式切换不清集合）', () => {
     mount([node('A')])
     setMode('focus')
     click(cardOf('A'))
@@ -228,25 +234,43 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     expect(useLineageViewStore.getState().focusSet).toEqual(['A'])
   })
 
-  it('切图 focusSet 清空（图域隔离——setFolder 单点）+模式保持 focus（空集合法）', () => {
+  it('[B5 §2.2 #16/#18 断言翻转] 切图=按图挂起恢复：A 的集合驻留 A 会话、目标图空集（图域隔离）、模式保持 focus；返回 A 恢复原集', () => {
+    // 成员有效性以会话 nodes 为准（[B5 §5] 写点剪枝）——离开图前把卡 A 写进活动会话，集合才合法可恢复
+    useLineageStore.setState({ nodes: [node('A')], status: 'ready' })
     mount([node('A')])
     setMode('focus')
     click(cardOf('A'))
     act(() => {
       useLineageStore.getState().setFolder('f-other')
     })
-    expect(useLineageViewStore.getState().focusSet).toEqual([])
+    expect(useLineageViewStore.getState().focusSet).toEqual([]) // 目标图空集（新图不继承 A 的 id）
     expect(useLineageViewStore.getState().mode).toBe('focus') // 模式保持（空集态合法）
+    act(() => {
+      useLineageStore.getState().setFolder('__main__')
+    })
+    expect(useLineageViewStore.getState().focusSet, '返回 A 恢复原集（不清 A、不重建第二份）').toEqual(['A'])
   })
 
-  it('drag-hint 文案随三模式（browse 平移/focus 聚焦标记/edit 全句）', () => {
-    mount([node('A')])
-    const hint = (): string => req('[data-testid="drag-hint"]').textContent ?? ''
-    expect(hint()).toBe('✋ 拖动空白＝平移画布 · 滚轮浏览时间线')
+  it('[B5 §3.5/§4.1 断言翻转] drag-hint 三态文案删除（零残留负锚）；三模式画布全亮：无 .dim、focus 模式本集卡 .focused、browse/edit 零描边', () => {
+    mount([node('A'), node('B')])
+    expect(q('[data-testid="drag-hint"]'), 'drag-hint 退役').toBeNull()
+    expect(host?.querySelector('.drag-hint')).toBeNull()
+    expect(host?.textContent).not.toContain('平移画布')
+    expect(host?.textContent).not.toContain('编辑中：拖动')
+    expect(cardOf('A').classList.contains('dim')).toBe(false) // browse 全亮
     setMode('focus')
-    expect(hint()).toBe('◎ 单击卡片＝聚焦标记（再点取消） · 拖动空白＝平移画布')
+    click(cardOf('A'))
+    expect(cardOf('A').classList.contains('focused')).toBe(true) // focus 模式本集卡 accent 描边
+    expect(cardOf('B').classList.contains('dim'), '非聚焦卡不 dim（全亮）').toBe(false)
+    expect(cardOf('B').classList.contains('focused')).toBe(false)
+    setMode('browse')
+    expect(useLineageViewStore.getState().focusSet, '模式切换保集合').toEqual(['A'])
+    expect(cardOf('A').classList.contains('focused'), 'browse 不显示聚焦描边').toBe(false)
     setMode('edit')
-    expect(hint()).toBe('编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡') // [②U2] 工具组文案（画线入口提示）；[C1 裁决 h]→[C2·P6] 终态=CAD 式锚点拖拽正名（v1.11①；[F-VISFB-66 裁定 2] 点两卡径随链路退役删除）
+    expect(cardOf('A').classList.contains('focused'), 'edit 不显示聚焦描边').toBe(false)
+    expect(cardOf('A').classList.contains('dim')).toBe(false)
+    setMode('focus')
+    expect(cardOf('A').classList.contains('focused'), '回 focus 恢复描边').toBe(true)
   })
 
   it('.timeline 挂模式类（mode-browse/mode-focus/mode-edit——CSS 光标域承载）', () => {
@@ -258,5 +282,66 @@ describe('F-LGRAPH-01①U5 focus 域 —— toggle/视觉/图域隔离/文案', 
     // [回炉 R13] mode-edit 零消费类清理——edit 态不挂模式类（.editing 承载）
     expect(req('.timeline').classList.contains('mode-edit')).toBe(false)
     expect(req('.timeline').classList.contains('editing')).toBe(true) // 编辑态类同源保活
+  })
+})
+
+// ── [B5 设计稿 §2.3/§3.1/§11.2——wave C 2026-11-25] 三模式工具栏控件（与画布同挂）──────────
+
+const PANES: LineagePaneControls = {
+  navCollapsed: false,
+  toggleNav: () => undefined,
+  sidebar: {
+    width: 252,
+    collapsed: false,
+    onResizeStart: () => undefined,
+    onResizeKey: () => undefined,
+    collapse: () => undefined,
+    expand: () => undefined
+  }
+}
+const toolbarBtn = (testid: string): HTMLButtonElement | null =>
+  host?.querySelector<HTMLButtonElement>(`[data-testid="${testid}"]`) ?? null
+
+describe('[B5 §2.3/§3.1] 三模式工具栏控件（工具栏与画布同挂）', () => {
+  it('三模式控件常驻：保存/撤销重做/缩放/清空聚焦/图名/左右栏开关在场；编辑工具在 browse/focus 禁用（点击无效）、edit 可用', () => {
+    for (const mode of ['browse', 'focus', 'edit'] as const) {
+      host = document.createElement('div')
+      document.body.appendChild(host)
+      root = createRoot(host)
+      useLineageViewStore.setState({ mode, focusSet: [], tool: 'select', paletteFor: null, zoom: 1 })
+      act(() => {
+        root?.render(
+          <>
+            <LineageToolbar graphName="主图" panes={PANES} />
+            <LineageTimeline nodes={[node('A'), node('B')]} edges={[]} onNodeClick={onNodeClick} />
+          </>
+        )
+      })
+      for (const id of [
+        'lineage-save-btn', 'lineage-undo', 'lineage-redo',
+        'lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed',
+        'lineage-zoom-out', 'zoom-badge', 'lineage-zoom-in', 'lineage-focus-clear', 'lineage-graph-title',
+        'lineage-nav-collapse', 'lineage-sidebar-collapse'
+      ]) {
+        expect(toolbarBtn(id), `${mode}：${id} 常驻在场`).not.toBeNull()
+      }
+      expect(toolbarBtn('lineage-graph-title')?.textContent).toBe('主图')
+      const editTools = ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-dashed', 'lineage-tool-solid-expand', 'lineage-tool-dashed-expand']
+      for (const id of editTools) {
+        expect(toolbarBtn(id)?.disabled, `${mode}：${id} ${mode === 'edit' ? '可用' : '禁用（不消失）'}`).toBe(mode !== 'edit')
+      }
+      // 禁用=点击无效（工具态不变）；可用=点击生效
+      act(() => {
+        toolbarBtn('lineage-tool-solid')?.click()
+      })
+      expect(useLineageViewStore.getState().tool, `${mode}：点实线钮后的工具态`).toBe(mode === 'edit' ? 'draw-solid' : 'select')
+      expect(host?.querySelector('[data-testid="drag-hint"]'), `${mode}：drag-hint 退役`).toBeNull()
+      act(() => {
+        root?.unmount()
+      })
+      root = null
+      host?.remove()
+      host = null
+    }
   })
 })

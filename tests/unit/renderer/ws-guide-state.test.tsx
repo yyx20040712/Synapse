@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * [F-WS-02] 默认课题引导态（INV-87）App 级锁定测试（always-active，不经
- * guardedDescribe）——App 全挂载（Rail 禁用/状态条待选择/导入升格桥都在
- * 组合根，须挂真 App 非 WorkspacesPage 单件）。
+ * guardedDescribe）——App 全挂载（Rail 禁用/导入升格桥都在组合根，须挂真
+ * App 非 WorkspacesPage 单件）。
  *
  * 拆件先例=app-shell-t3u1.test.tsx（App 级同域拆件——app-shell.test.tsx
  * max-lines 防线）；mock 配方沿 app-shell.test.tsx（makeApiStub+mount/flush/
@@ -10,8 +10,12 @@
  *
  * 锁行为面（D2 批语「默认课题显示为待选择，其余听你的」）：
  * - 三条件（id=default ∧ paperCount=0 ∧ name=默认名[DEFAULT_WS_NAME 单源]）
- *   成立：课题钮 label=待选择（仍可用=引导出路）、下方五钮全 disabled、
- *   状态条课题名=待选择
+ *   成立：课题钮 label=待选择（仍可用=引导出路）、下方五钮全 disabled
+ *   [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原「状态条
+ *   课题名=待选择（课题 待选择 · 0 篇）」断言随状态条删除式处置：其「引导态显示名」
+ *   语义由同例上方 rail label 断言（span.lb=待选择——同一 selectDisplayWsName 单源）
+ *   承载，纯函数面另由 workspace.store.test selectDisplayWsName 用例锁定；「· 0 篇」
+ *   计数呈现仅状态条持有，无承接面。
  * - 升格三路：改名/导入计数/切非 default——任一打破即解禁+实名显示
  * - 导入升格桥（App 组合根）：引导态∧library total>0 → 重拉 workspaces
  *   list（paperCount 刷新→解禁）；跨格导入中（total 仍 0）不重拉禁用保持；
@@ -129,7 +133,7 @@ describe('F-WS-02 引导态（INV-87）——rail 禁用浅色+待选择显示+�
     })
   }
 
-  it('三条件成立：课题钮 label=待选择（仍可用=引导出路）、下方五钮全 disabled；状态条课题名=待选择', async () => {
+  it('三条件成立：课题钮 label=待选择（仍可用=引导出路）、下方五钮全 disabled', async () => {
     mount(<App />)
     await flush()
     await setWsItems([GUIDE_DEFAULT], 'default')
@@ -139,8 +143,6 @@ describe('F-WS-02 引导态（INV-87）——rail 禁用浅色+待选择显示+�
     for (const label of ['下载', '文献库', '阅读器', '脉络', '设置']) {
       expect(railButton(label)!.disabled, `引导态 rail「${label}」全禁用（D2 下方按钮全禁用）`).toBe(true)
     }
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '状态条课题名=待选择').toContain('课题 待选择 · 0 篇')
     await setWsItems(NORMAL_ITEMS, 'w1')
   })
 

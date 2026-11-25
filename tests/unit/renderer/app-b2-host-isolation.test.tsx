@@ -6,20 +6,27 @@
  * （待判点 1 采纳方案=React Profiler onRender 计数探针）。本文件独立于
  * app-shell 族——既有真文本/结构断言零触碰。
  *
- * 计数口径（Profiler 嵌套注入的落法申报）：
- * - 生产 App 不透明，无法在 App 与 ViewHost/AppStatusBarHost 之间插入
- *   Profiler。本探针经 vi.mock 把 Profiler 包在**真实**页面件/状态条件外
- *   （importOriginal 展开，实际渲染体零替换），经 App 生产装配挂载：
- *   ① 视图子树见证=LibraryPage（默认视图，ViewHost 的直接子件；App 连坐
- *      重渲时它必随之重渲，故其增量=0 ⇒ ViewHost 子树未重渲）；
- *   ② 状态条宿主见证=StatusBar（仅 AppStatusBarHost 渲染，其增量为宿主
- *      重渲的充分见证）。
+ * 计数口径（Profiler 嵌入注入的落法申报）：
+ * - 生产 App 不透明，无法在 App 与 ViewHost 之间插入 Profiler。本探针经
+ *   vi.mock 把 Profiler 包在**真实**页面件外（importOriginal 展开，实际渲染体
+ *   零替换），经 App 生产装配挂载：视图子树见证=LibraryPage（默认视图，
+ *   ViewHost 的直接子件；App 连坐重渲时它必随之重渲，故其增量=0 ⇒ ViewHost
+ *   子树未重渲）。
  * - 断言用**增量**而非绝对值：StrictMode 双跑（React 18 dev 双调用）下
  *   初始计数可能翻倍，增量口径对双跑稳定。
  *
+ * [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原第二见证「状态条
+ * 宿主=StatusBar」（仅 AppStatusBarHost 渲染）随状态条整删退役：每例中「状态条宿主
+ * 重渲/真文本」断言随之删除；「视图子树零重渲」断言与⑥整例原样保留。原状态条见证兼任
+ * 「变化确已传播」的阳性对照，其职责改由两处承载：(a) 各例的 store 状态断言（植入确已
+ * 落到活动投影/registry 会话）；(b) 新增阳性对照例⓪——ViewHost 的合法 prop 变化时视图
+ * 子树见证计数必须 ≥1，证明见证面在计数，从而使写源变化后的增量 0 具备判别力（恒真
+ * 断言比没有测试更危险）。判别力边界（如实声明）：「写源变化不连坐视图子树」由两道
+ * 防线共同成立——App 根不订阅数组本体＋ViewHost memo 纯 props；本探针锁的是该性质的
+ * 终态，单独拆任一道防线不翻红（另一道仍挡住），两道同拆才红。
+ *
  * 两变化沿（§3.4）：
- * ① lineage store setState nodes/edges（计数变化）→视图子树增量=0、状态条
- *   宿主增量≥1；
+ * ① lineage store setState nodes/edges（计数变化）→视图子树增量=0；
  * ② notes pending 翻转（annotation dirty 已在位=quitDirty 稳定，排除
  *   quitDirty prop 变化对 ViewHost 的合法重渲）→同构断言。
  *
@@ -32,9 +39,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { makeApiStub, stubApiEvents } from '../../utils/api-client-mock'
 import type * as LibraryPageModule from '../../../src/renderer/features/library/LibraryPage'
-import type * as StatusBarModule from '../../../src/renderer/app/StatusBar'
 
-const renderCounts = vi.hoisted(() => ({ page: 0, status: 0 }))
+const renderCounts = vi.hoisted(() => ({ page: 0 }))
 
 /** Profiler 注入：包裹真实 LibraryPage（视图子树见证），渲染体零替换 */
 vi.mock('../../../src/renderer/features/library/LibraryPage', async () => {
@@ -49,24 +55,6 @@ vi.mock('../../../src/renderer/features/library/LibraryPage', async () => {
       React.createElement(
         React.Profiler,
         { id: 'view-subtree', onRender: () => { renderCounts.page += 1 } },
-        React.createElement(Actual, props)
-      )
-  }
-})
-
-/** Profiler 注入：包裹真实 StatusBar（AppStatusBarHost 子树见证） */
-vi.mock('../../../src/renderer/app/StatusBar', async () => {
-  const React = await import('react')
-  const actual = await vi.importActual<typeof StatusBarModule>(
-    '../../../src/renderer/app/StatusBar'
-  )
-  const Actual = actual.StatusBar
-  return {
-    ...actual,
-    StatusBar: (props: Parameters<typeof Actual>[0]) =>
-      React.createElement(
-        React.Profiler,
-        { id: 'statusbar-host', onRender: () => { renderCounts.status += 1 } },
         React.createElement(Actual, props)
       )
   }
@@ -126,7 +114,6 @@ const flush = async (turns = 8): Promise<void> => {
 beforeEach(() => {
   vi.clearAllMocks()
   renderCounts.page = 0
-  renderCounts.status = 0
   stubApi.lineage.graph.mockReset()
   stubApi.library.list.mockReset()
   stubApi.settings.get.mockReset()
@@ -188,8 +175,14 @@ afterEach(() => {
   if (root !== null) unmount()
 })
 
-/** 变化沿①：lineage 写源（nodes/edges 计数）变化 */
-it('① lineage nodes/edges 计数变化：视图子树零重渲、状态条宿主重渲', async () => {
+/**
+ * [B5 wave C] 阳性对照⓪：见证面活性——ViewHost 的合法 prop 变化（quitDirty 聚合布尔：开一个
+ * 标注失败残留的 tab→annoDirty 真→quitDirty false→true）使视图子树重渲，见证（LibraryPage 外
+ * Profiler）计数必须 ≥1。①—⑤的「增量 0」以本例为前提才有判别力（计数面失能=恒真）。
+ * 选 quitDirty 而非 uiScale/theme：后两者只重渲 App 根，ViewHost 为 memo 纯 props 件、props 未变
+ * 不连坐视图子树（B2 §6 实施注记），其变化沿的视图增量本就应为 0，不能充当阳性对照。
+ */
+it('⓪ 阳性对照：ViewHost prop（quitDirty 聚合布尔）合法变化→视图子树见证计数 ≥1（见证面在计数）', async () => {
   mount(
     <StrictMode>
       <App />
@@ -197,7 +190,29 @@ it('① lineage nodes/edges 计数变化：视图子树零重渲、状态条宿�
   )
   await flush()
   const pageBase = renderCounts.page
-  const statusBase = renderCounts.status
+  act(() => {
+    useReaderStore.setState({
+      order: ['p1'],
+      tabs: { p1: { paperId: 'p1', dirty: true } } as never
+    })
+  })
+  await flush()
+  expect(
+    renderCounts.page - pageBase,
+    'quitDirty prop 变化经 App 布尔聚合传到 ViewHost——视图子树见证必须计数（否则下方各例的增量 0 恒真）'
+  ).toBeGreaterThanOrEqual(1)
+})
+
+/** 变化沿①：lineage 写源（nodes/edges 计数）变化 */
+/** 变化沿①：lineage 写源（nodes/edges 计数）变化 */
+it('① lineage nodes/edges 计数变化：视图子树零重渲', async () => {
+  mount(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  )
+  await flush()
+  const pageBase = renderCounts.page
   act(() => {
     useLineageStore.setState({
       nodes: [{ id: 'n1' }, { id: 'n2' }] as never,
@@ -209,15 +224,11 @@ it('① lineage nodes/edges 计数变化：视图子树零重渲、状态条宿�
     renderCounts.page - pageBase,
     'lineage 写源变化不得连坐 ViewHost 子树（App 根不订阅 nodes/edges 数组本体）'
   ).toBe(0)
-  expect(
-    renderCounts.status - statusBase,
-    '状态条宿主持有计数选择器——nodes/edges 计数变化必须重渲（真文本随 store 变化）'
-  ).toBeGreaterThanOrEqual(1)
-  expect(document.querySelector('footer.app-statusbar')?.textContent).toContain('脉络 2 节点 / 1 连线')
+  expect(useLineageStore.getState().nodes, '前提：植入确已落到活动投影').toHaveLength(2)
 })
 
 /** 变化沿②：notes pending 翻转（annoDirty 在位=quitDirty 稳定） */
-it('② notes pending 翻转：视图子树零重渲、状态条宿主重渲', async () => {
+it('② notes pending 翻转：视图子树零重渲', async () => {
   mount(
     <StrictMode>
       <App />
@@ -233,7 +244,6 @@ it('② notes pending 翻转：视图子树零重渲、状态条宿主重渲', a
   })
   await flush()
   const pageBase = renderCounts.page
-  const statusBase = renderCounts.status
   act(() => {
     useNotesStore.setState({
       noteByPaper: {
@@ -247,15 +257,10 @@ it('② notes pending 翻转：视图子树零重渲、状态条宿主重渲', a
     renderCounts.page - pageBase,
     'notes 写源变化不得连坐 ViewHost 子树（App 根不订阅 noteByPaper 对象本体）'
   ).toBe(0)
-  expect(
-    renderCounts.status - statusBase,
-    '状态条宿主消费 tab 自动保存投影——pending 翻转必须重渲'
-  ).toBeGreaterThanOrEqual(1)
-  expect(document.querySelector('footer.app-statusbar')?.textContent).toContain('自动保存 · 保存失败')
 })
 
-/** M4 回炉锚：计数未变时，即使 nodes/edges 数组本体换新，两宿主均不得重渲。 */
-it('③ lineage 同长度新数组替换：视图与状态条均零重渲，计数真文本不变', async () => {
+/** M4 回炉锚：计数未变时，即使 nodes/edges 数组本体换新，视图子树不得重渲。 */
+it('③ lineage 同长度新数组替换：视图子树零重渲（活动投影引用已换新）', async () => {
   mount(
     <StrictMode>
       <App />
@@ -270,12 +275,8 @@ it('③ lineage 同长度新数组替换：视图与状态条均零重渲，计�
   })
   await flush()
   const pageBase = renderCounts.page
-  const statusBase = renderCounts.status
-  const statusbar = document.querySelector('footer.app-statusbar')
-  const textBefore = statusbar?.textContent
   const nodesBefore = useLineageStore.getState().nodes
   const edgesBefore = useLineageStore.getState().edges
-  expect(textBefore).toContain('脉络 2 节点 / 1 连线')
 
   act(() => {
     useLineageStore.setState({
@@ -287,8 +288,6 @@ it('③ lineage 同长度新数组替换：视图与状态条均零重渲，计�
   expect(useLineageStore.getState().nodes).not.toBe(nodesBefore)
   expect(useLineageStore.getState().edges).not.toBe(edgesBefore)
   expect(renderCounts.page - pageBase, '同计数数组替换不得连坐 ViewHost 子树').toBe(0)
-  expect(renderCounts.status - statusBase, '计数选择器不得因数组本体替换重渲').toBe(0)
-  expect(document.querySelector('footer.app-statusbar')?.textContent).toBe(textBefore)
 })
 
 /**
@@ -304,7 +303,7 @@ async function registryOf() {
 }
 
 /** registry 投影夹具④：registry 单一写路径写活动会话 */
-it('④ registry 正式入口写活动会话：状态条宿主重渲（真文本随会话数据）、视图子树零重渲', async ({ onTestFinished }) => {
+it('④ registry 正式入口写活动会话：活动投影同引用更新、视图子树零重渲', async ({ onTestFinished }) => {
   const lineageRegistry = await registryOf()
   const { resetLineageSessionsForTests } = await import('./lineage-test-session-reset')
   onTestFinished(() => resetLineageSessionsForTests())
@@ -315,7 +314,6 @@ it('④ registry 正式入口写活动会话：状态条宿主重渲（真文本
   )
   await flush()
   const pageBase = renderCounts.page
-  const statusBase = renderCounts.status
   const nodes = [{ id: 'n1' }, { id: 'n2' }] as never
   const edges = [{ id: 'e1' }] as never
   act(() => {
@@ -328,15 +326,10 @@ it('④ registry 正式入口写活动会话：状态条宿主重渲（真文本
     renderCounts.page - pageBase,
     'registry 写活动会话不得连坐 ViewHost 子树'
   ).toBe(0)
-  expect(
-    renderCounts.status - statusBase,
-    '状态条宿主经活动投影读到会话数据——必须重渲'
-  ).toBeGreaterThanOrEqual(1)
-  expect(document.querySelector('footer.app-statusbar')?.textContent).toContain('脉络 2 节点 / 1 连线')
 })
 
 /** registry 投影夹具⑤：挂起会话的写不投影 */
-it('⑤ registry 写挂起会话不触达活动投影：两宿主零重渲、状态条真文本不变、活动投影引用不变', async ({ onTestFinished }) => {
+it('⑤ registry 写挂起会话不触达活动投影：视图子树零重渲、活动投影引用不变', async ({ onTestFinished }) => {
   const lineageRegistry = await registryOf()
   const { resetLineageSessionsForTests } = await import('./lineage-test-session-reset')
   onTestFinished(() => resetLineageSessionsForTests())
@@ -352,10 +345,8 @@ it('⑤ registry 写挂起会话不触达活动投影：两宿主零重渲、状
   })
   await flush()
   const pageBase = renderCounts.page
-  const statusBase = renderCounts.status
-  const textBefore = document.querySelector('footer.app-statusbar')?.textContent
   const nodesBefore = useLineageStore.getState().nodes
-  expect(textBefore).toContain('脉络 2 节点 / 0 连线')
+  expect(nodesBefore, '前提：活动会话计数基线非空（「不变」可判别）').toHaveLength(2)
   act(() => {
     lineageRegistry.ensure('f-b') // 挂起会话（无会话的 folder 不自动建）
     lineageRegistry.update('f-b', {
@@ -369,8 +360,6 @@ it('⑤ registry 写挂起会话不触达活动投影：两宿主零重渲、状
   expect(lineageRegistry.activeFolder()).toBe('__main__')
   expect(useLineageStore.getState().nodes, '活动投影不被他会话的写改写').toBe(nodesBefore)
   expect(renderCounts.page - pageBase, '挂起会话的写不得连坐 ViewHost 子树').toBe(0)
-  expect(renderCounts.status - statusBase, '挂起会话的写不触达状态条宿主').toBe(0)
-  expect(document.querySelector('footer.app-statusbar')?.textContent).toBe(textBefore)
 })
 
 /** registry 投影夹具⑥：夹具植入落在 registry 会话上（数据单源） */

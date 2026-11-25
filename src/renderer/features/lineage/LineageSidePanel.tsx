@@ -9,7 +9,8 @@
  *   省略——卡 L3 同源，无第二数据路径）。
  * - **core 徽章退役**（行 9）+「已绑定文献」域随行 9 收编：主题节点=
  *   「主题节点」域标识，文献节点=期刊/IF/被引域隐式承载绑定态。
- * - **空选中态**=「点击卡片查看详情」占位（P-16）；三模式点卡联动（P-13）
+ * - **空选中态**（P-16 常驻栏位）：[B5 设计稿 §3.5/§11.4——wave C 2026-11-25 断言翻转] 原「点击卡片
+ *   查看详情」教学占位文案删除——面板根仍挂载（常驻栏位形态保持）、零可见教学文字；三模式点卡联动（P-13）
  *   编排归 Page（selectedNodeId 单源）。
  * - **[F-UIRES-03 B5① v1.15②裁决] 头部操作行**：「去文献库/去阅读器」两钮
  *   自卡面迁移至此（hover-only 键盘不可达挂账随迁移消解）——
@@ -29,7 +30,8 @@
  *   anchor 增 annotationId=Annotation.id——元素级停驻恢复锚。
  * - 数据单源：AI 评估/片段两分节直连 window.api（quality 跨域互引红线
  *   ——reader 域组件/store 不可引；接缝声明见各分节头注）。
- * - [F-UIRES-04 批 3a] 拆件瘦身：骑缝行/星标/收起钮→SideCapRow、徽章行→
+ * - [F-UIRES-04 批 3a] 拆件瘦身：骑缝行/星标→SideCapRow（原收起钮与 onCollapse prop 随
+ *   [B5 §3.4] 退役——侧栏开关迁工具栏 LineagePaneToggles）、徽章行→
  *   SideBadges（行为零变搬移，e2e 锚 testid 一字不动；主题节点分支/编排
  *   留宿主——设计书 §4.2 弃候选二理由沿承）。
  * - [F-UIRES-04 批 3b] 两挂载点（§4.1 DOM 序）：头部徽章行后 TagsRow（§4.6
@@ -76,8 +78,6 @@ export function LineageSidePanel(props: {
   /** [T3-P8→②U4 退役] core 徽章消费面已随行 9 退役（prop 删除——数据面留） */
   /** 含金量摘要（[②U4] 扩 venue/impactFactor——卡 L3 同源单路径） */
   metrics?: LineagePaperMetrics | null
-  /** [F-UIRES-03 B4③] 头部收起钮回调（Page 态归 useSidebarPane；缺席=零渲染） */
-  onCollapse?: () => void
   /** [F-UIRES-03 B5①] 操作行「去文献库」钮（卡面版签名沿承——编排归 Page：
    *  library.store 预置+requestOpenLibrary；folderId=node.folderId 单源） */
   onGotoLibrary?: (paperId: string | null, folderId: string) => void
@@ -91,14 +91,13 @@ export function LineageSidePanel(props: {
 }): JSX.Element {
   const { node } = props
   if (node === null) {
+    // [B5 §3.5] 空选中态=面板根仍挂载（P-16 常驻栏位），零可见教学文字（原「点击卡片查看详情」占位删除）
     return (
       <div
         data-testid="lineage-side-panel"
-        className="lg-inspector flex h-full items-center justify-center p-4 text-center text-xs"
-        style={{ ...SIDE_GLASS, width: '100%', color: 'var(--text-dim)' }}
-      >
-        点击卡片查看详情
-      </div>
+        className="lg-inspector h-full"
+        style={{ ...SIDE_GLASS, width: '100%' }}
+      />
     )
   }
 
@@ -134,8 +133,8 @@ export function LineageSidePanel(props: {
         data-testid="lineage-side-meta"
         data-binding={node.paperId === null ? 'theme' : 'paper'}
       >
-        {/* [F-UIRES-04 批 3a] 骑缝行/星标/收起钮（原 insp-cap 块零变搬移→SideCapRow） */}
-        <SideCapRow node={node} pubNo={props.pubNo} onCollapse={props.onCollapse} onToggleStar={props.onToggleStar} />
+        {/* [F-UIRES-04 批 3a] 骑缝行/星标（原 insp-cap 块搬移→SideCapRow；收起钮随 B5 §3.4 退役） */}
+        <SideCapRow node={node} pubNo={props.pubNo} onToggleStar={props.onToggleStar} />
         <div className="insp-title">{node.title}</div>
         {/* [②U4] 详情域徽章：期刊/IF/被引/年月/T 档（原 badges 块零变搬移→SideBadges） */}
         <SideBadges node={node} metrics={props.metrics} />
@@ -210,11 +209,8 @@ export function LineageSidePanel(props: {
             <LineageSideAiNotes paperId={node.paperId} />
           </>
         )}
-        {/* [②U4/A5] 底部注记。[F-UIRES-03 C3 第一段] 「改月」子句随改月链退役删
-            （INV-107）；[C3 第二段·v1.7] 「双击卡片跳转阅读器」子句随卡双击退役
-            删（全应用唯一保留双击=片段条目——B2 终态）；[B5①] 跳转入口=头部操
-            作行「去阅读器」钮（常驻） */}
-        <div className="insp-foot">编辑模式：调序 / 画线 / 调线</div>
+        {/* [B5 设计稿 §3.5 文案删除 3——wave C 2026-11-25] 底部注记「编辑模式：调序 / 画线 / 调线」
+            （纯操作教学文案）连同 .insp-foot 脚注行整体删除；面板底部=真实笔记/元数据区。 */}
       </div>
     </div>
   )

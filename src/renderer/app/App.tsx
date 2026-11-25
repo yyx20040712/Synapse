@@ -1,11 +1,13 @@
 /**
- * 应用骨架（infra，无工单）：[T3-P2] 壳层改版——grid 38px/1fr/26px 三行
- * （顶栏 wordmark 签名+居中 gsearch+caption 三键｜Rail 72px 窄轨+ViewHost｜状态条）
+ * 应用骨架（infra，无工单）：[T3-P2] 壳层改版——grid 38px/1fr 两行
+ * （顶栏 wordmark 签名+居中 gsearch+caption 三键｜Rail 72px 窄轨+ViewHost）
  * +视图切换+错误边界。F-UI-03 折叠 nav 面已退役（方案切换=删除旧方案）。
  * [T3-P1] ErrorBoundary 随 ViewHost 拆件（视图边界迁驻）。
- * [B2 §3.1] 组合根只持值型/装配面：视图路由=ViewHost、状态条数据=
- * AppStatusBarHost——nodes/edges 数组本体与 noteByPaper 对象本体只由宿主/投影
- * 订阅（App 根仅取布尔投影，见 app-b2-host-isolation 探针）。
+ * [B2 §3.1] 组合根只持值型/装配面：视图路由=ViewHost；nodes/edges 数组本体与
+ * noteByPaper 对象本体不进 App 根，只由投影订阅（见 app-b2-host-isolation 探针）。
+ * [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原第三行 26px
+ * 状态条及其数据宿主 AppStatusBarHost/StatusBar 整删；网格由三行翻两行；THEME_LABEL
+ * 仍由设置页 ThemeChoices 消费（常量保留，本件不再传参）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ConflictDialog } from '../features/lineage/ConflictDialog'
@@ -16,7 +18,6 @@ import { useFigureExtractionBridge } from '../shared/figures/useFigureExtraction
 import { useSettingsStore } from '../features/settings/settings.store'
 import { UI_SCALE, type AppSettings } from '@shared/ipc/schemas'
 import { isGuideState, useWorkspaceStore } from '../features/workspaces/workspace.store'
-import { THEME_LABEL } from '../shared/ui-constants'
 import { registerKeymap, unregisterKeymap } from '../shared/keymap'
 import { Rail, type ViewId } from './Rail'
 import { TitleBarControls } from './TitleBarControls'
@@ -26,7 +27,6 @@ import { bindLineageFolderEvents } from '../features/lineage/lineage-folder-reco
 import { RecoveryBarHost } from './RecoveryBarHost'
 import { useWsGuideImportBridge } from './useWsGuideImportBridge'
 import { ViewHost } from './ViewHost'
-import { AppStatusBarHost } from './AppStatusBarHost'
 
 /** [T3-U1] dataset.theme 合法档校验（非法/缺省=undefined 走 ?? light 兜底；枚举同源 schema——B1 后两档） */
 function normalizeTheme(value: string | undefined): AppSettings['theme'] | undefined {
@@ -56,7 +56,8 @@ export function App(): JSX.Element {
     void wsLoad()
   }, [wsLoad])
   // 引导态布尔投影（导入升格桥+ViewHost guideHidden 消费）——只订阅派生布尔，
-  // 课题列表数组本体归 AppStatusBarHost（§3.2 禁双层订阅）
+  // 课题列表数组本体不进 App 根（§3.2 禁双层订阅；[B5 wave C] 原持有方 AppStatusBarHost
+  // 随状态条整删退役）
   const wsGuide = useWorkspaceStore((s) => isGuideState(s))
   // R2-SET1 界面缩放：设置驻留加载（挂载点在组合根——设置页外也要有档位）。
   // 失败容忍：load 抛错静默用默认档 small（`?? 'small'` 兜底；设置页自身 load
@@ -151,9 +152,10 @@ export function App(): JSX.Element {
       </header>
       {/* min-height:0：内容行高度约束（文档永不滚不变量——滚动只发生在 main 容器）。
           R2-SET1：app-content-row=界面缩放挂载行（zoom 经 --ui-scale）——rail+main
-          同入 zoom，topbar/statusbar 行外结构性豁免（E5：caption 三键/顶栏保持
-          系统观感）；PDF 页列在 theme-shell.css [data-page-column] 反向补偿恒视觉 1.0。
-          [F-VISFB-65 回炉 R2] zone=内容区列容器（.app-shell 三行模板不动——
+          同入 zoom，topbar 行外结构性豁免（E5：caption 三键/顶栏保持系统观感；
+          [B5 wave C] 原 statusbar 行随状态条整删）；PDF 页列在 theme-shell.css
+          [data-page-column] 反向补偿恒视觉 1.0。
+          [F-VISFB-65 回炉 R2] zone=内容区列容器（.app-shell 两行模板不动——
           恢复条与本行纵向排布，条空窗 0 高不占位） */}
       <div className="app-content-zone">
       <RecoveryBarHost />
@@ -164,8 +166,6 @@ export function App(): JSX.Element {
         <ViewHost view={view} changeView={changeView} quitDirty={quitDirty} guideHidden={wsGuide} />
       </div>
       </div>
-      {/* T3-P2 状态条 26px（等宽字仪表带——真文本槽位锁在 app-shell.test） */}
-      <AppStatusBarHost themeLabel={THEME_LABEL[theme]} />
       <ToastHost />
       {/* [F-VISFB-65 单元二] GHOST_FOLDER 降级询问（app 级——quit 交叠期任意
           视图可见；无待决渲染 null） */}

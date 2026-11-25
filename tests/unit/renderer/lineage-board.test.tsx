@@ -43,6 +43,7 @@ stubApiEvents({
 })
 
 import { LineageBoard } from '../../../src/renderer/features/lineage/LineageBoard'
+import { LineagePage } from '../../../src/renderer/features/lineage/LineagePage'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.store'
 import { App } from '../../../src/renderer/app/App'
@@ -209,14 +210,14 @@ describe('LineageBoard —— 节点菜单（加边/改父/删边/删节点）',
   })
 })
 
-describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内错误——退役行 4 chip）', () => {
-  it('失败指示+重试：行内错误可见，重试点击重发；成功后指示消退', async () => {
+describe('LineageBoard —— 保存态指示（[②U2] 工具组保存钮行内错误——退役行 4 chip；[B5 wave C] 告警宿主迁稳定 Page 外壳）', () => {
+  it('失败指示+重试：行内错误可见，重试点击重发；成功后指示消退（[B5 设计稿 §3.2/§6.2——wave C 2026-11-25 断言翻转，§11 清单漏列件] 告警自 Board 渲染树内的工具组迁驻页面稳定外壳 LineagePageBody→LineageToolbar→LineageWriteErrorAlert；写路径仍经 Board→Timeline，挂载宿主改 LineagePage，断言意图不变）', async () => {
     stubApi.lineage.patchNode
       .mockResolvedValueOnce({ ok: false, error: { code: 'DB_ERROR', message: '写入失败' } })
       .mockResolvedValueOnce({ ok: true, data: node('A', OVL) })
     seedLineage([node('A', OVL)])
-    useLineageViewStore.getState().setMode('edit') // [②U2/A11] 工具组仅 edit 可见
-    mount(<LineageBoard onSelectNode={() => undefined} />)
+    useLineageViewStore.getState().setMode('edit') // [②U2/A11] 历史：工具组曾仅 edit 可见；[B5 §2.3] 三模式常驻后模式不再是告警出现的前提
+    mount(<LineagePage />) // [B5 §6.2/§3.2] 告警宿主=稳定 Page 外壳（写 Board 不再承载告警）
     await writeViaNodePatch('A')
     const bar = q('[data-testid="lineage-save-error"]')
     expect(bar?.textContent).toContain('写入失败')

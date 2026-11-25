@@ -98,12 +98,16 @@ export async function freezeAnimations(page: Page): Promise<() => Promise<void>>
 /**
  * zoom 档位探针（§8.1.2——INV-96 逆变换族 e2e 面）：
  * 1. 把画布 zoom 设到 scale 档（步进 0.1、域 [0.5,2.0]）。设置机制=**Ctrl+
- *    滚轮步进**（timeline-zoom-hook：deltaY<0=+0.1，badge 角标非下拉=单动作
+ *    滚轮步进**（timeline-zoom-hook：deltaY<0=+0.1；百分比复位钮=单动作
  *    复位钮——机制探查申报见票简报）；
- * 2. 等 .tl-content transform 稳定（badge 文本=目标百分比+computed transform
+ * 2. 等 .tl-content transform 稳定（百分比复位钮文本=目标百分比+computed transform
  *    =期望矩阵/复位 none——几何读数前提）；
  * 3. 执行 probeFn（用例断言体——在目标档位几何稳定态下运行）；
- * 4. 毕后复位 1.0（badge 单动作点击=resetZoom）并等稳定（同 2 口径）。
+ * 4. 毕后复位 1.0（百分比复位钮单动作点击=resetZoom）并等稳定（同 2 口径）。
+ * [B5 设计稿 §11.3 geo-probes——wave C 2026-11-25] 百分比复位钮（testid zoom-badge 不变）自画布
+ * 右下角迁入页面顶部工具栏 LineageZoomControls：稳定文本=纯 `N%`（原「N% ▾」——右下角角标语义退役）；
+ * 点击工具栏控件前先滚动可见（1024×768 下工具栏自身横滚——CI 窄视口锚定规则）；仍读 .tl-content
+ * computed transform——探针几何算法零改。
  */
 export async function zoomProbe(page: Page, scale: number, probeFn: () => Promise<void>): Promise<void> {
   const steps10 = Math.round(scale * 10)
@@ -120,7 +124,7 @@ export async function zoomProbe(page: Page, scale: number, probeFn: () => Promis
   const waitStable = async (percent: number, matrix: string): Promise<void> => {
     await expect
       .poll(badgeText, { timeout: 5_000 })
-      .toBe(`${percent}% ▾`)
+      .toBe(`${percent}%`)
     await expect.poll(transform, { timeout: 5_000 }).toBe(matrix)
   }
   // 当前档读取（badge 文本=Math.round(z*100)——store 单源派生面）
@@ -149,7 +153,9 @@ export async function zoomProbe(page: Page, scale: number, probeFn: () => Promis
   try {
     await probeFn()
   } finally {
-    // 复位（badge 单动作点击=resetZoom→1.0——contentStyle 空对象=transform none）
+    // 复位（百分比复位钮单动作点击=resetZoom→1.0——contentStyle 空对象=transform none）；
+    // [B5] 复位钮在页面顶部工具栏——点击前滚动可见（工具栏自身横滚时按钮可在视口外）
+    await badge.scrollIntoViewIfNeeded()
     await badge.click()
     await waitStable(100, 'none')
   }

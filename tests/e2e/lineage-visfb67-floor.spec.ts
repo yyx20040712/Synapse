@@ -37,9 +37,12 @@
  * V67-01 真实滚轮（.timeline boundingBox 定位）+V67-05 拖拽（1440 档
  * 全卡共视——scrollport 877≥span 620，双端锚不需横滚）；1024/640 档
  * 无鼠标拖拽面。always-active（K3）。
+ * [B5 设计稿 §3.3/§3.5/§11.3——wave C 2026-11-25 断言翻转] V67-07 空图锚=画布 .tl-content（原 .tl-empty
+ * 「暂无脉络图」文案节点随 §3.5 删除；几何守卫逐值沿承——.tl-content 盒代位）+笔记层真实交互；
+ * 百分比文本适配新 ZoomControls（纯 N%）。V67-01~06 零改（zoom/scroll 真实矩阵沿承）。
  *
  * 收敛纪律（k1-W2）：zoom 档收敛条件=绝对行形态/transform 生效信号（禁以
- * badge 文本/W 读数为收敛条件——badge 仅作内容断言）；setViewportSize 逐档
+ * 百分比复位钮文本/W 读数为收敛条件——百分比钮仅作内容断言）；setViewportSize 逐档
  * 后 poll W 稳定（RO→rAF→React 重渲染收敛，探针 stableW 同法）。
  */
 import { test, expect, type Page } from '@playwright/test'
@@ -434,10 +437,10 @@ test.describe('F-VISFB-67 窄视口地板（min-width 577+flex-shrink:0+overflow
     await app.close()
   })
 
-  test('V67-07 [轮 4 W-5] 空图态守卫：:has(.month-frame) 使空图不铺 717——640 视口 .tl-empty 全落 scrollport+零横滚', async () => {
+  test('V67-07 [轮 4 W-5→B5 §3.3] 空图态守卫：:has(.month-frame) 使空图不铺 717——640 视口画布层全落 scrollport+零横滚；空图=画布+笔记层（无空态文案）', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'f67-v07-'))
     await bootstrapMigrations(userData)
-    // 1 篇幽灵文献（避零库引导面）+零脉络节点——空图态（.tl-empty 渲染承载）
+    // 1 篇幽灵文献（避零库引导面）+零脉络节点——空图态（[B5] 画布 .tl-content 渲染承载；原 .tl-empty 文案节点退役）
     const sha = createHash('sha256').update('f67-empty').digest('hex')
     await seedPaperRow(userData, `${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}.pdf`, sha, 'F67空图文献', 'f67-empty-p1')
     const app = await launch(userData)
@@ -445,22 +448,36 @@ test.describe('F-VISFB-67 窄视口地板（min-width 577+flex-shrink:0+overflow
     await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
     await win.setViewportSize({ width: 640, height: 800 })
     await win.getByRole('button', { name: '脉络', exact: true }).click()
-    await expect(win.locator('.tl-empty')).toContainText('暂无脉络图', { timeout: 10_000 })
-    // 空图不铺 717：.tl-empty 盒全落 timeline scrollport 横向区间（铺宽态
-    // 盒随内容 717 居中溢出 scrollport [563,640] 即红）
+    // [B5 设计稿 §3.3/§3.5/§11.3 断言翻转] ready 空图=画布在场、零卡、无「暂无脉络图」文案节点
+    await expect(win.locator('.tl-content')).toBeVisible({ timeout: 10_000 })
+    await expect(win.getByTestId('lineage-timeline')).not.toHaveAttribute('aria-busy', 'true')
+    await expect(win.locator('.tl-card')).toHaveCount(0)
+    await expect(win.locator('.tl-empty')).toHaveCount(0)
+    await expect(win.getByText('暂无脉络图')).toHaveCount(0)
+    // 空图不铺 717：画布层盒全落 timeline scrollport 横向区间（铺宽态盒随内容 717
+    // 居中溢出 scrollport [563,640] 即红）
     const geo = await win.evaluate(() => {
       const tl = document.querySelector('.timeline') as HTMLElement | null
-      const empty = document.querySelector('.tl-empty') as HTMLElement | null
-      if (tl === null || empty === null) return null
+      const content = document.querySelector('.tl-content') as HTMLElement | null
+      if (tl === null || content === null) return null
       const t = tl.getBoundingClientRect()
-      const e = empty.getBoundingClientRect()
-      return { tlX: t.x, tlR: t.x + t.width, eX: e.x, eR: e.x + e.width, scrollW: tl.scrollWidth, clientW: tl.clientWidth }
+      const c = content.getBoundingClientRect()
+      return { tlX: t.x, tlR: t.x + t.width, cX: c.x, cR: c.x + c.width, scrollW: tl.scrollWidth, clientW: tl.clientWidth }
     })
-    if (geo === null) throw new Error('.timeline/.tl-empty 缺席')
-    expect(geo.eX, `空态盒左界 ${geo.eX.toFixed(1)} 落 scrollport 左界 ${geo.tlX}`).toBeGreaterThanOrEqual(geo.tlX - 0.5)
-    expect(geo.eR, `空态盒右界 ${geo.eR.toFixed(1)} 落 scrollport 右界 ${geo.tlR}`).toBeLessThanOrEqual(geo.tlR + 0.5)
+    if (geo === null) throw new Error('.timeline/.tl-content 缺席')
+    expect(geo.cX, `空图画布层左界 ${geo.cX.toFixed(1)} 落 scrollport 左界 ${geo.tlX}`).toBeGreaterThanOrEqual(geo.tlX - 0.5)
+    expect(geo.cR, `空图画布层右界 ${geo.cR.toFixed(1)} 落 scrollport 右界 ${geo.tlR}`).toBeLessThanOrEqual(geo.tlR + 0.5)
     // 零横滚（空图无内容溢出——铺宽态 spill>0 即红）
     expect(geo.scrollW, `空图零横滚（scrollWidth ${geo.scrollW}==clientWidth ${geo.clientW}）`).toBeLessThanOrEqual(geo.clientW)
+    // 笔记层在场（真实交互）：edit 态右键画布空白出「新建悬浮笔记」菜单——空图笔记层不随文案节点删除
+    await win.getByTestId('lineage-mode-edit').scrollIntoViewIfNeeded()
+    await win.getByTestId('lineage-mode-edit').click()
+    const canvas = win.locator('.tl-content')
+    await canvas.click({ button: 'right', position: { x: 8, y: 60 } })
+    await expect(win.getByTestId('note-anchor-menu').getByRole('menuitem', { name: '新建悬浮笔记' })).toBeVisible({
+      timeout: 5_000
+    })
+    await win.keyboard.press('Escape')
     await app.close()
   })
 })

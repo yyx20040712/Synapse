@@ -3,6 +3,8 @@
  * [T3-P7A/P7B] EdgeOverlay CSS 锁+buildSnapshot 快照面拆件
  * （[F-LANEGRID-01 B2b] lineage-edge-overlay 行数红线 ≤500 拆出——内容零改）。
  * jsdom 无布局——CSS 文本锁与快照采集直测（几何断言驻主件）。
+ * [B5 设计稿 §3.2/§3.5/§4.1/§11.2「lineage-edge-overlay-css：改锁单排 shell、nowrap、原生横滚、
+ * focus accent；保留拖拽 CSS 负锚；删 drag-hint 三组 CSS 正则」——wave C 2026-11-25 断言翻转]
  * always-active 裸 describe（K3）。
  */
 import { readFileSync } from 'node:fs'
@@ -52,8 +54,21 @@ describe('T3-P7A/P7B EdgeOverlay CSS 锁（D-1/D-2/D-22；U8 视觉内联）', (
     // 编辑态卡 hover faint（mockup L259-260）
     expect(css).toMatch(/\.timeline\.editing \.tl-card\s*\{[^}]*outline:\s*1px dashed transparent/)
     expect(css).toMatch(/\.timeline\.editing \.tl-card:hover\s*\{[^}]*outline-color:\s*var\(--faint\)/)
-    // .lg-toolbar sticky（mockup L204-205 逐值——色值经 color-mix var(--bg) 承载）
-    expect(css).toMatch(/\.lg-toolbar\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;[^}]*z-index:\s*12;[^}]*padding:\s*10px 18px/)
+    // [B5 设计稿 §3.2——wave C 2026-11-25 断言翻转] 原「.lg-toolbar sticky 挂 .timeline 内」退役（工具栏迁页面
+    // 顶部稳定外壳）：单排工具栏三层壳——shell=flex 列 shrink-0 子件（min-width:0）；scroll=原生横滚
+    // （overflow-x:auto／overflow-y:hidden／max-width:100%）；toolbar=不折行（nowrap、width:max-content、
+    // min-width:100% 铺满、align-items:center）；直接子组/分隔符 flex:0 0 auto + nowrap（约束原文）
+    expect(css).toMatch(/\.lg-toolbar-shell\s*\{[^}]*flex:\s*none;[^}]*min-width:\s*0;/)
+    expect(css).toMatch(/\.lg-toolbar-scroll\s*\{[^}]*overflow-x:\s*auto;[^}]*overflow-y:\s*hidden;[^}]*max-width:\s*100%;/)
+    // [B5 §3.2 wave C 视觉门发现] 横滚容器自身=absolute 后代的包含块（sr-only 标签）：否则其包含块上溯到
+    // position:relative 的壳层——逃出横滚容器裁剪面，1024 下最右开关的 sr-only 标签把 main 右溢→页面级横向滚动条
+    expect(css).toMatch(/\.lg-toolbar-scroll\s*\{[^}]*position:\s*relative;[^}]*overflow-x:\s*auto;/)
+    expect(css).toMatch(
+      /\.lg-toolbar\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*nowrap;[^}]*width:\s*max-content;[^}]*min-width:\s*100%;[^}]*align-items:\s*center;/
+    )
+    expect(css).toMatch(/\.lg-toolbar\s*>\s*\*\s*\{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*nowrap;/)
+    expect(css, 'sticky 定位随「挂 .timeline 内」退役（不再钉在滚动容器内）').not.toMatch(/\.lg-toolbar\s*\{[^}]*position:\s*sticky/)
+    expect(css, 'min-width:100% 只用于轨道铺满——不给应用/视口设最小宽度').not.toMatch(/(?:body|html|\.app-shell)[^{]*\{[^}]*min-width:\s*100%/)
     // .lg-btn 主/ghost（mockup L206-210——阴影=三稿同值 token 承载）
     expect(css).toMatch(
       /\.lg-btn\s*\{[^}]*color:\s*var\(--accent-ink\);[^}]*background:\s*var\(--accent\);[^}]*padding:\s*6px 14px;[^}]*border-radius:\s*8px;[^}]*box-shadow:\s*var\(--shadow-lg-btn\)/
@@ -61,10 +76,9 @@ describe('T3-P7A/P7B EdgeOverlay CSS 锁（D-1/D-2/D-22；U8 视觉内联）', (
     expect(css).toMatch(
       /\.lg-btn\.ghost\s*\{[^}]*background:\s*var\(--panel\);[^}]*color:\s*var\(--dim\);[^}]*border:\s*1px solid var\(--line\);[^}]*box-shadow:\s*none/
     )
-    // drag-hint 双态（[T3-P8] D-P7B-1 兑现——mockup L218 base accent+L219 edit signal）
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*margin-left:\s*auto;[^}]*color:\s*var\(--accent\);[^}]*background:\s*var\(--accent-soft\)/)
-    expect(css).toMatch(/\.drag-hint\s*\{[^}]*border:\s*1px dashed var\(--accent\)/)
-    expect(css).toMatch(/\.timeline\.editing \.drag-hint\s*\{[^}]*color:\s*var\(--signal\);[^}]*background:\s*var\(--signal-a08\);[^}]*border-color:\s*var\(--signal\)/)
+    // [B5 §3.5 文案删除 1/§11.2] drag-hint 三态与其全部 .drag-hint CSS 退役——零残留负锚（原三组正则翻转）
+    expect(css).not.toMatch(/\.drag-hint/)
+    expect(css).not.toMatch(/\.timeline\.editing\s+\.drag-hint/)
     // .pop 弹层基础面（mockup L287 逐值——fixed 240px 挂视口；[F-UIRES-03 C3]
     // 脉络侧弹层消费面已随改月链退役——基础面留驻供通用弹层族）
     expect(css).toMatch(/\.pop\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*130;[^}]*width:\s*240px;[^}]*border-radius:\s*10px;[^}]*box-shadow:\s*var\(--shadow-drag\)/)

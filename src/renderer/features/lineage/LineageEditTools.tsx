@@ -4,19 +4,20 @@
  * [B5 设计稿 §3.1/§10.2] LineageEditTools —— 编辑工具组（mockup §3.3：[小手选择]
  * [— 实线(色)][╌ 虚线(色)]；自 LineageToolbar 拆件）。
  *
- * 本波（A 波）只搬不改：工具组仍驻 LineageTimeline、仍仅 edit 模式挂载，宿主
- * .lg-toolbar 的直接子序=保存│选择/线型│撤销重做不变（本件片段返回——不包节点，
- * DOM 结构零变）；testid 全保持。「三模式常驻、browse/focus 只禁用」与迁入页面
- * 顶部单排工具栏属后续波（§2.3/§3.1/§15.1 步骤 4），本波不做。
+ * [B5 wave A 纯拆件] 自 LineageToolbar 拆出（代码与锚注释同迁，行为零变）。
+ * [B5 设计稿 §2.3/§3.1——wave C 2026-11-25] 本件驻页面顶部单排工具栏 LineageToolbar 的规定槽位
+ * （保存/撤销重做之后、缩放之前）；片段返回——不包节点，直接子序=选择│实线+展开│虚线+展开。
+ * 三模式常驻：browse/focus 只禁用不消失（「仅 edit 挂载、非 edit 整组隐藏」退役）；testid 全保持。
  *
  * - 线型组 [F-UIRES-03 C1]：每 kind（solid/dashed）=图标钮（描边=该 kind 当前色
  *   per-kind——INV-108）+右独立「展开」chevron 钮；列表=LineTypeMenu 拆件（6 色行+
  *   行内改名=一编辑单元——saveLineTypeNames）。
- * - 工具组锁定面沿承：同会话 saving（任一在途写）=选择/线型交互钮禁用
- *   （INV-94 编辑锁）；保存/撤销/重做钮按各命令可用性（留宿主 LineageToolbar）。
- * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar
- *   直连 view.store 同型）；本件零 props——是否挂载由宿主按 mode 决定
- *   （原「props 面=mode 容器注入沿承」指宿主 LineageToolbar 的 mode prop）。
+ * - 工具组锁定面：同会话 saving（任一在途写）=选择/线型交互钮禁用（INV-94 编辑锁）；
+ *   [B5 §2.3] 非 edit 模式（browse/focus）同钮一律禁用——锁=flushing ∨ mode≠edit；保存/撤销/重做
+ *   钮按各命令可用性（留宿主 LineageToolbar）。
+ * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar 直连 view.store 同型）；
+ *   本件零 props——[B5 §3.1] 宿主 LineageToolbar 三模式恒挂载本件（原「是否挂载由宿主按 mode 决定」
+ *   退役：模式由本件自读 view.store 判锁）。
  *
  * ── 接口层 ── export function LineageEditTools(): JSX.Element
  *
@@ -52,14 +53,16 @@ function LineToolIcon({ kind, color }: { kind: 'solid' | 'dashed'; color: string
 export function LineageEditTools(): JSX.Element {
   const lineTypeNames = useLineageStore((s) => s.lineTypeNames)
   const flushing = useLineageStore((s) => s.flushing)
+  const viewMode = useLineageViewStore((s) => s.mode)
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
   const paletteFor = useLineageViewStore((s) => s.paletteFor)
 
   const store = useLineageStore.getState
   const view = useLineageViewStore.getState
-  // 工具组锁定面：同会话 saving=选择/线型交互钮禁用（§2.2）
-  const lock = flushing
+  // 工具组锁定面：同会话 saving=选择/线型交互钮禁用（§2.2）；[B5 §2.3] 非 edit 模式同钮一律禁用
+  // （三模式常驻、只禁用不消失）
+  const lock = flushing || viewMode !== 'edit'
   const listOpen = paletteFor !== null
   const dashed = paletteFor === 'dashed'
   // [回炉 R6] 列表单例（渲染进当前展开钮的锚槽内——[F-UIRES-03 C1] paletteFor

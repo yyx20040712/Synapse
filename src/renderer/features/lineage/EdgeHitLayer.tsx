@@ -4,7 +4,8 @@
  * 250 行红线）：z4 层透明命中 path 集（编辑态 pointer-events:stroke——CSS
  * 双闸）+点击/双击/右键/按下分派+[回炉 R2] 悬停联动（hoveredEdgeId 上浮
  * 可见层挂同键类）+手柄集驻层内最上（EdgeHandles）。
- * [RR5] focus 态 hover 扫描：hoverScan=true 时 document pointermove 数学
+ * [RR5→B5 设计稿 §4.1] focus 态 hover 扫描：hoverScan=true（独立 focusMode 信号——与聚焦集
+ * 是否为空无关，[B5 wave C 2026-11-25] 原「focus dim 激活」兼任开关退役）时 document pointermove 数学
  * 命中（段投影距离 ≤SCAN_R 内容坐标）驱动同一 onHoverChange 联动——
  * pointer-events 策略=命中层保持 focus 态关闭（.timeline.editing 专属开
  * 启），零 pointer-events 变更=卡点击零抢占（扫描只读不消费事件）。
@@ -43,7 +44,7 @@ export function EdgeHitLayer(props: {
   onEdgeHitClick?: (edgeId: string, ev: { clientX: number; clientY: number; stopPropagation(): void }) => void
   /** [R2] 悬停联动（entering=false 撤同键——仅当前键）；[RR5] focus 扫描同驱动 */
   onHoverChange(edgeId: string, entering: boolean): void
-  /** [RR5] focus dim 态激活 hover 扫描（document pointermove 数学命中） */
+  /** [RR5] focus 模式激活 hover 扫描（document pointermove 数学命中——[B5] 由 EdgeOverlay focusMode 驱动） */
   hoverScan?: boolean
   /** [F-VISFB-23 N2] browse 态激活线名扫描（rAF 节流——非 browse 零监听） */
   browseScan?: boolean

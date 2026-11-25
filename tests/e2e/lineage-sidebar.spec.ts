@@ -13,7 +13,10 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
  *   End 直达 480 / ArrowLeft −16 / Home 直达 200+aria-valuenow 随动（四键
  *   全域=单测族承载，e2e 代表键直证接线）；
  * - reload 后宽保持（synapse:sidebar:width 持久恢复）；
- * - 头部收起钮 → 48px 窄条（点击任意处展开）→ 展开回记忆宽。
+ * - [B5 设计稿 §3.4/§11.3/§12 B5-E11——wave C 2026-11-25 断言翻转] 左右栏从工具栏开合：原「头部
+ *   收起钮 → 48px 窄条（点击任意处展开）」退役——收起=宿主零 DOM（不占空 rail）、展开读回原宽；
+ *   同一时刻同一 testid 至多一个开关（动态 testid：lineage-sidebar-collapse／lineage-sidebar-expand；
+ *   lineage-nav-collapse／lineage-nav-expand）；localStorage 跨挂载保持（收起态 reload 后仍收起）。
  * 手柄在右缘=右移变宽；超上限拖拽目标出视口——CDP 合成坐标可达（真鼠标
  * 出窗路径同源）。种子=幽灵行+单节点直写（保证 ready 态有内容——空图路径
  * 由单测族承载）。
@@ -21,7 +24,7 @@ import { bootstrapMigrations, launch, seedLineageGraph, seedPaperRow } from './e
 
 const P = { id: 'e2e-uires03-sb', title: '侧栏尺寸论文', year: 2023 } as const
 
-test('详情栏拖拽调宽夹取 200–480+reload 持久+收起窄条往返', async () => {
+test('详情栏拖拽调宽夹取 200–480+reload 持久+工具栏开合往返（左右栏，收起不占空 rail）', async () => {
   const userData = await mkdtemp(join(tmpdir(), 'synapse-uires03-sb-'))
   await bootstrapMigrations(userData)
   const ghostSha = createHash('sha256').update(`uires03-${P.id}`).digest('hex')
@@ -47,11 +50,13 @@ test('详情栏拖拽调宽夹取 200–480+reload 持久+收起窄条往返', a
   const sidebar = win.getByTestId('lineage-sidebar')
   const panel = win.getByTestId('lineage-side-panel')
   await expect(panel).toBeVisible({ timeout: 10_000 })
-  // 选中节点（收起钮驻「节点详情」头区——空态无头区；点卡=产品路径 P-13）
-  await win.locator('.tl-card[data-node-id]').filter({ hasText: P.title }).click()
+  const navPane = win.getByTestId('lineage-nav-pane')
+  // [B5 E11] 右栏开关在工具栏（无需先选中节点——空态面板亦可收起）；原窗格内收起钮退役
   await expect(win.getByTestId('lineage-sidebar-collapse')).toBeVisible({ timeout: 10_000 })
+  await expect(win.locator('.side-collapse-btn')).toHaveCount(0)
   // 初始缺省 252（JS 态行内承载——CSS .lg-inspector 252 为无 JS 回退）
   expect((await sidebar.boundingBox())!.width).toBeCloseTo(252, 0)
+  expect((await navPane.boundingBox())!.width, '左栏缺省 208 展开').toBeCloseTo(208, 0)
 
   /** 自手柄当前位置拖 dx（手柄=aside 右缘：右移变宽） */
   const dragBy = async (dx: number): Promise<void> => {
@@ -89,20 +94,64 @@ test('详情栏拖拽调宽夹取 200–480+reload 持久+收起窄条往返', a
   await expect(rz).toHaveAttribute('aria-valuenow', '200')
   expect((await sidebar.boundingBox())!.width).toBeCloseTo(200, 0)
 
-  // 收起→48px 窄条（钮承载全条点击面=点任意处展开）→展开回记忆宽 200
-  await win.getByTestId('lineage-sidebar-collapse').click()
-  await expect(win.getByTestId('lineage-sidebar-rail')).toBeVisible()
-  expect((await sidebar.boundingBox())!.width).toBeCloseTo(48, 0)
-  await win.getByTestId('lineage-sidebar-rail').click()
+  // ── [B5 设计稿 §12 B5-E11] 工具栏开合往返（左右栏）──
+  const collapseSide = win.getByTestId('lineage-sidebar-collapse')
+  const expandSide = win.getByTestId('lineage-sidebar-expand')
+  const collapseNav = win.getByTestId('lineage-nav-collapse')
+  const expandNav = win.getByTestId('lineage-nav-expand')
+  // 开关可访问名与 svg（名称/aria/状态同源）
+  await expect(collapseSide).toHaveAttribute('aria-label', '收起详情面板')
+  await expect(collapseNav).toHaveAttribute('aria-label', '收起导航窗格')
+  expect(await collapseSide.locator('svg').count(), '右栏开关含 svg').toBeGreaterThan(0)
+  expect(await collapseNav.locator('svg').count(), '左栏开关含 svg').toBeGreaterThan(0)
+  // 右栏收起=宿主零 DOM（不占 48px 空 rail）；画布右缘推进到原侧板右缘（窄条在场即红）
+  const sideBoxBefore = (await sidebar.boundingBox())!
+  const timelineBefore = (await win.getByTestId('lineage-timeline').boundingBox())!
+  await collapseSide.click()
+  await expect(sidebar).toHaveCount(0)
+  await expect(panel).toHaveCount(0)
+  await expect(win.getByTestId('lineage-sidebar-rail')).toHaveCount(0) // 旧窄条 testid 退役
+  await expect(expandSide).toHaveAttribute('aria-label', '展开详情面板')
+  await expect(collapseSide).toHaveCount(0) // 同一时刻至多一个同 testid 开关
+  const timelineAfter = (await win.getByTestId('lineage-timeline').boundingBox())!
+  expect(
+    timelineAfter.x + timelineAfter.width,
+    `右栏收起不占空 rail：画布右缘 ${Math.round(timelineAfter.x + timelineAfter.width)} 应推进到原侧板右缘 ${Math.round(sideBoxBefore.x + sideBoxBefore.width)} 附近`
+  ).toBeGreaterThanOrEqual(sideBoxBefore.x + sideBoxBefore.width - 6)
+  expect(timelineBefore.x + timelineBefore.width, '前提：收起前画布右缘在侧板左缘').toBeLessThan(sideBoxBefore.x)
+  await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: P.title })).toBeVisible() // 真实卡文本仍在场
+  // 左栏收起=窗格零占位（无布局盒）；开关翻为展开态
+  await collapseNav.click()
+  expect(await navPane.boundingBox(), '收起态导航窗格零占位（display:none——boundingBox=null）').toBeNull()
+  await expect(expandNav).toHaveAttribute('aria-label', '展开导航窗格')
+  await expect(collapseNav).toHaveCount(0)
+  // 展开往返：右栏读回收起前的宽 200；左栏读回原宽 208
+  await expandSide.click()
   await expect(panel).toBeVisible()
-  expect((await sidebar.boundingBox())!.width).toBeCloseTo(200, 0)
+  expect((await sidebar.boundingBox())!.width, '右栏展开读回原宽').toBeCloseTo(200, 0)
+  await expect(collapseSide).toHaveAttribute('aria-label', '收起详情面板')
+  await expandNav.click()
+  expect((await navPane.boundingBox())!.width, '左栏展开读回原宽').toBeCloseTo(208, 0)
+  await expect(win.getByTestId('lineage-nav-graph')).toBeVisible()
 
-  // reload 持久恢复：宽 200 保持（synapse:sidebar:width）
+  // localStorage 跨挂载保持：右栏收起+左栏收起 → reload 重进 → 两者仍收起 → 工具栏展开读回原宽
+  await collapseSide.click()
+  await expect(sidebar).toHaveCount(0)
+  await collapseNav.click()
+  expect(await navPane.boundingBox()).toBeNull()
   await win.reload()
   await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
   await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(win.locator('.tl-card[data-node-id]').filter({ hasText: P.title })).toBeVisible({ timeout: 10_000 })
+  await expect(sidebar).toHaveCount(0) // 收起态跨挂载保持（synapse:sidebar:collapsed）
+  expect(await navPane.boundingBox(), '左栏收起态跨挂载保持（nav-pane prefs）').toBeNull()
+  await expect(expandSide).toHaveAttribute('aria-label', '展开详情面板')
+  await expect(expandNav).toHaveAttribute('aria-label', '展开导航窗格')
+  await expandSide.click()
   await expect(win.getByTestId('lineage-side-panel')).toBeVisible({ timeout: 10_000 })
-  expect((await win.getByTestId('lineage-sidebar').boundingBox())!.width).toBeCloseTo(200, 0)
+  expect((await win.getByTestId('lineage-sidebar').boundingBox())!.width, '宽 200 持久恢复（synapse:sidebar:width）').toBeCloseTo(200, 0)
+  await expandNav.click()
+  expect((await navPane.boundingBox())!.width).toBeCloseTo(208, 0)
 
   await app.close()
 })

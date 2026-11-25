@@ -173,13 +173,16 @@ describe('T3-P6 LineageTimeline 结构渲染（真实文本）', () => {
     }
   })
 
-  it('空图空态文案保活：暂无脉络图（[②U2/A11] 工具组仅 edit 可见；[F-ALIGN-01] 文案沿承 D6 不引导+添加节点钮零残留负锚）', () => {
+  it('[B5 §11.2/§3.5 断言翻转] 空图：不渲染「暂无脉络图」，画布 .tl-content 在场；工具栏不在 Timeline 渲染树；添加节点/导入入口零残留负锚', () => {
     useLineageViewStore.setState({ mode: 'edit' })
     mount(<LineageTimeline nodes={[]} edges={[]} />)
-    expect(host?.textContent).toContain('暂无脉络图')
-    // 工具条在空图在场；[F-ALIGN-01] 添加节点钮随手动添加路径退役——零残留
-    // 负锚（在场即红）；[F-BAKRET-01] 导入按钮随草稿导入链退役——零残留负锚
-    expect(host?.querySelector('.timeline .lg-toolbar')).not.toBeNull()
+    expect(host?.textContent).not.toContain('暂无脉络图') // 原「空态文案保活」随 §3.5 文案删除翻转
+    expect(host?.querySelector('.tl-content'), '空图画布在场').not.toBeNull()
+    expect(host?.querySelector('.tl-empty')).toBeNull()
+    // [B5 §3.1] 工具栏迁页面顶部稳定外壳——Timeline 渲染树内零工具栏（原「工具条在空图在场」翻转）
+    expect(host?.querySelector('.timeline .lg-toolbar')).toBeNull()
+    // [F-ALIGN-01] 添加节点钮随手动添加路径退役——零残留负锚（在场即红）；[F-BAKRET-01] 导入按钮
+    // 随草稿导入链退役——零残留负锚（在场即红）
     expect(host?.querySelector('[data-testid="lineage-add-node"]')).toBeNull()
     expect(host?.querySelector('[data-testid="lineage-import"]')).toBeNull()
     expect(host?.querySelector('[data-testid="edge-pop"]')).toBeNull()

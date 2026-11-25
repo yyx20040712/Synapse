@@ -12,6 +12,9 @@
  * 全部卡入首行单行，DOM 序不变）；瀑布错位 offsets prop 链随瀑布退役删除。
  * [F-UIRES-03 C3] 改月飞行 flash 高亮+月标点击回调随改月链退役删除
  * （INV-107）；[F 项搭车] 头注「fixed 离流」陈旧句改写（absolute 含块=.month-frame——session 头注）。
+ * [B5 设计稿 §4.1/§4.2 第 3 条/§11.2——wave C 2026-11-25 断言翻转] 聚焦无 dim：删 bright 邻接集入参与 dim 激活
+ *   两个 props 与卡的 dim 入参（原「非 bright 卡挂 dim 类」退役）；focusIds 保留=调用方按模式门控后的 accent 集。
+ *   空图（零分组）照常渲染=零年段节点（不为空图另造文案——LineageTimeline 头注）。
  */
 import { useCallback } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
@@ -44,11 +47,6 @@ export function TimelineYears(props: {
   dragSlot?: DragSlotPreview | null
   /** [F-LGRAPH-01①U5] P-8 聚焦集（仅被点卡 accent 边框——本集沿承不扩邻接） */
   focusIds?: ReadonlySet<string>
-  /** [F-VISFB-21 C4] bright 集（focus∪双向一度邻接——dim 判定源；缺省视全
-   *  非 bright——宿主 dimUnfocused 激活时恒随附） */
-  brightIds?: ReadonlySet<string>
-  /** [②U7/P-18] 聚焦 dim 激活（集非空）——非 bright 卡挂 .dim（0.3/hover 0.6） */
-  dimUnfocused?: boolean
   onCardClick: NonNullable<TimelineCallbacks['onNodeClick']>
   /** [F-STAR-01 A3 点亮] 星标区点击（三模式均 toggle——宿主 toggleNodeStar） */
   onCardStarClick?: (nodeId: string) => void
@@ -71,7 +69,7 @@ export function TimelineYears(props: {
         selected={props.selectedNodeId === n.id}
         ctx={props.ctxNodeId === n.id}
         focused={props.focusIds?.has(n.id) === true}
-        dim={props.dimUnfocused === true && props.brightIds?.has(n.id) !== true}
+
         dragging={dragging}
         onNodeClick={props.onCardClick}
         onNodeContextMenu={props.onNodeContextMenu}
@@ -79,7 +77,7 @@ export function TimelineYears(props: {
         onCardPointerDown={props.onCardPointerDown}
       />
     ),
-    [pubNos, paperMetrics, tagNames, props.selectedNodeId, props.ctxNodeId, props.focusIds, props.brightIds, props.dimUnfocused, props.onCardClick, props.onCardStarClick, props.onCardPointerDown, props.onNodeContextMenu]
+    [pubNos, paperMetrics, tagNames, props.selectedNodeId, props.ctxNodeId, props.focusIds, props.onCardClick, props.onCardStarClick, props.onCardPointerDown, props.onNodeContextMenu]
   )
   return (
     <>

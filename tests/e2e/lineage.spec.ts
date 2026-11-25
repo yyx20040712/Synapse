@@ -76,6 +76,7 @@ import { expectRectNear, freezeAnimations, zoomProbe } from './geo-probes'
 import {
   bootstrapMigrations,
   launch,
+  liveDbScript,
   seedAiNote,
   seedAnnotation,
   seedLineageGraph,
@@ -1042,9 +1043,12 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(win.getByTestId('lineage-side-panel')).toContainText('Water Res.')
     await expect(win.getByTestId('lineage-side-panel')).toContainText('IF 11.2')
     await expect(win.getByTestId('lineage-side-panel')).toContainText('被引 17')
-    // [F-UIRES-03 C3·v1.7] insp-foot 双击子句退役删（改月子句第一段已删——
+    // [B5 设计稿 §3.5 文案删除 3——wave C 2026-11-25 断言翻转] 侧栏底部「编辑模式：调序 / 画线 / 调线」纯操作教学
+    // 脚注随方案切换删除（负锚）；底部=真实笔记/元数据区（全文笔记节真文本在场）
+    await expect(win.getByTestId('lineage-side-panel')).not.toContainText('编辑模式：调序 / 画线 / 调线')
+    await expect(win.getByTestId('lineage-side-panel')).toContainText('全文笔记')
+    // [F-UIRES-03 C3·v1.7] 双击子句退役删（改月子句第一段已删——
     // INV-107）；卡双击跳转链退役→负锚（dblclick 不跳）+两钮新入口承载
-    await expect(win.getByTestId('lineage-side-panel')).toContainText('编辑模式：调序 / 画线 / 调线')
     await expect(win.getByTestId('panel-star')).toHaveAttribute('title', '星标') // [F-DBCAMP-01 DB-4 / F-STAR-01 A4] 点亮（未标记文案）
     await cardA.dblclick()
     await win.waitForTimeout(500) // 负向观察窗（错实现下跳转链 ~100ms 内切视图）
@@ -1255,13 +1259,15 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
   })
 
   /**
-   * [F-LGRAPH-01②U6/U7] T13=聚焦 dim+缩放+拖拽候选槽+退役零残留。
+   * [F-LGRAPH-01②U6/U7→B5 设计稿 §4] T13=聚焦全亮+accent 描边+缩放+拖拽候选槽+退役零残留
+   * （[B5 §4.2 第 6 条/§11.3——wave C 2026-11-25 断言翻转] 原「聚焦 dim」段翻案为无 dim 全亮+accent；
+   * 「N% ▾」→纯「N%」；拖拽候选槽尾段零改）。
    * [F-UIRES-03 T0] 缩放段经 zoomProbe 冒烟迁移（§8.1.2 绿路径——helper
    * 单源；断言文本逐字保真）；拖拽尾段保留原文（弱断言 :1266 驻留——
    * test-surface 按例签名比对使跨例迁移必红，强断言升级面由样板①独立
    * 新例承载，见该例头注）。
    */
-  test('T13 聚焦 dim+缩放+拖拽候选槽+退役零残留（②U6/U7）', async () => {
+  test('T13 聚焦全亮+accent 描边+缩放+拖拽候选槽+退役零残留（②U6/U7→B5 §4 无 dim）', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'synapse-lg05-t13-'))
     await firstHop(userData)
@@ -1291,14 +1297,27 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await win.getByTestId('lineage-mode-focus').click()
     await root.click()
     await expect(root).toHaveClass(/focused/)
-    // [F-VISFB-21 C4] bright=focus∪双向一度邻接：甲（邻接）常亮不 dim；
-    // 乙（非邻接）dim 沿承——原「甲 dim」断言随判定集换源改写
-    await expect(cardA).not.toHaveClass(/dim/)
-    await expect(cardB).toHaveClass(/dim/)
-    await expect(win.locator('.tl-edges')).toHaveClass(/dimmed-focus/)
+    // [B5 设计稿 §4.1/§11.3「T13 改全亮+accent」——wave C 2026-11-25 断言翻转] 无 dim：非空聚焦集下
+    // 所有卡与边一律全亮（原「甲邻接常亮／乙非邻接卡 dim／.tl-edges.dimmed-focus」退役——
+    // bright∪一度邻接判定集随无 dim 删除）；仅 focusSet 本集卡 accent 描边（2px solid accent）。
+    for (const card of [root, cardA, cardB]) {
+      await expect(card).not.toHaveClass(/dim/)
+      await expect(card).toHaveCSS('opacity', '1') // 基态 computed opacity（无拖拽/无错峰 fade/无 hover 回升）
+    }
+    await expect(win.locator('.tl-card.dim')).toHaveCount(0)
+    await expect(win.locator('.tl-edge.dim')).toHaveCount(0)
+    await expect(win.locator('svg.tl-edges')).not.toHaveClass(/dimmed-focus/)
+    await expect(win.locator('.tl-card.focused')).toHaveCount(1) // 本集=根（甲邻接、乙非邻接均不入集）
+    await expect(root).toHaveCSS('outline-style', 'solid')
+    await expect(root).toHaveCSS('outline-width', '2px')
+    await expect(cardA).toHaveCSS('outline-style', 'none')
+    await expect(cardB).toHaveCSS('outline-style', 'none')
     await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
     await root.click()
-    await expect(cardB).not.toHaveClass(/dim/)
+    await expect(root).not.toHaveClass(/focused/)
+    await expect(cardB).not.toHaveClass(/dim/) // 空聚焦集=无 dim（沿承）
+    await expect(win.getByTestId('lineage-focus-count')).toHaveCount(0)
+    for (const card of [root, cardA, cardB]) await expect(card).toHaveCSS('opacity', '1') // 空/非空聚焦集同为全亮
     await win.getByTestId('lineage-mode-browse').click()
     // [F-UIRES-03 T0] zoom 段=zoomProbe 冒烟（绿路径——设计稿 §8.1.2）：原
     // Ctrl+wheel/-120 逐句（设置 1.1 档+badge+transform 断言+badge 复位）语义
@@ -1309,10 +1328,11 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 样板①（T-S1——弱断言语义升级为计数+几何强断言，弱断言原文随迁保留为
     // 强断言套件子项——严格超集，C 面多重集保全）
     await zoomProbe(win, 1.1, async () => {
-      await expect(win.getByTestId('zoom-badge')).toHaveText('110% ▾', { timeout: 5_000 })
+      // [B5 §3.1/§4.2] zoom-badge=工具栏百分比复位钮（纯 N%——原右下角角标「N% ▾」退役）
+      await expect(win.getByTestId('zoom-badge')).toHaveText('110%', { timeout: 5_000 })
       await expect(win.locator('.tl-content')).toHaveCSS('transform', /matrix/)
     })
-    await expect(win.getByTestId('zoom-badge')).toHaveText('100% ▾', { timeout: 5_000 })
+    await expect(win.getByTestId('zoom-badge')).toHaveText('100%', { timeout: 5_000 })
     // [F-UIRES-03 T0 面上申报] 原计划把本拖拽尾段（:1258-1267）并入样板①——
     // 但 test-surface 契约=按例签名比对（跨例迁移不抵扣，实测 3 处
     // MISSING_ASSERT 红），豁免权在主控。合规解=本段原文保留（弱断言
@@ -2691,19 +2711,19 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     // 锚深落底部带→拖拽中持续滚屏，慢机帧长使读点陈旧超 ±12 锚容差（44846425284=
     // up 侧 57px 漂移）；v1（44855427019）=定位块置于稳定双读前读到过渡帧；v2
     // （44858389954）=两病：①1024 宽下 .lg-toolbar（sticky top:0 z12）换行变高，
-    // 可用窗（工具栏底→底部带）容不下根/甲 241px 锚距——纯滚动定位无解，且定位把
-    // 根锚滚进工具栏下（down 打在工具栏=hintCount 1 零边签名）；②单趟 shift 把两向
-    // 修正求和抵消致轮间振荡不收敛。v4=①测试内注入 .lg-toolbar{position:static}
-    // （工具栏随内容滚走，顶约束回归纯 autoscroll 带——本测试不断言工具栏粘性，
-    // 与后段 #e2e-t1m-scroll-domain 注入同型手法）+.timeline{overflow-anchor:none}
-    // （滚动写入确定性生效）；②定位数学改单趟可行区间取中 Δ（两侧同余量，不再
-    // 求和抵消）；③硬前置断言=两锚出带+down 点不被工具栏遮盖（未达即抛带数字
-    // 诊断，不进必败拖拽）。
+    // 可用窗容不下根/甲 241px 锚距；②单趟 shift 把两向修正求和抵消致轮间振荡不收敛。
+    // v4=①测试内注入 .timeline{overflow-anchor:none}（滚动写入确定性生效）；②定位
+    // 数学改单趟可行区间取中 Δ（两侧同余量，不再求和抵消）；③硬前置断言=两锚出带+
+    // down 点不被工具栏遮盖（未达即抛带数字诊断，不进必败拖拽）。
+    // [B5 设计稿 §3.1/§3.2/§11.3「lineage.spec：删除旧 sticky 注入补偿」——wave C 2026-11-25]
+    // 原 v4 ①另注入 .lg-toolbar{position:static}（工具条 sticky 挂 .timeline 内——测试内撤粘）
+    // 与带边 +50px 工具条让位：工具栏已迁页面顶部稳定外壳（不在画布滚动容器内），
+    // 注入补偿与让位随旧方案删除；autoscroll 带=纯容器高 20%，几何断言面不变。
     await win.evaluate(() => {
       const style = document.createElement('style')
       style.id = 'e2e-t1m-anchor-off'
       style.textContent =
-        '.timeline { overflow-anchor: none !important } .lg-toolbar { position: static !important }'
+        '.timeline { overflow-anchor: none !important }'
       document.head.append(style)
     })
     for (let round = 0; round < 5; round++) {
@@ -2716,7 +2736,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         const aCard = byTitle('脉络甲文献')
         if (tl === null || rootCard === undefined || aCard === undefined) return true
         const cr = tl.getBoundingClientRect()
-        const zone = cr.height * 0.2 + 50
+        const zone = cr.height * 0.2 // [B5] autoscroll 带=容器高 20%（原 +50=画布内旧工具条让位，随工具栏迁出删除）
         const midOf = (el: HTMLElement): number => {
           const r = el.getBoundingClientRect()
           return r.y + r.height / 2
@@ -2738,7 +2758,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
       await win.waitForTimeout(150)
       if (a !== (await rectOf())) await win.waitForTimeout(300)
     }
-    // 硬前置断言：两锚出带+down 点不被（可能残留的）工具栏遮盖
+    // 硬前置断言：两锚出带+down 点不被工具栏壳层遮盖（[B5] 工具栏在画布外——壳层为页面级外壳）
     const band = await win.evaluate((): {
       ok: boolean
       midA: number
@@ -2756,13 +2776,13 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
         return r === undefined ? Number.NaN : r.y + r.height / 2
       }
       const cr = tl?.getBoundingClientRect()
-      const zone = (cr?.height ?? 0) * 0.2 + 50
+      const zone = (cr?.height ?? 0) * 0.2 // [B5] 同上——旧工具条让位 +50 删除
       const rootRect = rootCard?.getBoundingClientRect()
       const probePt =
         rootRect === undefined ? null : { x: rootRect.right - 2, y: rootRect.y + rootRect.height / 2 }
       const covered =
         probePt === null ||
-        (document.elementFromPoint(probePt.x, probePt.y)?.closest('.lg-toolbar') ?? null) !== null
+        (document.elementFromPoint(probePt.x, probePt.y)?.closest('.lg-toolbar-shell') ?? null) !== null
       return {
         ok:
           cr !== undefined &&
@@ -2778,7 +2798,7 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     })
     if (!band.ok) {
       throw new Error(
-        `T1M 定位未达：midA=${band.midA} 需 ≤ bandBottom=${band.bandBottom}；midRoot=${band.midRoot} 需 ≥ bandTop=${band.bandTop}；rootCovered=${band.rootCovered}（工具栏遮盖——本视口下窗容不下锚距，需查注入）`
+        `T1M 定位未达：midA=${band.midA} 需 ≤ bandBottom=${band.bandBottom}；midRoot=${band.midRoot} 需 ≥ bandTop=${band.bandTop}；rootCovered=${band.rootCovered}（工具栏壳层遮盖——本视口下窗容不下锚距，需查注入）`
       )
     }
     const rb = await root.boundingBox()
@@ -3161,4 +3181,585 @@ test.describe('脉络图 e2e 全链（导入/渲染/编辑保存/侧板跳转）
     await expect(bing).toContainText(L2.bing.title)
     await app.close()
   })
+})
+
+// ══ [B5 设计稿 §12 B5-E01~E05/E07/E09/E10/E12/E14——wave C 2026-11-25 新增] ══
+// 工具栏稳定外壳／模式与聚焦生命周期／写失败告警分流 e2e 验收（E06/E08 宿主=lineage-conflict.spec，
+// E11=lineage-sidebar.spec，E13 归 D 波）。断言面=真实渲染文本+真实状态（类名/computed/DB 回读）；
+// CI 窄视口规则：点击工具栏控件前 scrollIntoViewIfNeeded（1024×768 下工具栏自身横滚）。
+// main 侧桩一律走既有 handler 表（ipcMain 单例的 handler Map）：取原 handler 后包裹——
+// 「失败 N 次/挂起→再委托真实 handler」，不用 page 级 mock 冒充落库。always-active（K3）。
+
+/** B5 新例视口（§12：1024×768=CI runner 档；1280×800=本地默认档） */
+const B5_NARROW = { width: 1024, height: 768 }
+const B5_WIDE = { width: 1280, height: 800 }
+
+/** 既有 IPC 桩的 main 侧句柄（Electron 内部 handler 表＋桩状态；桩状态挂 ipcMain 单例） */
+interface IpcMainStub {
+  _invokeHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>
+  removeHandler(channel: string): void
+  handle(channel: string, handler: (...args: unknown[]) => Promise<unknown>): void
+  /** E01：lineage/graph 调用计数 */
+  b5GraphCalls?: number
+  /** E07：悬浮笔记写通道失败开关（true=拒绝；false=委托原 handler） */
+  b5FailNote?: boolean
+  /** E12：首载 graph 阶段机放行（'fail'=以「db locked」拒绝挂起请求；'real'=委托原 handler） */
+  b5Stage?(stage: 'fail' | 'real'): void
+}
+
+/** B5 新例种子：主图三篇（根/甲/乙——chainSeed 形态；甲=真实 PDF） */
+async function b5Seed(userData: string): Promise<void> {
+  await firstHop(userData)
+  await seedLineagePapers(userData)
+  await seedLineageGraph(userData, chainSeed())
+}
+
+/** 进脉络页（先钉视口）并等主图 ready（readyTitle=该图一张真实卡标题在场——非 loading 占位）。
+ *  轨钮名一律 exact（侧板「去文献库」钮使非精确名歧义） */
+async function b5Open(win: Page, vp: { width: number; height: number }, readyTitle: string): Promise<void> {
+  await expect(win.getByRole('button', { name: '文献库', exact: true })).toBeVisible({ timeout: 20_000 })
+  await win.setViewportSize(vp)
+  await win.getByRole('button', { name: '脉络', exact: true }).click()
+  await expect(nodeG(win, readyTitle)).toBeVisible({ timeout: 10_000 })
+}
+
+/** 卡片基态读数：真实标题＋computed opacity＋dim/focused 类计数 */
+const cardState = (win: Page): Promise<{ titles: string[]; ops: string[]; dimNodes: number; focused: number }> =>
+  win.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('.tl-card'))
+    return {
+      titles: cards.map((c) => c.querySelector('.c-title')?.textContent ?? ''),
+      ops: cards.map((c) => getComputedStyle(c).opacity),
+      dimNodes: document.querySelectorAll('.tl-card.dim, .tl-edge.dim, .dimmed-focus').length,
+      focused: document.querySelectorAll('.tl-card.focused').length
+    }
+  })
+
+/** 渲染落定屏障（两帧＋宏任务：负向断言前让挂载 effect 已发出的 IPC 出门——非固定 sleep） */
+const settleFrames = (win: Page): Promise<void> =>
+  win.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => resolve(), 0)))
+      })
+  )
+
+/** 关掉在场的通知卡（toast 卡自身 role=alert 且遮画布——lineage-conflict.spec 同型） */
+async function b5DismissToasts(win: Page): Promise<void> {
+  const closeBtn = win.getByRole('button', { name: '关闭通知' })
+  for (let i = 0; i < 4 && (await closeBtn.count()) > 0; i++) await closeBtn.first().click()
+  await expect(closeBtn).toHaveCount(0)
+}
+
+/** 右键空白新建悬浮笔记并 blur 收口（入队 upsert；lineage-conflict.spec createNote 同型） */
+async function b5CreateNote(win: Page, text: string): Promise<void> {
+  const content = win.locator('.tl-content')
+  const cb = await content.boundingBox()
+  if (cb === null) throw new Error('内容层不可见')
+  await content.click({ button: 'right', position: { x: cb.width - 60, y: cb.height - 60 } })
+  await win.getByTestId('note-anchor-menu').getByRole('menuitem', { name: '新建悬浮笔记' }).click()
+  await win.locator('.tl-note-input').fill(text)
+  await content.click({ position: { x: 40, y: 40 } }) // blur 收口
+  await expect(win.locator('.tl-note-text').filter({ hasText: text })).toBeVisible({ timeout: 5_000 })
+}
+
+test.describe('B5 设计稿 §12——工具栏稳定外壳/模式与聚焦生命周期/告警分流 e2e', () => {
+  test('B5-E01 重挂记忆 focus（1280×800）：冷启动 browse→聚焦甲→离开脉络→返回——mode 仍 focus、「聚焦 1」、甲真实标题+accent 恢复；graph 不双取', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e01-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    const jia = nodeG(win, '脉络甲文献')
+    await expect(win.getByTestId('lineage-mode-browse')).toHaveAttribute('aria-pressed', 'true') // 冷启动缺省 browse
+    await win.getByTestId('lineage-mode-focus').click()
+    await jia.click()
+    await expect(jia).toHaveClass(/focused/)
+    await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
+    // graph 不双取——直接观测面：首载 ready 后开始计 lineage/graph IPC 调用（委托原 handler，行为不变）
+    await app.evaluate(({ ipcMain }) => {
+      const im = ipcMain as unknown as IpcMainStub
+      const real = im._invokeHandlers.get('lineage/graph')
+      if (real === undefined) throw new Error('lineage/graph handler 缺席')
+      im.b5GraphCalls = 0
+      im.removeHandler('lineage/graph')
+      im.handle('lineage/graph', (...args) => {
+        im.b5GraphCalls = (im.b5GraphCalls ?? 0) + 1
+        return real(...args)
+      })
+    })
+    // 旁证：返回期间 loading 占位（aria-busy=true）出现次数
+    await win.evaluate(() => {
+      const g = window as unknown as { b5BusySeen?: number }
+      g.b5BusySeen = 0
+      new MutationObserver(() => {
+        if (document.querySelector('[data-testid="lineage-timeline"][aria-busy="true"]') !== null) g.b5BusySeen = (g.b5BusySeen ?? 0) + 1
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-busy'] })
+    })
+    await win.getByRole('button', { name: '文献库', exact: true }).click() // 离开脉络（视图卸载）
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveCount(0)
+    await win.getByRole('button', { name: '脉络', exact: true }).click() // 返回
+    await expect(jia).toBeVisible({ timeout: 10_000 })
+    await settleFrames(win)
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true') // mode 仍 focus
+    await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
+    await expect(jia).toHaveClass(/focused/)
+    await expect(jia).toContainText('脉络甲文献') // 真实标题
+    expect(await app.evaluate(({ ipcMain }) => (ipcMain as unknown as IpcMainStub).b5GraphCalls ?? 0), '返回零 graph IPC').toBe(0)
+    expect(await win.evaluate(() => (window as unknown as { b5BusySeen: number }).b5BusySeen), '返回零 loading 占位').toBe(0)
+    await app.close()
+  })
+
+  test('B5-E02 focus 多卡→切 browse/edit→回 focus：集合不丢（仅 focus 模式显示描边与计数）；再点当前 mode 完全 no-op；Esc 只收工具不清聚焦', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e02-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    const focusCount = win.getByTestId('lineage-focus-count')
+    await win.getByTestId('lineage-mode-focus').click()
+    await nodeG(win, '脉络根文献').click()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(focusCount).toHaveText('聚焦 2')
+    for (const button of ['lineage-mode-browse', 'lineage-mode-edit']) {
+      await win.getByTestId(button).click()
+      await expect(focusCount).toHaveCount(0) // 计数仅 focus 模式显示
+      await expect(win.locator('.tl-card.focused')).toHaveCount(0) // 非 focus 模式不显示聚焦描边
+    }
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(focusCount).toHaveText('聚焦 2') // 集合不丢（不重建第二份）
+    await expect(win.locator('.tl-card.focused')).toHaveCount(2)
+    await expect(nodeG(win, '脉络根文献')).toHaveClass(/focused/)
+    await expect(nodeG(win, '脉络甲文献')).toHaveClass(/focused/)
+    // 再点当前 mode（focus）=完全 no-op：集合与工具态均不变
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(focusCount).toHaveText('聚焦 2')
+    await expect(win.locator('.tl-card.focused')).toHaveCount(2)
+    await expect(win.getByTestId('lineage-tool-solid')).not.toHaveClass(/\bon\b/)
+    // Esc 只收工具：edit 态 armed 画线→Esc 退画线；模式不动
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-solid').click()
+    await expect(win.getByTestId('lineage-tool-solid')).toHaveClass(/\bon\b/)
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('lineage-tool-solid')).not.toHaveClass(/\bon\b/)
+    await expect(win.getByTestId('lineage-mode-edit')).toHaveAttribute('aria-pressed', 'true')
+    // Esc 不是清空聚焦入口：focus 态按 Esc→集合与模式不变
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(focusCount).toHaveText('聚焦 2')
+    await win.keyboard.press('Escape')
+    await settleFrames(win)
+    await expect(focusCount).toHaveText('聚焦 2')
+    await expect(win.locator('.tl-card.focused')).toHaveCount(2)
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true')
+    await app.close()
+  })
+
+  test('B5-E03 清空聚焦：停留 focus、计数消失、按钮禁用、全部真实卡标题可见且基态 opacity=1；再聚焦其他卡可用', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e03-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    await win.getByTestId('lineage-mode-focus').click()
+    await nodeG(win, '脉络根文献').click()
+    await nodeG(win, '脉络甲文献').click()
+    await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 2')
+    const clearBtn = win.getByTestId('lineage-focus-clear')
+    await expect(clearBtn).toBeEnabled()
+    await clearBtn.click()
+    await expect(win.getByTestId('lineage-focus-count')).toHaveCount(0) // 计数消失
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true') // 停留 focus
+    await expect(clearBtn).toBeDisabled()
+    const after = await cardState(win)
+    expect(after.titles).toEqual(['脉络根文献', '脉络甲文献', '脉络乙文献']) // 所有真实卡标题在场
+    expect(after.ops).toEqual(['1', '1', '1']) // 基态全亮
+    expect(after.focused).toBe(0)
+    expect(after.dimNodes).toBe(0)
+    // 再聚焦其他卡（乙）可用
+    await nodeG(win, '脉络乙文献').click()
+    await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
+    await expect(nodeG(win, '脉络乙文献')).toHaveClass(/focused/)
+    await expect(clearBtn).toBeEnabled()
+    await app.close()
+  })
+
+  test('B5-E04 A/B 各聚焦不同真实卡，A→B→A→B：各自计数/accent/标题恢复（图域隔离；新图不继承）', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e04-'))
+    await firstHop(userData)
+    const E4 = [
+      { id: 'e2e-e4-jia', title: 'E4主图甲文献', year: 2021, folderId: undefined },
+      { id: 'e2e-e4-yi', title: 'E4图乙乙文献', year: 2022, folderId: 'f-e4-b' },
+      { id: 'e2e-e4-bing', title: 'E4图乙丙文献', year: 2022, folderId: 'f-e4-b' }
+    ] as const
+    for (const p of E4) {
+      const ghostSha = createHash('sha256').update(`e4-ghost-${p.id}`).digest('hex')
+      await seedPaperRow(userData, `${ghostSha.slice(0, 2)}/${ghostSha.slice(2, 4)}/${ghostSha}.pdf`, ghostSha, p.title, p.id, { year: p.year })
+    }
+    await seedLineageGraph(userData, {
+      folders: [{ id: 'f-e4-b', name: 'E4图乙' }],
+      nodes: E4.map((p) => ({ paperId: p.id, title: p.title, year: p.year, folderId: p.folderId })),
+      edges: []
+    })
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, E4[0].title) // 甲=主图；乙/丙=图乙
+    const jia = nodeG(win, E4[0].title)
+    const yi = nodeG(win, E4[1].title)
+    const bing = nodeG(win, E4[2].title)
+    const focusCount = win.getByTestId('lineage-focus-count')
+    await win.getByTestId('lineage-mode-focus').click()
+    await jia.click()
+    await expect(focusCount).toHaveText('聚焦 1')
+    // A→B：B 的集合为空（新图不继承 A 的成员）；模式保持 focus
+    await switchLineageGraph(win, 'f-e4-b', 'E4图乙')
+    await expect(bing).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toHaveCount(0)
+    await expect(focusCount).toHaveCount(0)
+    await bing.click()
+    await expect(focusCount).toHaveText('聚焦 1')
+    // B→A：A 的集合恢复（甲聚焦）；B 的卡不在 A
+    await switchLineageGraph(win, '__main__', '主图')
+    await expect(jia).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toHaveClass(/focused/)
+    await expect(jia).toContainText(E4[0].title)
+    await expect(focusCount).toHaveText('聚焦 1')
+    await expect(yi).toHaveCount(0)
+    await expect(bing).toHaveCount(0)
+    // A→B：B 的集合恢复（丙聚焦；乙未聚焦）
+    await switchLineageGraph(win, 'f-e4-b', 'E4图乙')
+    await expect(bing).toHaveClass(/focused/)
+    await expect(bing).toContainText(E4[2].title)
+    await expect(yi).not.toHaveClass(/focused/)
+    await expect(focusCount).toHaveText('聚焦 1')
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true')
+    await app.close()
+  })
+
+  test('B5-E05 删除甲→undo 恢复→focus 甲→redo 删除：真实卡消失、集合收敛（无「聚焦 1」）、其余卡全亮，DB 与 UI 一致', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e05-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    const jia = nodeG(win, '脉络甲文献')
+    const focusCount = win.getByTestId('lineage-focus-count')
+    await win.getByTestId('lineage-mode-edit').click()
+    await jia.click({ button: 'right' })
+    await win.getByTestId('lineage-node-menu').getByRole('menuitem', { name: '删除节点' }).click()
+    await expect(jia).toHaveCount(0)
+    const saveBtn = win.getByTestId('lineage-save-btn')
+    await expect(saveBtn).toBeEnabled({ timeout: 10_000 })
+    await saveBtn.click()
+    await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+    expect(await liveDbScript(userData, 'all', 'SELECT n.id FROM lineage_nodes n JOIN papers p ON p.id = n.paper_id WHERE p.id = ?', ['e2e-lg-a'])).toEqual([]) // 删除已落库
+    // undo 恢复甲（真实标题）
+    await win.getByTestId('lineage-undo').click()
+    await expect(jia).toBeVisible({ timeout: 10_000 })
+    await expect(jia).toContainText('脉络甲文献')
+    // 聚焦甲（删除时成员已同帧出集——undo 恢复的卡不自动回到集合）
+    await win.getByTestId('lineage-mode-focus').click()
+    await expect(jia).not.toHaveClass(/focused/)
+    await jia.click()
+    await expect(focusCount).toHaveText('聚焦 1')
+    // redo 再删除（聚焦模式下同一命令面）：卡消失且 id 同帧出集
+    await win.getByTestId('lineage-redo').click()
+    await expect(jia).toHaveCount(0, { timeout: 10_000 })
+    await expect(focusCount).toHaveCount(0) // 集合收敛——无「聚焦 1」
+    await expect(win.locator('.tl-card.focused')).toHaveCount(0)
+    await expect(win.getByTestId('lineage-focus-clear')).toBeDisabled()
+    await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true') // 停留 focus
+    const state = await cardState(win)
+    expect(state.titles).toEqual(['脉络根文献', '脉络乙文献'])
+    expect(state.ops).toEqual(['1', '1']) // 其余卡全亮
+    await expect(win.getByTestId('lineage-save-btn')).toBeEnabled({ timeout: 10_000 })
+    await win.getByTestId('lineage-save-btn').click()
+    await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 })
+    expect(await liveDbScript(userData, 'all', 'SELECT n.id FROM lineage_nodes n JOIN papers p ON p.id = n.paper_id WHERE p.id = ?', ['e2e-lg-a'])).toEqual([]) // DB 与 UI 一致
+    await app.close()
+  })
+
+  test('B5-E07 普通写失败：「保存失败」+保存重试在场（主保存钮名称恒为显式保存）；重试成功清告警且笔记真实落库', async ({}, testInfo) => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e07-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    // 既有 IPC 桩：悬浮笔记写通道失败（b5FailNote=true）→关桩后委托真实 handler
+    await app.evaluate(({ ipcMain }) => {
+      const im = ipcMain as unknown as IpcMainStub
+      const real = im._invokeHandlers.get('lineage/upsert-floating-note')
+      if (real === undefined) throw new Error('lineage/upsert-floating-note handler 缺席')
+      im.b5FailNote = true
+      im.removeHandler('lineage/upsert-floating-note')
+      im.handle('lineage/upsert-floating-note', (...args) =>
+        im.b5FailNote === true ? Promise.reject(new Error('模拟写库失败（e2e 桩）')) : Promise.resolve(real(...args))
+      )
+    })
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-select').click()
+    const NOTE = 'B5保存失败探针笔记'
+    await b5CreateNote(win, NOTE)
+    const errorRow = win.getByTestId('lineage-save-error')
+    await expect(errorRow).toBeVisible({ timeout: 15_000 })
+    await expect(errorRow).toContainText('保存失败：')
+    await expect(errorRow).toContainText('模拟写库失败（e2e 桩）') // main 真实原因
+    await expect(win.getByTestId('lineage-save-retry')).toBeVisible() // save 来源=保存重试在场
+    await expect(win.getByTestId('lineage-stale-drop')).toHaveCount(0) // 无 history 失败=无丢弃出口
+    // 主保存钮名称恒定（§6.2：failed 态不变通用重试）
+    await expect(win.getByTestId('lineage-save-btn')).toHaveAttribute('title', '保存全部修改（Ctrl+S——落库并标记为已保存）')
+    await b5DismissToasts(win)
+    await win.screenshot({ path: testInfo.outputPath('b5-e07-save-error-1280x800.png') })
+    // 关桩→点保存重试→告警消失、笔记真实落库
+    await app.evaluate(({ ipcMain }) => {
+      ;(ipcMain as unknown as IpcMainStub).b5FailNote = false
+    })
+    await win.getByTestId('lineage-save-retry').click()
+    await expect(errorRow).toHaveCount(0, { timeout: 10_000 })
+    await expect(win.getByTestId('lineage-save-btn')).toBeDisabled({ timeout: 10_000 }) // 定稿=已保存
+    expect(await liveDbScript(userData, 'all', 'SELECT content FROM floating_notes WHERE content = ?', [NOTE])).toEqual([{ content: NOTE }])
+    await expect(win.locator('.tl-note-text').filter({ hasText: NOTE })).toBeVisible()
+    await app.close()
+  })
+
+  test('B5-E09 工具栏横滚（1024×768）：控件单行同心、轨道不增高；scrollWidth>clientWidth；滚到最右真实点击右详情开关；告警前后轨道高度不变', async ({}, testInfo) => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e09-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_NARROW, '脉络根文献')
+    const rowGeo = (): Promise<{ centers: number[]; height: number; top: number; scrollW: number; clientW: number }> =>
+      win.evaluate(() => {
+        const t = document.querySelector('.lg-toolbar')
+        const s = document.querySelector('.lg-toolbar-scroll')
+        if (t === null || s === null) throw new Error('.lg-toolbar/.lg-toolbar-scroll 缺席')
+        const centers = Array.from(t.children).map((c) => {
+          const r = c.getBoundingClientRect()
+          return r.y + r.height / 2
+        })
+        const tr = t.getBoundingClientRect()
+        return { centers, height: tr.height, top: tr.y, scrollW: s.scrollWidth, clientW: s.clientWidth }
+      })
+    const before = await rowGeo()
+    expect(before.scrollW, `工具栏横滚（scrollWidth ${before.scrollW}>clientWidth ${before.clientW}）`).toBeGreaterThan(before.clientW)
+    // 页面级零横向溢出（§3.2「overflow 只发生在 .lg-toolbar-scroll，不得把 body/画布/侧栏一起撑宽」）：
+    // main 不出页面级横向滚动条（原缺陷：轨内 sr-only 标签 absolute 的包含块=壳层 relative，逃出横滚
+    // 容器裁剪面→main 右溢 4px→页面底部多出 15px 横向滚动条）
+    const page = await win.evaluate(() => {
+      const m = document.querySelector<HTMLElement>('main.app-main')
+      if (m === null) throw new Error('main.app-main 缺席')
+      return { sw: m.scrollWidth, cw: m.clientWidth, sb: m.offsetHeight - m.clientHeight }
+    })
+    expect(page.sw, `页面级零横向溢出（main scrollWidth ${page.sw}===clientWidth ${page.cw}）`).toBe(page.cw)
+    expect(page.sb, 'main 无横向滚动条占位（offsetHeight−clientHeight）').toBe(0)
+    const spread = Math.max(...before.centers) - Math.min(...before.centers)
+    expect(spread, `控件单行（各直接子组垂直中心离散 ${spread.toFixed(1)}px ≤1——不折行）`).toBeLessThanOrEqual(1)
+    expect(before.height, `控件轨道高度 ${before.height}（<60——原 1024 下 172.75px 高工具组不复现）`).toBeLessThan(60)
+    // 滚到最右→右详情开关落壳层可视区→真实点击→右栏收起（宿主零 DOM）
+    await expect(win.getByTestId('lineage-sidebar')).toBeVisible()
+    await win.locator('.lg-toolbar-scroll').evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+    })
+    const toggle = win.getByTestId('lineage-sidebar-collapse')
+    await toggle.scrollIntoViewIfNeeded()
+    expect(
+      await toggle.evaluate((el) => {
+        const r = el.getBoundingClientRect()
+        const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return at !== null && el.contains(at)
+      }),
+      '滚到最右后右详情开关可点（中心命中自身）'
+    ).toBe(true)
+    await toggle.click()
+    await expect(win.getByTestId('lineage-sidebar')).toHaveCount(0)
+    await expect(win.getByTestId('lineage-sidebar-expand')).toHaveAttribute('aria-label', '展开详情面板')
+    // 写失败告警（悬浮笔记通道恒失败）：告警前后控件轨道 top/height 不变（告警=滚动容器的兄弟节点）
+    await app.evaluate(({ ipcMain }) => {
+      const im = ipcMain as unknown as IpcMainStub
+      im.removeHandler('lineage/upsert-floating-note')
+      im.handle('lineage/upsert-floating-note', () => Promise.reject(new Error('模拟写库失败（e2e 桩）')))
+    })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-select').click()
+    await b5CreateNote(win, 'B5窄屏告警探针笔记')
+    const errorRow = win.getByTestId('lineage-save-error')
+    await expect(errorRow).toContainText('保存失败：', { timeout: 15_000 })
+    await expect(errorRow).toContainText('模拟写库失败（e2e 桩）')
+    await b5DismissToasts(win)
+    const after = await rowGeo()
+    expect(Math.abs(after.top - before.top), '告警前后控件轨道 top 不变').toBeLessThanOrEqual(0.5)
+    expect(Math.abs(after.height - before.height), '告警前后控件轨道 height 不变（不增高）').toBeLessThanOrEqual(0.5)
+    const alertGeo = await win.evaluate(() => {
+      const a = document.querySelector('.lg-save-error')
+      const s = document.querySelector('.lg-toolbar-scroll')
+      if (a === null || s === null) return null
+      return { inScroll: s.contains(a), h: a.getBoundingClientRect().height }
+    })
+    expect(alertGeo, '告警在场').not.toBeNull()
+    expect(alertGeo!.inScroll, '告警不在滚动容器内').toBe(false)
+    expect(alertGeo!.h, '告警区高度<80（完整可读，不挤压控件轨道）').toBeLessThan(80)
+    await win.screenshot({ path: testInfo.outputPath('b5-e09-narrow-alert-1024x768.png') })
+    await app.close()
+  })
+
+  test('B5-E10 工具栏满宽（1280×800）：轨道左右缘=页面内容缘；−/+ 到边界禁用；百分比复位 110%→100%；.tl-content transform 与真实卡同步', async () => {
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e10-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await b5Open(win, B5_WIDE, '脉络根文献')
+    const trackBox = (await win.locator('.lg-toolbar').boundingBox())!
+    const mainBox = (await win.locator('main.app-main').boundingBox())!
+    expect(Math.abs(trackBox.x - mainBox.x), '轨道左缘与页面内容左缘一致').toBeLessThanOrEqual(1)
+    expect(Math.abs(trackBox.x + trackBox.width - (mainBox.x + mainBox.width)), '轨道右缘与页面内容右缘一致（满宽）').toBeLessThanOrEqual(1)
+    const out = win.getByTestId('lineage-zoom-out')
+    const inn = win.getByTestId('lineage-zoom-in')
+    const badge = win.getByTestId('zoom-badge')
+    await expect(badge).toHaveText('100%')
+    for (let i = 0; i < 10; i++) await inn.click()
+    await expect(badge).toHaveText('200%')
+    await expect(inn).toBeDisabled() // 上边界
+    await expect(out).toBeEnabled()
+    await badge.click()
+    await expect(badge).toHaveText('100%')
+    for (let i = 0; i < 5; i++) await out.click()
+    await expect(badge).toHaveText('50%')
+    await expect(out).toBeDisabled() // 下边界
+    await expect(inn).toBeEnabled()
+    await badge.click()
+    await expect(badge).toHaveText('100%')
+    const card = nodeG(win, '脉络甲文献')
+    const transformOf = (): Promise<string> => win.locator('.tl-content').evaluate((el) => getComputedStyle(el).transform)
+    const w100 = (await card.boundingBox())!.width
+    expect(await transformOf(), '100%=无变换').toBe('none')
+    await inn.click()
+    await expect(badge).toHaveText('110%')
+    await expect.poll(transformOf, { timeout: 5_000 }).toBe('matrix(1.1, 0, 0, 1.1, 0, 0)')
+    const w110 = (await card.boundingBox())!.width
+    expect(w110 / w100, '真实卡随 .tl-content transform 同步缩放').toBeCloseTo(1.1, 1)
+    await expect(card).toContainText('脉络甲文献')
+    await badge.click() // 百分比复位
+    await expect(badge).toHaveText('100%')
+    await expect.poll(transformOf, { timeout: 5_000 }).toBe('none')
+    expect(((await card.boundingBox())!.width) / w100, '复位后卡宽回基态').toBeCloseTo(1, 1)
+    await expect(card).toContainText('脉络甲文献')
+    await app.close()
+  })
+
+  test('B5-E12 loading 共壳→graph「db locked」失败告警→lineage-load-retry 后真实卡标题出现（1024×768）', async ({}, testInfo) => {
+    test.slow()
+    const userData = await mkdtemp(join(tmpdir(), 'synapse-b5-e12-'))
+    await b5Seed(userData)
+    const app = await launch(userData)
+    // 既有 IPC 桩：首载 lineage/graph 挂起（请求入 parked）；b5Stage('fail')=挂起请求以「db locked」
+    // 拒绝；b5Stage('real')=此后委托原 handler（阶段推进由测试显式触发——无固定 sleep）
+    await app.evaluate(({ ipcMain }) => {
+      const im = ipcMain as unknown as IpcMainStub
+      const real = im._invokeHandlers.get('lineage/graph')
+      if (real === undefined) throw new Error('lineage/graph handler 缺席')
+      let stage: 'hang' | 'fail' | 'real' = 'hang'
+      const parked: Array<{ args: unknown[]; resolve: (v: unknown) => void; reject: (e: unknown) => void }> = []
+      const run = (args: unknown[]): Promise<unknown> =>
+        stage === 'fail' ? Promise.reject(new Error('db locked')) : Promise.resolve(real(...args))
+      im.b5Stage = (next) => {
+        stage = next
+        for (const p of parked.splice(0)) run(p.args).then(p.resolve, p.reject)
+      }
+      im.removeHandler('lineage/graph')
+      im.handle('lineage/graph', (...args) =>
+        stage === 'hang' ? new Promise((resolve, reject) => parked.push({ args, resolve, reject })) : run(args)
+      )
+    })
+    const win = await app.firstWindow()
+    const setStage = (stage: 'fail' | 'real'): Promise<void> =>
+      app.evaluate(({ ipcMain }, s) => {
+        (ipcMain as unknown as IpcMainStub).b5Stage?.(s)
+      }, stage)
+    await expect(win.getByRole('button', { name: '文献库', exact: true })).toBeVisible({ timeout: 20_000 })
+    await win.setViewportSize(B5_NARROW)
+    await win.getByRole('button', { name: '脉络', exact: true }).click()
+    // loading 共壳：画布占位 aria-busy=true＋sr-only 文案；同一工具栏在场；三模式钮可达；数据控件禁用
+    const loadingHost = win.getByTestId('lineage-timeline') // loading 共壳的画布占位宿主
+    await expect(loadingHost).toHaveAttribute('aria-busy', 'true', { timeout: 10_000 })
+    await expect(loadingHost).toHaveText('正在加载脉络图')
+    await expect(win.locator('.tl-content')).toHaveCount(0)
+    await expect(win.getByTestId('lineage-toolbar')).toBeVisible()
+    for (const id of ['lineage-mode-browse', 'lineage-mode-focus', 'lineage-mode-edit']) {
+      await expect(win.getByTestId(id)).toBeEnabled()
+      await expect(win.getByTestId(id)).toBeInViewport()
+    }
+    for (const id of [
+      'lineage-save-btn',
+      'lineage-undo',
+      'lineage-redo',
+      'lineage-tool-select',
+      'lineage-tool-solid',
+      'lineage-zoom-out',
+      'zoom-badge',
+      'lineage-zoom-in',
+      'lineage-focus-clear'
+    ]) {
+      await expect(win.getByTestId(id), `${id}：loading 态禁用`).toBeDisabled()
+    }
+    await expect(win.getByTestId('lineage-nav-collapse')).toBeInViewport()
+    await win.screenshot({ path: testInfo.outputPath('b5-e12-loading-1024x768.png') })
+    // graph 以真实「db locked」失败：同一工具栏仍在；role=alert 含该原因；与写失败告警分离
+    await setStage('fail')
+    const loadAlert = win.getByRole('alert').filter({ hasText: '脉络图加载失败' })
+    await expect(loadAlert).toBeVisible({ timeout: 10_000 })
+    await expect(loadAlert).toContainText('db locked')
+    await expect(win.getByTestId('lineage-toolbar')).toBeVisible()
+    await expect(win.getByTestId('lineage-save-error')).toHaveCount(0)
+    await expect(win.getByTestId('lineage-save-retry')).toHaveCount(0)
+    // 点 lineage-load-retry（只调 load()）→真实卡标题出现
+    await setStage('real')
+    await win.getByTestId('lineage-load-retry').click()
+    await expect(nodeG(win, '脉络甲文献')).toBeVisible({ timeout: 10_000 })
+    await expect(loadAlert).toHaveCount(0)
+    await expect(win.getByTestId('lineage-zoom-in')).toBeEnabled()
+    await app.close()
+  })
+
+  for (const vp of [
+    { ...B5_NARROW, tag: '1024x768' },
+    { ...B5_WIDE, tag: '1280x800' }
+  ]) {
+    test(`B5-E14 focus 视觉（${vp.tag}）：非空/空聚焦——真实卡标题、基态 opacity=1、无 dim 类、accent 描边；两张截图`, async ({}, testInfo) => {
+      const userData = await mkdtemp(join(tmpdir(), `synapse-b5-e14-${vp.tag}-`))
+      await b5Seed(userData)
+      const app = await launch(userData)
+      const win = await app.firstWindow()
+      await b5Open(win, vp, '脉络甲文献')
+      const TITLES = ['脉络根文献', '脉络甲文献', '脉络乙文献']
+      await win.getByTestId('lineage-mode-focus').click()
+      await nodeG(win, '脉络甲文献').click()
+      await expect(win.getByTestId('lineage-focus-count')).toHaveText('聚焦 1')
+      await win.mouse.move(1, 1) // 指针离卡（无 hover 的基态读数）
+      // 非空聚焦
+      const full = await cardState(win)
+      expect(full.titles).toEqual(TITLES) // 真实卡标题
+      expect(full.ops).toEqual(['1', '1', '1']) // 基态 computed opacity=1
+      expect(full.dimNodes).toBe(0) // 无 dim 类
+      expect(full.focused).toBe(1)
+      const accent = await win
+        .locator('.tl-card.focused')
+        .evaluate((el) => `${getComputedStyle(el).outlineStyle} ${getComputedStyle(el).outlineWidth} ${getComputedStyle(el).outlineOffset}`)
+      expect(accent, '聚焦卡 accent 描边').toBe('solid 2px 1px')
+      await expect(win.getByTestId('lineage-graph-title')).toHaveText('主图')
+      await win.screenshot({ path: testInfo.outputPath(`b5-focus-nonempty-${vp.tag}.png`) })
+      // 空聚焦（清空后停留 focus——视觉与非空集下的未聚焦卡同为基态）
+      const clearBtn = win.getByTestId('lineage-focus-clear')
+      await clearBtn.scrollIntoViewIfNeeded()
+      await clearBtn.click()
+      await expect(win.getByTestId('lineage-focus-count')).toHaveCount(0)
+      await win.mouse.move(1, 1)
+      const empty = await cardState(win)
+      expect(empty.titles).toEqual(TITLES)
+      expect(empty.ops).toEqual(['1', '1', '1'])
+      expect(empty.dimNodes).toBe(0)
+      expect(empty.focused).toBe(0)
+      await expect(win.getByTestId('lineage-mode-focus')).toHaveAttribute('aria-pressed', 'true')
+      await win.screenshot({ path: testInfo.outputPath(`b5-focus-empty-${vp.tag}.png`) })
+      await app.close()
+    })
+  }
 })

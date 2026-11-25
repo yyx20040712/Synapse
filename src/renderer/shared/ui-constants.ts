@@ -35,10 +35,11 @@ export const STATUS_POLL_MS = 5000
 /** fixed 右键菜单菜单项类名（block 全宽行式菜单项——hover 浮起） */
 export const MENU_ITEM_STYLE = 'block w-full rounded px-3 py-1.5 text-left text-xs hover:bg-black/5'
 /**
- * [T3-P2] 主题名标签单一真相源（自 SettingsPage 提取——状态条「主题：{名}」
- * 与设置页下拉同源；键类型=schemas AppSettings['theme'] 派生[门一 d1-N7 回炉：
- * 手写字面量非结构性单源——schema 枚举变更时 tsc 兜底切断]）。[B1 暗色退役]
- * 两主题；文案=v2 设计稿设置卡片标题原文（正常模式/护眼模式）。
+ * [T3-P2] 主题名标签单一真相源（自 SettingsPage 提取——设置页下拉同源；键类型=
+ * schemas AppSettings['theme'] 派生[门一 d1-N7 回炉：手写字面量非结构性单源——
+ * schema 枚举变更时 tsc 兜底切断]）。[B1 暗色退役]两主题；文案=v2 设计稿设置
+ * 卡片标题原文（正常模式/护眼模式）。[B5 C 2026-11-25] 状态条「主题：{名}」
+ * 消费面随状态条整删退役（用户裁决——设计稿外）；现消费方=ThemeChoices。
  */
 /**
  * [B4 L2 §8.4 末行] 多图未落库诚实 chip 文案（recovery 呈现件与决策文案件共用——

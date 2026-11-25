@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
 /**
- * [T3-U1] UAT 批——状态条自动保存槽+FOUC 启动注入（App 壳消费面）。
+ * [T3-U1] UAT 批——FOUC 启动注入（App 壳消费面）。
  *
  * 落位说明：票面「app-shell.test 扩用例」；实施时 app-shell.test.tsx 有效行数
  * 已近 max-lines 500 顶（追加后 617 行=lint 红），故 T3-U1 两 describe 落
  * 本姊妹件（mock 配方沿 app-quit-dirty.test.tsx / app-shell.test.tsx 同型，
- * harness 复制不共享——受锁件禁为复用改面）。
+ * harness 复制不共享——受锁件禁为复用改面）。文件名沿 T3-U1 工单名不改。
  *
- * ①自动保存槽：App 组合根 worst-of 聚合（tab 双源分档 ∪ lineage saveStatus，
- * 回炉 R2/W3 终裁：annotations dirty=真失败残留→error 档；notes pending=
- * 在途+失败混合[edit 置 true/save 成功清/失败不动]→saving 档「保存中…」=
- * 未落库统称——打字防抖窗禁假警报）→三态真文本注入 StatusBar 哑件；
- * null（无可写面信号）槽省略——禁假数据（无时间戳）。
- * ②FOUC：jsdom 模拟「挂载前 attr 已在场」＝theme-boot.js 首帧写入位；载入
+ * [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原①「状态条自动
+ * 保存槽」describe（worst-of 聚合三态真文本/null 省略共 8 例）随状态条删除——
+ * 聚合宿主 AppStatusBarHost 与 StatusBar 哑件同批整删，槽面无承接面。本件现只承载②。
+ *
+ * FOUC：jsdom 模拟「挂载前 attr 已在场」＝theme-boot.js 首帧写入位；载入
  * 在途窗不回退=零闪烁的行为契约面（真首帧时序面=实机，INV-71）。
  */
 import { act } from 'react'
@@ -104,121 +103,6 @@ afterEach(() => {
   host?.remove()
   host = null
   // 模块级 store 跨 mount 存留：显式复位防跨测污染（沿 app-shell.test 尾注先例）
-})
-
-describe('T3-U1 状态条自动保存槽——worst-of 三态真文本（saved/saving/error/null 省略）', () => {
-  afterEach(async () => {
-    const { useReaderStore } = await import('../../../src/renderer/features/reader/state/reader.store')
-    const { useNotesStore } = await import('../../../src/renderer/features/notes/notes.store')
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useReaderStore.setState({ order: [], tabs: {} })
-      useNotesStore.setState({ noteByPaper: {} })
-      useLineageStore.setState({ saveStatus: 'clean' }) // [②U1]
-    })
-  })
-
-  /** 开一个 reader tab（dirty=标注保存失败残留位）；store 局部 setState */
-  async function openTab(paperId: string, dirty: boolean): Promise<void> {
-    const { useReaderStore } = await import('../../../src/renderer/features/reader/state/reader.store')
-    act(() => {
-      useReaderStore.setState({
-        order: [paperId],
-        tabs: { [paperId]: { paperId, dirty } }
-      } as never)
-    })
-  }
-
-  it('saved 格：tab 在场全干净（lineage saved）→「自动保存 · 已保存」', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', false)
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '可写面在场且干净=已保存（真文本——无时间戳）').toContain('自动保存 · 已保存')
-  })
-
-  it('saving 格：lineage saveStatus=saving →「自动保存 · 保存中…」', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', false)
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'saving' })
-    })
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, 'lineage 写面在飞=保存中…').toContain('自动保存 · 保存中…')
-  })
-
-  it('error 格（lineage）：saveStatus=error →「自动保存 · 保存失败」且槽挂 .sig（--signal 色）', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', false)
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'error' })
-    })
-    const bar = document.querySelector('footer.app-statusbar')!
-    const slot = Array.from(bar.querySelectorAll('span')).find((s) => s.textContent?.includes('自动保存'))
-    expect(slot?.textContent, 'lineage 写失败=保存失败').toContain('自动保存 · 保存失败')
-    expect(slot?.classList.contains('sig'), '失败档挂 .sig（--signal 色——theme-shell.css 类）').toBe(true)
-  })
-
-  it('error 格（tabDirty）：TabState.dirty（标注失败残留）压过 lineage saved →「自动保存 · 保存失败」', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', true)
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, 'tabDirty（保存失败残留语义）=worst-of 最重档').toContain('自动保存 · 保存失败')
-  })
-
-  it('saving 格（notes pending，W3 终裁分档）：pending=在途+失败混合（edit 置 true/save 成功清/失败不动——打字防抖窗常 true）→「保存中…」非假警报', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', false)
-    const { useNotesStore } = await import('../../../src/renderer/features/notes/notes.store')
-    act(() => {
-      useNotesStore.setState({ noteByPaper: { p1: { pending: true } } } as never)
-    })
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '未落库统称=保存中…（打字期不得显红色保存失败）').toContain('自动保存 · 保存中…')
-    expect(bar.textContent, 'pending 非失败残留——禁 error 假警报（W3 双席同中警告）').not.toContain('保存失败')
-  })
-
-  it('worst-of 跨格：annoDirty(error) 压过 notePending+lineage saving →「保存失败」（error 最重）', async () => {
-    mount(<App />)
-    await flush()
-    await openTab('p1', true)
-    const { useNotesStore } = await import('../../../src/renderer/features/notes/notes.store')
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useNotesStore.setState({ noteByPaper: { p1: { pending: true } } } as never)
-      useLineageStore.setState({ saveStatus: 'saving' })
-    })
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, 'annotations 失败残留压在途/防抖面（worst-of 序 error > saving > saved）').toContain('自动保存 · 保存失败')
-  })
-
-  it('null 格：无 tab 且 lineage 空闲（saved）→ 槽整体省略（无可写面信号，禁假数据）', async () => {
-    mount(<App />)
-    await flush()
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '无可写面信号=槽省略（不显「已保存」造作信号）').not.toContain('自动保存')
-  })
-
-  it('lineage 独立信号格（无 tab）：saving/error 仍显槽（lineage 写面自持信号源）', async () => {
-    mount(<App />)
-    await flush()
-    const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'saving' })
-    })
-    const bar = document.querySelector('footer.app-statusbar')!
-    expect(bar.textContent, '无 tab 但 lineage 在飞=保存中…').toContain('自动保存 · 保存中…')
-    act(() => {
-      useLineageStore.setState({ saveStatus: 'error' })
-    })
-    expect(bar.textContent, '无 tab 但 lineage 失败=保存失败').toContain('自动保存 · 保存失败')
-  })
 })
 
 describe('T3-U1 FOUC 启动注入——挂载前 attr 已在场+运行时单点真源', () => {

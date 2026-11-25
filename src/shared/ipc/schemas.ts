@@ -458,8 +458,8 @@ export const noteSaveReqSchema = z
 export const noteIdReqSchema = z.object({ noteId: z.string().min(1) }).strict()
 
 // ── workspaces（R1-WS1 课题域——ADR-0018 库级分目录；路径永不跨 IPC）────
-// [T3-P2] paperCount=课题文献计数（课题弹层「N 篇」+状态条数据源——一课题一库，
-// main 侧逐课题库 COUNT 注入 list 返回）
+// [T3-P2] paperCount=课题文献计数（课题弹层「N 篇」/课题管理页卡片数据源——一课题一库，
+// main 侧逐课题库 COUNT 注入 list 返回；[B5 C 2026-11-25] 状态条消费面随整删退役——用户裁决，设计稿外）
 export const workspaceItemSchema = z
   .object({
     id: z.string().min(1),

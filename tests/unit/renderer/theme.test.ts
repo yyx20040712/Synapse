@@ -200,8 +200,8 @@ const TOKENS: Array<[string, string]> = [
   ['--accent-deep', 'var(--accent-hover)'],
   ['--btn-press-tint', 'rgba(11, 26, 40, 0.45)'],
   // ── v2 第一期信号色系派生（同值合并=var() 引用载体——F-LINT-04 ②）──
+  // [--signal-a08 值锁随 drag-hint 删除——B5 C 2026-11-25（设计稿 §3.5-1：唯一消费方）]
   ['--pop-danger', 'var(--signal)'],
-  ['--signal-a08', 'var(--danger-a08)'],
   ['--shadow-lg-edit', '0 2px 6px rgba(166, 75, 67, 0.3)'],
   ['--shadow-lg-btn', '0 2px 6px rgba(47, 111, 100, 0.28)'],
   // [T3-P6→P7A] --edge-label-text/--node-meta-border 随边标签与 NodeMeta
@@ -237,16 +237,21 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(css).toContain('repeating-linear-gradient(115deg')
   })
 
-  it('T3-P2 壳层皮肤形态锁：三行网格 38px/1fr/26px+顶栏 --panel-2+主区 var(--bg)', () => {
+  it('T3-P2 壳层皮肤形态锁：两行网格 38px/1fr+顶栏 --panel-2+主区 var(--bg)', () => {
     // [T3-P2] F-UI-04 冷雾灰形态锁随壳层改版退役（.app-main 背景改 mockup
     // .content=--bg；--surface-cool 桥接仍在 theme.css 由 TOKENS 正锚锁值）；
-    // 此处锁新壳「皮肤住类」形态（B1 先例）：.app-shell 三行网格值+
+    // 此处锁新壳「皮肤住类」形态（B1 先例）：.app-shell 网格值+
     // .app-header 38px/--panel-2+gsearch 居中载体+.app-main var(--bg)。
     // 高度 44→56（2026-08-31 增高令）→38（2026-09-26 theme-trio final-design
     // §1 四轮裁决后规格——后者覆盖前者，裁决链）
-    expect(shellCss, '.app-shell 三行网格 38px 1fr 26px（mockup .app）').toMatch(
-      /\.app-shell\s*\{[^}]*grid-template-rows:\s*38px 1fr 26px;/
+    // [B5 wave C 2026-11-25——用户裁决：App 底部状态条整删（设计稿外）] 原第三行 26px 的
+    // 唯一子项=状态条；整删=网格由三行 38px 1fr 26px 翻为两行（留空行=半删）。
+    // 本断言随裁决翻转（偏离申报：任务书点名行=原 .app-statusbar 规则体锁，已随删）
+    expect(shellCss, '.app-shell 两行网格 38px 1fr（状态条行随整删退役）').toMatch(
+      /\.app-shell\s*\{[^}]*grid-template-rows:\s*38px 1fr;/
     )
+    // 负锚：状态条皮肤族（规则体 .app-statusbar 与子槽 .sep/.ok/.sig）零残留——回填即红
+    expect(shellCss, '.app-statusbar 规则随状态条整删退役').not.toContain('.app-statusbar')
     expect(shellCss, '.app-header 高 38px+背景 --panel-2（mockup .topbar）').toMatch(
       /\.app-header\s*\{[^}]*height:\s*38px;[^}]*background:\s*var\(--panel-2\);/
     )
@@ -259,12 +264,8 @@ describe('R3-TH1 theme token 冒烟（mockup :root 防漂移锁）', () => {
     expect(shellCss, '.rail 宽 72px+--sidebar 底（v2 设计稿侧栏色）').toMatch(
       /\.rail\s*\{[^}]*width:\s*72px;[^}]*background:\s*var\(--sidebar\);/
     )
-    // [回炉 1 d1-N5 强化] 状态条规则体锁（原存在性锚规则体清空仍绿）：
-    // --panel-2 底+--line 顶边+等宽字（mockup .statusbar 三要素——声明序不锚，
-    // 三声明各自在体即可）
-    expect(shellCss, '.app-statusbar 规则体=--panel-2 底+--line 顶边+mono 字').toMatch(
-      /\.app-statusbar\s*\{[^}]*background:\s*var\(--panel-2\);[^}]*border-top:\s*1px solid var\(--line\);[^}]*font-family:\s*var\(--mono\);/
-    )
+    // [B5 wave C] 状态条规则体锁（[回炉 1 d1-N5 强化] .app-statusbar 三要素）随状态条整删退役——
+    // 替代=上方负锚（规则零残留）
     // [回炉 1 d1-W6] close 红底字色=跨主题不变 token（var(--panel) 载体随主题翻深失守）
     expect(shellCss, 'close hover 字色应走 --close-red-ink（非 --panel）').toMatch(
       /\.titlebar-btn-close:hover\s*\{[^}]*color:\s*var\(--close-red-ink\);/

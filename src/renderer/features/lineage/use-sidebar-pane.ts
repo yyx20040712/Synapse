@@ -1,7 +1,7 @@
 // b3: F-UIRES-03
 /**
- * [F-UIRES-03 B4③] useSidebarPane —— 脉络右侧详情栏（LineagePage aside）
- * 调宽/收起状态 hook（逻辑层抽件：LineagePage 行数预算紧——拖拽会话+持久化
+ * [F-UIRES-03 B4③] useSidebarPane —— 脉络右侧详情栏（LineageAsideHost——受控注入）
+ * 调宽/收起状态 hook（逻辑层抽件：LineagePageBody 行数预算紧——拖拽会话+持久化
  * 整体驻本件，Page 只消费）。
  *
  * - 拖拽会话（INV-14 同族：监听与 body 样式副作用同源清理）：手柄在 aside
@@ -15,10 +15,13 @@
  *   越界值/非数回退默认宽 252。localStorage 不可用静默回退=设计行为
  *   （SplitPane.tsx 头注同源），setState updater 保持纯净（持久化收口在
  *   useEffect 单点）。
- * - 收起态=48px 窄条（渲染归 LineagePage；本 hook 只持态）：收起时拖拽不
+ * - 收起态（本 hook 只持态）：[B5 设计稿 §3.4——wave C 2026-11-25] 收起=宿主 LineageAsideHost 返回
+ *   null（不占空 rail；原 48px 窄条 rail 与其宽度常量退役），开关=工具栏
+ *   LineagePaneToggles；本 hook 实例由页面组合层 use-lineage-pane-controls 调用后受控注入工具栏
+ *   与宿主（LineageAsideHost 不再内部调用）。收起时拖拽不
  *   启动（窄条上调宽无意义——SplitPane collapsed 先例语义）。
  * - [F-UIRES-03 B5② v1.15 第五轮③] 键盘调宽（APG separator 模式）：手柄
- *   role=separator+tabIndex=0（可达性接线归 LineagePage）；onResizeKey 承载
+ *   role=separator+tabIndex=0（可达性接线归 LineageAsideHost）；onResizeKey 承载
  *   四键——ArrowLeft −16/ArrowRight +16 步进（clampSidebarWidth 同源钳）、
  *   Home/End 直达边界（SIDEBAR_MIN/MAX_WIDTH 常量直用）；其余键零操作；
  *   承载键 preventDefault（防 Home/End/箭头滚动页面）；收起态零操作（沿
@@ -34,8 +37,6 @@ import { SEPARATOR_KEY_STEP_PX } from '@shared/constants'
 const SIDEBAR_DEFAULT_WIDTH = 252
 export const SIDEBAR_MIN_WIDTH = 200
 export const SIDEBAR_MAX_WIDTH = 480
-/** 收起窄条宽（px） */
-export const SIDEBAR_RAIL_WIDTH = 48
 /** [B5②] 键盘步进量（v1.15 第五轮③用户裁决：±16px）——[F-VISFB-41 B3 起]
  * 收敛 @shared/constants SEPARATOR_KEY_STEP_PX 单源（dup-constants C-4d） */
 const KEY_STEP_PX = SEPARATOR_KEY_STEP_PX

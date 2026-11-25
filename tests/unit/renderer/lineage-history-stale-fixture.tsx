@@ -39,6 +39,7 @@ import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.
 import { lineageRegistry } from '../../../src/renderer/features/lineage/lineage-session-registry'
 import { LineageToolbar } from '../../../src/renderer/features/lineage/LineageToolbar'
 import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
+import type { LineagePaneControls } from '../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { resetLineageSessionsForTests } from './lineage-test-session-reset'
 import type { LineageNode } from '../../../src/shared/models/lineage'
 import type { SqliteDb } from '../../../src/main/db/connection'
@@ -210,7 +211,7 @@ export const settle = async (turns = 14): Promise<void> => {
   for (let i = 0; i < turns; i++) await Promise.resolve()
 }
 
-// ── 工具组（错误行与出口的宿主）──
+// ── 工具栏（告警与出口的宿主——[B5 设计稿 §3.2/§6.2/§6.3 wave C] 稳定外壳：告警=横滚容器的兄弟节点，三模式可达）──
 let root: Root | null = null
 let hostEl: HTMLDivElement | null = null
 export const DROP_BTN = '[data-testid="lineage-stale-drop"]'
@@ -218,12 +219,28 @@ export const ERROR_ROW = '[data-testid="lineage-save-error"]'
 /** 出口动作文案（ui-constants LINEAGE_STALE_DROP_ACTION） */
 export const ACTION_TEXT = '丢弃这条过期历史'
 
-export function mountToolbar(): void {
+/** [B5 §3.1] 工具栏注入面=页面组合层的左右栏控制（本族不测开关行为——lineage-pane-controls 承载） */
+const PANES: LineagePaneControls = {
+  navCollapsed: false,
+  toggleNav: () => undefined,
+  sidebar: {
+    width: 252,
+    collapsed: false,
+    onResizeStart: () => undefined,
+    onResizeKey: () => undefined,
+    collapse: () => undefined,
+    expand: () => undefined
+  }
+}
+
+/** 挂载工具栏（[B5 §6.3 R4] 缺省 edit；传 mode 可在 browse/focus 下验证出口可达——工具栏三模式同一 DOM） */
+export function mountToolbar(mode: 'edit' | 'browse' | 'focus' = 'edit'): void {
+  useLineageViewStore.setState({ mode })
   hostEl = document.createElement('div')
   document.body.appendChild(hostEl)
   root = createRoot(hostEl)
   act(() => {
-    root?.render(<LineageToolbar mode="edit" />)
+    root?.render(<LineageToolbar graphName="主图" panes={PANES} />)
   })
 }
 /** 工具组子树内查（确认框经 portal 挂 document.body——不在子树内，用 dialog()） */

@@ -320,9 +320,16 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
       void chainFlush().catch(() => undefined)
     },
     reconcileNow() {
+      // [B5 §7.2/§12 E08——主控裁决 A 案 2026-11-25] 自动和解（#41 结构事件触发）不重试失败写：入口相位为
+      // error（Q0/F0 的 history 零写失败／和解读失败／finalize 的 CONFLICT 尾）时，和解**未失败**的收尾还原
+      // error——runReconcile 起手的 saving 会覆盖它，否则告警与其内的 stale 丢弃出口随一次自动和解消失
+      // （§6.1 清除行只列「普通写成功、history 成功」，自动和解成功不在其内）。settleEdit 的 wasError 同型；
+      // 还原只写相位、不触 message/source。和解自身失败由 runReconcile 落自己的 save 源＋新 message，不还原。
+      const wasError = get().saveStatus === 'error'
       return chainTask(async () => {
         const outcome = get().needsReload ? await runReconcile('save') : 'dropped' // 在途回执已清位=无再读必要（显式和解入口=save 来源）
         settleIoPhase() // 相位收口（含早退径；[回炉 W-B2·R-B3] 与 runReconcile 的退出收口共用同一助手）
+        if (wasError && outcome !== 'failed') write({ saveStatus: 'error' })
         return outcome
       })
     },

@@ -7,13 +7,20 @@
  * - dirty：软盘角点标记、可点（即使 Q0——idle-flush 落库后 U 仍可定稿）；
  * - saving：spinner+禁用；
  * - saved：灰暗禁用；
- * - failed：可点（title/aria「重试保存」；行内错误文案与重试钮在工具组宿主）。
+ * - failed：可点。[B5 设计稿 §6.2——wave C 2026-11-25 断言翻转] title/aria 恒为「保存全部修改
+ *   （Ctrl+S——落库并标记为已保存）」——原 failed 态「重试保存」退役：主保存钮只表示显式保存，
+ *   不自动代替 history 重试；保存失败的重试入口=告警内 lineage-save-retry（LineageWriteErrorAlert，
+ *   只随 save 来源渲染）。
+ * - [B5 §2.3] 三模式同一判据（工具栏常驻；保存钮不随 browse/focus 消失）。
  * 可用性：disabled=saved ∨ saving ∨ !canSave（finalize/history/reconcile 在途、
  * 图未 ready、冻结——§10.4 canSave）。
  * 受控锚（testid/类名/sr-only 文本沿承）：data-testid=lineage-save-btn、
  * .lg-btn.save、sr-only「保存」。
  */
 import type { SaveUiState } from '../../shared/save-status'
+
+/** [B5 §6.2] 保存钮恒定名称（title 与 aria-label 同源单值） */
+const SAVE_ALL_TITLE = '保存全部修改（Ctrl+S——落库并标记为已保存）'
 
 export function LineageSaveButton(props: {
   state: SaveUiState
@@ -22,8 +29,8 @@ export function LineageSaveButton(props: {
 }): JSX.Element {
   const { state, canSave, onSave } = props
   const saving = state === 'saving'
-  const failed = state === 'failed'
-  const title = failed ? '重试保存' : '保存全部修改（Ctrl+S——落库并标记为已保存）'
+  // [B5 §6.2] 名称恒定（failed 态不变通用重试——重试入口在告警内，按失败源分流）
+  const title = SAVE_ALL_TITLE
   return (
     <button
       type="button"

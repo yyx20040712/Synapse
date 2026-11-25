@@ -23,6 +23,9 @@
  *   [F-UIRES-03 B5① 2026-10-06 v1.15 第五轮②用户裁决] 显式入口两钮「去文献
  *   库/去阅读器」随迁移退役（卡面零钮——hover-only 键盘不可达挂账随迁移消解；
  *   承接面=LineageSidePanel 头部操作行，编排与通道零改动）。
+ * - [B5 设计稿 §4.1/§4.2 第 3 条——wave C 2026-11-25 断言翻转] 聚焦无 dim：dim prop 与 .dim 类退役
+ *   （原「非聚焦卡 0.3——hover 回升 0.6」退役）；focused 保留——仅 focus 模式由调用方门控传入
+ *   （accent 描边=2px outline/offset 1px，CSS 承载）。
  * - 皮肤住 theme-lineage.css .c-l1/.c-l2/.c-l3 族（旧 .c-head/.c-idea/.c-meta
  *   随三层重整退役——退役行 8）。
  * - data-node-id=e2e/测试结构锚；[F-SLOTGRID-01 U1] 瀑布错位 offset prop
@@ -55,10 +58,8 @@ export const LineageTimelineCard = memo(function LineageTimelineCard(props: {
   selected: boolean
   /** [T3-P8] 拖起态（.dragging——离文档流随指针+连线层 dimmed 配套视觉） */
   dragging?: boolean
-  /** [F-LGRAPH-01①U5] P-8 聚焦视觉：仅被点卡 accent 边框 */
+  /** [F-LGRAPH-01①U5→B5 §4.1] P-8 聚焦视觉：focus 模式下 focusSet 本集卡 accent 描边（调用方按模式门控） */
   focused?: boolean
-  /** [②U7/P-18] 聚焦 dim（非聚焦卡 0.3——hover 回升 0.6 CSS 承载） */
-  dim?: boolean
   /** [②U5] 右键反馈：节点菜单目标卡 accent 描边（.ctx-hlt——菜单关即撤） */
   ctx?: boolean
   /** [F-STAR-01 A3 点亮] 星标区点击（stopProp 已隔离卡身——三模式均 toggle：
@@ -79,7 +80,6 @@ export const LineageTimelineCard = memo(function LineageTimelineCard(props: {
     props.selected ? 'sel' : '',
     props.dragging === true ? 'dragging' : '',
     props.focused === true ? 'focused' : '',
-    props.dim === true ? 'dim' : '',
     props.ctx === true ? 'ctx-hlt' : ''
   ]
     .filter((c) => c !== '')

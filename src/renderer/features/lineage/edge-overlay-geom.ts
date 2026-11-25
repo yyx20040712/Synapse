@@ -93,12 +93,11 @@ export function edgeVisualStyle(edge: LineageEdge): CSSProperties {
   return { stroke: edge.color, strokeDasharray: edge.dashed ? '6 3' : 'none' }
 }
 
-/** [RR10] 边 inline opacity 单源（错峰 fade ×hover 回升 ×focus dim）：
- *  hovered 回升 0.65 并入 inline 计算（原仅 CSS .hovered 承载——错峰边
- *  inline fade 压 CSS 类=hover 可见回升死样式）；focus dim 态恒 undefined
- *  （dim/回升由 .dim/.dim.hovered 逐径类承载——RR5，fade 让位） */
-export function edgeVisualOpacity(args: { fade?: number; hovered: boolean; focusDim: boolean }): number | undefined {
-  if (args.focusDim) return undefined
+/** [RR10→B5 设计稿 §4.2 第 4 条] 边 inline opacity 单源（错峰 fade ×hover 回升）：hovered 回升 0.65
+ *  并入 inline 计算（原仅 CSS .hovered 承载——错峰边 inline fade 压 CSS 类=hover 可见回升死样式）。
+ *  [B5 wave C 2026-11-25] 聚焦 dim 入参与其「恒 undefined（由逐径类承载让位）」分支随无 dim 退役——
+ *  只保留 fade/hovered 两支。 */
+export function edgeVisualOpacity(args: { fade?: number; hovered: boolean }): number | undefined {
   if (args.hovered) return 0.65
   return args.fade
 }

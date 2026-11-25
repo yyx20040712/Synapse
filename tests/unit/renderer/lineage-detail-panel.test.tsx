@@ -75,9 +75,11 @@ afterEach(() => {
 })
 
 describe('U4 详情面板（A5/P-16/P-20）', () => {
-  it('空选中态=「点击卡片查看详情」占位（P-16 常驻栏位形态）', () => {
+  it('[B5 §3.5/§11.2 断言翻转] 空选中态：详情根仍挂、无「点击卡片查看详情」教学占位文字（P-16 常驻栏位形态保持）', () => {
     mount(<LineageSidePanel node={null} onJumpToPaper={JUMP} />)
-    expect(host?.textContent).toContain('点击卡片查看详情')
+    expect(host?.querySelector('[data-testid="lineage-side-panel"]'), '详情根仍挂载（常驻栏位）').not.toBeNull()
+    expect(host?.textContent, '教学占位文案零渲染').not.toContain('点击卡片查看详情')
+    expect(host?.textContent?.trim(), '空选中态面板零可见教学文字').toBe('')
   })
 
   it('详情域收编：完整题名/期刊缩写/IF/被引/年月真文本；星标态禁用呈现', () => {
@@ -116,16 +118,20 @@ describe('U4 详情面板（A5/P-16/P-20）', () => {
     expect(text).not.toContain('核心') // core UI 消费面全退役（徽章行零「核心」字样）
   })
 
-  it('底部注记=编辑操作提要（[F-UIRES-03 C3] 双击跳转子句随卡双击链退役删——入口=卡面「去阅读器」钮；改月子句随改月链退役删 INV-107；[A1b] 标签编辑域随私有域退役删）', () => {
+  it('[B5 §3.5/§11.2 断言翻转] 底部「编辑模式：调序 / 画线 / 调线」教学文案删除：.insp-foot 零渲染、文案零命中；底部为真实笔记/元数据区', () => {
     mount(
       <LineageSidePanel
         node={node('A')}
         onJumpToPaper={JUMP}
       />
     )
-    expect(host?.textContent).toContain('编辑模式：调序 / 画线 / 调线')
-    expect(host?.textContent).not.toContain('双击卡片跳转阅读器') // 退役负锚
+    expect(host?.querySelector('.insp-foot'), '教学脚注行零渲染').toBeNull()
+    expect(host?.textContent).not.toContain('编辑模式：调序 / 画线 / 调线')
+    expect(host?.textContent).not.toContain('双击卡片跳转阅读器') // 既有退役负锚沿承
     expect(host?.querySelector('[data-testid="lineage-side-tags"]')).toBeNull() // [A1b] 标签编辑分节退役零渲染
+    // 底部=真实笔记/元数据区在场（非教学文字）
+    expect(host?.querySelector('[data-testid="lineage-side-manual-note"]'), '全文笔记节在场').not.toBeNull()
+    expect(host?.querySelector('[data-testid="lineage-side-citation"]'), '引用节在场').not.toBeNull()
   })
 
   it('主题节点空态沿承（无笔记面文案保活）', () => {

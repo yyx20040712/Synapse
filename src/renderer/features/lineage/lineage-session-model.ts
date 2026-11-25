@@ -55,8 +55,9 @@ import type { LineageWriteErrorSource } from './lineage-write-failure'
 export { isLineageBusy, lineageCommandState, lineageIoPhase } from './lineage-command-state-model'
 export type { LineageCommandStateInput } from './lineage-command-state-model'
 
-/** [§2.4] IO 相位×Q 的四态投影（既有消费面：quitDirty/lineagePending/nav/状态条）。
- *  [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：'saved'→'clean'） */
+/** [§2.4] IO 相位×Q 的四态投影（既有消费面：quitDirty/lineagePending/nav）。
+ *  [F-LGRAPH-01②U1] 保存态四态（mockup §2.2——saveStatus 枚举语义反转申报：'saved'→'clean'；
+ *  [B5 C 2026-11-25] 状态条消费面随整删退役——用户裁决，设计稿外） */
 export type LineageSaveStatus = 'clean' | 'dirty' | 'saving' | 'error'
 export type LineageIoPhase = 'idle' | 'saving' | 'error'
 

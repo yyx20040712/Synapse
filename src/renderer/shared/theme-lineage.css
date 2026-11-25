@@ -19,7 +19,9 @@
    .drag-slot.cand/
    .month-frame.stretch/.tl-edges.dimmed）拆出 theme-lineage-drag.css
    2026-11-22（commit A 纯物理拆件——规则文本零值改；--shadow-drag token
-   本体留守 theme.css :root 单源；文本锁测试读面=双文件拼读）。 */
+   本体留守 theme.css :root 单源；文本锁测试读面=双文件拼读）。
+   [B5 wave C 2026-11-25] 单排工具栏三层壳皮肤自工具条换装迁入本件（§3.2）；原 drag 提示 chip、聚焦 dim、
+   空图空态与右下角缩放角标皮肤随方案切换删除（死代码即删）。 */
 
 /* ══ [T3-P6] 脉络时间线（纵向年+月 DOM 时间线——mockup L203-262 逐值）══ */
 /* 滚动容器（pan/zoom INV-43/44 退役→滚动定位语义）；height:100%=Board 块级
@@ -48,13 +50,11 @@
      =滚出区边句柄不可命中（探针实证 461<643）。min-width=地板框 577+140
      （140=tl-month 横 margin 92+本件横 padding 48——地板态内容自然宽算式）
      使内容盒≥滚动域→两边层随铺满；≥1280 自然宽 717≥717 等值零变。
-     [轮 4 W-5] :has(.month-frame) 守卫=空图态不铺 717（空态文案在窄视口
-     scrollport 内可见——无月框即无横滚域需求，Chromium 152 :has 支持） */
+     [轮 4 W-5] :has(.month-frame) 守卫=空图态不铺 717（无月框即无横滚域需求；[B5 §3.3]
+     空图=画布+笔记层无文案节点，守卫沿承，Chromium :has 支持） */
   min-width: calc(var(--tl-frame-min) + 140px);
 }
 .tl-content:not(:has(.month-frame)) { min-width: 0; }
-/* 空图空态（文案常驻无死按钮——Canvas 空态语义沿承；类为本票新增申报） */
-.tl-empty { padding: 48px 0; text-align: center; color: var(--faint); font-size: var(--fs-body); }
 /* A11 年距 38px；年份头=衬线数字（纯数字无「年」字）+「N 篇」mono 计数+细线 */
 .tl-year { margin-bottom: 38px; position: relative; z-index: 2; }
 .tl-year-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
@@ -236,22 +236,68 @@
    .side-jumps 族） */
 /* ══ [T3-P7B] 编辑交互族（工具条换装+编辑态+线型弹层——mockup L204-219/L247/
    L259-260/L287-311 逐值；字号/阴影 token 映射注记见文件头 [T3-P7B] 段）══ */
-/* 工具条：sticky 挂 .timeline 内（D-P7B-1——mockup L204-205：color-mix var(--bg)
-   86% 底+blur 8px+底边线；z 12 低于弹层 130） */
-.lg-toolbar {
-  position: sticky;
-  top: 0;
-  /* [F-LINEUI-01②] 横向双轴锚：横滚时钉住不随内容滚走（竖向 top 钮沿承） */
-  left: 0;
+/* ══ [B5 设计稿 §3.1/§3.2——wave C 2026-11-25] 单排工具栏三层壳（约束原文照做）══
+   页面顶部只有一个工具控件轨道：空间不足由轨道自身原生横向滚动承担（不做第二排/
+   溢出菜单/窗口最小宽度）。原「sticky 挂 .timeline 内」的工具条皮肤随迁出退役
+   （方案切换=删旧——不再有内容从其下方滚过，半透明底+blur 同删）。 */
+.lg-toolbar-shell {
+  position: relative; /* 色板下探区与轨道叠于画布之上（z 12 沿承——低于弹层 130） */
   z-index: 12;
+  flex: none; /* 页面 flex 列的 shrink-0 子件 */
+  min-width: 0;
+}
+.lg-toolbar-scroll {
+  position: relative; /* 本容器=轨内 absolute 后代（sr-only 标签）的包含块：否则上溯到壳层（relative）而逃出
+                         本容器裁剪面——1024 下最右开关的 sr-only 把 main 右溢 4px、页面底部多出横向滚动条
+                         （wave C 视觉门发现；e2e 锁=lineage.spec B5-E09「页面级零横向溢出」） */
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+/* 色板下拉列表（锚槽内 absolute 下探）落在横滚容器纵向裁剪面内：列表开时给滚动容器加
+   等量下内边距（列表纳入容器盒——不被裁）＋等量负外边距（下方内容零位移）；下探区不
+   截获指针（滚动容器 none、轨道与列表恢复 auto）。只动纵向——横滚宽度不变。
+   220px≥列表满高（6 行≈150px）×最大界面缩放档 1.25。
+   实测（仓外探针 wave-c/probe/geom.json）：1024×768 下色板开合前后轨道 top/height 与画布
+   top 逐值不变（1280×800 无横滚，同理不变）。 */
+.lg-toolbar-scroll:has(.linetype-list) {
+  padding-bottom: 220px;
+  margin-bottom: -220px;
+  pointer-events: none;
+}
+.lg-toolbar-scroll:has(.linetype-list) > .lg-toolbar { pointer-events: auto; }
+/* 色板开期间滚动条透明（占位与厚度不变——不用 scrollbar-width:none：那会抽掉 15px 滚动条使下方
+   内容上移；条身随容器盒落在指针穿透的下探区内，不可见亦不可拖，收板即恢复） */
+.lg-toolbar-scroll:has(.linetype-list)::-webkit-scrollbar { background: transparent; }
+.lg-toolbar-scroll:has(.linetype-list)::-webkit-scrollbar-thumb { background: transparent; }
+.lg-toolbar {
   display: flex;
+  flex-wrap: nowrap; /* 控件行恒不折行（写失败告警在滚动区外——§3.2） */
+  width: max-content;
+  min-width: 100%; /* 宽视口铺满工具栏——不是给应用或视口设置最小宽度 */
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   padding: 10px 18px;
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   font-size: var(--fs-body);
+}
+/* 直接子组/分隔符：不伸缩、不折行 */
+.lg-toolbar > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* ghost 钮禁用态（[B5 §2.3] 编辑工具非 edit 禁用／缩放边界禁用／清空聚焦禁用——
+   三模式常驻后需要可见的禁用反馈） */
+.lg-btn.ghost:disabled { opacity: 0.45; cursor: default; }
+/* [B5 §3.1] 缩放组：百分比复位钮=纯 N%、等宽字、宽度稳定（100%↔50% 不跳宽） */
+.lg-zoom { display: inline-flex; align-items: center; gap: 2px; }
+.lg-btn.ghost.lg-zoom-percent {
+  min-width: 52px;
+  justify-content: center;
+  padding: 6px 6px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 .lg-toolbar button { font-family: inherit; }
 .lg-btn {
@@ -266,24 +312,6 @@
 }
 .lg-btn.ghost { background: var(--panel); color: var(--dim); border: 1px solid var(--line); box-shadow: none; }
 .lg-btn.editing { background: var(--signal); color: var(--accent-ink); box-shadow: var(--shadow-lg-edit); }
-/* drag-hint 右缘 chip：[T3-P8] 双态全时渲染（D-P7B-1 兑现）——base=view
-   态 accent 变体（mockup L218）+edit 态 signal 变体（L219——三稿同值
-   token 承载） */
-
-.drag-hint {
-  margin-left: auto;
-  font-size: var(--fs-tl-hint);
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px dashed var(--accent);
-  border-radius: 7px;
-  padding: 4px 10px;
-}
-.timeline.editing .drag-hint {
-  color: var(--signal);
-  background: var(--signal-a08);
-  border-color: var(--signal);
-}
 
 /* 编辑态（.timeline.editing——mode 驻 Timeline 单源 INV-80）：
    命中层双闸 CSS 面（P7a 基线 none→edit 开 stroke+pointer L225）；
@@ -377,34 +405,13 @@
 /* ══ [T3-P8] 拖拽连线层淡化+改月弹层+检查面板族（mockup L223/L312-318/
    L264-281 逐值；字号 token 映射：14px→--fs-title/12px→--fs-body/11.5px→
    --fs-body/10.5px→--fs-tl-hint/10px·9.5px→--fs-micro/9px→--fs-nano）══ */
-/* [F-LGRAPH-01②U7/P-12/P-18] 聚焦 dim：非聚焦卡 0.3（hover 临时回升 0.6——
-   可读探查）；全部线 0.3+hover 回升 0.6（[RR5] P-12/P-18 定案含线——原
-   root opacity 乘法族阻断单线回升[父 .3×子 .6=.18 反更暗]，线 dim 移驻
-   逐径类 .dim 承载；根类 dimmed-focus 保留=聚焦 dim 态标记[e2e/单测锚]
-   +逐径过渡承载[hover 回升/dim 进出平滑]） */
-.tl-card.dim { opacity: .3; }
-.tl-card.dim:hover { opacity: .6; }
-.tl-edges.dimmed-focus .tl-edge { transition: opacity var(--dur-tint); }
-.tl-edge.dim { opacity: .3; }
-.tl-edge.dim.hovered { opacity: .6; }
+/* [B5 设计稿 §4——wave C 2026-11-25 方案切换=删旧] 聚焦 dim 皮肤族（非聚焦卡/全部线的 dim 与
+   其 hover 回升、根态标记类）随无 dim 删除；聚焦视觉=仅 focus 模式本集卡 accent 描边
+   （.tl-card.focused——theme-lineage-nav.css）。 */
 /* [②U7/P-4] 缩放：spacer 绝对定位撑滚动域（.timeline relative——滚动含
-   绝对后代溢出；不约束 content 布局防互撑环）；角标右下图例上位堆叠 */
+   绝对后代溢出；不约束 content 布局防互撑环）；[B5 §4.2] 原右下角缩放角标皮肤随角标件
+   退役（百分比复位=工具栏 .lg-zoom-percent） */
 .tl-zoom-spacer { position: absolute; left: 0; top: 0; pointer-events: none; }
-.zoom-badge {
-  position: absolute;
-  right: 12px;
-  bottom: 44px;
-  z-index: 3;
-  font-family: var(--mono);
-  font-size: var(--fs-tl-meta);
-  color: var(--dim);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 2px 7px;
-  cursor: pointer;
-}
-.zoom-badge:hover { border-color: var(--accent); color: var(--accent); }
 
 /* [F-UIRES-03 C3] 改月弹层皮肤（.month-pop .ws-item 族）随改月链退役删除
    （INV-107——弹层组件已删，死样式即删） */

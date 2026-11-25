@@ -45,6 +45,7 @@ import {
   setupStaleExitFixture
 } from './lineage-history-stale-fixture'
 import { seedFolder, seedPaper } from '../../utils/lineage-history-db'
+import { useLineageViewStore } from '../../../src/renderer/features/lineage/lineage-view.store'
 
 setupStaleExitFixture()
 
@@ -278,4 +279,49 @@ describe('R-D1 其余三种 CONFLICT 拒因（表驱动——同一出口）', (
     expect(state().lastWriteError).toBeNull()
     expect(state().needsReload).toBe(true)
   })
+})
+
+// ── [B5 设计稿 §6.2/§6.3 R4 三模式可达——wave C 2026-11-25] 告警与丢弃出口在 edit/browse/focus 均可达 ──
+
+describe('[B5 §6.3 R4] 过期历史丢弃出口三模式可达（browse/focus 被拒后出口在场、可确认丢弃）', () => {
+  for (const mode of ['browse', 'focus'] as const) {
+    it(`${mode} 模式：撤销被 HISTORY_STALE 拒→告警在场（方向文案、无保存重试）→丢弃出口在场→确认丢弃→更旧历史可撤`, async () => {
+      seedPaper(rig().db, 'p-a')
+      seedPaper(rig().db, 'p-b')
+      seedTwoNodes()
+      seedSession()
+      edit(() => {
+        state().moveNode('A', 10, 10)
+        state().moveNode('B', 20, 20)
+      })
+      await save()
+      const [olderId, topId] = undoIds()
+      rig().repos.lineage.upsertNode(forkInput(dbNode('B')!, { x: 77, y: 77 }))
+      mountToolbar(mode)
+      expect(useLineageViewStore.getState().mode, '挂载于目标模式').toBe(mode)
+      expect(q(DROP_BTN)).toBeNull() // 前提：尚无过期项
+
+      expect(await undo()).toBe(false) // HISTORY_STALE
+      expect(unitCalls()[0]?.unitId).toBe(topId)
+      // 三模式可达：告警在场、方向文案、无保存重试；编辑工具在非 edit 禁用（不影响出口）
+      expect(q(ERROR_ROW), `${mode}：告警在场`).not.toBeNull()
+      expect(q(ERROR_ROW)?.textContent).toContain(`撤销失败：${staleMessage('B')}`)
+      expect(q('[data-testid="lineage-save-retry"]'), `${mode}：history 来源无保存重试`).toBeNull()
+      const drop = q(DROP_BTN)
+      expect(drop, `${mode}：丢弃出口在场`).not.toBeNull()
+      expect(drop!.textContent).toBe(ACTION_TEXT)
+
+      click(drop, `${mode} 丢弃出口`)
+      expect(dialog(), `${mode}：确认框`).not.toBeNull()
+      expect(dialog()!.textContent).toContain(staleMessage('B'))
+      clickDialogButton('丢弃')
+      expect(dialog()).toBeNull()
+      expect(undoIds()).toEqual([olderId]) // 只移除栈顶这一条
+      expect(state().saveStatus).toBe('clean')
+      expect(q(ERROR_ROW)).toBeNull()
+      // 更旧项可达：撤销成功
+      expect(await undo()).toBe(true)
+      expect(unitCalls().at(-1)?.unitId).toBe(olderId)
+    })
+  }
 })

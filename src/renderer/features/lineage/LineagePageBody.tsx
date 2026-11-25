@@ -1,42 +1,45 @@
 // b3: B5 wave A 纯拆件（2026-11-25——自 LineagePage.tsx 拆出；代码与锚
-// 注释同迁，行为零变）
+// 注释同迁）/ B5 wave C 稳定外壳（单排工具栏＋三态共壳＋侧栏单态）
 /**
- * [LG-02 / B5 设计稿 §3.3/§10.2] LineagePageBody —— 脉络页主体（自 LineagePage
- * 拆件：三态呈现+选中详情+folders 图名+pane 组合）。
+ * [LG-02 / B5 设计稿 §3/§10.2] LineagePageBody —— 脉络页稳定外壳（自 LineagePage
+ * 拆件：单排工具栏＋写失败告警＋三态主体＋选中详情＋folders 图名＋pane 组合）。
  *
- * 本波（A 波）只搬不改：loading/error 早退、顶栏=LineageModeBar、「该文件夹无
- * 脉络图」与加载文案等现状全保持；「loading/error/ready 共壳（工具栏常驻）」与
- * 教学文案删除属后续波（§3.3/§3.5/§15.1 步骤 4–5），本波不做。
- *
- * - 三态呈现（门一 N6）：loading/error/ready（空图空态在画布内）。本件由
- *   LineagePage 无条件渲染=恒挂载——选中节点与 folders 两份本地态的生命周期=
- *   页面生命周期，跨 loading/error 不复位（与拆件前驻 LineagePage 时一致）。
- * - 不取第二次 graph：本件零 load/setFolder 调用——取数单点=LineagePage 挂载
- *   效应（接缝双向锚定：lineage.store 头注；INV-182）；error 态重试钮只转调
- *   store.load()（用户触发）。
- * - 编排（LG-03 接入）：selectedNodeId 驻本件 state——Board 的 onSelectNode
- *   上抛落此（04 侧板 LineageSidePanel 消费）。
+ * [B5 设计稿 §3.3 loading/error/ready 共壳——wave C 2026-11-25 断言翻转] Page 始终渲染
+ * 工具栏与主体框架（原 loading/error 早退丢工具栏、「正在加载脉络图…」可见文案、
+ * 「该文件夹无脉络图」空态提示随 §3.3/§3.5 退役）：
+ * - loading：中央保留画布占位宿主（[data-testid="lineage-timeline"]，aria-busy=true）＋sr-only
+ *   「正在加载脉络图」；数据控件按 §2.3 禁用（各控件自判图 ready）。
+ * - graph load error：同一工具栏仍在；中央 role=alert「脉络图加载失败：真实原因」＋独立
+ *   lineage-load-retry（只调 store.load()，不复用保存/history 重试）；不与 write error 告警
+ *   （工具栏下的 LineageWriteErrorAlert）合并。graph loading/error 只收 palette=LineagePage 编排层。
+ * - ready：Board/Timeline；空图保留 .tl-content 与 FloatingNotes 层（LineageTimeline）。
+ * - 不取第二次 graph：本件零 load/setFolder 调用——取数单点=LineagePage 挂载效应（接缝双向
+ *   锚定：lineage.store 头注；INV-182）；error 态重试钮只转调 store.load()（用户触发）。
+ * - 本件由 LineagePage 无条件渲染=恒挂载——选中节点与 folders 两份本地态的生命周期=页面
+ *   生命周期，跨 loading/error 不复位（与拆件前驻 LineagePage 时一致）。
+ * - 编排（LG-03 接入）：selectedNodeId 驻本件 state——Board 的 onSelectNode 上抛落此（04 侧板
+ *   LineageSidePanel 消费）。
  *
  * ── F-LGRAPH-01①U4 编排重构（顶栏并集切换器退役行 1）──
- * - 顶栏=LineageModeBar（三模式分段+图名 mono 小字——图名=folders 单源经
- *   NavGraphPicker 上抛 folders 派生）；左侧=LineageNavPane（Word 导航窗格
- *   兼任图/文件夹切换——S2/S3/S4 语义迁驻）。
- * - 「该文件夹无脉络图」空态提示保留（顶栏紧邻模式栏——executor 定位申报）。
+ * - 顶部=单排工具栏 LineageToolbar（[B5 §3.1] 内含模式栏子件；图名=父栏槽位——folders 单源经
+ *   NavGraphPicker 上抛派生，folders 未落定期=主图兜底；真实图名属保留的数据文案）；
+ *   左侧=LineageNavPane（Word 导航窗格兼任图/文件夹切换——S2/S3/S4 语义迁驻）。
+ * - [B5 §3.4] 左右侧栏控制=页面组合层 use-lineage-pane-controls（本件调用一次，同一对象喂工具栏
+ *   开关与 LineageAsideHost）；收起的 pane 不占空 rail，从工具栏恢复时读回原宽。
  *
  * ── 接口层 ── export type LineagePageBodyProps；export function
  *   LineagePageBody(props: LineagePageBodyProps): JSX.Element
- *   （侧板跳转三回调与星标回调=LineagePage 组合根的编排体，经 props 透传——
- *   跳转接缝三方头注锚定〔LineagePage+LineageSidePanel+open-paper-bus〕仍指
- *   LineagePage，不随本件迁移）
+ *   （侧板跳转三回调与星标回调=LineagePage 组合根的编排体，经 props 透传——跳转接缝三方
+ *   头注锚定〔LineagePage+LineageSidePanel+open-paper-bus〕仍指 LineagePage，不随本件迁移）
  */
 import { useState } from 'react'
-import { MAIN_GRAPH_ID } from '@shared/models/lineage'
 import { RetryButton } from '../../shared/ui/RetryButton'
 import { useLineageStore } from './lineage.store'
 import { LineageAsideHost, type LineageAsideHostProps } from './LineageAsideHost'
 import { LineageBoard } from './LineageBoard'
-import { LineageModeBar } from './LineageModeBar'
 import { LineageNavPane } from './LineageNavPane'
+import { LineageToolbar } from './LineageToolbar'
+import { useLineagePaneControls } from './use-lineage-pane-controls'
 import type { NavFolder } from './nav-graph-picker'
 
 /** 侧板编排回调面（=LineageAsideHost 同名 props——类型单源取自该件，不手写第二份） */
@@ -45,13 +48,15 @@ export type LineagePageBodyProps = Pick<
   'onJumpToPaper' | 'onGotoLibrary' | 'onGotoReader' | 'onToggleStar'
 >
 
+/** 图名兜底（folders 未落定期/主图——folders 单源缺省值） */
+const DEFAULT_GRAPH_NAME = '主图'
+
 export function LineagePageBody(props: LineagePageBodyProps): JSX.Element {
   const status = useLineageStore((s) => s.status)
   const error = useLineageStore((s) => s.error)
   const load = useLineageStore((s) => s.load)
-  // [F-LGRAPH-01①U4] 图作用域+节点计数（空态提示消费面）+folders 图名链
+  // [F-LGRAPH-01①U4] folders 图名链（NavGraphPicker 上抛）
   const folderId = useLineageStore((s) => s.folderId)
-  const nodeCount = useLineageStore((s) => s.nodes.length)
   const [folders, setFolders] = useState<NavFolder[] | null>(null)
   // 选中节点 id（04 侧板数据源——Board 上抛落此，store 查找分发在下行 selector）
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -65,57 +70,47 @@ export function LineagePageBody(props: LineagePageBodyProps): JSX.Element {
     selectedNode !== null && selectedNode.paperId !== null
       ? (paperMetrics[selectedNode.paperId] ?? null)
       : null
+  // [B5 §3.4] 左右侧栏控制（页面组合层——无第二 collapsed 态；右栏 useSidebarPane 实例在此持有）
+  const panes = useLineagePaneControls()
+  const graphName = folders?.find((f) => f.id === folderId)?.name ?? DEFAULT_GRAPH_NAME
 
-  if (status === 'loading') {
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-sm" style={{ color: 'var(--text-dim)' }}>
-        正在加载脉络图…
-      </div>
-    )
-  }
-  if (status === 'error') {
-    return (
-      <div className="flex h-full items-center justify-center p-8">
-        <div
-          className="flex items-center gap-3 rounded border px-4 py-3 text-xs"
-          role="alert"
-          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
-        >
-          <span>脉络图加载失败：{error}</span>
-          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（textContent 恰=
-              「重试」——受锁 lineage-timeline-page:256 精确匹配兼容面） */}
-          <RetryButton onClick={() => void load()} />
-        </div>
-      </div>
-    )
-  }
-  const graphName = folders?.find((f) => f.id === folderId)?.name ?? '主图'
   return (
-    <div className="flex h-full flex-col">
-      {/* [F-LGRAPH-01①U4] 顶栏=模式栏（图名随 folders 单源）+空图提示：folder
-          选中且子图空=「该文件夹无脉络图」（区别于时间线通用空态——含
-          「未选中文件夹」语境；主图空图不提示——D6 裁决=不引导〔新建文件夹/
-          导入 PDF 入口在库页在场〕；文献入库经导入链自动入图，无手动建点路径
-          ——F-ALIGN-01 建点入口退役） */}
-      <div className="flex items-center gap-3 px-2 pt-2">
-        <LineageModeBar graphName={graphName} />
-        {folderId !== MAIN_GRAPH_ID && nodeCount === 0 && (
-          <span className="text-xs" style={{ color: 'var(--text-dim)' }}>
-            该文件夹无脉络图
-          </span>
-        )}
-      </div>
-      <div className="flex min-h-0 flex-1 gap-1 p-1">
+    // min-w-0：外层页面不设最小宽度——工具栏横滚只发生在 .lg-toolbar-scroll（§3.2），不撑宽 body/画布/侧栏
+    <div className="flex h-full min-w-0 flex-col">
+      {/* [B5 §3.1/§3.2] 单排工具栏=稳定外壳首子（三态常驻；写失败告警=其内横滚容器的兄弟节点） */}
+      <LineageToolbar graphName={graphName} panes={panes} />
+      <div className="flex min-h-0 min-w-0 flex-1 gap-1 p-1">
         <LineageNavPane onFoldersChange={setFolders} />
         <div className="min-w-0 flex-1">
-          {/* [F-UIRES-03 B5①] 两钮编排改道：现有回调零改动复用——消费面自 Board→Timeline 卡链转 SidePanel 操作行 */}
-          <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+          {status === 'loading' ? (
+            // [B5 §3.3] loading：画布占位宿主（aria-busy＋sr-only），无可见教学式 loading 文案
+            <div className="flex h-full items-center justify-center" data-testid="lineage-timeline" aria-busy="true">
+              <span className="sr-only">正在加载脉络图</span>
+            </div>
+          ) : status === 'error' ? (
+            // [B5 §3.3] graph load error：同一工具栏仍在；独立重试入口只调 load()
+            <div className="flex h-full items-center justify-center p-8">
+              <div
+                className="flex min-w-0 max-w-full items-center gap-3 rounded border px-4 py-3 text-xs"
+                role="alert"
+                style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+              >
+                <span className="min-w-0 break-words">脉络图加载失败：{error}</span>
+                {/* [F-UIRES-02 批 B R2] 共享 RetryButton（textContent=「重试」）；testid 独立于
+                    lineage-save-retry——保存/history 重试不复用本入口 */}
+                <RetryButton testId="lineage-load-retry" onClick={() => void load()} />
+              </div>
+            </div>
+          ) : (
+            // [F-UIRES-03 B5①] 两钮编排改道：现有回调零改动复用——消费面自 Board→Timeline 卡链转 SidePanel 操作行
+            <LineageBoard onSelectNode={setSelectedNodeId} selectedNodeId={selectedNodeId} />
+          )}
         </div>
-        {/* [F-UIRES-03 B4③+F-DBCAMP-01 U3] aside 宿主拆件=LineageAsideHost：
-            宽/收起机制原语义原样迁驻（拖右缘 4px 手柄 clamp 200–480+localStorage
-            持久；收起=48px 窄条）+页签行「详情｜AI 会话」（详情缺省）——testid
-            锚全保持；编排态经 props 透传（Page 行数预算） */}
+        {/* [F-UIRES-03 B4③+F-DBCAMP-01 U3] aside 宿主拆件=LineageAsideHost：宽/调宽机制原语义
+            迁驻（拖右缘 4px 手柄 clamp 200–480+localStorage 持久）+页签行「详情｜AI 会话」
+            （详情缺省）；[B5 §3.4] 受控 SidebarPane 注入（同一 panes.sidebar）——收起=零 DOM */}
         <LineageAsideHost
+          sidebar={panes.sidebar}
           node={selectedNode}
           onJumpToPaper={props.onJumpToPaper}
           pubNo={

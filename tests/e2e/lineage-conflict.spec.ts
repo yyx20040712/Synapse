@@ -20,6 +20,14 @@
  *   钉在 1024×768（CI runner 档）执行并验收出口钮的呈现（在视口内、可点、横排、错误行不溢出
  *   工具组——[回炉 W-C·R-D1 呈现修复]）；另有一条 1280×800 短例。错误行与确认框在两档视口
  *   各截一张图（落 testInfo.outputPath——视觉岗核验面）。
+ *
+ * [B5 设计稿 §3.2/§6.2/§6.3/§11.3/§12 B5-E06/E08——wave C 2026-11-25 断言翻转+新增] 告警迁稳定 Page 外壳后：
+ * - 出口呈现验收改「告警=横滚容器兄弟节点（不在工具控件轨道内）+右缘不超壳层+告警出现前后控件轨道
+ *   top/height 不变」；原「.lg-toolbar 包错误行」几何比较删除；
+ * - E06 三模式参数化：browse/focus 下撤销、重做各被 HISTORY_STALE 拒——告警含 main 真实原因与
+ *   方向文案、无保存重试、丢弃出口可见，确认后更旧历史可用（原「点 edit 才见错误行」前提退役）；
+ * - E08 C2 对照：history 零写失败（Q0/F0）后 lineagePending 释放、结构写放行；普通写失败（Q1）
+ *   仍被 INV-91 队列闸拒；两种情况下告警都在。
  */
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -239,16 +247,26 @@ async function seedStaleNodes(userData: string): Promise<void> {
   })
 }
 
+/** 控件轨道几何快照（[B5 设计稿 §3.2] 告警=滚动容器的兄弟节点——出现前后轨道 top/height 不变） */
+interface TrackBox {
+  top: number
+  height: number
+}
+
 interface StaleIds {
   jiaId: string
   yiId: string
   cardJia: Locator
   cardYi: Locator
+  /** 告警出现前的控件轨道几何（告警独立性断言的对照基线） */
+  trackBefore: TrackBox
 }
 
 /**
  * 走到「撤销被拒」态：删甲（更旧项）→删乙（栈顶项）→显式保存（两项落库）→页面外子进程把乙的
- * 节点行恢复进库（分叉：栈顶项 after=null 而实体在场→history-unit 写前指纹核对不符）→撤销。
+ * 节点行恢复进库（分叉：栈顶项 after=null 而实体在场→history-unit 写前指纹核对不符）。
+ * [B5 设计稿 §12 B5-E06——wave C 2026-11-25] 拆为两步：本函数走到「栈顶项过期、尚未发撤销」
+ * （reachStaleReady），rejectUndo 发撤销并断言被拒——被拒命令可在 edit/browse/focus 任一模式发出。
  *
  * 夹具为什么用「删两个不同节点」而不用「新建悬浮笔记」：右键新建悬浮笔记会产生两条历史项
  * （addFloatingNote 与内容 updateFloatingNote），二者是同一实体；栈顶项过期被丢弃后，栈顶仍是
@@ -256,8 +274,9 @@ interface StaleIds {
  * b4b-rework/w-c/logs/probe-rd1-undo-after-drop-run1.log）。删除节点每条编辑恰一条历史项，两个
  * 不同实体互不影响。
  */
-async function reachStaleState(win: Page, userData: string): Promise<StaleIds> {
+async function reachStaleReady(win: Page, userData: string): Promise<StaleIds> {
   await openLineageEdit(win)
+  const trackBefore = await trackBox(win) // [B5 §3.2] 告警出现前的控件轨道基线
   const cardJia = win.locator('.tl-card[data-node-id]').filter({ hasText: STALE_JIA.title })
   const cardYi = win.locator('.tl-card[data-node-id]').filter({ hasText: STALE_YI.title })
   await expect(cardJia).toBeVisible({ timeout: 10_000 })
@@ -303,6 +322,14 @@ async function reachStaleState(win: Page, userData: string): Promise<StaleIds> {
       yiRow.folder_id
     ]
   )
+  return { jiaId: jiaId!, yiId: yiId!, cardJia, cardYi, trackBefore }
+}
+
+/**
+ * 发撤销并断言被拒（CONFLICT/HISTORY_STALE）：告警=方向文案+指引+丢弃出口，无保存重试
+ * （[B5 设计稿 §6.3 R4] 告警挂稳定 Page 外壳——调用方所处模式即被拒命令的模式）。
+ */
+async function rejectUndo(win: Page, yiId: string): Promise<void> {
   // 撤销→被拒（CONFLICT/HISTORY_STALE）：错误行+出口
   // [B5 设计稿 §2.4/§6 C1 断言翻转] history-unit 被拒=history-undo 来源——行文案为方向文案「撤销失败：」
   // 与「历史栈未变化，重按撤销即可重试」指引（原「保存失败：…撤销/重做未执行」通用错误行文案退役）；
@@ -315,16 +342,98 @@ async function reachStaleState(win: Page, userData: string): Promise<StaleIds> {
   await expect(errorRow).toContainText('历史栈未变化，重按撤销即可重试')
   await expect(win.getByTestId('lineage-stale-drop')).toHaveText('丢弃这条过期历史')
   await dismissToasts(win)
-  return { jiaId: jiaId!, yiId: yiId!, cardJia, cardYi }
+  // [B5 §2.4/§6.2] history 来源告警不渲染保存重试（重试入口=重按原方向命令）
+  await expect(win.getByTestId('lineage-save-retry')).toHaveCount(0)
+}
+
+/** 组合：走到过期就绪→发撤销被拒（edit 态——既有 R-D1 两例的入口） */
+async function reachStaleState(win: Page, userData: string): Promise<StaleIds> {
+  const state = await reachStaleReady(win, userData)
+  await rejectUndo(win, state.yiId)
+  return state
 }
 
 /**
- * 出口钮呈现验收（[回炉 W-C·R-D1 呈现修复]——修复前：长消息把工具组挤爆，出口钮一字一行竖排
- * 高 122px，1024×768 下整行溢出工具组右缘、落在侧板之下不可点）：在视口内；按钮中心命中自身
- * 或其子节点（未被压住）；横排（高度<40px）；错误行整体落在工具组盒子内（右缘不超工具组右缘）。
+ * [B5 设计稿 §12 B5-E06] 走到「重做栈顶过期」态：删甲→删乙→显式保存→撤销两次（乙、甲恢复；重做栈=
+ * [重删乙（更旧）, 重删甲（栈顶）]）→页面外改甲行 title（history-unit 指纹不含 updatedAt——改
+ * title 才构成「before 指纹不符」分叉）。之后发重做=栈顶项被 CONFLICT/HISTORY_STALE 拒。
  */
-async function expectDropButtonPresented(win: Page): Promise<void> {
+async function reachStaleRedoReady(win: Page, userData: string): Promise<StaleIds> {
+  await openLineageEdit(win)
+  const trackBefore = await trackBox(win) // [B5 §3.2] 告警出现前的控件轨道基线
+  const cardJia = win.locator('.tl-card[data-node-id]').filter({ hasText: STALE_JIA.title })
+  const cardYi = win.locator('.tl-card[data-node-id]').filter({ hasText: STALE_YI.title })
+  await expect(cardJia).toBeVisible({ timeout: 10_000 })
+  await expect(cardYi).toBeVisible({ timeout: 10_000 })
+  const jiaId = await cardJia.getAttribute('data-node-id')
+  const yiId = await cardYi.getAttribute('data-node-id')
+  expect(jiaId && yiId, '基线节点 id 非空').toBeTruthy()
+  await deleteNode(win, cardJia)
+  await deleteNode(win, cardYi)
+  const saveBtn = win.getByTestId('lineage-save-btn')
+  await expect(saveBtn).toBeEnabled({ timeout: 10_000 })
+  await saveBtn.click()
+  await expect(saveBtn).toBeDisabled({ timeout: 10_000 })
+  // 撤销两次：乙、甲依次恢复（真实卡文本）→重做栈两项，栈顶=重删甲
+  const undoBtn = win.getByTestId('lineage-undo')
+  await undoBtn.click()
+  await expect(cardYi).toBeVisible({ timeout: 10_000 })
+  await undoBtn.click()
+  await expect(cardJia).toBeVisible({ timeout: 10_000 })
+  await expect(cardJia).toContainText(STALE_JIA.title)
+  await expect(win.getByTestId('lineage-redo')).toBeEnabled()
+  // 页面外改甲行 title：重做「删甲」的 before 指纹不符
+  await liveDbScript(userData, 'run', 'UPDATE lineage_nodes SET title = ? WHERE id = ?', [`${STALE_JIA.title}（页面外改动）`, jiaId])
+  return { jiaId: jiaId!, yiId: yiId!, cardJia, cardYi, trackBefore }
+}
+
+/** 发重做并断言被拒：告警=重做方向文案+指引+丢弃出口，无保存重试 */
+async function rejectRedo(win: Page, jiaId: string): Promise<void> {
+  await win.getByTestId('lineage-redo').click()
   const errorRow = win.getByTestId('lineage-save-error')
+  await expect(errorRow).toBeVisible({ timeout: 10_000 })
+  await expect(errorRow).toContainText('重做失败：节点已被其他操作改变')
+  await expect(errorRow).toContainText(`（${jiaId}）`)
+  await expect(errorRow).toContainText('历史栈未变化，重按重做即可重试')
+  await expect(errorRow).not.toContainText('保存失败')
+  await expect(win.getByTestId('lineage-stale-drop')).toHaveText('丢弃这条过期历史')
+  await expect(win.getByTestId('lineage-save-retry')).toHaveCount(0)
+  await dismissToasts(win)
+}
+
+/** 切换模式（工具栏三模式钮——[B5 §3.1] 三态常驻）并断言选中态 */
+async function switchMode(win: Page, button: 'lineage-mode-browse' | 'lineage-mode-focus'): Promise<void> {
+  await win.getByTestId(button).click()
+  await expect(win.getByTestId(button)).toHaveAttribute('aria-pressed', 'true')
+}
+
+/** E06 公共段：丢弃出口确认（只移栈顶一项——告警与出口随之消失） */
+async function dropStaleConfirm(win: Page): Promise<void> {
+  const dialog = win.getByRole('dialog')
+  await win.getByTestId('lineage-stale-drop').click()
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('丢弃这条过期历史？')
+  await expect(dialog).toContainText('不写数据库')
+  await dialog.getByRole('button', { name: '丢弃', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(win.getByTestId('lineage-save-error')).toHaveCount(0)
+  await expect(win.getByTestId('lineage-stale-drop')).toHaveCount(0)
+}
+
+/**
+ * 出口钮呈现验收（[B5 设计稿 §3.2/§6.2/§11.3「lineage-conflict：窄视口改『告警独立、控件轨道不增高』；旧
+ * .lg-toolbar 包错误行的几何比较删除」——wave C 2026-11-25 断言翻转；原 [回炉 W-C·R-D1 呈现修复]
+ * 缘由：长消息把工具组挤爆，出口钮一字一行竖排高 122px，1024×768 下整行溢出到侧板之下不可点）：
+ * 出口钮在视口内；按钮中心命中自身或其子节点（未被压住）；横排（高度<40px）；告警=横滚容器的
+ * 兄弟节点（不在 .lg-toolbar-scroll 内——不占工具控件轨道）且右缘不超壳层右缘；告警出现前后
+ * 控件轨道 top/height 不变（告警只影响自己的告警区高度）。
+ */
+async function trackBox(win: Page): Promise<TrackBox> {
+  const b = (await win.locator('.lg-toolbar').boundingBox())!
+  return { top: b.y, height: b.height }
+}
+
+async function expectDropButtonPresented(win: Page, trackBefore: TrackBox): Promise<void> {
   const dropBtn = win.getByTestId('lineage-stale-drop')
   await expect(dropBtn).toBeInViewport()
   await expect(dropBtn).toHaveText('丢弃这条过期历史')
@@ -332,12 +441,30 @@ async function expectDropButtonPresented(win: Page): Promise<void> {
   const dropBox = await dropBtn.boundingBox()
   expect(dropBox).not.toBeNull()
   expect(dropBox!.height, '出口钮横排可读（高度<40px）').toBeLessThan(40)
-  const [toolbarBox, errorBox] = await Promise.all([win.locator('.lg-toolbar').boundingBox(), errorRow.boundingBox()])
-  expect(toolbarBox).not.toBeNull()
-  expect(errorBox).not.toBeNull()
-  expect(errorBox!.x + errorBox!.width, '错误行右缘不超过工具组右缘').toBeLessThanOrEqual(
-    toolbarBox!.x + toolbarBox!.width + 0.5
-  )
+  const geo = await win.evaluate(() => {
+    const alert = document.querySelector('.lg-save-error')
+    const shell = document.querySelector('.lg-toolbar-shell')
+    const scroll = document.querySelector('.lg-toolbar-scroll')
+    const track = document.querySelector('.lg-toolbar')
+    if (alert === null || shell === null || scroll === null || track === null) return null
+    const a = alert.getBoundingClientRect()
+    const s = shell.getBoundingClientRect()
+    const t = track.getBoundingClientRect()
+    return {
+      alertInScroll: scroll.contains(alert),
+      alertInShell: shell.contains(alert),
+      alertRight: a.x + a.width,
+      shellRight: s.x + s.width,
+      trackTop: t.y,
+      trackHeight: t.height
+    }
+  })
+  if (geo === null) throw new Error('.lg-save-error/.lg-toolbar-shell/.lg-toolbar-scroll/.lg-toolbar 缺席')
+  expect(geo.alertInScroll, '告警不得落在工具栏滚动容器内（不占工具控件轨道）').toBe(false)
+  expect(geo.alertInShell, '告警与滚动容器同父=稳定外壳').toBe(true)
+  expect(geo.alertRight, '告警右缘不超过壳层右缘').toBeLessThanOrEqual(geo.shellRight + 0.5)
+  expect(Math.abs(geo.trackTop - trackBefore.top), '告警出现前后控件轨道 top 不变').toBeLessThanOrEqual(0.5)
+  expect(Math.abs(geo.trackHeight - trackBefore.height), '告警出现前后控件轨道 height 不变（不增高）').toBeLessThanOrEqual(0.5)
 }
 
 test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
@@ -348,7 +475,7 @@ test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
     const win = await app.firstWindow()
     // 视口显式钉 1024×768（CI runner 档）：出口在该宽度下必须可见可点——不依赖运行环境默认视口
     await win.setViewportSize(NARROW)
-    const { jiaId, yiId, cardJia, cardYi } = await reachStaleState(win, userData)
+    const { jiaId, yiId, cardJia, cardYi, trackBefore } = await reachStaleState(win, userData)
     const undoBtn = win.getByTestId('lineage-undo')
     const redoBtn = win.getByTestId('lineage-redo')
     const errorRow = win.getByTestId('lineage-save-error')
@@ -360,7 +487,7 @@ test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
     await expect(redoBtn).toBeDisabled()
     await expect(cardJia).toHaveCount(0)
     await expect(cardYi).toHaveCount(0)
-    await expectDropButtonPresented(win)
+    await expectDropButtonPresented(win, trackBefore)
     await win.screenshot({ path: testInfo.outputPath('stale-drop-error-row-1024x768.png') })
 
     // 点击出口只开确认框（不丢弃）；未确认（取消）零变化
@@ -425,8 +552,8 @@ test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
     const app = await launch(userData)
     const win = await app.firstWindow()
     await win.setViewportSize(WIDE)
-    await reachStaleState(win, userData)
-    await expectDropButtonPresented(win)
+    const { trackBefore } = await reachStaleState(win, userData)
+    await expectDropButtonPresented(win, trackBefore)
     await win.screenshot({ path: testInfo.outputPath('stale-drop-error-row-1280x800.png') })
     const dialog = win.getByRole('dialog')
     await win.getByTestId('lineage-stale-drop').click()
@@ -434,6 +561,110 @@ test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
     await expect(dialog).toContainText('丢弃这条过期历史？')
     await expect(dialog).toBeInViewport()
     await win.screenshot({ path: testInfo.outputPath('stale-drop-confirm-1280x800.png') })
+    await app.close()
+  })
+
+  // ── [B5 设计稿 §12 B5-E06——wave C 2026-11-25] 三模式参数化（R4：告警与丢弃出口三模式可达）──
+  for (const [mode, button] of [
+    ['browse', 'lineage-mode-browse'],
+    ['focus', 'lineage-mode-focus']
+  ] as const) {
+    test(`B5-E06 ${mode} 模式：撤销与重做各被 HISTORY_STALE 拒→方向文案+无保存重试+丢弃出口→确认后更旧历史可用（1024×768）`, async ({}, testInfo) => {
+      // ── 撤销方向 ──
+      const undoDir = await freshDir()
+      await seedStaleNodes(undoDir)
+      const app = await launch(undoDir)
+      const win = await app.firstWindow()
+      await win.setViewportSize(NARROW)
+      const undoState = await reachStaleReady(win, undoDir)
+      await switchMode(win, button) // 被拒命令在目标模式发出（原「点 edit 才见错误行」前提退役）
+      await rejectUndo(win, undoState.yiId)
+      await expect(win.getByTestId('lineage-save-error')).not.toContainText('保存失败')
+      await expectDropButtonPresented(win, undoState.trackBefore)
+      await expect(undoState.cardJia).toHaveCount(0) // 被拒的撤销未执行（甲未恢复）
+      await expect(win.getByTestId('lineage-redo')).toBeDisabled()
+      await win.screenshot({ path: testInfo.outputPath(`b5-e06-undo-rejected-${mode}-1024x768.png`) })
+      await dropStaleConfirm(win)
+      // 更旧项可达：撤销（删节点甲）→甲原卡恢复；模式未被切换
+      await win.getByTestId('lineage-undo').click()
+      await expect(undoState.cardJia).toBeVisible({ timeout: 10_000 })
+      await expect(undoState.cardJia).toContainText(STALE_JIA.title)
+      await expect(win.getByTestId(button)).toHaveAttribute('aria-pressed', 'true')
+      await expect(win.getByTestId('lineage-save-error')).toHaveCount(0)
+      await app.close()
+
+      // ── 重做方向 ──
+      const redoDir = await freshDir()
+      await seedStaleNodes(redoDir)
+      const app2 = await launch(redoDir)
+      const win2 = await app2.firstWindow()
+      await win2.setViewportSize(NARROW)
+      const redoState = await reachStaleRedoReady(win2, redoDir)
+      await switchMode(win2, button)
+      await rejectRedo(win2, redoState.jiaId)
+      await expectDropButtonPresented(win2, redoState.trackBefore)
+      await expect(redoState.cardJia).toBeVisible() // 被拒的重做未执行（甲未删）
+      await win2.screenshot({ path: testInfo.outputPath(`b5-e06-redo-rejected-${mode}-1024x768.png`) })
+      await dropStaleConfirm(win2)
+      // 更旧项可达：重做（重删乙）→乙原卡消失；DB 回读=乙已删、甲仍在
+      await win2.getByTestId('lineage-redo').click()
+      await expect(redoState.cardYi).toHaveCount(0, { timeout: 10_000 })
+      expect(
+        await liveDbScript(redoDir, 'all', 'SELECT id FROM lineage_nodes WHERE id IN (?, ?) ORDER BY id', [redoState.jiaId, redoState.yiId])
+      ).toEqual([{ id: redoState.jiaId }])
+      await app2.close()
+    })
+  }
+
+  // ── [B5 设计稿 §12 B5-E08 / §7 C2=B] history 零写失败释放 lineagePending；普通写失败（Q1）仍拒 ──
+  test('B5-E08 C2 对照：history 零写失败（Q0/F0）→lineagePending 释放、结构写放行；普通写失败（Q1）→结构写仍拒；告警两种情况都在', async () => {
+    const userData = await freshDir()
+    await seedStaleNodes(userData)
+    const app = await launch(userData)
+    const win = await app.firstWindow()
+    await win.setViewportSize(WIDE)
+    // 撤销被拒=history-undo 来源：Q0/F0（ioUnsettled=false）——告警在、保存重试不在
+    await reachStaleState(win, userData)
+    const errorRow = win.getByTestId('lineage-save-error')
+    await expect(errorRow).toContainText('撤销失败：')
+    await expect(win.getByTestId('lineage-save-retry')).toHaveCount(0)
+    await dismissToasts(win)
+    /** 结构写探针：folders.create 走 INV-91 队列闸（lineagePending 缓存由 App 聚合经 setQuitDirty 上报） */
+    const createFolder = (name: string): Promise<string> =>
+      win.evaluate(async (n) => {
+        const r = (await window.api.folders.create({ name: n })) as { ok: boolean; error?: { message: string } }
+        return r.ok ? 'ok' : `rejected: ${r.error?.message ?? ''}`
+      }, name)
+    // Q0/F0 history error 不单独互斥结构写（B5-D01=C2 选 B）
+    await expect.poll(() => createFolder('结构写探针甲'), { timeout: 10_000 }).toBe('ok')
+    await expect(errorRow).toBeVisible() // 放行后告警仍在
+    // 负对照：普通写失败（写失败队首保留→Q1）——悬浮笔记写通道抛错
+    await app.evaluate((electronMod) => {
+      const ipcMain = (
+        electronMod as unknown as {
+          ipcMain: { removeHandler(channel: string): void; handle(channel: string, handler: () => Promise<never>): void }
+        }
+      ).ipcMain
+      ipcMain.removeHandler('lineage/upsert-floating-note')
+      ipcMain.handle('lineage/upsert-floating-note', async () => {
+        throw new Error('模拟写库失败（e2e 桩）')
+      })
+    })
+    await win.getByTestId('lineage-mode-edit').click()
+    await win.getByTestId('lineage-tool-select').click()
+    await createNote(win, '写失败探针笔记')
+    await expect(errorRow).toContainText('保存失败：') // 最近一次失败=save 来源
+    await expect(win.getByTestId('lineage-save-retry')).toBeVisible() // save 来源有保存重试
+    await dismissToasts(win)
+    await expect.poll(() => createFolder('结构写探针乙'), { timeout: 10_000 }).toContain('脉络图编辑保存中')
+    await expect(errorRow).toBeVisible() // 拒绝态下告警仍在
+    // 回读：甲夹已建、乙夹未建（真实应用读面）
+    const names = await win.evaluate(async () => {
+      const r = (await window.api.folders.list({})) as { ok: boolean; data: Array<{ name: string }> }
+      return r.data.map((f) => f.name)
+    })
+    expect(names).toContain('结构写探针甲')
+    expect(names).not.toContain('结构写探针乙')
     await app.close()
   })
 })

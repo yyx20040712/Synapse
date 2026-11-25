@@ -6,14 +6,17 @@
  * - TimelineCallbacks —— 03 编辑层/04 侧板消费的节点交互回调契约（跨件
  *   单源：TimelineYears/LineageTimelineCard/LineageTimeline 三方消费，
  *   [F-VISFB-22] 自 LineageTimeline 迁驻——消费方 import 随迁）；
- * - useTimelineFocusSets —— P-8 聚焦集/bright 邻接集/dim 激活派生；
+ * - useTimelineFocusIds —— P-8 聚焦集派生。[B5 设计稿 §4.2 第 2 条/§4.3——wave C 2026-11-25 断言翻转]
+ *   原三派生（聚焦集／bright∪双向一度邻接集／dim 激活）随无 dim 退役：
+ *   本 hook 只生成 focusIds、不依赖 edges、不计算 bright 邻接集与 dim 激活——每次渲染不再为 focus
+ *   做 O(E) 一度邻接集，保留的 focusIds 为 O(N_focus) Set 构造（memo——selector 取稳定数组
+ *   引用，派生 Set 不逐渲染新建）。是否显示描边由调用方按模式门控（LineageTimeline accentIds）。
  * - timelineClassOf —— 根容器类名装配（模式类/平移/编辑）；
  * - useTimelineCardHandlers —— 卡点击/星标点击分派工厂（hook：useMemo 包裹
  *   闭包，deps=nodes/tool/viewMode/onNodeClick——引用跨渲染恒定，memo 配套）。
  */
 import { useMemo } from 'react'
-import type { LineageEdge, LineageNode } from '@shared/models/lineage'
-import { focusBrightSet } from './focus-bright'
+import type { LineageNode } from '@shared/models/lineage'
 import { useLineageStore } from './lineage.store'
 import { useLineageViewStore, type LineageViewMode, type LineageTool } from './lineage-view.store'
 
@@ -34,22 +37,13 @@ export interface TimelineCallbacks {
   onReorderMonthSlots?: (nodeIds: string[], target: { folderId: string; generation: number; dragId: string }) => void
 }
 
-/** [F-VISFB-22 P2 闸②] 聚焦三派生（自 LineageTimeline 迁驻——行为零变）：
- *  focusIds=P-8 accent 边框本集；brightIds=focus∪双向一度邻接（[F-VISFB-21
- *  C4] 判定集单源=focus-bright 纯函数——卡 dim/边 dim 两消费面共用）；
- *  dimActive=[②U7/P-18] 聚焦 dim 激活（focus 模式集非空）。 */
-export function useTimelineFocusSets(edges: ReadonlyArray<LineageEdge>): {
-  focusIds: ReadonlySet<string>
-  brightIds: ReadonlySet<string>
-  dimActive: boolean
-} {
-  const viewMode = useLineageViewStore((s) => s.mode)
+/** [F-VISFB-22 P2 闸②→B5 设计稿 §4.2 第 2 条] 聚焦集派生（自 LineageTimeline 迁驻——[B5] 自三派生收敛为
+ *  focusIds 单派生）：focusIds=P-8 accent 边框本集（=lineage-view.store focusSet 的 Set 投影）。 */
+export function useTimelineFocusIds(): ReadonlySet<string> {
   // P-8 聚焦集（selector 取稳定数组引用——派生 Set 经 memo 防新引用死循环）
   const focusSet = useLineageViewStore((s) => s.focusSet)
   const focusIds = useMemo(() => new Set(focusSet), [focusSet])
-  const brightIds = useMemo(() => focusBrightSet(edges, focusSet), [edges, focusSet])
-  const dimActive = viewMode === 'focus' && focusSet.length > 0
-  return { focusIds, brightIds, dimActive }
+  return focusIds
 }
 
 /** [F-VISFB-22 P2 闸②] 根容器类名装配（自 LineageTimeline 迁驻——行为零变）。

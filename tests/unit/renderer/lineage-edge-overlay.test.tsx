@@ -50,7 +50,8 @@ function stubRaf(): void {
 
 /** 挂载+卡 DOM 伴生+rAF 冲洗（createRoot 首渲染清空宿主→卡注入在 render 后，
  *  rAF 队列化使快照采集读到卡 DOM——jsdom 零 rect 下产出退化几何但非空路径）。
- *  [F-VISFB-21 C4] extra=可选 prop 透传（focusDim/brightIds 判定集面） */
+ *  [B5 设计稿 §4.1/§4.2/§11.4——wave C 2026-11-25 断言翻转] extra=可选 prop 透传（focusMode——focus 模式
+ *  hover 扫描的独立交互信号；原 focusDim/brightIds 判定集面随无 dim 退役） */
 /** [F-LANEGRID-01 B2b] 月框伴生（快照 frames 源——车道 x 域；jsdom 零盒下
  *  无框即空车道表→自动边全 blocked）：rect 桩 (0,0,600,400) 覆盖全部夹具卡 */
 function addFrameRect(parent: HTMLElement): void {
@@ -70,7 +71,7 @@ function mountOverlay(
   routeEpoch = 0,
   contentW = 0,
   rects: Array<[string, number, number, number, number]> = [],
-  extra?: { focusDim?: boolean; brightIds?: ReadonlySet<string> }
+  extra?: { focusMode?: boolean }
 ): void {
   stubRaf()
   host = document.createElement('div')
@@ -90,8 +91,7 @@ function mountOverlay(
         shiftedIds={new Set()}
         groups={[]}
         routeEpoch={routeEpoch}
-        focusDim={extra?.focusDim}
-        brightIds={extra?.brightIds}
+        focusMode={extra?.focusMode}
       />
     )
   })
@@ -131,6 +131,26 @@ afterEach(() => {
   rafs = []
   vi.unstubAllGlobals()
 })
+
+/** [B5 §4.1] d 属性最长段中点（jsdom 零布局——几何由 d 值单源推导；hover 扫描命中点） */
+function longestSegMid(d: string): { x: number; y: number } {
+  const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number)
+  const pts: Array<{ x: number; y: number }> = []
+  for (let i = 0; i + 1 < nums.length; i += 2) pts.push({ x: nums[i]!, y: nums[i + 1]! })
+  let best = { x: 0, y: 0 }
+  let bestLen = -1
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const len = Math.hypot(pts[i + 1]!.x - pts[i]!.x, pts[i + 1]!.y - pts[i]!.y)
+    if (len > bestLen) {
+      bestLen = len
+      best = { x: (pts[i]!.x + pts[i + 1]!.x) / 2, y: (pts[i]!.y + pts[i + 1]!.y) / 2 }
+    }
+  }
+  return best
+}
+const docMove = (x: number, y: number): void => {
+  act(() => { document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: x, clientY: y })) })
+}
 
 describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', () => {
   it('svg.tl-edges 挂载；每边两 path（tl-edge 可见+tl-edge-hit 命中）+data-edge-id/data-dashed；d 非空', () => {
@@ -445,18 +465,42 @@ describe('T3-P7A EdgeOverlay 结构渲染（D-1/D-2/D-22；U8 视觉内联）', 
     expect(vis2?.classList.contains('hovered')).toBe(false)
   })
 
-  it('[F-VISFB-21 C4] 聚焦边 dim 判定：两端均非 bright 才 dim（邻接边常亮——focusDim+brightIds 判定集换源）', () => {
+  it('[B5 §4.1/§4.2 第 3 条/§11.4 断言翻转] 无 dim：focusMode=true 时根不挂 .dimmed-focus、逐径无 .dim、零 inline opacity；hover 扫描由独立 focusMode 信号驱动（hovered 挂/移开撤）', () => {
     mountOverlay(
       [node('A'), node('B'), node('C'), node('D')],
       [edge('e1', 'A', 'B'), edge('e2', 'C', 'D')],
       0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10], ['C', 200, 0, 10, 10], ['D', 200, 100, 10, 10]],
-      { focusDim: true, brightIds: new Set(['A', 'B']) }
+      { focusMode: true }
     )
-    // 根态标记沿承（dimmed-focus——聚焦 dim 态 e2e/单测锚）
-    expect(host?.querySelector('svg.tl-edges')?.classList.contains('dimmed-focus')).toBe(true)
-    // e1（A→B 两端 bright）常亮——不挂 .dim；e2（C→D 两端均非 bright）dim
-    expect(host?.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('dim')).toBe(false)
-    expect(host?.querySelector('path.tl-edge[data-edge-id="e2"]')?.classList.contains('dim')).toBe(true)
+    // 原「两端均非 bright 才 dim、根挂 dimmed-focus」翻转：所有边一律全亮
+    expect(host?.querySelector('svg.tl-edges')?.classList.contains('dimmed-focus')).toBe(false)
+    for (const id of ['e1', 'e2']) {
+      const vis = host?.querySelector<SVGPathElement>(`path.tl-edge[data-edge-id="${id}"]`)
+      expect(vis, `${id} 可见径在场`).not.toBeNull()
+      expect(vis?.classList.contains('dim'), `${id} 无 dim 类`).toBe(false)
+      expect(vis?.style.opacity, `${id} 基态零 inline opacity`).toBe('')
+    }
+    expect(host?.querySelector('path.tl-edge.dim')).toBeNull()
+    // hover 扫描：focusMode 驱动（document pointermove 数学命中）——挂 .hovered、移开即撤
+    const hit = host?.querySelector<SVGElement>('path.tl-edge-hit[data-edge-id="e1"]')
+    expect(hit, '命中层在场').not.toBeNull()
+    const mid = longestSegMid(hit?.getAttribute('d') ?? '')
+    docMove(mid.x, mid.y)
+    expect(host?.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('hovered'), 'focusMode：hover 挂类').toBe(true)
+    docMove(900, 900)
+    expect(host?.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('hovered'), '移开撤类').toBe(false)
+  })
+
+  it('[B5 §4.1] focusMode 缺省=false：hover 扫描不激活（对照——非 focus 模式零 .hovered）', () => {
+    mountOverlay(
+      [node('A'), node('B')],
+      [edge('e1', 'A', 'B')],
+      0, 0, [['A', 0, 0, 10, 10], ['B', 0, 100, 10, 10]]
+    )
+    const hit = host?.querySelector<SVGElement>('path.tl-edge-hit[data-edge-id="e1"]')
+    const mid = longestSegMid(hit?.getAttribute('d') ?? '')
+    docMove(mid.x, mid.y)
+    expect(host?.querySelector('path.tl-edge[data-edge-id="e1"]')?.classList.contains('hovered')).toBe(false)
   })
 
   it('[F-VISFB-21 N1] 图例零残留：渲染树无 .tl-legend/.lc 节点（死指示删除）', () => {

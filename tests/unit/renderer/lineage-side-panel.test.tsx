@@ -507,10 +507,11 @@ it('[RR1-A] AI 评估与建议节三态文案字节级：loading「AI 评估加�
   expect(q('[data-testid="lineage-side-ai-notes"]')?.textContent).toContain('暂无 AI 评估与建议')
 })
 
-it('未选中节点→空态提示（[②U4/P-16] 占位文案=「点击卡片查看详情」）', async () => {
+it('[B5 §3.5/§11.2 断言翻转] 未选中节点→面板根在场、无占位教学文字（原「点击卡片查看详情」随 §3.5 删除）', async () => {
   mount(<LineageSidePanel node={null} onJumpToPaper={JUMP} />)
   await flush()
-  expect(host?.textContent).toContain('点击卡片查看详情')
+  expect(q('[data-testid="lineage-side-panel"]'), '空态只锁面板根').not.toBeNull()
+  expect(host?.textContent, '占位教学文字零渲染').not.toContain('点击卡片查看详情')
   expect(stubApi.ai_sensor.listByPaper).not.toHaveBeenCalled()
 })
 

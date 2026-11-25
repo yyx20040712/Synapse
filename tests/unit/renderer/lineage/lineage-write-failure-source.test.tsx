@@ -5,7 +5,8 @@
  * 的目标语义（现状实现未满足=红；实现波落地后转绿）。
  *
  * 归属与边界：
- * - 告警组件面按现宿主取（edit 态 LineageToolbar 的保存错误行）；单告警迁稳定 Page 外壳
+ * - 告警组件面取自稳定 Page 外壳的工具栏（[B5 wave C] LineageWriteErrorAlert=横滚容器的兄弟节点，三模式
+ *   可达；原「现宿主=edit 态 LineageToolbar 的保存错误行」已迁移——挂载点改、断言不变）；单告警迁稳定 Page 外壳
  *   （LineageWriteErrorAlert，§6.2/§6.3）属后续波——届时本段改挂载点、断言不变。
  * - rekey 行：设计稿只明示「message 与 source 一起随原会话归属迁移，不落到别的 folder」与
  *   「IO 轴不迁」（lineage-session-rekey 头注）——本件只断言成对性与不跨 folder，不断言消息是否迁入新身份。
@@ -23,6 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LineageToolbar } from '../../../../src/renderer/features/lineage/LineageToolbar'
 import { useLineageViewStore } from '../../../../src/renderer/features/lineage/lineage-view.store'
+import type { LineagePaneControls } from '../../../../src/renderer/features/lineage/use-lineage-pane-controls'
 import { resetInflightRead } from '../../../../src/renderer/features/lineage/lineage-write-conflicts'
 import { resolveGhostFolderDecision } from '../../../../src/renderer/features/lineage/conflictResolution'
 import { resetLineageSessionsForTests } from '../lineage-test-session-reset'
@@ -50,12 +52,25 @@ const edge = (req: { id?: string; fromNode: string; toNode: string }): LineageEd
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
+/** [B5 §3.1] 工具栏注入面=页面组合层的左右栏控制（本件不测开关行为） */
+const PANES: LineagePaneControls = {
+  navCollapsed: false,
+  toggleNav: () => undefined,
+  sidebar: {
+    width: 252,
+    collapsed: false,
+    onResizeStart: () => undefined,
+    onResizeKey: () => undefined,
+    collapse: () => undefined,
+    expand: () => undefined
+  }
+}
 function mountToolbar(): void {
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
   act(() => {
-    root!.render(<LineageToolbar mode="edit" />)
+    root!.render(<LineageToolbar graphName="主图" panes={PANES} />)
   })
 }
 const q = (sel: string): Element | null => host?.querySelector(sel) ?? null
@@ -395,7 +410,7 @@ describe('retrySave 的 source guard（§6.1：只有 save 才 finalize，其他
   })
 })
 
-describe('告警按源分流（§2.4；现宿主=edit 态 LineageToolbar 保存错误行）', () => {
+describe('告警按源分流（§2.4；宿主=稳定 Page 外壳工具栏内 LineageWriteErrorAlert——[B5 wave C] 三模式同一 DOM）', () => {
   it('save：告警「保存失败：{message}」＋保存重试在场', () => {
     mountToolbar()
     implantError('写入失败', 'save')

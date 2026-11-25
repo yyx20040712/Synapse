@@ -8,13 +8,17 @@
  *   偏移不变式：激活步（+10px 过阈）后、**首次横滚前**安装页内 rAF 采样器
  *   记 cardX−cursorX（pointermove 光标追踪——左回段光标位变化），滚动帧
  *   |差−基准|≤1，采样窗覆盖全程含左回段；test.slow()。
- * - LU-02 工具条横滚钉住（②）：edit 前置（工具条仅 edit 可见）+scrollLeft=80
- *   **前置回读断言 ===80**→.lg-toolbar bbox.x 前后差 ≤1（纯 CSS sticky 无事件
- *   依赖可单发读）。
- * - LU-03 徽记双轴钉住+点击可达（②）：横滚 80/竖滚 300（各回读断言）→
- *   zoom-badge bbox 前后差 ≤1（expect.poll——transform 由 scroll 事件驱动）；
- *   点击冒烟判别化：置 zoom 110%（V67-03 wheelZoom 路径）→containText
- *   '110%'→click→containText '100%'。always-active。
+ * - LU-02 工具栏自身横滚（②）：[B5 设计稿 §11.3「lineage-lineui01：LU-02 改工具栏自身横滚、
+ *   百分比复位和实际 transform；删 .lg-toolbar 相对 .timeline sticky 钉住、ZoomBadge 双轴
+ *   transform 补偿」——wave C 2026-11-25 断言翻转] 工具栏=页面顶部稳定外壳（不在画布滚动
+ *   容器内）：1024×768 下 .lg-toolbar-scroll scrollWidth>clientWidth；滚动容器 scrollLeft=40
+ *   **前置回读断言 ===40**→壳层 bbox.x 不变（±1）而轨道内控件 bbox.x 前移 40（±1——
+ *   真实横滚，非 sticky 钉住）；滚到最右后右详情开关全落壳层可视区。
+ * - LU-03 工具栏不随画布滚动位移＋百分比复位+实际 transform（②）：[B5 §3.1/§4.2——同上翻转]
+ *   画布横滚 40/竖滚 300（各回读断言）→zoom-badge（工具栏百分比复位钮）bbox 前后差 ≤1
+ *   （工具栏在画布外——无 transform 补偿，单发读即可）；置 zoom 110%（V67-03 wheelZoom 路径）
+ *   →.tl-content computed transform=matrix(1.1…)+containText '110%'→click→containText '100%'
+ *   +transform 回 none。always-active。
  */
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
@@ -182,27 +186,55 @@ test.describe('F-LINEUI-01 横向 drag-autoscroll+横向钉住', () => {
     await app.close()
   })
 
-  test('LU-02 工具条横滚钉住：edit 前置+scrollLeft=80（回读 ===80）→.lg-toolbar bbox.x 前后差 ≤1', async () => {
+  test('LU-02 工具栏自身横滚：1024×768 scrollWidth>clientWidth+scrollLeft=步长（回读 ===步长）→壳层不动、轨道内控件前移同步+滚到最右右详情开关可视', async () => {
     const userData = await mkdtemp(join(tmpdir(), 'lu01-2-'))
     await bootstrapMigrations(userData)
     await seedPair(userData)
     const app = await launch(userData)
     const win = await app.firstWindow()
     await openLineage1024(win, '横滚甲')
-    await win.getByTestId('lineage-mode-edit').click()
-    const toolbar = win.locator('.lg-toolbar')
-    await expect(toolbar).toBeVisible({ timeout: 5_000 })
-    const x0 = await toolbar.boundingBox()
-    if (x0 === null) throw new Error('.lg-toolbar 不可见')
-    const readback = await setScrollLeft(win, 80)
-    expect(readback, '前置：横滚域在场（scrollLeft=80 赋值非 no-op——回读 !==80 即种子/视口面错）').toBe(80)
-    const x1 = await toolbar.boundingBox()
-    if (x1 === null) throw new Error('.lg-toolbar 滚后不可见')
-    expect(Math.abs(x1.x - x0.x), 'LU-02 工具条横滚钉住（sticky left:0——漂移即红）').toBeLessThanOrEqual(1)
+    // [B5 §3.2/§12 E09 视口] 1024×768（CI runner 档）
+    await win.setViewportSize({ width: 1024, height: 768 })
+    const shell = win.locator('.lg-toolbar-shell')
+    const scroll = win.locator('.lg-toolbar-scroll')
+    const track = win.locator('.lg-toolbar')
+    await expect(track).toBeVisible({ timeout: 5_000 })
+    // 横滚域在场：轨道内容宽>滚动容器可视宽（原生横向滚动承载——不做第二排/溢出菜单）
+    const metrics = await scroll.evaluate((el) => ({ scrollW: el.scrollWidth, clientW: el.clientWidth }))
+    expect(metrics.scrollW, `1024×768 工具栏横滚（scrollWidth ${metrics.scrollW}>clientWidth ${metrics.clientW}）`).toBeGreaterThan(metrics.clientW)
+    // 滚动步长：沿用旧断言的 40，并夹到工具栏实际可滚范围内（Linux 实测 browse 态轨道 989−容器 952=37——
+    // 原生滚动条占 15px；Windows runner 字宽/滚动条厚度不同，范围随之变化）；下限 20=横滚量必须可观
+    const range = metrics.scrollW - metrics.clientW
+    const STEP = Math.min(40, range)
+    expect(range, `工具栏可滚范围 ${range}px（≥20——不足即种子/视口面错）`).toBeGreaterThanOrEqual(20)
+    const probe = win.getByTestId('lineage-focus-clear')
+    const shellBefore = (await shell.boundingBox())!
+    const probeBefore = (await probe.boundingBox())!
+    const readback = await scroll.evaluate((el, x) => {
+      el.scrollLeft = x
+      return el.scrollLeft
+    }, STEP)
+    expect(readback, '前置：横滚域在场（scrollLeft 赋值非 no-op——回读 !==步长即夹具面错）').toBe(STEP)
+    const shellAfter = (await shell.boundingBox())!
+    const probeAfter = (await probe.boundingBox())!
+    expect(Math.abs(shellAfter.x - shellBefore.x), '壳层（页面外壳）不随轨道滚动位移').toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(probeBefore.x - STEP - probeAfter.x),
+      `轨道内控件随滚动前移 ${STEP}（实测前移 ${(probeBefore.x - probeAfter.x).toFixed(1)}）——真实横滚，非 sticky 钉住`
+    ).toBeLessThanOrEqual(1)
+    // 滚到最右：右详情开关全落壳层可视区（原生 scrollIntoView 等价——编程滚到 max）
+    await scroll.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+    })
+    await expect.poll(() => scroll.evaluate((el) => el.scrollLeft - (el.scrollWidth - el.clientWidth))).toBe(0)
+    const toggleBox = (await win.getByTestId('lineage-sidebar-collapse').boundingBox())!
+    const shellRight = (await shell.boundingBox())!
+    expect(toggleBox.x + toggleBox.width, '滚到最右后右详情开关右缘≤壳层右缘').toBeLessThanOrEqual(shellRight.x + shellRight.width + 0.5)
+    expect(toggleBox.x, '滚到最右后右详情开关左缘≥壳层左缘（完整可视）').toBeGreaterThanOrEqual(shellRight.x - 0.5)
     await app.close()
   })
 
-  test('LU-03 徽记双轴钉住+点击可达：横滚 80/竖滚 300 双轴 poll ≤1+zoom 110%→click→100%', async () => {
+  test('LU-03 工具栏不随画布滚动位移（横滚 40/竖滚 300）+zoom 110%→百分比复位钮点击→100%：.tl-content 实际 transform 同步', async () => {
     test.slow()
     const userData = await mkdtemp(join(tmpdir(), 'lu01-3-'))
     await bootstrapMigrations(userData)
@@ -211,36 +243,43 @@ test.describe('F-LINEUI-01 横向 drag-autoscroll+横向钉住', () => {
     const win = await app.firstWindow()
     await openLineage1024(win, '横滚甲')
     const badge = win.locator('[data-testid="zoom-badge"]')
-    await expect(badge).toBeVisible({ timeout: 5_000 })
-    // 横轴：scrollLeft=80（回读断言）→x 前后差 ≤1（poll——transform 由 scroll 事件驱动）
-    const x0 = await badge.boundingBox()
-    if (x0 === null) throw new Error('zoom-badge 不可见')
-    const rbx = await setScrollLeft(win, 80)
-    expect(rbx, '前置：横滚位 80 回读（赋值非 no-op）').toBe(80)
-    await expect
-      .poll(async () => Math.abs(((await badge.boundingBox())?.x ?? -9999) - x0.x), { timeout: 5_000 })
-      .toBeLessThanOrEqual(1)
+    await expect(badge).toHaveText('100%', { timeout: 5_000 }) // 纯 N%（原「100% ▾」）
+    const transform = (): Promise<string> =>
+      win.evaluate(() => {
+        const ct = document.querySelector('.tl-content')
+        return ct === null ? '' : getComputedStyle(ct).transform
+      })
+    expect(await transform(), '100%=无变换（内容坐标域基线）').toBe('none')
+    // 横轴：画布 scrollLeft=40（回读断言）→工具栏百分比钮 x 前后差 ≤1（工具栏在画布外——
+    // [B5 §4.2] 右下角角标及其滚动 transform 补偿退役；无事件依赖，单发读即可）
+    const x0 = (await badge.boundingBox())!
+    const rbx = await setScrollLeft(win, 40)
+    expect(rbx, '前置：画布横滚位 40 回读（赋值非 no-op）').toBe(40)
+    const x1 = (await badge.boundingBox())!
+    expect(Math.abs(x1.x - x0.x), '画布横滚不带动工具栏控件').toBeLessThanOrEqual(1)
     // 纵轴：注入可滚面（AS-01 先例 min-height 2400）+scrollTop=300（回读断言）→y 差 ≤1
     await win.evaluate(() => {
-      const el = document.getElementById('e2e-lu01-vscroll')
-      el?.remove()
+      document.getElementById('e2e-lu01-vscroll')?.remove()
       const style = document.createElement('style')
       style.id = 'e2e-lu01-vscroll'
       style.textContent = '.tl-content { min-height: 2400px !important }'
       document.head.append(style)
     })
-    const y0 = await badge.boundingBox()
-    if (y0 === null) throw new Error('zoom-badge（竖滚前）不可见')
+    const y0 = (await badge.boundingBox())!
     const rby = await setScrollTop(win, 300)
-    expect(rby, '前置：竖滚位 300 回读（赋值非 no-op）').toBe(300)
-    await expect
-      .poll(async () => Math.abs(((await badge.boundingBox())?.y ?? -9999) - y0.y), { timeout: 5_000 })
-      .toBeLessThanOrEqual(1)
-    // 点击冒烟（判别化）：置 zoom 110%→containText→click→100%（默认 100% 下点击断言 vacuous）
+    expect(rby, '前置：画布竖滚位 300 回读（赋值非 no-op）').toBe(300)
+    const y1 = (await badge.boundingBox())!
+    expect(Math.abs(y1.y - y0.y), '画布竖滚不带动工具栏控件').toBeLessThanOrEqual(1)
+    // 缩放（判别化：画布此刻已横竖双滚——transform 仍作用于 .tl-content）：ctrl+wheel 置 110%
+    // →.tl-content computed transform=matrix(1.1,…)+百分比钮 '110%'
     await wheelZoom(win, -100)
-    await expect(badge).toContainText('110%', { timeout: 5_000 })
+    await expect(badge).toHaveText('110%', { timeout: 5_000 })
+    await expect.poll(transform, { timeout: 5_000 }).toBe('matrix(1.1, 0, 0, 1.1, 0, 0)')
+    // 百分比复位钮（工具栏内——点击前滚动可见）→100%+transform 回 none
+    await badge.scrollIntoViewIfNeeded()
     await badge.click()
-    await expect(badge).toContainText('100%', { timeout: 5_000 })
+    await expect(badge).toHaveText('100%', { timeout: 5_000 })
+    await expect.poll(transform, { timeout: 5_000 }).toBe('none')
     await app.close()
   })
 })
