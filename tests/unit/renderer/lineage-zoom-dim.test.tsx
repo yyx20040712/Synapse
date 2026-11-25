@@ -142,11 +142,11 @@ describe('U7 聚焦 dim（P-12/P-18）', () => {
 })
 
 describe('A1 挂载 reset（P-1「进页缺省」直读——与数据暂存 P-2 正交）', () => {
-  it('[B4 L2 断言翻转] resetForMount：mode→browse+工具态归位；focusSet 不随挂载清（§2.5 #30 页面切换保留 focusSet）；navWidth 记忆不重置（P-17）', () => {
+  it('[B4 L2 断言翻转] resetForMount：工具态归位；focusSet 不随挂载清（§2.5 #30 页面切换保留 focusSet）；[B5 设计稿 §2.2 #5 断言翻转] mode 保持原值（原 P-1「进页缺省 browse」退役）；navWidth 记忆不重置（P-17）', () => {
     useLineageViewStore.setState({ mode: 'focus', focusSet: ['A', 'B'], tool: 'draw-solid', paletteFor: 'solid', navWidth: 260 })
     useLineageViewStore.getState().resetForMount()
     const v = useLineageViewStore.getState()
-    expect(v.mode).toBe('browse')
+    expect(v.mode).toBe('focus') // resetForMount 只收 tool/paletteFor——不读写 mode（INV-177 新语义；原断言：'browse'）
     expect(v.focusSet).toEqual(['A', 'B']) // 活动图聚焦集驻留（退出聚焦的显式清空不在此径）
     expect(v.tool).toBe('select')
     expect(v.paletteFor).toBeNull()

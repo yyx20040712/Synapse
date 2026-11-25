@@ -260,10 +260,14 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
   })
 
   it('dirty=true 且确认取消：confirm 弹切换文案，switch IPC 与 reload 均不被调', async () => {
-    // dirty 聚合通道=lineage saveStatus≠saved（App 组合根单点——沿 useLineageDirty）
+    // dirty 聚合通道=lineage 实际待写（队列∨在途——App 组合根单点，沿 useLineageDirty）。
+    // [B5 设计稿 §7 C2=B 断言翻转——与 app-quit-dirty:215 同型] 原只置 saveStatus=error（相位）即算 dirty；
+    // 两源语义下 Q0/F0 的 error 不单独计 dirty，改由真实队列 Q1 驱动。Q0/F0 error 两假的判别不在本件补
+    // （本文件已处 ESLint max-lines 500 上限、零增行余量）——由 lineage-io-unsettled-two-source.test.tsx 的
+    // App 聚合探针两假例与 app-quit-dirty.test.tsx:215 的 Q0 负断言承载
     const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
     act(() => {
-      useLineageStore.setState({ saveStatus: 'error' })
+      useLineageStore.setState({ saveStatus: 'error', queue: [{ kind: 'remove-edge', id: 'e-pending' }] }) // 真实 Q1
     })
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     mount(<App />)
@@ -283,7 +287,7 @@ describe('F-WS-02 课题管理视图页——rail 路由+页内切换链（弹�
     expect(document.querySelector('main .ws-page'), 'dirty 取消后留在本页（可换选）').not.toBeNull()
     confirmSpy.mockRestore()
     act(() => {
-      useLineageStore.setState({ saveStatus: 'clean' }) // [②U1]
+      useLineageStore.setState({ saveStatus: 'clean', queue: [] }) // [②U1]
     })
   })
 

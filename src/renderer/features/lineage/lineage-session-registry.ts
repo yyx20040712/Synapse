@@ -20,10 +20,13 @@
  * - activate（§8.1 步 3/4）：离场会话 focusSet 挂起（活动 focusSet 的存储=
  *   lineage-view.store——registry 只为挂起会话持有副本）；switchSeq++；目标有会话
  *   直接整幅投影，无会话才建（取数裁决=lineage-session-loader activate）。
+ *   [B5 设计稿 §5 C3] 聚焦集成员有效性（focusSet(folder) ⊆ ids(session(folder).nodes)）：entry 写的
+ *   归一化与活动整幅投影统一口 projectActiveSession 全驻 lineage-session-projection（见其头注）——
+ *   本件 activate／replace／resetWorkspace／syncActiveSession 只经该口委托，不另写剪枝。
  * - 聚合（rail/quit 读注册表全集，不以活动投影代替）：ioDirty=任一会话 IO 未落定
- *   （队列非空 ∨ 在途 F≠null ∨ 相位非 clean——lineage-io-phase.ioUnsettled 单源；
- *   [回炉 W-B2·R-B3] Q/F 直判：原只以 saveStatus≠clean 判定，在「在途而相位停在
- *   clean」时漏报）；unfinalizedAny=全 registry U OR；needsProtection=Q∨F（§8.1
+ *   （队列非空 ∨ 在途 F≠null——[B5 C2=B] 相位不再是第三输入；lineage-io-phase.
+ *   ioUnsettled 单源；[回炉 W-B2·R-B3] Q/F 直判：原只以 saveStatus≠clean 判定，在
+ *   「在途而相位停在 clean」时漏报）；unfinalizedAny=全 registry U OR；needsProtection=Q∨F（§8.1
  *   恢复价值谓词的会话面——草稿属活动图，由 recovery-clean-lifecycle 并入）。
  * - 恢复待令（[回炉 W-B2c] `restoredAwaitingCommand`）：真=恢复载入后、本会话写链尚无任务起步。
  *   置位=applyRecoverySession（会话替换的 patch）；清除=写链任一任务起步（lineage-session-lane
@@ -40,13 +43,13 @@
  * ── 接口层 ── export const lineageRegistry / 类型 LineageSession·SessionEntry·
  * LineageRegistry·RecoveryOwnerRef
  *
- * ── 架构层 ── 模块单例；依赖 loader/lane 工厂与 view.store（单向）；不 import
- * lineage.store（避免与 store 模块顶层求值成环）。[回炉 W-B1] 改键/remap 裁决经
+ * ── 架构层 ── 模块单例；依赖 loader/lane 工厂（单向）；不 import lineage.store（避免与 store 模块
+ * 顶层求值成环）；[B5 §5.2] 对 lineage-view.store 的接缝（聚焦集挂起/读点/清点、课题切换的 view
+ * 复位）全经 lineage-session-projection，本件不直接读写 view.store。[回炉 W-B1] 改键/remap 裁决经
  * lineage-session-core 契约外移（remap 件消费的 note-draft/调度器调用面已含于 lane 依赖面，无新环）；
- * [回炉 W-B3] 新建会话初值外移=lineage-session-fresh（本件行数已达预算上限）；
- * [回炉 W-D2a·T-B05] 单一写路径与活动投影（apply、PROJECT_KEYS、projectPatch/projectAll、
- * 投影宿主的持有、写闸落地）外移=lineage-session-projection（本件行数超预算上限；本件留
- * 委托面，公共方法名不变）。
+ * [回炉 W-B3] 新建会话初值外移=lineage-session-fresh（本件行数已达预算上限）；[回炉 W-D2a·T-B05]
+ * 单一写路径与活动投影（apply、PROJECT_KEYS、projectPatch/projectAll、投影宿主的持有、写闸落地）
+ * 外移=lineage-session-projection（本件行数超预算上限；本件留委托面，公共方法名不变）。
  */
 import { api, unwrap } from '../../api/client'
 import { MAIN_GRAPH_ID } from '@shared/models/lineage'
@@ -63,7 +66,6 @@ import type {
 } from './lineage-session-model'
 import { lineageIoPhase } from './lineage-session-model'
 import type { InflightRead } from './lineage-write-conflicts'
-import { useLineageViewStore } from './lineage-view.store'
 import { createSessionLoader, type SessionLoader } from './lineage-session-loader'
 import { createSessionLane, type SessionLane } from './lineage-session-lane'
 import { createRemapFinalizer } from './lineage-session-remap'
@@ -75,6 +77,7 @@ import { freshSession } from './lineage-session-fresh'
 import type { LineageStaleHistory } from './lineage-history-stale'
 import { createSessionProjection, implantProjection, projectAll } from './lineage-session-projection'
 import type { RegistryProjector, StorePatch, StoreStateOf } from './lineage-session-projection'
+import type { LineageWriteErrorSource } from './lineage-write-failure'
 
 export type { DragBridge } from './lineage-session-drag'
 export type { RegistryProjector, StorePatch } from './lineage-session-projection'
@@ -106,6 +109,8 @@ export interface LineageSession {
   /** ioPhase×Q 四态投影（clean=idle/Q0、dirty=idle/Q≥1、saving、error） */
   saveStatus: LineageSaveStatus
   lastWriteError: string | null
+  /** [B5 §6.1] 最近一次写失败的来源（消息元数据——与 message、相位同一 patch 写入或清除；定义=lineage-write-failure） */
+  lastWriteErrorSource: LineageWriteErrorSource
   undoStack: LineageHistoryEntry[]
   redoStack: LineageHistoryEntry[]
   unfinalized: boolean
@@ -115,7 +120,7 @@ export interface LineageSession {
   restoredAwaitingCommand: boolean
   /** 过期历史标记（[回炉 W-B3·R-D1]——定义见头注「过期历史标记」与 lineage-history-stale） */
   staleHistory: LineageStaleHistory | null
-  /** 活动会话的存储=lineage-view.store（切图时挂起到此） */
+  /** 活动会话的存储=lineage-view.store（切图时挂起到此；[B5 §5] 只含该图当前 nodes 中的 id——entry 写经 apply/replace 入口剪枝） */
   focusSet: string[]
   /** [§2.6 #42] 后台删夹标记（清出前的瞬态——已删会话不留在注册表） */
   deleted: boolean
@@ -157,18 +162,20 @@ export interface LineageRegistry {
   update(folderId: string, patch: SessionPatch): void
   /** 写发起时所属的 entry（后台响应专用——孤儿 entry 只落物理账本） */
   writeEntry(entry: SessionEntry, patch: Partial<LineageSession>): void
-  /** [§8.1 步 3/4] 切换活动会话（取数裁决由调用方经 loader.activate 执行） */
+  /** [§8.1 步 3/4] 切换活动会话（取数裁决由调用方经 loader.activate 执行）——经统一口 projectActiveSession 恢复目标集合 */
   activate(folderId: string): SessionEntry
-  /** 恢复替换/删除重建：新 generation（旧 entry 成孤儿——迟到写不落新会话） */
+  /** 恢复替换/删除重建：新 generation（旧 entry 成孤儿——迟到写不落新会话）；入口按 patch 后 nodes 归一化 focusSet，活动会话经统一投影口 */
   replace(folderId: string, patch: Partial<LineageSession>): SessionEntry
   remove(folderId: string): void
-  /** [§2.5 #38] 课题切换：全部会话失效、owner 归 null、活动=新建主图会话 */
+  /** [§2.5 #38] 课题切换：全部会话失效、owner 归 null、活动=新建主图会话；view.store 经 resetForWorkspace 归 browse */
   resetWorkspace(workspaceId: string): void
   attachProjector(projector: RegistryProjector): void
   /** 活动会话整幅投影（store 初态装配——LineageStore 全部状态字段） */
   projected(): StoreStateOf<LineageStore>
   /** 活动投影写闸（useLineageStore.setState 的落地） */
   patchActive(patch: StorePatch): void
+  /** [B5 §2.2/§5.2] 活动投影同步口（LineagePage 同图 ready 重挂的零 graph IPC 分支）：恒等防御剪枝——合法集合同值同引用、既有死 id 才移除；不覆写 mode、不重置工具态 */
+  syncActiveSession(): void
   focusSetOf(folderId: string): string[]
   clearFocusOf(folderId: string): void
   interactionOf(folderId: string): LineageInteraction
@@ -206,7 +213,7 @@ export function createSessionRegistry(): LineageRegistry {
     for (const cb of listeners) cb()
   }
   const activeEntry = (): SessionEntry | undefined => sessions.get(activeFolder)
-  const projection = createSessionProjection({ activeEntry, notify })
+  const projection = createSessionProjection({ activeEntry, entryOf: (folderId) => sessions.get(folderId), notify })
   const apply = projection.apply // 单一写路径（裁决体=lineage-session-projection，见其头注）
   const isAlive = (entry: SessionEntry): boolean => sessions.get(entry.key) === entry && !entry.data.deleted
   const loader = createSessionLoader({
@@ -248,7 +255,8 @@ export function createSessionRegistry(): LineageRegistry {
   const core: RegistryCore = {
     sessions, ensure, makeEntry, apply, notify, projectAll, loader, nextGeneration: () => ++genCounter,
     activeFolder: () => activeFolder, setActiveFolder: (folderId) => { activeFolder = folderId },
-    projector: () => projection.current(), activate: (folderId) => registry.activate(folderId)
+    projector: () => projection.current(), activate: (folderId) => registry.activate(folderId),
+    projectActiveSession: projection.projectActiveSession // [B5 §5.2] 统一活动整幅投影口注入 core（rekey 切键后必经）
   }
   const remapFinalize = createRemapFinalizer(core)
   // ── 拖拽两态桥接（§9.3）：裁决体=lineage-session-drag（[回炉 W-B2] 自本件外移）；makeEntry 的
@@ -278,12 +286,11 @@ export function createSessionRegistry(): LineageRegistry {
     activate(folderId) {
       const current = activeEntry()
       if (folderId === activeFolder && current !== undefined) return current
-      if (current !== undefined) current.data.focusSet = useLineageViewStore.getState().focusSet // 按图挂起
+      if (current !== undefined) projection.suspend(current) // 按图挂起（[B5 §5.2] 离场集合按离场图自身 nodes 剪）
       switchSeq += 1
       const entry = ensure(folderId)
       activeFolder = folderId
-      projection.setAll(entry.data)
-      useLineageViewStore.setState({ focusSet: entry.data.focusSet })
+      projection.projectActiveSession(entry) // 统一活动整幅投影口（LineageStore 字段＋view.store focusSet 同步）
       notify()
       return entry
     },
@@ -295,9 +302,9 @@ export function createSessionRegistry(): LineageRegistry {
         sessions.delete(folderId) // 旧链在途任务落定到孤儿 entry——不投影
       }
       const entry = makeEntry(folderId)
-      Object.assign(entry.data, patch)
+      projection.replaceData(entry, patch) // [B5 §5.2] replace 入口归一化（读源=patch 显式 focusSet ?? 新会话初值空集；按 patch 后 nodes 剪）
       sessions.set(folderId, entry)
-      if (activeFolder === folderId) projection.setAll(entry.data)
+      if (activeFolder === folderId) projection.projectActiveSession(entry) // 活动会话：剪后的集合写回双面（entry＋view.store）
       notify()
       return entry
     },
@@ -320,25 +327,19 @@ export function createSessionRegistry(): LineageRegistry {
       recoveryOwner = null
       activeFolder = MAIN_GRAPH_ID
       const entry = ensure(MAIN_GRAPH_ID)
-      useLineageViewStore.getState().clearFocus()
-      projection.setAll(entry.data)
+      projection.resetWorkspaceView(entry) // [B5 §5.2] 全部集合清空并归 browse（view.store 独立动作 resetForWorkspace）＋整幅投影
       notify()
     },
     attachProjector(p) {
       projection.attach(p)
-      projection.setAll(ensure(activeFolder).data)
+      projection.projectActiveSession(ensure(activeFolder)) // 装配即整幅投影（经统一口）
     },
     projected: () => projectAll(ensure(activeFolder).data),
     patchActive: (patch) => implantProjection(core, patch), // 落地=lineage-session-projection implantProjection（裁决体=lineage-session-rekey）
-    focusSetOf: (folderId) => {
-      const e = sessions.get(folderId)
-      return e !== undefined && e !== activeEntry() ? e.data.focusSet : useLineageViewStore.getState().focusSet
-    },
-    clearFocusOf: (folderId) => {
-      const e = sessions.get(folderId)
-      if (e !== undefined && e !== activeEntry()) e.data.focusSet = []
-      else useLineageViewStore.getState().clearFocus()
-    },
+    // [B5 §5.2] 聚焦集读点/清点/同步口=projection 委托面（registry 与 view.store 的聚焦集接缝单点）
+    focusSetOf: projection.focusSetOf,
+    clearFocusOf: projection.clearFocusOf,
+    syncActiveSession: projection.resyncActive,
     interactionOf: (folderId) => ensure(folderId).interaction,
     ioPhaseOf: (folderId) => lineageIoPhase(ensure(folderId).data.saveStatus),
     dragPending: drag.pending,

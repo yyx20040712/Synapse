@@ -15,7 +15,18 @@
  * - 迁入新身份的内容=图四面+派生三面+读面状态+历史两栈+U+focusSet（内容随会话走）；
  *   IO 轴不迁（queue/inflight/相位回 clean）：旧身份的未落定写属于旧身份——由旧 lane
  *   flush-first 落到旧 entry 的物理账本，不丢弃、不冒充新身份（旧 identity 的动作目标
- *   是旧 folder 的实体）。patch 显式携带的 IO 字段照常覆盖（夹具声明）。
+ *   是旧 folder 的实体）。[B5 §6.1] 写失败的 message 与 source 同属 IO 轴——同样不迁
+ *   （成对留在原会话；新身份=无消息无来源，不落到别的 folder）。patch 显式携带的 IO 字段
+ *   照常覆盖（夹具声明）。
+ * - focusSet 的迁移集合（[B5 设计稿 §5.2 rekey 特殊顺序①]）：在 depart **前**从 view.store
+ *   捕获当时活动集合（activeFocusSet——由调用方在离场前取定传入），不得读可能尚未挂起
+ *   同步的旧 entry.data.focusSet（活动会话的集合存储=view.store，entry 副本只在图态写点
+ *   与挂起时刷新）。
+ * - 改键的投影时序（rekey 特殊顺序②③）：fresh 仍非活动时 core.apply(fresh, {...carried, ...next})——
+ *   apply 入口以该迁移集合×patch 后 nodes 先剪 fresh.data.focusSet；切活动键后必须经
+ *   core.projectActiveSession(fresh)：由同一入口同步剪后的 view.store.focusSet 并投影其余
+ *   LineageStore 字段。原「只投 LineageStore」的收尾会让 registry 已剪而 view.store 仍留死
+ *   id（§5.3-6）。remap 不复制本时序——它经 core.activate 进入目标会话，已含统一切键与投影口。
  * - 按新身份续拉：仅当旧身份有在途读被弃置（其迟到响应按身份键丢弃后须由新身份重读，
  *   #35）且新会话 status=loading、无在途读→loader.load；旧身份无在途读=不续拉，取数
  *   交调用方裁决（loader.activate 见 loading∧无句柄即重载——夹具的「声明加载中」植入
@@ -24,7 +35,7 @@
  *   跨用例复位改走测试专用 resetLineageSessionsForTests）。目标键下已有会话时该会话被
  *   新身份顶替（同一文件夹不能有两个会话）：其未落定写同样先 flush-first 再离场。
  *
- * ── 接口层 ── export function implantActive(core: RegistryCore, next: Partial<LineageStore>)
+ * ── 接口层 ── export function implantActive(core, next, activeFocusSet)
  *
  * ── 架构层 ── 纯编排件：经 RegistryCore 读写注册表内部面；不 import registry 运行时。
  */
@@ -41,7 +52,7 @@ const CARRIED = [
 
 const hasUnsettledWrite = (entry: SessionEntry): boolean => entry.data.queue.length > 0 || entry.data.inflight !== null
 
-export function implantActive(core: RegistryCore, next: Partial<LineageStore>): void {
+export function implantActive(core: RegistryCore, next: Partial<LineageStore>, activeFocusSet: readonly string[]): void {
   const current = core.activeFolder()
   const entry = core.ensure(current)
   const target = next.folderId
@@ -67,10 +78,13 @@ export function implantActive(core: RegistryCore, next: Partial<LineageStore>): 
   if (displaced !== undefined) depart(displaced) // 目标键下既有会话被新身份顶替
   const fresh = core.makeEntry(target)
   core.sessions.set(target, fresh)
-  const carried = Object.fromEntries(CARRIED.map((k) => [k, entry.data[k]])) as unknown as Partial<LineageSession>
+  // [B5 §5.2 ①] 迁移集合=depart 前捕获的活动集合（view.store 现值）——不读旧 entry.data.focusSet（可能尚未挂起同步）
+  const carried = Object.fromEntries(CARRIED.map((k) => [k, k === 'focusSet' ? activeFocusSet : entry.data[k]])) as unknown as Partial<LineageSession>
+  // ② fresh 仍非活动：apply 入口以该迁移集合×patch 后 nodes 先剪 fresh.data.focusSet
   core.apply(fresh, { ...carried, ...next })
   core.setActiveFolder(target)
-  core.projector()?.set(core.projectAll(fresh.data))
+  // ③ 切活动键后经统一活动整幅投影口：同步剪后的 view.store.focusSet 并投影其余 LineageStore 字段
+  core.projectActiveSession(fresh)
   core.notify()
   if (discardedRead && fresh.data.status === 'loading' && fresh.inflightGraph === null) void core.loader.load(fresh) // 按新身份续拉
 }

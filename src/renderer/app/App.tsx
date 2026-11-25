@@ -86,9 +86,11 @@ export function App(): JSX.Element {
   }, [theme])
   useEffect(() => {
     // 失败容忍：下一次 dirty 变化沿自愈重报（INV-02 尽力而为先例）。
-    // [F-FOLDER-01] INV-91 S1 队列闸：lineagePending（脉络写队列 IO 独立信号
+    // [F-FOLDER-01] INV-91 S1 队列闸：lineagePending（脉络实际待写 IO 独立信号
     // ——folders/papers.move/updateMeta 写入口互斥判定源）随同载荷上报。
     // [B4-A R2 §2.5 #37] U 不参与 quit/lineagePending（聚合单源已分列）
+    // [B5 设计稿 §7 C2=B] lineagePending=任一会话 队列非空∨在途写在场——相位不入：Q0/F0 的
+    // error（history 零写失败等）不互斥结构写；普通写失败队首保留 Q≥1 继续互斥（载荷形状不变）
     window.api.system
       .setQuitDirty({ dirty: quitDirty, lineagePending })
       .catch(() => undefined)

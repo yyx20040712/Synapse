@@ -141,9 +141,13 @@ describe('prepareWorkspaceSwitch —— 全量 flush→清史→release/switch �
     await useNotesStore.getState().load('p-3')
     useNotesStore.getState().edit('p-3', { contentMd: '切换前最新值' })
     mocks.notesSave.mockResolvedValueOnce(noteResult('p-3', '切换前最新值'))
-    // lineage IO 脏：saveStatus=dirty→编排 await 会话链 save()（写队列正道——
-    // [B4 L2] 编排面=registry 全会话收口，spy 落活动会话 lane）
-    useLineageStore.setState({ saveStatus: 'dirty' })
+    // lineage 实际待写：真实队列 Q=1→编排 await 会话链 save()（写队列正道——
+    // [B4 L2] 编排面=registry 全会话收口，spy 落活动会话 lane）。
+    // [B5 设计稿 §7 C2=B 断言翻转] 原只置 saveStatus=dirty（相位）即触发 lane.save——
+    // 两源语义下相位不再是输入，改为真实队列驱动成功格（Q0/F0 error 不等待的判别例见
+    // lineage-io-unsettled-two-source.test.tsx）
+    stubApi.lineage.removeEdge.mockResolvedValueOnce({ ok: true, data: { ok: true } })
+    useLineageStore.setState({ saveStatus: 'dirty', queue: [{ kind: 'remove-edge', id: 'e-pending' }] })
     const saveSpy = vi.spyOn(lineageRegistry.lane('__main__'), 'save')
     await expect(prepareWorkspaceSwitch()).resolves.toBe(true)
     expect(mocks.notesSave).toHaveBeenCalledWith({ paperId: 'p-3', contentMd: '切换前最新值' })

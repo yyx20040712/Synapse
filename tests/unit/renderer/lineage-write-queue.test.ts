@@ -82,6 +82,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
       lineTypeNames: ['待命名', '待命名', '待命名', '待命名', '待命名', '待命名'],
       saveStatus: 'clean',
       lastWriteError: null,
+      lastWriteErrorSource: null, // [B5 §6.1] 夹具机械补初值（WriteQueueHost 新增字段——无失败=无来源）
       queue: [],
       // [B4 L1] WriteQueueHost 只持图态+queue+IO（SessionSnapshot 退役——undo/redo/load 夹具删除）
       folderId: '__main__',
@@ -138,6 +139,7 @@ describe('F-LGRAPH-01②U1 lineage-write-queue（编辑会话暂存机制）', (
       folderId: '__main__',
       saveStatus: 'dirty',
       lastWriteError: null,
+      lastWriteErrorSource: null, // [B5 §6.1] 夹具机械补初值
       queue: [{ kind: 'remove-edge', id: 'e1' }],
       flushing: false,
       inflight: null

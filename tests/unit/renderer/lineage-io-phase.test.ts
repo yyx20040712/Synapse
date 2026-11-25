@@ -5,10 +5,10 @@
  * - 和解读在途（flush 尾 / history 前 / 显式保存前）：F=reconcile 期间相位必须是 saving
  *   （§2.4「有在途必须为 saving」——runReconcile 起步只写 inflight 不写 saving 是同类缺口）；
  * - #19 迟到/身份不符分支：返回前收 F=0 相位，不得把相位留在 saving（回归守卫——判别力见仓外变异红证）；
- * - ioDirty=队列非空 ∨ 在途 F≠null ∨ 相位非 clean：Q/F 直判不依赖 saveStatus 与 inflight 的一致性
- *   （原缺陷形态「在途而相位停在 clean」必须判脏）；相位项保留（既有合约 app-quit-dirty
- *   「lineagePending=lineage IO（saveStatus≠clean）」）。Q 直判的判别例见
- *   lineage-io-unsettled-queue.test.ts（[回炉 W-B2b·第 1 项]）。
+ * - ioDirty=队列非空 ∨ 在途 F≠null：Q/F 直判不依赖 saveStatus 与 inflight 的一致性
+ *   （原缺陷形态「在途而相位停在 clean」必须判脏）。[B5 设计稿 §7 C2=B 断言翻转] 原
+ *   「∨ 相位非 clean」第三输入退役——Q0/F0 的 error 不计入 IO 脏（只保留可见告警）。
+ *   Q 直判的判别例见 lineage-io-unsettled-queue.test.ts（[回炉 W-B2b·第 1 项]）。
  * always-active 裸 describe（K3）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -181,7 +181,7 @@ describe('#19 迟到/身份不符分支收相位（回归守卫）', () => {
   })
 })
 
-describe('ioDirty：队列非空 ∨ 在途 F≠null ∨ 相位非 clean', () => {
+describe('ioDirty：队列非空 ∨ 在途 F≠null（[B5 C2=B] 两源）', () => {
   it('任一会话 inflight 非空即 IO 脏——不依赖 saveStatus 是否同步成 saving', () => {
     expect(lineageRegistry.ioDirty()).toBe(false)
     useLineageStore.setState({ inflight: { kind: 'history', unitId: 'u', direction: 'undo' }, saveStatus: 'clean' }) // 相位未同步的非法组合（R-B3 原缺陷形态）
@@ -193,9 +193,9 @@ describe('ioDirty：队列非空 ∨ 在途 F≠null ∨ 相位非 clean', () =>
     expect(lineageRegistry.ioDirty()).toBe(false)
   })
 
-  it('error/Q0 会话计入 IO 脏；dirty 与 saving 相位计入（相位口径保留）；clean/Q0/F0 为净', () => {
+  it('error/Q0 会话不计入 IO 脏（[B5 设计稿 §7 C2=B 断言翻转]——只保留可见告警）；Q≥1 与在途 F 计入；clean/Q0/F0 为净', () => {
     useLineageStore.setState({ saveStatus: 'error', queue: [] })
-    expect(lineageRegistry.ioDirty()).toBe(true)
+    expect(lineageRegistry.ioDirty()).toBe(false)
     useLineageStore.setState({ saveStatus: 'dirty', queue: [{ kind: 'remove-edge', id: 'e-x' }] })
     expect(lineageRegistry.ioDirty()).toBe(true)
     useLineageStore.setState({ saveStatus: 'saving', flushing: true, queue: [], inflight: { kind: 'write' } })

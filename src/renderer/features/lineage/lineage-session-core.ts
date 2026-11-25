@@ -34,4 +34,8 @@ export interface RegistryCore {
   projector(): RegistryProjector | null
   /** [§8.1 步 3/4] 切换活动会话并整幅投影 */
   activate(folderId: string): SessionEntry
+  /** [B5 设计稿 §5.2] 统一活动整幅投影口：按 entry.nodes 归一化 entry.data.focusSet→setAll(entry.data)→
+   *  同步 view.store focusSet（合法集合保持引用）。rekey 切活动键后必经此口——不得直接
+   *  projector.set(projectAll(...)) 绕开 focusSet（落地=lineage-session-projection） */
+  projectActiveSession(entry: SessionEntry): void
 }

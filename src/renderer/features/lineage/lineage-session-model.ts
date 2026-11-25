@@ -10,7 +10,8 @@
  * ── 行为层 ──
  * - IO 轴（§2.1「IO」）：保存对象的实际写状态——相位 idle/saving/error × 待写
  *   队列 × 当前在途写。saveStatus 四态=相位×Q 的既有投影（clean=idle/Q0、
- *   dirty=idle/Q≥1、saving=在途、error=失败且队首保留）；flushing ⇔ 在途写
+ *   dirty=idle/Q≥1、saving=在途、error=失败——普通写队首保留，history／和解失败
+ *   可 Q0：[B5 C2=B] 相位只用于呈现，未落定判据只看 Q/F）；flushing ⇔ 在途写
  *   在场（F≠0）。
  * - inflight kind（§2.2）：write=普通写在途（不置 busy）/flush=显式保存定稿步/
  *   history=history-unit/reconcile=权威和解读。busy=finalize·history·reconcile
@@ -47,6 +48,8 @@ import type { LineageRecoveryPayload, WriteAction } from '@shared/recovery/schem
 import type { EditCommands } from './lineage-edit-commands'
 import type { NoteOps } from './lineage-note-ops'
 import type { LineageStaleHistory } from './lineage-history-stale'
+// [B5 §6.1] 写失败来源类型单源=lineage-write-failure（本件只消费——type-only import，零运行时环）
+import type { LineageWriteErrorSource } from './lineage-write-failure'
 
 // [回炉 W-D2a·T-B05] 命令状态纯投影驻 lineage-command-state-model（本件 re-export 保活既有导入面，类型不双写）
 export { isLineageBusy, lineageCommandState, lineageIoPhase } from './lineage-command-state-model'
@@ -135,6 +138,9 @@ export interface LineageStore extends EditCommands, NoteOps {
   saveStatus: LineageSaveStatus
   /** 最近一次系统型写失败消息（行内错误呈现；成功清空） */
   lastWriteError: string | null
+  /** [B5 §6.1] 最近一次失败的来源（消息元数据——与 lastWriteError、saveStatus 在同一 patch 写入或清除；
+   *  告警呈现与重试入口只看它：save 才有保存重试，history 指引重按原方向命令，缺源 fail closed） */
+  lastWriteErrorSource: LineageWriteErrorSource
   /** 暂存动作队列（仅实际待落库普通编辑——历史项不入队，§6.2） */
   queue: WriteAction[]
   /** 在途写在场（F≠0）——同会话 saving 编辑锁判据 */
@@ -159,6 +165,9 @@ export interface LineageStore extends EditCommands, NoteOps {
   editRevision: number
   /** 权威取数（挂载/重试/切图；已有会话刷新不清历史与 U） */
   load(): Promise<void>
+  /** [B5 设计稿 §2.2/§5.2] 活动投影同步口（LineagePage 同图 ready 重挂消费面——零 graph IPC）：对活动集合做
+   *  恒等防御剪枝（合法集合同值同引用，既有死 id 才移除）；不覆写 mode、不重置工具态 */
+  syncActiveSession(): void
   /** [B4 L2] 当前会话代际（恢复替换/删除重建递增——迟到响应身份键之一） */
   sessionGeneration: number
   /** [B4 L2 §2.5 #32/§8.1] 切图：flush-first（取消 timer→A 未落定写即发落库，不等回执、
@@ -179,7 +188,7 @@ export interface LineageStore extends EditCommands, NoteOps {
   /** [B4 L2 §6.1 O2] 已恢复会话放弃副本的目标会话清理（queue/IO/历史/U/needsReload
    *  清——不落库）；缺省=活动会话 */
   discardSession(folderId?: string): void
-  /** error 态重试=再次显式保存 */
+  /** error 态重试=再次显式保存（[B5 §6.1] source guard：只有 save 来源才 finalize，history／缺源=no-op） */
   retrySave(): void
   /** [回炉 W-B3·R-D1] 丢弃过期历史（保存错误行出口——用户确认后调用；不写数据库）：只移除该方向栈顶的过期项，
    *  清该次失败的错误态；needsReload 保留。项已不在栈顶或写链在途＝不适用（零副作用） */

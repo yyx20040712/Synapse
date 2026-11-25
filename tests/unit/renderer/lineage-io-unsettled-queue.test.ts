@@ -5,8 +5,9 @@
  *
  * R-B3 修的就是相位可能不同步（在途而相位停在 clean）；同理 Q 也不应再经 saveStatus 推断。本件用
  * 非法态夹具（queue 非空而 saveStatus='clean'、inflight=null）锁定：
- * - ioUnsettled 纯函数三项并集：Q ∨ F ∨ 相位非 clean（相位项保留——既有合约 app-quit-dirty:215、
- *   workspace-switch.test:134 以只置相位的夹具锁定）；
+ * - ioUnsettled 纯函数两源：Q ∨ F（[B5 设计稿 §7 C2=B 断言翻转] 原第三输入「相位非 clean」退役——
+ *   Q0/F0 的 error 只保留可见告警，不单独构成未落定；两源全表与退出/课题等待名单的判别例见
+ *   lineage-io-unsettled-two-source.test.tsx）；
  * - registry.ioDirty 聚合；
  * - 退出握手与课题切换的等待名单：队列里的写必须被等到并发出（旧判据下该会话不在名单内，回执 clean 而写未落库）。
  * always-active 裸 describe（K3）。
@@ -65,16 +66,17 @@ afterEach(() => {
   setQuitClosing(false)
 })
 
-describe('ioUnsettled：Q ∨ F ∨ 相位非 clean（三项并集）', () => {
+describe('ioUnsettled：Q ∨ F（两源——[B5 C2=B] 相位退役）', () => {
   it('队列非空而相位 clean、无在途（非法态夹具）→ 判未落定——Q 直判，不靠相位推断', () => {
     expect(ioUnsettled({ queue: [...QUEUED], inflight: null, saveStatus: 'clean' })).toBe(true)
   })
 
-  it('其余各项仍成立：在途 F（相位 clean）为真；相位非 clean（队列为空、无在途）为真；三项皆无为假', () => {
+  it('其余各项：在途 F（相位 clean）为真；Q0/F0 的相位 dirty/saving/error 为假（[B5 C2=B 断言翻转] 相位项退役）；两源皆无为假', () => {
     expect(ioUnsettled({ queue: [], inflight: { kind: 'history' }, saveStatus: 'clean' })).toBe(true) // F 直判
-    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'dirty' })).toBe(true) // 相位项保留
-    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'error' })).toBe(true)
-    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'saving' })).toBe(true)
+    // [B5 设计稿 §7 C2=B 断言翻转] 原「相位项保留：为真」→ 两源语义下为假（error=合法失败呈现，不单独构成未落定）
+    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'dirty' })).toBe(false)
+    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'error' })).toBe(false)
+    expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'saving' })).toBe(false)
     expect(ioUnsettled({ queue: [], inflight: null, saveStatus: 'clean' })).toBe(false)
   })
 

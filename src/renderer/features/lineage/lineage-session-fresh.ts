@@ -6,7 +6,7 @@
  * ── 行为层 ──
  * - freshSession(workspaceId, folderId, sessionGeneration)：§2.3 全部会话字段的「空／未发生」
  *   初值——图四面与派生三面空、读面 loading（取数由 loader 起步）、IO 轴 clean/Q0/F0、
- *   两栈空、U=0、needsReload=0、恢复待令标记假、过期历史标记 null。
+ *   两栈空、U=0、needsReload=0、恢复待令标记假、过期历史标记 null、写失败无消息无来源。
  * - 会话被替换（恢复载入／弃会话）、移除后同键再建、课题切换 reset 都经本件取初值：
  *   旧会话的内存态（两栈、U、位、各类标记）不迁入新会话。
  *
@@ -38,6 +38,7 @@ export const freshSession = (workspaceId: string, folderId: string, sessionGener
   flushing: false,
   saveStatus: 'clean',
   lastWriteError: null,
+  lastWriteErrorSource: null, // [B5 §6.1] 无失败=无来源（与 lastWriteError 同批成对）
   undoStack: [],
   redoStack: [],
   unfinalized: false,

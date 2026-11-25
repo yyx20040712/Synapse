@@ -212,16 +212,22 @@ describe('useSaveAggregates —— IO quitDirty/U 角标/lineagePending 分列�
     expect(read().quitDirty).toBe(true)
   })
 
-  it('lineagePending=lineage IO（saveStatus≠clean）——U/reader 面不参与', async () => {
+  it('lineagePending=lineage 实际待写（Q∨F——[B5 设计稿 §7 C2=B 断言翻转] 相位不再是输入）——U/reader 面不参与', async () => {
     const { useLineageStore } = await import('../../../src/renderer/features/lineage/lineage.store')
     const read = mountProbe()
     expect(read().lineagePending).toBe(false)
+    // [B5 C2=B 断言翻转] 原「只置 saveStatus=dirty 即 true」→ Q0/F0 只置相位=无实际待写，不上报
     act(() => {
       useLineageStore.setState({ saveStatus: 'dirty' })
     })
+    expect(read().lineagePending).toBe(false)
+    // 真实 Q1（实际待写）才上报；Q0/F0 error 的两假判别例见 lineage-io-unsettled-two-source.test.tsx
+    act(() => {
+      useLineageStore.setState({ saveStatus: 'dirty', queue: [{ kind: 'remove-edge', id: 'e-pending' }] })
+    })
     expect(read().lineagePending).toBe(true)
     act(() => {
-      useLineageStore.setState({ saveStatus: 'clean' })
+      useLineageStore.setState({ saveStatus: 'clean', queue: [] })
     })
     expect(read().lineagePending).toBe(false)
   })

@@ -47,7 +47,9 @@ import { notifyRecoveryFolderRemoved } from './recoveryScheduler'
 export interface RemapSurvivor {
   /** ③ 存活会话的和解落定（未立即和解=已落定的 'dropped'——位保留待其链尾续拉） */
   settled: Promise<ReconcileOutcome>
-  /** X 写链任务体内其后的命令结果写存活会话（finalize 的 #10 记失败）；存活会话已离场则丢弃 */
+  /** X 写链任务体内其后的命令结果写存活会话（finalize 的 #10 记失败）；存活会话已离场则丢弃。
+   *  [B5 设计稿 §6.1] 记失败=saveStatus·message·source（'save'）同批落存活会话——错误归属随存活会话，
+   *  不落到别的 folder；[B5 §5.2] 终态经 core.activate 进入目标会话（已含统一投影口），不复制 rekey 的剪枝时序 */
   write(patch: Partial<LineageSession>): void
 }
 

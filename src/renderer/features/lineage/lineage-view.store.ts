@@ -1,7 +1,8 @@
 // b3: P7-H
 /**
  * [F-LGRAPH-01①U3] lineage-view.store —— 脉络页模式态单源（zustand；
- * mockup §2.1/§2.3/§3.1——P-1/P-3/T1/T2 定案）。
+ * mockup §2.1/§2.3/§3.1——P-1/P-3/T1/T2 定案；[B5 设计稿 §2.2 全表、§14] P-1/P-3
+ * 翻案——见「迁移」节）。
  *
  * ── 态空间（宪法状态纪律）──
  * mode ∈ {edit, browse, focus}（互斥单选，页面级）× focusSet: string[]
@@ -29,11 +30,21 @@
  *   esc（edit 模式+输入焦点外+菜单让路探测；E-ESC-01：armed idle Esc 单层
  *   直达〔锚层删除后〕；dragging 期 Esc=**取消会话且工具保持**〔R19 终裁
  *   翻案——会话级一次性消费，不达本单口〕）。
- * - P-1 进页缺省=browse（resetForMount：色值不重置——per-kind 色跨挂载驻留）。
- * - P-3 聚焦退出**单出口**=点浏览/编辑按钮（再点聚焦=no-op——T1 三轮裁决）
- *   →focusSet 清空；再进 focus=空集。
+ * - 挂载（[B5 设计稿 §2.2 #1/#2/#5、§14 决策 1] 原 P-1「进页缺省 browse」退役）：仅应用
+ *   冷启动缺省 browse；resetForMount 只收 tool/paletteFor，**不读写 mode/focusSet**——页面
+ *   卸载、重挂、folder 切换保留 mode（跨视图、跨图的工作上下文不丢；色值同理不重置）。
+ *   挂载流程对活动集合的恒等防御剪枝属 registry 的活动投影同步口，不塞回本 action。
+ * - 模式切换（[B5 §2.2 #6-#8、§14 决策 2] 原 P-3「退出聚焦清集」退役）：不同模式切换保
+ *   focusSet（edit↔browse↔focus 全组合不清——再进 focus 恢复同一集合，不重建第二份），
+ *   工具态归 select/null；同值 setMode=完全 no-op（集合与工具态均不变——T1 再点聚焦
+ *   no-op 沿承）。
+ * - 清空聚焦=唯一用户显式清空当前图的入口（LineageFocusClearButton——点击后停留 focus，
+ *   空聚焦合法）；clearFocus 动作本身不带模式语义。
  * - focus 中切图=显示目标图自身的聚焦集（模式保持 focus——图域隔离，空集
- *   合法）；clearFocus=显式清空，只清当前图（恢复载入/ghost 降级消费面）。
+ *   合法）；clearFocus=显式清空，只清当前图（恢复载入/ghost 降级消费面）。集合成员
+ *   有效性（只含该图现存 id）由 registry 的图态写点剪枝保证（[B5 §5]）——本件不扫 nodes。
+ * - 课题切换成功=resetForWorkspace：mode 归 browse、集合清空、工具态归位（[B5 §2.2 #26、
+ *   §14 决策 3]；navWidth/线色/zoom 驻留不变——INV-177）；切换失败保留旧态（#25）。
  * - 模式切换不丢编辑会话暂存（P-2：queue/saveStatus 驻 lineage.store 不清
  *   ——写队列天然满足，跨 store 零耦合）。
  *
@@ -125,11 +136,14 @@ export interface LineageViewStore {
   escapeStep(): void
   /** [②U2] 工具态中止（切模式/切图/进入 select——画线中止无残留） */
   resetTool(): void
-  /** [F-LGRAPH-01②A1] 挂载 reset（P-1「进页缺省」直读：mode='browse'+工具态归位
-   *  ——二次进页=再进页缺省；与编辑会话数据暂存[P-2]正交；[B4 L2 §2.5 #30] focusSet **不随挂载清**（活动图与
-   *  注册表挂起图的聚焦集均保留——页面切换保留 focusSet；mode 记忆归 B5 不在本批）；
+  /** [F-LGRAPH-01②A1] 挂载 reset（[B5 设计稿 §2.2 #5、§14 决策 1——原 P-1 翻案] 只收 tool/paletteFor：
+   *  不读写 mode/focusSet——页面切换保留模式与聚焦集，mode 记忆即此；[B4 L2 §2.5 #30] 沿承；
    *  [C1] per-kind 色不随挂载重置——跨挂载驻留同 P-17 语义） */
   resetForMount(): void
+  /** [B5 设计稿 §2.2 #26、§5.2] 课题切换复位（独立动作——不复用 resetForMount，否则 mode 不复位）：
+   *  mode 归 browse、focusSet 清空、工具态归位；navWidth/线色/zoom 驻留不变（INV-177） */
+  resetForWorkspace(): void
+  /** [B5 设计稿 §2.2 #6-#8——原 P-3 翻案] 不同模式切换保 focusSet、工具态归位；同值=完全 no-op */
   setMode(mode: LineageViewMode): void
   /** focus 模式内 toggle：加入/移出（非 focus 态 no-op） */
   toggleFocus(nodeId: string): void
@@ -174,15 +188,10 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
   },
 
   setMode(mode) {
-    if (mode === get().mode) return // T1：再点当前模式段=no-op（聚焦保持——单出口唯浏览/编辑）
-    set({
-      mode,
-      // P-3：退出聚焦（→browse/edit）即清空；再进=空集
-      focusSet: get().mode === 'focus' && mode !== 'focus' ? [] : get().focusSet,
-      // [F-UIRES-03 C1] 模式切换=工具态中止（armed/色板无残留——§2.4 沿承）
-      tool: 'select',
-      paletteFor: null
-    })
+    if (mode === get().mode) return // T1：再点当前模式段=完全 no-op（集合与工具态均不变）
+    // [B5 设计稿 §2.2 #7——原 P-3「退出聚焦即清集」翻案] 不同模式切换保集合（focusSet 不动）；
+    // [F-UIRES-03 C1] 模式切换=工具态中止（armed/色板无残留——§2.4 沿承）
+    set({ mode, tool: 'select', paletteFor: null })
   },
 
   toggleLineTool(kind) {
@@ -223,7 +232,15 @@ export const useLineageViewStore = create<LineageViewStore>()((set, get) => ({
     // reset 恒定；navWidth/navCollapsed 个性化记忆不随挂载重置——P-17 语义；
     // [C1] currentLineColor 同驻留——localStorage 单源）
     // [B4 L2 §2.5 #30/§12.2] focusSet 不随挂载清：页面切换保留（注册表挂起图同）
-    set({ mode: 'browse', tool: 'select', paletteFor: null })
+    // [B5 设计稿 §2.2 #5/§14 决策 1] mode 同样不随挂载覆写（原 P-1「进页缺省 browse」退役）——
+    // 本 action 只收工具态；活动集合的恒等防御剪枝=registry 的活动投影同步口
+    set({ tool: 'select', paletteFor: null })
+  },
+
+  resetForWorkspace() {
+    // [B5 设计稿 §2.2 #26/§5.2] 课题切换成功：全部集合清空并归 browse（新课题不带旧 id）、工具态归位；
+    // navWidth/线色/zoom 驻留不变（INV-177）
+    set({ mode: 'browse', focusSet: [], tool: 'select', paletteFor: null })
   },
 
   toggleFocus(nodeId) {

@@ -33,7 +33,8 @@
  *   hasUnsettledWrites(A) 真=请求写 A 最新 RecoveryPayload+A flush-first（不等回执、
  *   不弹弃改框）→B 有会话直接投影（needsReload 单飞和解/error 重载）、无会话才发
  *   graph IPC→activeFolder 同步变 B；同值重选=既有会话不双取（§8.3）；saving 不阻切。
- * - 聚合：useLineageDirty=全 registry IO（Q∨inflight∨error——草稿由聚合 hook 并入）；
+ * - 聚合：useLineageDirty=全 registry 实际待写（Q∨inflight——[B5 C2=B] saveStatus 不再是第三输入：
+ *   Q0/F0 的 error 只保留可见告警与重试，不单独构成未落定；草稿由聚合 hook 并入）；
  *   useLineageUnfinalized=全 registry U OR。rail/quit 不以活动投影代替全集。
  * - IO 轴与 U 轴独立（§2.1）：undo/redo=flush-then-unit（async，失败不弹栈）；
  *   显式保存=saveActiveFolder（清 redo+U，undo 保留）；save()=IO 收口不定稿；
@@ -61,6 +62,7 @@ import { admitWriteback, captureStamp, targetOf } from './lineage-writeback-admi
 import { hasUnsettledWrites } from './recovery-clean-lifecycle'
 import { dropStaleHistory } from './lineage-history-stale'
 import { settledIoPhase } from './lineage-io-phase'
+import { canRetrySave, writeFailureCleared } from './lineage-write-failure'
 import type { LineageDragTarget, LineageStore } from './lineage-session-model'
 
 export type { LineageHistoryEntry, LineageInflight, LineageSaveStatus, LineageStatus, LineageStore } from './lineage-session-model'
@@ -68,7 +70,7 @@ export type { DrawEdgeResult, ReconnectResult } from './lineage-edit-commands'
 export type { LazyNodePatch, LineageNodePatchBody } from './lineage-write-actions'
 export type { WriteAction } from '@shared/recovery/schemas'
 
-/** IO 退出拦截聚合输入（INV-22/INV-91——全 registry：任一会话 Q∨inflight∨error；U 不入） */
+/** IO 退出拦截聚合输入（INV-22/INV-91——全 registry：任一会话 Q∨inflight；[B5 C2=B] 相位不入、U 不入） */
 export function useLineageDirty(): boolean {
   return useSyncExternalStore(registry.subscribe, registry.ioDirty)
 }
@@ -113,6 +115,11 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       await registry.loader.load(activeEntry())
     },
 
+    /** [B5 设计稿 §2.2/§5.2] 同图 ready 重挂的活动投影同步口（registry 委托——恒等防御剪枝，零 graph IPC） */
+    syncActiveSession() {
+      registry.syncActiveSession()
+    },
+
     setFolder(folderId) {
       const from = registry.activeFolder()
       const leaving = registry.entry(from) // 离场会话只查不建（后台删夹清出后无会话）
@@ -148,6 +155,8 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
     discardSession(folderId = registry.activeFolder()) {
       const old = registry.ensure(folderId)
       // 弃会话=同图新代际（迟到写不落新会话）：图态保留，queue/IO/历史/U/needsReload 清
+      // [B5 设计稿 §2.2 #24、A 波裁决①] 聚焦集读源=该会话现集合（活动会话在 view.store、挂起会话在 entry 副本——
+      // focusSetOf 单点），经 replace 入口按保留后的 nodes 剪枝写回双面；旧 entry.data.focusSet 对活动会话可能滞后，不可作读源
       const entry = registry.replace(folderId, {
         nodes: old.data.nodes,
         edges: old.data.edges,
@@ -158,14 +167,19 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         tagNames: old.data.tagNames,
         status: old.data.status,
         error: old.data.error,
-        focusSet: old.data.focusSet
+        focusSet: registry.focusSetOf(folderId)
       })
       if (entry.data.status === 'loading') void registry.loader.load(entry)
       markRecoveryClean('discard', folderId)
     },
 
+    /** [B5 设计稿 §6.1] 保存重试的 source guard（store 层第二道防线——防陈旧闭包/直接调用；UI 条件渲染是第一道）：
+     *  只有活动会话的失败来源是 save 才 finalize；history 来源与缺源=no-op——finalize 会显式定稿并清 redo/U，
+     *  history 失败的重试入口=重按原方向命令 */
     retrySave() {
-      void activeEntry().lane.finalize()
+      const entry = activeEntry()
+      if (!canRetrySave(entry.data.lastWriteErrorSource)) return
+      void entry.lane.finalize()
     },
 
     /** [回炉 W-B3·R-D1] 丢弃过期历史（保存错误行出口——用户点击并确认后调用，不静默自动跳过；不写数据库）：
@@ -178,9 +192,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
       if (next === null || entry.data.inflight !== null) return
       registry.writeEntry(entry, {
         ...next,
-        lastWriteError: null,
-        // 该次失败的 error 已清——相位按 Q（settledIoPhase 见 error 即保留，故以 clean 为输入取「清后按 Q」）
-        saveStatus: settledIoPhase({ queue: entry.data.queue, inflight: entry.data.inflight, saveStatus: 'clean' })
+        ...writeFailureCleared(
+          // 该次失败的 error 已清——相位按 Q（settledIoPhase 见 error 即保留，故以 clean 为输入取「清后按 Q」）；[B5 §6.1] message 与 source 同清
+          settledIoPhase({ queue: entry.data.queue, inflight: entry.data.inflight, saveStatus: 'clean' })
+        )
       })
     },
 
@@ -205,8 +220,10 @@ export const useLineageStore = create<LineageStore>()((set, get) => {
         restoredAwaitingCommand: true, // [回炉 W-B2c] 恢复待令：脉络页挂载/返回不自动和解（W-B2·R-W2 回归的修复点）
         invalidationEpoch: 0
       })
-      if (registry.activeFolder() !== folderId) registry.activate(folderId) // 路由到恢复的目标会话
-      useLineageViewStore.getState().clearFocus()
+      // 路由到恢复的目标会话（activate 挂起离场集合并经统一投影口恢复目标集合）
+      if (registry.activeFolder() !== folderId) registry.activate(folderId)
+      // [B5 设计稿 §2.2 #24/§5.2] 聚焦集不在此清：恢复替换的默认空集由 registry.replace（活动会话经
+      // projectActiveSession）同步到 view.store——mode 不变；这里只收画线工具（视图域隔离——view.store 零反向依赖）
       useLineageViewStore.getState().resetTool()
     },
 

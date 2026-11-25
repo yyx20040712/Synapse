@@ -13,8 +13,9 @@
  * ③ [B4 L2 §2.5 #37/§9.3] lineage=全 registry flush：拖拽两态有界先行（态一请求
  *    有界 settle→数据写落原会话；态二 await settleFlight 句柄）→取消全部 idle
  *    timer→有未落定写的会话各自 await save()（写队列正道——不旁路队列，硬约束；
- *    等待名单=Q∨在途 F∨error——[回炉 W-B2·R-B3] history-unit/和解读在途的会话必在
- *    其中：save() 排在链的在途任务之后，等到它落定）；
+ *    等待名单=Q∨在途 F——[回炉 W-B2·R-B3] history-unit/和解读在途的会话必在
+ *    其中：save() 排在链的在途任务之后，等到它落定；[B5 设计稿 §7 C2=B] 相位不入：
+ *    Q0/F0 的 error 会话不进名单——告警与两栈保留，不伪称把失败历史写再次落库）；
  * ③.5 [B4-A R2 §2.5 #37] reader 各打开 tab 的写链 drain（tab-write-lane）：
  *    在途 history-unit 与普通写属 IO——无人 await 的链任务（快捷键 undo/redo、
  *    切 tab fire-first 立存）在最终查态前落定；失败结果由 ④ 查态承接；
@@ -25,9 +26,10 @@
  *    全量收口，不限开 tab 键集）；
  *    annotations：开 tab TabState.dirty（API 失败残留——关 tab 卸载注册承接
  *    不属本判定）∨ 句柄终态未落库 ∨ 注册表未落盘残留（hasPending）；
- *    lineage：任一会话 IO 未落定（Q∨在途 F∨error——lineage-io-phase.ioUnsettled 单源；
- *    [回炉 W-B2·R-B3] 直接按 Q/F/error 计算，不以 saveStatus≠clean 代替：相位写点漏同步
- *    时后者漏报在途写）；
+ *    lineage：任一会话实际待写（Q∨在途 F——lineage-io-phase.ioUnsettled 单源；
+ *    [回炉 W-B2·R-B3] 直接按 Q/F 计算，不以 saveStatus≠clean 代替：相位写点漏同步时后者
+ *    漏报在途写；[B5 设计稿 §7 C2=B] Q0/F0 的 error 只保留可见告警与重试，不单独构成
+ *    stillDirty——普通写失败 Q≥1 仍计入）；
  *    noteDraft〔F-VISFB-63〕：noteDraftPending()=未收口草稿残留（②.5 fire
  *    no-op〔flushing 窗〕/句柄同步 throw 面——pending 保真承接）。[回炉 W-B2b] 编辑器
  *    已卸载的残留（无挂载句柄）在 ②.5 之后经内部 settle 写路径落库
@@ -83,7 +85,7 @@ export async function runQuitFlush(): Promise<boolean> {
   // ③ [B4 L2] lineage 全 registry 收口：两态有界先行→取消 idle timer→各会话正道 flush
   await Promise.all(lineageRegistry.sessions().map((entry) => lineageRegistry.awaitDragSettle(entry.key)))
   lineageRegistry.cancelAllIdle()
-  // 等待名单=IO 未落定的会话（Q∨F∨error）——[回炉 W-B2·R-B3] 含 history-unit/和解读在途（F）
+  // 等待名单=实际待写的会话（Q∨F——[B5 C2=B] 相位不入）——[回炉 W-B2·R-B3] 含 history-unit/和解读在途（F）
   await Promise.all(
     lineageRegistry
       .sessions()

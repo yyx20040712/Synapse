@@ -133,7 +133,7 @@ describe('T3-P7B Timeline 编辑交互接线（工具条换装——U3 受控化
     )
     setMode('edit')
     act(() => {
-      useLineageStore.setState({ saveStatus: 'error', lastWriteError: '写入失败' })
+      useLineageStore.setState({ saveStatus: 'error', lastWriteError: '写入失败', lastWriteErrorSource: 'save' }) // [B5 §6.1] 夹具机械补来源（save 场景——保存重试只随 save 来源）
     })
     // 退役行 4 负锚：旧 chip testid 零残留
     expect(q('[data-testid="lineage-save-status"]')).toBeNull()

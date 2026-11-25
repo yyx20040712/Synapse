@@ -14,7 +14,8 @@
  *   - 链任务起步→saving/F≠0；drain 全部成功→clean（服务器行回填；**不清 undo/
  *     redo、不动 U**——idle-flush≠定稿，§2.5 #8）；出队即存恢复副本。
  *   - saving+系统型失败（非 CONFLICT）→error（**队首保留**+toast+重试——INV-04
- *     同型：失败不推进保存态；U/H/R 全不变，#9）
+ *     同型：失败不推进保存态；U/H/R 全不变，#9；[B5 设计稿 §6.1] 来源='save'——
+ *     message 与 source 经 lineage-write-failure 的原子 patch 同批写入，成功同清）
  *   - saving+CONFLICT 拒绝型→**丢弃动作继续队列**（toast reason 透传+needsReload
  *     置位——#10：U 与 redo 不因丢弃自动清，历史保留）；丢弃后队列空→clean+链尾
  *     权威和解任务（§2.6 10a——原 `void load()` fire-and-forget 收口退役）；和解被丢
@@ -53,6 +54,7 @@ import {
 import { conflictPolicyOf, ghostFolderPatch, type ReconcileOutcome } from './lineage-write-conflicts'
 import { reconcileAtTail } from './lineage-reconcile-tail'
 import type { EntityEcho } from './lineage-history-commands'
+import { writeFailure, writeFailureCleared, type LineageWriteErrorSource } from './lineage-write-failure'
 import { createWriteExecutor } from './lineage-write-executor'
 
 /** [F-VISFB-65] 写动作（排队单元）=shared 单源 re-export（判别联合迁移锚——
@@ -70,6 +72,8 @@ export interface WriteQueueHost {
   lineTypeNames: string[]
   saveStatus: LineageSaveStatus
   lastWriteError: string | null
+  /** [B5 §6.1] 最近一次失败的来源（与 lastWriteError 同批写入或清除——本件恒 'save'／null） */
+  lastWriteErrorSource: LineageWriteErrorSource
   queue: WriteAction[]
   /** 在途写在场（F≠0 ⇔ inflight≠null）——同会话 saving 编辑锁判据 */
   flushing: boolean
@@ -252,17 +256,17 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
           flight = null
           continue
         }
-        // 系统型：动作保留（不丢），error 态+重试（INV-04：失败不推进保存态）
+        // 系统型：动作保留（不丢），error 态+重试（INV-04：失败不推进保存态）；[B5 §6.1] 普通写失败=source 'save'
         const message = e instanceof Error ? e.message : String(e)
         flight = null
-        set({ saveStatus: 'error', lastWriteError: message })
+        set(writeFailure(message, 'save'))
         writeFailToast(message)
         return { ok: false, conflictTouched, conflictMessage }
       }
       flight = null
     }
-    // 成功收尾：clean（U/H/R 全不变——idle-flush≠定稿）
-    set({ saveStatus: 'clean', lastWriteError: null })
+    // 成功收尾：clean（U/H/R 全不变——idle-flush≠定稿）；[B5 §6.1] message 与 source 同清
+    set(writeFailureCleared())
     markRecoveryClean('clean', key()) // clean 四源之一：flush 全成功→release(clean)〔L2：按会话归属裁决〕
     if (remappedTo !== null) deps.onRemapLanded?.(remappedTo) // [回炉 W-B1·R-remap] remap 落库：队列空、写全部落地→终态迁移
     return { ok: true, conflictTouched, conflictMessage }

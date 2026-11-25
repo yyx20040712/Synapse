@@ -304,12 +304,15 @@ async function reachStaleState(win: Page, userData: string): Promise<StaleIds> {
     ]
   )
   // 撤销→被拒（CONFLICT/HISTORY_STALE）：错误行+出口
+  // [B5 设计稿 §2.4/§6 C1 断言翻转] history-unit 被拒=history-undo 来源——行文案为方向文案「撤销失败：」
+  // 与「历史栈未变化，重按撤销即可重试」指引（原「保存失败：…撤销/重做未执行」通用错误行文案退役）；
+  // 丢弃出口断言保留
   await win.getByTestId('lineage-undo').click()
   const errorRow = win.getByTestId('lineage-save-error')
   await expect(errorRow).toBeVisible({ timeout: 10_000 })
-  await expect(errorRow).toContainText('保存失败：节点已被其他操作改变')
+  await expect(errorRow).toContainText('撤销失败：节点已被其他操作改变')
   await expect(errorRow).toContainText(`（${yiId}）`)
-  await expect(errorRow).toContainText('撤销/重做未执行')
+  await expect(errorRow).toContainText('历史栈未变化，重按撤销即可重试')
   await expect(win.getByTestId('lineage-stale-drop')).toHaveText('丢弃这条过期历史')
   await dismissToasts(win)
   return { jiaId: jiaId!, yiId: yiId!, cardJia, cardYi }
@@ -378,7 +381,7 @@ test.describe('过期历史出口 e2e（B4 L1 回炉 R-D1）', () => {
     await expect(cardYi).toBeVisible({ timeout: 10_000 })
     await expect(cardYi).toContainText(STALE_YI.title)
     await expect(errorRow).toBeVisible({ timeout: 10_000 })
-    await expect(errorRow).toContainText('撤销/重做未执行')
+    await expect(errorRow).toContainText('历史栈未变化，重按撤销即可重试') // [B5 C1 断言翻转] 方向文案＋指引（原「撤销/重做未执行」）
     await expect(dropBtn).toBeVisible()
     await expect(cardJia).toHaveCount(0)
     await expect(undoBtn).toBeEnabled()

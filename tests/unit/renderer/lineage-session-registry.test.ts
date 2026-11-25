@@ -342,13 +342,15 @@ describe('显式清空 focusSet 只清当前图（§2.3 focusSet 行、§14 终�
     expect(view().focusSet, '活动图的聚焦集不动').toEqual(['A1'])
     state().setFolder('f-b')
     await settle()
-    view().toggleFocus('B2') // f-b 重新持有聚焦集 [B2]；随后切回主图使其挂起
+    view().toggleFocus('B1') // f-b 重新持有聚焦集 [B1]；随后切回主图使其挂起
     state().setFolder(MAIN)
     await settle()
-    expect(lineageRegistry.focusSetOf('f-b')).toEqual(['B2'])
+    // [B5 设计稿 §5 C3 断言翻转] 原用不存在的节点 id 'B2' 聚焦并断言其跨挂起存活——锁的是死 id 缺陷本身；
+    // 挂起前按离场图 nodes 剪枝后死 id 不再残留，改用 f-b 图内真实节点（意图不变：挂起集合跨切换存活）
+    expect(lineageRegistry.focusSetOf('f-b')).toEqual(['B1'])
     lineageRegistry.clearFocusOf(MAIN) // 活动图被矫正：只清活动图
     expect(view().focusSet).toEqual([])
     expect(view().mode).toBe('focus')
-    expect(lineageRegistry.focusSetOf('f-b'), '挂起图的聚焦集不动').toEqual(['B2'])
+    expect(lineageRegistry.focusSetOf('f-b'), '挂起图的聚焦集不动').toEqual(['B1'])
   })
 })

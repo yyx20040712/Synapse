@@ -32,10 +32,17 @@ import { useLineageEscapeKey } from './use-lineage-esc'
 import { useLineageHistoryShortcuts } from './use-lineage-history-shortcuts'
 
 export function LineagePage(): JSX.Element {
+  // [B5 设计稿 §2.2 #23/§3.3] graph loading/error 只收 palette（mode、focusSet 与画线工具不动——
+  // 状态切换不清内存会话）；write error 走独立告警，不与 graph load error 合并
+  const graphStatus = useLineageStore((s) => s.status)
   useEffect(() => {
-    // [F-LGRAPH-01②A1 兑现] 挂载恒走模式态 reset（P-1「进页缺省」直读——二次
-    // 进页=再进页缺省：mode='browse'+focusSet 清空+工具态归位；与下行数据
-    // 暂存保留[P-2]正交——view 态 reset≠数据 discard，两者不互斥）
+    if (graphStatus !== 'ready') useLineageViewStore.getState().closePalette()
+  }, [graphStatus])
+
+  useEffect(() => {
+    // [F-LGRAPH-01②A1 兑现] 挂载恒走视图态 reset（只收 tool/paletteFor）；[B5 设计稿 §2.2 #2/#5、
+    // §14 决策 1——原 P-1「进页缺省 browse」翻案] resetForMount 不读写 mode/focusSet：页面切换
+    // 保留模式与聚焦集；与下行数据暂存保留[P-2]正交——view 态 reset≠数据 discard，两者不互斥
     useLineageViewStore.getState().resetForMount()
     // 缺省图=库页文件夹上下文同步（进哪个文件夹开哪张图；未选=主图）——
     // [B4 L2] setFolder=flush-first 挂起切换（每图 U/历史/focusSet 驻留，§2.5
@@ -51,7 +58,12 @@ export function LineagePage(): JSX.Element {
     // needsReload=1 同样零 graph IPC：恢复图的和解时点=首次命令入链（§2.5 #10a/#39），页面挂载/返回
     // 不做自动和解。R-W2 删除「非 clean 早退」后，挂载效应对它调 setFolder→单飞和解，库态覆盖恢复图
     // （e2e recovery.spec E7 非确定失败的根因）。显式同图重选（setFolder 同值）不经本效应，仍和解。
-    if (current.folderId === target && current.status === 'ready' && (!current.needsReload || current.restoredAwaitingCommand)) return
+    if (current.folderId === target && current.status === 'ready' && (!current.needsReload || current.restoredAwaitingCommand)) {
+      // [B5 设计稿 §2.2/§5.2] 同图 ready 重挂：零 graph IPC，但仍经 registry 的活动投影同步口对活动集合做
+      // 恒等防御剪枝（合法集合同值同引用、既有死 id 才移除——不重置 mode、不重取、不双取）
+      useLineageStore.getState().syncActiveSession()
+      return
+    }
     // 目标≠当前：[F-LGRAPH-01②U1] 原按「会话 dirty 跳过同步=暂存图保留」处理——[回炉 W-B2·R-W2]
     // 按 flush-first 语义迁移（§2.5 #32、§8.1、§8.3「离场 flush-first」）：离场会话的未落定写由
     // setFolder 取消 timer→快照请求→flush-first 承接，跨页返回的暂存图不丢，不以 IO 状态阻切。

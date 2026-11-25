@@ -16,6 +16,10 @@
  * - IO 相位（[回炉 W-B2·R-B3] §2.4「有在途必须为 saving」）：runReconcile 与 inflight 同一
  *   写点发布 saving（原只写 inflight——和解读在途期停在 clean），退出统一收 F=0 相位
  *   （settleIoPhase：error 保留、否则按 Q）；reconcileNow 的相位收口沿用同一助手。
+ *   [B5 设计稿 §6.1] 和解失败的来源由**发起命令显式传入** runReconcile(source)：history
+ *   命令=history-undo／history-redo（经 history-unit 的 reconcile 端口），save／finalize／
+ *   普通 flush／reconcileNow='save'——不持可变 currentSource、不靠 inflight 反推；finalize 的
+ *   #10 记失败（含 remap 后写存活会话）恒 'save'。
  * - editUnit 闸（#3/#4）：同会话 saving 编辑锁（INV-94）+ quit/recovery/conflict
  *   冻结 + 未完成拖拽两态（§9.3）——拒绝零副作用。settle 域（settleEdit 的 body
  *   同步执行期）免这三道用户闸——同会话不并发由链内串行保证。
@@ -70,6 +74,7 @@ import { reconcileAtTail } from './lineage-reconcile-tail'
 import { createIdleScheduler } from './lineage-idle-scheduler'
 import { reanchorHistory, type EntityEcho } from './lineage-history-commands'
 import { isLineageBusy } from './lineage-session-model'
+import { writeFailure, type LineageWriteErrorSource } from './lineage-write-failure'
 import type { LineageSession, SessionEntry, SessionPatch } from './lineage-session-registry'
 import type { RemapSurvivor } from './lineage-session-remap'
 
@@ -145,8 +150,9 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
   }
   /** 本链 remap 落库后的存活会话句柄（drain 收尾时捕获——此后本链的和解读与之无关） */
   let remap: RemapSurvivor | null = null
-  /** 和解链任务装配位（链内调用——读失败折叠 failed+error，位保留不定稿 #10c） */
-  const runReconcile = async (): Promise<ReconcileOutcome> => {
+  /** 和解链任务装配位（链内调用——读失败折叠 failed+error，位保留不定稿 #10c）；
+   *  [B5 §6.1] source=发起命令的失败来源（和解失败按它记——由各调用点显式传入） */
+  const runReconcile = async (source: Exclude<LineageWriteErrorSource, null>): Promise<ReconcileOutcome> => {
     if (remap !== null) return remap.settled // remap 已落库：和解由存活会话承担——本链等待其落定
     if (!deps.alive()) return 'dropped' // 孤儿会话：不再发 keyed 读（迟到响应本就按身份键丢弃）
     // [回炉 W-B2·R-B3] 与 inflight 同一写点发布 saving（§2.4「有在途必须为 saving」——原只写 inflight，
@@ -155,7 +161,7 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
     try {
       return await deps.reconcile()
     } catch (e) {
-      write({ saveStatus: 'error', lastWriteError: e instanceof Error ? e.message : String(e) })
+      write(writeFailure(e instanceof Error ? e.message : String(e), source)) // 失败三字段同批写入（[B5 §6.1]）
       return 'failed'
     } finally {
       settleIoPhase()
@@ -166,7 +172,7 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
     get,
     key: () => deps.entry.key,
     onEcho: (echo: EntityEcho) => write((s) => reanchorHistory({ undoStack: s.undoStack, redoStack: s.redoStack }, echo)),
-    reconcile: runReconcile,
+    reconcile: () => runReconcile('save'), // 普通 flush 的链尾和解=save 来源（[B5 §6.1]）
     alive: deps.alive,
     onRemapMain: deps.clearFocus,
     onRemapLanded: (to) => {
@@ -275,8 +281,8 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
         if (!drained.ok) return false // #23 预 flush 失败：redo/U/undo 全保留
         if (get().needsReload) {
           // #20a-#20c 和解先行；[回炉 W-B3·R-B7] 和解被丢→链在 drain 新 Q 后按当前 epoch 有界续拉——续拉成功后才定稿；
-          // 续拉仍未应用（或续拉前新写失败）＝不定稿、位保留（不按未和解图清 redo/U）
-          const tail = await reconcileAtTail({ reconcile: runReconcile, drain: () => wq.drain(), alive: deps.alive })
+          // 续拉仍未应用（或续拉前新写失败）＝不定稿、位保留（不按未和解图清 redo/U）；和解失败来源='save'（[B5 §6.1]）
+          const tail = await reconcileAtTail({ reconcile: () => runReconcile('save'), drain: () => wq.drain(), alive: deps.alive })
           if (tail.outcome !== 'applied') return false
           if (tail.followed !== null) {
             // 续拉各轮 drain 的 CONFLICT 丢弃并入本次 finalize 的 #10 记失败判据
@@ -288,9 +294,11 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
           }
         }
         if (drained.conflictTouched) {
-          // #10：本次 finalize 记失败（[回炉 W-B1·R-remap] remap 落库后本会话已离场——记存活会话）
-          if (remap !== null) remap.write({ saveStatus: 'error', lastWriteError: drained.conflictMessage })
-          else write({ saveStatus: 'error', lastWriteError: drained.conflictMessage })
+          // #10：本次 finalize 记失败（[回炉 W-B1·R-remap] remap 落库后本会话已离场——记存活会话）；
+          // [B5 §6.1] 来源恒 'save'（不是 history 拒绝）——message 与 source 同批落到同一会话，不串到别的 folder
+          const failed = writeFailure(drained.conflictMessage ?? '', 'save')
+          if (remap !== null) remap.write(failed)
+          else write(failed)
           return false
         }
         write({
@@ -313,7 +321,7 @@ export function createSessionLane(deps: SessionLaneDeps): SessionLane {
     },
     reconcileNow() {
       return chainTask(async () => {
-        const outcome = get().needsReload ? await runReconcile() : 'dropped' // 在途回执已清位=无再读必要
+        const outcome = get().needsReload ? await runReconcile('save') : 'dropped' // 在途回执已清位=无再读必要（显式和解入口=save 来源）
         settleIoPhase() // 相位收口（含早退径；[回炉 W-B2·R-B3] 与 runReconcile 的退出收口共用同一助手）
         return outcome
       })

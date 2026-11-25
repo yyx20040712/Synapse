@@ -83,7 +83,9 @@ describe('R-D1 真实分叉·HISTORY_STALE（undo 方向）', () => {
     expect(staleMark()).toEqual({ direction: 'undo', entryId: topId, reason: 'HISTORY_STALE', message: staleMessage('B') })
 
     // 出口：在既有保存错误行内提供「丢弃这条过期历史」
-    expect(q(ERROR_ROW)?.textContent).toContain(`保存失败：${staleMessage('B')}`)
+    // [B5 设计稿 §2.4/§6 C1 断言翻转] history-unit 被拒=history-undo 来源——行文案为方向文案「撤销失败：」，
+    // 不再冒充保存失败（保存重试不在 history 来源的告警内；丢弃出口保留）
+    expect(q(ERROR_ROW)?.textContent).toContain(`撤销失败：${staleMessage('B')}`)
     const drop = q(DROP_BTN)
     expect(drop, '过期历史项在栈顶时错误行应提供丢弃出口').not.toBeNull()
     expect(drop!.textContent).toBe(ACTION_TEXT)

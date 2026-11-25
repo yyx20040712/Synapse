@@ -6,8 +6,9 @@
  * - quitDirty（INV-22/INV-187）：只消费 IO（annotations 失败残留 ∪ notes
  *   pending ∪ lineage IO ∪ 悬浮笔记草稿）——unfinalized 不参与（灰点不卡
  *   退出；§2.5 #37「U 不进入 stillDirty」）。
- * - lineagePending（INV-91 S1 队列闸）：=全 registry lineage IO（任一会话
- *   Q∨inflight∨error）——U 不参与 folders/papers 结构写互斥。
+ * - lineagePending（INV-91 S1 队列闸）：=全 registry lineage 实际待写（任一会话 队列非空∨
+ *   在途写在场——[B5 设计稿 §7 C2=B] 相位不再是输入：Q0/F0 的 error 只保留可见告警，不互斥
+ *   结构写；普通写失败队首保留 Q≥1 继续互斥）——U 不参与 folders/papers 结构写互斥。
  * - readerUnfinalized：全部打开 tab 的 U OR（rail 阅读器角标输入）。
  * - lineageUnfinalized：[B4 L2] 全 registry 会话 unfinalized OR（rail 脉络角标）。
  *
@@ -35,7 +36,7 @@ export interface SaveAggregates {
 
 export function useSaveAggregates(): SaveAggregates {
   const { annoDirty, notePending } = useTabAutosaveSignals()
-  const lineageDirty = useLineageDirty() // 全 registry IO（registry 订阅单源）
+  const lineageDirty = useLineageDirty() // 全 registry 实际待写（Q∨F——[B5 C2=B]；registry 订阅单源）
   const lineageUnfinalized = useLineageUnfinalized() // 全 registry U OR
   const noteDraft = useNoteDraftPending()
   const readerUnfinalized = useTabUnfinalizedAggregate()

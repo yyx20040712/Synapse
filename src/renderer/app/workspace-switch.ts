@@ -6,16 +6,18 @@
  * - 全量 flush：notes 全量立存（flushAllNow）→ 批注/总评挂载句柄全量 flush
  *   （并行 await；终态查态——fulfilled≠落库）→ 悬浮笔记草稿 fire-first commit
  *   → [B4 L2] lineage=全 registry：拖拽两态有界收口→取消 idle timer→有未落定写
- *   的会话各自 await save()（写队列正道——不旁路队列；等待名单=Q∨在途 F∨error——
+ *   的会话各自 await save()（写队列正道——不旁路队列；等待名单=Q∨在途 F——
  *   [回炉 W-B2·R-B3] history-unit/和解读在途的会话必在其中，#38「全量 flush 成功」
- *   含在途链任务落定）。
+ *   含在途链任务落定；[B5 设计稿 §7 C2=B] 相位不入：Q0/F0 的 error 会话不进等待
+ *   名单、不中止切换——告警状态在 reset 前仍存在，成功后的全域 reset 清内存错误）。
  * - reader 各打开 tab 的写链 drain（tab-write-lane）：在途 history-unit 与普通写
  *   属 IO（§2.5 #38「全量 flush 成功」含在途链任务）——清史前落定，在途 undo/redo
  *   的回显先写回原 tab；
  * - 查态（IO 单源——U 不参与）：任一面仍 IO 脏 → false（留旧课题：不 switch、
  *   不清任何历史/草稿——失败零副作用，可重试）。[回炉 W-B2b] 编辑器已卸载的草稿残留
  *   （无收口句柄）在 ③ 之后经内部 settle 写路径落库（lineage-note-draft-settle）——
- *   否则残留会让本段恒返回 false 而用户在课题页看不到任何提示。
+ *   否则残留会让本段恒返回 false 而用户在课题页看不到任何提示。[B5 设计稿 §7 C2=B]
+ *   lineage 面只看 Q∨F：Q0/F0 的 error 不单独把会话判脏（清史时机不变）。
  * - 全 IO clean → 清全部内存历史（reader 两层历史+操作栈+U、lineage 全 registry
  *   会话——历史/U/queue/focusSet 随 resetWorkspace 全清，§2.5 #38「清全部
  *   H/R/U/focusSet」——reload 前归零），返回 true；随后调用方
@@ -83,7 +85,7 @@ export async function prepareWorkspaceSwitch(): Promise<boolean> {
   // ④ [B4 L2] lineage 全 registry 收口：两态有界先行→取消 idle timer→各会话正道 flush
   await Promise.all(lineageRegistry.sessions().map((entry) => lineageRegistry.awaitDragSettle(entry.key)))
   lineageRegistry.cancelAllIdle()
-  // 等待名单=IO 未落定的会话（Q∨F∨error）——[回炉 W-B2·R-B3] 含 history-unit/和解读在途（F）
+  // 等待名单=实际待写的会话（Q∨F——[B5 C2=B] 相位不入）——[回炉 W-B2·R-B3] 含 history-unit/和解读在途（F）
   await Promise.all(
     lineageRegistry
       .sessions()

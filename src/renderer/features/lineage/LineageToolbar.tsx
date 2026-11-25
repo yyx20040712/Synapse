@@ -31,6 +31,13 @@
  *   工具态，渲染输出不变）；
  * - 保存/撤销重做/保存错误行=既有分件（LineageSaveButton/LineageHistoryButtons/
  *   LineageStaleHistoryDrop）原位原序零改。
+ *
+ * [B5 设计稿 §6 C1/§2.4——wave B 数据面接线 2026-11-25] 保存错误行按失败源分流（单告警，
+ * 投影=lineage-write-failure writeErrorAlert，零第二错误态）：save 来源=「保存失败：{message}」
+ * ＋保存重试；history-undo/redo=方向文案＋「历史栈未变化，重按撤销/重做即可重试」——无保存
+ * 重试；缺源非法态=通用真实错误、无任何重试钮（fail closed）。过期历史丢弃出口与来源无关
+ * （较早的 stale 标记仍合法时并存）。告警迁稳定 Page 外壳（LineageWriteErrorAlert、三模式
+ * 可达——§6.3 R4）属后续波；本波仍挂现宿主（edit 态），testid 不变。
  */
 import { useLineageStore } from './lineage.store'
 import { RetryButton } from '../../shared/ui/RetryButton'
@@ -39,13 +46,18 @@ import { LineageSaveButton } from './LineageSaveButton'
 import { LineageHistoryButtons } from './LineageHistoryButtons'
 import { LineageStaleHistoryDrop } from './LineageStaleHistoryDrop'
 import { useLineageCommandState } from './use-lineage-command-state'
+import { writeErrorAlert } from './lineage-write-failure'
 
 export function LineageToolbar(props: {
   mode: 'edit' | 'browse' | 'focus'
 }): JSX.Element {
   const mode = props.mode
   const command = useLineageCommandState()
+  // [B5 §6 C1] 写失败告警按来源分流（三个读点恒在早退之前——Rules of Hooks）
+  const saveStatus = useLineageStore((s) => s.saveStatus)
   const lastWriteError = useLineageStore((s) => s.lastWriteError)
+  const lastWriteErrorSource = useLineageStore((s) => s.lastWriteErrorSource)
+  const alert = writeErrorAlert({ saveStatus, lastWriteError, lastWriteErrorSource })
 
   if (mode !== 'edit') {
     // 非 edit：工具组隐藏——仅 drag-hint（三态文案）；历史快捷键仍三模式生效
@@ -90,19 +102,23 @@ export function LineageToolbar(props: {
             拖至目标卡（唯一建边径）；拖动段=C3 月内调序（INV-107 改月单口沿承） */}
         编辑中：拖动＝月内调序 · 画线＝从卡边锚点拖至目标卡
       </span>
-      {command.saveState === 'failed' && (
+      {command.saveState === 'failed' && alert.kind === 'alert' && (
         <span
           className="lg-save-error"
           role="alert"
           data-testid="lineage-save-error"
           style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
         >
-          保存失败：{lastWriteError}
-          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（testid 受锁锚透传） */}
-          <RetryButton testId="lineage-save-retry" onClick={() => store().retrySave()} />
+          {/* [B5 §2.4] 单告警按源分流：文案取自 writeErrorAlert（保存失败／撤销失败／重做失败／缺源通用错误） */}
+          {alert.text}
+          {/* [F-UIRES-02 批 B R2] 文字重试钮→共享 RetryButton（testid 受锁锚透传）；
+              [B5 §6.1] 只随 save 来源渲染（retrySave 的 source guard 是第二道防线）——history 来源的
+              重试入口=重按原方向撤销/重做，缺源 fail closed */}
+          {alert.retrySave && <RetryButton testId="lineage-save-retry" onClick={() => store().retrySave()} />}
           {/* [回炉 W-B3·R-D1] 过期历史出口：history-unit 以 CONFLICT 拒绝的栈顶历史项——
-              点击出确认框，确认才丢弃（不静默自动跳过） */}
-          <LineageStaleHistoryDrop />
+              点击出确认框，确认才丢弃（不静默自动跳过）；[B5 §6.2] save 与 history 来源都可带
+              （较早的 stale 标记仍合法时与保存重试并存——两者含义不同），缺源不带 */}
+          {alert.dropStale && <LineageStaleHistoryDrop />}
         </span>
       )}
     </div>

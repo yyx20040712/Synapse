@@ -6,18 +6,23 @@
  * ── 行为层（任务体由宿主排入每会话串行写链——同对象 history/reconcile busy 时
  *    后续请求按 #13d 排队不并发）──
  * - #13 预 drain：先 drain 普通写（悬浮笔记草稿由宿主在入链前 commit）；
- * - #14 预 flush 失败：不弹栈、不改 redo、不改 U，不执行反向写（错误可见）；
+ * - #14 预 flush 失败：不弹栈、不改 redo、不改 U，不执行反向写（错误可见——该失败由写队列
+ *   记为 source 'save'）；
  * - #13a/#13b/#13c needsReload=1：drain 后先等和解（图在 history 前落地，#35 自身放行
  *   判据）——和解失败则 history 不执行（#13b：error 可见、可重试）；和解被丢（读到达时
  *   应用判据不成立——位保留）则链在 drain 新 Q 后按当前 epoch 有界续拉，续拉成功才执行
  *   history-unit，续拉仍未应用／续拉前新写失败则不执行、两栈不动（#13c；[回炉 W-B3·R-B7]
- *   lineage-reconcile-tail）；
+ *   lineage-reconcile-tail）；[B5 设计稿 §6.1] 前置与续拉和解失败的来源=发起命令的方向
+ *   （history-undo／history-redo——沿 run(direction) → reconcileAtTail → reconcile(source)
+ *   显式传递）：history-unit 尚未执行，两栈不动，不显示保存重试；
  * - #15-#17 unit：身份键=folderId+会话代际+unitId（回显去重）；成功才移栈
  *   （undo：undo−1/redo+1；redo 对称；截断≤10）、U 置真、editRevision+1；应用
  *   响应=只增量应用 touched 实体+按 lineageOrder 重排 nodes（不用整图替换），
  *   星标保现值（非撤销维度）；写回显再锚历史项时戳；
  * - #18 失败：两栈不动、U 不改为已定稿；IO error+toast（CONFLICT=图态偏离→
- *   needsReload 置位，下次命令入链先和解）；[回炉 W-B3·R-D1] CONFLICT 且拒因属
+ *   needsReload 置位，下次命令入链先和解）；[B5 设计稿 §6.1] 来源=发起方向
+ *   （history-undo／history-redo）——与 message 经原子 patch 同批写入，成功同清；重试入口
+ *   =重按原方向命令（无保存重试——saveStatus/message/source 的成组写法=lineage-write-failure）；[回炉 W-B3·R-D1] CONFLICT 且拒因属
  *   history-unit 四种之一（HISTORY_STALE／HISTORY_PAPER_MISSING／HISTORY_FOLDER_
  *   MISSING／HISTORY_GRAPH_INVALID——lineage-history-stale 命名谓词）＝栈顶历史项
  *   过期（后进先出，其下更旧的历史都撤不到）：按历史项 id 写入过期标记
@@ -54,6 +59,7 @@ import { admitWriteback, targetOf, type SessionStamp } from './lineage-writeback
 import { settledIoPhase } from './lineage-io-phase'
 import { reanchorHistory, type EntityEcho } from './lineage-history-commands'
 import { historyConflictReason, type LineageStaleHistory } from './lineage-history-stale'
+import { historyWriteErrorSource, writeFailure, writeFailureCleared, type LineageWriteErrorSource } from './lineage-write-failure'
 import {
   LINEAGE_HISTORY_DEPTH_MAX,
   type LineageHistoryEntry,
@@ -73,6 +79,8 @@ export interface HistoryUnitHost {
   needsReload: boolean
   saveStatus: 'clean' | 'dirty' | 'saving' | 'error'
   lastWriteError: string | null
+  /** [B5 §6.1] 最近一次失败的来源（与 lastWriteError 同批写入或清除——本件恒发起方向／null） */
+  lastWriteErrorSource: LineageWriteErrorSource
   inflight: LineageInflight | null
   undoStack: LineageHistoryEntry[]
   redoStack: LineageHistoryEntry[]
@@ -91,7 +99,8 @@ export interface HistoryUnitDeps {
    *  不写新会话、命令结果记失败；缺省=恒存活，单会话夹具） */
   alive?(): boolean
   drain(): Promise<DrainOutcome>
-  reconcile(): Promise<ReconcileOutcome>
+  /** [B5 §6.1] 前置／续拉和解：source=发起命令的失败来源（和解失败按它记——history 方向，不写 'save'） */
+  reconcile(source: Exclude<LineageWriteErrorSource, null>): Promise<ReconcileOutcome>
   historyUnit(req: LineageHistoryUnitReq): Promise<LineageHistoryUnitRes>
 }
 
@@ -166,8 +175,8 @@ export function createHistoryUnit(deps: HistoryUnitDeps): HistoryUnit {
         staleHistory: null, // [回炉 W-B3·R-D1] 成功移栈：原标记项必不再位于其方向栈顶（同向被弹／异向被压）——清标记
         unfinalized: true,
         editRevision: s.editRevision + 1,
-        saveStatus: 'clean', // history 已落库：F=0 相位（链 finally 清 F——同会话 saving 锁保证 Q0）
-        lastWriteError: null
+        // history 已落库：F=0 相位 clean（链 finally 清 F——同会话 saving 锁保证 Q0）；[B5 §6.1] message 与 source 同清
+        ...writeFailureCleared()
       }
     })
     markRecoveryClean('clean', res.folderId) // history 已落库且 IO clean（Q0——同会话 saving 锁保证）
@@ -193,7 +202,12 @@ export function createHistoryUnit(deps: HistoryUnitDeps): HistoryUnit {
     if (get().needsReload) {
       // #13a-#13c 先等和解；[回炉 W-B3·R-B7] 和解被丢→链在 drain 新 Q 后按当前 epoch 有界续拉——续拉成功才执行
       // history-unit；续拉仍未应用（或续拉前新写失败——#14 同型）＝不执行（不在未和解的图上执行反向写）
-      const tail = await reconcileAtTail({ reconcile: deps.reconcile, drain: deps.drain, alive: () => deps.alive?.() ?? true })
+      // [B5 §6.1] 和解失败按发起方向记来源（初次前置与有界续拉同一来源）
+      const tail = await reconcileAtTail({
+        reconcile: () => deps.reconcile(historyWriteErrorSource(direction)),
+        drain: deps.drain,
+        alive: () => deps.alive?.() ?? true
+      })
       if (tail.outcome !== 'applied') return false
     }
     if (stale() || topOf(get(), direction)?.id !== entry.id) return false // 会话已替换/栈顶已变
@@ -217,8 +231,7 @@ export function createHistoryUnit(deps: HistoryUnitDeps): HistoryUnit {
       // （错误行出口据此提供丢弃；须用户点击并确认）。系统失败不标记——历史项未失效、可重试
       const reason = conflict !== null ? historyConflictReason(conflict.reason) : null
       set({
-        saveStatus: 'error',
-        lastWriteError: message,
+        ...writeFailure(message, historyWriteErrorSource(direction)), // [B5 §6.1] 来源=发起方向（与 message 同批）
         ...(conflict !== null ? { needsReload: true } : {}),
         ...(reason !== null ? { staleHistory: { direction, entryId: entry.id, reason, message } } : {})
       })

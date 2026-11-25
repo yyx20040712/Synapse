@@ -175,7 +175,7 @@ describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零�
 
   it('error=行内错误+重试钮（新 testid lineage-save-error/lineage-save-retry）；重试=retrySave', () => {
     mountToolbar()
-    setState({ saveStatus: 'error', lastWriteError: '写入失败', queue: [{ kind: 'remove-edge', id: 'e1' }] })
+    setState({ saveStatus: 'error', lastWriteError: '写入失败', queue: [{ kind: 'remove-edge', id: 'e1' }], lastWriteErrorSource: 'save' }) // [B5 §6.1] 夹具机械补来源（save 场景）
     expect(req('[data-testid="lineage-save-error"]').textContent).toContain('写入失败')
     click(btn('lineage-save-retry'))
     expect(['saving', 'clean']).toContain(useLineageStore.getState().saveStatus)
@@ -196,7 +196,7 @@ describe('F-LGRAPH-01②U2 保存钮四态（§2.2——退役行 4：chip 零�
   it('[回炉 R7] 重试成功路径：error→重试→flush 成功回 clean（保存钮回 clean 禁用锁定）', async () => {
     stubApi.lineage.removeEdge.mockResolvedValue({ ok: true, data: { ok: true } })
     mountToolbar()
-    setState({ saveStatus: 'error', lastWriteError: '写入失败', queue: [{ kind: 'remove-edge', id: 'e1' }] })
+    setState({ saveStatus: 'error', lastWriteError: '写入失败', queue: [{ kind: 'remove-edge', id: 'e1' }], lastWriteErrorSource: 'save' }) // [B5 §6.1] 夹具机械补来源（save 场景）
     click(btn('lineage-save-retry'))
     await act(async () => {
       for (let i = 0; i < 10; i++) await Promise.resolve()
