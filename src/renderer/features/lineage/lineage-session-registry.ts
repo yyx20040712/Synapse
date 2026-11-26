@@ -253,7 +253,7 @@ export function createSessionRegistry(): LineageRegistry {
 
   // ── 注册表内部面（外移裁决件共用——改键/植入、remap 终态迁移；注释随代码驻各件）──
   const core: RegistryCore = {
-    sessions, ensure, makeEntry, apply, notify, projectAll, loader, nextGeneration: () => ++genCounter,
+    sessions, ensure, makeEntry, apply, notify, loader, nextGeneration: () => ++genCounter,
     activeFolder: () => activeFolder, setActiveFolder: (folderId) => { activeFolder = folderId },
     projector: () => projection.current(), activate: (folderId) => registry.activate(folderId),
     projectActiveSession: projection.projectActiveSession // [B5 §5.2] 统一活动整幅投影口注入 core（rekey 切键后必经）

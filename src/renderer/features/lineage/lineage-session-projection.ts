@@ -19,9 +19,10 @@
  *     focusSet 的存储面，不加入 LineageStore 投影字段表），剪枝结果与 nodes 同一写提交
  *     生效并同步 view.store（合法集合同值同引用时不写）；挂起会话读 entry.data.focusSet。
  *   · 统一活动整幅投影口 projectActiveSession(entry)——按 entry.nodes 归一化 entry.data.
- *     focusSet → setAll(entry.data) → 同步 view.store focusSet。activate、活动 replace、
+ *     focusSet → 整幅写入投影宿主 → 同步 view.store focusSet。activate、活动 replace、
  *     rekey 切活动键后、课题切换 reset 的整幅投影都必须走此口，不得直接 projector.set
- *     (projectAll(...)) 绕开 focusSet。
+ *     (projectAll(...)) 绕开 focusSet（独立 setAll 接口面已删——[closeout W3 2026-11-26]
+ *     零消费且留面即留旁路）。
  *   · 同图 ready 重挂（LineagePage 挂载效应的零 graph IPC 分支）经 resyncActive：先把
  *     view.store 现集合按活动会话 nodes 剪后回写 entry 副本，再经统一投影口——合法集合同值
  *     同引用，既有死 id 才移除。
@@ -33,7 +34,7 @@
  *   活动会话、恢复替换、课题切换 reset）。
  * - 投影宿主（RegistryProjector——useLineageStore 的 set/get 面）由本件持有：attach 装配
  *   一次（装配位=store 模块求值期 registry.attachProjector）；未装配时写入为 no-op
- *   （registry 模块求值早于 store）。setPatch/setAll 是否执行由调用方判定——仅活动
+ *   （registry 模块求值早于 store）。setPatch 是否执行由调用方判定——仅活动
  *   会话的写投影（registry.activate/replace/resetWorkspace）；整幅投影与切图时序见
  *   lineage-session-registry 头注。
  * - 聚焦集读点/清点（[B4 L2 §2.3 focusSet 行；B5 §5.2] 委托面自 registry 迁驻本件——
@@ -104,9 +105,7 @@ export interface SessionProjection {
   current(): RegistryProjector | null
   /** 活动会话写的投影（未装配=no-op；是否活动会话由调用方判定） */
   setPatch(next: Partial<LineageSession>): void
-  /** 整幅投影（未装配=no-op；是否活动会话由调用方判定） */
-  setAll(data: LineageSession): void
-  /** [B5 §5.2] 统一活动整幅投影口：按 entry.nodes 归一化 entry.data.focusSet→setAll(entry.data)→同步 view.store focusSet（合法集合保持引用） */
+  /** [B5 §5.2] 统一活动整幅投影口：按 entry.nodes 归一化 entry.data.focusSet→整幅写入投影宿主→同步 view.store focusSet（合法集合保持引用）——[closeout W3 2026-11-26] 整幅投影唯一入口（独立 setAll 面删除，防绕开 focusSet 同步） */
   projectActiveSession(entry: SessionEntry): void
   /** [B5 §5.2] replace 入口的数据归一化：读源=patch 显式 focusSet ?? entry.data.focusSet（新会话初值=空集），按 patch 后 nodes 剪后就地合并 */
   replaceData(entry: SessionEntry, patch: Partial<LineageSession>): void
@@ -163,9 +162,6 @@ export function createSessionProjection(host: ProjectionHost): SessionProjection
     current: () => projector,
     setPatch: (next) => {
       projector?.set(projectPatch(next))
-    },
-    setAll: (data) => {
-      projector?.set(projectAll(data))
     },
     projectActiveSession,
     replaceData: (entry, patch) => {

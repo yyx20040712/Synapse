@@ -7,7 +7,7 @@
  * 契约读写注册表内部面（会话表、活动键、代际计数、单一写路径 apply、活动投影），不 import
  * registry 运行时（类型单向依赖，零环）。
  */
-import type { DragBridge, LineageSession, RegistryProjector, SessionEntry, SessionPatch } from './lineage-session-registry'
+import type { DragBridge, RegistryProjector, SessionEntry, SessionPatch } from './lineage-session-registry'
 import type { SessionLoader } from './lineage-session-loader'
 
 /** 活动投影整幅（LineageStore 全部状态字段） */
@@ -27,15 +27,15 @@ export interface RegistryCore {
   /** 单一写路径（就地合并+仅活动会话投影+通知；拒收异键 folderId） */
   apply(entry: SessionEntry, patch: SessionPatch): void
   notify(): void
-  projectAll(data: LineageSession): SessionProjection
   loader: SessionLoader
   activeFolder(): string
   setActiveFolder(folderId: string): void
   projector(): RegistryProjector | null
   /** [§8.1 步 3/4] 切换活动会话并整幅投影 */
   activate(folderId: string): SessionEntry
-  /** [B5 设计稿 §5.2] 统一活动整幅投影口：按 entry.nodes 归一化 entry.data.focusSet→setAll(entry.data)→
+  /** [B5 设计稿 §5.2] 统一活动整幅投影口：按 entry.nodes 归一化 entry.data.focusSet→整幅写入投影宿主→
    *  同步 view.store focusSet（合法集合保持引用）。rekey 切活动键后必经此口——不得直接
-   *  projector.set(projectAll(...)) 绕开 focusSet（落地=lineage-session-projection） */
+   *  projector.set(projectAll(...)) 绕开 focusSet（落地=lineage-session-projection；独立整幅接口面
+   *  已删——closeout W3 2026-11-26） */
   projectActiveSession(entry: SessionEntry): void
 }

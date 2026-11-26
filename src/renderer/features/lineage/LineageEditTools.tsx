@@ -13,7 +13,10 @@
  *   per-kind——INV-108）+右独立「展开」chevron 钮；列表=LineTypeMenu 拆件（6 色行+
  *   行内改名=一编辑单元——saveLineTypeNames）。
  * - 工具组锁定面：同会话 saving（任一在途写）=选择/线型交互钮禁用（INV-94 编辑锁）；
- *   [B5 §2.3] 非 edit 模式（browse/focus）同钮一律禁用——锁=flushing ∨ mode≠edit；保存/撤销/重做
+ *   [B5 §2.3] 非 edit 模式（browse/focus）同钮一律禁用——锁=图非 ready ∨ flushing ∨ mode≠edit
+ *   （[closeout B1 2026-11-26 隔离一审回炉] 补 graphReady 门：edit × loading/error 五控件同禁
+ *   ——§2.3「loading/error 追加门=可见且禁用」全模式成立；色板行/行内改名经 LineTypeMenu 的
+ *   lock 同门，防经已展开列表把写送入非 ready 图的队列）；保存/撤销/重做
  *   钮按各命令可用性（留宿主 LineageToolbar）。
  * - 工具组直连双 store（view 工具态+lineage 会话/色行名——LineageModeBar 直连 view.store 同型）；
  *   本件零 props——[B5 §3.1] 宿主 LineageToolbar 三模式恒挂载本件（原「是否挂载由宿主按 mode 决定」
@@ -53,6 +56,7 @@ function LineToolIcon({ kind, color }: { kind: 'solid' | 'dashed'; color: string
 export function LineageEditTools(): JSX.Element {
   const lineTypeNames = useLineageStore((s) => s.lineTypeNames)
   const flushing = useLineageStore((s) => s.flushing)
+  const status = useLineageStore((s) => s.status)
   const viewMode = useLineageViewStore((s) => s.mode)
   const tool = useLineageViewStore((s) => s.tool)
   const currentLineColor = useLineageViewStore((s) => s.currentLineColor)
@@ -61,17 +65,18 @@ export function LineageEditTools(): JSX.Element {
   const store = useLineageStore.getState
   const view = useLineageViewStore.getState
   // 工具组锁定面：同会话 saving=选择/线型交互钮禁用（§2.2）；[B5 §2.3] 非 edit 模式同钮一律禁用
-  // （三模式常驻、只禁用不消失）
-  const lock = flushing || viewMode !== 'edit'
+  // （三模式常驻、只禁用不消失）；[closeout B1] 图非 ready（loading/error）追加门——edit 亦禁
+  const lock = status !== 'ready' || flushing || viewMode !== 'edit'
   const listOpen = paletteFor !== null
   const dashed = paletteFor === 'dashed'
   // [回炉 R6] 列表单例（渲染进当前展开钮的锚槽内——[F-UIRES-03 C1] paletteFor
-  // 归属维；per-kind 选色行写）
+  // 归属维；per-kind 选色行写）；[closeout B1] lock 同门下行（选色/改名/进入编辑）
   const linetypeMenu = listOpen ? (
     <LineTypeMenu
       names={lineTypeNames}
       currentColor={currentLineColor[dashed ? 'dashed' : 'solid']}
       anchorKind={dashed ? 'dashed' : 'solid'}
+      lock={lock}
       onPick={(color) => view().pickLineColor(dashed ? 'dashed' : 'solid', color)}
       onRename={(index, name) => {
         // 行内改名=一编辑单元：整批写（恰 6——index 定位色行；属当前 folder 会话）

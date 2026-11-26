@@ -272,3 +272,71 @@ describe('[B5 §3.1] 缩放控件 LineageZoomControls（zoom-badge 迁百分比�
     expect(req('[data-testid="lineage-graph-title"]').textContent).toBe('主图') // 图名显示编排注入值
   })
 })
+
+// ── [B5 §2.3 loading/error 追加门——closeout 隔离一审 B1 回炉 2026-11-26] edit 模式下编辑工具与色板行同门 ──
+// 既有稳定外壳用例自 focus 模式出发（「非 edit 禁用」掩盖了缺 graphReady 门的交错），本组补 edit × loading/error。
+describe('[B5 §2.3·closeout B1] edit × 图非 ready：五编辑控件禁用；色板行不可达；改名零入队', () => {
+  const EDIT_IDS = ['lineage-tool-select', 'lineage-tool-solid', 'lineage-tool-solid-expand', 'lineage-tool-dashed', 'lineage-tool-dashed-expand']
+
+  it('edit × loading 与 edit × error：选择/实线/虚线/两展开钮禁用（可见不消失）；模式钮可用（对照）', () => {
+    mountToolbar('edit')
+    for (const status of ['loading', 'error'] as const) {
+      setState({ status })
+      for (const id of EDIT_IDS) {
+        expect(btn(id).disabled, `edit × ${status}：${id} 应禁用`).toBe(true)
+      }
+      for (const id of ['lineage-mode-edit', 'lineage-mode-browse', 'lineage-mode-focus']) {
+        expect(btn(id).disabled, `edit × ${status}：${id}（三模式钮）应可用`).toBe(false)
+      }
+    }
+    setState({ status: 'ready' })
+    for (const id of EDIT_IDS) {
+      expect(btn(id).disabled, `对照：ready × edit＝${id} 可用`).toBe(false)
+    }
+  })
+
+  it('edit × loading：色板行不可达——点击行名不进入改名输入；点击非当前色行选色无效（列表在场也不放开写口）', () => {
+    mountToolbar('edit')
+    setViewState({ paletteFor: 'solid' }) // ready 期已展开（展开钮禁用只挡新开，不追溯收起在场列表）
+    setState({ status: 'loading' })
+    const names = host?.querySelectorAll('[data-testid="lineage-linetype-name"]') ?? []
+    expect(names.length, '色板列表在场（六行）').toBe(6)
+    act(() => {
+      ;(names[0] as HTMLElement).click()
+    })
+    expect(q('[data-testid="lineage-linetype-name-input"]'), 'loading 期点击行名不得进入改名输入').toBe(null)
+    // [closeout 终审 O2] 行级选色门回归锁：点非当前色行——currentLineColor 不换、列表不收
+    const row = host?.querySelector(`[data-testid="lineage-linetype-row"][data-color="${LINE_TYPE_COLORS[1]}"]`) as HTMLElement
+    act(() => {
+      row.click()
+    })
+    expect(useLineageViewStore.getState().currentLineColor.solid, '锁期选色不得换当前线色').toBe(LINE_TYPE_COLORS[0])
+    expect(useLineageViewStore.getState().paletteFor, '锁期选色不得收起色板（选色未发生）').toBe('solid')
+  })
+
+  it('判别：ready 期已进入改名、图转 loading 后提交——改名不得入队（零写）', async () => {
+    mountToolbar('edit')
+    setViewState({ paletteFor: 'solid' })
+    act(() => {
+      ;(host?.querySelector('[data-testid="lineage-linetype-name"]') as HTMLElement).click()
+    })
+    const setNative = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    const typeDraft = (value: string): void => {
+      const el = req('[data-testid="lineage-linetype-name-input"]') as HTMLInputElement
+      setNative?.call(el, value)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    act(() => { typeDraft('新名') })
+    setState({ status: 'loading' })
+    // 状态切换重渲后重取在场输入（防脱挂节点 dispatch 空转致恒真）；修前本断言通过、写口判别在其后
+    const input2 = req('[data-testid="lineage-linetype-name-input"]') as HTMLInputElement
+    expect(input2.isConnected, '改名输入在场（编辑态跨状态切换存活）').toBe(true)
+    await act(async () => {
+      input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+      for (let i = 0; i < 12; i++) await Promise.resolve()
+    })
+    expect(stubApi.lineage.upsertLineTypes, 'loading 期改名不得落库').not.toHaveBeenCalled()
+    expect(useLineageStore.getState().queue.length, 'loading 期改名不得入队').toBe(0)
+    expect(useLineageStore.getState().lineTypeNames[0], '行名不被 loading 期改名改写').toBe('待命名')
+  })
+})

@@ -52,9 +52,11 @@ export function LineTypeMenu(props: {
   currentColor: string
   /** 列表挂载面（展开钮锚槽——solid/dashed 由容器传） */
   anchorKind: 'solid' | 'dashed'
+  /** [closeout B1 2026-11-26] 行级锁（=容器工具组锁）：图非 ready/saving/非 edit——选色、进入改名、改名提交全禁（防经已展开列表把写送入非 ready 图的队列；已进入的改名草稿在锁出现时丢弃不写） */
+  lock: boolean
   /** 选行（收起+该 kind 当前色变——容器承接 per-kind 写） */
   onPick(color: string): void
-  /** 行内改名提交（一改名=一编辑单元——容器承接 saveLineTypeNames） */
+  /** 行内改名提交（一改名=一编辑单元——容器承接 saveLineTypeNames〔closeout 终审 O1 2026-11-26 笔误勘正〕） */
   onRename(index: number, name: string): void
   /** 点外部收起（[F-UIRES-03 C1] 该次点击不吞——事件正常路由；收起语义由容器承接） */
   onOutside(): void
@@ -90,12 +92,14 @@ export function LineTypeMenu(props: {
     return () => document.removeEventListener('click', onDoc)
   }, [props])
 
-  /** 提交改名（nameOverride=序 B 补提交的 DOM 定案文本——state 可能滞后） */
+  /** 提交改名（nameOverride=序 B 补提交的 DOM 定案文本——state 可能滞后）；
+   *  [closeout B1] 锁出现（图转非 ready/saving/切模式）时丢弃草稿不写——loading 期改名不得入队 */
   const commitRename = (nameOverride?: string): void => {
     if (editingIndex === null) return
     const idx = editingIndex
     const name = (nameOverride ?? draft).trim()
     setEditingIndex(null)
+    if (props.lock) return // 锁期提交=丢弃（零写）
     if (name === '' || name === names[idx]) return // 空名/未变=零写
     props.onRename(idx, name)
   }
@@ -111,6 +115,7 @@ export function LineTypeMenu(props: {
             data-color={color}
             key={color}
             onClick={() => {
+              if (props.lock) return // [closeout B1] 行级锁：选色/提交均禁
               if (editingIndex !== null) {
                 commitRename()
                 return
@@ -156,6 +161,7 @@ export function LineTypeMenu(props: {
                 title="点击重命名"
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (props.lock) return // [closeout B1] 锁期不得进入改名
                   setEditingIndex(i)
                   setDraft(names[i] ?? '')
                 }}
