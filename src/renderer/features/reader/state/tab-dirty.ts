@@ -11,13 +11,12 @@
  * - useTabUnfinalizedAggregate：任一已打开 tab U=1 → true（rail 阅读器角标
  *   输入——App 组合根经 use-save-aggregates 消费）。
  * - useTabAutosaveSignals：quitDirty 的 IO 输入（use-save-aggregates 消费——只算
- *   IO，不把灰点改成永久「待保存」——§10.1）；useTabOpenCount：现无消费方（驻留导出）。
- * - switchTabFlushFirst：切 tab 离场篇 fire-first 立存（§2.5 #31——两 tab 栈
- *   均不动；R1 语义原样）。
+ *   IO，不把灰点改成永久「待保存」——§10.1）。
+ * - switchTabFlushFirst：切 tab 离场篇 fire-first 立存（§2.5 #31——两 tab
+ *   栈均不动；R1 语义原样）。
  *
  * ── 接口层 ──
  * - export function useTabUnfinalizedAggregate(): boolean
- * - export function useTabOpenCount(): number
  * - export interface TabDirtySignalPair / useTabAutosaveSignals()
  * - export function switchTabFlushFirst(targetId): void
  *
@@ -47,13 +46,10 @@ export function useTabUnfinalizedAggregate(): boolean {
   return useReaderStore((s) => s.order.some((id) => s.tabs[id]?.unfinalized === true))
 }
 
-/** [T3-U1] 已打开 tab 数（响应式）——[B5 wave C 2026-11-25] 原消费方=状态条自动保存槽的
- *  「可写面在场」判定（App 组合根聚合注入 StatusBar），随 App 底部状态条整删（用户裁决）
- *  退役；导出按用户裁决驻留不改（useTabUnfinalizedAggregate 同源订阅 order——App 经本
- *  reader 域 facade 取 tab 面，不直引 reader.store），现无消费方。 */
-export function useTabOpenCount(): number {
-  return useReaderStore((s) => s.order.length)
-}
+// [T3-U1] useTabOpenCount（已打开 tab 数，响应式）——原消费方=状态条自动保存槽的「可写面
+// 在场」判定，随 App 状态条整删（用户裁决 2026-11-25）退役；导出一并删除（用户裁决
+// 2026-11-26 追认——总则「只保留仍有其他消费方的部分」，点名驻留的前提〔use-save-aggregates
+// 在消费〕实测不成立）。git 历史可回捞。
 
 /**
  * [T3-U1 回炉 R2/W3 终裁→B4-A R2] tab IO 双源分档（响应式）——quitDirty 的

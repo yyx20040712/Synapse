@@ -65,3 +65,6 @@
   `HISTORY_UNIT_CONFLICT_REASONS`）；系统失败不给该出口。出口只在 edit 模式
   工具组的保存错误行可见，browse/focus 模式下撤销被拒只有 toast——是否
   在这两个模式给入口留 B5 评估。
+  〔B5 演进注记 2026-11-26：R4 edit-only 限制已由 ADR-0033 翻案——告警与
+  丢弃出口挂稳定 Page 外壳，edit/browse/focus 三模式可达；本节保留为历史
+  决策记录。〕
