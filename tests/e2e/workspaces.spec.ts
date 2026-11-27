@@ -195,7 +195,7 @@ async function openReaderNotesPanel(win: Page): Promise<Locator> {
 async function typeReaderNote(win: Page, text: string): Promise<void> {
   const panel = await openReaderNotesPanel(win)
   await panel.getByLabel('笔记正文').fill(text)
-  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
+  await expect(win.getByTestId('reader-toolbar-save')).toBeEnabled()
 }
 
 /** 管理页：新建课题并切换（「创建即切」） */
