@@ -21,11 +21,18 @@
  */
 import type { SaveUiState } from './save-status'
 
-/** [B4-A R2 §10.4] B5/B6 只消费的命令状态（两域同形） */
-export interface HistoryCommandState {
-  saveState: SaveUiState
-  canSave: boolean
+/** undo/redo 方向独立消费（library 只用本形状）。 */
+export interface UndoCommandState {
   canUndo: boolean
   canRedo: boolean
   busy: boolean
 }
+
+/** 显式保存独立消费；saveState 是 IO+U 聚合显示态，canSave 是命令门。 */
+export interface SaveCommandState {
+  saveState: SaveUiState
+  canSave: boolean
+}
+
+/** [B4-A R2 §10.4] B5/B6 兼容形状=两份独立状态的交集投影。 */
+export type HistoryCommandState = UndoCommandState & SaveCommandState
