@@ -54,6 +54,7 @@
  */
 import type { BrowserWindow, HandlerDetails, WebPreferences } from 'electron'
 import type { AppSettings, WindowControlAction } from '../../shared/ipc/schemas'
+import type { UndoRollout } from '../../shared/undo-rollout'
 import { createQuitClosePolicy, type QuitClosePolicy } from './quit-close-policy'
 
 export const WINDOW_SECURITY_FLAGS = {
@@ -78,6 +79,8 @@ export interface MainWindowLoad {
    *  readThemeSync 同步读）——loadURL 拼 query / loadFile {query} 选项承载，
    *  renderer 首帧脚本（public/theme-boot.js）消费；缺省=零附参（旧调用面兼容） */
   startupTheme?: AppSettings['theme']
+  /** bootstrap 显式传入已解析档位；缺字段保留旧调用零附参行为。 */
+  undoRollout?: UndoRollout
 }
 
 export function windowOpenPolicy(): { action: 'deny' } {
@@ -154,12 +157,13 @@ export function createMainWindow(
   if (load.devServerUrl) {
     const url = new URL(load.devServerUrl)
     if (load.startupTheme !== undefined) url.searchParams.set('theme', load.startupTheme)
+    if (load.undoRollout !== undefined) url.searchParams.set('undoRollout', load.undoRollout)
     void win.loadURL(url.toString())
   } else {
-    void win.loadFile(
-      load.entryFile,
-      load.startupTheme === undefined ? undefined : { query: { theme: load.startupTheme } }
-    )
+    const query: Record<string, string> = {}
+    if (load.startupTheme !== undefined) query.theme = load.startupTheme
+    if (load.undoRollout !== undefined) query.undoRollout = load.undoRollout
+    void win.loadFile(load.entryFile, Object.keys(query).length === 0 ? undefined : { query })
   }
 
   return win

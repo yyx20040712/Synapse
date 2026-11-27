@@ -105,6 +105,13 @@ INV-69 页码通道存续）。
   F-CLOSERETRY-01/F-NOTESRAW-01=B6 已交付定案设计，实施另行验收，F-EDGEDBL-01/
   F-NOTECLICK-01/F-XIMPE2E-01/F-RECOV-03/F-EVCTX-02/F-E2EHANG-01/
   F-E2EFLK-01/F-WINGUARD-01=挂账（触发=相关域触及或失败频次升级）。
+  2026-11-28 Batch A 定点：计划复审与独立实现复验均通过；ADR-0034、
+  `history-characterization`、共享栈/registry/run conformance 和启动 off 装配
+  已按内核原子性、generation、领域结算、单次发布和真实导入约束交付。生产档
+  最高 off，生产 reader/lineage 仍走原实现，reader 条件写与启用、lineage/
+  library 分片未交付；用户裁决⑨⑩优先于旧评审⑦的“清空三域”建议。
+  后续 library 已补裁：创建与删除恢复原 ID、创建标签并挂接为一个 main
+  事务和一个历史 unit；快照只实现最新版恢复证据协议，不做旧客户端或旧卷兼容。
 
 ### B6 阅读器保存入口和工具栏（2026-11-27 实现）
 

@@ -16,9 +16,13 @@ import './shared/theme-lineage-tools.css' // [F-LGRAPH-01②] 工具组/线型�
 import './shared/theme-lineage-nav.css'
 import './shared/theme-lineage-card.css' // [F-LGRAPH-01②U4] 卡三层+详情面板皮肤（分域拆件）
 import './shared/theme-lineage-notes.css' // [F-VISFB-62] 画布悬浮笔记层皮肤（分域拆件）
+import { resolveStartupUndoRollout } from '@shared/undo-rollout'
 
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('找不到 #root 挂载点')
+// 统一撤销启动档只在入口读一次；Batch A 生产上限=off，更高档交后续装配消费。
+const undoRollout = resolveStartupUndoRollout(window.location.search)
+if (undoRollout.diagnostic !== null) console.warn(undoRollout.diagnostic)
 // P7X-02 启动闸门（回炉 W1：渲染先行+后台回放）——重放存量（T5 恢复+按序
 // 排空）不阻塞首帧：send 挂起只停在后台排空循环（UI 活），ToastHost 在 App
 // 子树=回放期死信/退化 WARN 实时可见（pre-render toast 的自动消失计时从调用

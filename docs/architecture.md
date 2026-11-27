@@ -215,6 +215,15 @@ internalDepth 豁免。订阅件不持第二份状态。批注动作行删除局
 finalize 在挂载草稿后经 `reader-close-tab.flushNotesForTab` 复用
 `notes.flushNow`；工具栏按钮局部拦截 Space 冒泡，保留原生按钮激活。
 
+统一撤销历史（Batch A）契约驻 `src/renderer/shared/history` 与 ADR-0034。
+共享 registry 是唯一可写历史，并在 reset 前保留已用 generation；领域在
+`open` 时固定 redoOrder——reader 操作/文本层取 future 头，lineage 取 redo 尾，
+深度固定为 `HISTORY_DEPTH_MAX`。命令结算经 `run` 端口在 lane 入口、prepare
+后和 execute 前核对原栈与领域门；领域 settlement 提供反向单元、pending 和
+缺失策略。成功路径在单一通知抑制边界移栈、改写载荷、回显领域状态并订阅通
+知。当前生产档最高 `off`，启动仍走 reader 与 lineage 原实现；library 历史
+未实现。
+
 ### 3.5 域结构速览
 
 **lineage（发展脉络图，第四视图）**
@@ -469,6 +478,7 @@ flowchart TB
 | 0030 | 迁移链基线压缩（001–025 并单件 026） | 仓外档案区 scripts-audits/20261020-snapclean01/design-v2-final.md |
 | 0031 | zod 3→4 安全升级 | docs/adr/ |
 | 0032 | 两域保存/撤销核心（定稿≠落库·可逆历史·per-folder 会话——B4） | docs/adr/ |
+| 0034 | 统一撤销历史契约与 off 装配（共享栈/registry/run/off 上限） | docs/adr/ |
 
 跨模块不变量=docs/invariants.md（「什么必须永远成立」；ADR 记「为什么」）。
 

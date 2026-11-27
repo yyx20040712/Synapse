@@ -45,6 +45,7 @@ import { createRepos } from './db/repos'
 import { createFileStore } from './services/import_/file-store'
 import { createServices } from './services'
 import { readThemeSync } from './services/settings.service'
+import { parseUndoRollout } from '../shared/undo-rollout'
 import { runStartupRecovery } from './services/ai/ai-recovery'
 import { AI_SENSOR_DIR_NAME } from './services/ai_sensor/ai-sensor.service'
 import { resolveTemplateDir } from './services/ai_sensor/zcode-link.service'
@@ -277,6 +278,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
   // renderer 首帧脚本（public/theme-boot.js）写 documentElement.dataset.theme
   // （首帧前生效）。运行时单点真源仍=App effect（两者值一致——INV-71）
   const startupTheme = readThemeSync(userDataDir)
+  const undoRollout = parseUndoRollout(process.env.SYNAPSE_UNDO_ROLLOUT)
+  if (undoRollout.diagnostic !== null) console.warn(undoRollout.diagnostic)
   const window = createMainWindow(
     BrowserWindow,
     {
@@ -284,7 +287,8 @@ export async function bootstrap(app: App): Promise<BootstrapContext> {
       entryFile: join(__dirname, '../renderer/index.html'),
       preloadScript: join(__dirname, '../preload/index.cjs'),
       isDev,
-      startupTheme
+      startupTheme,
+      undoRollout: undoRollout.rollout
     },
     {
       x: clamped.x,
