@@ -1,21 +1,20 @@
 // @vitest-environment jsdom
 /**
- * [F-VISFB-13] 四态保存钮测试（新建，always-active）。
+ * [F-VISFB-13] SaveStateButton 四态与批注编辑器保存反馈测试（always-active）。
  *
  * 锁四链（票面 §5-13：四态图标〔§0-2 锁定裁决——禁仅颜色区分，每态至少
  * 文本/形状/图形双编码〕+A4 删「已保存」类可见字样+A5 按钮重排+键盘与
  * disabled 验收；v207 P2 闸 A1/N-1）：
  * - ① save-status 纯函数新面：deriveSaveUiState 四态优先级（notes 轴三布尔）/
- *   editorSaveUiState 五格映射（批注轴——clean 并入 saved 格）/
  *   deriveSaveButtonView 四格视图模型（钮呈现单源——禁组件内散落 if-else）；
  * - ② SaveStateButton 组件：四态全格（图标 svg+态语文本双编码、sr-only
  *   可见性〔A4〕、spinner、title/aria-label/aria-live=polite）+ disabled
  *   不可操作（.click() 对 disabled 控件零派发=HTML 激活行为面）+ type=button
  *   （Tab 聚焦/Enter/Space 触发=原生 button 语义）；
- * - ③ AnnotationEditor 集成：A5 单行重排（保存/删除右上、取消上移同工具行）/
- *   A1 闸（flush 失败→failed 态呈现→重试可点→点击派发手动保存——禁只接
- *   成功路径）/ dirty 点击=即时手动保存（等价 saveNow 语义）/ A4（saved·
- *   failed 标记 icon+sr-only 零可见字样）/ busy 互斥（saving 呈现）；
+ * - ③ AnnotationEditor 集成：B6 后局部保存钮退役，A5 只保留撤销/重做/删除/
+ *   取消单行；A1 闸（flush 失败→failed 标记可见→Escape 再 flush 重试——禁只接
+ *   成功路径）/ A4（saved·failed 标记 icon+sr-only 零可见字样）/ busy 互斥
+ *   （删除/取消禁用）；
  * - ④ P2 闸 N-1 failed 逃生径两径：删除钮逃生（popups 级 api 派发+收层+
  *   草稿零复活）+切目标 fire-first 注册表承接（AnnotationLayer 级立存第二发）。
  * 模块态隔离：批注用互异 id（f13-*，12 号件先例）；api/Toast/store 桩=
@@ -39,8 +38,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   deriveSaveButtonView,
-  deriveSaveUiState,
-  editorSaveUiState
+  deriveSaveUiState
 } from '../../../src/renderer/shared/save-status'
 
 const mocks = vi.hoisted(() => ({
@@ -169,12 +167,6 @@ function savedFlag(): Element | null {
   return host!.querySelector('[data-testid="annotation-saved-flag"]')
 }
 
-function editorSaveBtn(): HTMLButtonElement {
-  const btn = host!.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')
-  expect(btn).not.toBeNull()
-  return btn!
-}
-
 function buttonByLabel(label: string): HTMLButtonElement {
   const btn = [...host!.querySelectorAll('button')].find((b) => b.textContent === label)
   expect(btn, `按钮存在：${label}`).toBeDefined()
@@ -189,11 +181,9 @@ function annoOf(id: string, comment = ''): Annotation {
 function renderEditor(
   annotation: Annotation,
   props: Partial<Parameters<typeof AnnotationEditor>[0]> = {}
-): { onAutosave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn>; onSave: ReturnType<typeof vi.fn> } {
+): { onAutosave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn>; } {
   const onAutosave = (props.onAutosave ?? vi.fn(() => Promise.resolve(true))) as ReturnType<typeof vi.fn>
-  const onCancel = (props.onCancel ?? vi.fn()) as ReturnType<typeof vi.fn>
-  const onSave = (props.onSave ?? vi.fn()) as ReturnType<typeof vi.fn>
-  // [B4-A 回炉 R5 fixture migration] 裸写体端口必选：夹具写体本就不入链，同一桩兼作裸通道
+  const onCancel = (props.onCancel ?? vi.fn()) as ReturnType<typeof vi.fn>  // [B4-A 回炉 R5 fixture migration] 裸写体端口必选：夹具写体本就不入链，同一桩兼作裸通道
   act(() => {
     root!.render(
       <AnnotationEditor
@@ -201,14 +191,13 @@ function renderEditor(
         rect={RECT}
         busy={props.busy ?? false}
         onCancel={onCancel}
-        onSave={onSave}
         onDelete={props.onDelete ?? vi.fn()}
         onAutosave={onAutosave}
         onAutosaveRaw={onAutosave}
       />
     )
   })
-  return { onAutosave, onCancel, onSave }
+  return { onAutosave, onCancel }
 }
 
 /** race 挂载器（rework 件同形态；文件域共享——③ A1 闸与 ④ N-1 两消费）：
@@ -264,14 +253,6 @@ describe('F-VISFB-13 ① save-status 纯函数 —— 四态推导单源', () =>
     expect(deriveSaveUiState(false, true, false)).toBe('failed')
     expect(deriveSaveUiState(false, false, true)).toBe('dirty')
     expect(deriveSaveUiState(false, false, false)).toBe('saved')
-  })
-
-  it('editorSaveUiState 五格映射：clean 并入 saved，余四格直通', () => {
-    expect(editorSaveUiState('clean')).toBe('saved')
-    expect(editorSaveUiState('dirty')).toBe('dirty')
-    expect(editorSaveUiState('saving')).toBe('saving')
-    expect(editorSaveUiState('saved')).toBe('saved')
-    expect(editorSaveUiState('failed')).toBe('failed')
   })
 
   it('deriveSaveButtonView dirty 格：彩色可点+保存图标+sr-only 态语+title 立即保存', () => {
@@ -377,19 +358,38 @@ describe('F-VISFB-13 ② SaveStateButton 组件 —— 四态图标与 disabled 
     })
     expect(onClick).toHaveBeenCalledTimes(1)
   })
+
+  it('saving 显式命令门可保持可点：mousedown 不夺焦、Enter 触发一次', () => {
+    const onClick = vi.fn()
+    act(() => {
+      root!.render(<SaveStateButton state="saving" disabled={false} onClick={onClick} />)
+    })
+    const btn = host!.querySelector('button')!
+    expect(btn.disabled).toBe(false)
+    act(() => {
+      btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+    })
+    expect(document.activeElement).not.toBe(btn)
+    act(() => {
+      btn.focus()
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+      btn.click()
+    })
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('F-VISFB-13 ③ AnnotationEditor —— A5 重排/A1 闸/A4 标记/busy', () => {
   it('A5 单行重排：保存/删除/取消与撤销/重做同工具行（取消上移、无第二按钮行）', () => {
     renderEditor(annoOf('f13-a5'))
     const undoRow = host!.querySelector('[data-testid="annotation-editor-undo"]')!.closest('div')
-    expect(editorSaveBtn().closest('div')).toBe(undoRow)
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
     expect(buttonByLabel('删除').closest('div')).toBe(undoRow)
     expect(buttonByLabel('取消').closest('div')).toBe(undoRow)
-    expect(host!.querySelectorAll('[data-testid="annotation-editor"] button').length).toBe(5)
+    expect(host!.querySelectorAll('[data-testid="annotation-editor"] button').length).toBe(4)
   })
 
-  it('A1 闸 failed 链（popups 级真卸载锚）：取消 flush 失败→不收层+保存钮 failed 可点→点击派发手动保存重试', async () => {
+  it('A1 闸 failed 链（popups 级真卸载锚）：取消 flush 失败→不收层+failed 标记可见→Escape flush 重试', async () => {
     const a = annoOf('f13-a1')
     const d1 = deferred<{ ok: boolean; data: Annotation }>()
     mocks.apiUpdate.mockImplementation(() => d1.promise)
@@ -410,14 +410,12 @@ describe('F-VISFB-13 ③ AnnotationEditor —— A5 重排/A1 闸/A4 标记/busy
     // popups 级（setEditing 回灌真卸载）：failed 终态不得收层
     expect(setEditingSpy).not.toHaveBeenCalledWith(null)
     expect(host!.querySelector('[data-testid="annotation-editor"]')).not.toBeNull()
-    const save = editorSaveBtn()
-    expect(save.disabled).toBe(false)
-    expect(save.textContent).toBe('重试')
-    expect(save.getAttribute('aria-label')).toBe('重试——上次保存失败')
-    // 重试链：点击保存→手动保存链再派发（apiUpdate 第二发，载荷=草稿值）
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
+    expect(savedFlag()?.textContent).toBe('保存失败')
+    // 失败重试统一走 Escape flush；界面级保存入口在工具栏。
     mocks.apiUpdate.mockImplementation(async ({ annotation }: { annotation: Annotation }) => ({ ok: true, data: annotation }))
     await act(async () => {
-      save.click()
+      pressEscape()
       await vi.advanceTimersByTimeAsync(0)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(2)
@@ -461,19 +459,6 @@ describe('F-VISFB-13 ③ AnnotationEditor —— A5 重排/A1 闸/A4 标记/busy
     })
   })
 
-  it('dirty 点击=即时手动保存（saveNow 等价）：零防抖等待、不混入自动保存链', () => {
-    const onAutosave = vi.fn(() => Promise.resolve(true))
-    const onSave = vi.fn()
-    renderEditor(annoOf('f13-a2'), { onAutosave, onSave })
-    typeInto(textarea(), '即存稿')
-    act(() => {
-      editorSaveBtn().click()
-    })
-    expect(onSave).toHaveBeenCalledTimes(1)
-    expect(onSave).toHaveBeenCalledWith('即存稿')
-    expect(onAutosave).not.toHaveBeenCalled()
-  })
-
   it('A4 saved 标记：图标在场+「已保存」sr-only（零可见字样、textContent 锚保活）', async () => {
     const onAutosave = vi.fn(() => Promise.resolve(true))
     renderEditor(annoOf('f13-a3'), { onAutosave })
@@ -508,12 +493,11 @@ describe('F-VISFB-13 ③ AnnotationEditor —— A5 重排/A1 闸/A4 标记/busy
     expect(stateTextSpan(flag!, '保存失败').classList.contains('sr-only')).toBe(true)
   })
 
-  it('busy 互斥：busy 在途→保存钮禁用+spinner（saving 呈现）', () => {
+  it('busy 互斥：busy 在途→局部保存入口不在场，删除/取消禁用', () => {
     renderEditor(annoOf('f13-b1'), { busy: true })
-    const save = editorSaveBtn()
-    expect(save.disabled).toBe(true)
-    expect(save.querySelector('.animate-spin')).not.toBeNull()
-    expect(save.textContent).toContain('保存中')
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
+    expect(buttonByLabel('删除').disabled).toBe(true)
+    expect(buttonByLabel('取消').disabled).toBe(true)
   })
 })
 

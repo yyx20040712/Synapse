@@ -202,6 +202,19 @@ flowchart TB
 所在块、跨块越界投影回锚块——单栏页同样生效，页眉/页脚/段块净空不再被误卷。
 块分割与授权合同=INV-178；栏几何、闪烁/签名合同沿 INV-142/58 零改。
 
+阅读器命令入口收口（B6）：`ReaderToolbarCommands` 在目录开关与翻页组之间
+渲染工具栏保存、操作层撤销和重做；`ReaderToolbar` 外层改为单排原生横滚轨道。
+`useActiveTabCommandState` 通过 `reader-command-state` 的 per-tab 版本号订阅
+模块级命令态；订阅建立立即失效一次，避免首帧 layout effect 写点早于 passive
+订阅被丢弃。hook 再读 reader/notes store 的活动 tab、PDF、IO 与 U 状态。真相仍驻
+`annotation-undo`、`reader-save-coordinator`、`reader-history-commands` 和两个
+关闭/退出冻结门；按钮的全局冻结读 closing 只读投影，原命令入口保留
+internalDepth 豁免。订阅件不持第二份状态。批注动作行删除局部保存钮，面板保存
+钮退役，显式保存统一进入 tab 级 finalize；普通写在途的 saving 显示不当作保存
+命令禁用门（INV-106/194）。
+finalize 在挂载草稿后经 `reader-close-tab.flushNotesForTab` 复用
+`notes.flushNow`；工具栏按钮局部拦截 Space 冒泡，保留原生按钮激活。
+
 ### 3.5 域结构速览
 
 **lineage（发展脉络图，第四视图）**

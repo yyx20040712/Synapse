@@ -1,8 +1,8 @@
 /**
  * AnnotationEditor —— 标注批注编辑弹层（AnnotationLayer 的交互子件，纯展示）。
  *
- * 数据与副作用全在 AnnotationLayer/AnnotationPopups：本件只收 textarea 文本并
- * 上交（onSave(comment) / onDelete / onCancel），busy 期间按钮禁点防重复提交。
+ * 数据与副作用全在 AnnotationLayer/AnnotationPopups：本件上交删除/取消；
+ * busy 期间动作禁点防重复提交。
  * 弹层挂载在页根内、文本层之上（z 高于划选工具条），按命中矩形的左下沿定位；
  * key 由父级按 annotation.id 传（换条编辑必经卸载重挂，comment 状态不串）。
  *
@@ -32,7 +32,6 @@ export function AnnotationEditor(props: {
   rect: AnnotationRect
   busy: boolean
   onCancel(): void
-  onSave(comment: string): void
   onDelete(): void
   /** 落库写通道（单元/blur/flush 的普通写——写体自入链） */
   onAutosave(comment: string): Promise<boolean>
@@ -43,7 +42,7 @@ export function AnnotationEditor(props: {
   /** 编辑会话终止通知（blur 与卸载——popups 据此结束操作层编辑合并会话） */
   onSessionEnd?(): void
 }): JSX.Element {
-  const { annotation, rect, busy, onCancel, onSave, onDelete, onAutosave, onAutosaveRaw } = props
+  const { annotation, rect, busy, onCancel, onDelete, onAutosave, onAutosaveRaw } = props
   const historyWrite = props.onHistoryWriteRaw
   const hostRef = useRef<HTMLDivElement | null>(null)
   const draft = useAnnotationDraft(
@@ -130,7 +129,6 @@ export function AnnotationEditor(props: {
         canRedo={draft.canRedo}
         onUndo={() => void draft.undoEdit()}
         onRedo={() => void draft.redoEdit()}
-        onSave={() => onSave(comment)}
         onDelete={onDelete}
         onCancel={requestCancel}
       />

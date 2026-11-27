@@ -146,7 +146,7 @@ describe('T3-P4 批注弹层归一 —— AnnotationEditor textarea 底=--panel-
     act(() => {
       root!.render(
         <AnnotationEditor annotation={makeAnnotation('批注草稿')} rect={rect} busy={false}
-          onCancel={() => undefined} onSave={() => undefined} onDelete={() => undefined}
+          onCancel={() => undefined} onDelete={() => undefined}
           onAutosave={async () => true} onAutosaveRaw={async () => true} />
       )
     })

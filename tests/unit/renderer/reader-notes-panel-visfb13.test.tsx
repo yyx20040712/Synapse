@@ -47,9 +47,9 @@ function mount(node: JSX.Element): void {
 }
 
 /** 面板保存钮（annotations=[] 时片段节空态无钮——保存钮即唯一 button，b3 同锚） */
-function saveButton(): HTMLButtonElement {
-  const btn = host?.querySelector('button') ?? null
-  return btn as HTMLButtonElement
+/** B6 后面板只承载 IO/U 文字态；保存动作统一由工具栏/Ctrl+S 承接 */
+function savedText(): string {
+  return host?.querySelector('[aria-live="polite"]')?.textContent ?? ''
 }
 
 describe('F-VISFB-13 ReaderNotesPanel 四态钮消费面', () => {
@@ -68,7 +68,7 @@ describe('F-VISFB-13 ReaderNotesPanel 四态钮消费面', () => {
     vi.useRealTimers()
   })
 
-  it('A4+disabled 验收：clean 态「已保存」sr-only 零可见字样+.click() 零 saveNow 派发', async () => {
+  it('A4 文字态与无钮负锚：clean「已保存」在场；局部保存动作不存在', async () => {
     const { Panel, useReaderStore } = await loadPanel()
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     notesGet.mockResolvedValue({ ok: true, data: null })
@@ -77,18 +77,12 @@ describe('F-VISFB-13 ReaderNotesPanel 四态钮消费面', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
     })
-    const btn = saveButton()
-    expect(btn.disabled).toBe(true)
-    const span = [...btn.querySelectorAll('span')].find((s) => s.textContent === '已保存')
-    expect(span).toBeDefined()
-    expect(span!.classList.contains('sr-only')).toBe(true)
-    act(() => {
-      btn.click()
-    })
+    expect(savedText()).toBe('已保存')
+    expect(host?.querySelector('button')).toBeNull()
     expect(notesSave).not.toHaveBeenCalled()
   })
 
-  it('A5 消费方位：保存钮与「全文笔记」节标同头部行（top-right 一致重排）', async () => {
+  it('A5 消费方位：IO/U 文字态与「全文笔记」节标同头部行', async () => {
     const { Panel, useReaderStore } = await loadPanel()
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     notesGet.mockResolvedValue({ ok: true, data: null })
@@ -98,6 +92,6 @@ describe('F-VISFB-13 ReaderNotesPanel 四态钮消费面', () => {
     })
     const title = [...host!.querySelectorAll('span')].find((s) => s.textContent === '全文笔记')
     expect(title).toBeDefined()
-    expect(saveButton().closest('div')).toBe(title!.closest('div'))
+    expect(host?.querySelector('[aria-live="polite"]')?.closest('div')).toBe(title!.closest('div'))
   })
 })

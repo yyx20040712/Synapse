@@ -6,8 +6,8 @@
  * 先例=annotation-popups-autosave 自 annotation-editor-ux 拆出同因）。
  *
  * 锁链（票面②busy 清单 1-4+③W-1 正身）：
- * - ② 手动保存在途×失败：autosave 等待 settle 后复判→真实写→saved 真值
- *   （旧病=busy 期乐观 true→believing-saved 丢值窗）；
+ * - ② R2 值双证：autosave 成功回执命中 lastPersisted 但 store 现值≠请求值时，
+ *   不得短路——现役 autosave/raw 通路重发真实写；
  * - ② 删除在途×失败：同族收口（值落库非错像）；删除在途×成功：复判存活→
  *   零写返回 false（复活防线沿承）；
  * - ② quit/切目标 flush 撞 busy（句柄消费形态）：等待 settle→真实写→句柄
@@ -34,6 +34,8 @@ import {
   takeAnnotationDraft
 } from '../../../src/renderer/features/reader/interact/annotation-draft-registry'
 import { resetTabLanes } from '../../../src/renderer/shared/tab-write-lane'
+import { enqueueTabTask } from '../../../src/renderer/shared/tab-write-lane'
+import type * as annotationPopupsActionsModule from '../../../src/renderer/features/reader/interact/annotation-popups-actions'
 
 const mocks = vi.hoisted(() => ({
   apiUpdate: vi.fn(),
@@ -45,6 +47,8 @@ const mocks = vi.hoisted(() => ({
   storeRemoveAnnotation: vi.fn(),
   storeNotifyNoteHighlight: vi.fn(),
   pushUndo: vi.fn(),
+  // 现役弹层动作捕获：R2 用 autosave/raw 通路构造首写成功后的同值复判
+  popupActions: undefined as unknown,
   // [回炉 R2] store 现值复判面：tabs 态注入（undo 回写旧值格模拟——真 store 的
   // annotations 投影；逐用例 beforeEach 重置）
   storeTabs: {} as Record<string, { annotations: Annotation[] }>
@@ -92,6 +96,17 @@ vi.mock('../../../src/renderer/features/reader/state/annotation-undo', async (im
   }
 })
 
+vi.mock('../../../src/renderer/features/reader/interact/annotation-popups-actions', async (importOriginal) => {
+  const real = await importOriginal<typeof annotationPopupsActionsModule>()
+  return {
+    useAnnotationPopupActions: (...args: Parameters<typeof real.useAnnotationPopupActions>) => {
+      const actions = real.useAnnotationPopupActions(...args)
+      mocks.popupActions = actions
+      return actions
+    }
+  }
+})
+
 const RECT: AnnotationRect = { page: 0, x: 0.1, y: 0.2, w: 0.3, h: 0.05 }
 
 let root: Root | null = null
@@ -107,6 +122,7 @@ beforeEach(() => {
   mocks.apiDelete.mockReset()
   // [B4-A R1] per-tab lane 模块态隔离（挂起任务不堵后续用例同 tab 入链）
   resetTabLanes()
+  mocks.popupActions = undefined
   ;(globalThis as unknown as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
   host = document.createElement('div')
   document.body.appendChild(host)
@@ -178,7 +194,6 @@ function renderEditor(
         rect={RECT}
         busy={props.busy ?? false}
         onCancel={onCancel}
-        onSave={props.onSave ?? vi.fn()}
         onDelete={props.onDelete ?? vi.fn()}
         onAutosave={onAutosave}
         onAutosaveRaw={onAutosave}
@@ -251,42 +266,33 @@ function LiveMenuWithEditor(props: { annotation: Annotation }): JSX.Element {
   )
 }
 
-/** 四态保存钮（testid 定位——saving 态态语分型，textContent 定位面失效） */
-function saveButton(): HTMLButtonElement {
-  const btn = host!.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')
-  expect(btn).not.toBeNull()
-  return btn!
-}
-
 describe('F-VISFB-15 ② busy 等待复判 + ③ 删除失败补偿 —— AnnotationPopups', () => {
-  it('②busy-1 手动保存在途×失败：autosave 等待 settle 后复判→真实写→saved 真值（非乐观）', async () => {
-    const a = annoOf('f15-b1')
+  it('[R2] lastPersisted 命中但 store 现值≠请求值：autosave/raw 同值写不短路', async () => {
+    const a = annoOf('f15-r2')
+    // undo 链已把 store 现值回写旧值；首写回执命中 lastPersisted，唯 store 现证可否决短路
+    mocks.storeTabs = { 'paper-1': { annotations: [{ ...a, comment: '旧值回写' }] } }
     const d1 = deferred<{ ok: boolean; data?: Annotation; error?: { code: string; message: string } }>()
     mocks.apiUpdate.mockImplementationOnce(() => d1.promise)
-    mocks.apiUpdate.mockResolvedValueOnce({ ok: true, data: { ...a, comment: 'x' } })
+    mocks.apiUpdate.mockResolvedValueOnce({ ok: true, data: { ...a, comment: 'v' } })
     act(() => {
       root!.render(<LivePopups annotation={a} />)
     })
-    typeInto(textarea(), 'x')
-    act(() => {
-      saveButton().click()
-    })
+    const actions = mocks.popupActions as ReturnType<typeof annotationPopupsActionsModule.useAnnotationPopupActions>
+    expect(actions).toBeDefined()
+    typeInto(textarea(), 'v')
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
-    // busy 等待中——零并发写（旧病=乐观 true 即 saved 错像）
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
-    expect(savedFlag()).toBeNull()
+    // raw autosave 须由调用方复合链承载；此处排在首写后，复现 history 预 flush 时序
+    const rawFlight = enqueueTabTask(a.paperId, () => actions.autosaveCommentRaw(a, 'v'))
     await act(async () => {
-      d1.resolve({ ok: false as const, error: { code: 'E', message: '手动写失败' } })
-      await vi.advanceTimersByTimeAsync(0)
+      d1.resolve({ ok: true as const, data: { ...a, comment: 'v' } })
+      await rawFlight
     })
-    // settle 复判：值未落库→真实写链（第二次写）→真实 saved
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(2)
-    expect(mocks.apiUpdate.mock.calls[1]![0].annotation.comment).toBe('x')
+    expect(mocks.apiUpdate.mock.calls[1]![0].annotation.comment).toBe('v')
     expect(savedFlag()?.textContent).toBe('已保存')
-    expect(mocks.storeMarkTabDirty).toHaveBeenCalledWith(a.paperId)
-    expect(mocks.storeClearTabDirty).toHaveBeenCalledWith(a.paperId)
   })
 
   it('②busy-2 删除在途×失败：autosave 等待 settle 后复判存活→真实写（值落库非 believing-saved）', async () => {
@@ -348,36 +354,6 @@ describe('F-VISFB-15 ② busy 等待复判 + ③ 删除失败补偿 —— Annot
     confirmSpy.mockRestore()
   })
 
-  it('[R2] undo 回写旧值窗：lastPersisted 命中但 store 现值≠请求值——不得短路，真实写落库', async () => {
-    const a = annoOf('f15-r2')
-    // undo 链（annotation-undo comment-edit 逆操作直写 api+store upsert）已把
-    // store 现值回写为旧值——second 写源在场（k1 W-1 实锤面）
-    mocks.storeTabs = { 'paper-1': { annotations: [{ ...a, comment: '旧值回写' }] } }
-    const d1 = deferred<{ ok: boolean; data?: Annotation; error?: { code: string; message: string } }>()
-    mocks.apiUpdate.mockImplementationOnce(() => d1.promise)
-    mocks.apiUpdate.mockResolvedValueOnce({ ok: true, data: { ...a, comment: 'v' } })
-    act(() => {
-      root!.render(<LivePopups annotation={a} />)
-    })
-    typeInto(textarea(), 'v')
-    act(() => {
-      saveButton().click()
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
-    })
-    // busy 等待中——零并发写
-    expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
-    await act(async () => {
-      // 手动保存成功：lastPersisted={id,'v'}（值命中面成立——唯 store 现证可否决）
-      d1.resolve({ ok: true as const, data: { ...a, comment: 'v' } })
-      await vi.advanceTimersByTimeAsync(0)
-    })
-    // store 现值 '旧值回写'≠'v'→短路被否决→真实写 #2 落库（终态 saved=DB/editor 一致）
-    expect(mocks.apiUpdate).toHaveBeenCalledTimes(2)
-    expect(mocks.apiUpdate.mock.calls[1]![0].annotation.comment).toBe('v')
-  })
-
   it('②busy-3/4 flush 撞 busy（quit·切目标句柄消费形态）：等待 settle→真实写→句柄真实终态', async () => {
     const a = annoOf('f15-b3')
     const d1 = deferred<{ ok: boolean; data?: Annotation; error?: { code: string; message: string } }>()
@@ -387,8 +363,8 @@ describe('F-VISFB-15 ② busy 等待复判 + ③ 删除失败补偿 —— Annot
       root!.render(<LivePopups annotation={a} />)
     })
     typeInto(textarea(), 'z')
-    act(() => {
-      saveButton().click()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     let flushState: string | undefined
     const flushed = (async () => {

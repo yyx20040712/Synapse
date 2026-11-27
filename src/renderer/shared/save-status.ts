@@ -9,8 +9,7 @@
  * 锁定测试：tests/unit/renderer/notes-panel-status.test.ts（动态 import 已随
  * C-06 迁径本文件 [locked-change]——断言语义原样锁定）。
  * [F-VISFB-13] 四态钮推导面（§0-2 锁定裁决）：SaveUiState 规范态+
- * deriveSaveUiState（notes 轴）/editorSaveUiState（批注轴——clean 并入
- * saved）/deriveSaveButtonView（钮视图单源）。锁定测试：
+ * deriveSaveUiState（notes 轴）/deriveSaveButtonView（钮视图单源）。锁定测试：
  * tests/unit/renderer/save-state-button.test.tsx ①（always-active）。
  */
 
@@ -77,14 +76,6 @@ export function aggregateSaveUiState(input: SaveAggregateInput): SaveUiState {
   if (input.busy) return 'saving'
   if (input.error) return 'failed'
   if (input.unfinalized || input.pending) return 'dirty'
-  return 'saved'
-}
-
-/** [F-VISFB-13] 批注轴五格映射：clean 并入 saved（无待存=已存基线），余四格直通 */
-export function editorSaveUiState(s: EditorSaveState): SaveUiState {
-  if (s === 'saving') return 'saving'
-  if (s === 'failed') return 'failed'
-  if (s === 'dirty') return 'dirty'
   return 'saved'
 }
 

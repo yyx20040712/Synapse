@@ -5,7 +5,7 @@
  *
  * 覆盖面（blocked=冻结期拒绝 / allowed=closing 外正常）：
  * - 关 tab/切 tab 用户命令闸（requestCloseTab〔reader-close-tab〕/switchTabFlushFirst）；
- * - 标注命令族（W1）：saveComment/deleteAnnotation（annotation-popups-actions
+ * - 标注命令族（W1）：deleteAnnotation（annotation-popups-actions
  *   用户入口）+ annotation-undo 逆写；autosaveComment 不闸=timer/收口驱动非
  *   用户命令入口（quit flush ② 经 draft.flush→onAutosave 消费——闸则自锁，
  *   回炉申报依据）；
@@ -206,27 +206,6 @@ describe('quit-gate-sources —— 逐写源判别（F-VISFB-64 回炉 W1/W2/W7�
     const { chooseCloseTabDecision } = await import('../../../src/renderer/features/reader/state/reader-close-tab')
     chooseCloseTabDecision('p1', false)
     await expect(closing).resolves.toBe(false)
-  })
-
-  it('标注 saveComment（W1 用户入口）：冻结期拒绝零 api 写；closing 外真实写', async () => {
-    const actions = mountProbe()
-    const anno = { ...makeAnnotation(''), id: 'anno-w1a', paperId: 'paper-1' }
-    useReaderStore.setState({
-      tabs: { 'paper-1': makeTab('paper-1', { annotations: [anno] }) },
-      order: ['paper-1'],
-      activeId: 'paper-1'
-    })
-    setQuitClosing(true)
-    await actions.saveComment(anno, '冻结窗内保存')
-    expect(mocks.annoWrite).not.toHaveBeenCalled()
-    setQuitClosing(false)
-    mocks.annoWrite.mockImplementationOnce(async () => ({
-      ok: true as const,
-      data: { ...anno, comment: '正常保存' }
-    }))
-    await actions.saveComment(anno, '正常保存')
-    await drain()
-    expect(mocks.annoWrite).toHaveBeenCalledTimes(1)
   })
 
   it('标注 deleteAnnotation（W1 用户入口）：冻结期拒绝（零 confirm 零 api）；closing 外删除链达 api', async () => {

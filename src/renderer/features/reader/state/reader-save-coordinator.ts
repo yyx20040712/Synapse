@@ -29,11 +29,12 @@
  *   经注册表句柄与 per-tab lane 接入，本件不新增跨域 import——IO 查态（含总评
  *   pending/saveFailed）经 reader-close-tab 的 notes 白名单面取。
  */
-import { allDraftFlushHandles } from '../interact/annotation-draft-registry'
+import { allDraftFlushHandles, type AnnotationDraftFlush } from '../interact/annotation-draft-registry'
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import { laneDrain } from '../../../shared/tab-write-lane'
 import { clearRedo, endCommentEditSession } from './annotation-undo'
-import { tabFlushError, tabNotePending } from './reader-close-tab'
+import { notifyReaderCommandState } from './reader-command-state'
+import { flushNotesForTab, tabFlushError, tabNotePending } from './reader-close-tab'
 import { opHistoryInFlight } from './reader-history-commands'
 import { useReaderStore } from './reader.store'
 import { clearTabTextRedo } from './reader-text-history'
@@ -48,9 +49,9 @@ export function finalizeInFlight(paperId: string): boolean {
 }
 
 /** 句柄收口（同步 throw/异步 rejection 归 'failed'——tab-dirty 复扫先例；返回值=句柄终态） */
-function runHandle(handle: () => Promise<unknown>): Promise<unknown> {
+function runHandle(handle: AnnotationDraftFlush): Promise<unknown> {
   return Promise.resolve()
-    .then(handle)
+    .then(() => handle({ retryFailed: false }))
     .catch(() => 'failed')
 }
 
@@ -64,6 +65,7 @@ export async function finalizeTab(paperId: string): Promise<boolean> {
   // #20：同对象已有 finalize 或 history 在途时拒绝重复命令
   if (finalizing.has(paperId) || opHistoryInFlight(paperId)) return false
   finalizing.add(paperId)
+  notifyReaderCommandState(paperId)
   try {
     // [B4-A R2 §2.5 #20] 捕获 finalizeRevision（保存期间有新编辑的判据——#22）
     const revAtStart = useReaderStore.getState().tabs[paperId]?.editRevision ?? 0
@@ -71,8 +73,12 @@ export async function finalizeTab(paperId: string): Promise<boolean> {
     //    只 drain 其写链；clean 控制器零写）
     const handles = useReaderStore.getState().activeId === paperId ? allDraftFlushHandles() : []
     const states = await Promise.all(handles.map(runHandle))
-    // #23：预 flush 失败——redo/undo/U 全保留，可重试（真实写失败由写路径呈现）
+    // #23：任一挂载句柄失败——立刻保留可见失败与显式重试，禁止总评收口在
+    // 用户看见失败前自动二次写。
     if (states.some((s) => s === 'failed')) return false
+    // [B6 返工 4] 卸载后的失败总评不在挂载句柄表；flushNow 复用关闭流程的
+    // 在途收敛/失败重试语义，再统一 drain 和复查 IO。
+    await flushNotesForTab(paperId)
     // 2. drain 该 tab 写链（排队任务全部落定）
     await laneDrain(paperId)
     // [B4-A R2 §2.5 #20/#23] drain 后复查该 tab 最新 IO（§4.3 #4：drain 兑现≠
@@ -93,6 +99,7 @@ export async function finalizeTab(paperId: string): Promise<boolean> {
     return true
   } finally {
     finalizing.delete(paperId)
+    notifyReaderCommandState(paperId)
   }
 }
 

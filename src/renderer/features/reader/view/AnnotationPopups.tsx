@@ -98,7 +98,6 @@ export function AnnotationPopups(props: {
           rect={editing.rect}
           busy={busy}
           onCancel={() => setEditing(null)}
-          onSave={(comment) => void actions.saveComment(editing.annotation, comment)}
           onDelete={() => void actions.deleteAnnotation(editing.annotation)}
           onAutosave={(comment) => actions.autosaveComment(editing.annotation, comment)}
           onAutosaveRaw={(comment) => actions.autosaveCommentRaw(editing.annotation, comment)}

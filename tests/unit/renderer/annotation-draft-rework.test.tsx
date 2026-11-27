@@ -173,7 +173,6 @@ function renderEditor(
         rect={RECT}
         busy={props.busy ?? false}
         onCancel={onCancel}
-        onSave={props.onSave ?? vi.fn()}
         onDelete={props.onDelete ?? vi.fn()}
         onAutosave={onAutosave}
         onAutosaveRaw={onAutosave}
@@ -415,7 +414,6 @@ describe('F-VISFB-12 回炉轮 1 —— 草稿恢复缺口/查态/删除失败/S
             rect={RECT}
             busy={false}
             onCancel={vi.fn()}
-            onSave={vi.fn()}
             onDelete={vi.fn()}
             onAutosave={onAutosave}
             onAutosaveRaw={onAutosave}

@@ -57,6 +57,7 @@ import type { AnnotationColor } from '@shared/models/annotation'
 import { ANNOTATION_COLORS } from '@shared/constants'
 import { COLOR_LABEL, COLOR_SWATCH } from '../anchors/annotation-style'
 import { ICON_FIT_WIDTH, ICON_PAGE_DOUBLE, ICON_PAGE_SINGLE, ICON_RESEARCH_PANEL, ICON_SELECT, ICON_SIDEBAR_OUTLINE } from './toolbar-icons'
+import { ReaderToolbarCommands } from './ReaderToolbarCommands'
 import { ReaderToolbarNav } from './ReaderToolbarNav'
 
 /** 缩放步进（0.1，浮点累积经 round2 消除）——单源导出：工具栏按钮与快捷键装配
@@ -110,9 +111,10 @@ export function ReaderToolbar(props: {
   const btnText = 'rdr-tool-btn rdr-tool-btn-text shrink-0 disabled:opacity-50'
 
   return (
-    // [T3-P4] 工具栏皮肤=.rdr-toolbar（mockup .toolbar：panel 底+line 下缘——
-    // 金族退役；padding/gap 由组件承载）；文档流位置零变：纯皮肤票
-    <div className="rdr-toolbar flex shrink-0 flex-wrap items-center gap-1 px-3.5 py-1.5 text-xs">
+    // [B6] 壳保皮肤；滚动轨道原生横滚且可键盘进入；内容行单排不折行。
+    <div className="rdr-toolbar-shell">
+      <div className="rdr-toolbar-scroll" role="toolbar" aria-label="阅读器工具栏" tabIndex={0}>
+        <div className="rdr-toolbar flex items-center gap-1 px-3.5 py-1.5 text-xs">
       {/* [B1 批] 左端首位：目录侧栏开关（开合唯一入口——收起钮/浮动 chevron
           退役；on 态=rdr-tool-btn on 类，与选择模式/双页钮同语言） */}
       <button
@@ -125,6 +127,8 @@ export function ReaderToolbar(props: {
       >
         {ICON_SIDEBAR_OUTLINE}
       </button>
+
+      <ReaderToolbarCommands />
 
       {/* 翻页组（[B1 批] 拆驻 ReaderToolbarNav——行为零变） */}
       <ReaderToolbarNav page={page} totalPages={totalPages} pageStep={pageStep} onNavigate={onNavigate} />
@@ -232,6 +236,8 @@ export function ReaderToolbar(props: {
       >
         {ICON_RESEARCH_PANEL}
       </button>
+        </div>
+      </div>
     </div>
   )
 }

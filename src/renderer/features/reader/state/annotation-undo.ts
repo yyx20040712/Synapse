@@ -37,6 +37,7 @@
  */
 import type { Annotation, AnnotationInput } from '@shared/models/annotation'
 import { HISTORY_DEPTH_MAX } from '@shared/constants'
+import { notifyReaderCommandState } from './reader-command-state'
 
 /** 深度上限（共享单源再导出——本地 50 旧常量退役） */
 export const OP_DEPTH_MAX = HISTORY_DEPTH_MAX
@@ -93,6 +94,7 @@ export function pushUndo(paperId: string, input: ReaderOperationInput): ReaderOp
   if (s.past.length > OP_DEPTH_MAX) {
     s.past.splice(0, s.past.length - OP_DEPTH_MAX)
   }
+  notifyReaderCommandState(paperId)
   return entry
 }
 
@@ -152,6 +154,7 @@ export function settleUndo(paperId: string, entry: ReaderOperationEntry): void {
   if (s.future.length > OP_DEPTH_MAX) {
     s.future.length = OP_DEPTH_MAX
   }
+  notifyReaderCommandState(paperId)
 }
 
 /** redo 顶（不弹；空栈 null） */
@@ -173,11 +176,13 @@ export function settleRedo(paperId: string, entry: ReaderOperationEntry): void {
   if (s.past.length > OP_DEPTH_MAX) {
     s.past.splice(0, s.past.length - OP_DEPTH_MAX)
   }
+  notifyReaderCommandState(paperId)
 }
 
 /** closeTab 清理接缝（双栈与合并会话随 tab 关闭丢弃） */
 export function clearStack(paperId: string): void {
   delete stacks[paperId]
+  notifyReaderCommandState(paperId)
 }
 
 /** 显式保存 finalize：只清 redo、undo 保留（§3 显式保存行） */
@@ -185,6 +190,7 @@ export function clearRedo(paperId: string): void {
   const s = stacks[paperId]
   if (s !== undefined) {
     s.future = []
+    notifyReaderCommandState(paperId)
   }
 }
 

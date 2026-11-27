@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * [F-UIRES-03 B3] ReaderNotesPanel 四态保存钮 + 卸载面 flush —— 组件级契约
+ * [F-UIRES-03 B3] ReaderNotesPanel 保存状态文字 + 卸载面 flush —— 组件级契约
  * （always-active，不经 guardedDescribe——INV-106 强制面）。
  *
- * 覆盖：四态钮（clean 禁用「已保存」/dirty 可点「保存」/saving 禁用 spinner
- * 「保存中」/error 可点「重试」）；点击=清防抖+立即落盘；error 点击重试载荷=
- * pending 合并态；卸载三族之关面板族（pending∧error 卸载→立即重试一次）与
+ * 覆盖：四态文字（clean「已保存」/dirty「未保存」/saving「保存中」/error
+ * 「保存失败」）；B6 后面板不渲染保存钮，定稿统一走工具栏保存/Ctrl+S；
+ * 卸载三族之关面板族（pending∧error 卸载→立即重试一次）与
  * 切文献族（saving∧pending 在途→flush 等在途完成后立即落盘）。切走切回/
  * 退出两族=notes-store-b3.test.ts（store 级）。
  */
@@ -70,13 +70,13 @@ function savedData(contentMd: string, updatedAt: string) {
   return { ok: true as const, data: { id: 'n-1', paperId: 'p-1', contentMd, createdAt: 't', updatedAt } }
 }
 
-/** 面板唯一按钮（annotations=[] 时片段节空态无钮——保存钮即唯一 button） */
-function saveButton(): HTMLButtonElement {
-  const btn = host?.querySelector('button') ?? null
-  return btn as HTMLButtonElement
+/** 面板保存状态文字（B6 后面板只保留 IO/U 文字态，不再渲染保存钮） */
+function savedText(): string {
+  const span = host?.querySelector('[aria-live="polite"]')
+  return span?.textContent ?? ''
 }
 
-describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
+describe('F-UIRES-03 B3 ReaderNotesPanel 保存状态文字+卸载面', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
@@ -92,7 +92,7 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
     vi.useRealTimers()
   })
 
-  it('四态钮全格：clean 禁用「已保存」→dirty 可点「保存」→saving 禁用「保存中」→error 可点「重试」', async () => {
+  it('四态文字全格：clean 已保存→dirty 未保存→saving 保存中→error 保存失败', async () => {
     const { Panel, useReaderStore } = await loadPanel()
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     notesGet.mockResolvedValue({ ok: true, data: null })
@@ -103,44 +103,35 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
-    // clean：灰暗禁用「已保存」
-    const btn = saveButton()
-    expect(btn.disabled).toBe(true)
-    expect(btn.textContent).toBe('已保存')
-    // [RR1 k1-W3] 状态播报通道：四态钮承载 aria-live=polite（原 role=status
-    // span 随钮面文字合一退役——文本变化即 AT 播报；四态迁移↔钮文案一一对应）
-    expect(btn.getAttribute('aria-live')).toBe('polite')
+    // clean：已保存文字态。
+    expect(savedText()).toBe('已保存')
+    const status = host?.querySelector('[aria-live="polite"]')
+    expect(status?.getAttribute('aria-live')).toBe('polite')
+    expect(host?.querySelector('button')).toBeNull()
 
-    // dirty：主色可点「保存」
+    // dirty：面板文字态为「未保存」，定稿入口在工具栏。
     const body = host?.querySelector('textarea[aria-label="笔记正文"]') as HTMLTextAreaElement
     await act(async () => {
       typeInto(body, '草稿')
     })
-    expect(btn.disabled).toBe(false)
-    expect(btn.textContent).toBe('保存')
+    expect(savedText()).toBe('未保存')
 
-    // saving：禁用 spinner+「保存中」（⟳=共享 Button loading 态图标——textContent 含图标符）
+    // saving：面板文字态为「保存中」。
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     expect(notesSave).toHaveBeenCalledTimes(1)
-    expect(btn.disabled).toBe(true)
-    expect(btn.textContent).toContain('保存中')
-    expect(btn.querySelector('.animate-spin')).not.toBeNull()
+    expect(savedText()).toBe('保存中')
 
-    // error：红描边可点「重试」
+    // error：面板文字态为「保存失败」。
     await act(async () => {
       rejectSave(new Error('保存失败'))
       await flushMicro()
     })
-    expect(btn.disabled).toBe(false)
-    expect(btn.textContent).toBe('重试')
-    // [RR1 k1-N2] 无障碍名以可见文字「重试」开头（WCAG 2.5.3 label-in-name；
-    // 兼保存失败原因播报——aria-label 覆盖播报文本）
-    expect(btn.getAttribute('aria-label')).toBe('重试——上次保存失败')
+    expect(savedText()).toBe('保存失败')
   })
 
-  it('点击=清防抖+立即落盘：dirty 态点击→未到 1.5s 即派发且 timer 清零', async () => {
+  it('idle 定时落盘：dirty 态到 1.5s 即派发且 timer 清零', async () => {
     const { Panel, useReaderStore, useNotesStore } = await loadPanel()
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     notesGet.mockResolvedValue({ ok: true, data: null })
@@ -153,29 +144,24 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
     await act(async () => {
       typeInto(body, '草稿')
     })
-    expect(vi.getTimerCount()).toBe(1) // 防抖在排
+    expect(vi.getTimerCount()).toBe(1) // idle 定时器在排
 
     await act(async () => {
-      saveButton().dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    // [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(notesSave).toHaveBeenCalledTimes(1) // 立即落盘（未推进定时器）
     expect(notesSave.mock.calls[0]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' })
-    // [B4-A R1 迁移·断言翻转] store 防抖通道零 timer；仍在排的 1 个=文本控制器的
-    // 空闲计时（单元提交用——不随点击清除；到期时值已落库→零写）
-    expect(vi.getTimerCount()).toBe(1)
+    // [B6] 面板无点击清防抖动作；idle 落库后文本控制器计时器也已归零。
+    expect(vi.getTimerCount()).toBe(0)
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false)
-    expect(saveButton().textContent).toBe('已保存') // 落库后 clean
+    expect(savedText()).toBe('已保存')
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     expect(notesSave).toHaveBeenCalledTimes(1)
   })
 
-  it('error 态点击→saving（载荷=pending 合并态——消费时点二）', async () => {
+  it('error idle 落库失败：面板失败态可见且不自动重试', async () => {
     const { Panel, useReaderStore, useNotesStore } = await loadPanel()
     useReaderStore.setState({ tabs: { 'p-1': makeTab('p-1') }, order: ['p-1'], activeId: 'p-1' })
     notesGet.mockResolvedValue({ ok: true, data: null })
@@ -191,22 +177,18 @@ describe('F-UIRES-03 B3 ReaderNotesPanel 四态保存钮+卸载面', () => {
       typeInto(body, '草稿')
     })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100) // 防抖到期：失败→error
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
-    expect(saveButton().textContent).toBe('重试')
+    expect(savedText()).toBe('保存失败')
+    expect(notesSave).toHaveBeenCalledTimes(1)
+    expect(useNotesStore.getState().noteByPaper['p-1']?.saveFailed).toBe(true)
+    expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
 
     await act(async () => {
-      saveButton().dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      // [B4-A R1 迁移·async 调用] 写体经 per-tab lane 入链——API 派发在微任务
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
-    expect(notesSave).toHaveBeenCalledTimes(2)
-    expect(notesSave.mock.calls[1]?.[0]).toMatchObject({ paperId: 'p-1', contentMd: '草稿' }) // 合并态载荷
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0)
-    })
-    expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false) // 重试成功→clean
-    expect(saveButton().textContent).toBe('已保存')
+    expect(notesSave).toHaveBeenCalledTimes(1)
+    expect(savedText()).toBe('保存失败')
   })
 
   it('序列族·关面板：pending∧error 卸载→卸载前以 pending 合并态立即重试落盘一次', async () => {

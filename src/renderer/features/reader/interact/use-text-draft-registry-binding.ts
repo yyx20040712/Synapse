@@ -15,6 +15,7 @@
  */
 import { useLayoutEffect } from 'react'
 import {
+  type AnnotationDraftFlush,
   registerDraftFlush,
   saveAnnotationDraft,
   takeAnnotationDraft,
@@ -42,7 +43,7 @@ export interface TextDraftBindingDeps {
   /** 恢复携带（调用侧置 restored 标志+按值/failed 应用恢复态） */
   applyRestore(comment: string, failed: boolean): void
   wasRestored(): boolean
-  flush(): Promise<unknown>
+  flush: AnnotationDraftFlush
   dispose(): void
   /** 卸载即收口（总评 true：离场先关闭单元并无在途写时 fire flush——其空闲计时
    *  随卸载消亡；批注编辑器 false：未尝试 dirty 不入表锚，由切目标/离场挂点承接） */
@@ -63,7 +64,7 @@ export function useTextDraftRegistryBinding(deps: TextDraftBindingDeps): void {
     if (entry !== null && entry.comment !== d.initial) {
       d.applyRestore(entry.comment, entry.failed)
     }
-    registerDraftFlush(id, () => d.flush(), d.rawPreflush?.())
+    registerDraftFlush(id, (options) => d.flush(options), d.rawPreflush?.())
     return () => {
       // 先闭合单元+条件立存（链任务不随卸载消亡），再销毁控制器
       if (d.closeoutOnUnmount) d.closeout()

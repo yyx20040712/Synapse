@@ -47,7 +47,7 @@ async function flushAllDraftHandles(): Promise<boolean> {
   const states = await Promise.all(
     allDraftFlushHandles().map((flush) =>
       Promise.resolve()
-        .then(flush)
+        .then(() => flush())
         .then((s) => (typeof s === 'string' ? s : 'failed'), () => 'failed')
     )
   )

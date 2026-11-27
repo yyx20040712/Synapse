@@ -7,15 +7,12 @@
  *   撤销/重做/删除/取消图标+title 同源（data-testid 受锁锚零变）；sr-only
  *   span 保 textContent/accessible name；saved/failed 标记=图标+sr-only 态语
  *   （A4 删「已保存」类可见字样——textContent/accessible name 双面保活）。
- * - [F-VISFB-13] 四态保存钮：状态轴=editorSaveUiState（save-status 单源），
- *   动作轴=onSave 手动保存链（dirty 点击即存/failed 点击重试）；busy 在途
- *   归一 saving 格；标记不在场时由保存钮承载右对齐（ml-auto）。
+ * - [B6 F-ANNOSAVE-01] 局部保存钮退役；saved/failed 图标保留写反馈。
+ *   failed 重试=二次 Escape（flush）；tab 定稿=工具栏保存/Ctrl+S。
  * - 纯受控：全部动作经 props 上交，零状态零副作用。
  */
 import { ICON_CHECK, ICON_REDO, ICON_RETRY, ICON_TRASH, ICON_UNDO, ICON_X } from '../../../shared/icons'
 import { ANNOTATION_BTN_CLASS as btn } from '../anchors/annotation-style'
-import { SaveStateButton } from '../../../shared/ui/SaveStateButton'
-import { editorSaveUiState } from '../../../shared/save-status'
 import type { EditorSaveState } from '../../../shared/save-status'
 
 export function AnnotationEditorActions(props: {
@@ -25,11 +22,10 @@ export function AnnotationEditorActions(props: {
   canRedo: boolean
   onUndo(): void
   onRedo(): void
-  onSave(): void
   onDelete(): void
   onCancel(): void
 }): JSX.Element {
-  const { saveState, busy, canUndo, canRedo, onUndo, onRedo, onSave, onDelete, onCancel } = props
+  const { saveState, busy, canUndo, canRedo, onUndo, onRedo, onDelete, onCancel } = props
   const flagged = saveState === 'saved' || saveState === 'failed'
   return (
     <div className="flex items-center gap-1">
@@ -69,13 +65,7 @@ export function AnnotationEditorActions(props: {
           <span className="sr-only">{saveState === 'failed' ? '保存失败' : '已保存'}</span>
         </span>
       )}
-      <SaveStateButton
-        testId="annotation-editor-save"
-        state={editorSaveUiState(saveState)}
-        busy={busy}
-        className={flagged ? undefined : 'ml-auto'}
-        onClick={onSave}
-      />
+      {!flagged && <span className="ml-auto" />}
       <button
         type="button"
         className={`${btn} syn-icon-btn`}

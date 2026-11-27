@@ -6,17 +6,29 @@
  * lineage.store/lineage-note-draft/annotation 族——回炉 W1/W2 扩）；治理条款
  * =INV-22（新增 quit dirty 写面须先登记 flush 收口并挂本门）。
  */
+import { notifyQuitFreezeChanged } from '../shared/command-freeze-events'
+
 let closing = false
 let internalDepth = 0
 
 /** 置位/复位（bridge：收帧置位；abort/按脏收口/5000ms 有界复位解除） */
 export function setQuitClosing(value: boolean): void {
   closing = value
+  notifyQuitFreezeChanged(value)
 }
 
 /** 用户写闸：closing 且非豁免域=true（写源入口在 enqueue/store 变更/句柄修改之前同步检查） */
 export function quitWriteBlocked(): boolean {
   return closing && internalDepth === 0
+}
+
+/**
+ * [B6 返工] 按钮投影用的“用户命令持续冻结”只读视图：只看 closing，不看
+ * internalDepth。退出 flush 的同步豁免只属于原命令入口；内部收口期重渲染
+ * 不得把界面命令重新启用。
+ */
+export function quitUserCommandFrozen(): boolean {
+  return closing
 }
 
 /** flush 内部收口豁免域=**同步域**（[回炉 B1] 收窄）：fn 现值执行期间放行——

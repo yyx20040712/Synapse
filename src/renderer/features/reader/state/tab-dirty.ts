@@ -32,7 +32,9 @@ import { useReaderStore } from './reader.store'
 import { useNotesStore } from '../../notes/notes.store'
 import { fireAllDraftFlushes } from '../interact/annotation-draft-registry'
 import { useShallow } from 'zustand/react/shallow'
-import { quitWriteBlocked } from '../../../app/quit-closing-gate'
+import { useCallback, useSyncExternalStore } from 'react'
+import { readerCommandStateVersion, subscribeReaderCommandState } from './reader-command-state'
+import { quitUserCommandFrozen, quitWriteBlocked } from '../../../app/quit-closing-gate'
 import { aggregateSaveUiState } from '../../../shared/save-status'
 import { tabWriteBlocked } from './tab-closing-gate'
 import type { HistoryCommandState } from '../../../shared/history-command'
@@ -100,11 +102,22 @@ export function useActiveTabCommandState(): HistoryCommandState {
     return id === null ? undefined : s.tabs[id]
   })
   const note = useNotesStore((s) => (activeId === null ? undefined : s.noteByPaper[activeId]))
+  // [B6] 模块级 mutex/frozen 真值用按 tab 订阅刷新；快照是稳定原始布尔。
+  const subscribeCommandMutex = useCallback(
+    (listener: () => void) => (activeId === null ? () => undefined : subscribeReaderCommandState(activeId, listener)),
+    [activeId]
+  )
+  useSyncExternalStore(
+    subscribeCommandMutex,
+    () =>
+      (activeId === null ? 0 : readerCommandStateVersion(activeId)),
+  )
   // §10.4 busy=finalize/history 在途（普通写 saving 不置——命令互斥判据）
   const busy = activeId !== null && (finalizeInFlight(activeId) || opHistoryInFlight(activeId))
   // §10.1 saving=保存对象写机械在途（finalize/flush/history——含在途普通写）
   const writeInFlight = busy || note?.saving === true
-  const frozen = quitWriteBlocked() || (activeId !== null && tabWriteBlocked(activeId))
+  // [B6 返工] 按钮持续读用户冻结事实；runQuitInternal 只豁免原命令入口。
+  const frozen = quitUserCommandFrozen() || (activeId !== null && tabWriteBlocked(activeId))
   const ready = tab?.status === 'ready'
   return {
     saveState: aggregateSaveUiState({
@@ -114,8 +127,8 @@ export function useActiveTabCommandState(): HistoryCommandState {
       unfinalized: tab?.unfinalized === true
     }),
     canSave: activeId !== null && ready && !busy && !frozen,
-    canUndo: activeId !== null && !frozen && stackDepth(activeId) > 0,
-    canRedo: activeId !== null && !frozen && redoDepth(activeId) > 0,
+    canUndo: activeId !== null && ready && !frozen && stackDepth(activeId) > 0,
+    canRedo: activeId !== null && ready && !frozen && redoDepth(activeId) > 0,
     busy
   }
 }

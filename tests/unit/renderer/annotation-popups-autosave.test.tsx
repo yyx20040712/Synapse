@@ -3,10 +3,10 @@
  * [F-A11] AnnotationPopups 自动保存接线面测试（自 annotation-editor-ux.test.tsx
  * 拆出 2026-09-09 门二轮——该件超 ESLint max-lines 500；本件锁接线行为）。
  *
- * 锁：自动保存=saveComment 静默变体（api 链+store 同步+pushUndo 会话单
- * entry、不 setEditing 收层；失败 markTabDirty+toast）+ [W-A 门二] busy
- * 毫秒级串行互斥（autosave 在途→手动按钮禁用零写；手动在途→autosave 被
- * busyRef 挡、store 终值=手动值）。模块替身：api/client、Toast、reader.store、
+ * 锁：自动保存=普通写通道（api 链+store 同步+pushUndo 会话单 entry、不
+ * setEditing 收层；失败 markTabDirty+toast）+ [W-A 门二] busy 串行互斥
+ * （autosave 在途→局部保存入口不在场，后续 idle 定时零并发）。模块替身：
+ * api/client、Toast、reader.store、
  * annotation-undo（unwrap 对齐真实语义 await 后判 ok；ApiClientError 双参）。
  * React act 环境对齐 annotation-layer.test.tsx；输入模拟对齐 lineage-tag-edit。
  */
@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => ({
   // Toast 入口 spy=共享工厂实例（下方顶层语句替换——体内经 mocks.showToast 断言）
   showToast: undefined as unknown as ReturnType<typeof vi.fn>,
   // [F-VISFB-15 回炉 R2] store tabs 投影（生产形现值注入——见 reader.store
-  // mock 处注；W-A 反向竞态格=手动保存同值成功后的 store 现值 '手动值'）
+  // mock 处注；反向竞态格用已落库现值承载值复判）
   storeTabs: {
     'paper-1': {
       annotations: [{ id: 'anno-1', paperId: 'paper-1', comment: '手动值' }]
@@ -57,8 +57,7 @@ vi.mock('../../../src/renderer/features/reader/state/reader.store', () => ({
       removeAnnotation: mocks.storeRemoveAnnotation,
       notifyNoteHighlight: mocks.storeNotifyNoteHighlight,
       // [F-VISFB-15 回炉 R2] store 现值复判面（annotation-popups-actions 值
-      // 复判读 getState().tabs）：生产形 tabs 投影注入——W-A 反向竞态格的手动
-      // 保存 '手动值' 成功后 store 现值（断言零改，仅 mock 生产保真扩展）
+      // 复判读 getState().tabs）：生产形 tabs 投影注入——已落库值供反向竞态复判
       tabs: mocks.storeTabs
     })
   }
@@ -350,7 +349,7 @@ describe('F-A11 接线 —— AnnotationPopups 自动保存（静默变体）', 
     return { setEditingSpy }
   }
 
-  it('W-A 竞态（正向）：autosave 在途置 busy → 手动保存按钮禁用、click 零写', async () => {
+  it('W-A 竞态（正向）：autosave 在途置 busy → 局部保存入口不在场、零并发写', async () => {
     await mountPopupsRace()
     const d1 = deferred<{ ok: boolean; data: Annotation }>()
     mocks.apiUpdate.mockImplementation(() => d1.promise)
@@ -360,14 +359,7 @@ describe('F-A11 接线 —— AnnotationPopups 自动保存（静默变体）', 
       await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
-    // [F-VISFB-13] 保存钮定位改 testid：四态钮 saving 态态语为「保存中」
-    // （sr-only），textContent==='保存' 定位面随态语分型失效（dirty 态仍='保存'）
-    const saveBtn = host!.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!
-    expect(saveBtn).toBeDefined()
-    expect(saveBtn.disabled).toBe(true)
-    act(() => {
-      saveBtn.click()
-    })
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     await act(async () => {
       d1.resolve({ ok: true, data: { ...makeAnnotation('自动值') } })
@@ -379,35 +371,30 @@ describe('F-A11 接线 —— AnnotationPopups 自动保存（静默变体）', 
     expect(savedFlag()?.textContent).toBe('已保存')
   })
 
-  it('W-A 竞态（反向）：手动保存在途 busy → autosave 到期被挡，store 终值=手动值', async () => {
-    const { setEditingSpy } = await mountPopupsRace()
+  it('W-A 竞态（反向）：idle 写在途 busy → 后续 idle 定时零并发', async () => {
+    await mountPopupsRace()
     const d1 = deferred<{ ok: boolean; data: Annotation }>()
     mocks.apiUpdate.mockImplementation(() => d1.promise)
     const ta = host!.querySelector('textarea') as HTMLTextAreaElement
-    typeInto(ta, '手动值')
-    const saveBtn = [...host!.querySelectorAll('button')].find((b) => b.textContent === '保存')!
-    expect(saveBtn.disabled).toBe(false)
-    // [B4-A R1 迁移·async 调用] 手动保存经 per-tab lane 入链——API 派发在微任务
+    typeInto(ta, '在途值')
     await act(async () => {
-      saveBtn.click()
-      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
-    // busy 在途：保存钮（saving 态语「保存中」——textContent 定位面随态语分型失效）禁用
-    expect(host!.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!.disabled).toBe(true)
-    // 手动链在途（busy）期间 autosave 防抖到期——被 busy 挡，不并发写
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
+    // 写链在途期间，再次防抖到期也被 busy 挡，不并发写。
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1600)
+      await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     await act(async () => {
-      d1.resolve({ ok: true, data: { ...makeAnnotation('手动值') } })
+      d1.resolve({ ok: true, data: { ...makeAnnotation('在途值') } })
       await vi.advanceTimersByTimeAsync(0)
     })
     expect(mocks.apiUpdate).toHaveBeenCalledTimes(1)
     expect(mocks.storeUpdateAnnotation).toHaveBeenCalledTimes(1)
-    expect(mocks.storeUpdateAnnotation.mock.calls[0]![0].comment).toBe('手动值')
-    expect(setEditingSpy).toHaveBeenCalledWith(null)
-    expect(host!.querySelector('[data-testid="annotation-editor"]')).toBeNull()
+    expect(mocks.storeUpdateAnnotation.mock.calls[0]![0].comment).toBe('在途值')
+    expect(host!.querySelector('[data-testid="annotation-editor"]')).not.toBeNull()
   })
+
 })

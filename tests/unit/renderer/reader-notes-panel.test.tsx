@@ -122,26 +122,17 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       typeInto(body, '草稿')
     })
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(true)
-    // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点「保存」（原「未保存」状态文字
-    // 随钮面合一退役——语义等价：pending 镜像即 dirty 信号）
-    const btn = host?.querySelector('button') as HTMLButtonElement
-    expect(btn.textContent).toBe('保存')
-    expect(btn.disabled).toBe(false)
+    // [B6] pending 显示态独立于动作禁用；显式保存由工具栏/Ctrl+S 承接。
+    const status = host?.querySelector('[aria-live="polite"]') as HTMLElement
+    expect(status.textContent).toBe('未保存')
+    expect(host?.querySelector('button')).toBeNull()
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IDLE_FLUSH_MS + 100)
     })
     expect(notesSave).toHaveBeenCalled()
     expect(useNotesStore.getState().noteByPaper['p-1']?.pending).toBe(false)
-    // [B4-A R2 §10.1 断言翻转] idle-flush 落库≠定稿：Q0+U1=dirty 可点（「保存」）
-    expect(btn.textContent).toBe('保存')
-    expect(btn.disabled).toBe(false)
-    // 显式保存（钮=tab 级 finalize）成功清 U → saved「已保存」
-    await act(async () => {
-      btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await vi.advanceTimersByTimeAsync(0)
-    })
-    expect(btn.disabled).toBe(true)
-    expect(btn.textContent).toBe('已保存')
+    // [B6] 面板文字态反映 IO；U 的重保存意图由工具栏投影承接，不在面板合成按钮。
+    expect(status.textContent).toBe('已保存')
   })
 
   it('换 tab 草稿驻 store 不失忆（per-tab 语义——切回即见草稿）', async () => {
@@ -220,8 +211,8 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       rejectSave?.(new Error('A save failed'))
       for (let i = 0; i < 8; i++) await Promise.resolve()
     })
-    // B 面板不受 A 域影响：自身 clean 态「已保存」；不得显 A 的 error 钮「重试」
-    expect(host?.textContent).not.toContain('重试')
+    // B 面板不受 A 域影响：自身 clean 态「已保存」；B 无失败态。
+    expect(host?.textContent).not.toContain('A save failed')
     expect(host?.textContent).toContain('已保存')
     // W3：切回 A——A 的保存失败必须可见（重试入口不失联；error 态 per-paper 分键）。
     // [B3] 切回触发 load 合并（flush 重试在途）；重试亦失败→A 呈 error 钮「重试」
@@ -233,7 +224,7 @@ guardedDescribe('SR2-C-03', 'ReaderNotesPanel —— 总评层（notes.store 消
       rejectSave?.(new Error('A retry failed'))
       for (let i = 0; i < 8; i++) await Promise.resolve()
     })
-    expect(host?.textContent).toContain('重试')
+    expect(host?.textContent).toContain('保存失败')
   })
 })
 

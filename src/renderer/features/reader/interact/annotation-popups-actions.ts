@@ -3,7 +3,7 @@
  *
  * ── 行为层（B4-A R1：写经 per-tab lane 串行链——§4.3「busy 等待、值复判与删除
  *   补偿迁移到链任务结果，不另建第二条直接 API 写路」）──
- * - saveComment（手动）/autosaveComment（文本单元写）/deleteAnnotation：liveness
+ * - autosaveComment（文本单元写）/deleteAnnotation：liveness
  *   预判→**单次入链**→链任务内运行时复判（排队期间目标已删→判废零写；值已由
  *   前序写落库→lastPersisted+store 现值双证短路返回 true）。busy=链任务体置位/
  *   复位（旧 busyFlightRef 等待窗由 lane 排队替代——W-A 正/反向与 busy-1/2/A6/R2
@@ -25,7 +25,7 @@
  *   不等空闲直接显式保存」必被自身写回推进 revision，finalize 永远清不了灰点。
  * - 迟到回显寻址（§2.5 #19）：update/remove 写标注归属的原 tab（store 按
  *   paperId/标注 id 寻址），不读 activeId——await 窗内切 tab 时回执仍归原篇。
- * - 冻结门（saveComment/deleteAnnotation 用户命令入口）：全局 quit 门 + 目标 tab
+ * - 冻结门（deleteAnnotation 用户命令入口）：全局 quit 门 + 目标 tab
  *   关闭在途门（tab-closing-gate，§2.5 #2「命令通过 gate」）；autosave/raw 不闸
  *   （单元/收口驱动，非用户命令入口）。
  * - 删除：成功即该标注文本 target 代际失效（§4.2）+push delete 项。删除失败
@@ -34,7 +34,7 @@
  *
  * ── 接口层 ──
  * - export function useAnnotationPopupActions(args): AnnotationPopupActions
- *   （saveComment/autosaveComment/autosaveCommentRaw/writeCommentRaw/
+ *   （autosaveComment/autosaveCommentRaw/writeCommentRaw/
  *   deleteAnnotation/endEditSession）
  */
 import { useRef } from 'react'
@@ -70,7 +70,6 @@ const DELETE_CONFIRM = '删除这条标注？'
 
 /** busy 族动作（AnnotationPopups JSX 接线消费） */
 export interface AnnotationPopupActions {
-  saveComment(a: Annotation, comment: string): Promise<void>
   /** 文本单元写（控制器 persist 端口——timer/blur/flush 在链外调用，本件入链一次） */
   autosaveComment(a: Annotation, comment: string): Promise<boolean>
   /** [B4-A 回炉 R5] 文本单元写裸体（控制器 persistRaw 端口——history 命令的预
@@ -151,22 +150,7 @@ export function useAnnotationPopupActions(args: {
     }
   }
 
-  /** 批注保存（手动——成功收层+onChanged）。冻结门用户命令入口（quit+目标 tab
-   *  关闭在途）；autosave/raw 不闸=单元/收口驱动非用户命令入口（闸则收口自锁） */
-  async function saveComment(a: Annotation, comment: string): Promise<void> {
-    if (busy || quitWriteBlocked() || tabWriteBlocked(a.paperId)) return
-    const gen = annotationWriteGen(a.id)
-    if (!isAnnotationWriteLive(a.id, gen)) return
-    await enqueueTabTask(a.paperId, async () => {
-      const ok = await writeTask(a, comment, gen, 'session')
-      if (ok && isAnnotationWriteLive(a.id, gen)) {
-        closeEditing()
-        onChanged()
-      }
-    })
-  }
-
-  /** 文本单元写（saveComment 的静默变体）：链任务+运行时复判，不收层不 onChanged */
+  /** 文本单元写：链任务+运行时复判，不收层不 onChanged */
   function autosaveComment(a: Annotation, comment: string): Promise<boolean> {
     const gen = annotationWriteGen(a.id)
     if (!isAnnotationWriteLive(a.id, gen)) return Promise.resolve(false)
@@ -230,7 +214,6 @@ export function useAnnotationPopupActions(args: {
   }
 
   return {
-    saveComment,
     autosaveComment,
     autosaveCommentRaw,
     writeCommentRaw,

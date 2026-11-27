@@ -41,6 +41,7 @@
 
 /** 关闭流程在途表：paperId → 该次关闭流程的 promise */
 const flights = new Map<string, Promise<boolean>>()
+import { notifyReaderCommandState } from './reader-command-state'
 
 /** 该 tab 在途的关闭流程 promise（无在途=undefined）——重入方原样返回同一对象 */
 export function tabClosingFlight(paperId: string): Promise<boolean> | undefined {
@@ -53,10 +54,15 @@ export function tabClosingFlight(paperId: string): Promise<boolean> | undefined 
  */
 export function startTabClosing(paperId: string, flight: Promise<boolean>): Promise<boolean> {
   flights.set(paperId, flight)
+  notifyReaderCommandState(paperId)
   const forget = (): void => {
     if (flights.get(paperId) === flight) flights.delete(paperId)
   }
   void flight.then(forget, forget)
+  const observeSettle = (): void => {
+    notifyReaderCommandState(paperId)
+  }
+  void flight.then(observeSettle, observeSettle)
   return flight
 }
 

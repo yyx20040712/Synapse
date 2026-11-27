@@ -261,6 +261,7 @@ test('F-A11 笔记编辑：自动保存已保存标记+撤销重做+关闭重开
   await win.getByTestId('annotation-menu').getByRole('button', { name: '添加笔记' }).click()
   const editor = win.getByTestId('annotation-editor')
   await expect(editor).toBeVisible()
+  await expect(editor.getByTestId('annotation-editor-save')).toHaveCount(0)
   const ta = editor.getByRole('textbox', { name: '批注内容' })
 
   // ①输入→停顿（800ms 防抖）→「已保存」标记在场（自动保存零反馈缺陷的整链闭环）
@@ -648,16 +649,19 @@ test('P7-C 收官：侧栏笔记面——片段列表（文档序）+总评 auto
   await expect(panel.locator('[data-fragment-id]')).toHaveCount(1)
   const body = panel.getByLabel('笔记正文')
   await body.fill('e2e 总评内容')
+  const tabBar = win.getByRole('tablist', { name: '打开的文献' })
   // [F-VISFB-11] 节拍 1.5s→600s（shared 常量单源）：e2e 真实计时器等不到防抖到期
   // ——改锁显式保存链（saveNow 点击→四态钮 clean「已保存」；节拍数学=单测 fake
   // timers 域）；[F-VISFB-13] 恒 aria-label 后 dirty 态 accessible name=「立即保存」
   // （exact 全串防子串误中「已保存/保存中」——:1230 同口径）
-  // [B4-A R2] 点击取钮面内边距位+微延迟：默认中心点击命中钮内 svg 图标，在
+  // [B6] 工具栏保存入口；左上角偏移点击规避 svg 拖面差异，沿用既有 e2e 时序。
   // Linux Xvfb+Electron 下瞬时 down-up 被 svg 原生拖拽面吞掉（pd/md/mu 到达而
   // click 事件不派发——探针实证 probe-run12/14/15，仓外档案区）；定位+延迟后
   // 全链稳定。单元级点击→finalize 语义由 reader-notes-panel.test 锁定。
-  await panel.getByRole('button', { name: '立即保存', exact: true }).click({ position: { x: 6, y: 11 }, delay: 60 })
+  await win.getByTestId('reader-toolbar-save').click({ position: { x: 6, y: 11 }, delay: 60 })
   await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
+  // [B6 返工] 面板 IO 结束不能证明 tab 定稿；一次工具栏保存必须清本 tab 灰点。
+  await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(0, { timeout: 5_000 })
 
   // 片段单击 → C-05 定位服务：同页 exact → 标注元素滚动+locate-flash 闪烁
   await panel.locator('[data-fragment-id] button').first().click()
@@ -1268,13 +1272,8 @@ test('A3 端到端：防抖窗内关脏 tab（flush-first 立存）→重开同�
   const panel = win.getByTestId('reader-notes-panel')
   await expect(panel).toBeVisible()
   await panel.getByLabel('笔记正文').fill('A3 悬置写输入')
-  // [F-UIRES-03 B3] 四态钮承载 dirty 态：可点保存钮（原「未保存」状态文字
-  // 随钮面合一退役——语义等价：dirty 信号=保存钮可点）。exact 全串=判别力
-  // 口径：getByRole name 默认子串匹配，「已保存/保存中/保存」均含「保存」即误中。
-  // [F-VISFB-13] SaveStateButton 恒设 aria-label=title：dirty 态 accessible name
-  // =「立即保存」（aria-label 压过 sr-only 内容文本）——exact 锚随名换源（同 :614），
-  // 语义等价锁定：dirty 未达成即红（saved 态名=「已保存」不误中）
-  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
+  // [B6] 输入后界面保存入口必须可点；面板态文字只承担读出。
+  await expect(win.getByTestId('reader-toolbar-save')).toBeEnabled()
 
   // [F-VISFB-14 C-A3 翻案→B4-A R2 §2.5 #26 迁移] 关 tab=flush-first 立存；
   // 输入已置 unfinalized——flush 成功后走自绘二选 Dialog（冻结文案），点「是」
@@ -1400,11 +1399,8 @@ test('B4-A R1 两层历史：批注/总评文本 undo·redo+ctrl+s 定稿清 red
   await research.getByRole('tab', { name: '笔记' }).click()
   const panel = win.getByTestId('reader-notes-panel')
   await expect(panel).toBeVisible()
-  // [B4-A R2 §10.1 断言翻转] 载入完成锚改「保存钮在场」：tab 聚合含本用例先前
-  // 批注编辑的 U（idle-flush 落库≠定稿——钮恒 dirty 不再回「已保存」）；钮只在
-  // notes entry 落地后渲染（load 完成判据等价保持）
-  const panelSaveBtn = panel.getByRole('button', { name: /保存/, exact: false })
-  await expect(panelSaveBtn).toBeVisible({ timeout: 10_000 })
+  // [B6 返工 4] 笔记载入完成锚用面板自身 IO 读出，不用常驻工具栏按钮。
+  await expect(panel.getByText('已保存')).toBeVisible({ timeout: 10_000 })
   const body = panel.getByLabel('笔记正文')
   await body.fill('总评甲')
   await body.pressSequentially(' 乙')
@@ -1428,11 +1424,10 @@ test('B4-A R1 两层历史：批注/总评文本 undo·redo+ctrl+s 定稿清 red
   await expect(body).toHaveValue('总评甲 ')
   await body.pressSequentially('丙')
   await expect(body).toHaveValue('总评甲 丙')
-  // [B4-A R2 §10.1 断言翻转] idle 落库后 Q0+U1=dirty 可点（「保存」非「已保存」
-  // ——idle-flush≠定稿）；等 1.5s 真实 idle 落库后再关（⑤重开回读证 DB 值——
-  // 旧「已保存」锚隐式等待落库，改锚后须显式等真实计时）
-  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible({ timeout: 8_000 })
+  // [B6 返工 4] 真实 idle 落库后 Q0+U1=dirty，保存入口仍可点（idle-flush≠
+  // 定稿）；再关闭并用⑤重开回读证 DB 值。
   await win.waitForTimeout(2_200)
+  await expect(win.getByTestId('reader-toolbar-save')).toBeEnabled()
   await app.close()
 
   // ⑤ 重开应用：DB 真相源回读（批注+总评真实文本）
@@ -1475,10 +1470,11 @@ test('B4-A R2 灰点跨真实 idle：输入→idle 落库灰点仍在→显式�
   await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(0)
   await panel.getByLabel('笔记正文').fill('R2 灰点输入')
   await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
+  const body = panel.getByLabel('笔记正文')
 
   // 1.5s 真实 idle：单元提交+落库（Q0——防抖窗自然到期非立存）；灰点仍在
   await win.waitForTimeout(2_200)
-  await expect(panel.getByRole('button', { name: '立即保存', exact: true })).toBeVisible()
+  await expect(win.getByTestId('reader-toolbar-save')).toBeEnabled()
   await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
 
   // 关闭二选·否：输入已置 U——Dialog 冻结文案；「否」=留下（tab/灰点原样）
@@ -1489,11 +1485,173 @@ test('B4-A R2 灰点跨真实 idle：输入→idle 落库灰点仍在→显式�
   await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(1)
 
   // ctrl+s 显式保存（tab 级 finalize）：灰点清（#21）
-  await panel.getByLabel('笔记正文').press('Control+s')
+  await body.click()
+  await body.press('Control+s')
   await expect(tabBar.getByTestId('tab-dirty-dot')).toHaveCount(0, { timeout: 5_000 })
 
   // U=0 关闭：零弹窗直关（#25）
   await tabBar.getByRole('tab').first().getByRole('button').click()
   await expect(tabBar.getByRole('tab')).toHaveCount(0)
+  await app.close()
+})
+
+
+/** [B6] 真实入口验收：1024 单排、800 原生横滚、命令组和双侧栏开关。 */
+test('B6 阅读器工具栏：1024 单排、800 横滚、命令可达与侧栏开关', async () => {
+  skipIfPending(ANNOTATION_DEPS)
+  const title = '智慧水务 e2e B6 阅读器工具栏文献'
+  const { app } = await seedAndLaunch(title)
+  const win = await app.firstWindow()
+  await win.setViewportSize({ width: 1024, height: 768 })
+  await expect(win.getByRole('button', { name: '文献库' })).toBeVisible({ timeout: 20_000 })
+  await win.getByText(title).first().dblclick()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible({ timeout: 20_000 })
+
+  const outline = win.getByRole('button', { name: '展开或收起目录侧栏' })
+  const save = win.getByTestId('reader-toolbar-save')
+  const undo = win.getByTestId('reader-toolbar-undo')
+  const redo = win.getByTestId('reader-toolbar-redo')
+  const page = win.getByLabel('跳转到页')
+  const research = win.getByRole('button', { name: '展开或收起研究面板' })
+  await expect(save).toBeVisible()
+  await expect(save).toBeDisabled()
+  await expect(undo).toBeDisabled()
+  await expect(redo).toBeDisabled()
+  await expect(page).toBeVisible()
+  await expect(outline).toBeVisible()
+  await expect(research).toBeVisible()
+
+  const scroll = (): Promise<{ scrollWidth: number; clientWidth: number; scrollLeft: number }> =>
+    win.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+      if (el === null) throw new Error('工具栏横滚轨道不在场')
+      return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, scrollLeft: el.scrollLeft }
+    })
+  const controlSelectors = [
+    'button[aria-label="展开或收起目录侧栏"]',
+    '[data-testid="reader-toolbar-save"]',
+    '[data-testid="reader-toolbar-undo"]',
+    '[data-testid="reader-toolbar-redo"]',
+    'input[aria-label="跳转到页"]',
+    'button[aria-label="展开或收起研究面板"]'
+  ] as const
+
+  // DOM 顺序锁定：目录 -> 保存 -> 撤销 -> 重做 -> 翻页 -> 研究。
+  // 关键控件同一 top 才能证明单排；1024 无溢出本身是“放得下”的验收结果。
+  const metrics = await win.evaluate((selectors: string[]) => {
+    const one = (selector: string): Element => {
+      const el = document.querySelector(selector)
+      if (el === null) throw new Error(`${selector} 不在场`)
+      return el
+    }
+    const order = selectors.map(one)
+    for (let i = 1; i < order.length; i += 1) {
+      if (!(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        throw new Error('B6 工具栏顺序偏移')
+      }
+    }
+    const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    if (scroll === null) throw new Error('工具栏横滚轨道不在场')
+    return {
+      centers: order.map((el) => {
+        const rect = el.getBoundingClientRect()
+        return rect.top + rect.height / 2
+      }),
+      scrollWidth: scroll.scrollWidth,
+      clientWidth: scroll.clientWidth
+    }
+  }, [...controlSelectors])
+  expect(metrics.centers.length).toBe(controlSelectors.length)
+  expect(Math.max(...metrics.centers) - Math.min(...metrics.centers)).toBeLessThanOrEqual(1)
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1)
+
+  // [B6 返工] 1024 直接验收搜索入口：Ctrl+F 后输入、计数和真实匹配文本都可见。
+  await win.keyboard.press('Control+f')
+  const searchInput = win.getByTestId('reader-search-input')
+  await expect(searchInput).toBeVisible()
+  await expect(searchInput).toBeFocused()
+  await searchInput.fill(PDF_KNOWN_TEXT)
+  await win.keyboard.press('Enter')
+  await expect(win.getByTestId('reader-search-count')).toHaveText('1/1')
+  const activeHighlight = win.locator('[data-testid="search-hl"][data-active="true"]').first()
+  await expect(activeHighlight).toBeVisible()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('reader-search-box')).toHaveCount(0)
+
+  // 更窄窗口分别验证原生横滚确实发生，且滚动到研究开关是实进而非几何恒真。
+  await win.setViewportSize({ width: 800, height: 768 })
+  await expect(save).toBeVisible()
+  await expect(undo).toBeDisabled()
+  await expect(redo).toBeDisabled()
+  await expect(page).toBeVisible()
+  await expect
+    .poll(async () => {
+      const metrics = await scroll()
+      return metrics.scrollWidth - metrics.clientWidth
+    })
+    .toBeGreaterThan(0)
+  await win.evaluate(() => {
+    const el = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    el?.scrollTo({ left: 0 })
+  })
+  await expect.poll(async () => (await scroll()).scrollLeft).toBe(0)
+  const beforeScrollLeft = await win.evaluate(() => {
+    const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    if (scroll === null) throw new Error('工具栏横滚轨道不在场')
+    return scroll.scrollLeft
+  })
+  // [B6 返工 4] Playwright 的 actionability 滚动不会保证水平轨道位移。直接沿
+  // 原生轨道滚到末端，再用几何和真实点击证明研究开关已进入可视段。
+  await win.evaluate(() => {
+    const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    if (scroll === null) throw new Error('工具栏横滚轨道不在场')
+    scroll.scrollLeft = scroll.scrollWidth
+  })
+  const aside = win.getByTestId('reader-aside')
+  const researchPanel = win.getByTestId('reader-research')
+  await expect.poll(async () => (await scroll()).scrollLeft).toBeGreaterThan(0)
+  const geometry = await win.evaluate(() => {
+    const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    const button = document.querySelector<HTMLElement>('button[aria-label="展开或收起研究面板"]')
+    if (scroll === null || button === null) throw new Error('横滚验收元素不在场')
+    const track = scroll.getBoundingClientRect()
+    const item = button.getBoundingClientRect()
+    return { left: scroll.scrollLeft, trackLeft: track.left, trackRight: track.right, itemLeft: item.left, itemRight: item.right }
+  })
+  expect(geometry.itemLeft).toBeGreaterThanOrEqual(geometry.trackLeft - 1)
+  expect(geometry.itemRight).toBeLessThanOrEqual(geometry.trackRight + 1)
+  await expect(research).toBeVisible()
+  await expect(aside).toBeVisible()
+  await expect(researchPanel).toBeVisible()
+  await expect
+    .poll(() =>
+      win.evaluate(() => {
+        const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+        if (scroll === null) throw new Error('工具栏横滚轨道不在场')
+        return scroll.scrollLeft
+      })
+    )
+    .toBeGreaterThan(beforeScrollLeft)
+  const afterScrollLeft = await win.evaluate(() => {
+    const scroll = document.querySelector<HTMLElement>('.rdr-toolbar-scroll')
+    if (scroll === null) throw new Error('工具栏横滚轨道不在场')
+    return scroll.scrollLeft
+  })
+  expect(afterScrollLeft - beforeScrollLeft).toBeGreaterThan(0)
+  // [B6 返工] 两侧栏默认展开：先收起并断言面板真隐藏，再展开恢复。
+  await outline.click()
+  await expect(outline).toHaveAttribute('aria-pressed', 'false')
+  await expect(aside).toBeHidden()
+  await outline.click()
+  await expect(outline).toHaveAttribute('aria-pressed', 'true')
+  await expect(aside).toBeVisible()
+  await research.click()
+  await expect(research).toHaveAttribute('aria-pressed', 'false')
+  await expect(researchPanel).toBeHidden()
+  await research.click()
+  await expect(research).toHaveAttribute('aria-pressed', 'true')
+  await expect(researchPanel).toBeVisible()
+  await expect(win.getByText(PDF_KNOWN_TEXT).first()).toBeVisible()
   await app.close()
 })

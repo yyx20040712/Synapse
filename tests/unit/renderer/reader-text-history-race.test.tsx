@@ -213,3 +213,35 @@ describe('文本 history 在途窗内的单元提交 —— 条目身份结算+�
     expect(ctl.view().comment).toBe('')
   })
 })
+
+describe('flush 在途失败后的重试边界 —— 非定稿默认兼容，定稿专用不自动重试', () => {
+  it('默认 flush 等待失败回执后仍按原语义重试待写值', async () => {
+    const first = deferred()
+    const w = makeController({ persist: (n) => (n === 1 ? first.promise : Promise.resolve(true)) })
+    ctl = w.ctl
+    ctl.edit('a')
+    const firstFlush = ctl.flush()
+    await turns()
+    const retryFlush = ctl.flush()
+    first.resolve(false)
+    expect(await firstFlush).toBe('failed')
+    expect(await retryFlush).toBe('saved')
+    expect(w.persistCalls()).toBe(2)
+    expect(w.ctl.view().saveState).toBe('saved')
+  })
+
+  it('retryFailed=false 等待到失败后直接返回失败终态', async () => {
+    const first = deferred()
+    const w = makeController({ persist: (n) => (n === 1 ? first.promise : Promise.resolve(true)) })
+    ctl = w.ctl
+    ctl.edit('a')
+    const firstFlush = ctl.flush()
+    await turns()
+    const finalizeFlush = ctl.flush({ retryFailed: false })
+    first.resolve(false)
+    expect(await firstFlush).toBe('failed')
+    expect(await finalizeFlush).toBe('failed')
+    expect(w.persistCalls()).toBe(1)
+    expect(w.ctl.view().saveState).toBe('failed')
+  })
+})

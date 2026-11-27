@@ -101,7 +101,6 @@ function renderEditor(
         rect={RECT}
         busy={false}
         onCancel={onCancel}
-        onSave={vi.fn()}
         onDelete={vi.fn()}
         onAutosave={onAutosave}
         onAutosaveRaw={props.onAutosave ?? onAutosave}

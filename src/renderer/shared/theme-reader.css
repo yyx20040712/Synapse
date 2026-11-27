@@ -10,9 +10,23 @@
    标注/AI/选区层零触碰——F-07 层叠链红线）══ */
 /* 工具栏（mockup .toolbar L151：panel 底+line 下缘；无 glass 无 blur——金族
    退役。padding/gap 由组件 tailwind 类承载） */
-.rdr-toolbar {
+.rdr-toolbar-shell {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+}
+.rdr-toolbar-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+.rdr-toolbar {
+  width: max-content;
+  min-width: 100%;
+}
+.rdr-toolbar > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 /* 工具栏图标钮（mockup .tb-btn L152-154：28px 方格+7px 圆角+grid 居中+dim 字；
    hover=line-soft；.on=accent-soft 底+accent 字+inset 1px accent ring——选中态

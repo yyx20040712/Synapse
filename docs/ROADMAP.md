@@ -102,9 +102,16 @@ INV-69 页码通道存续）。
   B5 修复翻 done（同一 React 提交批＋真机 e2e B5-E13）；③挂账票
   去向（2026-11-25 triage，票面详情=registry）：F-SNAPHINT-01/
   F-FLIGHTGHOST-01=B5/B8 视觉域，F-SETTLECASCADE-01=B8 前评估，
-  F-CLOSERETRY-01/F-NOTESRAW-01=B6 前定案设计，F-EDGEDBL-01/
+  F-CLOSERETRY-01/F-NOTESRAW-01=B6 已交付定案设计，实施另行验收，F-EDGEDBL-01/
   F-NOTECLICK-01/F-XIMPE2E-01/F-RECOV-03/F-EVCTX-02/F-E2EHANG-01/
   F-E2EFLK-01/F-WINGUARD-01=挂账（触发=相关域触及或失败频次升级）。
+
+### B6 阅读器保存入口和工具栏（2026-11-27 实现）
+
+- `F-ANNOSAVE-01` 已翻 done：阅读器唯一显式保存入口=工具栏保存钮与 Ctrl+S；
+  批注动作行局部保存钮删除，总评面板保存钮退役。
+- 三个写入时序票的设计定案与实施验收指针=B6 设计稿：
+  `docs/design/2026-11-27_b6-reader-toolbar-save-design.md`；票保持 open。
 
 ### B3 用户裁决（已裁决——本节即裁决指针，v2 工单头注引用此处）
 

@@ -85,10 +85,22 @@ import {
   peekTextCommand,
   type TextPreflushInput
 } from './reader-text-history-task'
-import type { RawPreflush, TextControllerPorts, TextSaveState, TextView } from './reader-text-controller-model'
+import type {
+  RawPreflush,
+  TextControllerPorts,
+  TextFlushOptions,
+  TextSaveState,
+  TextView
+} from './reader-text-controller-model'
 
 // [F-SLIMB4A-01 拆件] 契约类型迁驻 reader-text-controller-model——原名再导出，既有导入面零改动
-export type { RawPreflush, TextControllerPorts, TextSaveState, TextView } from './reader-text-controller-model'
+export type {
+  RawPreflush,
+  TextControllerPorts,
+  TextFlushOptions,
+  TextSaveState,
+  TextView
+} from './reader-text-controller-model'
 
 export class TextController {
   private value: string
@@ -221,12 +233,18 @@ export class TextController {
     this.ports.onSessionEnd?.()
   }
 
-  /** 收口面：闭合单元→等在途→有待存立即派发写；返回终态（兑现≠已落库） */
-  async flush(): Promise<TextSaveState> {
+  /** 收口面：闭合单元→等在途→有待存立即派发写；返回终态（兑现≠已落库）。
+   *  finalize 传 retryFailed=false；其他收口不传，保持失败后的原有自动重试。 */
+  async flush(options?: TextFlushOptions): Promise<TextSaveState> {
     this.machine.close()
     this.emit()
     const inflight = this.inflight
-    if (inflight !== null) await inflight.catch(() => undefined)
+    // [B6 返工 5b] 只有 finalize 等待在途写时，失败回执就是本句柄终态；不在同一次
+    // flush 内自动重试。其他收口维持原语义，失败后仍待写则立即重试。
+    if (inflight !== null) {
+      const settled = await inflight.catch(() => 'failed' as const)
+      if (settled === 'failed' && options?.retryFailed === false) return this.state
+    }
     if (this.value !== this.lastSaved) return this.writeNow()
     return this.state
   }

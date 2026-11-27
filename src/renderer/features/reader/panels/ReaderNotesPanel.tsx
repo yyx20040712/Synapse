@@ -19,9 +19,8 @@
  *     四态消费 deriveSaveUiState（renderer/shared/save-status.ts——单一推导点）
  *   · 片段层：FragmentNotesList（C-01 单源序；单击 onLocate/高亮滚动=C-05 消费面）
  * - notes 面 dirty 投影（TABS-03 既有）零改动——pending 语义自动覆盖本编辑面
- * - [F-UIRES-03 B3] 四态保存主动作钮（INV-106；dirty 可点/saving 禁用/clean
- *   禁用/error 可点；点击=saveNow）；钮 aria-live=polite；error 无障碍名
- *   RETRY_A11Y（[RR1 k1-W3]/[RR1 k1-N2]）
+ * - [B6 F-ANNOSAVE-01] 面内保存钮退役；总评定稿=工具栏保存/Ctrl+S。
+ *   本行只保留 IO 态文字反馈。
  * - [A2 F-CONTRACTA-01 2026-10-04] note.title 停用：标题输入框退役为静态
  *   「全文笔记」节标
  * - [B4-A R1 §10.3] textarea 内 ctrl+z/ctrl+y/ctrl+shift+z=文本值层 undo/redo、
@@ -47,14 +46,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ApiClientError } from '../../../api/client'
 import { showToast } from '../../../shared/ui/Toast'
 import { RetryButton } from '../../../shared/ui/RetryButton'
-import { SaveStateButton } from '../../../shared/ui/SaveStateButton'
 import type { Annotation } from '@shared/models/annotation'
 import { useNotesStore } from '../../notes/notes.store'
 import { FragmentNotesList } from './FragmentNotesList'
 import { useActiveTab } from '../state/useActiveTab'
 import { useAnnotationDraft } from '../interact/use-annotation-draft'
 import { finalizeActiveTab } from '../state/reader-save-coordinator'
-import { useActiveTabCommandState } from '../state/tab-dirty'
 import { matchTextLayerKey } from '../view/AnnotationEditorTextarea'
 import type { TextTargetKey } from '../state/reader-text-history'
 
@@ -77,9 +74,6 @@ export function ReaderNotesPanel(props: NotesPanelProps): JSX.Element {
   const load = useNotesStore((s) => s.load)
   const edit = useNotesStore((s) => s.edit)
   const flush = useNotesStore((s) => s.flush)
-  // [B4-A R2 §10.1/§10.4] 保存钮四态=活动 tab IO+U 聚合（tab 级单源——本面板
-  // 局部 saveNow 与全局定稿并存退役；动作=tab 级 finalize）
-  const command = useActiveTabCommandState()
 
   const [loadFailed, setLoadFailed] = useState(false)
   // 最新 paperId（迟到回调比对）：面板随 active tab 换文献时旧请求失败不得作用
@@ -160,17 +154,11 @@ export function ReaderNotesPanel(props: NotesPanelProps): JSX.Element {
         <span className="min-w-0 flex-1 truncate text-sm font-medium" style={{ color: 'var(--text-dim)' }}>
           全文笔记
         </span>
-        {/* [F-VISFB-13→B4-A R2 §10.4] 四态钮=tab 级 IO+U 聚合（单源
-            useActiveTabCommandState）；动作=tab 级 finalize（局部 saveNow 退役）；
-            A5 消费方位=保存钮 top-right 本行 */}
+        {/* [B6] 保留 IO 文字反馈；tab 定稿统一走工具栏保存/Ctrl+S */}
         {entry !== undefined && (
-          <SaveStateButton
-            state={command.saveState}
-            className="shrink-0"
-            onClick={() => {
-              void finalizeActiveTab()
-            }}
-          />
+          <span aria-live="polite" className="shrink-0 text-xs" style={{ color: 'var(--text-dim)' }}>
+            {entry.saving ? '保存中' : entry.saveFailed ? '保存失败' : entry.pending ? '未保存' : '已保存'}
+          </span>
         )}
       </div>
       <div className="relative min-h-0 flex-1 basis-24">

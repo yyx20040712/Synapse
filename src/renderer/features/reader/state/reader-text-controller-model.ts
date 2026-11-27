@@ -19,6 +19,12 @@ import type { TextTargetKey } from './reader-text-history'
 
 export type TextSaveState = 'clean' | 'dirty' | 'saving' | 'saved' | 'failed'
 
+/** flush 收口选项；缺省保持既有收口语义（在途失败后值仍待写则重试） */
+export interface TextFlushOptions {
+  /** false=finalize 等待到失败后保留失败终态，不在同一次 flush 内自动重试 */
+  retryFailed?: boolean
+}
+
 export interface TextControllerPorts {
   /** 落库写（单元/blur/flush 的普通写路径）：true=该值已在库。写体由宿主适配器
    *  经 per-tab lane 自行入链（控制器在链外调用） */

@@ -24,6 +24,7 @@ import { useTextDraftRegistryBinding } from './use-text-draft-registry-binding'
 import {
   TextController,
   type TextSaveState,
+  type TextFlushOptions,
   type TextView
 } from '../state/reader-text-controller'
 import { textTargetId, type TextTargetKey } from '../state/reader-text-history'
@@ -49,8 +50,9 @@ export interface AnnotationDraft {
   /** 外部值同步（宿主草稿被 load/合并改写——不开历史单元不清 redo）；
    *  persisted=false=该值尚未落库（合并产物） */
   syncExternal(value: string, persisted?: boolean): void
-  /** 收口面可等待立存：闭合单元→等在途→立即派发写；返回终态（兑现≠已落库） */
-  flush(): Promise<SaveState>
+  /** 收口面可等待立存：闭合单元→等在途→立即派发写；返回终态（兑现≠已落库）。
+   *  finalize 句柄传 retryFailed=false；无参调用保持原自动重试语义。 */
+  flush(options?: TextFlushOptions): Promise<SaveState>
 }
 
 export interface TextDraftOptions {
@@ -155,7 +157,7 @@ export function useAnnotationDraft(target: TextTargetKey | null, initial: string
     getState: () => ctl?.view().saveState ?? 'clean',
     applyRestore: (value, failed) => ctl?.restore(value, failed),
     wasRestored: () => ctl?.wasRestored() ?? false,
-    flush: () => ctl?.flush() ?? Promise.resolve('clean'),
+    flush: (options) => ctl?.flush(options) ?? Promise.resolve('clean'),
     dispose: () => ctl?.dispose(),
     closeout: () => ctl?.closeout(),
     closeoutOnUnmount: opts.closeoutOnUnmount === true,
@@ -193,6 +195,6 @@ export function useAnnotationDraft(target: TextTargetKey | null, initial: string
     handleCompositionEnd: () => ctl?.compositionEnd(),
     handleBlur: () => ctl?.blur(),
     syncExternal: (value, persisted) => ctl?.syncExternal(value, persisted),
-    flush: () => ctl?.flush() ?? Promise.resolve('clean')
+    flush: (options) => ctl?.flush(options) ?? Promise.resolve('clean')
   }
 }

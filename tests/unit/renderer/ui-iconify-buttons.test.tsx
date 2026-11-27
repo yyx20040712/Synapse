@@ -170,7 +170,7 @@ describe('F-UIRES-02 批 B Reader 域', () => {
     }
     mount(
       <AnnotationEditor annotation={annotation} rect={{ page: 0, x: 0.1, y: 0.1, w: 0.2, h: 0.02 }}
-        busy={false} onCancel={() => undefined} onSave={() => undefined} onDelete={() => undefined}
+        busy={false} onCancel={() => undefined} onDelete={() => undefined}
         onAutosave={() => Promise.resolve(true)} onAutosaveRaw={() => Promise.resolve(true)} />
     )
     for (const testid of ['annotation-editor-undo', 'annotation-editor-redo']) {
@@ -181,16 +181,16 @@ describe('F-UIRES-02 批 B Reader 域', () => {
     }
     expect(host!.querySelector('[data-testid="annotation-editor-undo"]')!.textContent).toBe('撤销')
     expect(host!.querySelector('[data-testid="annotation-editor-redo"]')!.textContent).toBe('重做')
-    // [F-VISFB-13] 四态钮态语分型：clean 态钮面=「已保存」（sr-only）——输入
-    // 一字转 dirty 后钮面=「保存」，本锚按 dirty 态锚定「保存」三断言（态机
-    // 全格锚=save-state-button.test.tsx ②）；原生 setter 驱动对齐本仓既有形态
+    // [F-ANNOSAVE-01] 局部保存钮已删除；从 dirty 态锁定实际动作集：
+    // 删除/取消的 sr-only 文本仍承载可见 a11y 名。
     const ta = host!.querySelector('textarea') as HTMLTextAreaElement
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
     act(() => {
       setter?.call(ta, '脏')
       ta.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    for (const label of ['保存', '删除', '取消']) {
+    expect(host!.querySelector('[data-testid="annotation-editor-save"]')).toBeNull()
+    for (const label of ['删除', '取消']) {
       const btn = findBtnByText(label)
       expectSameLabel(btn)
       expectSvg(btn, label)

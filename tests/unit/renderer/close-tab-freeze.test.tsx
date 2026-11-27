@@ -230,8 +230,6 @@ describe('关 tab 冻结门 —— 按 tab 寻址、用户命令入口统一拒�
     // 显式保存（tab 级 finalize）
     expect(await finalizeTab(P)).toBe(false)
     expect(await finalizeActiveTab()).toBe(false)
-    // 批注手动保存（saveComment 用户命令入口）
-    void actions.saveComment(a, '关闭中保存')
     await turns()
     expect(mocks.updateAnnotation).not.toHaveBeenCalled()
     // 操作层 undo/redo

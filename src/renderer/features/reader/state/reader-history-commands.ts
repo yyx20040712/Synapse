@@ -43,6 +43,7 @@ import { api, ApiClientError } from '../../../api/client'
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
 import { enqueueTabTask } from '../../../shared/tab-write-lane'
 import { tabWriteBlocked } from './tab-closing-gate'
+import { notifyReaderCommandState } from './reader-command-state'
 import { allDraftRawPreflushes } from '../interact/annotation-draft-registry'
 import {
   endCommentEditSession,
@@ -126,6 +127,7 @@ async function runOpHistory(paperId: string, direction: 'undo' | 'redo'): Promis
   // 排队项起步时冻结期已到：拒绝（栈不变零 api）
   if (quitWriteBlocked() || tabWriteBlocked(paperId)) return { done: false, reason: 'busy' }
   opRunning.set(paperId, (opRunning.get(paperId) ?? 0) + 1)
+  notifyReaderCommandState(paperId)
   let preflushes: RawPreflush[] = []
   try {
     // 命令起步（同一同步段内入链占位）：提交本 tab 挂载控制器的打开单元并捕获待写值
@@ -167,6 +169,7 @@ async function runOpHistory(paperId: string, direction: 'undo' | 'redo'): Promis
     const rest = (opRunning.get(paperId) ?? 1) - 1
     if (rest <= 0) opRunning.delete(paperId)
     else opRunning.set(paperId, rest)
+    notifyReaderCommandState(paperId)
   }
 }
 

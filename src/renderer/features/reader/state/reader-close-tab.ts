@@ -88,6 +88,18 @@ export function tabNotePending(paperId: string): boolean {
   return useNotesStore.getState().noteByPaper[paperId]?.pending === true
 }
 
+/**
+ * [B6 返工 4] finalize 的总评结算白名单面：复用 notes.flushNow 的在途收敛、
+ * 失败重试与 clean no-op 语义；协调器不直引 notes.store。
+ */
+export async function flushNotesForTab(paperId: string): Promise<void> {
+  try {
+    await useNotesStore.getState().flushNow(paperId)
+  } catch {
+    // flushNow rejection=收口失败——按后续 IO 查态呈现，禁未处理 rejection。
+  }
+}
+
 /** 关闭预 flush 查态：IO 错误或总评待写残留（首载门控篇零写派发等）均为未落库 */
 function closeFlushError(paperId: string): string | null {
   return tabFlushError(paperId) ?? (tabNotePending(paperId) ? '笔记尚未落库' : null)

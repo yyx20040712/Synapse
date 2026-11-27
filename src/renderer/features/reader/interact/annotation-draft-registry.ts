@@ -26,7 +26,7 @@
  *   接受——notes.store 模块级元数据同口径）
  */
 import { quitWriteBlocked } from '../../../app/quit-closing-gate'
-import type { RawPreflush } from '../state/reader-text-controller'
+import type { RawPreflush, TextFlushOptions } from '../state/reader-text-controller'
 
 /** 卸载期草稿快照：comment=最新未落盘值；failed=最近一次保存尝试是否失败（重挂载恢复态依据） */
 export interface AnnotationDraftSnapshot {
@@ -34,8 +34,8 @@ export interface AnnotationDraftSnapshot {
   failed: boolean
 }
 
-/** flush 句柄形态（结构兼容 use-annotation-draft 的 draft.flush；不 import 其类型以避循环） */
-export type AnnotationDraftFlush = () => Promise<unknown>
+/** flush 句柄形态（结构兼容 use-annotation-draft 的 draft.flush；finalize 可专用禁自动重试） */
+export type AnnotationDraftFlush = (options?: TextFlushOptions) => Promise<unknown>
 
 /** [B4-A 回炉三 A] 操作层 history 命令的预 flush 准备（controller.flushPendingRaw——
  *  命令起步时同步调用，返回链任务体内直调的裸预 flush 体）；paperId=控制器所属 tab */

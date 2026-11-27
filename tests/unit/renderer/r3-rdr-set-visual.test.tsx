@@ -72,7 +72,7 @@ afterEach(() => {
 
 /** ready 态完整 tab 形状（tab-bar.test 同配方） */
 describe('T3-P4 ReaderToolbar —— panel 底工具栏皮肤（mockup .toolbar 语汇）', () => {
-  it('工具条根挂 rdr-toolbar 类；theme-reader.css 值面=--panel 底+--line 下缘（金族退役：无 glass 无 blur）', () => {
+  it('工具条根挂 rdr-toolbar-shell 类；theme-reader.css 值面=--panel 底+--line 下缘（B6 横滚壳承载皮肤）', () => {
     mount(
       <ReaderToolbar
         page={0}
@@ -86,11 +86,11 @@ describe('T3-P4 ReaderToolbar —— panel 底工具栏皮肤（mockup .toolbar 
     )
     const bar = host?.firstElementChild as HTMLElement
     expect(bar, '工具条根元素应在场').toBeDefined()
-    expect(bar.className, '工具栏类钩 rdr-toolbar 应挂在根').toContain('rdr-toolbar')
+    expect(bar.className, '工具栏壳类钩 rdr-toolbar-shell 应挂在根').toContain('rdr-toolbar-shell')
     // 材质文本锁（theme.test 同口径）：值漂移/误删即红——T3-P4 金族退役换
     // mockup .toolbar 值面（panel 底+line 下缘；padding/gap 由组件类承载）
-    expect(cssTheme, '工具栏底=--panel').toMatch(/\.rdr-toolbar\s*\{[^}]*background:\s*var\(--panel\)/)
-    expect(cssTheme, '工具栏下缘=--line').toMatch(/\.rdr-toolbar\s*\{[^}]*border-bottom:\s*1px solid var\(--line\)/)
+    expect(cssTheme, '工具栏底=--panel').toMatch(/\.rdr-toolbar-shell\s*\{[^}]*background:\s*var\(--panel\)/)
+    expect(cssTheme, '工具栏下缘=--line').toMatch(/\.rdr-toolbar-shell\s*\{[^}]*border-bottom:\s*1px solid var\(--line\)/)
     // 金族退役负锚（阅读器皮肤域回填即红；--gold/border-gold 随菱形分隔删除
     // 全域清零——前端四期 B2 起 theme-buttons.css 无任何 --gold 消费）
     expect(cssTheme, '阅读器域 panel-glass 消费应清零').not.toContain('panel-glass')

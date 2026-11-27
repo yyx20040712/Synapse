@@ -27,6 +27,7 @@ import { useLineageStore } from '../../../src/renderer/features/lineage/lineage.
 import { AnnotationPopups } from '../../../src/renderer/features/reader/view/AnnotationPopups'
 import {
   discardAnnotationDraft,
+  fireAllDraftFlushes,
   registerDraftFlush,
   saveAnnotationDraft,
   unregisterDraftFlush
@@ -410,9 +411,8 @@ describe('quit-flush × busy —— ②步等待 settle 后真实终态（F-VISF
       setter?.call(ta, 'quit 窗内值')
       ta.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    const saveBtn = host.querySelector<HTMLButtonElement>('[data-testid="annotation-editor-save"]')!
     await act(async () => {
-      saveBtn.click()
+      fireAllDraftFlushes()
     })
   }
 
